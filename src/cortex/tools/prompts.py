@@ -209,28 +209,13 @@ Check for:
 - File structure and metadata validity
 
 Expected output format (up to date):
-{
-  "status": "up_to_date",
-  "message": "Memory Bank is already using the latest format",
-  "current_location": "memory-bank/",
-  "files_count": 7
-}
+{"status": "up_to_date", "message": "Memory Bank is already using the latest format", "current_location": "memory-bank/", "files_count": 7}
 
 Expected output format (migration needed):
-{
-  "status": "migration_needed",
-  "message": "Old format detected at .cursor/memory-bank/",
-  "old_location": ".cursor/memory-bank/",
-  "new_location": "memory-bank/",
-  "files_to_migrate": 7
-}
+{"status": "migration_needed", "message": "Old format detected at .cursor/memory-bank/", "old_location": ".cursor/memory-bank/", "new_location": "memory-bank/", "files_to_migrate": 7}
 
 Expected output format (not initialized):
-{
-  "status": "not_initialized",
-  "message": "No Memory Bank found",
-  "suggestion": "Run initialize_memory_bank to create one"
-}"""
+{"status": "not_initialized", "message": "No Memory Bank found", "suggestion": "Run initialize_memory_bank to create one"}"""
 
 
 @mcp.prompt()
@@ -307,14 +292,4 @@ Safety requirements:
 - Backup creation before migration
 
 Expected output format:
-{
-  "status": "success",
-  "message": "Project structure migrated successfully",
-  "migrations": {
-    "memory_bank": {"from": "memory-bank/", "to": ".cursor/memory-bank/", "files": 7},
-    "rules": {"from": "rules/", "to": ".cursor/rules/", "files": <count>},
-    "plans": {"from": ".plan/", "to": ".cursor/plans/", "files": <count>}
-  },
-  "links_updated": <count>,
-  "duration_ms": <time>
-}"""
+{"status": "success", "message": "Project structure migrated successfully", "migrations": {"memory_bank": {"from": "memory-bank/", "to": ".cursor/memory-bank/", "files": 7}, "rules": {"from": "rules/", "to": ".cursor/rules/", "files": <count>}, "plans": {"from": ".plan/", "to": ".cursor/plans/", "files": <count>}}, "links_updated": <count>, "duration_ms": <time>}"""
