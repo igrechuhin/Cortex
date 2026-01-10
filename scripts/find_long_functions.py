@@ -13,7 +13,7 @@ def count_logical_lines(
     node: ast.FunctionDef | ast.AsyncFunctionDef, source_lines: list[str]
 ) -> int:
     """Count logical lines in a function (excluding docstrings, comments, blank lines)."""
-    if node.lineno is None or node.end_lineno is None:
+    if node.end_lineno is None:
         return 0
 
     logical_lines = 0
@@ -69,9 +69,9 @@ def analyze_file(file_path: Path) -> list[tuple[str, int, int, int]]:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             logical_lines = count_logical_lines(node, source_lines)
             if logical_lines > MAX_LINES:
-                violations.append(
-                    (node.name, logical_lines, node.lineno or 0, node.end_lineno or 0)
-                )
+                lineno = node.lineno
+                end_lineno = node.end_lineno if node.end_lineno is not None else 0
+                violations.append((node.name, logical_lines, lineno, end_lineno))
 
     return violations
 

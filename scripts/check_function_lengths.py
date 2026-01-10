@@ -52,7 +52,7 @@ class FunctionVisitor(ast.NodeVisitor):
         start_line = node.lineno
         end_line = node.end_lineno
 
-        if start_line is None or end_line is None:
+        if end_line is None:
             return
 
         # Count logical lines (excluding docstrings, comments, blank lines)
@@ -83,7 +83,11 @@ class FunctionVisitor(ast.NodeVisitor):
                 continue
 
             # Skip docstring lines
-            if docstring_start and docstring_start <= line_num <= docstring_end:
+            if (
+                docstring_start
+                and docstring_end is not None
+                and docstring_start <= line_num <= docstring_end
+            ):
                 continue
 
             # Skip blank lines and comments
@@ -172,7 +176,7 @@ def main():
                 excess = logical_lines - MAX_FUNCTION_LINES
                 print(
                     f"    {func_name}() at line {start_line}: {logical_lines} lines "
-                    f"(max: {MAX_FUNCTION_LINES}, excess: {excess})",
+                    + f"(max: {MAX_FUNCTION_LINES}, excess: {excess})",
                     file=sys.stderr,
                 )
             print(file=sys.stderr)

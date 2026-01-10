@@ -14,9 +14,21 @@ Output:
 
 import ast
 from pathlib import Path
+from typing import TypedDict
 
 
-def analyze_file(file_path: Path) -> list[dict]:
+class ComplexityIssue(TypedDict):
+    """Complexity issue dictionary structure."""
+
+    file: str
+    function: str
+    line: int
+    complexity: int
+    nesting: int
+    issues: list[str]
+
+
+def analyze_file(file_path: Path) -> list[ComplexityIssue]:
     """Analyze a single Python file for complexity metrics.
 
     Args:
@@ -25,7 +37,7 @@ def analyze_file(file_path: Path) -> list[dict]:
     Returns:
         List of complexity issues found in the file
     """
-    results = []
+    results: list[ComplexityIssue] = []
 
     try:
         with open(file_path) as f:
@@ -129,7 +141,7 @@ def _describe_issues(complexity: int, nesting: int) -> list[str]:
     Returns:
         List of issue descriptions
     """
-    issues = []
+    issues: list[str] = []
 
     if complexity > 10:
         issues.append(f"High complexity: {complexity} (target: ≤10)")
@@ -150,7 +162,7 @@ def main():
 
     print("🔍 Analyzing code complexity...\n")
 
-    all_results = []
+    all_results: list[ComplexityIssue] = []
     file_count = 0
 
     for py_file in sorted(src_path.rglob("*.py")):
@@ -162,7 +174,10 @@ def main():
         all_results.extend(results)
 
     # Sort by complexity (highest first), then by nesting
-    all_results.sort(key=lambda x: (x["complexity"], x["nesting"]), reverse=True)
+    def sort_key(x: ComplexityIssue) -> tuple[int, int]:
+        return (x["complexity"], x["nesting"])
+
+    all_results.sort(key=sort_key, reverse=True)
 
     # Print results
     print("=" * 80)
@@ -175,9 +190,13 @@ def main():
         return 0
 
     # Group by severity
-    high_complexity = [r for r in all_results if r["complexity"] > 15]
-    medium_complexity = [r for r in all_results if 10 < r["complexity"] <= 15]
-    deep_nesting = [r for r in all_results if r["nesting"] > 3]
+    high_complexity: list[ComplexityIssue] = [
+        r for r in all_results if r["complexity"] > 15
+    ]
+    medium_complexity: list[ComplexityIssue] = [
+        r for r in all_results if 10 < r["complexity"] <= 15
+    ]
+    deep_nesting: list[ComplexityIssue] = [r for r in all_results if r["nesting"] > 3]
 
     # Print high complexity functions
     if high_complexity:
@@ -194,7 +213,7 @@ def main():
 
     # Print medium complexity functions
     if medium_complexity:
-        print(f"\n🟡 MEDIUM COMPLEXITY (11-15):")
+        print("\n🟡 MEDIUM COMPLEXITY (11-15):")
         print("-" * 80)
         for result in medium_complexity:
             print(f"\n📍 {result['file']}:{result['line']}")
@@ -204,9 +223,11 @@ def main():
             )
 
     # Print deep nesting issues
-    nesting_only = [r for r in deep_nesting if r["complexity"] <= 10]
+    nesting_only: list[ComplexityIssue] = [
+        r for r in deep_nesting if r["complexity"] <= 10
+    ]
     if nesting_only:
-        print(f"\n🟠 DEEP NESTING (>3 levels):")
+        print("\n🟠 DEEP NESTING (>3 levels):")
         print("-" * 80)
         for result in nesting_only:
             print(f"\n📍 {result['file']}:{result['line']}")
@@ -226,8 +247,9 @@ def main():
     print(f"📈 Total issues: {len(all_results)}")
 
     if all_results:
-        avg_complexity = sum(r["complexity"] for r in all_results) / len(all_results)
-        max_complexity = max(r["complexity"] for r in all_results)
+        complexity_values = [r["complexity"] for r in all_results]
+        avg_complexity = sum(complexity_values) / len(complexity_values)
+        max_complexity = max(complexity_values)
         print(f"\n📊 Average complexity (issues only): {avg_complexity:.1f}")
         print(f"📊 Maximum complexity: {max_complexity}")
 

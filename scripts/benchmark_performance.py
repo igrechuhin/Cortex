@@ -17,6 +17,16 @@ import subprocess
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import TypedDict
+
+
+class TestModuleInfo(TypedDict):
+    """Test module information dictionary structure."""
+
+    module: str
+    test_file: str
+    target: str
+    day: int
 
 
 @dataclass
@@ -39,7 +49,7 @@ class PerformanceBenchmark:
     def __init__(self):
         """Initialize benchmark suite."""
         self.results: list[BenchmarkResult] = []
-        self.test_modules = [
+        self.test_modules: list[TestModuleInfo] = [
             {
                 "module": "duplication_detector",
                 "test_file": "tests/unit/test_duplication_detector.py",
@@ -158,9 +168,9 @@ class PerformanceBenchmark:
         for result in self.results:
             print(
                 f"  {result.status} {result.module}: "
-                f"{result.execution_time_s:.3f}s "
-                f"({result.tests_passed}/{result.test_count} tests, "
-                f"target: {result.improvement_target})"
+                + f"{result.execution_time_s:.3f}s "
+                + f"({result.tests_passed}/{result.test_count} tests, "
+                + f"target: {result.improvement_target})"
             )
 
         print("\n🎉 Phase 10.3.1 Performance Achievements:")

@@ -42,11 +42,11 @@ jobs:
 
       - name: Check file sizes (max 400 lines)
         run: |
-          python scripts/check_file_sizes.py
+          uv run python scripts/check_file_sizes.py
 
       - name: Check function lengths (max 30 lines)
         run: |
-          python scripts/check_function_lengths.py
+          uv run python scripts/check_function_lengths.py
 
       - name: Run tests
         run: |

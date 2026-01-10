@@ -13,8 +13,8 @@ def get_module_imports(file_path: Path) -> set[str]:
         with open(file_path) as f:
             tree = ast.parse(f.read())
 
-        imports = set()
-        type_checking_imports = set()
+        imports: set[str] = set()
+        type_checking_imports: set[str] = set()
 
         # Find all TYPE_CHECKING blocks
         for node in ast.walk(tree):
@@ -42,7 +42,7 @@ def get_module_imports(file_path: Path) -> set[str]:
                         imports.add(layer)
 
         # Remove TYPE_CHECKING imports from runtime imports
-        runtime_imports = imports - type_checking_imports
+        runtime_imports: set[str] = imports - type_checking_imports
 
         return runtime_imports
     except Exception as e:
@@ -99,9 +99,9 @@ def analyze_dependencies() -> dict[str, set[str]]:
 
 def find_circular_dependencies(layer_deps: dict[str, set[str]]) -> list[list[str]]:
     """Find circular dependencies between layers."""
-    cycles = []
+    cycles: list[list[str]] = []
 
-    def dfs(node: str, path: list[str], visited: set[str]):
+    def dfs(node: str, path: list[str], visited: set[str]) -> None:
         if node in path:
             # Found a cycle
             cycle_start = path.index(node)
@@ -175,8 +175,10 @@ def main():
     print()
 
     # Check for violations of intended layer order
-    violations = []
-    layer_order_map = {layer: i for i, layer in enumerate(intended_order)}
+    violations: list[tuple[str, str, int, int]] = []
+    layer_order_map: dict[str, int] = {
+        layer: i for i, layer in enumerate(intended_order)
+    }
 
     for layer, deps in layer_deps.items():
         layer_index = layer_order_map.get(layer, 999)

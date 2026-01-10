@@ -11,6 +11,17 @@ This script analyzes the codebase for common performance anti-patterns:
 import ast
 from collections import defaultdict
 from pathlib import Path
+from typing import TypedDict
+
+
+class PerformanceIssue(TypedDict):
+    """Performance issue dictionary structure."""
+
+    type: str
+    severity: str
+    line: int
+    function: str | None
+    message: str
 
 
 class PerformanceAnalyzer(ast.NodeVisitor):
@@ -18,8 +29,8 @@ class PerformanceAnalyzer(ast.NodeVisitor):
 
     def __init__(self, filename: str):
         self.filename = filename
-        self.issues = []
-        self.function_name = None
+        self.issues: list[PerformanceIssue] = []
+        self.function_name: str | None = None
         self.nested_loops = 0
         self.loop_depth = 0
 
@@ -127,7 +138,7 @@ class PerformanceAnalyzer(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-def analyze_file(filepath: Path) -> list[dict]:
+def analyze_file(filepath: Path) -> list[PerformanceIssue]:
     """Analyze a Python file for performance issues."""
     try:
         with open(filepath) as f:
@@ -163,7 +174,7 @@ def main():
         "optimization/optimization_strategies.py",
     ]
 
-    all_issues = defaultdict(list)
+    all_issues: defaultdict[str, list[PerformanceIssue]] = defaultdict(list)
     total_issues = 0
 
     print("=" * 70)
@@ -186,7 +197,7 @@ def main():
             print("-" * 70)
 
             # Group by severity
-            by_severity = defaultdict(list)
+            by_severity: defaultdict[str, list[PerformanceIssue]] = defaultdict(list)
             for issue in issues:
                 by_severity[issue["severity"]].append(issue)
 
@@ -212,7 +223,7 @@ def main():
 
     if total_issues > 0:
         print("\nIssues by severity:")
-        severity_counts = defaultdict(int)
+        severity_counts: defaultdict[str, int] = defaultdict(int)
         for issues in all_issues.values():
             for issue in issues:
                 severity_counts[issue["severity"]] += 1
@@ -222,7 +233,7 @@ def main():
                 print(f"  {severity.capitalize():8s}: {severity_counts[severity]}")
 
         print("\nTop priority fixes:")
-        high_priority = []
+        high_priority: list[tuple[str, PerformanceIssue]] = []
         for module, issues in all_issues.items():
             for issue in issues:
                 if issue["severity"] == "high":

@@ -158,8 +158,8 @@ def main() -> int:
         severity = "🔴" if v.over_limit > 50 else "🟠" if v.over_limit > 20 else "🟡"
         print(
             f"| {idx} | {file_name} | `{v.function_name}` | "
-            f"{v.logical_lines} | +{v.over_limit} {severity} | "
-            f"{v.file_path}:{v.start_line} |"
+            + f"{v.logical_lines} | +{v.over_limit} {severity} | "
+            + f"{v.file_path}:{v.start_line} |"
         )
 
     print()

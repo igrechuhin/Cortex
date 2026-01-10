@@ -18,8 +18,10 @@ import pstats
 import sys
 import tempfile
 import time
+from collections.abc import Callable, Coroutine
 from pathlib import Path
 from pstats import SortKey
+from typing import cast
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
@@ -27,6 +29,7 @@ from cortex.analysis.structure_analyzer import StructureAnalyzer
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
 from cortex.core.token_counter import TokenCounter
+from cortex.linking.link_parser import LinkParser
 from cortex.linking.transclusion_engine import TransclusionEngine
 
 
@@ -59,8 +62,8 @@ async def profile_file_operations() -> float:
 
         start = time.perf_counter()
         for i in range(50):
-            await fs_manager.write_file(f"test_{i}.md", test_content)
-            await fs_manager.read_file(f"test_{i}.md")
+            _ = await fs_manager.write_file(Path(f"test_{i}.md"), test_content)
+            _, _ = await fs_manager.read_file(Path(f"test_{i}.md"))
         elapsed = time.perf_counter() - start
 
         print(f"50 write+read operations: {elapsed:.3f}s")
@@ -77,9 +80,8 @@ async def profile_dependency_graph() -> float:
     # Build a large graph
     start = time.perf_counter()
     for i in range(100):
-        graph.add_file(f"file_{i}.md")
         for j in range(i % 10):
-            graph.add_dependency(f"file_{i}.md", f"file_{j}.md")
+            graph.add_dynamic_dependency(f"file_{i}.md", f"file_{j}.md")
 
     # Test operations
     for i in range(100):
@@ -104,22 +106,36 @@ async def profile_structure_analysis() -> float:
         # Create test files
         for i in range(20):
             content = f"# File {i}\n" + ("Content line\n" * 100)
-            await fs_manager.write_file(f"file_{i}.md", content)
+            _ = await fs_manager.write_file(Path(f"file_{i}.md"), content)
 
         dep_graph = DependencyGraph()
         for i in range(20):
-            dep_graph.add_file(f"file_{i}.md")
             if i > 0:
-                dep_graph.add_dependency(f"file_{i}.md", f"file_{i-1}.md")
+                dep_graph.add_dynamic_dependency(f"file_{i}.md", f"file_{i-1}.md")
 
-        analyzer = StructureAnalyzer(fs_manager, dep_graph)
+        from cortex.core.metadata_index import MetadataIndex
+
+        metadata_index = MetadataIndex(base_path)
+        analyzer = StructureAnalyzer(base_path, dep_graph, fs_manager, metadata_index)
 
         start = time.perf_counter()
-        result = await analyzer.analyze_structure()
+        result = await analyzer.analyze_file_organization()
         elapsed = time.perf_counter() - start
 
         print(f"Structure analysis (20 files): {elapsed:.3f}s")
-        print(f"Files analyzed: {result.get('organization', {}).get('total_files', 0)}")
+        if "organization" in result:
+            org: object = result["organization"]
+            if isinstance(org, dict) and "total_files" in org:
+                org_dict = cast(dict[str, object], org)
+                total_value = org_dict["total_files"]
+                if isinstance(total_value, int):
+                    print(f"Files analyzed: {total_value}")
+                else:
+                    print("Files analyzed: N/A")
+            else:
+                print("Files analyzed: N/A")
+        else:
+            print("Files analyzed: N/A")
         return elapsed
 
 
@@ -132,19 +148,21 @@ async def profile_transclusion() -> float:
         fs_manager = FileSystemManager(base_path)
 
         # Create source files
-        await fs_manager.write_file("source.md", "# Source\nSource content\n")
+        _ = await fs_manager.write_file(Path("source.md"), "# Source\nSource content\n")
 
         # Create file with transclusions
         transclusion_content = (
             "# Main\n" + "{{include: source.md}}\n" * 10 + "More content\n"
         )
-        await fs_manager.write_file("main.md", transclusion_content)
+        _ = await fs_manager.write_file(Path("main.md"), transclusion_content)
 
-        engine = TransclusionEngine(fs_manager)
+        link_parser = LinkParser()
+        engine = TransclusionEngine(fs_manager, link_parser)
 
         start = time.perf_counter()
         for _ in range(50):
-            _ = await engine.resolve_content("main.md")
+            content, _ = await fs_manager.read_file(Path("main.md"))
+            _ = await engine.resolve_content(content, "main.md")
         elapsed = time.perf_counter() - start
 
         print(f"50 transclusion resolutions: {elapsed:.3f}s")
@@ -152,7 +170,7 @@ async def profile_transclusion() -> float:
         return elapsed
 
 
-def run_profiled(func):
+def run_profiled(func: Callable[[], Coroutine[object, object, float]]) -> float:
     """Run a function with cProfile and display results."""
     profiler = cProfile.Profile()
     profiler.enable()
@@ -164,7 +182,7 @@ def run_profiled(func):
     # Print profiler statistics
     s = io.StringIO()
     ps = pstats.Stats(profiler, stream=s).sort_stats(SortKey.CUMULATIVE)
-    ps.print_stats(20)  # Top 20 functions
+    _ = ps.print_stats(20)  # Top 20 functions
     print(s.getvalue())
 
     return result
@@ -187,7 +205,7 @@ async def main():
         ("Transclusion Resolution", profile_transclusion),
     ]
 
-    results = {}
+    results: dict[str, float] = {}
     for name, test_func in tests:
         print(f"\n{'='*60}")
         elapsed = await test_func()

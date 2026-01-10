@@ -62,7 +62,7 @@ def main():
         print(f"Error: Source directory {src_dir} does not exist", file=sys.stderr)
         sys.exit(1)
 
-    violations = []
+    violations: list[tuple[Path, int]] = []
 
     for py_file in src_dir.glob("**/*.py"):
         # Skip __pycache__ and test files
@@ -76,12 +76,16 @@ def main():
     if violations:
         print("❌ File size violations detected:", file=sys.stderr)
         print(file=sys.stderr)
-        for path, lines in sorted(violations, key=lambda x: x[1], reverse=True):
+
+        def sort_key(x: tuple[Path, int]) -> int:
+            return x[1]
+
+        for path, lines in sorted(violations, key=sort_key, reverse=True):
             try:
-                relative_path = path.relative_to(project_root)
+                relative_path: Path = path.relative_to(project_root)
             except ValueError:
                 relative_path = path
-            excess = lines - MAX_LINES
+            excess: int = lines - MAX_LINES
             print(
                 f"  {relative_path}: {lines} lines (max: {MAX_LINES}, excess: {excess})",
                 file=sys.stderr,

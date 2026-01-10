@@ -909,7 +909,9 @@ class TestProcessRefactoringRequest:
                 mock_structure_analyzer.analyze_file_organization = AsyncMock(
                     return_value={}
                 )
-                mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
+                mock_structure_analyzer.detect_anti_patterns = AsyncMock(
+                    return_value=[]
+                )
                 mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
                     return_value={}
                 )
