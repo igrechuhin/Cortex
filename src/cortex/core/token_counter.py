@@ -50,18 +50,46 @@ class TokenCounter:
             return None
 
         if self.encoding_impl is None:
-            try:
-                import tiktoken
-
-                self.encoding_impl = tiktoken.get_encoding(self.model)
-            except Exception as e:
-                logger.warning(
-                    f"Failed to load tiktoken encoding '{self.model}': {e}. "
-                    + "Falling back to word-based estimation."
-                )
-                self._tiktoken_available = False
-                return None
+            self.encoding_impl = self._load_tiktoken_with_timeout()
         return self.encoding_impl
+
+    def _load_tiktoken_with_timeout(
+        self, timeout_seconds: float = 5.0
+    ) -> object | None:
+        """Load tiktoken encoding with a timeout to prevent network hangs.
+
+        Args:
+            timeout_seconds: Maximum time to wait for tiktoken to load
+
+        Returns:
+            Tiktoken encoding object or None if loading fails/times out
+        """
+        import concurrent.futures
+
+        try:
+            import tiktoken
+
+            # Use a thread pool to add timeout to the blocking call
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(tiktoken.get_encoding, self.model)
+                try:
+                    return future.result(timeout=timeout_seconds)
+                except concurrent.futures.TimeoutError:
+                    logger.warning(
+                        (
+                            f"Tiktoken encoding '{self.model}' load timed out after "
+                            f"{timeout_seconds}s. Falling back to word-based estimation."
+                        )
+                    )
+                    self._tiktoken_available = False
+                    return None
+        except Exception as e:
+            logger.warning(
+                f"Failed to load tiktoken encoding '{self.model}': {e}. "
+                + "Falling back to word-based estimation."
+            )
+            self._tiktoken_available = False
+            return None
 
     def _estimate_tokens_by_words(self, text: str) -> int:
         """

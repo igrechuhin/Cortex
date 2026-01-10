@@ -161,6 +161,58 @@ Provide more context to get better results.
 - **configure** - Configure server settings
 - **get_structure_info** - Get project structure information
 
+## Available Prompts
+
+Cortex provides MCP prompts for one-time setup and migration operations. Use prompts when you need guided assistance for initial configuration or structural changes.
+
+### Which Prompt Should I Use?
+
+| Your Situation | Prompt to Use |
+|----------------|---------------|
+| Starting a new project, no Memory Bank exists | `initialize_memory_bank` |
+| Want full project structure with rules and plans | `setup_project_structure` |
+| Setting up Cursor IDE with MCP configuration | `setup_cursor_integration` |
+| Want to share rules across multiple projects | `setup_shared_rules` |
+| Not sure if your Memory Bank needs updating | `check_migration_status` |
+| Have old `.cursor/memory-bank/` format | `migrate_memory_bank` |
+| Have files scattered in old locations | `migrate_project_structure` |
+
+### Setup Prompts
+
+Use these when starting fresh or configuring a new project:
+
+- **initialize_memory_bank** - Create a new Memory Bank with all 7 core files (projectBrief.md, productContext.md, activeContext.md, systemPatterns.md, techContext.md, progress.md, roadmap.md). Use this for new projects or projects without any Memory Bank.
+
+- **setup_project_structure** - Create the full standardized `.cursor/` directory structure including memory-bank/, rules/, plans/, and integrations/. Use this when you want the complete organized structure, not just core files.
+
+- **setup_cursor_integration** - Configure Cursor IDE to work with Cortex MCP server. Creates `.cursor/config.json` and `.cursor/mcp.json`. Use this after setting up the project structure if you're using Cursor IDE.
+
+- **setup_shared_rules** - Add a shared rules repository as a Git submodule to `.cursor/rules/shared/`. Use this when you want to share coding standards, security rules, or other guidelines across multiple projects.
+
+### Migration Prompts
+
+Use these when updating an existing project to a newer format:
+
+- **check_migration_status** - Check if your Memory Bank needs migration. Use this first if you're unsure whether your project uses an old format. Returns one of: `up_to_date`, `migration_needed`, or `not_initialized`.
+
+- **migrate_memory_bank** - Move files from old `.cursor/memory-bank/` location to new `memory-bank/` location. Preserves all content and version history. Use this when `check_migration_status` reports `migration_needed`.
+
+- **migrate_project_structure** - Reorganize scattered files into the standardized structure. Moves memory-bank/, rules/, and .plan/ directories to their proper `.cursor/` locations. Use this for projects with files in non-standard locations.
+
+### Prompts vs Tools
+
+**Use Prompts for:**
+
+- One-time setup operations (initialization, configuration)
+- Migration from old formats
+- Guided multi-step processes
+
+**Use Tools for:**
+
+- Regular file operations (read, write, validate)
+- Analysis and optimization
+- Ongoing maintenance tasks
+
 ## Memory Bank Structure
 
 The Memory Bank consists of core files in Markdown format, stored in a portable location that works with any editor, LLM, or agent.
