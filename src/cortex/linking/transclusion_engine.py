@@ -1,0 +1,510 @@
+"""Transclusion engine for resolving and including content from other files.
+
+This module handles:
+1. Resolving {{include: ...}} directives recursively
+2. Content caching for performance
+3. Circular dependency detection
+4. Section extraction
+5. Depth limiting
+
+Part of Phase 2: DRY Linking and Transclusion
+"""
+
+import re
+from typing import cast
+
+from cortex.core.exceptions import MemoryBankError
+from cortex.core.file_system import FileSystemManager
+
+from .link_parser import LinkParser
+
+
+class CircularDependencyError(MemoryBankError):
+    """Raised when circular transclusion dependency is detected."""
+
+    pass
+
+
+class MaxDepthExceededError(MemoryBankError):
+    """Raised when transclusion depth exceeds maximum."""
+
+    pass
+
+
+class TransclusionEngine:
+    """Resolve and include content from transclusion directives."""
+
+    def __init__(
+        self,
+        file_system: FileSystemManager,
+        link_parser: LinkParser,
+        max_depth: int = 5,
+        cache_enabled: bool = True,
+    ):
+        """
+        Initialize transclusion engine.
+
+        Args:
+            file_system: File system manager for reading files
+            link_parser: Link parser for detecting transclusions
+            max_depth: Maximum transclusion depth (default: 5)
+            cache_enabled: Enable content caching (default: True)
+        """
+        self.fs: FileSystemManager = file_system
+        self.parser: LinkParser = link_parser
+        self.max_depth: int = max_depth
+        self.cache_enabled: bool = cache_enabled
+
+        # Cache: key = (file, section, options_tuple), value = resolved content
+        self.cache: dict[tuple[str, str, tuple[tuple[str, object], ...]], str] = {}
+        self.cache_hits: int = 0
+        self.cache_misses: int = 0
+
+        # Resolution stack for circular dependency detection
+        self.resolution_stack: list[str] = []
+
+    async def resolve_content(
+        self, content: str, source_file: str, depth: int = 0
+    ) -> str:
+        """
+        Resolve all transclusions in content.
+
+        Args:
+            content: Markdown content with transclusion directives
+            source_file: Name of source file (for relative paths and error messages)
+            depth: Current recursion depth
+
+        Returns:
+            Content with transclusions resolved
+
+        Raises:
+            CircularDependencyError: If circular transclusion detected
+            MaxDepthExceededError: If max depth exceeded
+        """
+        self._validate_depth(depth, source_file)
+
+        if not self.parser.has_transclusions(content):
+            return content
+
+        parsed = await self.parser.parse_file(content)
+        transclusions = parsed.get("transclusions", [])
+
+        if not transclusions:
+            return content
+
+        self._validate_depth_with_transclusions(depth, source_file)
+        return await self._resolve_all_transclusions(
+            content, transclusions, depth, source_file
+        )
+
+    def _validate_depth(self, depth: int, source_file: str) -> None:
+        """Validate current depth is within limits."""
+        if depth > self.max_depth:
+            raise MaxDepthExceededError(
+                f"Failed to resolve transclusion in '{source_file}': "
+                + f"Maximum transclusion depth ({self.max_depth}) exceeded. "
+                + "Cause: Too many nested {{include:}} directives. "
+                + "Try: Reduce nesting depth, increase max_depth limit, "
+                + "or reorganize content to avoid deep transclusion chains."
+            )
+
+    def _validate_depth_with_transclusions(self, depth: int, source_file: str) -> None:
+        """Validate depth when transclusions need to be resolved."""
+        if depth >= self.max_depth:
+            raise MaxDepthExceededError(
+                f"Failed to resolve transclusion in '{source_file}': "
+                + f"Maximum transclusion depth ({self.max_depth}) exceeded. "
+                + "Cause: Too many nested {{include:}} directives. "
+                + "Try: Reduce nesting depth, increase max_depth limit, "
+                + "or reorganize content to avoid deep transclusion chains."
+            )
+
+    async def _resolve_all_transclusions(
+        self,
+        content: str,
+        transclusions: list[dict[str, object]],
+        depth: int,
+        source_file: str,
+    ) -> str:
+        """Resolve all transclusion directives in content."""
+        resolved_content = content
+        for trans in reversed(transclusions):  # Process from end to maintain positions
+            trans_dict: dict[str, object] = trans
+            resolved_content = await self._resolve_single_transclusion(
+                resolved_content, trans_dict, depth, source_file
+            )
+        return resolved_content
+
+    async def _resolve_single_transclusion(
+        self, content: str, trans: dict[str, object], depth: int, source_file: str
+    ) -> str:
+        """Resolve a single transclusion directive in content."""
+        target_file, section, options = self._parse_transclusion_params(trans)
+        if target_file is None:
+            return content
+
+        if self.detect_circular_dependency(target_file):
+            chain = " -> ".join(self.resolution_stack)
+            raise CircularDependencyError(
+                "Failed to resolve transclusion: Circular dependency detected. "
+                + f"Cause: '{chain}' -> '{target_file}' forms a cycle. "
+                + "Try: Remove one of the {{include:}} directives to break the cycle, "
+                + "use section-level includes instead of full file includes, "
+                + "or reorganize content to avoid circular references."
+            )
+
+        try:
+            included_content = await self.resolve_transclusion(
+                target_file=target_file,
+                section=section,
+                options=options,
+                depth=depth,
+                source_file=source_file,
+            )
+            return self._replace_directive_with_content(
+                content, trans, included_content
+            )
+        except (CircularDependencyError, MaxDepthExceededError):
+            raise
+        except Exception as e:
+            return self._replace_directive_with_error(content, trans, str(e))
+
+    def _parse_transclusion_params(
+        self, trans: dict[str, object]
+    ) -> tuple[str | None, str | None, dict[str, object] | None]:
+        """Parse transclusion parameters from directive."""
+        target_file_raw: object = trans.get("target")
+        if not isinstance(target_file_raw, str):
+            return None, None, None
+
+        target_file: str = target_file_raw
+        section_raw: object = trans.get("section")
+        section: str | None = str(section_raw) if isinstance(section_raw, str) else None
+        options_raw: object = trans.get("options", {})
+        options: dict[str, object] | None = (
+            cast(dict[str, object], options_raw)
+            if isinstance(options_raw, dict)
+            else None
+        )
+        return target_file, section, options
+
+    def _replace_directive_with_content(
+        self, content: str, trans: dict[str, object], included_content: str
+    ) -> str:
+        """Replace transclusion directive with resolved content."""
+        directive = self.build_directive_pattern(trans)
+        return re.sub(directive, included_content, content, count=1)
+
+    def _replace_directive_with_error(
+        self, content: str, trans: dict[str, object], error: str
+    ) -> str:
+        """Replace transclusion directive with error message."""
+        error_msg = f"\n<!-- TRANSCLUSION ERROR: {error} -->\n"
+        directive = self.build_directive_pattern(trans)
+        return re.sub(directive, error_msg, content, count=1)
+
+    async def resolve_transclusion(
+        self,
+        target_file: str,
+        section: str | None = None,
+        options: dict[str, object] | None = None,
+        depth: int = 0,
+        source_file: str = "",
+    ) -> str:
+        """
+        Resolve a single transclusion directive.
+
+        Args:
+            target_file: Target file name
+            section: Optional section heading
+            options: Transclusion options (lines, recursive, etc.)
+            depth: Current recursion depth
+            source_file: Source file (for error messages)
+
+        Returns:
+            Resolved content
+
+        Raises:
+            CircularDependencyError: If circular dependency detected
+            FileNotFoundError: If target file not found
+        """
+        options = options or {}
+
+        # Check cache first
+        cached_result = self._check_cache(target_file, section, options)
+        if cached_result is not None:
+            return cached_result
+
+        self._validate_transclusion(target_file, depth, source_file)
+        self.resolution_stack.append(target_file)
+
+        try:
+            target_content = await self._read_and_process_target(
+                target_file, section, options, depth, source_file
+            )
+            self._cache_result(target_file, section, options, target_content)
+            return target_content
+        finally:
+            _ = self.resolution_stack.pop()
+
+    def _check_cache(
+        self, target_file: str, section: str | None, options: dict[str, object]
+    ) -> str | None:
+        """Check cache for resolved transclusion."""
+        cache_key = self.make_cache_key(target_file, section, options)
+        if self.cache_enabled and cache_key in self.cache:
+            self.cache_hits += 1
+            return self.cache[cache_key]
+        self.cache_misses += 1
+        return None
+
+    def _validate_transclusion(
+        self, target_file: str, depth: int, source_file: str
+    ) -> None:
+        """Validate transclusion depth and circular dependencies."""
+        if depth > self.max_depth:
+            raise MaxDepthExceededError(
+                f"Failed to resolve transclusion of '{target_file}' from '{source_file}': "
+                + f"Maximum transclusion depth ({self.max_depth}) exceeded. "
+                + "Cause: Too many nested {{include:}} directives. "
+                + "Try: Reduce nesting depth, increase max_depth limit, "
+                + "or reorganize content to avoid deep transclusion chains."
+            )
+        if self.detect_circular_dependency(target_file):
+            chain = " -> ".join(self.resolution_stack)
+            raise CircularDependencyError(
+                "Failed to resolve transclusion: Circular dependency detected. "
+                + f"Cause: '{chain}' -> '{target_file}' forms a cycle. "
+                + "Try: Remove one of the {{include:}} directives to break the cycle, "
+                + "use section-level includes instead of full file includes, "
+                + "or reorganize content to avoid circular references."
+            )
+
+    async def _read_and_process_target(
+        self,
+        target_file: str,
+        section: str | None,
+        options: dict[str, object],
+        depth: int,
+        source_file: str,
+    ) -> str:
+        """Read target file and process content with options."""
+        target_content = await self._read_target_file(target_file, source_file)
+        target_content = self._apply_section_filter(target_content, section, options)
+        target_content = await self._apply_recursive_resolution(
+            target_content, target_file, options, depth
+        )
+        return target_content
+
+    async def _read_target_file(self, target_file: str, source_file: str) -> str:
+        """Read content from target file."""
+        memory_bank_dir = self.fs.memory_bank_dir
+        target_path = memory_bank_dir / target_file
+
+        if not target_path.exists():
+            raise FileNotFoundError(
+                f"Failed to transclude '{target_file}' from '{source_file}': "
+                + f"Target file not found at {target_path}. "
+                + "Try: Check file name is correct (case-sensitive), "
+                + "verify file exists in memory-bank directory, "
+                + "or run initialize_memory_bank() to create missing files."
+            )
+
+        target_content, _ = await self.fs.read_file(target_path)
+        return target_content
+
+    def _apply_section_filter(
+        self, content: str, section: str | None, options: dict[str, object]
+    ) -> str:
+        """Apply section extraction or line limit."""
+        if section:
+            lines_limit_raw = options.get("lines")
+            lines_limit: int | None = (
+                int(lines_limit_raw)
+                if isinstance(lines_limit_raw, (int, float))
+                else None
+            )
+            return self.extract_section(
+                content=content, section_heading=section, lines_limit=lines_limit
+            )
+        elif "lines" in options:
+            lines = content.split("\n")
+            return "\n".join(lines[: options["lines"]])
+        return content
+
+    async def _apply_recursive_resolution(
+        self, content: str, target_file: str, options: dict[str, object], depth: int
+    ) -> str:
+        """Apply recursive transclusion if enabled."""
+        recursive = options.get("recursive", True)
+        if recursive and depth < self.max_depth:
+            return await self.resolve_content(
+                content=content, source_file=target_file, depth=depth + 1
+            )
+        return content
+
+    def _cache_result(
+        self,
+        target_file: str,
+        section: str | None,
+        options: dict[str, object],
+        content: str,
+    ) -> None:
+        """Cache resolved content."""
+        if self.cache_enabled:
+            cache_key = self.make_cache_key(target_file, section, options)
+            self.cache[cache_key] = content
+
+    def extract_section(
+        self, content: str, section_heading: str, lines_limit: int | None = None
+    ) -> str:
+        """
+        Extract a specific section from content.
+
+        Args:
+            content: Full file content
+            section_heading: Heading to find (e.g., "Architecture")
+            lines_limit: Optional limit on number of lines
+
+        Returns:
+            Section content (without the heading itself)
+
+        Raises:
+            ValueError: If section not found
+        """
+        lines = content.split("\n")
+
+        # Find the section heading
+        section_start = None
+        section_level = None
+
+        for i, line in enumerate(lines):
+            # Match heading with any number of #
+            heading_match = re.match(r"^(#+)\s+(.+)$", line.strip())
+            if heading_match:
+                level = len(heading_match.group(1))
+                heading_text = heading_match.group(2).strip()
+
+                if heading_text.lower() == section_heading.lower():
+                    section_start = i
+                    section_level = level
+                    break
+
+        if section_start is None:
+            raise ValueError(
+                f"Failed to transclude section '{section_heading}': "
+                + "Section heading not found in target file. "
+                + "Try: Check the exact heading text including case and special characters, "
+                + "list available sections with parse_file_links(), "
+                + "or verify the section exists in the target file."
+            )
+
+        # Find the end of the section (next heading of same or higher level)
+        section_end = len(lines)
+        if section_level is not None:
+            for i in range(section_start + 1, len(lines)):
+                heading_match = re.match(r"^(#+)\s+", lines[i].strip())
+                if heading_match:
+                    level = len(heading_match.group(1))
+                    if level <= section_level:
+                        section_end = i
+                        break
+
+        # Extract section content (skip the heading line itself)
+        section_lines = lines[section_start + 1 : section_end]
+
+        # Apply line limit if specified
+        if lines_limit is not None:
+            section_lines = section_lines[:lines_limit]
+
+        return "\n".join(section_lines).strip()
+
+    def detect_circular_dependency(self, target: str) -> bool:
+        """
+        Check if target is in resolution stack.
+
+        Args:
+            target: Target file being resolved
+
+        Returns:
+            True if circular dependency detected
+        """
+        return target in self.resolution_stack
+
+    def clear_cache(self):
+        """Clear resolved content cache."""
+        self.cache.clear()
+        self.cache_hits = 0
+        self.cache_misses = 0
+
+    def invalidate_cache_for_file(self, file_name: str):
+        """
+        Invalidate cache entries for a specific file.
+
+        Args:
+            file_name: Name of file that changed
+        """
+        keys_to_remove = [
+            key
+            for key in self.cache.keys()
+            if key[0] == file_name  # key[0] is target_file
+        ]
+
+        for key in keys_to_remove:
+            del self.cache[key]
+
+    def get_cache_stats(self) -> dict[str, int | float]:
+        """
+        Get cache statistics.
+
+        Returns:
+            Dictionary with cache stats
+        """
+        total_requests = self.cache_hits + self.cache_misses
+        hit_rate = self.cache_hits / total_requests if total_requests > 0 else 0.0
+
+        return {
+            "entries": len(self.cache),
+            "hits": self.cache_hits,
+            "misses": self.cache_misses,
+            "total_requests": total_requests,
+            "hit_rate": hit_rate,
+        }
+
+    def make_cache_key(
+        self, target_file: str, section: str | None, options: dict[str, object] | None
+    ) -> tuple[str, str, tuple[tuple[str, object], ...]]:
+        """Create cache key from transclusion parameters."""
+        # Convert options dict to sorted tuple for hashability
+        # Normalize None section to empty string for cache key consistency
+        section_normalized = section if section is not None else ""
+        options_tuple = tuple(sorted(options.items())) if options else ()
+        return (target_file, section_normalized, options_tuple)
+
+    def build_directive_pattern(self, trans: dict[str, object]) -> str:
+        """
+        Build regex pattern to match the transclusion directive.
+
+        Args:
+            trans: Transclusion dict from parser
+
+        Returns:
+            Regex pattern string
+        """
+        target_raw = trans.get("target")
+        if not isinstance(target_raw, str):
+            raise ValueError("Transclusion target must be a string")
+        target = re.escape(target_raw)
+        section_raw = trans.get("section")
+        section: str | None = str(section_raw) if isinstance(section_raw, str) else None
+
+        if section:
+            section_escaped = re.escape(section)
+            pattern = rf"\{{\{{include:\s*{target}#{section_escaped}"
+        else:
+            pattern = rf"\{{\{{include:\s*{target}"
+
+        # Add optional options part
+        pattern += r"(?:\|[^}]+)?\}\}"
+
+        return pattern

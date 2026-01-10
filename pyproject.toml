@@ -1,0 +1,95 @@
+[project]
+name = "cortex"
+version = "0.2.0"
+description = "Cortex - AI Memory & Context Management Server"
+requires-python = ">=3.13"
+dependencies = [
+    "mcp",
+    "watchdog>=4.0.0",
+    "tiktoken>=0.5.0",
+    "aiofiles>=23.0.0",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "pytest-timeout>=2.1.0",
+]
+server = [
+    "httpx",
+    "uvicorn",
+    "starlette",
+]
+all = [
+    "httpx",
+    "uvicorn",
+    "starlette",
+]
+
+[project.scripts]
+cortex = "cortex.main:main"
+
+[dependency-groups]
+dev = [
+    "black>=25.12.0",
+    "ruff>=0.1.0",
+    "pyright>=1.1.400",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # import sorting (isort replacement)
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # Line too long (handled by Black)
+]
+
+[tool.ruff.lint.isort]
+# Configure ruff's isort (compatible with isort's black profile by default)
+known-first-party = ["cortex"]
+
+[tool.coverage.run]
+# Coverage configuration (pytest config in pytest.ini)
+source = ["src/cortex"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+
+[build-system]
+requires = ["uv_build"]
+build-backend = "uv_build"

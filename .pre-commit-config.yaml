@@ -1,0 +1,58 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  - repo: https://github.com/psf/black
+    rev: 24.1.1
+    hooks:
+      - id: black
+        language_version: python3.13
+        args: ["--line-length=88"]
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile=black"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.15
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+
+  - repo: local
+    hooks:
+      - id: check-file-sizes
+        name: Check file sizes (max 400 lines)
+        entry: python scripts/check_file_sizes.py
+        language: python
+        pass_filenames: false
+        always_run: true
+
+      - id: check-function-lengths
+        name: Check function lengths (max 30 lines)
+        entry: python scripts/check_function_lengths.py
+        language: python
+        pass_filenames: false
+        always_run: true
+
+      - id: pyright
+        name: Type check with pyright
+        entry: uv run pyright
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: true

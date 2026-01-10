@@ -1,0 +1,78 @@
+{
+  "typeCheckingMode": "strict",
+  "pythonVersion": "3.13",
+
+  "include": ["src", "tests"],
+
+  "exclude": [
+    "**/__pycache__",
+    "**/*.egg-info",
+    "**/.pytest_cache",
+    "**/.mypy_cache",
+    "**/node_modules",
+    ".venv"
+  ],
+
+  "useLibraryCodeForTypes": true,
+  "venvPath": ".",
+  "venv": ".venv",
+
+  "reportMissingTypeStubs": "error",
+  "reportMissingImports": "error",
+  "reportMissingModuleSource": "error",
+
+  "reportPrivateUsage": "warning",
+  "reportPrivateImportUsage": "warning",
+
+  "reportUnusedCallResult": "warning",
+  "reportUnusedClass": "warning",
+  "reportUnusedFunction": "warning",
+  "reportUnusedImport": "warning",
+  "reportUnusedVariable": "warning",
+  "reportWildcardImportFromLibrary": "warning",
+
+  "reportUnusedCoroutine": "error",
+  "reportDuplicateImport": "error",
+  "reportConstantRedefinition": "error",
+  "reportUnboundVariable": "error",
+  "reportUndefinedVariable": "error",
+  "reportCallInDefaultInitializer": "error",
+  "reportAssertAlwaysTrue": "error",
+
+  "reportIncompleteStub": "warning",
+  "reportInvalidStubStatement": "error",
+  "reportInvalidTypeVarUse": "error",
+  "reportInvalidStringEscapeSequence": "error",
+  "reportUnsupportedDunderAll": "warning",
+
+  "reportUnknownParameterType": "warning",
+  "reportUnknownArgumentType": "warning",
+  "reportUnknownMemberType": "warning",
+  "reportUnknownVariableType": "warning",
+  "reportUntypedFunctionDecorator": "warning",
+  "reportUntypedClassDecorator": "warning",
+  "reportUntypedBaseClass": "warning",
+  "reportUntypedNamedTuple": "warning",
+
+  "reportIncompatibleMethodOverride": "error",
+  "reportIncompatibleVariableOverride": "error",
+  "reportInconsistentConstructor": "error",
+  "reportOverlappingOverload": "error",
+  "reportUninitializedInstanceVariable": "error",
+
+  "reportUnnecessaryIsInstance": "warning",
+  "reportUnnecessaryCast": "warning",
+  "reportUnnecessaryComparison": "warning",
+
+  "reportSelfClsParameterName": "warning",
+  "reportImplicitStringConcatenation": "warning",
+
+  "reportGeneralTypeIssues": "error",
+  "reportOptionalSubscript": "error",
+  "reportOptionalMemberAccess": "error",
+  "reportOptionalCall": "error",
+  "reportOptionalIterable": "error",
+  "reportOptionalContextManager": "error",
+  "reportOptionalOperand": "error",
+  "reportTypedDictNotRequiredAccess": "error"
+}
