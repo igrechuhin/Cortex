@@ -847,7 +847,7 @@ def test_build_graph_data_with_dependencies():
     assert "projectBrief.md" in dependencies
 
 
-def testextract_version_history_valid_list():
+def test_extract_version_history_valid_list():
     """Test extract_version_history with valid version list."""
     # Arrange
     from cortex.tools.phase1_foundation_version import extract_version_history
@@ -868,7 +868,7 @@ def testextract_version_history_valid_list():
     assert result[1]["version"] == 2
 
 
-def testextract_version_history_invalid_format():
+def test_extract_version_history_invalid_format():
     """Test extract_version_history handles invalid format."""
     # Arrange
     from cortex.tools.phase1_foundation_version import extract_version_history
@@ -882,7 +882,7 @@ def testextract_version_history_invalid_format():
     assert result == []
 
 
-def testextract_version_history_missing_field():
+def test_extract_version_history_missing_field():
     """Test extract_version_history handles missing version_history field."""
     # Arrange
     from cortex.tools.phase1_foundation_version import extract_version_history
@@ -896,7 +896,7 @@ def testextract_version_history_missing_field():
     assert result == []
 
 
-def testsort_and_limit_versions():
+def test_sort_and_limit_versions():
     """Test sort_and_limit_versions sorts and limits correctly."""
     # Arrange
     from cortex.tools.phase1_foundation_version import sort_and_limit_versions
@@ -916,7 +916,7 @@ def testsort_and_limit_versions():
     assert result[1]["version"] == 2
 
 
-def testsort_and_limit_versions_with_float_versions():
+def test_sort_and_limit_versions_with_float_versions():
     """Test sort_and_limit_versions handles float version numbers."""
     # Arrange
     from cortex.tools.phase1_foundation_version import sort_and_limit_versions
@@ -937,7 +937,7 @@ def testsort_and_limit_versions_with_float_versions():
     assert result[2]["version"] == 1.5
 
 
-def testsort_and_limit_versions_with_missing_version():
+def test_sort_and_limit_versions_with_missing_version():
     """Test sort_and_limit_versions handles missing version field."""
     # Arrange
     from cortex.tools.phase1_foundation_version import sort_and_limit_versions
@@ -957,7 +957,7 @@ def testsort_and_limit_versions_with_missing_version():
     assert result[1]["version"] == 1
 
 
-def testformat_versions_for_export_all_fields():
+def test_format_versions_for_export_all_fields():
     """Test format_versions_for_export includes all fields."""
     # Arrange
     from cortex.tools.phase1_foundation_version import format_versions_for_export
@@ -987,7 +987,7 @@ def testformat_versions_for_export_all_fields():
     assert version_dict["token_count"] == 256
 
 
-def testformat_versions_for_export_minimal_fields():
+def test_format_versions_for_export_minimal_fields():
     """Test format_versions_for_export with minimal fields."""
     # Arrange
     from cortex.tools.phase1_foundation_version import format_versions_for_export
@@ -1006,7 +1006,7 @@ def testformat_versions_for_export_minimal_fields():
     assert "change_description" not in version_dict
 
 
-def testsum_file_field():
+def test_sum_file_field():
     """Test sum_file_field sums numeric fields correctly."""
     # Arrange
     from cortex.tools.phase1_foundation_stats import sum_file_field
@@ -1029,7 +1029,7 @@ def testsum_file_field():
     assert total_size == 1200
 
 
-def testsum_file_field_missing_field():
+def test_sum_file_field_missing_field():
     """Test sum_file_field handles missing fields."""
     # Arrange
     from cortex.tools.phase1_foundation_stats import sum_file_field
@@ -1048,7 +1048,7 @@ def testsum_file_field_missing_field():
     assert result == 100
 
 
-def testsum_file_field_non_numeric():
+def test_sum_file_field_non_numeric():
     """Test sum_file_field ignores non-numeric values."""
     # Arrange
     from cortex.tools.phase1_foundation_stats import sum_file_field
@@ -1067,7 +1067,7 @@ def testsum_file_field_non_numeric():
     assert result == 100
 
 
-def testextract_last_updated_success():
+def test_extract_last_updated_success():
     """Test extract_last_updated extracts timestamp."""
     # Arrange
     from cortex.tools.phase1_foundation_stats import extract_last_updated
@@ -1081,7 +1081,7 @@ def testextract_last_updated_success():
     assert result == "2026-01-10T12:00:00"
 
 
-def testextract_last_updated_missing_field():
+def test_extract_last_updated_missing_field():
     """Test extract_last_updated handles missing field."""
     # Arrange
     from cortex.tools.phase1_foundation_stats import extract_last_updated
@@ -1095,7 +1095,7 @@ def testextract_last_updated_missing_field():
     assert result is None
 
 
-def testextract_last_updated_invalid_structure():
+def test_extract_last_updated_invalid_structure():
     """Test extract_last_updated handles invalid structure."""
     # Arrange
     from cortex.tools.phase1_foundation_stats import extract_last_updated
@@ -1109,7 +1109,7 @@ def testextract_last_updated_invalid_structure():
     assert result is None
 
 
-def testbuild_summary_dict():
+def test_build_summary_dict():
     """Test build_summary_dict constructs correct summary."""
     # Arrange
     from cortex.tools.phase1_foundation_stats import build_summary_dict
@@ -1138,7 +1138,7 @@ def testbuild_summary_dict():
     assert result["history_size_kb"] == 2.0
 
 
-def testcalculate_token_status_healthy():
+def test_calculate_token_status_healthy():
     """Test calculate_token_status returns healthy status."""
     # Arrange
     from cortex.tools.phase1_foundation_stats import calculate_token_status
@@ -1152,7 +1152,7 @@ def testcalculate_token_status_healthy():
     assert result == "healthy"
 
 
-def testcalculate_token_status_warning():
+def test_calculate_token_status_warning():
     """Test calculate_token_status returns warning status."""
     # Arrange
     from cortex.tools.phase1_foundation_stats import calculate_token_status
@@ -1166,7 +1166,7 @@ def testcalculate_token_status_warning():
     assert result == "warning"
 
 
-def testcalculate_token_status_over_budget():
+def test_calculate_token_status_over_budget():
     """Test calculate_token_status returns over_budget status."""
     # Arrange
     from cortex.tools.phase1_foundation_stats import calculate_token_status
@@ -1180,7 +1180,7 @@ def testcalculate_token_status_over_budget():
     assert result == "over_budget"
 
 
-def testcalculate_totals():
+def test_calculate_totals():
     """Test calculate_totals computes correct totals."""
     # Arrange
     from cortex.tools.phase1_foundation_stats import calculate_totals
@@ -1201,7 +1201,7 @@ def testcalculate_totals():
     assert total_reads == 15
 
 
-def testbuild_rollback_success_response():
+def test_build_rollback_success_response():
     """Test build_rollback_success_response constructs correct response."""
     # Arrange
     from cortex.tools.phase1_foundation_rollback import (
@@ -1224,7 +1224,7 @@ def testbuild_rollback_success_response():
     assert result["token_count"] == 128
 
 
-def testbuild_rollback_error_response():
+def test_build_rollback_error_response():
     """Test build_rollback_error_response constructs correct response."""
     # Arrange
     from cortex.tools.phase1_foundation_rollback import build_rollback_error_response
