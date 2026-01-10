@@ -7,9 +7,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cortex.tools.analysis_operations import analyze, suggest_refactoring
+from cortex.tools.analysis_operations import analyze
 from cortex.tools.configuration_operations import configure
 from cortex.tools.file_operations import manage_file
+from cortex.tools.refactoring_operations import suggest_refactoring
 from cortex.tools.validation_operations import validate
 
 
@@ -800,11 +801,11 @@ class TestSuggestRefactoring:
         }
 
         with patch(
-            "cortex.tools.analysis_operations.get_managers",
+            "cortex.tools.refactoring_operations.get_managers",
             return_value=mock_managers_dict,
         ):
             with patch(
-                "cortex.tools.analysis_operations.get_project_root",
+                "cortex.tools.refactoring_operations.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -857,11 +858,11 @@ class TestSuggestRefactoring:
         }
 
         with patch(
-            "cortex.tools.analysis_operations.get_managers",
+            "cortex.tools.refactoring_operations.get_managers",
             return_value=mock_managers_dict,
         ):
             with patch(
-                "cortex.tools.analysis_operations.get_project_root",
+                "cortex.tools.refactoring_operations.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -927,11 +928,11 @@ class TestSuggestRefactoring:
         }
 
         with patch(
-            "cortex.tools.analysis_operations.get_managers",
+            "cortex.tools.refactoring_operations.get_managers",
             return_value=mock_managers_dict,
         ):
             with patch(
-                "cortex.tools.analysis_operations.get_project_root",
+                "cortex.tools.refactoring_operations.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute

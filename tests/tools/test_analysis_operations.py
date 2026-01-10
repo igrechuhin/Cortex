@@ -15,10 +15,12 @@ from cortex.tools.analysis_operations import (
     analyze_insights,
     analyze_structure,
     analyze_usage_patterns,
-    convert_opportunities_to_dict,
-    convert_recommendations_to_dict,
     dispatch_analysis_target,
     get_analysis_managers,
+)
+from cortex.tools.refactoring_operations import (
+    convert_opportunities_to_dict,
+    convert_recommendations_to_dict,
     get_refactoring_managers,
     get_structure_data,
     handle_preview_mode,
@@ -885,47 +887,51 @@ class TestProcessRefactoringRequest:
         """Test processing reorganization refactoring request."""
         # Arrange
         with patch(
-            "cortex.tools.analysis_operations.get_managers"
+            "cortex.tools.refactoring_operations.get_managers"
         ) as mock_get_managers:
-            mock_planner = MagicMock()
-            mock_planner.create_reorganization_plan = AsyncMock(return_value={})
+            with patch(
+                "cortex.tools.refactoring_operations.get_project_root",
+                return_value=Path(str(tmp_path)),
+            ):
+                mock_planner = MagicMock()
+                mock_planner.create_reorganization_plan = AsyncMock(return_value={})
 
-            mock_reorg_mgr = MagicMock()
-            mock_reorg_mgr.get = AsyncMock(return_value=mock_planner)
+                mock_reorg_mgr = MagicMock()
+                mock_reorg_mgr.get = AsyncMock(return_value=mock_planner)
 
-            mock_detector_mgr = MagicMock()
-            mock_detector_mgr.get = AsyncMock(return_value=MagicMock())
+                mock_detector_mgr = MagicMock()
+                mock_detector_mgr.get = AsyncMock(return_value=MagicMock())
 
-            mock_split_mgr = MagicMock()
-            mock_split_mgr.get = AsyncMock(return_value=MagicMock())
+                mock_split_mgr = MagicMock()
+                mock_split_mgr.get = AsyncMock(return_value=MagicMock())
 
-            mock_structure_analyzer = MagicMock()
-            mock_structure_analyzer.analyze_file_organization = AsyncMock(
-                return_value={}
-            )
-            mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
-            mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-                return_value={}
-            )
+                mock_structure_analyzer = MagicMock()
+                mock_structure_analyzer.analyze_file_organization = AsyncMock(
+                    return_value={}
+                )
+                mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
+                mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
+                    return_value={}
+                )
 
-            mock_structure_mgr = MagicMock()
-            mock_structure_mgr.get = AsyncMock(return_value=mock_structure_analyzer)
+                mock_structure_mgr = MagicMock()
+                mock_structure_mgr.get = AsyncMock(return_value=mock_structure_analyzer)
 
-            mock_graph = MagicMock()
-            mock_graph.to_dict.return_value = {}
+                mock_graph = MagicMock()
+                mock_graph.to_dict.return_value = {}
 
-            mock_get_managers.return_value = {
-                "consolidation_detector": mock_detector_mgr,
-                "split_recommender": mock_split_mgr,
-                "reorganization_planner": mock_reorg_mgr,
-                "structure_analyzer": mock_structure_mgr,
-                "graph": mock_graph,
-            }
+                mock_get_managers.return_value = {
+                    "consolidation_detector": mock_detector_mgr,
+                    "split_recommender": mock_split_mgr,
+                    "reorganization_planner": mock_reorg_mgr,
+                    "structure_analyzer": mock_structure_mgr,
+                    "graph": mock_graph,
+                }
 
-            # Act
-            result = await process_refactoring_request(
-                "reorganization", str(tmp_path), None, None, "category", None
-            )
+                # Act
+                result = await process_refactoring_request(
+                    "reorganization", str(tmp_path), None, None, "category", None
+                )
 
             # Assert
             result_data = json.loads(result)
@@ -1023,7 +1029,7 @@ class TestSuggestRefactoringHandler:
         """Test exception handling in suggest_refactoring."""
         # Arrange
         with patch(
-            "cortex.tools.analysis_operations.get_managers"
+            "cortex.tools.refactoring_operations.get_managers"
         ) as mock_get_managers:
             mock_get_managers.side_effect = RuntimeError("Test error")
 

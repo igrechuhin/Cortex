@@ -6,7 +6,8 @@ This package contains all MCP tool implementations organized by phase.
 Modules:
 - file_operations: File management operations (1 tool) - Phase 9.1.1 split
 - validation_operations: Validation operations (1 tool) - Phase 9.1.1 split
-- analysis_operations: Analysis operations (2 tools) - Phase 9.1.1 split
+- analysis_operations: Analysis operations (1 tool) - Phase 9.1.1 split
+- refactoring_operations: Refactoring suggestions (1 tool) - Split from analysis_operations
 - rules_operations: Rules management (1 tool) - Phase 9.1.1 split
 - configuration_operations: Configuration management (1 tool) - Phase 9.1.1 split
 - phase1_foundation: Core Memory Bank operations (10 tools)
@@ -36,6 +37,7 @@ from . import (
     phase5_refactoring,  # noqa: F401
     phase6_shared_rules,  # noqa: F401
     phase8_structure,  # noqa: F401
+    refactoring_operations,  # noqa: F401
     rules_operations,  # noqa: F401
     validation_operations,  # noqa: F401
 )
@@ -53,6 +55,7 @@ __all__ = [
     "phase5_execution",
     "phase6_shared_rules",
     "phase8_structure",
+    "refactoring_operations",
     "rules_operations",
     "validation_operations",
 ]
