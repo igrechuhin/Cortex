@@ -7,13 +7,26 @@ Tests the custom exception hierarchy and error types defined for MCP Memory Bank
 import pytest
 
 from cortex.core.exceptions import (
+    ApprovalError,
     FileConflictError,
     FileLockTimeoutError,
     FileOperationError,
     GitConflictError,
     IndexCorruptedError,
+    LearningError,
     MemoryBankError,
     MigrationFailedError,
+    RefactoringError,
+    RefactoringExecutionError,
+    RefactoringValidationError,
+    RollbackError,
+    RulesError,
+    RulesIndexingError,
+    SharedRulesError,
+    SharedRulesGitError,
+    StructureError,
+    StructureMigrationError,
+    SymlinkError,
     TokenLimitExceededError,
     ValidationError,
 )
@@ -361,3 +374,188 @@ class TestExceptionHierarchy:
 
         assert exc_info.value.current_tokens == 100000
         assert exc_info.value.limit == 80000
+
+
+class TestRulesError:
+    """Tests for RulesError exception hierarchy."""
+
+    def test_rules_error_inherits_memory_bank_error(self):
+        """Test that RulesError inherits from MemoryBankError."""
+        # Arrange & Act
+        error = RulesError("rules error")
+
+        # Assert
+        assert isinstance(error, MemoryBankError)
+        assert str(error) == "rules error"
+
+    def test_rules_indexing_error_inherits_rules_error(self):
+        """Test that RulesIndexingError inherits from RulesError."""
+        # Arrange & Act
+        error = RulesIndexingError("folder", "reason")
+
+        # Assert
+        assert isinstance(error, RulesError)
+        assert isinstance(error, MemoryBankError)
+        assert error.folder == "folder"
+        assert error.reason == "reason"
+        assert "folder" in str(error)
+        assert "reason" in str(error)
+
+    def test_shared_rules_error_inherits_rules_error(self):
+        """Test that SharedRulesError inherits from RulesError."""
+        # Arrange & Act
+        error = SharedRulesError("shared rules error")
+
+        # Assert
+        assert isinstance(error, RulesError)
+        assert isinstance(error, MemoryBankError)
+        assert str(error) == "shared rules error"
+
+    def test_shared_rules_git_error_inherits_shared_rules_error(self):
+        """Test that SharedRulesGitError inherits from SharedRulesError."""
+        # Arrange & Act
+        error = SharedRulesGitError("pull", "conflict")
+
+        # Assert
+        assert isinstance(error, SharedRulesError)
+        assert isinstance(error, RulesError)
+        assert isinstance(error, MemoryBankError)
+        assert error.operation == "pull"
+        assert error.reason == "conflict"
+        assert "pull" in str(error)
+        assert "conflict" in str(error)
+
+
+class TestRefactoringError:
+    """Tests for RefactoringError exception hierarchy."""
+
+    def test_refactoring_error_inherits_memory_bank_error(self):
+        """Test that RefactoringError inherits from MemoryBankError."""
+        # Arrange & Act
+        error = RefactoringError("refactoring error")
+
+        # Assert
+        assert isinstance(error, MemoryBankError)
+        assert str(error) == "refactoring error"
+
+    def test_refactoring_validation_error_inherits_refactoring_error(self):
+        """Test that RefactoringValidationError inherits from RefactoringError."""
+        # Arrange & Act
+        error = RefactoringValidationError("suggestion-123", "invalid format")
+
+        # Assert
+        assert isinstance(error, RefactoringError)
+        assert isinstance(error, MemoryBankError)
+        assert error.suggestion_id == "suggestion-123"
+        assert error.reason == "invalid format"
+        assert "suggestion-123" in str(error)
+        assert "invalid format" in str(error)
+
+    def test_refactoring_execution_error_inherits_refactoring_error(self):
+        """Test that RefactoringExecutionError inherits from RefactoringError."""
+        # Arrange & Act
+        error = RefactoringExecutionError("suggestion-456", "execution failed")
+
+        # Assert
+        assert isinstance(error, RefactoringError)
+        assert isinstance(error, MemoryBankError)
+        assert error.suggestion_id == "suggestion-456"
+        assert error.reason == "execution failed"
+        assert "suggestion-456" in str(error)
+        assert "execution failed" in str(error)
+
+
+class TestRollbackError:
+    """Tests for RollbackError exception."""
+
+    def test_rollback_error_inherits_memory_bank_error(self):
+        """Test that RollbackError inherits from MemoryBankError."""
+        # Arrange & Act
+        error = RollbackError("refactoring-789", "rollback failed")
+
+        # Assert
+        assert isinstance(error, MemoryBankError)
+        assert error.refactoring_id == "refactoring-789"
+        assert error.reason == "rollback failed"
+        assert "refactoring-789" in str(error)
+        assert "rollback failed" in str(error)
+
+
+class TestLearningError:
+    """Tests for LearningError exception."""
+
+    def test_learning_error_inherits_memory_bank_error(self):
+        """Test that LearningError inherits from MemoryBankError."""
+        # Arrange & Act
+        error = LearningError("learning error")
+
+        # Assert
+        assert isinstance(error, MemoryBankError)
+        assert str(error) == "learning error"
+
+
+class TestApprovalError:
+    """Tests for ApprovalError exception."""
+
+    def test_approval_error_inherits_memory_bank_error(self):
+        """Test that ApprovalError inherits from MemoryBankError."""
+        # Arrange & Act
+        error = ApprovalError("suggestion-999", "approval failed")
+
+        # Assert
+        assert isinstance(error, MemoryBankError)
+        assert error.suggestion_id == "suggestion-999"
+        assert error.reason == "approval failed"
+        assert "suggestion-999" in str(error)
+        assert "approval failed" in str(error)
+
+
+class TestStructureError:
+    """Tests for StructureError exception hierarchy."""
+
+    def test_structure_error_inherits_memory_bank_error(self):
+        """Test that StructureError inherits from MemoryBankError."""
+        # Arrange & Act
+        error = StructureError("structure error")
+
+        # Assert
+        assert isinstance(error, MemoryBankError)
+        assert str(error) == "structure error"
+
+    def test_structure_migration_error_inherits_structure_error(self):
+        """Test that StructureMigrationError inherits from StructureError."""
+        # Arrange & Act
+        error = StructureMigrationError("migration failed", "/tmp/backup")
+
+        # Assert
+        assert isinstance(error, StructureError)
+        assert isinstance(error, MemoryBankError)
+        assert error.reason == "migration failed"
+        assert error.backup_location == "/tmp/backup"
+        assert "migration failed" in str(error)
+        assert "/tmp/backup" in str(error)
+
+    def test_structure_migration_error_without_backup(self):
+        """Test StructureMigrationError without backup location."""
+        # Arrange & Act
+        error = StructureMigrationError("migration failed")
+
+        # Assert
+        assert error.reason == "migration failed"
+        assert error.backup_location is None
+        assert "migration failed" in str(error)
+
+    def test_symlink_error_inherits_structure_error(self):
+        """Test that SymlinkError inherits from StructureError."""
+        # Arrange & Act
+        error = SymlinkError("/target", "/link", "permission denied")
+
+        # Assert
+        assert isinstance(error, StructureError)
+        assert isinstance(error, MemoryBankError)
+        assert error.target == "/target"
+        assert error.link == "/link"
+        assert error.reason == "permission denied"
+        assert "/target" in str(error)
+        assert "/link" in str(error)
+        assert "permission denied" in str(error)

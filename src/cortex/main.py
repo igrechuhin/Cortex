@@ -6,6 +6,8 @@ This is the main entry point for the Memory Bank MCP server.
 All tool implementations are in the tools/ package.
 """
 
+# Import tools package to register all @mcp.tool() decorators
+import cortex.tools  # noqa: F401  # pyright: ignore[reportUnusedImport]
 from cortex.server import mcp
 
 

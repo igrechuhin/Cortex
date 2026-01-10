@@ -5,6 +5,7 @@ Tests token counting functionality using tiktoken.
 """
 
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -318,6 +319,44 @@ And this is code: `#define MACRO`
         assert sections[0]["title"] == "Real Header"
         assert sections[1]["title"] == "Another Real Header"
 
+    def test_parse_markdown_sections_with_invalid_levels(self):
+        """Test parse_markdown_sections ignores headers with invalid levels."""
+        # Arrange
+        counter = TokenCounter()
+        content = """####### Invalid level 7
+# Valid level 1
+######## Invalid level 8
+## Valid level 2
+"""
+
+        # Act
+        sections = counter.parse_markdown_sections(content)
+
+        # Assert
+        # Should only find valid headers (levels 1-6)
+        assert len(sections) == 2
+        assert sections[0]["level"] == 1
+        assert sections[1]["level"] == 2
+
+    def test_parse_markdown_sections_with_hash_not_at_start(self):
+        """Test parse_markdown_sections handles indented headers and hashes in content."""
+        # Arrange
+        counter = TokenCounter()
+        content = """   # Indented header (still detected)
+# Real header
+Text with # hash in middle (not detected)
+"""
+
+        # Act
+        sections = counter.parse_markdown_sections(content)
+
+        # Assert
+        # Indented headers are still detected (lstrip removes leading whitespace)
+        # Hashes in middle of line are not detected
+        assert len(sections) == 2
+        assert sections[0]["title"] == "Indented header (still detected)"
+        assert sections[1]["title"] == "Real header"
+
 
 class TestContentHashing:
     """Tests for content_hash method."""
@@ -450,3 +489,230 @@ class TestTokenCounterEdgeCases:
         # Act & Assert
         with pytest.raises(TypeError):
             counter.content_hash(None)  # type: ignore[arg-type]
+
+
+class TestCountTokensWithCache:
+    """Tests for count_tokens_with_cache method."""
+
+    def test_count_tokens_with_cache_caches_result(self):
+        """Test that count_tokens_with_cache caches results."""
+        # Arrange
+        counter = TokenCounter()
+        text = "Test content for caching"
+        content_hash = counter.content_hash(text)
+
+        # Act
+        count1 = counter.count_tokens_with_cache(text, content_hash)
+        count2 = counter.count_tokens_with_cache(text, content_hash)
+
+        # Assert
+        assert count1 == count2
+        assert count1 > 0
+
+    def test_count_tokens_with_cache_different_hashes(self):
+        """Test that different hashes produce different cached results."""
+        # Arrange
+        counter = TokenCounter()
+        text1 = "This is a much longer text that should have significantly more tokens than a short one."
+        text2 = "Short."
+        hash1 = counter.content_hash(text1)
+        hash2 = counter.content_hash(text2)
+
+        # Act
+        count1 = counter.count_tokens_with_cache(text1, hash1)
+        count2 = counter.count_tokens_with_cache(text2, hash2)
+
+        # Assert
+        # Different texts should produce different token counts
+        assert count1 > count2
+        # Verify cache is working
+        assert counter.get_cache_size() == 2
+
+
+class TestCountTokensSections:
+    """Tests for count_tokens_sections method."""
+
+    def test_count_tokens_sections_simple(self):
+        """Test counting tokens per section."""
+        # Arrange
+        counter = TokenCounter()
+        content = """# Section 1
+Content for section 1.
+
+## Section 2
+Content for section 2.
+"""
+        sections: list[dict[str, object]] = [
+            {"heading": "# Section 1", "line_start": 1, "line_end": 3},
+            {"heading": "## Section 2", "line_start": 4, "line_end": 6},
+        ]
+
+        # Act
+        result = counter.count_tokens_sections(content, sections)
+
+        # Assert
+        assert "total_tokens" in result
+        assert "sections" in result
+        total_tokens = cast(int, result["total_tokens"])
+        sections_list = cast(list[dict[str, object]], result["sections"])
+        assert len(sections_list) == 2
+        assert total_tokens > 0
+        assert isinstance(sections_list[0], dict)
+        assert isinstance(sections_list[1], dict)
+        assert "token_count" in sections_list[0]
+        assert "token_count" in sections_list[1]
+        token_count_0 = cast(int, sections_list[0]["token_count"])
+        token_count_1 = cast(int, sections_list[1]["token_count"])
+        assert token_count_0 > 0
+        assert token_count_1 > 0
+
+    def test_count_tokens_sections_with_percentages(self):
+        """Test that sections include percentage calculations."""
+        # Arrange
+        counter = TokenCounter()
+        content = "Line 1\nLine 2\nLine 3"
+        sections: list[dict[str, object]] = [
+            {"heading": "Test", "line_start": 1, "line_end": 3}
+        ]
+
+        # Act
+        result = counter.count_tokens_sections(content, sections)
+
+        # Assert
+        sections_list = cast(list[dict[str, object]], result["sections"])
+        assert len(sections_list) > 0
+        assert "percentage" in sections_list[0]
+        percentage = cast(float, sections_list[0]["percentage"])
+        assert isinstance(percentage, float)
+        assert 0 <= percentage <= 100
+
+    def test_count_tokens_sections_with_empty_sections(self):
+        """Test count_tokens_sections with empty sections list."""
+        # Arrange
+        counter = TokenCounter()
+        content = "Some content here"
+
+        # Act
+        result = counter.count_tokens_sections(content, [])
+
+        # Assert
+        total_tokens = cast(int, result["total_tokens"])
+        sections_list = cast(list[dict[str, object]], result["sections"])
+        assert total_tokens > 0
+        assert sections_list == []
+
+
+class TestEstimateContextSize:
+    """Tests for estimate_context_size method."""
+
+    def test_estimate_context_size_simple(self):
+        """Test estimating context size for multiple files."""
+        # Arrange
+        counter = TokenCounter()
+        file_tokens = {"file1.md": 500, "file2.md": 800, "file3.md": 300}
+
+        # Act
+        result = counter.estimate_context_size(file_tokens)
+
+        # Assert
+        total_tokens = cast(int, result["total_tokens"])
+        breakdown = cast(dict[str, int], result["breakdown"])
+        assert total_tokens == 1600
+        assert "estimated_cost_gpt4" in result
+        assert "warnings" in result
+        assert "breakdown" in result
+        assert breakdown == file_tokens
+
+    def test_estimate_context_size_with_warnings(self):
+        """Test that warnings are generated for large token counts."""
+        # Arrange
+        counter = TokenCounter()
+        file_tokens = {"large.md": 150000}
+
+        # Act
+        result = counter.estimate_context_size(file_tokens)
+
+        # Assert
+        total_tokens = cast(int, result["total_tokens"])
+        warnings = cast(list[str], result["warnings"])
+        assert total_tokens == 150000
+        assert len(warnings) > 0
+        assert any("100K" in warning or "100000" in warning for warning in warnings)
+
+    def test_estimate_context_size_very_large(self):
+        """Test warnings for very large token counts."""
+        # Arrange
+        counter = TokenCounter()
+        file_tokens = {"huge.md": 250000}
+
+        # Act
+        result = counter.estimate_context_size(file_tokens)
+
+        # Assert
+        total_tokens = cast(int, result["total_tokens"])
+        warnings = cast(list[str], result["warnings"])
+        assert total_tokens == 250000
+        assert len(warnings) >= 2
+        # Check for warnings about exceeding limits
+        warning_text = " ".join(warnings)
+        assert (
+            "200000" in warning_text
+            or "200K" in warning_text
+            or "exceeds most model" in warning_text.lower()
+        )
+
+    def test_estimate_context_size_medium_size(self):
+        """Test estimate_context_size with medium token count (50K-100K)."""
+        # Arrange
+        counter = TokenCounter()
+        file_tokens = {"medium.md": 75000}
+
+        # Act
+        result = counter.estimate_context_size(file_tokens)
+
+        # Assert
+        total_tokens = cast(int, result["total_tokens"])
+        warnings = cast(list[str], result["warnings"])
+        assert total_tokens == 75000
+        # Should trigger the 50K-100K warning
+        assert len(warnings) > 0
+        assert any(
+            "50K" in warning or "progressive" in warning.lower() for warning in warnings
+        )
+
+
+class TestCacheManagement:
+    """Tests for cache management methods."""
+
+    def test_clear_cache(self):
+        """Test clearing the cache."""
+        # Arrange
+        counter = TokenCounter()
+        text = "Test content"
+        content_hash = counter.content_hash(text)
+        _ = counter.count_tokens_with_cache(text, content_hash)
+
+        # Act
+        counter.clear_cache()
+
+        # Assert
+        assert counter.get_cache_size() == 0
+
+    def test_get_cache_size(self):
+        """Test getting cache size."""
+        # Arrange
+        counter = TokenCounter()
+        text1 = "First content"
+        text2 = "Second content"
+        hash1 = counter.content_hash(text1)
+        hash2 = counter.content_hash(text2)
+
+        # Act
+        _ = counter.count_tokens_with_cache(text1, hash1)
+        size1 = counter.get_cache_size()
+        _ = counter.count_tokens_with_cache(text2, hash2)
+        size2 = counter.get_cache_size()
+
+        # Assert
+        assert size1 == 1
+        assert size2 == 2
