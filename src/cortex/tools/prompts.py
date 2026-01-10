@@ -211,11 +211,7 @@ def check_migration_status(project_root: str) -> str:
     """
     return f"""Please check if my Memory Bank at {project_root} needs migration.
 
-I need you to:
-1. Detect the current Memory Bank format
-2. Check if it's using an old directory structure
-3. Identify what changes would be needed
-4. Report the migration status
+I need you to: 1) Detect the current Memory Bank format, 2) Check if it's using an old directory structure, 3) Identify what changes would be needed, 4) Report the migration status.
 
 Check for:
 - Old format at .cursor/memory-bank/
@@ -305,13 +301,7 @@ def migrate_project_structure(project_root: str) -> str:
     """
     return f"""Please migrate my project structure at {project_root} to the standardized format.
 
-I need you to:
-1. Detect the current structure
-2. Create the new .cursor/ directory structure
-3. Move existing files to correct locations
-4. Preserve all content and history
-5. Update references and links
-6. Validate the migration
+I need you to: 1) Detect the current structure, 2) Create the new .cursor/ directory structure, 3) Move existing files to correct locations, 4) Preserve all content and history, 5) Update references and links, 6) Validate the migration.
 
 Migration mappings:
 - memory-bank/ -> .cursor/memory-bank/
