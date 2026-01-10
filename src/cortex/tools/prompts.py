@@ -16,7 +16,7 @@ from cortex.server import mcp
 
 
 @mcp.prompt()
-def initialize_memory_bank(project_root: str) -> str:
+def initialize_memory_bank() -> str:
     """Initialize a new Memory Bank with all core files.
 
     Creates the memory-bank/ directory structure with 7 core files:
@@ -28,13 +28,10 @@ def initialize_memory_bank(project_root: str) -> str:
     - progress.md - Development progress tracking
     - roadmap.md - Development roadmap and milestones
 
-    Args:
-        project_root: Path to the project root directory
-
     Returns:
         Prompt message guiding the assistant to initialize Memory Bank
     """
-    return f"""Please initialize a Memory Bank in my project at {project_root}.
+    return """Please initialize a Memory Bank in my project.
 
 I need you to:
 1. Create the memory-bank/ directory
@@ -52,17 +49,16 @@ I need you to:
 If an old format is detected, please migrate it to the current format.
 
 Expected output format:
-{{
+{
   "status": "success",
   "message": "Memory Bank initialized successfully",
-  "project_root": "{project_root}",
   "files_created": 7,
   "total_tokens": <token_count>
-}}"""
+}"""
 
 
 @mcp.prompt()
-def setup_project_structure(project_root: str) -> str:
+def setup_project_structure() -> str:
     """Setup the standardized .cursor/ project structure.
 
     Creates:
@@ -72,13 +68,10 @@ def setup_project_structure(project_root: str) -> str:
     - .cursor/plans/archive/ - Archived plans
     - .cursor/integrations/ - IDE integration configs
 
-    Args:
-        project_root: Path to the project root directory
-
     Returns:
         Prompt message guiding the assistant to setup project structure
     """
-    return f"""Please setup the standardized project structure in my project at {project_root}.
+    return """Please setup the standardized project structure in my project.
 
 I need you to:
 1. Create the .cursor/ directory structure
@@ -97,30 +90,27 @@ Expected directory structure:
 └── integrations/    # IDE integration configs
 
 Expected output format:
-{{
+{
   "status": "success",
   "message": "Project structure setup successfully",
   "directories_created": [...],
   "files_created": [...],
   "total_files": <count>
-}}"""
+}"""
 
 
 @mcp.prompt()
-def setup_cursor_integration(project_root: str) -> str:
+def setup_cursor_integration() -> str:
     """Setup Cursor IDE integration with MCP server configuration.
 
     Creates configuration files for Cursor IDE:
     - .cursor/config.json - IDE settings
     - .cursor/mcp.json - MCP server config
 
-    Args:
-        project_root: Path to the project root directory
-
     Returns:
         Prompt message guiding the assistant to setup Cursor integration
     """
-    return f"""Please setup Cursor IDE integration in my project at {project_root}.
+    return """Please setup Cursor IDE integration in my project.
 
 I need you to:
 1. Create .cursor/ configuration directory
@@ -135,42 +125,41 @@ Configuration files to create:
 - .cursor/mcp.json - MCP server config with Cortex server
 
 MCP configuration should include:
-{{
-  "mcpServers": {{
-    "cortex": {{
+{
+  "mcpServers": {
+    "cortex": {
       "command": "uvx",
       "args": ["--from", "git+https://github.com/igrechuhin/cortex.git", "cortex"]
-    }}
-  }}
-}}
+    }
+  }
+}
 
 Expected output format:
-{{
+{
   "status": "success",
   "message": "Cursor integration setup successfully",
   "config_files": [".cursor/config.json", ".cursor/mcp.json"],
-  "mcp_server": {{
+  "mcp_server": {
     "name": "cortex",
     "status": "configured"
-  }}
-}}"""
+  }
+}"""
 
 
 @mcp.prompt()
-def setup_shared_rules(project_root: str, shared_rules_repo_url: str) -> str:
+def setup_shared_rules(shared_rules_repo_url: str) -> str:
     """Setup shared rules via Git submodule.
 
     Adds a shared rules repository as a Git submodule to enable
     cross-project rule sharing.
 
     Args:
-        project_root: Path to the project root directory
         shared_rules_repo_url: URL of the shared rules repository
 
     Returns:
         Prompt message guiding the assistant to setup shared rules
     """
-    return f"""Please setup shared rules in my project at {project_root}.
+    return f"""Please setup shared rules in my project.
 
 I want to use shared rules from: {shared_rules_repo_url}
 
@@ -197,21 +186,22 @@ Expected output format:
 
 
 @mcp.prompt()
-def check_migration_status(project_root: str) -> str:
+def check_migration_status() -> str:
     """Check if Memory Bank needs migration to the latest format.
 
     Detects old format at .cursor/memory-bank/ and checks if migration
     to memory-bank/ is needed.
 
-    Args:
-        project_root: Path to the project root directory
-
     Returns:
         Prompt message guiding the assistant to check migration status
     """
-    return f"""Please check if my Memory Bank at {project_root} needs migration.
+    return """Please check if my Memory Bank needs migration.
 
-I need you to: 1) Detect the current Memory Bank format, 2) Check if it's using an old directory structure, 3) Identify what changes would be needed, 4) Report the migration status.
+I need you to:
+1. Detect the current Memory Bank format
+2. Check if it's using an old directory structure
+3. Identify what changes would be needed
+4. Report the migration status
 
 Check for:
 - Old format at .cursor/memory-bank/
@@ -219,44 +209,41 @@ Check for:
 - File structure and metadata validity
 
 Expected output format (up to date):
-{{
+{
   "status": "up_to_date",
   "message": "Memory Bank is already using the latest format",
   "current_location": "memory-bank/",
   "files_count": 7
-}}
+}
 
 Expected output format (migration needed):
-{{
+{
   "status": "migration_needed",
   "message": "Old format detected at .cursor/memory-bank/",
   "old_location": ".cursor/memory-bank/",
   "new_location": "memory-bank/",
   "files_to_migrate": 7
-}}
+}
 
 Expected output format (not initialized):
-{{
+{
   "status": "not_initialized",
   "message": "No Memory Bank found",
   "suggestion": "Run initialize_memory_bank to create one"
-}}"""
+}"""
 
 
 @mcp.prompt()
-def migrate_memory_bank(project_root: str) -> str:
+def migrate_memory_bank() -> str:
     """Migrate Memory Bank to the latest format.
 
     Moves files from .cursor/memory-bank/ to memory-bank/ while
     preserving all content and version history.
 
-    Args:
-        project_root: Path to the project root directory
-
     Returns:
         Prompt message guiding the assistant to migrate Memory Bank
     """
-    return f"""Please migrate my Memory Bank at {project_root} to the latest format.
+    return """Please migrate my Memory Bank to the latest format.
 
 I need you to:
 1. Create the new memory-bank/ directory
@@ -273,7 +260,7 @@ Safety requirements:
 - Atomic operation (succeeds completely or fails completely)
 
 Expected output format:
-{{
+{
   "status": "success",
   "message": "Memory Bank migrated successfully",
   "old_location": ".cursor/memory-bank/",
@@ -281,11 +268,11 @@ Expected output format:
   "files_migrated": 7,
   "versions_migrated": <count>,
   "duration_ms": <time>
-}}"""
+}"""
 
 
 @mcp.prompt()
-def migrate_project_structure(project_root: str) -> str:
+def migrate_project_structure() -> str:
     """Migrate project to the standardized structure.
 
     Moves files to standardized locations:
@@ -293,15 +280,18 @@ def migrate_project_structure(project_root: str) -> str:
     - rules/ -> .cursor/rules/
     - .plan/ -> .cursor/plans/
 
-    Args:
-        project_root: Path to the project root directory
-
     Returns:
         Prompt message guiding the assistant to migrate project structure
     """
-    return f"""Please migrate my project structure at {project_root} to the standardized format.
+    return """Please migrate my project structure to the standardized format.
 
-I need you to: 1) Detect the current structure, 2) Create the new .cursor/ directory structure, 3) Move existing files to correct locations, 4) Preserve all content and history, 5) Update references and links, 6) Validate the migration.
+I need you to:
+1. Detect the current structure
+2. Create the new .cursor/ directory structure
+3. Move existing files to correct locations
+4. Preserve all content and history
+5. Update references and links
+6. Validate the migration
 
 Migration mappings:
 - memory-bank/ -> .cursor/memory-bank/
@@ -317,14 +307,14 @@ Safety requirements:
 - Backup creation before migration
 
 Expected output format:
-{{
+{
   "status": "success",
   "message": "Project structure migrated successfully",
-  "migrations": {{
-    "memory_bank": {{"from": "memory-bank/", "to": ".cursor/memory-bank/", "files": 7}},
-    "rules": {{"from": "rules/", "to": ".cursor/rules/", "files": <count>}},
-    "plans": {{"from": ".plan/", "to": ".cursor/plans/", "files": <count>}}
-  }},
+  "migrations": {
+    "memory_bank": {"from": "memory-bank/", "to": ".cursor/memory-bank/", "files": 7},
+    "rules": {"from": "rules/", "to": ".cursor/rules/", "files": <count>},
+    "plans": {"from": ".plan/", "to": ".cursor/plans/", "files": <count>}
+  },
   "links_updated": <count>,
   "duration_ms": <time>
-}}"""
+}"""

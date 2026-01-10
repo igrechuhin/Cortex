@@ -77,7 +77,7 @@ class TokenCounter:
                 except concurrent.futures.TimeoutError:
                     logger.warning(
                         f"Tiktoken encoding '{self.model}' load timed out after "
-                        f"{timeout_seconds}s. Falling back to word-based estimation."
+                        + f"{timeout_seconds}s. Falling back to word-based estimation."
                     )
                     self._tiktoken_available = False
                     return None
