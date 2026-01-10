@@ -390,7 +390,13 @@ class ValidationConfig:
         token_budget_raw: object = self.config.get("token_budget", {})
         if isinstance(token_budget_raw, dict):
             token_budget = cast(dict[str, object], token_budget_raw)
-            return cast(int, token_budget.get("max_total_tokens", 100000))
+            value = token_budget.get("max_total_tokens", 100000)
+            if isinstance(value, int):
+                return value
+            if isinstance(value, str):
+                return int(value)
+            if isinstance(value, float):
+                return int(value)
         return 100000
 
     def get_token_budget_warn_threshold(self) -> float:
@@ -403,7 +409,11 @@ class ValidationConfig:
         token_budget_raw: object = self.config.get("token_budget", {})
         if isinstance(token_budget_raw, dict):
             token_budget = cast(dict[str, object], token_budget_raw)
-            return cast(float, token_budget.get("warn_at_percentage", 80))
+            value = token_budget.get("warn_at_percentage", 80)
+            if isinstance(value, (int, float)):
+                return float(value)
+            if isinstance(value, str):
+                return float(value)
         return 80.0
 
     def get_duplication_threshold(self) -> float:
