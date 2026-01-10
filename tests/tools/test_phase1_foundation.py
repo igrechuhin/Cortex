@@ -346,7 +346,11 @@ async def test_get_version_history_with_limit(
         "current_version": 3,
         "version_history": [
             {"version": 3, "timestamp": "2026-01-10T10:00:00", "change_type": "update"},
-            {"version": 2, "timestamp": "2026-01-09T10:00:00", "change_type": "rollback"},
+            {
+                "version": 2,
+                "timestamp": "2026-01-09T10:00:00",
+                "change_type": "rollback",
+            },
             {"version": 1, "timestamp": "2026-01-08T10:00:00", "change_type": "create"},
         ],
     }
@@ -598,8 +602,16 @@ async def test_get_memory_bank_stats_success_basic(
             "history_size_bytes": 10240,
         },
         "files": {
-            "projectBrief.md": {"token_count": 1000, "size_bytes": 4000, "read_count": 10},
-            "activeContext.md": {"token_count": 500, "size_bytes": 2000, "read_count": 5},
+            "projectBrief.md": {
+                "token_count": 1000,
+                "size_bytes": 4000,
+                "read_count": 10,
+            },
+            "activeContext.md": {
+                "token_count": 500,
+                "size_bytes": 2000,
+                "read_count": 5,
+            },
         },
     }
     with patch(
@@ -671,13 +683,22 @@ async def test_get_memory_bank_stats_with_refactoring_history(
         "status": "success",
         "summary": {"total_files": 2, "total_tokens": 1500},
     }
-    async def mock_add_optional_stats(result, include_token_budget, include_refactoring_history, project_root, total_tokens, refactoring_days):
+
+    async def mock_add_optional_stats(
+        result: dict[str, object],
+        include_token_budget: bool,
+        include_refactoring_history: bool,
+        project_root: str | None,
+        total_tokens: int,
+        refactoring_days: int,
+    ) -> None:
         if include_refactoring_history:
             result["refactoring_history"] = {
                 "total_refactorings": 5,
                 "successful": 4,
                 "rolled_back": 1,
             }
+
     with patch(
         "cortex.tools.phase1_foundation_stats._collect_base_stats",
         new=AsyncMock(return_value=(base_stats, 1500)),
@@ -711,9 +732,18 @@ async def test_get_memory_bank_stats_refactoring_executor_unavailable(
         "status": "success",
         "summary": {"total_files": 2, "total_tokens": 1500},
     }
-    async def mock_add_optional_stats(result, include_token_budget, include_refactoring_history, project_root, total_tokens, refactoring_days):
+
+    async def mock_add_optional_stats(
+        result: dict[str, object],
+        include_token_budget: bool,
+        include_refactoring_history: bool,
+        project_root: str | None,
+        total_tokens: int,
+        refactoring_days: int,
+    ) -> None:
         if include_refactoring_history:
             result["refactoring_history"] = {"status": "unavailable"}
+
     with patch(
         "cortex.tools.phase1_foundation_stats._collect_base_stats",
         new=AsyncMock(return_value=(base_stats, 1500)),
