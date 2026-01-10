@@ -556,28 +556,8 @@ class PatternAnalyzer:
         peak_times: dict[str, int | str | None],
     ) -> TemporalPatternsResult:
         """Build temporal patterns result."""
-        hourly = temporal_data["hourly"]
-        daily = temporal_data["daily"]
-        weekly = temporal_data["weekly"]
-
-        hourly_dict: dict[int, int] = {
-            k: v for k, v in hourly.items() if isinstance(k, int)
-        }
-        daily_dict: dict[str, int] = {
-            k: v for k, v in daily.items() if isinstance(k, str)
-        }
-        weekly_dict: dict[str, int] = {
-            k: v for k, v in weekly.items() if isinstance(k, str)
-        }
-
-        peak_hour_val = peak_times.get("peak_hour")
-        peak_hour: int | None = (
-            int(peak_hour_val) if isinstance(peak_hour_val, (int, float)) else None
-        )
-
-        peak_day_val = peak_times.get("peak_day")
-        peak_day: str | None = str(peak_day_val) if peak_day_val else None
-
+        hourly_dict, daily_dict, weekly_dict = self._build_temporal_dicts(temporal_data)
+        peak_hour, peak_day = self._extract_peak_times(peak_times)
         total_accesses = sum(hourly_dict.values())
         avg_accesses = total_accesses / max(len(daily_dict), 1)
 
@@ -591,6 +571,36 @@ class PatternAnalyzer:
             "peak_day": peak_day,
             "avg_accesses_per_day": avg_accesses,
         }
+
+    def _build_temporal_dicts(
+        self, temporal_data: dict[str, defaultdict[int | str, int]]
+    ) -> tuple[dict[int, int], dict[str, int], dict[str, int]]:
+        """Build temporal distribution dictionaries."""
+        hourly = temporal_data["hourly"]
+        daily = temporal_data["daily"]
+        weekly = temporal_data["weekly"]
+        hourly_dict: dict[int, int] = {
+            k: v for k, v in hourly.items() if isinstance(k, int)
+        }
+        daily_dict: dict[str, int] = {
+            k: v for k, v in daily.items() if isinstance(k, str)
+        }
+        weekly_dict: dict[str, int] = {
+            k: v for k, v in weekly.items() if isinstance(k, str)
+        }
+        return hourly_dict, daily_dict, weekly_dict
+
+    def _extract_peak_times(
+        self, peak_times: dict[str, int | str | None]
+    ) -> tuple[int | None, str | None]:
+        """Extract peak hour and day from peak_times dict."""
+        peak_hour_val = peak_times.get("peak_hour")
+        peak_hour: int | None = (
+            int(peak_hour_val) if isinstance(peak_hour_val, (int, float)) else None
+        )
+        peak_day_val = peak_times.get("peak_day")
+        peak_day: str | None = str(peak_day_val) if peak_day_val else None
+        return peak_hour, peak_day
 
     async def cleanup_old_data(self, keep_days: int = 180):
         """

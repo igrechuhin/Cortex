@@ -10,7 +10,7 @@ Modules:
 - refactoring_operations: Refactoring suggestions (1 tool) - Split from analysis_operations
 - rules_operations: Rules management (1 tool) - Phase 9.1.1 split
 - configuration_operations: Configuration management (1 tool) - Phase 9.1.1 split
-- phase1_foundation: Core Memory Bank operations (10 tools)
+- phase1_foundation_*: Core Memory Bank operations (4 tools split across modules)
 - phase2_linking: Link management and transclusion (4 tools)
 - phase3_validation: Validation and quality checks (5 tools)
 - phase4_optimization: Token optimization and context management (7 tools)
@@ -28,7 +28,10 @@ from . import (
     analysis_operations,  # noqa: F401
     configuration_operations,  # noqa: F401
     file_operations,  # noqa: F401
-    phase1_foundation,  # noqa: F401
+    phase1_foundation_dependency,  # noqa: F401
+    phase1_foundation_rollback,  # noqa: F401
+    phase1_foundation_stats,  # noqa: F401
+    phase1_foundation_version,  # noqa: F401
     phase2_linking,  # noqa: F401
     phase3_validation,  # noqa: F401
     phase4_optimization,  # noqa: F401
@@ -46,7 +49,10 @@ __all__ = [
     "analysis_operations",
     "configuration_operations",
     "file_operations",
-    "phase1_foundation",
+    "phase1_foundation_dependency",
+    "phase1_foundation_rollback",
+    "phase1_foundation_stats",
+    "phase1_foundation_version",
     "phase2_linking",
     "phase3_validation",
     "phase4_optimization",

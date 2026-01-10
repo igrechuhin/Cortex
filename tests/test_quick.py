@@ -5,7 +5,7 @@ import asyncio
 import json
 import tempfile
 
-from cortex.tools.phase1_foundation import get_memory_bank_stats
+from cortex.tools.phase1_foundation_stats import get_memory_bank_stats
 
 # Note: check_migration_status and initialize_memory_bank have been replaced
 # by prompt templates (see docs/prompts/)

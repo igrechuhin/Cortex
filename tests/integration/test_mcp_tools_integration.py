@@ -15,11 +15,9 @@ from pathlib import Path
 import pytest
 
 from cortex.tools.file_operations import manage_file
-from cortex.tools.phase1_foundation import (
-    get_dependency_graph,
-    get_memory_bank_stats,
-    get_version_history,
-)
+from cortex.tools.phase1_foundation_dependency import get_dependency_graph
+from cortex.tools.phase1_foundation_stats import get_memory_bank_stats
+from cortex.tools.phase1_foundation_version import get_version_history
 from cortex.tools.phase2_linking import parse_file_links, validate_links
 from cortex.tools.phase4_optimization import optimize_context
 from cortex.tools.validation_operations import validate

@@ -53,17 +53,23 @@ class CacheWarmer:
         """
         self.cache_manager: AdvancedCacheManager = cache_manager
         self.project_root: Path = Path(project_root)
+        self._strategy_key_getters = self._build_strategy_key_getters()
+        self.strategies = self._build_default_strategies()
 
-        # Strategy key retrieval dispatch table
-        self._strategy_key_getters: dict[str, Callable[[int], list[str]]] = {
+    def _build_strategy_key_getters(
+        self,
+    ) -> dict[str, Callable[[int], list[str]]]:
+        """Build strategy key retrieval dispatch table."""
+        return {
             "hot_path": self.get_hot_path_keys,
             "dependency": self._get_dependency_keys,
             "recent": self._get_recent_keys,
             "mandatory": self.get_mandatory_keys,
         }
 
-        # Default warming strategies
-        self.strategies: dict[str, WarmingStrategy] = {
+    def _build_default_strategies(self) -> dict[str, WarmingStrategy]:
+        """Build default warming strategies."""
+        return {
             "hot_path": {
                 "name": "Hot Path Warming",
                 "enabled": True,

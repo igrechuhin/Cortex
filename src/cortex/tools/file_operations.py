@@ -565,36 +565,67 @@ async def _dispatch_operation(
 ) -> str:
     """Dispatch operation to appropriate handler."""
     if operation == "read":
-        return await _handle_read_operation(
-            file_path,
-            file_name,
-            cast(Path, managers["root"]),
-            cast(FileSystemManager, managers["fs"]),
-            cast(MetadataIndex, managers["index"]),
-            include_metadata,
+        return await _dispatch_read_operation(
+            file_path, file_name, managers, include_metadata
         )
     if operation == "write":
-        if content is None:
-            return json.dumps(
-                {
-                    "status": "error",
-                    "error": "Content is required for write operation",
-                },
-                indent=2,
-            )
-            return json.dumps({"error": "Content is required for write operation"})
-        return await _handle_write_operation(
-            file_path,
-            file_name,
-            content,
-            change_description,
-            cast(FileSystemManager, managers["fs"]),
-            cast(MetadataIndex, managers["index"]),
-            cast(TokenCounter, managers["tokens"]),
-            cast(VersionManager, managers["versions"]),
+        return await _dispatch_write_operation(
+            file_path, file_name, content, change_description, managers
         )
     if operation == "metadata":
-        return await _handle_metadata_operation(
-            file_path, file_name, cast(MetadataIndex, managers["index"])
-        )
+        return await _dispatch_metadata_operation(file_path, file_name, managers)
     return build_invalid_operation_error(operation)
+
+
+async def _dispatch_read_operation(
+    file_path: Path,
+    file_name: str,
+    managers: dict[str, object],
+    include_metadata: bool,
+) -> str:
+    """Dispatch read operation."""
+    return await _handle_read_operation(
+        file_path,
+        file_name,
+        cast(Path, managers["root"]),
+        cast(FileSystemManager, managers["fs"]),
+        cast(MetadataIndex, managers["index"]),
+        include_metadata,
+    )
+
+
+async def _dispatch_write_operation(
+    file_path: Path,
+    file_name: str,
+    content: str | None,
+    change_description: str | None,
+    managers: dict[str, object],
+) -> str:
+    """Dispatch write operation."""
+    if content is None:
+        return json.dumps(
+            {
+                "status": "error",
+                "error": "Content is required for write operation",
+            },
+            indent=2,
+        )
+    return await _handle_write_operation(
+        file_path,
+        file_name,
+        content,
+        change_description,
+        cast(FileSystemManager, managers["fs"]),
+        cast(MetadataIndex, managers["index"]),
+        cast(TokenCounter, managers["tokens"]),
+        cast(VersionManager, managers["versions"]),
+    )
+
+
+async def _dispatch_metadata_operation(
+    file_path: Path, file_name: str, managers: dict[str, object]
+) -> str:
+    """Dispatch metadata operation."""
+    return await _handle_metadata_operation(
+        file_path, file_name, cast(MetadataIndex, managers["index"])
+    )

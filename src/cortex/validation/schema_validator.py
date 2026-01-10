@@ -411,7 +411,6 @@ def _run_all_validations(
                 sections, cast(list[str], required_sections)
             )
         )
-
     recommended_sections = schema.get("recommended_sections", [])
     if isinstance(recommended_sections, list):
         warnings.extend(
@@ -419,16 +418,12 @@ def _run_all_validations(
                 sections, cast(list[str], recommended_sections)
             )
         )
-
     heading_level = schema.get("heading_level", 2)
     max_nesting = schema.get("max_nesting", 3)
     if isinstance(heading_level, int) and isinstance(max_nesting, int):
-        heading_errors = validator.check_heading_levels(
-            content, heading_level, max_nesting
+        errors.extend(
+            validator.check_heading_levels(content, heading_level, max_nesting)
         )
-    else:
-        heading_errors = []
-    errors.extend(heading_errors)
 
     return errors, warnings
 

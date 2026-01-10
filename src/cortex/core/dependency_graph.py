@@ -321,15 +321,17 @@ class DependencyGraph:
             Mermaid flowchart syntax
         """
         lines = ["flowchart TD"]
+        self._add_mermaid_nodes(lines)
+        self._add_mermaid_edges(lines)
+        self._add_mermaid_styling(lines)
+        return "\n".join(lines)
 
-        # Add nodes with styling based on category
+    def _add_mermaid_nodes(self, lines: list[str]) -> None:
+        """Add nodes to Mermaid diagram."""
         for file_name, info in self.static_deps.items():
             category = info["category"]
-            # Simplify node labels (remove .md extension)
             node_id = file_name.replace(".md", "").replace("-", "")
             label = file_name.replace(".md", "")
-
-            # Add styling classes
             if category == "meta":
                 lines.append(f'    {node_id}["{label}"]:::meta')
             elif category == "foundation":
@@ -339,20 +341,20 @@ class DependencyGraph:
             else:
                 lines.append(f'    {node_id}["{label}"]')
 
-        # Optimize: Pre-compute all dependencies once
+    def _add_mermaid_edges(self, lines: list[str]) -> None:
+        """Add edges to Mermaid diagram."""
         all_dependencies = {
             file_name: self.get_dependencies(file_name)
             for file_name in self.static_deps.keys()
         }
-
-        # Add edges using pre-computed dependencies
         for file_name, deps in all_dependencies.items():
             from_id = file_name.replace(".md", "").replace("-", "")
             for dep in deps:
                 to_id = dep.replace(".md", "").replace("-", "")
                 lines.append(f"    {to_id} --> {from_id}")
 
-        # Add styling
+    def _add_mermaid_styling(self, lines: list[str]) -> None:
+        """Add styling to Mermaid diagram."""
         lines.extend(
             [
                 "",
@@ -361,8 +363,6 @@ class DependencyGraph:
                 "    classDef active fill:#f3e5f5,stroke:#4a148c",
             ]
         )
-
-        return "\n".join(lines)
 
     # Phase 2: Dynamic link-based dependency methods
 
@@ -381,50 +381,41 @@ class DependencyGraph:
             memory_bank_dir: Path to memory-bank directory
             link_parser: LinkParser instance for parsing files
         """
-        # Clear existing dynamic dependencies
         self.dynamic_deps.clear()
         self.link_types.clear()
-
-        # Get all markdown files
         md_files = list(memory_bank_dir.glob("*.md"))
-
         for file_path in md_files:
-            try:
-                # Read file
-                async with open_async_text_file(file_path, "r", "utf-8") as f:
-                    content = await f.read()
+            await self._process_file_links(file_path, link_parser)
 
-                # Parse links
-                parsed: dict[str, list[dict[str, object]]] = (
-                    await link_parser.parse_file(content)
-                )
+    async def _process_file_links(
+        self, file_path: Path, link_parser: "LinkParser"
+    ) -> None:
+        """Process links in a single file."""
+        try:
+            async with open_async_text_file(file_path, "r", "utf-8") as f:
+                content = await f.read()
+            parsed: dict[str, list[dict[str, object]]] = await link_parser.parse_file(
+                content
+            )
+            markdown_links = parsed.get("markdown_links", [])
+            transclusions = parsed.get("transclusions", [])
+            for link in markdown_links:
+                target_raw: object = link.get("target")
+                if target_raw and isinstance(target_raw, str):
+                    self.add_link_dependency(
+                        file_path.name, target_raw, link_type="reference"
+                    )
+            for trans in transclusions:
+                trans_target_raw: object = trans.get("target")
+                if trans_target_raw and isinstance(trans_target_raw, str):
+                    self.add_link_dependency(
+                        file_path.name, trans_target_raw, link_type="transclusion"
+                    )
+        except Exception as e:
+            # Skip files that can't be processed
+            from cortex.core.logging_config import logger
 
-                # Optimize: Process all links in single pass
-                # Combine markdown_links and transclusions processing
-                markdown_links = parsed.get("markdown_links", [])
-                transclusions = parsed.get("transclusions", [])
-
-                # Process markdown links
-                for link in markdown_links:
-                    target_raw: object = link.get("target")
-                    if target_raw and isinstance(target_raw, str):
-                        self.add_link_dependency(
-                            file_path.name, target_raw, link_type="reference"
-                        )
-
-                # Process transclusions
-                for trans in transclusions:
-                    trans_target_raw: object = trans.get("target")
-                    if trans_target_raw and isinstance(trans_target_raw, str):
-                        self.add_link_dependency(
-                            file_path.name, trans_target_raw, link_type="transclusion"
-                        )
-
-            except Exception as e:
-                # Skip files that can't be processed
-                from cortex.core.logging_config import logger
-
-                logger.warning(f"Failed to parse links from {file_path}: {e}")
+            logger.warning(f"Failed to parse links from {file_path}: {e}")
 
     def add_link_dependency(
         self, source_file: str, target_file: str, link_type: str = "reference"

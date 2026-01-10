@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import re
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 from cortex.core.constants import (
@@ -165,56 +166,72 @@ class FileSystemManager:
             FileLockTimeoutError: If unable to acquire lock
             PermissionError: If path is invalid
         """
-        # Rate limiting
         await self.rate_limiter.acquire()
-
-        if not self.validate_path(file_path):
-            raise PermissionError(
-                f"Failed to write '{file_path.name}': Path {file_path} is outside project root '{self.project_root}'. Try: Check file path is correct and within project directory, or verify project root configuration."
-            )
-
-        # Check for Git conflict markers
-        if self.has_git_conflicts(content):
-            raise GitConflictError(
-                f"Failed to write '{file_path.name}': Git conflict markers detected in content. Cause: File contains unresolved git merge conflicts (<<<<<<, =======, >>>>>>>). Try: Resolve git conflicts manually and remove conflict markers before saving."
-            )
-
+        self._validate_write_path(file_path)
+        self._validate_write_content(file_path, content)
         lock_path = file_path.with_suffix(file_path.suffix + ".lock")
-
-        async def write_operation() -> str:
-            try:
-                # Acquire lock
-                await self.acquire_lock(lock_path)
-
-                # Check for external modifications if expected hash provided
-                if expected_hash and file_path.exists():
-                    _, current_hash = await self.read_file(file_path)
-                    if current_hash != expected_hash:
-                        raise FileConflictError(
-                            file_name=file_path.name,
-                            expected_hash=expected_hash,
-                            actual_hash=current_hash,
-                        )
-
-                # Write file
-                file_path.parent.mkdir(parents=True, exist_ok=True)
-                async with open_async_text_file(file_path, "w", "utf-8") as f:
-                    _ = await f.write(content)
-
-                # Compute and return new hash
-                new_hash = self.compute_hash(content)
-                return new_hash
-
-            finally:
-                # Release lock
-                await self.release_lock(lock_path)
-
+        write_operation = self._create_write_operation(
+            file_path, content, expected_hash, lock_path
+        )
         return await retry_async(
             write_operation,
             max_retries=3,
             base_delay=0.5,
             exceptions=(OSError, IOError, PermissionError, BlockingIOError),
         )
+
+    def _create_write_operation(
+        self,
+        file_path: Path,
+        content: str,
+        expected_hash: str | None,
+        lock_path: Path,
+    ) -> Callable[[], Awaitable[str]]:
+        """Create write operation function."""
+
+        async def write_operation() -> str:
+            try:
+                await self.acquire_lock(lock_path)
+                await self._check_file_conflict(file_path, expected_hash)
+                await self._write_file_content(file_path, content)
+                return self.compute_hash(content)
+            finally:
+                await self.release_lock(lock_path)
+
+        return write_operation
+
+    async def _check_file_conflict(
+        self, file_path: Path, expected_hash: str | None
+    ) -> None:
+        """Check for file conflicts."""
+        if expected_hash and file_path.exists():
+            _, current_hash = await self.read_file(file_path)
+            if current_hash != expected_hash:
+                raise FileConflictError(
+                    file_name=file_path.name,
+                    expected_hash=expected_hash,
+                    actual_hash=current_hash,
+                )
+
+    async def _write_file_content(self, file_path: Path, content: str) -> None:
+        """Write file content."""
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        async with open_async_text_file(file_path, "w", "utf-8") as f:
+            _ = await f.write(content)
+
+    def _validate_write_path(self, file_path: Path) -> None:
+        """Validate file path for writing."""
+        if not self.validate_path(file_path):
+            raise PermissionError(
+                f"Failed to write '{file_path.name}': Path {file_path} is outside project root '{self.project_root}'. Try: Check file path is correct and within project directory, or verify project root configuration."
+            )
+
+    def _validate_write_content(self, file_path: Path, content: str) -> None:
+        """Validate file content for writing."""
+        if self.has_git_conflicts(content):
+            raise GitConflictError(
+                f"Failed to write '{file_path.name}': Git conflict markers detected in content. Cause: File contains unresolved git merge conflicts (<<<<<<, =======, >>>>>>>). Try: Resolve git conflicts manually and remove conflict markers before saving."
+            )
 
     async def acquire_lock(self, lock_path: Path):
         """

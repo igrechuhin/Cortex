@@ -327,6 +327,55 @@ def create_execution_managers(
     AdaptationConfig,
 ]:
     """Create Phase 5.3-5.4 execution and learning managers."""
+    managers = _create_all_execution_managers(
+        memory_bank_path,
+        file_system,
+        version_manager,
+        link_validator,
+        metadata_index,
+        optimization_config,
+    )
+    return _build_execution_managers_tuple(*managers)
+
+
+def _create_all_execution_managers(
+    memory_bank_path: Path,
+    file_system: FileSystemManager,
+    version_manager: VersionManager,
+    link_validator: LinkValidator,
+    metadata_index: MetadataIndex,
+    optimization_config: OptimizationConfig,
+) -> tuple[
+    RefactoringExecutor,
+    ApprovalManager,
+    RollbackManager,
+    LearningEngine,
+    AdaptationConfig,
+]:
+    """Create all execution managers."""
+    core_managers = _create_core_execution_managers(
+        memory_bank_path,
+        file_system,
+        version_manager,
+        link_validator,
+        metadata_index,
+        optimization_config,
+    )
+    learning_components = _create_learning_components(
+        memory_bank_path, optimization_config
+    )
+    return _build_execution_managers_tuple(*core_managers, *learning_components)
+
+
+def _create_core_execution_managers(
+    memory_bank_path: Path,
+    file_system: FileSystemManager,
+    version_manager: VersionManager,
+    link_validator: LinkValidator,
+    metadata_index: MetadataIndex,
+    optimization_config: OptimizationConfig,
+) -> tuple[RefactoringExecutor, ApprovalManager, RollbackManager]:
+    """Create core execution managers."""
     refactoring_executor = _create_refactoring_executor(
         memory_bank_path,
         file_system,
@@ -343,8 +392,32 @@ def create_execution_managers(
         metadata_index,
         optimization_config,
     )
+    return refactoring_executor, approval_manager, rollback_manager
+
+
+def _create_learning_components(
+    memory_bank_path: Path, optimization_config: OptimizationConfig
+) -> tuple[LearningEngine, AdaptationConfig]:
+    """Create learning engine and adaptation config."""
     learning_engine = _create_learning_engine(memory_bank_path, optimization_config)
     adaptation_config = _create_adaptation_config(optimization_config)
+    return learning_engine, adaptation_config
+
+
+def _build_execution_managers_tuple(
+    refactoring_executor: RefactoringExecutor,
+    approval_manager: ApprovalManager,
+    rollback_manager: RollbackManager,
+    learning_engine: LearningEngine,
+    adaptation_config: AdaptationConfig,
+) -> tuple[
+    RefactoringExecutor,
+    ApprovalManager,
+    RollbackManager,
+    LearningEngine,
+    AdaptationConfig,
+]:
+    """Build tuple of execution managers."""
     return (
         refactoring_executor,
         approval_manager,

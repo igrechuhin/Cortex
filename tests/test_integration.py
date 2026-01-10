@@ -8,12 +8,10 @@ import tempfile
 from cortex.tools.file_operations import manage_file
 
 # Import the tool functions directly
-from cortex.tools.phase1_foundation import (
-    get_dependency_graph,
-    get_memory_bank_stats,
-    get_version_history,
-    rollback_file_version,
-)
+from cortex.tools.phase1_foundation_dependency import get_dependency_graph
+from cortex.tools.phase1_foundation_rollback import rollback_file_version
+from cortex.tools.phase1_foundation_stats import get_memory_bank_stats
+from cortex.tools.phase1_foundation_version import get_version_history
 
 
 # Helper function to replace initialize_memory_bank (which has been replaced by prompt templates)

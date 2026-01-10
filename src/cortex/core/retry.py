@@ -74,34 +74,52 @@ async def retry_async(
             return await func(*args, **kwargs)
         except exceptions as e:
             last_exception = e
-
             if attempt == max_retries:
-                logger.error(
-                    f"Retry exhausted after {max_retries} attempts: {e}",
-                    extra={"function": func.__name__, "attempt": attempt},
-                )
+                _log_retry_exhausted(func, max_retries, attempt, e)
                 raise
-
-            # Calculate delay with exponential backoff and jitter
-            delay = min(
-                base_delay * (DEFAULT_EXPONENTIAL_BASE**attempt),
-                max_delay,
-            )
-            # Add jitter (±25%)
-            jitter = delay * 0.25 * (random.random() * 2 - 1)
-            delay = max(0.1, delay + jitter)
-
-            logger.warning(
-                f"Transient error, retrying in {delay:.2f}s "
-                + f"(attempt {attempt + 1}/{max_retries}): {e}",
-                extra={"function": func.__name__, "delay": delay},
-            )
-            await asyncio.sleep(delay)
+            delay = _calculate_retry_delay(attempt, base_delay, max_delay)
+            await _log_and_wait_retry(func, attempt, max_retries, delay, e)
 
     # Should not reach here, but satisfy type checker
     if last_exception:
         raise last_exception
     raise RuntimeError("Retry logic error")
+
+
+def _log_retry_exhausted(
+    func: Callable[..., object],
+    max_retries: int,
+    attempt: int,
+    e: Exception,
+) -> None:
+    """Log retry exhaustion."""
+    logger.error(
+        f"Retry exhausted after {max_retries} attempts: {e}",
+        extra={"function": func.__name__, "attempt": attempt},
+    )
+
+
+def _calculate_retry_delay(attempt: int, base_delay: float, max_delay: float) -> float:
+    """Calculate retry delay with exponential backoff and jitter."""
+    delay = min(base_delay * (DEFAULT_EXPONENTIAL_BASE**attempt), max_delay)
+    jitter = delay * 0.25 * (random.random() * 2 - 1)
+    return max(0.1, delay + jitter)
+
+
+async def _log_and_wait_retry(
+    func: Callable[..., object],
+    attempt: int,
+    max_retries: int,
+    delay: float,
+    e: Exception,
+) -> None:
+    """Log retry attempt and wait."""
+    logger.warning(
+        f"Transient error, retrying in {delay:.2f}s "
+        + f"(attempt {attempt + 1}/{max_retries}): {e}",
+        extra={"function": func.__name__, "delay": delay},
+    )
+    await asyncio.sleep(delay)
 
 
 def with_retry(

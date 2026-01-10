@@ -81,7 +81,6 @@ class RulesRepository:
         """Internal method to run git command."""
         try:
             cmd = [c for c in cmd if c]
-
             process = await asyncio.wait_for(
                 asyncio.create_subprocess_exec(
                     *cmd,
@@ -91,27 +90,34 @@ class RulesRepository:
                 ),
                 timeout=timeout,
             )
-
             stdout, stderr = await asyncio.wait_for(
                 process.communicate(), timeout=timeout
             )
-
-            return {
-                "success": process.returncode == 0,
-                "stdout": stdout.decode("utf-8", errors="replace"),
-                "stderr": stderr.decode("utf-8", errors="replace"),
-                "returncode": process.returncode,
-            }
-
+            return self._build_git_success_response(process, stdout, stderr)
         except asyncio.TimeoutError:
-            return {
-                "success": False,
-                "error": f"Git command timed out after {timeout}s",
-                "stdout": "",
-                "stderr": "",
-            }
+            return self._build_git_timeout_response(timeout)
         except Exception as e:
             return {"success": False, "error": str(e), "stdout": "", "stderr": ""}
+
+    def _build_git_success_response(
+        self, process: asyncio.subprocess.Process, stdout: bytes, stderr: bytes
+    ) -> dict[str, object]:
+        """Build success response for git command."""
+        return {
+            "success": process.returncode == 0,
+            "stdout": stdout.decode("utf-8", errors="replace"),
+            "stderr": stderr.decode("utf-8", errors="replace"),
+            "returncode": process.returncode,
+        }
+
+    def _build_git_timeout_response(self, timeout: int) -> dict[str, object]:
+        """Build timeout response for git command."""
+        return {
+            "success": False,
+            "error": f"Git command timed out after {timeout}s",
+            "stdout": "",
+            "stderr": "",
+        }
 
     async def initialize_submodule(
         self, repo_url: str, force: bool = False

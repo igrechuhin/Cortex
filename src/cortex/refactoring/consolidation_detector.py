@@ -329,15 +329,7 @@ class ConsolidationDetector:
             List of consolidation opportunities found
         """
         opportunities: list[ConsolidationOpportunity] = []
-
-        # Performance optimization: Pre-compute hashes for sections2 to avoid repeated hashing
-        # This reduces hash computation from O(sections1 × sections2) to O(sections1 + sections2)
-        sections2_with_hashes: list[tuple[str, str, str]] = []
-        for heading2, content2 in sections2:
-            if len(content2) < self.min_section_length:
-                continue
-            content_hash = self._compute_content_hash(content2)
-            sections2_with_hashes.append((heading2, content2, content_hash))
+        sections2_with_hashes = self._precompute_section_hashes(sections2)
 
         for heading1, content1 in sections1:
             if len(content1) < self.min_section_length:
@@ -370,6 +362,18 @@ class ConsolidationDetector:
                     opportunities.append(opportunity)
 
         return opportunities
+
+    def _precompute_section_hashes(
+        self, sections: list[tuple[str, str]]
+    ) -> list[tuple[str, str, str]]:
+        """Pre-compute hashes for sections to avoid repeated hashing."""
+        sections_with_hashes: list[tuple[str, str, str]] = []
+        for heading, content in sections:
+            if len(content) < self.min_section_length:
+                continue
+            content_hash = self._compute_content_hash(content)
+            sections_with_hashes.append((heading, content, content_hash))
+        return sections_with_hashes
 
     async def detect_similar_sections(
         self, file_contents: dict[str, str]

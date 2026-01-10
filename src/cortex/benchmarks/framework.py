@@ -94,57 +94,66 @@ class Benchmark:
     async def run(self) -> BenchmarkResult:
         """Run the benchmark and return results."""
         await self.setup()
-
-        # Warmup phase
-        for _ in range(self.warmup_iterations):
-            await self.before_each()
-            await self.run_iteration()
-            await self.after_each()
-
-        # Measurement phase
-        times: list[float] = []
-        total_start = time.perf_counter()
-
-        for _ in range(self.iterations):
-            await self.before_each()
-
-            start = time.perf_counter()
-            await self.run_iteration()
-            end = time.perf_counter()
-
-            await self.after_each()
-
-            times.append(end - start)
-
-        total_end = time.perf_counter()
-        total_time = total_end - total_start
-
+        await self._run_warmup_phase()
+        times, total_time = await self._run_measurement_phase()
         await self.teardown()
-
-        # Calculate statistics
-        sorted_times = sorted(times)
-        mean_time = sum(times) / len(times)
-        median_time = sorted_times[len(sorted_times) // 2]
-        p95_index = int(len(sorted_times) * 0.95)
-        p99_index = int(len(sorted_times) * 0.99)
-
-        # Calculate standard deviation
-        variance = sum((t - mean_time) ** 2 for t in times) / len(times)
-        std_dev = variance**0.5
+        stats = self._calculate_statistics(times)
 
         return BenchmarkResult(
             name=self.name,
             iterations=self.iterations,
             total_time=total_time,
-            min_time=min(times),
-            max_time=max(times),
-            mean_time=mean_time,
-            median_time=median_time,
-            std_dev=std_dev,
-            p95_time=sorted_times[p95_index],
-            p99_time=sorted_times[p99_index],
+            min_time=stats["min"],
+            max_time=stats["max"],
+            mean_time=stats["mean"],
+            median_time=stats["median"],
+            std_dev=stats["std_dev"],
+            p95_time=stats["p95"],
+            p99_time=stats["p99"],
             metadata={"description": self.description},
         )
+
+    async def _run_warmup_phase(self) -> None:
+        """Run warmup phase."""
+        for _ in range(self.warmup_iterations):
+            await self.before_each()
+            await self.run_iteration()
+            await self.after_each()
+
+    async def _run_measurement_phase(
+        self,
+    ) -> tuple[list[float], float]:
+        """Run measurement phase and return times and total time."""
+        times: list[float] = []
+        total_start = time.perf_counter()
+        for _ in range(self.iterations):
+            await self.before_each()
+            start = time.perf_counter()
+            await self.run_iteration()
+            end = time.perf_counter()
+            await self.after_each()
+            times.append(end - start)
+        total_end = time.perf_counter()
+        return times, total_end - total_start
+
+    def _calculate_statistics(self, times: list[float]) -> dict[str, float]:
+        """Calculate benchmark statistics."""
+        sorted_times = sorted(times)
+        mean_time = sum(times) / len(times)
+        median_time = sorted_times[len(sorted_times) // 2]
+        p95_index = int(len(sorted_times) * 0.95)
+        p99_index = int(len(sorted_times) * 0.99)
+        variance = sum((t - mean_time) ** 2 for t in times) / len(times)
+        std_dev = variance**0.5
+        return {
+            "min": min(times),
+            "max": max(times),
+            "mean": mean_time,
+            "median": median_time,
+            "std_dev": std_dev,
+            "p95": sorted_times[p95_index],
+            "p99": sorted_times[p99_index],
+        }
 
 
 class BenchmarkSuite:

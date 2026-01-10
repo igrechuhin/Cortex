@@ -373,42 +373,14 @@ class TransclusionEngine:
             ValueError: If section not found
         """
         lines = content.split("\n")
-
-        # Find the section heading
-        section_start = None
-        section_level = None
-
-        for i, line in enumerate(lines):
-            # Match heading with any number of #
-            heading_match = re.match(r"^(#+)\s+(.+)$", line.strip())
-            if heading_match:
-                level = len(heading_match.group(1))
-                heading_text = heading_match.group(2).strip()
-
-                if heading_text.lower() == section_heading.lower():
-                    section_start = i
-                    section_level = level
-                    break
-
+        section_start, section_level = self._find_section_heading(
+            lines, section_heading
+        )
         if section_start is None:
-            raise ValueError(
-                f"Failed to transclude section '{section_heading}': "
-                + "Section heading not found in target file. "
-                + "Try: Check the exact heading text including case and special characters, "
-                + "list available sections with parse_file_links(), "
-                + "or verify the section exists in the target file."
-            )
-
-        # Find the end of the section (next heading of same or higher level)
-        section_end = len(lines)
-        if section_level is not None:
-            for i in range(section_start + 1, len(lines)):
-                heading_match = re.match(r"^(#+)\s+", lines[i].strip())
-                if heading_match:
-                    level = len(heading_match.group(1))
-                    if level <= section_level:
-                        section_end = i
-                        break
+            self._raise_section_not_found_error(section_heading)
+        # section_start is guaranteed to be int here due to check above
+        assert section_start is not None
+        section_end = self._find_section_end(lines, section_start, section_level)
 
         # Extract section content (skip the heading line itself)
         section_lines = lines[section_start + 1 : section_end]
@@ -418,6 +390,48 @@ class TransclusionEngine:
             section_lines = section_lines[:lines_limit]
 
         return "\n".join(section_lines).strip()
+
+    def _find_section_heading(
+        self, lines: list[str], section_heading: str
+    ) -> tuple[int | None, int | None]:
+        """Find section heading in lines."""
+        section_start = None
+        section_level = None
+        for i, line in enumerate(lines):
+            heading_match = re.match(r"^(#+)\s+(.+)$", line.strip())
+            if heading_match:
+                level = len(heading_match.group(1))
+                heading_text = heading_match.group(2).strip()
+                if heading_text.lower() == section_heading.lower():
+                    section_start = i
+                    section_level = level
+                    break
+        return section_start, section_level
+
+    def _raise_section_not_found_error(self, section_heading: str) -> None:
+        """Raise error when section not found."""
+        raise ValueError(
+            f"Failed to transclude section '{section_heading}': "
+            + "Section heading not found in target file. "
+            + "Try: Check the exact heading text including case and special characters, "
+            + "list available sections with parse_file_links(), "
+            + "or verify the section exists in the target file."
+        )
+
+    def _find_section_end(
+        self, lines: list[str], section_start: int, section_level: int | None
+    ) -> int:
+        """Find end of section (next heading of same or higher level)."""
+        section_end = len(lines)
+        if section_level is not None:
+            for i in range(section_start + 1, len(lines)):
+                heading_match = re.match(r"^(#+)\s+", lines[i].strip())
+                if heading_match:
+                    level = len(heading_match.group(1))
+                    if level <= section_level:
+                        section_end = i
+                        break
+        return section_end
 
     def detect_circular_dependency(self, target: str) -> bool:
         """
