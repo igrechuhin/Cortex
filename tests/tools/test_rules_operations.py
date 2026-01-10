@@ -147,7 +147,7 @@ def mock_managers_disabled(
 
 
 @pytest.mark.asyncio
-async def testcheck_rules_enabled_when_enabled(
+async def test_check_rules_enabled_when_enabled(
     mock_optimization_config_enabled: MagicMock,
 ) -> None:
     """Test check_rules_enabled returns None when rules enabled."""
@@ -160,7 +160,7 @@ async def testcheck_rules_enabled_when_enabled(
 
 
 @pytest.mark.asyncio
-async def testcheck_rules_enabled_when_disabled(
+async def test_check_rules_enabled_when_disabled(
     mock_optimization_config_disabled: MagicMock,
 ) -> None:
     """Test check_rules_enabled returns error message when rules disabled."""
@@ -181,7 +181,7 @@ async def testcheck_rules_enabled_when_disabled(
 
 
 @pytest.mark.asyncio
-async def testhandle_index_operation_success(mock_rules_manager: MagicMock) -> None:
+async def test_handle_index_operation_success(mock_rules_manager: MagicMock) -> None:
     """Test handle_index_operation with successful indexing."""
     # Act
     result = await handle_index_operation(mock_rules_manager, force=False)
@@ -196,7 +196,7 @@ async def testhandle_index_operation_success(mock_rules_manager: MagicMock) -> N
 
 
 @pytest.mark.asyncio
-async def testhandle_index_operation_with_force(mock_rules_manager: MagicMock) -> None:
+async def test_handle_index_operation_with_force(mock_rules_manager: MagicMock) -> None:
     """Test handle_index_operation with force=True."""
     # Act
     result = await handle_index_operation(mock_rules_manager, force=True)
@@ -214,7 +214,7 @@ async def testhandle_index_operation_with_force(mock_rules_manager: MagicMock) -
 
 
 @pytest.mark.asyncio
-async def testvalidate_get_relevant_params_valid() -> None:
+async def test_validate_get_relevant_params_valid() -> None:
     """Test validate_get_relevant_params with valid task description."""
     # Act
     result = await validate_get_relevant_params("Implementing async file operations")
@@ -224,7 +224,7 @@ async def testvalidate_get_relevant_params_valid() -> None:
 
 
 @pytest.mark.asyncio
-async def testvalidate_get_relevant_params_none() -> None:
+async def test_validate_get_relevant_params_none() -> None:
     """Test validate_get_relevant_params with None task description."""
     # Act
     result = await validate_get_relevant_params(None)
@@ -237,7 +237,7 @@ async def testvalidate_get_relevant_params_none() -> None:
 
 
 @pytest.mark.asyncio
-async def testvalidate_get_relevant_params_empty() -> None:
+async def test_validate_get_relevant_params_empty() -> None:
     """Test validate_get_relevant_params with empty task description."""
     # Act
     result = await validate_get_relevant_params("")
@@ -253,7 +253,7 @@ async def testvalidate_get_relevant_params_empty() -> None:
 # ============================================================================
 
 
-def testresolve_config_defaults_both_provided(
+def test_resolve_config_defaults_both_provided(
     mock_optimization_config_enabled: MagicMock,
 ) -> None:
     """Test resolve_config_defaults when both params provided."""
@@ -269,7 +269,7 @@ def testresolve_config_defaults_both_provided(
     mock_optimization_config_enabled.get_rules_min_relevance.assert_not_called()
 
 
-def testresolve_config_defaults_both_none(
+def test_resolve_config_defaults_both_none(
     mock_optimization_config_enabled: MagicMock,
 ) -> None:
     """Test resolve_config_defaults when both params are None."""
@@ -285,7 +285,7 @@ def testresolve_config_defaults_both_none(
     mock_optimization_config_enabled.get_rules_min_relevance.assert_called_once()
 
 
-def testresolve_config_defaults_max_tokens_provided(
+def test_resolve_config_defaults_max_tokens_provided(
     mock_optimization_config_enabled: MagicMock,
 ) -> None:
     """Test resolve_config_defaults when only max_tokens provided."""
@@ -301,7 +301,7 @@ def testresolve_config_defaults_max_tokens_provided(
     mock_optimization_config_enabled.get_rules_min_relevance.assert_called_once()
 
 
-def testresolve_config_defaults_min_score_provided(
+def test_resolve_config_defaults_min_score_provided(
     mock_optimization_config_enabled: MagicMock,
 ) -> None:
     """Test resolve_config_defaults when only min_relevance_score provided."""
@@ -322,7 +322,7 @@ def testresolve_config_defaults_min_score_provided(
 # ============================================================================
 
 
-def testextract_all_rules_all_categories() -> None:
+def test_extract_all_rules_all_categories() -> None:
     """Test extract_all_rules with all three categories."""
     # Arrange
     rules_dict = {
@@ -340,7 +340,7 @@ def testextract_all_rules_all_categories() -> None:
     assert {"id": 5} in result
 
 
-def testextract_all_rules_some_categories() -> None:
+def test_extract_all_rules_some_categories() -> None:
     """Test extract_all_rules with only some categories."""
     # Arrange
     rules_dict = {
@@ -356,7 +356,7 @@ def testextract_all_rules_some_categories() -> None:
     assert {"id": 1} in result
 
 
-def testextract_all_rules_empty() -> None:
+def test_extract_all_rules_empty() -> None:
     """Test extract_all_rules with empty dictionary."""
     # Arrange
     rules_dict: dict[str, object] = {}
@@ -368,7 +368,7 @@ def testextract_all_rules_empty() -> None:
     assert len(result) == 0
 
 
-def testextract_all_rules_non_list_values() -> None:
+def test_extract_all_rules_non_list_values() -> None:
     """Test extract_all_rules with non-list values."""
     # Arrange
     rules_dict = {
@@ -390,7 +390,7 @@ def testextract_all_rules_non_list_values() -> None:
 # ============================================================================
 
 
-def testcalculate_total_tokens_from_dict() -> None:
+def test_calculate_total_tokens_from_dict() -> None:
     """Test calculate_total_tokens using total_tokens from dict."""
     # Arrange
     rules_dict = {"total_tokens": 1500}
@@ -403,7 +403,7 @@ def testcalculate_total_tokens_from_dict() -> None:
     assert result == 1500
 
 
-def testcalculate_total_tokens_from_rules() -> None:
+def test_calculate_total_tokens_from_rules() -> None:
     """Test calculate_total_tokens by summing rules."""
     # Arrange
     rules_dict = {"total_tokens": None}  # Non-int/float value triggers rule summing
@@ -422,7 +422,7 @@ def testcalculate_total_tokens_from_rules() -> None:
     assert result == 1500
 
 
-def testcalculate_total_tokens_mixed_types() -> None:
+def test_calculate_total_tokens_mixed_types() -> None:
     """Test calculate_total_tokens with mixed token types."""
     # Arrange
     rules_dict = {
@@ -444,7 +444,7 @@ def testcalculate_total_tokens_mixed_types() -> None:
     assert result == 1200  # 500 + 700 (rounded from 700.5)
 
 
-def testcalculate_total_tokens_zero() -> None:
+def test_calculate_total_tokens_zero() -> None:
     """Test calculate_total_tokens with no tokens."""
     # Arrange
     rules_dict: dict[str, object] = {}
@@ -463,7 +463,7 @@ def testcalculate_total_tokens_zero() -> None:
 
 
 @pytest.mark.asyncio
-async def testhandle_get_relevant_operation_success(
+async def test_handle_get_relevant_operation_success(
     mock_rules_manager: MagicMock, mock_optimization_config_enabled: MagicMock
 ) -> None:
     """Test handle_get_relevant_operation with successful retrieval."""
@@ -489,7 +489,7 @@ async def testhandle_get_relevant_operation_success(
 
 
 @pytest.mark.asyncio
-async def testhandle_get_relevant_operation_defaults(
+async def test_handle_get_relevant_operation_defaults(
     mock_rules_manager: MagicMock, mock_optimization_config_enabled: MagicMock
 ) -> None:
     """Test handle_get_relevant_operation with default parameters."""
@@ -513,7 +513,7 @@ async def testhandle_get_relevant_operation_defaults(
 # ============================================================================
 
 
-def testbuild_get_relevant_response() -> None:
+def test_build_get_relevant_response() -> None:
     """Test build_get_relevant_response constructs correct JSON."""
     # Arrange
     all_rules = [
@@ -558,7 +558,7 @@ def testbuild_get_relevant_response() -> None:
 
 
 @pytest.mark.asyncio
-async def testdispatch_operation_index(
+async def test_dispatch_operation_index(
     mock_rules_manager: MagicMock, mock_optimization_config_enabled: MagicMock
 ) -> None:
     """Test dispatch_operation with index operation."""
@@ -581,7 +581,7 @@ async def testdispatch_operation_index(
 
 
 @pytest.mark.asyncio
-async def testdispatch_operation_get_relevant(
+async def test_dispatch_operation_get_relevant(
     mock_rules_manager: MagicMock, mock_optimization_config_enabled: MagicMock
 ) -> None:
     """Test dispatch_operation with get_relevant operation."""
@@ -604,7 +604,7 @@ async def testdispatch_operation_get_relevant(
 
 
 @pytest.mark.asyncio
-async def testdispatch_operation_get_relevant_missing_task(
+async def test_dispatch_operation_get_relevant_missing_task(
     mock_rules_manager: MagicMock, mock_optimization_config_enabled: MagicMock
 ) -> None:
     """Test dispatch_operation get_relevant without task_description."""
@@ -627,7 +627,7 @@ async def testdispatch_operation_get_relevant_missing_task(
 
 
 @pytest.mark.asyncio
-async def testdispatch_operation_invalid(
+async def test_dispatch_operation_invalid(
     mock_rules_manager: MagicMock, mock_optimization_config_enabled: MagicMock
 ) -> None:
     """Test dispatch_operation with invalid operation."""
