@@ -562,3 +562,94 @@ class TestRegisterSynapsePrompts:
             ):
                 # Act & Assert - should not raise
                 synapse_prompts._register_synapse_prompts()
+
+    def test_processes_prompt_with_default_name(
+        self, prompts_dir: Path, sample_prompt_file: Path
+    ):
+        """Test processing prompt info with default name from filename."""
+        # Arrange
+        prompt_info = {"file": "test-prompt.md", "description": "Test"}
+
+        # Act
+        result = synapse_prompts._process_prompt_info(
+            prompt_info, prompts_dir, "general"
+        )
+
+        # Assert
+        assert result == 1
+
+    def test_processes_prompt_with_non_string_description(
+        self, prompts_dir: Path, sample_prompt_file: Path
+    ):
+        """Test processing prompt info with non-string description."""
+        # Arrange
+        prompt_info = {
+            "file": "test-prompt.md",
+            "name": "test",
+            "description": 123,
+        }
+
+        # Act
+        result = synapse_prompts._process_prompt_info(
+            prompt_info, prompts_dir, "general"
+        )
+
+        # Assert
+        assert result == 1
+
+    def test_creates_prompt_when_dict_already_exists(self):
+        """Test creating prompt function when _prompt_contents already exists."""
+        # Arrange
+        test_name = "test_existing_dict"
+        test_content = "Content"
+        synapse_prompts.__dict__["_prompt_contents"] = {}
+
+        # Act
+        synapse_prompts._create_prompt_function(test_name, test_content, "desc")
+
+        # Assert
+        assert synapse_prompts.__dict__["_prompt_contents"][test_name] == test_content
+
+    def test_registers_multiple_prompts(
+        self, temp_project_root: Path, prompts_dir: Path
+    ):
+        """Test registering multiple prompts from manifest."""
+        # Arrange
+        manifest_path = prompts_dir / "prompts-manifest.json"
+        manifest_data = {
+            "version": "1.0",
+            "categories": {
+                "general": {
+                    "prompts": [
+                        {
+                            "file": "prompt1.md",
+                            "name": "prompt1",
+                            "description": "First prompt",
+                        },
+                        {
+                            "file": "prompt2.md",
+                            "name": "prompt2",
+                            "description": "Second prompt",
+                        },
+                    ]
+                }
+            },
+        }
+        manifest_path.write_text(json.dumps(manifest_data), encoding="utf-8")
+        (prompts_dir / "prompt1.md").write_text("Content 1", encoding="utf-8")
+        (prompts_dir / "prompt2.md").write_text("Content 2", encoding="utf-8")
+
+        with patch(
+            "cortex.tools.synapse_prompts._get_synapse_prompts_path",
+            return_value=prompts_dir,
+        ):
+            # Clear existing registrations
+            for key in list(synapse_prompts.__dict__.keys()):
+                if key in ["prompt1", "prompt2"]:
+                    del synapse_prompts.__dict__[key]
+
+            # Act
+            synapse_prompts._register_synapse_prompts()
+
+            # Assert - functions should be registered
+            # Note: This verifies the registration flow completes
