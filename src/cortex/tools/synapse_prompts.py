@@ -11,7 +11,9 @@ import json
 from pathlib import Path
 from typing import cast
 
-from cortex.server import mcp  # noqa: F401  # Used in exec() string
+from cortex.server import (
+    mcp,  # noqa: F401  # pyright: ignore[reportUnusedImport]  # Used in exec() string
+)
 
 
 def _get_synapse_prompts_path() -> Path | None:
@@ -170,12 +172,14 @@ def _register_synapse_prompts() -> None:
         if not isinstance(category_info, dict):
             continue
 
-        prompts_list = category_info.get("prompts", [])
-        if not isinstance(prompts_list, list):
+        prompts_list_raw = category_info.get("prompts", [])
+        if not isinstance(prompts_list_raw, list):
             continue
 
-        for prompt_info in prompts_list:
-            if isinstance(prompt_info, dict):
+        prompts_list: list[object] = prompts_list_raw
+        for prompt_info_raw in prompts_list:
+            if isinstance(prompt_info_raw, dict):
+                prompt_info: dict[str, object] = prompt_info_raw
                 registered_count += _process_prompt_info(
                     prompt_info, prompts_path, category_name
                 )
