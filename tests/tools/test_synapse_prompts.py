@@ -109,15 +109,11 @@ class TestGetSynapsePromptsPath:
     ):
         """Test finding prompts directory from module file location."""
         # Arrange
+        module_file_path = (
+            temp_project_root / "src" / "cortex" / "tools" / "synapse_prompts.py"
+        )
         with patch("cortex.tools.synapse_prompts.Path.cwd", return_value=Path("/tmp")):
-            with patch(
-                "cortex.tools.synapse_prompts.Path.__file__",
-                new=temp_project_root
-                / "src"
-                / "cortex"
-                / "tools"
-                / "synapse_prompts.py",
-            ):
+            with patch.object(synapse_prompts, "__file__", str(module_file_path)):
                 # Act
                 result = synapse_prompts._get_synapse_prompts_path()
 
@@ -128,9 +124,10 @@ class TestGetSynapsePromptsPath:
         """Test returns None when prompts directory doesn't exist."""
         # Arrange
         with patch("cortex.tools.synapse_prompts.Path.cwd", return_value=Path("/tmp")):
-            with patch(
-                "cortex.tools.synapse_prompts.Path.__file__",
-                new=Path("/tmp" / "nonexistent" / "file.py"),
+            with patch.object(
+                synapse_prompts,
+                "__file__",
+                str(Path("/tmp") / "nonexistent" / "file.py"),
             ):
                 # Act
                 result = synapse_prompts._get_synapse_prompts_path()
@@ -398,7 +395,7 @@ class TestLogRegistrationSummary:
     def test_logs_when_count_greater_than_zero(self):
         """Test logs summary when registered_count > 0."""
         # Arrange
-        with patch("cortex.tools.synapse_prompts.logger") as mock_logger:
+        with patch("cortex.core.logging_config.logger") as mock_logger:
             # Act
             synapse_prompts._log_registration_summary(5)
 
@@ -413,7 +410,7 @@ class TestLogRegistrationSummary:
         test_func_name = "commit_test"
         synapse_prompts.__dict__[test_func_name] = lambda: "test"
 
-        with patch("cortex.tools.synapse_prompts.logger") as mock_logger:
+        with patch("cortex.core.logging_config.logger") as mock_logger:
             # Act
             synapse_prompts._log_registration_summary(1)
 
@@ -427,7 +424,7 @@ class TestLogRegistrationSummary:
     def test_does_not_log_when_count_zero(self):
         """Test does not log when registered_count is 0."""
         # Arrange
-        with patch("cortex.tools.synapse_prompts.logger") as mock_logger:
+        with patch("cortex.core.logging_config.logger") as mock_logger:
             # Act
             synapse_prompts._log_registration_summary(0)
 
