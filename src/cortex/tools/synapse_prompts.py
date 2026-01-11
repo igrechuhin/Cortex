@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 from typing import cast
 
-from cortex.server import mcp
+from cortex.server import mcp  # noqa: F401  # Used in exec() string
 
 
 def _get_synapse_prompts_path() -> Path | None:
@@ -52,7 +52,7 @@ def _load_prompts_manifest(prompts_path: Path) -> dict[str, object] | None:
         return None
 
     try:
-        with open(manifest_path, "r", encoding="utf-8") as f:
+        with open(manifest_path, encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return None
@@ -68,7 +68,7 @@ def _load_prompt_content(
         return None
 
     try:
-        with open(prompt_file, "r", encoding="utf-8") as f:
+        with open(prompt_file, encoding="utf-8") as f:
             return f.read()
     except Exception:
         return None
@@ -97,81 +97,49 @@ def {name}() -> str:
     exec(func_code, globals())
 
 
-def _register_synapse_prompts() -> None:
-    """Load and register all Synapse prompts as MCP prompts."""
-    prompts_path = _get_synapse_prompts_path()
-    if not prompts_path:
-        # Silently fail if Synapse prompts directory doesn't exist
-        # This is expected if Synapse isn't set up yet
-        return
+def _process_prompt_info(
+    prompt_info: dict[str, object], prompts_path: Path, category_name: str
+) -> int:
+    """Process a single prompt info and register it.
 
-    manifest = _load_prompts_manifest(prompts_path)
-    if not manifest:
-        # Manifest doesn't exist or is invalid
-        return
+    Returns:
+        Number of prompts registered (0 or 1)
+    """
+    filename = prompt_info.get("file")
+    if not isinstance(filename, str):
+        return 0
 
-    registered_count = 0
+    prompt_name = prompt_info.get("name", filename.replace(".md", "").replace("-", "_"))
+    if not isinstance(prompt_name, str):
+        return 0
 
-    categories = manifest.get("categories")
-    if not isinstance(categories, dict):
-        return
+    description = prompt_info.get("description", "")
+    if not isinstance(description, str):
+        description = ""
 
-    # Iterate through categories and prompts
-    for category_name, category_info in cast(dict[str, object], categories).items():
-        if not isinstance(category_info, dict):
-            continue
+    content = _load_prompt_content(prompts_path, category_name, filename)
+    if not content:
+        return 0
 
-        prompts_list = category_info.get("prompts", [])
-        if not isinstance(prompts_list, list):
-            continue
+    func_name = prompt_name.lower().replace(" ", "_").replace("-", "_")
+    func_name = "".join(c if c.isalnum() or c == "_" else "_" for c in func_name)
 
-        for prompt_info in prompts_list:
-            if not isinstance(prompt_info, dict):
-                continue
+    try:
+        _create_prompt_function(func_name, content, description)
+        return 1
+    except Exception as e:
+        from cortex.core.logging_config import logger
 
-            filename = prompt_info.get("file")
-            if not isinstance(filename, str):
-                continue
+        logger.warning(f"Failed to register prompt {func_name}: {e}")
+        return 0
 
-            prompt_name = prompt_info.get(
-                "name", filename.replace(".md", "").replace("-", "_")
-            )
-            if not isinstance(prompt_name, str):
-                continue
 
-            description = prompt_info.get("description", "")
-            if not isinstance(description, str):
-                description = ""
-
-            # Load prompt content
-            content = _load_prompt_content(prompts_path, category_name, filename)
-            if not content:
-                continue
-
-            # Create sanitized function name
-            func_name = prompt_name.lower().replace(" ", "_").replace("-", "_")
-            func_name = "".join(
-                c if c.isalnum() or c == "_" else "_" for c in func_name
-            )
-
-            # Register the prompt
-            try:
-                _create_prompt_function(func_name, content, description)
-                registered_count += 1
-            except Exception as e:
-                # Log error but continue with other prompts
-                from cortex.core.logging_config import logger
-
-                logger.warning(f"Failed to register prompt {func_name}: {e}")
-                continue
-
-    # Log registration summary and verify
+def _log_registration_summary(registered_count: int) -> None:
+    """Log registration summary and verify functions exist."""
     if registered_count > 0:
         from cortex.core.logging_config import logger
 
         logger.info(f"Registered {registered_count} Synapse prompts")
-
-        # Verify functions exist in module namespace
         registered_names = [
             name
             for name in globals()
@@ -181,6 +149,38 @@ def _register_synapse_prompts() -> None:
             or name.startswith("run_")
         ]
         logger.debug(f"Registered prompt functions in namespace: {registered_names}")
+
+
+def _register_synapse_prompts() -> None:
+    """Load and register all Synapse prompts as MCP prompts."""
+    prompts_path = _get_synapse_prompts_path()
+    if not prompts_path:
+        return
+
+    manifest = _load_prompts_manifest(prompts_path)
+    if not manifest:
+        return
+
+    categories = manifest.get("categories")
+    if not isinstance(categories, dict):
+        return
+
+    registered_count = 0
+    for category_name, category_info in cast(dict[str, object], categories).items():
+        if not isinstance(category_info, dict):
+            continue
+
+        prompts_list = category_info.get("prompts", [])
+        if not isinstance(prompts_list, list):
+            continue
+
+        for prompt_info in prompts_list:
+            if isinstance(prompt_info, dict):
+                registered_count += _process_prompt_info(
+                    prompt_info, prompts_path, category_name
+                )
+
+    _log_registration_summary(registered_count)
 
 
 # Register prompts at import time

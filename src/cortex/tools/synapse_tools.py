@@ -266,6 +266,36 @@ async def get_synapse_rules(
         )
 
 
+def _build_category_prompts_response(
+    category: str, prompts: list[dict[str, object]]
+) -> str:
+    """Build JSON response for category-specific prompts."""
+    return json.dumps(
+        {
+            "status": "success",
+            "category": category,
+            "prompts": format_prompts_list(prompts),
+            "total_count": len(prompts),
+        },
+        indent=2,
+    )
+
+
+def _build_all_prompts_response(
+    prompts: list[dict[str, object]], categories: list[str]
+) -> str:
+    """Build JSON response for all prompts."""
+    return json.dumps(
+        {
+            "status": "success",
+            "categories": categories,
+            "prompts": format_prompts_list(prompts),
+            "total_count": len(prompts),
+        },
+        indent=2,
+    )
+
+
 @mcp.tool()
 async def get_synapse_prompts(category: str | None = None) -> str:
     """
@@ -302,33 +332,15 @@ async def get_synapse_prompts(category: str | None = None) -> str:
             )
 
         synapse_manager = cast(SynapseManager, managers["synapse"])
-
-        # Load prompts manifest if not loaded
         _ = await synapse_manager.load_prompts_manifest()
 
         if category:
             prompts = await synapse_manager.load_prompts_category(category)
-            return json.dumps(
-                {
-                    "status": "success",
-                    "category": category,
-                    "prompts": format_prompts_list(prompts),
-                    "total_count": len(prompts),
-                },
-                indent=2,
-            )
+            return _build_category_prompts_response(category, prompts)
         else:
             prompts = await synapse_manager.get_all_prompts()
             categories = synapse_manager.get_prompt_categories()
-            return json.dumps(
-                {
-                    "status": "success",
-                    "categories": categories,
-                    "prompts": format_prompts_list(prompts),
-                    "total_count": len(prompts),
-                },
-                indent=2,
-            )
+            return _build_all_prompts_response(prompts, categories)
 
     except Exception as e:
         return json.dumps(

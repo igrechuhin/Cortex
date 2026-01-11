@@ -219,16 +219,14 @@ def _add_optimization_managers(
         name="progressive_loader",
     )
     managers["summarization_engine"] = LazyManager(
-        lambda: _create_summarization_engine(core_managers),
-        name="summarization_engine",
+        lambda: _create_summarization_engine(core_managers), name="summarization_engine"
     )
     managers["rules_manager"] = LazyManager(
         lambda: _create_rules_manager(project_root, core_managers, managers),
         name="rules_manager",
     )
     managers["synapse"] = LazyManager(
-        lambda: _create_synapse_manager(project_root, managers),
-        name="synapse",
+        lambda: _create_synapse_manager(project_root, managers), name="synapse"
     )
 
 
