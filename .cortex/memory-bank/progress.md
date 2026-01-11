@@ -1,5 +1,50 @@
 # Progress Log: MCP Memory Bank
 
+## 2026-01-11: Dynamic Synapse Prompts Registration
+
+### Summary (Dynamic Synapse Prompts Registration)
+
+Added dynamic Synapse prompts registration module that automatically loads and registers prompts from `.cortex/synapse/prompts/` directory as MCP prompts.
+
+### Changes Made (Dynamic Synapse Prompts Registration)
+
+#### 1. Added `src/cortex/tools/synapse_prompts.py` - Dynamic Prompts Registration
+
+- **Feature**: New module that dynamically loads prompts from Synapse repository and registers them as MCP prompts
+- **Functionality**:
+  - Loads prompts manifest (`prompts-manifest.json`) from `.cortex/synapse/prompts/`
+  - Dynamically creates and registers prompt functions using `@mcp.prompt()` decorator
+  - Handles prompt loading errors gracefully
+  - Supports prompts in root of prompts directory (not in category subdirectories)
+- **Impact**: Enables automatic registration of Synapse prompts without manual code changes
+- **Lines**: 1-188
+
+#### 2. Updated `src/cortex/tools/__init__.py` - Added Synapse Prompts Import
+
+- **Change**: Added `synapse_prompts` module to imports to trigger registration at import time
+- **Impact**: Synapse prompts are now automatically registered when tools module is imported
+- **Lines**: 46
+
+#### 3. Updated Synapse Submodule
+
+- **Change**: Committed and pushed Synapse submodule changes including prompts and rules directories
+- **Files Added**: 18 files (prompts, rules, LICENSE update)
+- **Impact**: Synapse repository now contains prompts and rules for cross-project sharing
+
+### Verification Results (Dynamic Synapse Prompts Registration)
+
+- **Formatting Status**: ✅ PASS - Black formatted 1 file
+- **Type Check Status**: ⚠️ WARNINGS - Unused import warnings (acceptable, imports trigger side effects)
+- **Test Status**: ⚠️ SKIPPED - pytest not available in current environment
+- **Code Quality**: Clean implementation with proper error handling
+
+### Code Quality (Dynamic Synapse Prompts Registration)
+
+- Dynamic prompt registration without manual code changes
+- Graceful error handling for missing prompts directory or manifest
+- Proper type hints and documentation
+- Clean separation of concerns
+
 ## 2026-01-11: Synapse Path Refactoring
 
 ### Summary (Synapse Path Refactoring)

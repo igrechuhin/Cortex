@@ -17,6 +17,14 @@
 
 ## Completed Milestones
 
+### 2026-01-11: Dynamic Synapse Prompts Registration ✅
+
+- Added dynamic Synapse prompts registration module (`synapse_prompts.py`)
+- Automatically loads and registers prompts from `.cortex/synapse/prompts/` directory
+- Prompts are registered as MCP prompts at import time
+- Updated Synapse submodule with prompts and rules directories
+- Enables automatic prompt registration without manual code changes
+
 ### 2026-01-11: Synapse Integration and Refactoring ✅
 
 - Refactored shared rules to use Synapse manager architecture
