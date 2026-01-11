@@ -54,13 +54,13 @@ coverage.xml
 
 # Cortex data directories (project-specific, not tracked in this repo)
 # These are tracked in user projects, not in the Cortex server itself
-/.cortex/
 /.cursor/
 
 # Legacy memory bank paths (for migration)
 /.memory-bank/
 /.memory-bank-*
 /memory-bank/
+/.plan/
 
 # Cortex backup directories
 .cortex-backup-*

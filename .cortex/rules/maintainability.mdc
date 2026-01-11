@@ -1,0 +1,151 @@
+---
+alwaysApply: true
+---
+# Maintainability & Architecture Rules (MANDATORY)
+
+**ENFORCEMENT**: CI MUST fail on violations. All rules are MANDATORY. NO exceptions.
+
+## Memory Bank Adoption (ENFORCED)
+
+1. The project **MUST** include a `.cursor/memory-bank` directory with core files: `projectbrief.md`, `productContext.md`, `systemPatterns.md`, `techContext.md`, `activeContext.md`, `progress.md`, `roadmap.md`.
+2. **Follow Plan → Act workflow** when starting tasks and updating documentation.
+3. **After every significant change** (or when triggered by **update memory bank / umb**), update all memory-bank files.
+4. **Keep synchronized** - Memory bank files must be consistent with each other.
+
+## File / Type Size Limits (ENFORCED)
+
+1. **Maximum file length** – 400 lines (excluding license headers & import statements).
+2. **Maximum function length** – 30 lines (logical lines, excluding doc comments & blank lines).
+3. **One public/open/internal type per file** - Private/fileprivate helpers may share the file with their parent type.
+4. **CI MUST fail** if these limits are exceeded.
+
+## Private Constants Organization (ENFORCED)
+
+1. **Private constants MUST be defined at file level**, at the bottom of the file.
+2. **Private constants MUST NOT be defined inside type definitions** (classes, structs, enums).
+3. **Constants used within single type** MAY be defined at file level.
+4. **CI MUST fail** if private constants are defined inside type definitions.
+
+## Private Helper Functions Organization (ENFORCED)
+
+1. **Pure helpers at file level** - Private helper functions that don't depend on instance state MUST be defined at file level, at the bottom of the file.
+2. **State-dependent helpers** - Private helper functions that depend on instance state SHOULD remain inside the type definition.
+3. **CI MUST fail** if pure helper functions are unnecessarily defined inside type definitions.
+
+## Shared Helper Re-exports (MANDATORY)
+
+- When re-exporting shared helper functions, alias imports and call the aliased symbol to avoid accidental self-recursion (e.g., wrap `_normalize_source_path_impl` instead of calling the wrapper name).
+
+## Dependency Injection Mandate (ENFORCED)
+
+1. **All external dependencies MUST be injected** via initialisers or protocol conformances.
+2. **NO global state or singletons** in production code. Legacy code should be progressively refactored.
+3. **Constructor injection preferred** - Property injection only when circular dependencies make constructor injection impossible.
+
+## Unit-Testing Requirements (ENFORCED)
+
+1. **Unit tests for all critical business logic** and every public API surface.
+2. **AAA pattern** - Tests MUST follow Arrange-Act-Assert structure with descriptive, behaviour-focused names (e.g., `test_viewModelEmitsError_whenRepositoryFails()`).
+3. **Toggleable behaviours** - Tests SHOULD verify each toggle state.
+4. **CI MUST run test suite** on every merge request/pull request and block if failures occur.
+5. **Test renaming** - When updating an existing test, ALWAYS verify function name accurately reflects new behaviour; rename accordingly.
+
+## Enforcement & CI Integration (MANDATORY)
+
+1. **Memory Bank sync validation** - CI job validates memory bank files exist and are consistent.
+2. **Rule conformance enforcement** - When a new rule is added or modified, entire codebase **MUST** be reviewed and updated to conform. CI must fail if violations remain.
+
+## Architectural Boundaries (ENFORCED)
+
+### Layering (MANDATORY)
+
+- **Clear module boundaries** - e.g., Core, Plugins, Documentation, Search
+- **Dependencies flow inward** - Server → Core → Plugins
+- **Cross-layer calls** - Must go through defined interfaces
+
+### Public Surface (ENFORCED)
+
+- **Minimize public APIs** - Review public/open declarations during code review for necessity and stability
+- **Deprecation policy** - When changing public APIs, add deprecation annotations and migration guidance. Remove deprecated APIs after at least one minor release
+
+### Cross-Module Visibility (ENFORCED)
+
+- **Cross-module symbols MUST be public** - Any symbol (class, function, method, constant) that is used outside its defining module MUST NOT be private (no underscore prefix)
+- **Private symbols are module-internal only** - Private symbols (with `_` prefix) MUST only be used within the same module where they are defined
+- **Detection**: If a private symbol is accessed from another module (e.g., in tests, other packages), it MUST be made public by removing the underscore prefix
+- **NEVER use type-checker suppressions** - It is FORBIDDEN to use `# pyright: reportPrivateUsage=false`, `# pyright: ignore[reportPrivateUsage]`, `# type: ignore[reportPrivateUsage]`, or any similar suppression comments. These are BLOCKED and MUST be removed. The ONLY correct fix is to make the symbol public.
+- **Renaming requirement**: When making a symbol public, rename it everywhere:
+  - Symbol definition (remove `_` prefix)
+  - All internal calls within the defining module
+  - All external usages (tests, other modules)
+- **Remove ignore comments**: After making a symbol public, remove any `# pyright: ignore[reportPrivateUsage]` or similar type-checker ignore comments
+- **CI MUST fail** if private symbols are accessed across module boundaries or if suppression comments are found
+
+## Plan Completion Checklist (ENFORCED)
+
+When completing any plan, the following checklist MUST be followed in order:
+
+1. **Code formatting** - Run formatting tools:
+   - Execute `./.venv/bin/black .` and `./.venv/bin/isort .`
+   - Verify formatting completes successfully with no errors or warnings
+   - Fix any formatting issues if they occur
+   - Verify no files were left in inconsistent state
+
+2. **Test execution** - Run test suite:
+   - Execute `./.venv/bin/pytest --session-timeout=300` (pytest-timeout configured in pytest.ini: 10s per test, 300s session timeout)
+   - Ensure 100% pass rate for all executable tests (zero failures)
+   - Investigate and fix any failures before proceeding
+
+3. **Memory bank update** - Update memory bank files:
+   - Execute Cursor command: `update-memory-bank`
+   - Update all relevant memory bank files with current changes
+   - Focus on `activeContext.md` and `progress.md` for current state
+   - Ensure consistency across all memory bank files
+
+4. **Roadmap update** - Update roadmap.md:
+   - Review recent changes and completed work
+   - Mark completed milestones and tasks in roadmap.md
+   - Add new roadmap items if significant new work is identified
+   - Update completion status and progress indicators
+   - Ensure roadmap accurately reflects current project state
+
+5. **Plan archival** - Archive completed plans:
+   - Check `.cursor/plans/` directory for completed plan files
+   - Use standard tools (`mv` or equivalent) to move completed plans to `.cursor/plans/archive/PhaseX/MilestoneY/` directory matching the plan's Phase/Milestone
+   - Create archive directory structure if it doesn't exist: `mkdir -p .cursor/plans/archive/PhaseX/MilestoneY`
+   - Update plan status to "archived" if not already done
+   - Ensure no active plans remain in the plans directory
+   - **CRITICAL**: Plan files MUST be archived in `.cursor/plans/archive/`, never in `.cursor/plans/`
+
+**VIOLATION**: Completing a plan without following this checklist is a CRITICAL violation that blocks proper plan closure.
+
+## CI Quality Gates (MANDATORY)
+
+### Static Analysis (ENFORCED)
+
+- **Compiler warnings as errors** - Enable in CI
+- **TODO/FIXME markers** - CI job fails on new markers in production sources
+
+### Performance Budgets (ENFORCED)
+
+- **Performance baselines** - Keep for known hot paths
+- **CI flags regressions** - Beyond agreed threshold
+
+## See Also
+
+- [coding-standards.mdc](coding-standards.mdc) - Core coding standards and file organization requirements
+- [one-public-type-per-file.mdc](one-public-type-per-file.mdc) - One public type per file requirement
+- [testing-standards.mdc](testing-standards.mdc) - Testing requirements for public APIs
+- [memory-bank-workflow.mdc](memory-bank-workflow.mdc) - Memory bank maintenance procedures
+
+## Violations (BLOCKED)
+
+- ❌ Files exceeding 400 lines (production code)
+- ❌ Functions exceeding 30 lines (logical lines)
+- ❌ Multiple public types per file
+- ❌ Private constants inside type definitions
+- ❌ Pure helpers unnecessarily inside type definitions
+- ❌ Global state or singletons in production code
+- ❌ Public APIs without tests
+- ❌ Unsynchronized Memory Bank files
+- ❌ Private symbols accessed across module boundaries

@@ -1,0 +1,417 @@
+---
+globs: *.md,*.mdc
+alwaysApply: false
+---
+# Markdown Formatting Rules (MANDATORY)
+
+**ENFORCEMENT**: CI MUST fail on violations. Markdown formatting rules are STRICTLY enforced. NO exceptions.
+
+## ⚠️ MANDATORY PRE-ACTION CHECKLIST
+
+**BEFORE creating, editing, or modifying ANY `.md` or `.mdc` file, you MUST:**
+
+1. ✅ **Read this rule file completely** - Understand all formatting requirements
+2. ✅ **Check file type** - Verify the file matches `*.md` or `*.mdc` patterns
+3. ✅ **Apply rules during writing** - Follow MD009, MD012, MD022, MD031, MD032, MD036, MD029, MD024, MD040 while writing
+4. ✅ **Validate after writing** - Run `read_lints` on the file to check for violations
+5. ✅ **Fix violations immediately** - Do not consider the file complete until all violations are resolved
+
+**VIOLATION**: Creating or editing markdown files without following this checklist is a CRITICAL violation that blocks merge.
+
+## Scope (ENFORCED)
+
+**CRITICAL**: This rule applies to ALL markdown file operations. You MUST check this rule before ANY markdown file creation or modification.
+
+- Applies to all `.md` and `.mdc` files in the project
+- Includes command files in `.cursor/commands/`
+- Includes rule files in `.cursor/rules/`
+- Includes memory bank files in `.cursor/memory-bank/`
+- Includes documentation files
+- Includes review files in `.cursor/reviews/`
+- Includes plan files in `.cursor/plans/`
+
+**When this rule applies:**
+
+- ✅ Creating new `.md` or `.mdc` files
+- ✅ Editing existing `.md` or `.mdc` files
+- ✅ Modifying content in markdown files
+- ✅ Writing documentation, reviews, plans, or any markdown content
+
+**You MUST read this rule file BEFORE starting any markdown file operation.**
+
+## Fenced Code Language (MD040) (ENFORCED)
+
+- **Fenced code blocks MUST specify a language** - All fenced code blocks must include a language identifier after the opening triple backticks
+- **Language specification**: Use appropriate language tags (e.g., `markdown`, `bash`, `python`, `json`, `yaml`)
+- **Violation**: Fenced code blocks without language specification (e.g., ` ``` ` instead of ` ```python `)
+- **Fix**: Add appropriate language identifier to all fenced code blocks
+- **Exception**: Plain text code blocks may use `text` or `plaintext` as the language
+- **Common Pattern**: Code examples in documentation, reviews, and plans must specify language:
+
+## Blank Lines Around Fenced Code Blocks (MD031) (ENFORCED)
+
+- **Fenced code blocks MUST be surrounded by blank lines** - One blank line before and after each fenced code block
+- **Before code blocks**: When text is immediately followed by a fenced code block, there MUST be a blank line between them
+- **After code blocks**: When a fenced code block is immediately followed by text, there MUST be a blank line between them
+- **Between code blocks**: When two fenced code blocks are adjacent, there MUST be a blank line between them
+- **MD012 Compliance**: Must be exactly ONE blank line (not zero, not multiple)
+- **Common Pattern in Review Files**: Code examples in recommendations need blank lines:
+
+  **Effort**: Low
+
+  ```markdown
+  **Effort**: Low
+  
+  - Add blank line before code fences
+  - Add blank line after code fences
+  ```
+
+## Blank Lines Around Lists (MD032) (ENFORCED)
+
+- **Lists MUST be surrounded by blank lines** - One blank line before and after each list
+- **After headings**: When a heading is immediately followed by a list, there MUST be a blank line between the heading and the list
+- **Before headings**: When a list is immediately followed by a heading, there MUST be a blank line between the list and the heading
+- **Between lists**: When two lists are adjacent, there MUST be a blank line between them
+- **After bold labels**: When bold text like `**Strengths**:` or `**Weaknesses**:` is followed by a list, there MUST be a blank line between the bold text and the list
+- **MD012 Compliance**: Must be exactly ONE blank line (not zero, not multiple)
+- **Common Pattern**:
+
+  ```markdown
+  **Strengths**:
+  
+  - Item 1
+  - Item 2
+  ```
+
+## No Trailing Spaces (MD009) (ENFORCED)
+
+- **No trailing spaces allowed** - Lines MUST NOT end with trailing whitespace
+- **Expected**: 0 or 2 trailing spaces (2 spaces are allowed for line breaks in markdown)
+- **Violation**: Lines ending with exactly 1 trailing space (or any odd number except 0 or 2)
+- **Fix**: Remove trailing spaces from lines, or use exactly 2 trailing spaces if intentional line break is needed
+- **Common Violations**:
+  - Single trailing space at end of line (most common)
+  - Odd number of trailing spaces (3, 5, 7, etc.)
+  - Trailing spaces in code blocks (should be removed)
+- **Note**: Two trailing spaces are allowed in markdown for hard line breaks, but single trailing spaces serve no purpose and should be removed
+
+## No Multiple Blank Lines (MD012) (ENFORCED)
+
+- **Only one blank line allowed** - Multiple consecutive blank lines are PROHIBITED
+- **Maximum blank lines**: Exactly one blank line between any elements (headings, lists, code blocks, paragraphs)
+- **Violation**: Two or more consecutive blank lines anywhere in the document
+- **Fix**: Remove extra blank lines, keeping only one blank line where spacing is needed
+- **Common Violations**:
+  - Multiple blank lines between sections (e.g., `\n\n\n` → should be `\n\n`)
+  - Extra blank lines at end of file
+  - Multiple blank lines after code blocks or lists
+- **Note**: This rule works together with MD022, MD031, MD032 - those rules require ONE blank line, MD012 ensures you don't have MORE than one
+
+## Blank Lines Around Headings (MD022) (ENFORCED)
+
+- **Headings MUST be surrounded by blank lines** - One blank line before and after each heading
+- **Exception**: Headings at the start of a file do not need a blank line before them
+- **Exception**: Headings at the end of a file do not need a blank line after them (unless followed by content)
+- **MD012 Compliance**: Must be exactly ONE blank line (not zero, not multiple)
+
+## No Emphasis as Heading (MD036) (ENFORCED)
+
+- **Bold text MUST NOT be used as headings** - Use proper heading syntax (`#`, `##`, `###`) instead of bold text (`**text**`)
+- **Exception**: Bold text for emphasis within content is allowed
+- **Violation**: Using `**Text**` at the start of a line where a heading would be appropriate
+- **Fix**: Replace bold text with proper heading syntax when it serves as a section title
+- **Common Pattern**: Score or metric summaries (e.g., `**Overall Score: 8.3/10**`) should use headings (e.g., `### Overall Score: 8.3/10`)
+- **Detection**: Any bold text (`**text**`) at the start of a line that introduces a section or subsection should be converted to a heading
+- **Common Violations in Review Files**:
+  - `**Review Date**:` → Keep as bold (metadata, not a heading)
+  - `**Overall Score: X/10**` → Convert to `### Overall Score: X/10`
+  - `**Strengths**:` → Keep as bold (subsection label, not a heading)
+  - `**None identified**` → Convert to regular text: `No issues identified.`
+  - `**Key Findings**:` → Convert to `### Key Findings`
+  - `**Recommendations**:` → Convert to `### Recommendations` (or make unique: `### Review Recommendations`)
+
+## Ordered List Numbering (MD029) (ENFORCED)
+
+- **Ordered lists MUST use consistent numbering** - Lists should start at 1 and increment sequentially
+- **Within separate sections**: Each section's ordered list should start at 1
+- **Within same section**: Ordered list items should be numbered sequentially (1, 2, 3...)
+- **Violation**: Using non-sequential numbering (e.g., 3, 4, 5 in a list that should start at 1)
+- **Fix**: Renumber lists to start at 1 within each section, or use separate lists for different sections
+- **Common Pattern in Review Files**: Action items or recommendations across different priority levels should each start at 1:
+
+  ```markdown
+  ### Must-Fix (High Priority)
+  
+  1. Item 1
+  2. Item 2
+  
+  ### Should-Fix (Medium Priority)
+  
+  1. Item 1  // Correct: Starts at 1 for new section
+  2. Item 2
+  ```
+
+## No Duplicate Headings (MD024) (ENFORCED)
+
+- **Headings MUST be unique** - No two headings in the same document should have identical text content
+- **Applies across all heading levels** - Even if heading levels differ (e.g., `## Title` and `### Title`), they are considered duplicates
+- **Violation**: Multiple headings with the same text content anywhere in the document
+- **Fix**: Rename one or more headings to be more specific and descriptive
+- **Example**: If you have `### Success Criteria` in one section and `## Success Criteria` in another, rename one to `### Plan Success Criteria` and `## Command Success Criteria`
+- **Common Duplicates in Review Files**:
+  - `### Strengths` → Use `### Architecture Strengths`, `### Security Strengths`, etc.
+  - `### Recommendations` → Use `### Review Recommendations`, `### Documentation Recommendations`, etc.
+  - `### Overall Score` → Use `### Code Quality Score` or `### Overall Score: X/10` (with score)
+  - `### None Identified` → Use `### Critical Issues Status` or `### Completeness Status`
+
+## Descriptive Link Text (MD059) (ENFORCED)
+
+- **Use descriptive link text** - Avoid generic text like "link" or "here".
+- **Submission pages**: For external submission/report pages, use action + target labels (e.g., `[GitLab issue form](https://gitlab.tcsbank.ru/i.grechukhin/doc-mcp/-/issues/new)`).
+- **Goal**: Make destination and intent clear for accessibility and scanning.
+
+## Examples
+
+### ✅ REQUIRED - Correct formatting
+
+```markdown
+### Section Title
+
+- List item 1
+- List item 2
+
+### Next Section
+```
+
+### ✅ REQUIRED - Correct formatting with text before list
+
+```markdown
+### Section Title
+
+Some descriptive text here.
+
+- List item 1
+- List item 2
+```
+
+### ❌ PROHIBITED - Trailing spaces
+
+```markdown
+Some text with trailing space 
+More text  // BLOCKED: Single trailing space (1 space)
+```
+
+### ✅ REQUIRED - No trailing spaces or exactly two
+
+```markdown
+Some text
+More text  // Correct: No trailing spaces
+
+Or with intentional line break:
+Some text  
+More text  // Correct: Exactly 2 trailing spaces for hard break
+```
+
+### ❌ PROHIBITED - Missing blank line before fenced code block
+
+Text immediately followed by code block without blank line:
+
+### ❌ PROHIBITED - Missing blank line after heading
+
+```markdown
+### Section Title
+- List item 1  // BLOCKED: Missing blank line
+- List item 2
+```
+
+### ❌ PROHIBITED - Missing blank line before heading
+
+```markdown
+- List item 1
+- List item 2
+### Next Section  // BLOCKED: Missing blank line
+```
+
+### ❌ PROHIBITED - Missing blank line between adjacent lists
+
+```markdown
+- List item 1
+- List item 2
+- Another list item  // BLOCKED: Missing blank line between lists
+- Yet another item
+```
+
+### ❌ PROHIBITED - Emphasis used as heading
+
+```markdown
+**Section Title**  // BLOCKED: Should use ### Section Title
+- List item
+```
+
+### ✅ REQUIRED - Proper heading instead of emphasis
+
+```markdown
+### Section Title
+
+- List item
+```
+
+### ❌ PROHIBITED - Emphasis used for scores/metrics
+
+```markdown
+**Overall Code Quality Score: 8.3/10**  // BLOCKED: Should use heading
+```
+
+### ✅ REQUIRED - Proper heading for scores/metrics
+
+```markdown
+### Overall Code Quality Score: 8.3/10
+```
+
+### ❌ PROHIBITED - Bold statement at line start
+
+```markdown
+**None identified**  // BLOCKED: Should be regular text or proper heading
+```
+
+### ✅ REQUIRED - Regular text for statements
+
+```markdown
+No vulnerabilities identified.
+```
+
+### ❌ PROHIBITED - Inconsistent ordered list numbering
+
+```markdown
+### Section 1
+1. First item
+2. Second item
+
+### Section 2
+3. Third item  // BLOCKED: Should start at 1
+4. Fourth item
+```
+
+### ✅ REQUIRED - Consistent numbering per section
+
+```markdown
+### Section 1
+1. First item
+2. Second item
+
+### Section 2
+1. Third item  // Correct: Starts at 1 for new section
+2. Fourth item
+```
+
+### ❌ PROHIBITED - Duplicate heading text
+
+```markdown
+### Success Criteria
+
+- Item 1
+
+## Success Criteria  // BLOCKED: Duplicate heading text (even though different level)
+
+- Item 2
+```
+
+### ✅ REQUIRED - Unique heading text
+
+```markdown
+### Plan Success Criteria
+
+- Item 1
+
+## Command Success Criteria  // Correct: Unique heading text
+
+- Item 2
+```
+
+### ❌ PROHIBITED - Multiple consecutive blank lines
+
+```markdown
+### Section Title
+
+
+- List item 1  // BLOCKED: Two blank lines instead of one
+- List item 2
+```
+
+### ✅ REQUIRED - Exactly one blank line
+
+```markdown
+### Section Title
+
+- List item 1  // Correct: Exactly one blank line
+- List item 2
+```
+
+### ❌ PROHIBITED - Multiple blank lines between sections
+
+```markdown
+### Section 1
+
+- Item 1
+
+
+### Section 2  // BLOCKED: Multiple blank lines between sections
+```
+
+### ✅ REQUIRED - Exactly one blank line between sections
+
+```markdown
+### Section 1
+
+- Item 1
+
+### Section 2  // Correct: Exactly one blank line between sections
+```
+
+## Validation (ENFORCED)
+
+**MANDATORY VALIDATION STEPS:**
+
+1. **Before writing**: Read this rule file completely
+2. **During writing**: Apply all formatting rules (MD009, MD012, MD022, MD031, MD032, MD036, MD029, MD024, MD040, MD059)
+3. **After writing**: Run `read_lints` on the file to verify compliance
+4. **Before completion**: Fix all violations - file is NOT complete until lint passes
+5. **Strip BOMs**: Ensure no UTF-8 BOM is present when creating or saving markdown files to avoid hidden lint issues
+
+**MANDATORY**: When `read_lints` reports violations, fix ALL of the following:
+
+- **MD040 violations**: Code blocks without language tags - Add appropriate language identifier to all fenced code blocks
+- **MD031 violations**: Code blocks without blank lines - Add one blank line before and after each code block
+- **MD032 violations**: Lists without blank lines - Add one blank line before and after each list
+- **MD009 violations**: Trailing spaces - Remove all trailing spaces from lines
+- **MD012 violations**: Multiple blank lines - Remove extra blank lines, keeping exactly one blank line where needed
+- **MD022 violations**: Headings without blank lines - Add one blank line before and after each heading
+- **MD036 violations**: Emphasis used as headings - Replace bold text with proper heading syntax where appropriate
+- **MD029 violations**: Inconsistent ordered list numbering - Renumber lists to start at 1 within each section
+- **MD024 violations**: Duplicate headings - Rename headings to be unique and descriptive
+- **MD059 violations**: Non-descriptive link text - Use clear, descriptive link labels (e.g., "GitLab issue form") instead of generic "link"/"here"
+
+**CRITICAL**: File is NOT complete until all markdown linting violations are resolved. Re-run `read_lints` until no violations remain.
+
+**Validation Methods:**
+
+- **Code review** - Reject changes that introduce MD009, MD012, MD022, MD031, MD032, MD036, MD029, MD024, MD040, or MD059 violations
+- **Automated checks** - CI validates markdown formatting using markdownlint
+- **Manual verification** - Use `read_lints` tool to check for violations
+- **Violations block merge** - NO exceptions
+
+## Enforcement (MANDATORY)
+
+- **Pre-commit hooks**: Validate markdown formatting before commit
+- **CI Integration**: Automated checks fail builds on violations
+- **Code review**: Reject PRs with markdown formatting violations
+- **No exceptions**: All violations must be fixed before merge
+
+## Rationale
+
+- **Readability** - Proper spacing improves markdown readability
+- **Consistency** - Ensures consistent formatting across all documentation
+- **Tool compatibility** - Many markdown tools expect proper spacing and heading syntax
+- **Standards compliance** - Follows markdownlint (MD009, MD012, MD022, MD031, MD032, MD036, MD029, MD024, MD040, MD059) standards
+- **Semantic correctness** - Proper headings enable better document structure and navigation
+- **Accessibility** - Correct heading hierarchy improves screen reader compatibility

@@ -1,0 +1,54 @@
+---
+alwaysApply: true
+---
+# Coding Standards (MANDATORY)
+
+**ENFORCEMENT**: CI and review must block violations. Apply alongside Python-specific rules.
+
+## Core Principles
+
+- **Readable first**: Prefer clarity over cleverness; minimize hidden state.
+- **Small units**: Keep functions ≤30 logical lines; files ≤400 lines (production code).
+- **Single responsibility**: One public type per file; helpers colocated with their owner.
+- **Explicit typing**: Full type hints for functions, methods, and public attributes.
+- **Fail loudly**: Validate inputs; avoid silent failure paths.
+
+## Formatting & Imports
+
+- **Black**: Use `black` (88 columns) as the single source of formatting truth.
+- **isort**: Sort imports with black profile; stdlib → third-party → local.
+- **No manual tweaks**: Never hand-format to fight Black/isort output.
+
+## Error Handling & Logging
+
+- **Granular exceptions**: Raise domain-specific errors; avoid bare `except`.
+- **Context-rich logs**: Log actionable context without leaking secrets.
+- **Preserve tracebacks**: Use `raise ... from e` where appropriate.
+
+## Async & Performance
+
+- **Async correctness**: Use async for I/O; avoid blocking the event loop. Offload CPU/file I/O with executors or `asyncio.to_thread`.
+- **Structured concurrency**: Prefer `asyncio.TaskGroup`/`gather` with bounds; enforce timeouts.
+- **Efficiency**: Choose appropriate data structures; avoid accidental O(n²); use generators for large streams.
+
+## Security & Validation
+
+- **Input validation**: Validate and normalize all external inputs (paths, URIs, user data).
+- **No secrets in code**: Never hardcode credentials; keep secrets out of logs.
+- **Safe file/URI handling**: Block traversal, control chars, and encoded slashes; enforce containment for cache/FS paths.
+
+## Testing & Quality Gates
+
+- **pytest + AAA**: Tests use Arrange-Act-Assert with descriptive names (`test_behavior_when_condition`).
+- **Coverage**: Add tests for new behaviors and public APIs; avoid happy-path-only coverage.
+- **Zero warnings**: Treat warnings as errors in tests; keep suites fast and deterministic.
+
+## Documentation & Memory Bank
+
+- **Docs sync**: Update memory bank and roadmap after significant changes or on request.
+- **Markdown rules**: Follow markdown formatting standards (blank lines, fenced languages, no trailing spaces).
+
+## Tooling Requirements
+
+- **Pre-commit**: Black, isort, flake8/Pyright (where configured) must pass before merging.
+- **No manual reformat**: Run the tools instead of hand edits; include generated changes in commits.

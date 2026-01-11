@@ -1,0 +1,37 @@
+---
+globs: tests/**/*.py
+alwaysApply: false
+---
+
+# Testing Standards (MANDATORY)
+
+**ENFORCEMENT**: CI MUST fail on violations. Applies to all test files.
+
+## Core Principles
+
+- **AAA required**: Arrange-Act-Assert structure in every test.
+- **Deterministic**: No flakiness; avoid time-based sleeps and randomness without seeding.
+- **Performance**: Individual tests complete in <10s; suites stay lean.
+- **Coverage**: New code paths must be covered; critical logic needs edge/error cases.
+
+## Skips and Marks
+
+- Skips must include explicit reason and issue/ticket reference.
+- Do not use broad `xfail` without a linked defect and a removal plan.
+- No unconditional skips for entire modules; scope skips narrowly.
+
+## Fixtures and Data
+
+- Reuse shared fixtures in `conftest.py`; avoid duplicated setup.
+- Isolate state between tests; clean up external resources.
+- Prefer factories/builders over ad-hoc dicts for complex payloads.
+
+## Async Tests
+
+- Use `pytest.mark.asyncio` (or configured async plugin) on async tests.
+- Avoid blocking calls inside async tests; offload with executors when needed.
+
+## Assertions
+
+- Assert behavior, not implementation details; include clear failure messages for complex checks.
+- Validate both success and failure/error paths for public APIs.

@@ -1,0 +1,21 @@
+---
+globs: tests/**/*.py
+alwaysApply: false
+---
+# No Test Skipping (MANDATORY)
+
+**ENFORCEMENT**: Skips are tightly controlled; CI blocks violations.
+
+## Rules
+
+- **No blanket skips**: Do not skip entire modules/suites.
+- **Justify every skip**: Use `pytest.skip`/`@pytest.mark.skip` only with a clear reason and linked ticket/issue.
+- **Temporary only**: Include a removal/reenable condition; revisit before release.
+- **No silent xfail**: `xfail` must specify condition and reason; avoid permanent xfails.
+- **Environment guards**: If gating by platform/env, document the condition explicitly.
+
+## Guidance
+
+- Prefer fixing flaky/slow tests instead of skipping.
+- If external dependency is unavailable, use mocks/fakes; skip only when unavoidable.
+- Review skips regularly; remove once the blocking issue is resolved.

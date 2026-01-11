@@ -335,8 +335,8 @@ All 14 agents (13 tool agents + 1 protocol agent) completed successfully:
 
 **Plan Files (2):**
 
-- [.plan/phase-9.6-code-style.md](.plan/phase-9.6-code-style.md)
-- [.plan/README.md](.plan/README.md)
+- [.plan/phase-9.6-code-style.md](.cursor/plans/phase-9.6-code-style.md)
+- [.plan/README.md](.cursor/plans/README.md)
 
 ### New Files (1)
 

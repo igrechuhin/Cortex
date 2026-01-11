@@ -174,6 +174,6 @@ All existing tests continue to pass:
 
 ## Related Documents
 
-- [Phase 9.3.1 Performance Optimization Summary](.plan/phase-9.3.1-performance-optimization-summary.md)
-- [Phase 9.3.2 Dependency Graph Optimization Summary](.plan/phase-9.3.2-dependency-graph-optimization-summary.md)
+- [Phase 9.3.1 Performance Optimization Summary](.cursor/plans/phase-9.3.1-performance-optimization-summary.md)
+- [Phase 9.3.2 Dependency Graph Optimization Summary](.cursor/plans/phase-9.3.2-dependency-graph-optimization-summary.md)
 - [Performance Analysis Tool](scripts/analyze_performance.py)

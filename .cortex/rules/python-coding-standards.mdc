@@ -1,0 +1,720 @@
+---
+globs: *.py
+alwaysApply: false
+---
+
+# Python Coding Standards (MANDATORY - ZERO TOLERANCE)
+
+**ENFORCEMENT**: All rules are MANDATORY. CI MUST fail on violations. NO exceptions.
+
+## Core Principles (ENFORCED)
+
+- **PEP 8 Compliance**: Follow Python Enhancement Proposal 8 for code style - MANDATORY
+- **Readability First**: Code must be immediately understandable by any Python developer - MANDATORY
+- **Explicit is Better than Implicit**: Prefer clear, explicit code over clever shortcuts - MANDATORY
+- **Simple is Better than Complex**: Choose simple solutions over complex ones - MANDATORY
+- **Errors Should Never Pass Silently**: All errors must be handled appropriately - MANDATORY
+
+## Code Formatting (ENFORCED via Black + isort)
+
+- **Black Formatter**: Use Black with 88-character line length - MANDATORY
+- **Import Sorting**: Use isort with black-compatible settings - MANDATORY
+- **No Manual Formatting**: Never manually adjust Black-formatted code - MANDATORY
+- **Consistent Quotes**: Use double quotes for strings, single quotes for character constants - MANDATORY
+- **Trailing Commas**: Include trailing commas in multi-line structures - MANDATORY
+
+### Import Organization (ENFORCED)
+
+```python
+# Standard library imports first
+import os
+import sys
+from pathlib import Path
+
+# One blank line after standard library
+import requests
+
+# Third-party packages
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+# One blank line before local imports
+from .config import Config
+from .database import Database
+```
+
+## Type Hints (ENFORCED)
+
+- **100% Type Coverage**: All functions, methods, and classes MUST have complete type hints - MANDATORY
+- **Prefer Built-in Generics**: Use `list[str]`, `dict[str, int]` instead of `typing.List[str]`, `typing.Dict[str, int]` - MANDATORY (Python 3.13+)
+- **Use typing Module for Advanced Types**: Use `typing.Self`, `typing.Required`, `typing.NotRequired`, `Callable` when needed - MANDATORY
+- **Optional Types**: Use `T | None` instead of `Optional[T]` or `Union[T, None]` - MANDATORY (Python 3.13+)
+- **Self Type**: Use `typing.Self` for methods returning instances of their class - MANDATORY (Python 3.13+)
+- **TypedDict**: Use `typing.Required` and `typing.NotRequired` for optional TypedDict fields - MANDATORY (Python 3.13+)
+- **Callable Types**: Use `Callable[[ArgTypes], ReturnType]` for function parameters - MANDATORY
+- **NEVER Use `Any`**: `Any` type is FORBIDDEN - Use proper types, Protocols, or `object` instead - MANDATORY
+  - For third-party libraries without stubs: Create `Protocol` classes matching the interface
+  - For truly dynamic data: Use `dict[str, object]` or specific TypedDict classes
+  - For unknown types: Use `object` and type narrowing with `isinstance()` checks
+  - CI MUST fail on any `Any` usage - NO exceptions
+
+## Concrete Types Requirement (ENFORCED - MANDATORY)
+
+**CRITICAL**: Use concrete types instead of `object` wherever possible. This is a MANDATORY requirement.
+
+### Core Principle
+
+- **Investigate actual types**: Before using `object`, investigate what the actual type is and use it
+- **Replace `object` with concrete types**: Wherever `object` is used, determine the real type and replace it
+- **Make types MORE specific, not less**: Prefer `dict[str, str]` over `dict[str, object]`, `list[SearchResult]` over `list[object]`
+- **Avoid unnecessary abstractions**: Don't use `Mapping` or other abstractions when `dict` works - use `dict` directly
+- **Only use `object` when truly necessary**: Use `object` only when the type is genuinely unknown or polymorphic
+
+### Requirements (MANDATORY)
+
+1. **Investigate Return Types**: When a function returns `object`, investigate the actual return type:
+   - Check the implementation to see what is actually returned
+   - Check related functions and their return types
+   - Use the concrete type (e.g., `list[RefactoringSuggestion]`, `dict[str, str | None]`, `RollbackResult`)
+
+2. **Replace `object` Parameters**: When a function accepts `object`, determine the actual expected type:
+   - Check call sites to see what types are passed
+   - Check the function implementation to see what it expects
+   - Use the concrete type (e.g., `dict[str, str]` instead of `dict[str, object]`)
+
+3. **Use Concrete Dict Types**: When working with dictionaries, use the most specific type possible:
+   - ✅ `dict[str, str]` - when all values are strings
+   - ✅ `dict[str, str | None]` - when values can be strings or None
+   - ✅ `dict[str, list[dict[str, str]]]` - when values are lists of string dicts
+   - ❌ `dict[str, object]` - only when values are truly heterogeneous and unknown
+
+4. **Protocol Return Types**: When defining protocols, use concrete return types:
+   - ✅ `async def get_refactoring_suggestions(...) -> list[RefactoringSuggestion]:`
+   - ✅ `async def execute_refactoring(...) -> RefactoringResult:`
+   - ❌ `async def get_refactoring_suggestions(...) -> object:`
+
+5. **Format Function Types**: Format functions should accept the most specific structured type:
+   - ✅ `def format_memory_bank_content(structured: dict[str, str | None]) -> str:`
+   - ✅ `def format_section_list_content(structured: dict[str, str | list[dict[str, str]]]) -> str:`
+   - ❌ `def format_memory_bank_content(structured: dict[str, object]) -> str:`
+
+### Examples (REQUIRED)
+
+#### ✅ CORRECT - Using Concrete Types
+
+```python
+from .refactoring_engine import RefactoringSuggestion, RefactoringAction
+from .rollback_manager import RollbackResult
+
+class RefactoringEngine(Protocol):
+    async def get_suggestions(...) -> list[RefactoringSuggestion]: ...
+    async def execute_refactoring(...) -> RefactoringResult: ...
+
+def format_memory_bank_content(structured: dict[str, str | None]) -> str:
+    """Format memory bank content with concrete types."""
+    ...
+```
+
+#### ❌ PROHIBITED - Using Generic `object`
+
+```python
+class RefactoringEngine(Protocol):
+    async def get_suggestions(...) -> object: ...  # BLOCKED: Use list[RefactoringSuggestion]
+    async def execute_refactoring(...) -> object: ...  # BLOCKED: Use RefactoringResult
+
+def format_memory_bank_content(structured: dict[str, object]) -> str:
+    """BLOCKED: Use dict[str, str | None] instead."""
+    ...
+```
+
+#### ❌ PROHIBITED - Replacing Concrete with Generic
+
+```python
+# BLOCKED: Replacing dict[str, str] with dict[str, object] makes types LESS specific
+def build_template(name: str, variables: dict[str, object]) -> str:
+    # Should be dict[str, str] if variables are always strings
+    ...
+```
+
+### Concrete Types Enforcement (MANDATORY)
+
+- **Code Review**: Reject changes that use `object` when concrete types are available
+- **CI Integration**: Automated type checking should flag unnecessary `object` usage
+- **Type Checker**: Use type checkers (pyright, mypy) to identify opportunities for concrete types
+- **No exceptions**: All violations must be fixed before merge
+
+### Rationale
+
+- **Better Type Safety**: Concrete types catch more errors at development time
+- **Improved IDE Support**: IDEs provide better autocomplete and error detection
+- **Clearer Intent**: Code is more self-documenting with concrete types
+- **Easier Refactoring**: Concrete types make refactoring safer and easier
+- **Better Error Messages**: Type checkers provide clearer error messages with concrete types
+
+### Type Hint Examples (REQUIRED)
+
+```python
+from typing import Callable, Protocol, TypedDict, Self
+from pathlib import Path
+
+class ConfigDict(TypedDict, total=False):
+    """Configuration dictionary structure."""
+    timeout: int
+    retries: int
+    enabled: bool
+
+def process_files(
+    file_paths: list[Path],
+    config: dict[str, object],
+    callback: Callable[[Path], bool] | None = None
+) -> list[Path]:
+    """Process files with optional callback."""
+    processed = []
+    for path in file_paths:
+        if callback and not callback(path):
+            continue
+        processed.append(path)
+    return processed
+```
+
+## Error Handling (ENFORCED)
+
+- **Custom Exception Classes**: Create domain-specific exception classes - MANDATORY
+- **Exception Hierarchy**: Use proper exception inheritance from standard library exceptions - MANDATORY
+- **Exception Groups**: Use `except*` for handling multiple exception types - MANDATORY (Python 3.13+)
+- **Context Managers**: Use `with` statements for resource management - MANDATORY
+- **Logging Before Raising**: Log errors before re-raising or handling - MANDATORY
+- **No Bare Except**: Never use `except:` without specific exception types - MANDATORY
+
+### Exception Patterns (REQUIRED)
+
+```python
+class ValidationError(ValueError):
+    """Raised when data validation fails."""
+    pass
+
+class DatabaseError(Exception):
+    """Raised when database operations fail."""
+    pass
+
+def validate_data(data: dict) -> None:
+    """Validate input data."""
+    try:
+        if not data.get('name'):
+            raise ValidationError("Name is required")
+        if len(data.get('name', '')) > 100:
+            raise ValidationError("Name too long")
+    except KeyError as e:
+        logger.error(f"Missing required field: {e}")
+        raise ValidationError(f"Missing required field: {e}") from e
+
+def handle_multiple_exceptions_example():
+    """Example using ExceptionGroup and except* (Python 3.13+)."""
+    try:
+        # Operations that might raise different exceptions
+        process_data()
+        validate_input()
+        save_to_database()
+    except* ValidationError as eg:
+        # Handle all ValidationErrors
+        for exc in eg.exceptions:
+            logger.error(f"Validation error: {exc}")
+    except* DatabaseError as eg:
+        # Handle all DatabaseErrors
+        for exc in eg.exceptions:
+            logger.error(f"Database error: {exc}")
+```
+
+## Function Design (ENFORCED)
+
+- **Single Responsibility**: Each function does one thing well - MANDATORY
+- **Max 30 Lines**: Functions should not exceed 30 logical lines - MANDATORY
+- **Descriptive Names**: Use `verb_noun` format for function names - MANDATORY
+- **Docstrings**: All public functions MUST have docstrings following Google/NumPy style - MANDATORY
+- **Parameter Defaults**: Use `None` as default for mutable arguments - MANDATORY
+
+### Function Examples (REQUIRED)
+
+```python
+from typing import TypedDict, Required, NotRequired
+
+class ItemDict(TypedDict):
+    """Item dictionary structure (Python 3.13+ Required/NotRequired)."""
+    price: Required[float]  # Required field
+    quantity: Required[int]  # Required field
+    discount: NotRequired[float]  # Optional field (Python 3.13+)
+
+def calculate_total_price(
+    items: list[ItemDict],
+    tax_rate: float = 0.08,
+    discount: float | None = None
+) -> float:
+    """Calculate total price including tax and optional discount.
+
+    Args:
+        items: List of items with 'price' and 'quantity' keys
+        tax_rate: Tax rate as decimal (e.g., 0.08 for 8%)
+        discount: Optional discount amount
+
+    Returns:
+        Total price after tax and discount
+
+    Raises:
+        ValueError: If items contain invalid data
+    """
+    if not items:
+        return 0.0
+
+    subtotal = sum(item['price'] * item['quantity'] for item in items)
+    total = subtotal * (1 + tax_rate)
+
+    if discount:
+        total -= discount
+
+    return max(total, 0.0)  # Never return negative total
+```
+
+## Class Design (ENFORCED)
+
+- **Dataclasses for Data**: Use `@dataclass` for data-only classes - MANDATORY
+- **Properties Over Public Attributes**: Use `@property` for computed attributes - MANDATORY
+- **Dunder Methods**: Implement `__str__`, `__repr__`, `__eq__` as needed - MANDATORY
+- **Context Managers**: Implement `__enter__`/`__exit__` for resource management - MANDATORY
+- **Abstract Base Classes**: Use `abc.ABC` for interfaces - MANDATORY
+
+## Module Visibility Rules (ENFORCED)
+
+- **Cross-module symbols MUST be public** - Any symbol (class, function, method, constant) accessed from outside its defining module MUST NOT be private (no `_` prefix) - MANDATORY
+- **Private symbols are module-internal only** - Private symbols (with `_` prefix) MUST only be used within the same module where they are defined - MANDATORY
+- **Detection**: Type checkers (Pyright/Pylance) report `reportPrivateUsage` errors when private symbols are accessed across module boundaries - these MUST be fixed by making the symbol public - MANDATORY
+- **NEVER use type-checker suppressions** - It is FORBIDDEN to use `# pyright: reportPrivateUsage=false`, `# pyright: ignore[reportPrivateUsage]`, `# type: ignore[reportPrivateUsage]`, or any similar suppression comments. These are BLOCKED and MUST be removed. The ONLY correct fix is to make the symbol public - MANDATORY
+- **Renaming requirement**: When making a symbol public, rename it everywhere:
+  - Symbol definition (remove `_` prefix)
+  - All internal calls within the defining module
+  - All external usages (tests, other modules)
+- **Remove ignore comments**: After making a symbol public, remove any `# pyright: ignore[reportPrivateUsage]` or similar type-checker ignore comments - MANDATORY
+- **CI MUST fail** if private symbols are accessed across module boundaries - MANDATORY
+- **Exception**: Private symbols used only within the same file/class are allowed and encouraged for internal implementation details
+
+### Class Examples (REQUIRED)
+
+```python
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field, replace
+
+@dataclass
+class User:
+    """User data model."""
+    id: int
+    username: str
+    email: str
+    is_active: bool = True
+    created_at: datetime = field(default_factory=datetime.now)
+
+    @property
+    def display_name(self) -> str:
+        """Get display name for user."""
+        return f"{self.username} ({self.email})"
+
+    def __post_init__(self):
+        """Validate user data after initialization."""
+        if not self.username:
+            raise ValueError("Username cannot be empty")
+        if '@' not in self.email:
+            raise ValueError("Invalid email format")
+
+    def copy_with(self, **changes) -> Self:
+        """Create a copy of this user with modified fields (Python 3.13+ Self type)."""
+        return replace(self, **changes)
+
+class DatabaseConnection(ABC):
+    """Abstract database connection interface."""
+
+    @abstractmethod
+    def connect(self) -> None:
+        """Establish database connection."""
+        pass
+
+    @abstractmethod
+    def disconnect(self) -> None:
+        """Close database connection."""
+        pass
+
+    @abstractmethod
+    def execute(self, query: str, params: list[object] | None = None) -> list[dict[str, object]]:
+        """Execute query and return results."""
+        pass
+
+    def __enter__(self):
+        """Context manager entry."""
+        self.connect()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit."""
+        self.disconnect()
+```
+
+## Python 3.13+ Built-ins (ENFORCED)
+
+- **Exception Groups**: Use `except*` for handling multiple exceptions - MANDATORY (Python 3.13+)
+- **itertools.batched()**: Use `itertools.batched()` for chunking iterables - MANDATORY (Python 3.13+)
+- **contextlib.chdir()**: Use `contextlib.chdir()` for temporary directory changes - MANDATORY (Python 3.13+)
+- **functools.cache**: Prefer `@cache` over `@lru_cache` for unbounded caching - MANDATORY (Python 3.13+)
+- **asyncio.timeout()**: Prefer `asyncio.timeout()` over `asyncio.wait_for()` - MANDATORY (Python 3.13+)
+
+## Async/Await Patterns (ENFORCED)
+
+- **Async Functions**: Use `async def` for I/O-bound operations - MANDATORY
+- **Await Correctly**: Only `await` async functions - MANDATORY
+- **Async Context Managers**: Use `async with` for async resources - MANDATORY
+- **Async Iterators**: Use `async for` for async iteration - MANDATORY
+- **Task Groups**: Use `asyncio.TaskGroup` for concurrent operations - MANDATORY
+- **Timeout Context**: Use `asyncio.timeout()` instead of `asyncio.wait_for()` - MANDATORY (Python 3.13+)
+
+### Async Patterns (REQUIRED)
+
+```python
+import asyncio
+from typing import AsyncGenerator
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def database_session():
+    """Async database session context manager."""
+    session = await create_database_session()
+    try:
+        yield session
+    finally:
+        await session.close()
+
+async def process_items_concurrently(items: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Process items concurrently using TaskGroup."""
+
+    async def process_item(item: dict[str, object]) -> dict[str, object]:
+        """Process a single item."""
+        # Simulate async processing
+        await asyncio.sleep(0.1)
+        return {"processed": True, **item}
+
+    async with asyncio.TaskGroup() as tg:
+        tasks = [tg.create_task(process_item(item)) for item in items]
+
+    return [task.result() for task in tasks]
+
+async def stream_data() -> AsyncGenerator[dict[str, object], None]:
+    """Async generator for streaming data."""
+    for i in range(100):
+        yield {"id": i, "data": f"item_{i}"}
+        await asyncio.sleep(0.01)  # Simulate async data fetching
+
+async def fetch_with_timeout_example(url: str) -> dict[str, object]:
+    """Example using asyncio.timeout() (Python 3.13+)."""
+    async with asyncio.timeout(5.0):  # Prefer over asyncio.wait_for()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                return await response.json()
+
+async def main():
+    """Main async function."""
+    async with database_session() as session:
+        results = await process_items_concurrently([
+            {"id": 1, "name": "item1"},
+            {"id": 2, "name": "item2"}
+        ])
+
+        async for item in stream_data():
+            await session.save(item)
+```
+
+## Testing Standards (ENFORCED)
+
+- **pytest Framework**: Use pytest for all testing - MANDATORY
+- **Test Discovery**: Follow `test_*.py` and `*_test.py` naming conventions - MANDATORY
+- **Arrange-Act-Assert**: Use AAA pattern in all tests - MANDATORY
+- **Descriptive Names**: Use `test_functionality_when_condition` format - MANDATORY
+- **100% Coverage**: Aim for 100% test coverage on new code - MANDATORY
+
+### Testing Patterns (REQUIRED)
+
+```python
+import pytest
+from unittest.mock import Mock, AsyncMock
+
+class TestUserManager:
+    """Test cases for UserManager class."""
+
+    @pytest.fixture
+    def user_manager(self):
+        """Create UserManager instance for testing."""
+        return UserManager(database=Mock())
+
+    @pytest.fixture
+    def sample_user_data(self):
+        """Sample user data for testing."""
+        return {
+            "id": 1,
+            "username": "testuser",
+            "email": "test@example.com"
+        }
+
+    def test_create_user_success(self, user_manager, sample_user_data):
+        """Test successful user creation."""
+        # Arrange
+        user_manager.database.save.return_value = True
+
+        # Act
+        result = user_manager.create_user(sample_user_data)
+
+        # Assert
+        assert result["success"] is True
+        assert result["user"]["username"] == "testuser"
+        user_manager.database.save.assert_called_once()
+
+    def test_create_user_validation_failure(self, user_manager):
+        """Test user creation with invalid data."""
+        # Arrange
+        invalid_data = {"username": "", "email": "invalid"}
+
+        # Act & Assert
+        with pytest.raises(ValidationError, match="Username cannot be empty"):
+            user_manager.create_user(invalid_data)
+
+    @pytest.mark.asyncio
+    async def test_async_operation(self, user_manager):
+        """Test async operations."""
+        # Arrange
+        user_manager.database.async_query = AsyncMock(return_value=[{"id": 1}])
+
+        # Act
+        results = await user_manager.get_all_users()
+
+        # Assert
+        assert len(results) == 1
+        assert results[0]["id"] == 1
+
+    def test_edge_cases(self, user_manager):
+        """Test edge cases and error conditions."""
+        test_cases = [
+            ({}, "Empty data"),
+            ({"username": None}, "None username"),
+            ({"username": "a" * 101}, "Username too long"),
+        ]
+
+        for invalid_data, description in test_cases:
+            with pytest.raises(ValidationError):
+                user_manager.create_user(invalid_data)
+```
+
+## Performance Considerations (ENFORCED)
+
+- **List Comprehensions**: Prefer list comprehensions over loops - MANDATORY
+- **Generator Expressions**: Use generators for large datasets - MANDATORY
+- **Efficient Data Structures**: Choose appropriate data structures (dict vs list) - MANDATORY
+- **Lazy Evaluation**: Use lazy evaluation when possible - MANDATORY
+- **Memory Management**: Avoid loading large datasets into memory - MANDATORY
+
+### Performance Patterns (REQUIRED)
+
+```python
+# ✅ GOOD: List comprehensions
+squares = [x**2 for x in range(1000)]
+
+# ✅ GOOD: Generator expressions for large data
+def get_large_dataset():
+    return (process_item(item) for item in huge_dataset)
+
+# ✅ GOOD: Dictionary lookups over list searches
+user_lookup = {user.id: user for user in users}
+user = user_lookup.get(user_id)  # O(1) lookup
+
+# ✅ GOOD: Efficient string operations
+parts = []
+for item in items:
+    parts.append(str(item))
+result = ''.join(parts)  # Single string allocation
+
+# ❌ BAD: Inefficient string concatenation in loop
+result = ""
+for item in items:
+    result += str(item)  # Creates new string each iteration
+```
+
+## Security Practices (ENFORCED)
+
+- **Input Validation**: Validate all external inputs - MANDATORY
+- **SQL Injection Prevention**: Use parameterized queries - MANDATORY
+- **XSS Prevention**: Sanitize HTML output - MANDATORY
+- **Secure Defaults**: Use secure defaults for all configurations - MANDATORY
+- **Dependency Scanning**: Regularly update and scan dependencies - MANDATORY
+
+## Context Managers (ENFORCED)
+
+- **contextlib.chdir()**: Use `contextlib.chdir()` for temporary directory changes - MANDATORY (Python 3.13+)
+- **Resource Management**: Always use context managers for file operations and resource cleanup - MANDATORY
+
+### Context Manager Examples (REQUIRED)
+
+```python
+from contextlib import chdir
+from pathlib import Path
+
+def process_files_in_directory(directory: Path) -> list[str]:
+    """Process files using contextlib.chdir() (Python 3.13+)."""
+    results = []
+    
+    with chdir(directory):  # Temporarily change directory
+        for file_path in Path.cwd().glob("*.txt"):
+            results.append(process_file(file_path))
+    
+    # Directory automatically restored after context exit
+    return results
+```
+
+## Package Structure (ENFORCED)
+
+- **src Layout**: Use `src/` directory for package code - MANDATORY
+- **Flat is Better**: Keep package structure reasonably flat - MANDATORY
+- ****init**.py**: Include `__init__.py` files in all packages - MANDATORY
+- ****main**.py**: Use for executable packages - MANDATORY
+- **README.md**: Include comprehensive documentation - MANDATORY
+
+### Package Structure Example (REQUIRED)
+
+```text
+my_package/
+├── src/
+│   └── my_package/
+│       ├── __init__.py
+│       ├── __main__.py
+│       ├── core.py
+│       ├── utils.py
+│       └── api/
+│           ├── __init__.py
+│           ├── client.py
+│           └── server.py
+├── tests/
+│   ├── __init__.py
+│   ├── test_core.py
+│   └── test_api.py
+├── pyproject.toml
+├── README.md
+└── .gitignore
+```
+
+## Tooling Requirements (ENFORCED)
+
+- **Black**: Code formatting - MANDATORY
+- **isort**: Import sorting - MANDATORY
+- **Pyright**: Static type checking with strict mode - MANDATORY
+- **flake8**: Linting - MANDATORY
+- **pytest**: Testing framework - MANDATORY
+- **coverage.py**: Test coverage - MANDATORY
+- **pre-commit**: Pre-commit hooks - MANDATORY
+
+### Pyright Configuration (REQUIRED)
+
+Type checking is enforced via Pyright with strict mode. Configuration in `pyrightconfig.json`:
+
+- **Type Checking Mode**: `"strict"` - Enables maximum type safety
+- **Python Version**: `"3.13"` - Matches project requirements (Python 3.13+ built-ins preferred)
+- **Missing Type Stubs**: Reported as errors
+- **Missing Imports**: Reported as errors
+- **Missing Module Source**: Reported as errors
+- **Unbound Variables**: Reported as errors
+- **Unused Coroutines**: Reported as errors
+- **Duplicate Imports**: Reported as errors
+- **Constant Redefinition**: Reported as errors
+- **Call in Default Initializer**: Reported as errors
+- **Assert Always True**: Reported as errors
+- **Invalid Stub Statements**: Reported as errors
+- **Invalid TypeVar Use**: Reported as errors
+- **Invalid String Escape Sequences**: Reported as errors
+- **Unused Code**: Reported as warnings (classes, functions, imports, variables, exceptions, call results)
+- **Private Usage**: Reported as warnings
+- **Wildcard Imports**: Reported as warnings
+- **Incomplete Stubs**: Reported as warnings
+
+Strict mode automatically enforces:
+
+- All type issues are errors
+- Optional member access, operands, subscripts, calls, iterables, and context managers are errors
+- Unknown types (member, variable, argument, lambda, parameter, return) are errors
+- Untyped decorators, base classes, and NamedTuples are errors
+- Incompatible overrides and inconsistent constructors are errors
+
+### Pre-commit Configuration (REQUIRED)
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+
+  - repo: https://github.com/psf/black
+    rev: 23.7.0
+    hooks:
+      - id: black
+        language_version: python3
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
+    hooks:
+      - id: flake8
+```
+
+## Violations (BLOCKED)
+
+- ❌ Missing type hints on functions/methods
+- ❌ Functions exceeding 30 lines
+- ❌ Bare `except:` clauses
+- ❌ Manual import sorting
+- ❌ Manual code formatting
+- ❌ Classes without proper encapsulation
+- ❌ Missing docstrings on public functions
+- ❌ Inefficient algorithms (O(n²) where O(n) possible)
+- ❌ Missing input validation
+- ❌ Use of `Any` type (FORBIDDEN - Use Protocols, TypedDict, or `object` instead)
+- ❌ Use of `typing.List`, `typing.Dict`, `typing.Tuple`, `typing.Set` when built-ins are available (FORBIDDEN - Use `list`, `dict`, `tuple`, `set` instead)
+- ❌ Use of `object` when concrete types are available (FORBIDDEN - Investigate actual types and use them)
+- ❌ Replacing concrete types with `object` (FORBIDDEN - Make types MORE specific, not less)
+- ❌ Using abstractions like `Mapping` when `dict` works (FORBIDDEN - Use `dict` directly)
+- ❌ Synchronous I/O in async contexts
+
+## Python 3.13+ Feature Summary
+
+This project targets Python 3.13+ and should use modern built-ins:
+
+- **Type Hints**: `T | None`, `typing.Self`, `Required`/`NotRequired` (all available in Python 3.13+)
+- **Async**: `asyncio.timeout()`, `asyncio.TaskGroup` (all available in Python 3.13+)
+- **Itertools**: `itertools.batched()`, `itertools.pairwise()` (all available in Python 3.13+)
+- **Contextlib**: `contextlib.chdir()` (available in Python 3.13+)
+- **Functools**: `@cache` for unbounded caching (available in Python 3.13+)
+- **Exceptions**: `except*` for ExceptionGroup handling (available in Python 3.13+)
+- **Generics**: Built-in `list[str]`, `dict[str, int]` (available in Python 3.13+)
+
+## See Also
+
+- [coding-standards.mdc](coding-standards.mdc) - General coding standards
+- [testing-standards.mdc](testing-standards.mdc) - Testing requirements
+- [maintainability.mdc](maintainability.mdc) - Code maintainability rules
+
+## Enforcement (MANDATORY)
+
+- **Pre-commit hooks**: Verify compliance before commit
+- **CI Integration**: Automated checks fail builds on violations
+- **Code review**: Reject PRs with Python coding standard violations
+- **Type checking**: Pyright must pass with strict mode (all type errors must be resolved)
+- **Test coverage**: Must maintain >90% coverage
+- **NO exceptions**: All violations must be fixed before merge

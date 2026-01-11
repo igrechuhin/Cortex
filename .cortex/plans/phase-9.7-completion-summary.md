@@ -268,8 +268,8 @@ Used general-purpose agent to efficiently complete all Phase 9.7 tasks:
 - [docs/guides/failure-modes.md](../docs/guides/failure-modes.md) - Failure mode documentation (642 lines)
 
 **Plan Files:**
-- [.plan/phase-9.7-error-handling.md](.plan/phase-9.7-error-handling.md) - Updated status to COMPLETE
-- [.plan/README.md](.plan/README.md) - Updated Phase 9.7 progress to 100%
+- [.plan/phase-9.7-error-handling.md](.cursor/plans/phase-9.7-error-handling.md) - Updated status to COMPLETE
+- [.plan/README.md](.cursor/plans/README.md) - Updated Phase 9.7 progress to 100%
 
 ### New Files (Summary)
 

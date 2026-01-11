@@ -1,0 +1,567 @@
+---
+globs: *.py
+alwaysApply: false
+---
+
+# Python MCP Development Standards (MANDATORY - ZERO TOLERANCE)
+
+**ENFORCEMENT**: All rules are MANDATORY. CI MUST fail on violations. NO exceptions.
+
+## MCP Server Architecture (ENFORCED)
+
+### Server Structure (MANDATORY)
+
+```python
+# ✅ REQUIRED - Proper MCP server structure
+class DocMCPServer:
+    """MCP server wrapper with proper initialization and lifecycle."""
+
+    def __init__(self):
+        self.server = Server("server-name")  # MCP Server instance
+        self.config = None
+        self.doc_loader = None
+        self.resource_manager = None
+
+    async def initialize_async(self):
+        """Async initialization with proper error handling."""
+        # Load configuration
+        # Initialize components
+        # Register MCP handlers
+        pass
+
+    # Register handlers on self.server (MCP Server instance)
+    @self.server.list_resources()
+    async def list_resources_handler(self):
+        # Handler implementation
+        pass
+
+# ❌ PROHIBITED - Incorrect server structure
+class BadMCPServer:
+    def __init__(self):
+        self.server = Server("name")  # OK
+        # Missing proper initialization pattern
+
+    # ❌ Handlers registered incorrectly
+    def setup_handlers(self):
+        @self.server.list_resources  # Missing () - not a decorator
+        async def handler(self):  # Extra self parameter
+            pass
+```
+
+### Handler Registration (ENFORCED)
+
+```python
+# ✅ REQUIRED - Proper handler registration
+class CorrectMCPServer:
+    def __init__(self):
+        self.server = Server("my-server")
+
+    # Register on MCP Server instance
+    @self.server.list_resources()
+    async def handle_list_resources(self):
+        """List available resources."""
+        return []  # Return proper MCP response
+
+    @self.server.read_resource()
+    async def handle_read_resource(self, uri: str):
+        """Read specific resource."""
+        return {"contents": []}  # Return proper MCP response
+
+# ❌ PROHIBITED - Handler registration errors
+class IncorrectMCPServer:
+    def __init__(self):
+        self.server = Server("my-server")
+
+    # ❌ Wrong decorator syntax
+    @self.server.list_resources  # Missing ()
+    async def handler(self):
+        pass
+
+    # ❌ Wrong method signature
+    @self.server.read_resource()
+    async def read_handler(self, uri):  # Missing type hints
+        return "string"  # Wrong return type
+```
+
+## stdio Communication (ENFORCED)
+
+### Context Manager Usage (MANDATORY)
+
+```python
+# ✅ REQUIRED - Proper stdio_server usage
+async def main():
+    server = DocMCPServer()
+    await server.initialize_async()
+
+    # Use stdio_server as async context manager
+    async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
+        await server.server.run(read_stream, write_stream, server.server.create_initialization_options())
+
+# ❌ PROHIBITED - Incorrect stdio_server usage
+async def bad_main():
+    server = DocMCPServer()
+    await server.initialize_async()
+
+    # ❌ Passing server object as argument
+    async with mcp.server.stdio.stdio_server(server.server) as (read_stream, write_stream):  # Causes async iterator error
+        await server.server.run(read_stream, write_stream, server.server.create_initialization_options())
+```
+
+### Main Function Pattern (MANDATORY)
+
+```python
+# ✅ REQUIRED - Synchronous main function
+def main():
+    """Synchronous main function for script entry points."""
+    async def run_server():
+        server = DocMCPServer()
+        await server.initialize_async()
+
+        async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
+            await server.server.run(read_stream, write_stream, server.server.create_initialization_options())
+
+    # Run async server internally
+    asyncio.run(run_server())
+
+# ❌ PROHIBITED - Async main function
+async def bad_main():
+    """Async main function causes coroutine errors."""
+    server = DocMCPServer()
+    await server.initialize_async()
+
+    async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
+        await server.server.run(read_stream, write_stream, server.server.create_initialization_options())
+
+# Script entry point calls
+if __name__ == "__main__":
+    asyncio.run(bad_main())  # This would cause "coroutine was never awaited"
+```
+
+## Error Prevention (ENFORCED)
+
+### Server Object Misuse Prevention (MANDATORY)
+
+```python
+# ✅ REQUIRED - Prevent server objects from being used as async iterators
+class SafeMCPServer:
+    """Server that cannot be accidentally used as async iterator."""
+
+    def __init__(self):
+        self.server = Server("safe-server")
+
+    # Explicitly prevent async iteration
+    def __aiter__(self):
+        raise TypeError(f"{self.__class__.__name__} is not async iterable")
+
+    def __anext__(self):
+        raise TypeError(f"{self.__class__.__name__} is not async iterable")
+
+# Testing
+def test_server_not_async_iterable():
+    """Test that server objects are not async iterable."""
+    server = SafeMCPServer()
+
+    # Should raise TypeError
+    with pytest.raises(TypeError, match="not async iterable"):
+        async for item in server:
+            pass
+```
+
+### Async Context Manager Errors (MANDATORY)
+
+```python
+# ✅ REQUIRED - Proper async context manager usage
+async def correct_stdio_usage():
+    """Correct stdio_server usage."""
+    server = DocMCPServer()
+    await server.initialize_async()
+
+    # stdio_server() without arguments
+    async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
+        # server.server.run() with proper arguments
+        await server.server.run(read_stream, write_stream, server.server.create_initialization_options())
+
+# ❌ PROHIBITED - Common async context manager mistakes
+async def incorrect_stdio_usage():
+    """Common mistakes that cause errors."""
+    server = DocMCPServer()
+
+    # ❌ Forgetting parentheses on stdio_server
+    async with mcp.server.stdio.stdio_server as (read_stream, write_stream):  # SyntaxError
+        pass
+
+    # ❌ Calling stdio_server incorrectly
+    async with mcp.server.stdio.stdio_server(server) as (read_stream, write_stream):  # TypeError
+        pass
+
+    # ❌ Wrong arguments to server.run
+    await server.server.run(read_stream, write_stream)  # Missing init_options
+```
+
+## Testing Patterns (ENFORCED)
+
+### MCP Handler Testing (MANDATORY)
+
+```python
+# ✅ REQUIRED - Test MCP handlers properly
+import pytest
+from unittest.mock import AsyncMock
+
+class TestMCPHandlers:
+    """Test MCP protocol handlers."""
+
+    @pytest.fixture
+    async def server(self):
+        """Server fixture with mocked components."""
+        server = DocMCPServer()
+        server.config = AsyncMock()
+        server.doc_loader = AsyncMock()
+        server.resource_manager = AsyncMock()
+        return server
+
+    async def test_list_resources_handler(self, server):
+        """Test list_resources handler."""
+        # Mock resource manager
+        server.resource_manager.list_resources = AsyncMock(return_value=[
+            {"uri": "file:///docs/README.md", "name": "README"}
+        ])
+
+        # Call handler (this would be called by MCP protocol)
+        result = await server.handle_list_resources()
+
+        # Verify proper MCP response format
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert "uri" in result[0]
+        assert "name" in result[0]
+
+    async def test_read_resource_handler(self, server):
+        """Test read_resource handler."""
+        uri = "file:///docs/README.md"
+
+        # Mock resource manager
+        server.resource_manager.read_resource = AsyncMock(return_value={
+            "contents": [{"type": "text", "text": "# README\nHello World"}]
+        })
+
+        # Call handler
+        result = await server.handle_read_resource(uri)
+
+        # Verify proper MCP response format
+        assert "contents" in result
+        assert isinstance(result["contents"], list)
+        assert result["contents"][0]["type"] == "text"
+```
+
+### stdio Communication Testing (MANDATORY)
+
+```python
+# ✅ REQUIRED - Test stdio communication without real I/O
+import pytest
+from unittest.mock import patch, AsyncMock
+
+class TestStdioCommunication:
+    """Test stdio communication setup."""
+
+    async def test_stdio_server_initialization(self):
+        """Test stdio_server can be initialized without errors."""
+        server = DocMCPServer()
+        await server.initialize_async()
+
+        # Mock stdio_server to avoid real stdio operations
+        with patch('mcp.server.stdio.stdio_server') as mock_stdio:
+            mock_context = AsyncMock()
+            mock_stdio.return_value = mock_context
+            mock_context.__aenter__.return_value = (AsyncMock(), AsyncMock())
+            mock_context.__aexit__.return_value = None
+
+            # This should not raise any exceptions
+            async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
+                # Verify stdio_server was called correctly
+                mock_stdio.assert_called_once_with()  # No arguments
+
+                # Verify streams are available
+                assert read_stream is not None
+                assert write_stream is not None
+
+    async def test_server_run_called_correctly(self):
+        """Test server.run is called with correct arguments."""
+        server = DocMCPServer()
+        await server.initialize_async()
+
+        with patch('mcp.server.stdio.stdio_server') as mock_stdio:
+            with patch.object(server.server, 'run') as mock_run:
+                with patch.object(server.server, 'create_initialization_options') as mock_init:
+                    # Setup mocks
+                    mock_context = AsyncMock()
+                    mock_stdio.return_value = mock_context
+                    mock_read_stream = AsyncMock()
+                    mock_write_stream = AsyncMock()
+                    mock_context.__aenter__.return_value = (mock_read_stream, mock_write_stream)
+                    mock_context.__aexit__.return_value = None
+                    mock_init.return_value = {}
+
+                    # Run the communication
+                    async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
+                        await server.server.run(read_stream, write_stream, server.server.create_initialization_options())
+
+                    # Verify server.run was called correctly
+                    mock_run.assert_called_once_with(mock_read_stream, mock_write_stream, {})
+```
+
+## Common MCP Errors (DOCUMENTED)
+
+### Error: "coroutine 'main' was never awaited"
+
+**Cause**: Async main function called directly instead of via `asyncio.run()`
+**Fix**: Make main function synchronous, run async code internally
+
+```python
+# ❌ BAD
+async def main():
+    # async code
+
+if __name__ == "__main__":
+    main()  # Returns coroutine, never awaited
+
+# ✅ GOOD
+def main():
+    async def run_server():
+        # async code
+    asyncio.run(run_server())
+
+if __name__ == "__main__":
+    main()  # Synchronous call
+```
+
+### Error: "async for requires an object with **aiter** method"
+
+**Cause**: Server object passed to stdio_server, ends up as stdin in async for loop
+**Fix**: Call `stdio_server()` without arguments
+
+```python
+# ❌ BAD
+async with mcp.server.stdio.stdio_server(server.server):  # Server object becomes stdin
+
+# ✅ GOOD
+async with mcp.server.stdio.stdio_server():  # No arguments, handles stdin/stdout automatically
+```
+
+### Error: "'Server' object has no attribute 'initialize'"
+
+**Cause**: Trying to register handlers on wrapper class instead of MCP Server instance
+**Fix**: Register handlers on `self.server` (the MCP Server instance)
+
+```python
+# ❌ BAD
+@self.initialize()  # Wrong - self is wrapper class
+async def handler(self):
+
+# ✅ GOOD
+@self.server.list_resources()  # Correct - self.server is MCP Server instance
+async def handler(self):
+```
+
+## Tool Naming (MANDATORY)
+
+- Use snake_case verbs plus domain nouns (e.g., `search_docs`, `find_component`, `list_components`).
+- Start with an action verb; avoid bare nouns or ambiguous prefixes.
+- Keep names to three segments or fewer for readability and to avoid collisions.
+- Document tool names, schemas, and examples in README and capability schemas when registering new tools.
+
+## Violations (BLOCKED)
+
+- ❌ Async main functions in script entry points
+- ❌ Passing server objects to stdio_server()
+- ❌ Registering MCP handlers on wrapper classes instead of MCP Server instances
+- ❌ Server objects being used as async iterators
+- ❌ Incorrect arguments to server.run() method
+- ❌ Missing proper MCP response formats in handlers
+- ❌ Not testing MCP protocol compliance
+
+## See Also
+
+- [python-async-patterns.mdc](python-async-patterns.mdc) - Async programming patterns
+- [python-testing-standards.mdc](python-testing-standards.mdc) - Testing requirements
+- [python-coding-standards.mdc](python-coding-standards.mdc) - Python coding standards
+
+## Enforcement (MANDATORY)
+
+## Cursor + Pyright + MCP Ergonomics (MANDATORY)
+
+### Typed MCP Boundaries (ENFORCED)
+
+- All public MCP handlers MUST have fully explicit parameter and return types.
+- JSON-like inputs MUST use `TypedDict` models instead of bare `dict` where field structure is known.
+- Handler inputs and outputs MUST avoid `Any`; use concrete types, `TypedDict`, or dataclasses.
+
+```python
+from dataclasses import dataclass
+from typing import TypedDict
+
+
+class OptimizeContextRequest(TypedDict):
+    """JSON payload for optimize_context MCP tool."""
+
+    memory_bank_root: str
+    max_tokens: int
+    strategy: str
+
+
+@dataclass(frozen=True)
+class OptimizeContextResult:
+    """Structured result for optimize_context."""
+
+    selected_files: list[str]
+    total_tokens: int
+
+
+@mcp.tool()
+async def optimize_context(request: OptimizeContextRequest) -> OptimizeContextResult:
+    """Thin async handler that delegates to pure helpers."""
+    result = _optimize_context_impl(
+        root=request["memory_bank_root"],
+        max_tokens=request["max_tokens"],
+        strategy=request["strategy"],
+    )
+    return OptimizeContextResult(
+        selected_files=result.selected_files,
+        total_tokens=result.total_tokens,
+    )
+```
+
+### Pure Helpers Inside Handlers (ENFORCED)
+
+- MCP handlers MUST stay thin orchestrators:
+  - Parse/validate typed inputs
+  - Delegate to pure, file-level helper functions
+  - Map results to typed outputs
+- Core logic MUST live in small, pure helpers that are easy to test and refactor.
+
+```python
+def _optimize_context_impl(root: str, max_tokens: int, strategy: str) -> OptimizeContextResult:
+    """Pure helper for context optimization (no I/O, fully typed)."""
+    # ... pure computation using root, max_tokens, and strategy ...
+    return OptimizeContextResult(selected_files=[], total_tokens=0)
+```
+
+### JSON Payload Modeling (ENFORCED)
+
+- JSON payloads MUST be modeled with `TypedDict` hierarchies when keys are known.
+- Nested structures SHOULD use dedicated `TypedDict` or dataclasses instead of `dict[str, object]`.
+- Use `dict[str, object]` only at true protocol edges where structure is unknown.
+
+```python
+class ToolCallArguments(TypedDict, total=False):
+    query: str
+    top_k: int
+    include_metadata: bool
+
+
+class ToolCall(TypedDict):
+    name: str
+    arguments: ToolCallArguments
+```
+
+### TypedDict Response Patterns in MCP Handlers (ENFORCED)
+
+**Reference Implementation**: See actual TypedDict patterns used in MCP handlers throughout the codebase:
+
+- **`ValidationResult`** and **`ValidationError`** in `src/cortex/schema_validator.py` - Used by `validate_memory_bank` tool in `src/cortex/tools/phase3_validation.py`
+- **`InsightDict`** and **`SummaryDict`** in `src/cortex/insight_engine.py` - Used for analysis and insight generation
+- **`AccessRecord`**, **`FileStatsEntry`**, **`TaskPatternEntry`**, and **`AccessLog`** in `src/cortex/pattern_analyzer.py` - Used for pattern analysis
+- **`FileDependencyInfo`** in `src/cortex/dependency_graph.py` - Used for dependency tracking
+
+**Pattern to Follow**:
+
+1. **Define TypedDict at module level** (not inside handlers):
+
+```python
+# ✅ CORRECT - TypedDict defined at module level
+class ValidationError(TypedDict, total=False):
+    """Validation error structure."""
+    type: str
+    severity: str
+    message: str
+    suggestion: str | None
+
+
+class ValidationResult(TypedDict):
+    """Result of file validation."""
+    valid: bool
+    errors: list[ValidationError]
+    warnings: list[ValidationError]
+    score: int
+```
+
+1. **Use TypedDict in handler return types** (when returning structured data):
+
+```python
+# ✅ CORRECT - Handler uses TypedDict for structured response
+@mcp.tool()
+async def validate_memory_bank(...) -> str:
+    """Validate Memory Bank files."""
+    # ... validation logic ...
+    result: ValidationResult = await schema_validator.validate_file(fname, content)
+    # ValidationResult (TypedDict) is compatible with dict[str, object]
+    validation_results[fname] = {
+        "valid": result["valid"],
+        "errors": result["errors"],
+        "warnings": result["warnings"],
+        "score": result["score"],
+    }
+    return json.dumps(validation_results, indent=2)
+```
+
+1. **Use `total=False` for optional fields**:
+
+```python
+# ✅ CORRECT - Optional fields use total=False
+class ValidationError(TypedDict, total=False):
+    type: str
+    severity: str
+    message: str
+    suggestion: str | None  # Optional field
+```
+
+1. **Nested TypedDict structures** - Use separate TypedDict classes for nested structures:
+
+```python
+# ✅ CORRECT - Separate TypedDict for nested structure
+class ValidationError(TypedDict, total=False):
+    type: str
+    severity: str
+    message: str
+    suggestion: str | None
+
+
+class ValidationResult(TypedDict):
+    valid: bool
+    errors: list[ValidationError]  # Nested TypedDict
+    warnings: list[ValidationError]  # Nested TypedDict
+    score: int
+```
+
+**See Examples**:
+
+- `src/cortex/schema_validator.py:13-28` - `ValidationError` and `ValidationResult` definitions
+- `src/cortex/tools/phase3_validation.py:107-114` - Usage in `validate_memory_bank` handler
+- `src/cortex/insight_engine.py:17-39` - `InsightDict` and `SummaryDict` patterns
+- `src/cortex/pattern_analyzer.py:17-51` - Complex nested TypedDict structures
+
+**❌ PROHIBITED**: Using bare `dict[str, object]` when TypedDict structure is known. Always define explicit TypedDict classes for structured responses.
+
+### Pyright Configuration for MCP (DOCUMENTED)
+
+- `pyrightconfig.json` MUST:
+  - Use `"typeCheckingMode": "strict"` and `"pythonVersion": "3.13"`.
+  - Set `reportUnknown*Type` to `"warning"` to reduce noise around dynamic MCP payloads.
+  - Set `reportUntypedFunctionDecorator` and `reportUntypedClassDecorator` to `"none"` to avoid decorator-related noise from MCP tooling.
+- These settings keep MCP development productive in Cursor while preserving strictness on concrete types and optional handling.
+
+- **MCP Protocol Compliance**: Automated tests verify MCP message formats
+- **Async Error Prevention**: Static analysis flags potential async iterator misuse
+- **Handler Registration**: Code review ensures handlers registered on correct objects
+- **stdio Communication**: Tests verify correct stdio_server usage
+- **Error Pattern Detection**: CI checks for common MCP development mistakes
+- **NO exceptions**: All MCP development violations must be fixed before merge

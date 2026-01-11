@@ -1,0 +1,830 @@
+---
+globs: *.py
+alwaysApply: false
+---
+
+# Python Testing Standards (MANDATORY - ZERO TOLERANCE)
+
+**ENFORCEMENT**: All rules are MANDATORY. CI MUST fail on violations. NO exceptions.
+
+## Test Structure and Organization (ENFORCED)
+
+### Test File Organization (MANDATORY)
+
+```python
+# ✅ REQUIRED - Standard test file structure
+# tests/
+# ├── __init__.py
+# ├── conftest.py                    # Shared fixtures and configuration
+# ├── unit/                         # Unit tests (fast, isolated)
+# │   ├── __init__.py
+# │   ├── test_user_service.py
+# │   ├── test_config.py
+# │   └── test_validation.py
+# ├── integration/                  # Integration tests (slower, realistic)
+# │   ├── __init__.py
+# │   ├── test_api_endpoints.py
+# │   ├── test_database_operations.py
+# │   └── test_external_services.py
+# ├── e2e/                         # End-to-end tests (full system)
+# │   ├── __init__.py
+# │   └── test_user_registration_flow.py
+# ├── performance/                 # Performance tests
+# │   ├── __init__.py
+# │   └── test_api_performance.py
+# └── fixtures/                    # Test data and fixtures
+#     ├── __init__.py
+#     ├── users.json
+#     └── sample_data.py
+
+# Test file naming conventions
+# ✅ REQUIRED - Descriptive test names
+def test_user_creation_with_valid_data():
+    """Test user creation with valid input data."""
+    pass
+
+def test_user_creation_fails_with_invalid_email():
+    """Test user creation fails with invalid email format."""
+    pass
+
+def test_user_creation_fails_with_duplicate_username():
+    """Test user creation fails with duplicate username."""
+    pass
+
+# ❌ PROHIBITED - Non-descriptive test names
+def test_user():
+    # BLOCKED: Too vague, unclear what aspect of user functionality
+    pass
+
+def test_1():
+    # BLOCKED: Non-descriptive numbering
+    pass
+
+def test_user_creation():
+    # BLOCKED: Missing specific scenario
+    pass
+```
+
+## AAA Pattern (ENFORCED)
+
+### Arrange-Act-Assert Structure (MANDATORY)
+
+```python
+# ✅ REQUIRED - Clear AAA pattern in all tests
+def test_calculate_total_with_tax():
+    """Test total calculation including tax."""
+    # Arrange - Set up test data and dependencies
+    service = PricingService()
+    items = [
+        {"name": "Widget", "price": 10.00, "quantity": 2},
+        {"name": "Gadget", "price": 5.50, "quantity": 1}
+    ]
+    tax_rate = 0.08  # 8% tax
+
+    # Act - Execute the code under test
+    total = service.calculate_total(items, tax_rate)
+
+    # Assert - Verify the expected outcome
+    expected_total = (10.00 * 2 + 5.50 * 1) * 1.08  # 25.50 * 1.08 = 27.54
+    assert total == pytest.approx(expected_total, abs=0.01)
+
+def test_user_registration_success():
+    """Test successful user registration."""
+    # Arrange
+    user_repo = Mock()
+    user_repo.save.return_value = True
+    auth_service = AuthService(user_repo)
+    user_data = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "SecurePass123!"
+    }
+
+    # Act
+    result = auth_service.register_user(user_data)
+
+    # Assert
+    assert result["success"] is True
+    assert result["user_id"] is not None
+    user_repo.save.assert_called_once()
+
+def test_api_returns_404_for_unknown_user():
+    """Test API returns 404 for unknown user."""
+    # Arrange
+    app = create_test_app()
+    client = TestClient(app)
+    unknown_user_id = 999
+
+    # Act
+    response = client.get(f"/api/users/{unknown_user_id}")
+
+    # Assert
+    assert response.status_code == 404
+    assert response.json() == {"error": "User not found"}
+
+# ❌ PROHIBITED - Tests without clear AAA structure
+def test_user_creation():
+    # BLOCKED: No clear arrange/act/assert separation
+    service = UserService()
+    user_data = {"name": "Test", "email": "test@example.com"}
+
+    # Mixed arrange and act
+    result = service.create_user(user_data)
+
+    # Missing clear assertions
+    assert result is not None
+```
+
+## pytest Best Practices (ENFORCED)
+
+### Fixtures and Test Setup (MANDATORY)
+
+```python
+# ✅ REQUIRED - Proper fixture usage
+import pytest
+from unittest.mock import Mock, AsyncMock
+
+@pytest.fixture
+def user_service():
+    """Create UserService instance for testing."""
+    repository = Mock()
+    return UserService(repository)
+
+@pytest.fixture
+def sample_user_data():
+    """Provide sample user data."""
+    return {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "hashed_password"
+    }
+
+@pytest.fixture
+async def async_db_session():
+    """Async database session fixture."""
+    session = AsyncMock()
+    yield session
+    # Cleanup if needed
+
+class TestUserService:
+    """Test UserService with fixtures."""
+
+    def test_create_user_success(self, user_service, sample_user_data):
+        """Test successful user creation."""
+        # Arrange
+        user_service.repository.save.return_value = True
+
+        # Act
+        result = user_service.create_user(sample_user_data)
+
+        # Assert
+        assert result["success"] is True
+        user_service.repository.save.assert_called_once_with(sample_user_data)
+
+    def test_create_user_repository_failure(self, user_service, sample_user_data):
+        """Test user creation when repository fails."""
+        # Arrange
+        user_service.repository.save.side_effect = DatabaseError("Connection failed")
+
+        # Act & Assert
+        with pytest.raises(DatabaseError):
+            user_service.create_user(sample_user_data)
+
+# ✅ REQUIRED - Factory fixtures for complex setup
+@pytest.fixture
+def configured_app():
+    """Create configured application instance."""
+    app = create_app()
+    app.config["TESTING"] = True
+    app.config["DATABASE_URL"] = "sqlite:///:memory:"
+
+    with app.app_context():
+        db.create_all()
+        yield app
+        db.drop_all()
+
+# ❌ PROHIBITED - Manual test setup
+class TestUserServiceBad:
+    # BLOCKED: Manual setup in each test
+    def test_create_user(self):
+        repository = Mock()
+        service = UserService(repository)
+        # ... rest of test
+```
+
+## Mocking and Stubs (ENFORCED)
+
+### Proper Mock Usage (MANDATORY)
+
+```python
+# ✅ REQUIRED - Proper mocking techniques
+from unittest.mock import Mock, patch, MagicMock
+import pytest
+
+def test_payment_processing_with_mock():
+    """Test payment processing with proper mocking."""
+    # Arrange
+    payment_service = PaymentService()
+    mock_processor = Mock()
+    mock_processor.charge.return_value = {"status": "success", "transaction_id": "txn_123"}
+
+    # Act
+    with patch.object(payment_service, '_get_processor', return_value=mock_processor):
+        result = payment_service.process_payment(100.00, "card_123")
+
+    # Assert
+    assert result["status"] == "success"
+    assert result["transaction_id"] == "txn_123"
+    mock_processor.charge.assert_called_once_with(100.00, "card_123")
+
+def test_api_client_with_responses():
+    """Test API client with mocked responses."""
+    # Arrange
+    client = APIClient()
+    expected_response = {"data": "test"}
+
+    # Act
+    with patch('requests.get') as mock_get:
+        mock_get.return_value.json.return_value = expected_response
+        response = client.get_data()
+
+    # Assert
+    assert response == expected_response
+    mock_get.assert_called_once_with('https://api.example.com/data')
+
+# ✅ REQUIRED - Async mocking
+@pytest.mark.asyncio
+async def test_async_service():
+    """Test async service with proper mocking."""
+    service = AsyncDataService()
+    mock_repo = AsyncMock()
+    mock_repo.get_data.return_value = ["item1", "item2"]
+
+    # Act
+    with patch.object(service, '_repository', mock_repo):
+        result = await service.fetch_data()
+
+    # Assert
+    assert result == ["item1", "item2"]
+    mock_repo.get_data.assert_called_once()
+
+# ❌ PROHIBITED - Over-mocking
+def test_over_mocked_function():
+    """BLOCKED: Too much mocking obscures test value."""
+    service = UserService()
+
+    # BLOCKED: Mocking everything removes test value
+    with patch.object(service, '_validate_user') as mock_validate, \
+         patch.object(service, '_save_user') as mock_save, \
+         patch.object(service, '_send_notification') as mock_notify:
+
+        mock_validate.return_value = True
+        mock_save.return_value = 123
+        mock_notify.return_value = None
+
+        result = service.create_user({"name": "Test"})
+
+        # Test verifies nothing meaningful
+        assert result["id"] == 123
+```
+
+**Static typing for test doubles**:
+
+- Test doubles for protocols/abstract interfaces (e.g., adapters) must implement required properties and method signatures so static type checkers (mypy/pyright) remain green. Provide explicit return types and inherit from the interface when possible.
+
+## Exception Testing (ENFORCED)
+
+### Proper Exception Testing Patterns (MANDATORY)
+
+```python
+# ✅ REQUIRED - Comprehensive exception testing
+import pytest
+
+def test_invalid_input_raises_validation_error():
+    """Test that invalid input raises appropriate exception."""
+    service = DataProcessor()
+
+    # Test with invalid data
+    invalid_data = {"value": -1}  # Negative values not allowed
+
+    # Assert specific exception type
+    with pytest.raises(ValidationError) as exc_info:
+        service.process_data(invalid_data)
+
+    # Verify exception message
+    assert "must be positive" in str(exc_info.value)
+
+def test_database_connection_failure():
+    """Test database connection failure handling."""
+    service = DatabaseService()
+
+    # Mock database connection failure
+    with patch.object(service, '_connect') as mock_connect:
+        mock_connect.side_effect = ConnectionError("Database unreachable")
+
+        # Assert exception is raised
+        with pytest.raises(DatabaseError) as exc_info:
+            service.get_data()
+
+        # Verify error chaining
+        assert isinstance(exc_info.value.__cause__, ConnectionError)
+
+def test_timeout_exception_handling():
+    """Test timeout exception handling."""
+    client = HTTPClient(timeout=1.0)
+
+    # Mock slow response
+    with patch('aiohttp.ClientSession.get') as mock_get:
+        mock_response = AsyncMock()
+        mock_response.status = 200
+        mock_response.json = AsyncMock(side_effect=asyncio.TimeoutError)
+        mock_get.return_value.__aenter__.return_value = mock_response
+
+        # Test timeout handling
+        with pytest.raises(TimeoutError):
+            await client.get_data()
+
+# ✅ REQUIRED - Multiple exception scenarios
+@pytest.mark.parametrize("invalid_input,expected_error", [
+    ({"value": -1}, "Value must be positive"),
+    ({"value": 1001}, "Value exceeds maximum of 1000"),
+    ({"value": "not_a_number"}, "Value must be numeric"),
+    ({}, "Value is required"),
+])
+def test_input_validation_scenarios(invalid_input, expected_error):
+    """Test multiple input validation failure scenarios."""
+    validator = InputValidator()
+
+    with pytest.raises(ValidationError) as exc_info:
+        validator.validate(invalid_input)
+
+    assert expected_error in str(exc_info.value)
+
+# ❌ PROHIBITED - Incomplete exception testing
+def test_exception_handling_bad():
+    """BLOCKED: Missing exception type specification."""
+    service = DataService()
+
+    # BLOCKED: No specific exception type
+    with pytest.raises(Exception):  # Too broad
+        service.process_invalid_data()
+
+def test_no_exception_assertion():
+    """BLOCKED: Exception raised but not asserted."""
+    service = DataService()
+
+    # BLOCKED: Exception occurs but test doesn't verify it
+    try:
+        service.process_invalid_data()
+    except ValueError:
+        pass  # BLOCKED: Not asserting the exception
+```
+
+## Test Coverage Requirements (ENFORCED)
+
+### Coverage Targets (MANDATORY)
+
+```python
+# ✅ REQUIRED - High test coverage standards
+# pyproject.toml coverage configuration
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
+    "setup.py"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:"
+]
+show_missing = true
+skip_covered = false
+
+# ✅ REQUIRED - Coverage enforcement in CI
+# .github/workflows/ci.yml
+- name: Run tests with coverage
+  run: |
+    pytest --cov=src --cov-report=xml --cov-report=term-missing --cov-fail-under=90
+
+# ✅ REQUIRED - Coverage analysis in tests
+def test_critical_function_coverage():
+    """Test critical business logic with comprehensive scenarios."""
+    service = CriticalBusinessService()
+
+    # Test all code paths
+    # Normal operation
+    result = service.process_normal_case(data)
+    assert result is not None
+
+    # Edge cases
+    result = service.process_edge_case(empty_data)
+    assert result == default_value
+
+    # Error conditions
+    with pytest.raises(BusinessLogicError):
+        service.process_invalid_data(bad_data)
+
+# ❌ PROHIBITED - Insufficient test coverage
+def test_only_happy_path():
+    """BLOCKED: Missing error cases and edge conditions."""
+    service = CriticalService()
+
+    # BLOCKED: Only tests success case
+    result = service.do_important_thing(valid_data)
+    assert result["status"] == "success"
+
+    # Missing: Error cases, edge cases, boundary conditions
+```
+
+## Async Testing Standards (ENFORCED)
+
+### pytest-asyncio Best Practices (MANDATORY)
+
+```python
+# ✅ REQUIRED - Proper async test patterns
+import pytest
+import pytest_asyncio
+import asyncio
+from unittest.mock import AsyncMock
+
+@pytest.mark.asyncio
+async def test_async_service_success():
+    """Test successful async service operation."""
+    service = AsyncDataService()
+    mock_repo = AsyncMock()
+    mock_repo.fetch_data.return_value = ["item1", "item2"]
+
+    # Act
+    with patch.object(service, '_repository', mock_repo):
+        result = await service.get_data()
+
+    # Assert
+    assert result == ["item1", "item2"]
+    mock_repo.fetch_data.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_async_timeout_handling():
+    """Test async operation timeout handling."""
+    service = AsyncTimeoutService(timeout=0.1)
+
+    # Mock slow operation
+    with patch.object(service, '_slow_operation') as mock_slow:
+        mock_slow.side_effect = asyncio.sleep(1.0)  # Longer than timeout
+
+        # Act & Assert
+        with pytest.raises(asyncio.TimeoutError):
+            await service.perform_operation()
+
+@pytest.fixture
+async def async_database():
+    """Async database fixture with proper cleanup."""
+    db = AsyncDatabase()
+    await db.connect()
+    await db.setup_test_schema()
+
+    yield db
+
+    await db.cleanup_test_data()
+    await db.disconnect()
+
+# ✅ REQUIRED - Async test parametrization
+@pytest.mark.asyncio
+@pytest.mark.parametrize("input_data,expected_output", [
+    ({"value": 1}, {"result": 2}),
+    ({"value": 0}, {"result": 0}),
+    ({"value": -1}, {"result": -2}),
+])
+async def test_async_transformation(input_data, expected_output):
+    """Test async data transformation with multiple scenarios."""
+    transformer = AsyncDataTransformer()
+
+    result = await transformer.transform(input_data)
+
+    assert result == expected_output
+
+# ❌ PROHIBITED - Incorrect async test patterns
+@pytest.mark.asyncio
+async def test_async_without_await():
+    """BLOCKED: Missing await in async test."""
+    service = AsyncService()
+
+    # BLOCKED: Not awaiting async operation
+    result = service.async_method()  # Missing await
+    assert result is not None
+
+def test_async_without_asyncio_mark():
+    """BLOCKED: Async test without pytest-asyncio mark."""
+    service = AsyncService()
+
+    # BLOCKED: Async test must use pytest.mark.asyncio
+    result = asyncio.run(service.async_method())
+    assert result is not None
+```
+
+## Test Data Management (ENFORCED)
+
+### Test Data Patterns (MANDATORY)
+
+```python
+# ✅ REQUIRED - Proper test data management
+import pytest
+from pathlib import Path
+
+@pytest.fixture
+def sample_user_data():
+    """Provide consistent sample user data."""
+    return {
+        "id": 1,
+        "username": "testuser",
+        "email": "test@example.com",
+        "created_at": "2023-01-01T00:00:00Z"
+    }
+
+@pytest.fixture
+def test_database():
+    """Provide isolated test database."""
+    db = TestDatabase()
+    db.setup_schema()
+    yield db
+    db.teardown()
+
+class TestDataFactory:
+    """Factory for creating test data."""
+
+    @staticmethod
+    def create_user(overrides=None):
+        """Create user with default test data."""
+        data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "hashed_password",
+            "is_active": True
+        }
+        if overrides:
+            data.update(overrides)
+        return data
+
+    @staticmethod
+    def create_multiple_users(count=3):
+        """Create multiple users for bulk operations testing."""
+        return [
+            TestDataFactory.create_user({
+                "username": f"user{i}",
+                "email": f"user{i}@example.com"
+            })
+            for i in range(count)
+        ]
+
+# ✅ REQUIRED - Test data files for complex scenarios
+# tests/fixtures/sample_products.json
+{
+  "products": [
+    {
+      "id": 1,
+      "name": "Test Product",
+      "price": 29.99,
+      "category": "electronics"
+    }
+  ]
+}
+
+@pytest.fixture
+def sample_products():
+    """Load sample product data from file."""
+    fixture_path = Path(__file__).parent / "fixtures" / "sample_products.json"
+    with open(fixture_path) as f:
+        return json.load(f)["products"]
+
+# ❌ PROHIBITED - Hardcoded test data everywhere
+def test_user_creation_bad():
+    """BLOCKED: Hardcoded test data scattered throughout tests."""
+    service = UserService()
+
+    # BLOCKED: Same data repeated in multiple tests
+    user_data = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "testpass123"
+    }
+
+    result = service.create_user(user_data)
+    assert result["success"] is True
+```
+
+## Performance Testing (ENFORCED)
+
+### Benchmarking Tests (MANDATORY)
+
+```python
+# ✅ REQUIRED - Performance testing in CI
+import pytest_benchmark
+import time
+
+@pytest.mark.benchmark
+def test_algorithm_performance(benchmark):
+    """Benchmark algorithm performance."""
+    test_data = generate_large_test_dataset()
+
+    def run_algorithm():
+        return my_algorithm(test_data)
+
+    result = benchmark(run_algorithm)
+
+    # Assert performance requirements
+    assert result.stats.mean < 1.0  # Must complete in under 1 second
+
+def test_api_response_time():
+    """Test API response time requirements."""
+    client = TestClient(app)
+
+    start_time = time.time()
+    response = client.get("/api/data")
+    end_time = time.time()
+
+    response_time = end_time - start_time
+
+    # Assert response time requirements
+    assert response_time < 0.5  # Must respond within 500ms
+    assert response.status_code == 200
+
+# ✅ REQUIRED - Load testing patterns
+def test_concurrent_requests_handling():
+    """Test handling of concurrent requests."""
+    import threading
+    import queue
+
+    results = queue.Queue()
+    errors = queue.Queue()
+
+    def make_request(request_id):
+        """Make a single request in a thread."""
+        try:
+            client = TestClient(app)
+            response = client.get(f"/api/data/{request_id}")
+            results.put((request_id, response.status_code))
+        except Exception as e:
+            errors.put((request_id, str(e)))
+
+    # Start multiple concurrent requests
+    threads = []
+    for i in range(10):  # 10 concurrent requests
+        thread = threading.Thread(target=make_request, args=(i,))
+        threads.append(thread)
+        thread.start()
+
+    # Wait for all threads to complete
+    for thread in threads:
+        thread.join(timeout=5.0)
+
+    # Verify all requests succeeded
+    successful_requests = 0
+    while not results.empty():
+        request_id, status_code = results.get()
+        assert status_code == 200
+        successful_requests += 1
+
+    assert successful_requests == 10
+    assert errors.empty()
+
+# ❌ PROHIBITED - No performance testing
+def test_functionality_only():
+    """BLOCKED: Missing performance requirements."""
+    service = DataProcessingService()
+
+    # Test functionality only
+    result = service.process_data(large_dataset)
+    assert result is not None
+
+    # BLOCKED: No performance assertions
+    # Missing: Execution time limits, memory usage checks, scalability tests
+```
+
+## Test Organization and Naming (ENFORCED)
+
+### Test Suite Structure (MANDATORY)
+
+```python
+# ✅ REQUIRED - Well-organized test suite
+# tests/
+# ├── unit/                          # Fast, isolated unit tests
+# │   ├── services/
+# │   │   ├── test_user_service.py
+# │   │   └── test_payment_service.py
+# │   └── utils/
+# │       ├── test_validation.py
+# │       └── test_formatting.py
+# ├── integration/                   # Slower integration tests
+# │   ├── api/
+# │   │   ├── test_user_endpoints.py
+# │   │   └── test_payment_endpoints.py
+# │   └── database/
+# │       ├── test_user_repository.py
+# │       └── test_migrations.py
+# ├── e2e/                          # End-to-end tests (if applicable)
+# │   └── test_user_registration_flow.py
+# └── performance/                   # Performance tests
+#     └── test_api_performance.py
+
+# ✅ REQUIRED - Descriptive test naming
+def test_user_service_create_user_with_valid_data():
+    """Test UserService.create_user with valid input data."""
+    pass
+
+def test_user_service_create_user_fails_with_duplicate_email():
+    """Test UserService.create_user fails when email already exists."""
+    pass
+
+def test_api_user_endpoint_returns_200_for_authenticated_request():
+    """Test /api/users endpoint returns 200 for authenticated request."""
+    pass
+
+def test_database_user_repository_handles_connection_timeout():
+    """Test UserRepository handles database connection timeout gracefully."""
+    pass
+
+# ✅ REQUIRED - Test method grouping in classes
+class TestUserServiceCreation:
+    """Test user creation functionality."""
+
+    def test_create_user_success(self):
+        """Test successful user creation."""
+        pass
+
+    def test_create_user_with_minimum_data(self):
+        """Test user creation with minimum required data."""
+        pass
+
+    def test_create_user_with_all_optional_fields(self):
+        """Test user creation with all optional fields provided."""
+        pass
+
+class TestUserServiceValidation:
+    """Test user validation functionality."""
+
+    def test_create_user_fails_with_invalid_email(self):
+        """Test user creation fails with invalid email format."""
+        pass
+
+    def test_create_user_fails_with_duplicate_username(self):
+        """Test user creation fails with duplicate username."""
+        pass
+
+# ❌ PROHIBITED - Poor test organization
+def test_user():
+    # BLOCKED: Too vague, unclear what aspect of user functionality
+    pass
+
+def test_1():
+    # BLOCKED: Non-descriptive numbering
+    pass
+
+class TestEverything:
+    # BLOCKED: Tests not logically grouped
+    def test_user_creation(self):
+        pass
+
+    def test_payment_processing(self):
+        pass
+
+    def test_email_sending(self):
+        pass
+```
+
+## Violations (BLOCKED)
+
+- ❌ Tests without clear Arrange-Act-Assert structure
+- ❌ Missing test coverage for new/updated functionality
+- ❌ Tests that don't verify behavior or state changes
+- ❌ Over-mocking that removes test value
+- ❌ Tests without descriptive names
+- ❌ Async tests without proper pytest-asyncio usage
+- ❌ Exception tests that don't specify exception types
+- ❌ Tests that only cover happy paths
+- ❌ Performance tests missing timing assertions
+- ❌ Test data hardcoded in test methods
+- ❌ Test files not following naming conventions
+- ❌ Missing fixtures for common test setup
+- ❌ Tests that modify shared state without cleanup
+- ❌ Integration tests that don't isolate external dependencies
+
+## See Also
+
+- [python-coding-standards.mdc](python-coding-standards.mdc) - Python coding standards
+- [python-async-patterns.mdc](python-async-patterns.mdc) - Async programming patterns
+- [python-package-structure.mdc](python-package-structure.mdc) - Package organization
+
+## Enforcement (MANDATORY)
+
+- **pytest Configuration**: Proper pytest.ini configuration in CI
+- **Coverage Requirements**: Minimum 90% coverage for new code
+- **Test Execution**: All tests must pass in CI
+- **Performance Benchmarks**: Performance tests included in CI pipeline
+- **Code Review**: Test quality review required for all PRs
+- **Test Maintenance**: Regular review of test effectiveness and coverage
+- **NO exceptions**: All testing standard violations must be fixed before merge

@@ -1,0 +1,749 @@
+---
+globs: *.py
+alwaysApply: false
+---
+
+# Python Performance Standards (MANDATORY - ZERO TOLERANCE)
+
+**ENFORCEMENT**: All rules are MANDATORY. CI MUST fail on violations. NO exceptions.
+
+## Algorithm Complexity (ENFORCED)
+
+### Big O Analysis (MANDATORY)
+
+```python
+# ✅ REQUIRED - O(n) or better algorithms
+def find_duplicates_optimized(items: list[int]) -> set[int]:
+    """Find duplicates in O(n) time using set."""
+    seen = set()
+    duplicates = set()
+
+    for item in items:
+        if item in seen:
+            duplicates.add(item)
+        else:
+            seen.add(item)
+
+    return duplicates
+
+def find_duplicates_bad(items: list[int]) -> list[int]:
+    """Find duplicates in O(n²) time - BLOCKED."""
+    duplicates = []
+    for i, item1 in enumerate(items):
+        for j, item2 in enumerate(items):
+            if i != j and item1 == item2 and item1 not in duplicates:
+                duplicates.append(item1)
+    return duplicates
+
+# ✅ REQUIRED - Efficient data structures
+from collections import defaultdict, Counter
+
+def word_frequency_optimized(words: list[str]) -> dict[str, int]:
+    """Efficient word frequency counting."""
+    return dict(Counter(words))
+
+def word_frequency_bad(words: list[str]) -> dict[str, int]:
+    """Inefficient word frequency counting - BLOCKED."""
+    frequency = {}
+    for word in words:
+        if word in frequency:
+            frequency[word] += 1  # O(n) lookup each time
+        else:
+            frequency[word] = 1
+    return frequency
+```
+
+### Memory Complexity (ENFORCED)
+
+```python
+# ✅ REQUIRED - Memory-efficient processing
+def process_large_file_optimized(file_path: Path) -> int:
+    """Process large file without loading entirely into memory."""
+    total_lines = 0
+    with open(file_path, 'r') as file:
+        for line in file:  # Process line by line
+            if process_line(line):
+                total_lines += 1
+    return total_lines
+
+def process_large_file_bad(file_path: Path) -> int:
+    """Process large file by loading everything into memory - BLOCKED."""
+    with open(file_path, 'r') as file:
+        content = file.read()  # Loads entire file into memory
+    lines = content.split('\n')
+    return sum(1 for line in lines if process_line(line))
+```
+
+## Data Structure Selection (ENFORCED)
+
+### Optimal Data Structure Usage (MANDATORY)
+
+```python
+# ✅ REQUIRED - Appropriate data structures
+from collections import deque, defaultdict
+
+# Queue operations - use deque for O(1) append/popleft
+def process_queue_items(items: list[str]) -> list[str]:
+    """Process items in FIFO order."""
+    queue = deque(items)  # O(1) operations
+    processed = []
+
+    while queue:
+        item = queue.popleft()  # O(1)
+        processed.append(process_item(item))
+
+    return processed
+
+# Frequency counting - use Counter
+def most_frequent_words(text: str, n: int = 10) -> list[str]:
+    """Find most frequent words efficiently."""
+    words = text.lower().split()
+    word_counts = Counter(words)  # O(n) counting
+    return [word for word, _ in word_counts.most_common(n)]
+
+# Group operations - use defaultdict
+def group_by_category(items: list[dict]) -> dict[str, list[dict]]:
+    """Group items by category efficiently."""
+    grouped = defaultdict(list)  # No KeyError handling needed
+
+    for item in items:
+        category = item.get('category', 'uncategorized')
+        grouped[category].append(item)  # O(1) append
+
+    return dict(grouped)  # Convert to regular dict if needed
+
+# Set operations for membership testing
+def find_common_elements(lists: list[list[int]]) -> set[int]:
+    """Find common elements efficiently."""
+    if not lists:
+        return set()
+
+    # Convert first list to set for O(1) lookups
+    common = set(lists[0])
+
+    # Intersect with remaining lists
+    for lst in lists[1:]:
+        common &= set(lst)  # O(m) intersection
+
+    return common
+
+# ❌ PROHIBITED - Inefficient data structure usage
+def process_queue_bad(items: list[str]) -> list[str]:
+    """Inefficient queue using list - BLOCKED."""
+    queue = list(items)  # List pop(0) is O(n)
+    processed = []
+
+    while queue:
+        item = queue.pop(0)  # O(n) operation!
+        processed.append(process_item(item))
+
+    return processed
+```
+
+## List Comprehensions vs Loops (ENFORCED)
+
+### When to Use List Comprehensions (MANDATORY)
+
+```python
+# ✅ REQUIRED - List comprehensions for simple transformations
+def square_numbers(numbers: list[int]) -> list[int]:
+    """Simple transformation - use list comprehension."""
+    return [x * x for x in numbers]
+
+def filter_even_numbers(numbers: list[int]) -> list[int]:
+    """Simple filtering - use list comprehension."""
+    return [x for x in numbers if x % 2 == 0]
+
+def transform_coordinates(points: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """Simple transformation with condition."""
+    return [(x + 1, y + 1) for x, y in points if x > 0 and y > 0]
+
+# ✅ REQUIRED - Generator expressions for large data
+def process_large_dataset(data: list[dict]) -> Iterator[dict]:
+    """Use generator for memory efficiency."""
+    return (
+        transform_item(item)
+        for item in data
+        if item.get('active', False)
+    )
+
+# ✅ REQUIRED - Use itertools.batched() for chunking (Python 3.13+)
+from itertools import batched
+
+def process_items_in_batches(items: list[dict], batch_size: int = 100) -> Iterator[list[dict]]:
+    """Process items in batches using itertools.batched() (Python 3.13+)."""
+    for batch in batched(items, batch_size):
+        yield [process_item(item) for item in batch]
+
+# ❌ PROHIBITED - Manual batching instead of itertools.batched()
+def process_items_manual_batching(items: list[dict], batch_size: int = 100) -> Iterator[list[dict]]:
+    """BLOCKED: Manual batching when itertools.batched() should be used."""
+    # BLOCKED: Manual slicing is less readable than itertools.batched()
+    for i in range(0, len(items), batch_size):
+        batch = items[i:i + batch_size]
+        yield [process_item(item) for item in batch]
+
+# ❌ PROHIBITED - Overly complex list comprehensions
+def complex_transformation_bad(data: list[dict]) -> list[dict]:
+    """Too complex for list comprehension - BLOCKED."""
+    return [
+        {
+            'id': item['id'],
+            'name': item['first_name'] + ' ' + item['last_name'],
+            'score': calculate_complex_score(item),
+            'tags': [tag for tag in item.get('tags', []) if is_valid_tag(tag)]
+        }
+        for item in data
+        if item.get('active') and validate_item(item)
+    ]
+
+# ✅ REQUIRED - Use explicit loops for complex logic
+def complex_transformation_good(data: list[dict]) -> list[dict]:
+    """Complex logic - use explicit loop."""
+    result = []
+
+    for item in data:
+        if not item.get('active') or not validate_item(item):
+            continue
+
+        transformed = {
+            'id': item['id'],
+            'name': item['first_name'] + ' ' + item['last_name'],
+            'score': calculate_complex_score(item),
+            'tags': [tag for tag in item.get('tags', []) if is_valid_tag(tag)]
+        }
+
+        result.append(transformed)
+
+    return result
+```
+
+## String Operations Optimization (ENFORCED)
+
+### String Building (MANDATORY)
+
+```python
+# ✅ REQUIRED - Efficient string building
+def build_html_table_optimized(rows: list[dict]) -> str:
+    """Efficient string building using join."""
+    lines = ['<table>']
+
+    for row in rows:
+        cells = [f'<td>{value}</td>' for value in row.values()]
+        lines.append(f'<tr>{"".join(cells)}</tr>')
+
+    lines.append('</table>')
+    return '\n'.join(lines)
+
+def format_log_message_optimized(level: str, message: str, **kwargs) -> str:
+    """Efficient string formatting with f-strings."""
+    timestamp = datetime.now().isoformat()
+    extra = ' '.join(f'{k}={v}' for k, v in kwargs.items())
+    return f'[{timestamp}] {level}: {message} {extra}'.rstrip()
+
+# ❌ PROHIBITED - Inefficient string concatenation
+def build_html_table_bad(rows: list[dict]) -> str:
+    """Inefficient string building - BLOCKED."""
+    result = '<table>'
+
+    for row in rows:
+        result += '<tr>'  # Creates new string each time!
+        for value in row.values():
+            result += f'<td>{value}</td>'  # More string creation!
+        result += '</tr>'
+
+    result += '</table>'
+    return result
+```
+
+## Database Query Optimization (ENFORCED)
+
+### Query Efficiency (MANDATORY)
+
+```python
+# ✅ REQUIRED - Optimized database queries
+import asyncpg
+from sqlalchemy import select, func, and_, or_
+from sqlalchemy.ext.asyncio import AsyncSession
+
+async def get_users_with_posts_optimized(session: AsyncSession) -> list[dict]:
+    """Efficient query with joins."""
+    stmt = select(
+        User.id,
+        User.name,
+        func.count(Post.id).label('post_count')
+    ).join(
+        Post, User.id == Post.user_id
+    ).group_by(
+        User.id, User.name
+    ).having(
+        func.count(Post.id) > 0
+    )
+
+    result = await session.execute(stmt)
+    return [dict(row) for row in result.all()]
+
+async def batch_update_users_optimized(session: AsyncSession, updates: list[dict]) -> int:
+    """Efficient batch update."""
+    # Use executemany for multiple updates
+    update_stmt = """
+        UPDATE users
+        SET name = $2, email = $3, updated_at = NOW()
+        WHERE id = $1
+    """
+
+    # Prepare data for batch execution
+    batch_data = [
+        (update['id'], update['name'], update['email'])
+        for update in updates
+    ]
+
+    async with session.connection() as conn:
+        # Execute all updates in one batch
+        await conn.executemany(update_stmt, batch_data)
+
+    return len(updates)
+
+# ❌ PROHIBITED - N+1 query problem
+async def get_users_with_posts_bad(session: AsyncSession) -> list[dict]:
+    """Inefficient N+1 queries - BLOCKED."""
+    users = await session.execute(select(User))
+    result = []
+
+    for user in users.scalars():
+        # Separate query for each user! - BLOCKED
+        post_count = await session.execute(
+            select(func.count(Post.id)).where(Post.user_id == user.id)
+        )
+        result.append({
+            'user': user,
+            'post_count': post_count.scalar()
+        })
+
+    return result
+```
+
+## Caching Strategies (ENFORCED)
+
+### Memory Caching (MANDATORY)
+
+```python
+# ✅ REQUIRED - Effective caching strategies
+from functools import lru_cache
+import asyncio
+from typing import Any
+import time
+
+# Function-level caching
+# For bounded caches, use @lru_cache
+@lru_cache(maxsize=128)
+def expensive_computation_bounded(n: int) -> int:
+    """Cache expensive computation results with size limit."""
+    # Simulate expensive operation
+    time.sleep(0.1)
+    return n * n
+
+# For unbounded caches, prefer @cache (Python 3.13+)
+from functools import cache
+
+@cache
+def expensive_computation_unbounded(n: int) -> int:
+    """Cache expensive computation results without size limit."""
+    # Simulate expensive operation
+    time.sleep(0.1)
+    return n * n
+
+# Method-level caching with TTL
+class Cache:
+    """Simple TTL cache implementation."""
+
+    def __init__(self, ttl_seconds: int = 300):
+        self._cache: dict[str, dict[str, Any]] = {}
+        self._ttl = ttl_seconds
+
+    def get(self, key: str) -> Any | None:
+        """Get cached value if not expired."""
+        if key in self._cache:
+            entry = self._cache[key]
+            if time.time() - entry['timestamp'] < self._ttl:
+                return entry['value']
+            else:
+                del self._cache[key]
+        return None
+
+    def set(self, key: str, value: Any) -> None:
+        """Set cached value with timestamp."""
+        self._cache[key] = {
+            'value': value,
+            'timestamp': time.time()
+        }
+
+    def clear(self) -> None:
+        """Clear all cached entries."""
+        self._cache.clear()
+
+# Application-level caching
+class APICache:
+    """API response caching."""
+
+    def __init__(self):
+        self._cache = Cache(ttl_seconds=600)  # 10 minute TTL
+
+    async def get_cached_response(self, endpoint: str, params: dict[str, Any]) -> dict | None:
+        """Get cached API response."""
+        cache_key = f"{endpoint}:{hash(frozenset(params.items()))}"
+        return self._cache.get(cache_key)
+
+    async def cache_response(self, endpoint: str, params: dict[str, Any], response: dict) -> None:
+        """Cache API response."""
+        cache_key = f"{endpoint}:{hash(frozenset(params.items()))}"
+        self._cache.set(cache_key, response)
+
+# Database query result caching
+class QueryCache:
+    """Cache database query results."""
+
+    def __init__(self, redis_client=None):
+        self._redis = redis_client
+        self._local_cache = Cache(ttl_seconds=300)
+
+    async def get_query_result(self, query_hash: str) -> list[dict] | None:
+        """Get cached query result."""
+        # Try local cache first
+        result = self._local_cache.get(query_hash)
+        if result:
+            return result
+
+        # Try Redis cache
+        if self._redis:
+            result = await self._redis.get(f"query:{query_hash}")
+            if result:
+                # Cache locally for faster access
+                self._local_cache.set(query_hash, result)
+                return result
+
+        return None
+
+    async def cache_query_result(self, query_hash: str, result: list[dict]) -> None:
+        """Cache query result."""
+        # Cache locally
+        self._local_cache.set(query_hash, result)
+
+        # Cache in Redis if available
+        if self._redis:
+            await self._redis.setex(f"query:{query_hash}", 1800, result)  # 30 min TTL
+```
+
+## Async Performance Optimization (ENFORCED)
+
+### Concurrent Execution (MANDATORY)
+
+```python
+# ✅ REQUIRED - Proper async concurrency
+import asyncio
+from asyncio import Semaphore, TaskGroup
+import aiohttp
+
+async def fetch_multiple_urls_concurrent(urls: list[str]) -> list[dict]:
+    """Fetch multiple URLs concurrently with proper limits."""
+    semaphore = Semaphore(10)  # Limit concurrent requests
+
+    async def fetch_with_semaphore(url: str) -> dict:
+        async with semaphore:
+            return await fetch_url(url)
+
+    async with TaskGroup() as tg:
+        tasks = [
+            tg.create_task(fetch_with_semaphore(url))
+            for url in urls
+        ]
+
+    return [task.result() for task in tasks]
+
+async def process_items_with_batching(items: list[dict], batch_size: int = 100) -> list[dict]:
+    """Process items in batches to control memory usage."""
+    results = []
+
+    for i in range(0, len(items), batch_size):
+        batch = items[i:i + batch_size]
+
+        # Process batch concurrently
+        batch_results = await asyncio.gather(*[
+            process_item(item) for item in batch
+        ])
+
+        results.extend(batch_results)
+
+    return results
+
+# ❌ PROHIBITED - Improper async usage
+async def fetch_multiple_urls_bad(urls: list[str]) -> list[dict]:
+    """Inefficient sequential async calls - BLOCKED."""
+    results = []
+
+    for url in urls:
+        # Sequential processing - wastes async benefits!
+        result = await fetch_url(url)
+        results.append(result)
+
+    return results
+
+async def fetch_multiple_urls_unlimited(urls: list[str]) -> list[dict]:
+    """Uncontrolled concurrency - BLOCKED."""
+    # No limits - can overwhelm server or exhaust resources
+    tasks = [asyncio.create_task(fetch_url(url)) for url in urls]
+    return await asyncio.gather(*tasks)
+```
+
+## Profiling and Benchmarking (ENFORCED)
+
+### Performance Testing (MANDATORY)
+
+```python
+# ✅ REQUIRED - Performance testing and profiling
+import time
+import cProfile
+import pstats
+from functools import wraps
+from typing import Callable, Any
+import pytest
+
+def profile_function(func: Callable) -> Callable:
+    """Decorator to profile function performance."""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        profiler = cProfile.Profile()
+        profiler.enable()
+
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+
+        profiler.disable()
+
+        execution_time = end_time - start_time
+        print(f"{func.__name__} executed in {execution_time:.4f} seconds")
+
+        # Print top 10 most time-consuming functions
+        stats = pstats.Stats(profiler)
+        stats.sort_stats('cumulative').print_stats(10)
+
+        return result
+    return wrapper
+
+def benchmark_async_function(iterations: int = 100) -> Callable:
+    """Decorator to benchmark async function performance."""
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            times = []
+
+            for _ in range(iterations):
+                start_time = time.perf_counter()
+                result = await func(*args, **kwargs)
+                end_time = time.perf_counter()
+
+                times.append(end_time - start_time)
+
+            avg_time = sum(times) / len(times)
+            min_time = min(times)
+            max_time = max(times)
+
+            print(f"{func.__name__} benchmark ({iterations} iterations):")
+            print(f"  Average: {avg_time:.4f}s")
+            print(f"  Min: {min_time:.4f}s")
+            print(f"  Max: {max_time:.4f}s")
+
+            return result
+        return wrapper
+    return decorator
+
+# pytest-benchmark integration
+@pytest.mark.benchmark
+def test_algorithm_performance(benchmark):
+    """Benchmark algorithm performance using pytest-benchmark."""
+    test_data = generate_test_data(size=10000)
+
+    def run_algorithm():
+        return my_algorithm(test_data)
+
+    result = benchmark(run_algorithm)
+
+    # Assertions on performance
+    assert result is not None
+    # Additional performance assertions can be added
+
+# Memory profiling
+def profile_memory_usage(func: Callable) -> Callable:
+    """Decorator to profile memory usage."""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        import tracemalloc
+
+        tracemalloc.start()
+
+        start_snapshot = tracemalloc.take_snapshot()
+        result = func(*args, **kwargs)
+        end_snapshot = tracemalloc.take_snapshot()
+
+        tracemalloc.stop()
+
+        # Calculate memory difference
+        stats = end_snapshot.compare_to(start_snapshot, 'lineno')
+        total_memory = sum(stat.size_diff for stat in stats)
+
+        print(f"{func.__name__} memory usage: {total_memory / 1024:.2f} KB")
+
+        # Print top memory consumers
+        for stat in stats[:5]:
+            print(f"  {stat.traceback.format()[0]}: {stat.size_diff / 1024:.2f} KB")
+
+        return result
+    return wrapper
+```
+
+## Memory Management (ENFORCED)
+
+### Memory-Efficient Patterns (MANDATORY)
+
+```python
+# ✅ REQUIRED - Memory-efficient processing
+from typing import Iterator, Generator
+import gc
+
+def process_large_csv_efficient(file_path: Path) -> Iterator[dict]:
+    """Process large CSV without loading into memory."""
+    with open(file_path, 'r') as file:
+        reader = csv.DictReader(file)
+
+        for row in reader:
+            # Process one row at a time
+            processed_row = process_csv_row(row)
+            yield processed_row
+
+def batch_process_with_cleanup(items: list[dict], batch_size: int = 1000) -> Iterator[list[dict]]:
+    """Process items in batches with memory cleanup."""
+    for i in range(0, len(items), batch_size):
+        batch = items[i:i + batch_size]
+
+        # Process batch
+        processed_batch = [process_item(item) for item in batch]
+
+        yield processed_batch
+
+        # Force garbage collection between batches
+        del batch
+        gc.collect()
+
+# Context manager for memory management
+class MemoryManagedContext:
+    """Context manager for memory-managed operations."""
+
+    def __enter__(self):
+        gc.disable()  # Disable automatic GC
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        gc.enable()   # Re-enable automatic GC
+        gc.collect()  # Force collection
+
+        # Log memory usage if needed
+        if exc_type:
+            logger.warning(f"Exception in memory-managed context: {exc_val}")
+
+# Usage
+def memory_intensive_operation():
+    """Perform memory-intensive operation with management."""
+    with MemoryManagedContext():
+        # Perform operations that require precise memory control
+        large_data = load_large_dataset()
+        processed = process_data(large_data)
+
+        # Explicit cleanup
+        del large_data
+        gc.collect()
+
+        return processed
+```
+
+## CPU-Bound Task Optimization (ENFORCED)
+
+### Process Pool for CPU-Intensive Tasks (MANDATORY)
+
+```python
+# ✅ REQUIRED - CPU-bound task optimization
+import asyncio
+from concurrent.futures import ProcessPoolExecutor
+import functools
+
+def cpu_intensive_sync_task(data: Any) -> Any:
+    """CPU-intensive synchronous task."""
+    # This function runs in a separate process
+    import time
+    import hashlib
+
+    # Simulate CPU-intensive work
+    result = data
+    for _ in range(10000):
+        result = hashlib.sha256(result.encode()).hexdigest()
+
+    return result
+
+async def async_cpu_task(data: Any) -> Any:
+    """Run CPU-intensive task in process pool."""
+    loop = asyncio.get_running_loop()
+
+    # Run CPU-bound task in separate process
+    with ProcessPoolExecutor() as executor:
+        result = await loop.run_in_executor(
+            executor,
+            cpu_intensive_sync_task,
+            data
+        )
+
+    return result
+
+async def process_cpu_tasks(datasets: list[Any]) -> list[Any]:
+    """Process multiple CPU-intensive tasks."""
+    tasks = [asyncio.create_task(async_cpu_task(data)) for data in datasets]
+
+    # Run with controlled concurrency to avoid overwhelming the system
+    semaphore = asyncio.Semaphore(4)  # Limit to 4 concurrent CPU tasks
+
+    async def limited_task(task):
+        async with semaphore:
+            return await task
+
+    limited_tasks = [limited_task(task) for task in tasks]
+    return await asyncio.gather(*limited_tasks)
+```
+
+## Violations (BLOCKED)
+
+- ❌ O(n²) or worse algorithms where O(n) possible
+- ❌ Loading entire files into memory unnecessarily
+- ❌ Inefficient data structure usage (list.pop(0), dict lookups in loops)
+- ❌ String concatenation in loops
+- ❌ N+1 database query patterns
+- ❌ Overly complex list comprehensions
+- ❌ Unbounded async concurrency
+- ❌ Blocking CPU-bound work on async event loop
+- ❌ Missing performance profiling and benchmarking
+- ❌ Inefficient memory usage patterns
+- ❌ No caching for expensive operations
+
+## See Also
+
+- [concurrency.mdc](concurrency.mdc) - General concurrency patterns
+- [python-coding-standards.mdc](python-coding-standards.mdc) - Python coding standards
+- [python-async-patterns.mdc](python-async-patterns.mdc) - Async programming patterns
+
+## Enforcement (MANDATORY)
+
+- **Performance Benchmarks**: CI must include performance regression tests
+- **Memory Profiling**: Automated memory usage monitoring
+- **Algorithm Analysis**: Code review must include Big O analysis
+- **Caching Requirements**: Performance-critical paths must include caching
+- **Async Profiling**: Async task performance monitoring in production
+- **Resource Limits**: CPU and memory usage limits in CI/CD pipelines
+- **NO exceptions**: All performance violations must be fixed before merge

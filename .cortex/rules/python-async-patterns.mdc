@@ -1,0 +1,597 @@
+---
+globs: *.py
+alwaysApply: false
+---
+
+# Python Async Patterns (MANDATORY - ZERO TOLERANCE)
+
+**ENFORCEMENT**: All rules are MANDATORY. CI MUST fail on violations. NO exceptions.
+
+## Core Principles (ENFORCED)
+
+- **Async First**: All I/O operations must be async by default - MANDATORY
+- **Non-blocking**: Never block the event loop with synchronous operations - MANDATORY
+- **Structured Concurrency**: Use `asyncio` structured concurrency patterns - MANDATORY
+- **Resource Management**: Proper cleanup of async resources - MANDATORY
+- **Error Propagation**: Async exceptions must be properly handled and propagated - MANDATORY
+
+## Async/Await Usage (ENFORCED)
+
+### Function Declaration (MANDATORY)
+
+```python
+# ✅ REQUIRED - Async functions for I/O operations
+async def fetch_user_data(user_id: int) -> User:
+    """Fetch user data from database asynchronously."""
+    async with database.connection() as conn:
+        return await conn.fetchrow("SELECT * FROM users WHERE id = $1", user_id)
+
+# ✅ REQUIRED - Async context managers
+async def process_request(request: Request) -> Response:
+    async with request.app.state.database.transaction() as txn:
+        data = await txn.fetch("SELECT * FROM data")
+        return Response(data)
+
+# ❌ PROHIBITED - Sync functions for I/O
+def fetch_user_data(user_id: int) -> User:  # BLOCKED: Should be async
+    return database.query("SELECT * FROM users WHERE id = $1", user_id)
+```
+
+### Async Context Managers (MANDATORY)
+
+```python
+class AsyncDatabaseConnection:
+    async def __aenter__(self):
+        self.connection = await asyncpg.connect(self.dsn)
+        return self.connection
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.connection.close()
+
+# Usage
+async def query_data():
+    async with AsyncDatabaseConnection() as conn:
+        return await conn.fetch("SELECT * FROM table")
+```
+
+## Structured Concurrency (ENFORCED)
+
+### Task Groups (MANDATORY)
+
+```python
+import asyncio
+
+async def process_multiple_items(items: list[Item]) -> list[Result]:
+    """Process multiple items concurrently using task groups."""
+    async with asyncio.TaskGroup() as tg:
+        tasks = [
+            tg.create_task(process_item(item))
+            for item in items
+        ]
+
+    # All tasks completed successfully
+    return [task.result() for task in tasks]
+
+async def process_item(item: Item) -> Result:
+    """Process a single item asynchronously."""
+    # Simulate async processing
+    await asyncio.sleep(0.1)
+    return Result.from_item(item)
+```
+
+### Timeout and Cancellation (ENFORCED)
+
+**IMPORTANT**: Always prefer `asyncio.timeout()` over `asyncio.wait_for()` (Python 3.13+). The context manager pattern is cleaner and more Pythonic.
+
+```python
+# ✅ REQUIRED - Use asyncio.timeout() context manager (Python 3.13+)
+async def fetch_with_timeout(url: str, timeout: float = 5.0) -> bytes:
+    """Fetch data with timeout protection using asyncio.timeout()."""
+    async with asyncio.timeout(timeout):  # Preferred over asyncio.wait_for()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                return await response.read()
+
+# ❌ PROHIBITED - Using asyncio.wait_for() instead of asyncio.timeout()
+async def fetch_with_wait_for_bad(url: str, timeout: float = 5.0) -> bytes:
+    """BLOCKED: Should use asyncio.timeout() instead."""
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            # BLOCKED: asyncio.wait_for() is less clean than asyncio.timeout()
+            return await asyncio.wait_for(response.read(), timeout=timeout)
+
+async def cancellable_operation(cancellation_token: asyncio.Event) -> None:
+    """Operation that can be cancelled gracefully."""
+    while not cancellation_token.is_set():
+        try:
+            # Do work with periodic cancellation checks
+            async with asyncio.timeout(1.0):
+                await do_work()
+        except TimeoutError:
+            continue
+        except asyncio.CancelledError:
+            # Clean up and re-raise
+            await cleanup_partial_work()
+            raise
+```
+
+## Async Generators (ENFORCED)
+
+```python
+async def async_data_stream() -> AsyncGenerator[dict[str, Any], None]:
+    """Generate data asynchronously."""
+    async for record in database_stream():
+        processed = await process_record(record)
+        yield processed
+
+# Usage
+async def consume_stream():
+    async for data in async_data_stream():
+        await process_data(data)
+```
+
+## Async Testing (ENFORCED)
+
+### pytest-asyncio Integration (MANDATORY)
+
+```python
+import pytest
+import pytest_asyncio
+
+@pytest.mark.asyncio
+async def test_async_function():
+    """Test async functions with pytest-asyncio."""
+    service = AsyncUserService()
+
+    result = await service.get_user(1)
+
+    assert result.id == 1
+    assert result.name == "Test User"
+
+@pytest.fixture
+async def async_service():
+    """Async fixture for testing."""
+    service = AsyncService()
+    await service.start()
+    yield service
+    await service.stop()
+```
+
+## Async Design Patterns (ENFORCED)
+
+### Producer-Consumer Pattern (MANDATORY)
+
+```python
+import asyncio
+from asyncio import Queue
+
+async def producer(queue: Queue, items: list[Item]):
+    """Produce items for processing."""
+    for item in items:
+        await queue.put(item)
+        await asyncio.sleep(0.01)  # Simulate production time
+
+    await queue.put(None)  # Sentinel value to stop consumers
+
+async def consumer(queue: Queue, consumer_id: int):
+    """Consume and process items."""
+    while True:
+        item = await queue.get()
+        if item is None:  # Sentinel value
+            queue.task_done()
+            break
+
+        result = await process_item(item)
+        print(f"Consumer {consumer_id} processed: {result}")
+
+        queue.task_done()
+
+async def run_producer_consumer():
+    """Run producer-consumer pattern."""
+    queue = Queue(maxsize=10)
+
+    # Start consumers
+    consumers = [
+        asyncio.create_task(consumer(queue, i))
+        for i in range(3)
+    ]
+
+    # Start producer
+    producer_task = asyncio.create_task(producer(queue, items))
+
+    # Wait for completion
+    await producer_task
+    await queue.join()  # Wait for all items to be processed
+
+    # Cancel consumers
+    for consumer_task in consumers:
+        consumer_task.cancel()
+
+    await asyncio.gather(*consumers, return_exceptions=True)
+```
+
+### Circuit Breaker Pattern (MANDATORY)
+
+```python
+import asyncio
+from enum import Enum
+from dataclasses import dataclass
+
+class CircuitState(Enum):
+    CLOSED = "closed"
+    OPEN = "open"
+    HALF_OPEN = "half_open"
+
+@dataclass
+class CircuitBreaker:
+    failure_threshold: int = 5
+    recovery_timeout: float = 60.0
+    success_threshold: int = 3
+
+    _state: CircuitState = CircuitState.CLOSED
+    _failure_count: int = 0
+    _success_count: int = 0
+    _last_failure_time: float | None = None
+
+    async def call(self, func, *args, **kwargs):
+        """Execute function with circuit breaker protection."""
+        if self._state == CircuitState.OPEN:
+            if self._should_attempt_reset():
+                self._state = CircuitState.HALF_OPEN
+            else:
+                raise CircuitBreakerOpen("Circuit breaker is open")
+
+        try:
+            result = await func(*args, **kwargs)
+            self._on_success()
+            return result
+        except Exception as e:
+            self._on_failure()
+            raise e
+
+    def _should_attempt_reset(self) -> bool:
+        """Check if enough time has passed to attempt reset."""
+        if self._last_failure_time is None:
+            return True
+        return (asyncio.get_event_loop().time() - self._last_failure_time) >= self.recovery_timeout
+
+    def _on_success(self):
+        """Handle successful operation."""
+        if self._state == CircuitState.HALF_OPEN:
+            self._success_count += 1
+            if self._success_count >= self.success_threshold:
+                self._reset()
+        else:
+            self._failure_count = 0
+
+    def _on_failure(self):
+        """Handle failed operation."""
+        self._failure_count += 1
+        self._last_failure_time = asyncio.get_event_loop().time()
+
+        if self._failure_count >= self.failure_threshold:
+            self._state = CircuitState.OPEN
+
+    def _reset(self):
+        """Reset circuit breaker to closed state."""
+        self._state = CircuitState.CLOSED
+        self._failure_count = 0
+        self._success_count = 0
+        self._last_failure_time = None
+
+class CircuitBreakerOpen(Exception):
+    """Exception raised when circuit breaker is open."""
+    pass
+```
+
+## Async Resource Management (ENFORCED)
+
+### Resource Manager Pattern (MANDATORY)
+
+```python
+class AsyncResourceManager:
+    """Example of proper async resource management."""
+
+    def __init__(self):
+        self._resource = None
+        self._initialized = False
+
+    async def __aenter__(self):
+        if not self._initialized:
+            self._resource = await self._initialize_resource()
+            self._initialized = True
+        return self._resource
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self._resource:
+            await self._cleanup_resource(self._resource)
+            self._resource = None
+
+    async def _initialize_resource(self):
+        """Initialize the async resource."""
+        # Simulate async initialization
+        await asyncio.sleep(0.1)
+        return "initialized_resource"
+
+    async def _cleanup_resource(self, resource):
+        """Clean up the async resource."""
+        # Simulate async cleanup
+        await asyncio.sleep(0.1)
+        print(f"Cleaned up {resource}")
+
+# Usage
+async def use_resource():
+    async with AsyncResourceManager() as resource:
+        print(f"Using {resource}")
+        # Resource automatically cleaned up on exit
+```
+
+### Async Iterator Protocol (ENFORCED)
+
+```python
+class AsyncDatabaseIterator:
+    """Async iterator for database results."""
+
+    def __init__(self, query: str):
+        self.query = query
+        self.connection = None
+        self.cursor = None
+
+    async def __aenter__(self):
+        self.connection = await asyncpg.connect()
+        self.cursor = await self.connection.cursor(self.query)
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self.cursor:
+            await self.cursor.close()
+        if self.connection:
+            await self.connection.close()
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        try:
+            return await self.cursor.fetchrow()
+        except StopAsyncIteration:
+            raise StopAsyncIteration
+
+# Usage
+async def process_database_results():
+    async for row in AsyncDatabaseIterator("SELECT * FROM users"):
+        await process_row(row)
+```
+
+## Async Error Handling (ENFORCED)
+
+### Exception Chaining (MANDATORY)
+
+```python
+class AsyncOperationError(Exception):
+    """Custom exception for async operations."""
+    pass
+
+async def risky_async_operation() -> Result:
+    """Async operation that might fail."""
+    try:
+        # Simulate async operation that might fail
+        await asyncio.sleep(0.1)
+        if random.random() < 0.3:  # 30% failure rate
+            raise ValueError("Operation failed")
+
+        return Result.success("Operation completed")
+    except ValueError as e:
+        # Chain the exception
+        raise AsyncOperationError("Async operation failed") from e
+    except asyncio.CancelledError:
+        # Handle cancellation gracefully
+        await cleanup_partial_work()
+        raise
+
+async def handle_async_errors():
+    """Handle async errors properly."""
+    try:
+        result = await risky_async_operation()
+        return result
+    except AsyncOperationError as e:
+        # Log the error with full context
+        logger.error(f"Async operation failed: {e}", exc_info=True)
+        # Attempt recovery or re-raise
+        raise e
+    except asyncio.TimeoutError:
+        logger.error("Async operation timed out")
+        raise AsyncOperationError("Operation timed out") from e
+```
+
+## Performance Considerations (ENFORCED)
+
+### Concurrent Execution Limits (MANDATORY)
+
+```python
+import asyncio
+from asyncio import Semaphore
+
+class AsyncWorkerPool:
+    """Pool of async workers with concurrency limits."""
+
+    def __init__(self, max_concurrent: int = 10):
+        self.semaphore = Semaphore(max_concurrent)
+
+    async def execute_task(self, task_func, *args, **kwargs):
+        """Execute task with concurrency control."""
+        async with self.semaphore:
+            return await task_func(*args, **kwargs)
+
+# Usage
+async def process_many_items(items: list[Item]) -> list[Result]:
+    """Process many items with controlled concurrency."""
+    pool = AsyncWorkerPool(max_concurrent=5)  # Limit to 5 concurrent tasks
+
+    # Process all items with controlled concurrency
+    tasks = [asyncio.create_task(process_with_pool(item)) for item in items]
+    return await asyncio.gather(*tasks)
+```
+
+### Async CPU-Bound Tasks (MANDATORY)
+
+```python
+import asyncio
+from concurrent.futures import ProcessPoolExecutor
+import functools
+
+def cpu_intensive_sync_task(data: Any) -> Any:
+    """CPU-intensive synchronous task."""
+    # This function runs in a separate process
+    import time
+    import hashlib
+
+    # Simulate CPU-intensive work
+    result = data
+    for _ in range(10000):
+        result = hashlib.sha256(result.encode()).hexdigest()
+
+    return result
+
+async def async_cpu_task(data: Any) -> Any:
+    """Run CPU-intensive task in process pool."""
+    loop = asyncio.get_running_loop()
+
+    # Run CPU-bound task in separate process
+    with ProcessPoolExecutor() as executor:
+        result = await loop.run_in_executor(
+            executor,
+            cpu_intensive_sync_task,
+            data
+        )
+
+    return result
+
+async def process_cpu_tasks(datasets: list[Any]) -> list[Any]:
+    """Process multiple CPU-intensive tasks."""
+    tasks = [asyncio.create_task(async_cpu_task(data)) for data in datasets]
+
+    # Run with controlled concurrency to avoid overwhelming the system
+    semaphore = asyncio.Semaphore(4)  # Limit to 4 concurrent CPU tasks
+
+    async def limited_task(task):
+        async with semaphore:
+            return await task
+
+    limited_tasks = [limited_task(task) for task in tasks]
+    return await asyncio.gather(*limited_tasks)
+```
+
+## Async Debugging and Monitoring (ENFORCED)
+
+### Async Task Monitoring (MANDATORY)
+
+```python
+import asyncio
+from typing import Any  # Note: Prefer specific types over Any when possible
+import logging
+
+logger = logging.getLogger(__name__)
+
+class AsyncTaskMonitor:
+    """Monitor async tasks for debugging and performance."""
+
+    def __init__(self):
+        self.tasks: dict[str, asyncio.Task] = {}
+        self.task_stats: dict[str, dict[str, Any]] = {}
+
+    def create_monitored_task(self, coro, name: str):
+        """Create a monitored async task."""
+        task = asyncio.create_task(coro, name=name)
+
+        # Store reference for monitoring
+        self.tasks[name] = task
+        self.task_stats[name] = {
+            "created_at": asyncio.get_event_loop().time(),
+            "status": "running"
+        }
+
+        # Add completion callback
+        task.add_done_callback(
+            functools.partial(self._on_task_complete, name)
+        )
+
+        return task
+
+    def _on_task_complete(self, name: str, task: asyncio.Task):
+        """Handle task completion."""
+        completion_time = asyncio.get_event_loop().time()
+        created_at = self.task_stats[name]["created_at"]
+        duration = completion_time - created_at
+
+        if task.cancelled():
+            logger.warning(f"Task {name} was cancelled after {duration:.2f}s")
+            self.task_stats[name].update({
+                "status": "cancelled",
+                "duration": duration
+            })
+        elif task.exception():
+            logger.error(f"Task {name} failed after {duration:.2f}s", exc_info=task.exception())
+            self.task_stats[name].update({
+                "status": "failed",
+                "duration": duration,
+                "exception": str(task.exception())
+            })
+        else:
+            logger.info(f"Task {name} completed successfully in {duration:.2f}s")
+            self.task_stats[name].update({
+                "status": "completed",
+                "duration": duration,
+                "result": task.result()
+            })
+
+    def get_task_stats(self) -> dict[str, dict[str, Any]]:
+        """Get statistics for all monitored tasks."""
+        return self.task_stats.copy()
+
+# Usage
+async def monitored_operations():
+    monitor = AsyncTaskMonitor()
+
+    # Create monitored tasks
+    task1 = monitor.create_monitored_task(some_async_operation(), "operation_1")
+    task2 = monitor.create_monitored_task(another_async_operation(), "operation_2")
+
+    # Wait for completion
+    await asyncio.gather(task1, task2)
+
+    # Log statistics
+    stats = monitor.get_task_stats()
+    for name, stat in stats.items():
+        logger.info(f"Task {name}: {stat}")
+```
+
+## Violations (BLOCKED)
+
+- ❌ Synchronous I/O operations in async contexts
+- ❌ Blocking calls without `loop.run_in_executor()`
+- ❌ Manual task management instead of structured concurrency
+- ❌ Missing timeout protection on async operations
+- ❌ Improper resource cleanup in async contexts
+- ❌ Async functions that don't use `await` properly
+- ❌ Missing exception chaining in async error handling
+- ❌ Unbounded concurrency without semaphores
+- ❌ CPU-bound work on async event loop
+- ❌ Missing cancellation handling in long-running tasks
+
+## See Also
+
+- [concurrency.mdc](concurrency.mdc) - General concurrency patterns
+- [python-coding-standards.mdc](python-coding-standards.mdc) - Python coding standards
+- [python-performance.mdc](python-performance.mdc) - Performance considerations
+- [python-security.mdc](python-security.mdc) - Security standards
+
+## Enforcement (MANDATORY)
+
+- **Static Analysis**: Use tools like `flake8-async` for async code validation
+- **Runtime Monitoring**: Implement task monitoring in production
+- **CI Integration**: Automated checks for async anti-patterns
+- **Code Review**: Require async expertise for async code reviews
+- **Testing**: Comprehensive async test coverage with proper fixtures
+- **Performance Monitoring**: Track async operation performance metrics
+- **NO exceptions**: All async pattern violations must be fixed before merge

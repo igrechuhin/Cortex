@@ -1,0 +1,805 @@
+---
+globs: *.py, pyproject.toml, setup.py, setup.cfg, MANIFEST.in, requirements*.txt
+alwaysApply: false
+---
+# Python Package Structure (MANDATORY - ZERO TOLERANCE)
+
+**ENFORCEMENT**: All rules are MANDATORY. CI MUST fail on violations. NO exceptions.
+
+## Package Layout (ENFORCED)
+
+### Standard Project Structure (MANDATORY)
+
+```text
+my_project/
+├── pyproject.toml              # Project configuration (PEP 621)
+├── src/                        # Source code directory
+│   └── my_package/            # Main package
+│       ├── __init__.py
+│       ├── core/              # Core functionality
+│       │   ├── __init__.py
+│       │   ├── models.py      # Data models
+│       │   └── services.py    # Business logic
+│       ├── api/               # API layer
+│       │   ├── __init__.py
+│       │   ├── routes.py      # API routes
+│       │   └── schemas.py     # API schemas
+│       ├── infrastructure/    # Infrastructure layer
+│       │   ├── __init__.py
+│       │   ├── database.py    # Database connections
+│       │   └── cache.py       # Caching layer
+│       └── utils/             # Utilities
+│           ├── __init__.py
+│           └── helpers.py     # Helper functions
+├── tests/                      # Test directory
+│   ├── __init__.py
+│   ├── unit/                  # Unit tests
+│   ├── integration/           # Integration tests
+│   └── fixtures/              # Test fixtures
+├── docs/                       # Documentation
+│   ├── index.md
+│   └── api.md
+├── scripts/                    # Utility scripts
+│   └── setup_dev.py
+├── .gitignore                  # Git ignore rules
+├── README.md                   # Project README
+├── LICENSE                     # License file
+└── .pre-commit-config.yaml     # Pre-commit hooks
+```
+
+## Module Organization (ENFORCED)
+
+### Single Responsibility Principle (MANDATORY)
+
+```python
+# ✅ REQUIRED - Focused module with single responsibility
+# src/my_package/user_management/
+# ├── __init__.py
+# ├── models.py          # User data models only
+# ├── repository.py      # Data access only
+# ├── service.py         # Business logic only
+# └── api.py            # API endpoints only
+
+class User(BaseModel):
+    """User data model."""
+    id: int
+    email: str
+    name: str
+
+class UserRepository:
+    """Data access for users."""
+
+    async def get_by_id(self, user_id: int) -> User | None:
+        # Database operations only
+        pass
+
+class UserService:
+    """Business logic for user management."""
+
+    def __init__(self, repository: UserRepository):
+        self.repository = repository
+
+    async def get_user_profile(self, user_id: int) -> UserProfile:
+        # Business logic only
+        user = await self.repository.get_by_id(user_id)
+        return self._enrich_user_profile(user)
+
+# ❌ PROHIBITED - Mixed responsibilities in single file
+# src/my_package/user.py (contains models, database, business logic, API)
+```
+
+### Import Hierarchy (ENFORCED)
+
+```python
+# ✅ REQUIRED - Clear import hierarchy
+# src/my_package/__init__.py
+from .core import CoreService
+from .api import APIRouter
+
+__all__ = ["CoreService", "APIRouter"]
+
+# src/my_package/core/__init__.py
+from .models import User, Product
+from .services import UserService, ProductService
+
+__all__ = ["User", "Product", "UserService", "ProductService"]
+
+# src/my_package/core/models.py
+from pydantic import BaseModel
+
+class User(BaseModel):
+    id: int
+    name: str
+
+# ❌ PROHIBITED - Circular imports or unclear dependencies
+# Avoid: importing from higher levels or creating dependency cycles
+```
+
+## Project Configuration (ENFORCED)
+
+### pyproject.toml Structure (MANDATORY)
+
+```toml
+# pyproject.toml - PEP 621 compliant
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "my-package"
+version = "1.0.0"
+description = "A Python package"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.13"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+maintainers = [
+    {name = "Maintainer Name", email = "maintainer@example.com"}
+]
+keywords = ["python", "package", "example"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.20.0",
+    "pydantic>=2.0.0",
+    "sqlalchemy>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.5.0",
+    "flake8>=6.0.0",
+]
+docs = [
+    "sphinx>=6.0.0",
+    "sphinx-rtd-theme>=1.2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/username/my-package"
+Documentation = "https://my-package.readthedocs.io/"
+Repository = "https://github.com/username/my-package.git"
+Issues = "https://github.com/username/my-package/issues"
+Changelog = "https://github.com/username/my-package/blob/main/CHANGELOG.md"
+
+[project.scripts]
+my-command = "my_package.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/my_package"]
+
+[tool.black]
+line-length = 88
+target-version = ['py313']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["my_package"]
+known_third_party = ["fastapi", "pydantic", "sqlalchemy"]
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+ignore_errors = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers --strict-config"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
+    "setup.py"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:"
+]
+```
+
+## Dependency Management (ENFORCED)
+
+### Dependency Categories (MANDATORY)
+
+```python
+# Core dependencies in pyproject.toml
+dependencies = [
+    "fastapi>=0.100.0,<1.0.0",  # Pin major versions
+    "uvicorn[standard]>=0.20.0,<1.0.0",
+    "pydantic>=2.0.0,<3.0.0",
+]
+
+# Development dependencies
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0,<8.0.0",
+    "black>=23.0.0,<24.0.0",
+    "mypy>=1.5.0,<2.0.0",
+]
+
+# Environment-specific dependencies
+prod = [
+    "gunicorn>=20.0.0,<21.0.0",
+    "psycopg2-binary>=2.9.0,<3.0.0",
+]
+```
+
+### Virtual Environment Management (MANDATORY)
+
+```bash
+# ✅ REQUIRED - Use uv for dependency management
+# Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create virtual environment
+uv venv
+
+# Activate virtual environment
+source .venv/bin/activate  # Unix
+.venv\Scripts\activate     # Windows
+
+# Install dependencies
+uv sync
+
+# Install with development dependencies
+uv sync --extra dev
+
+# Add new dependency
+uv add requests
+
+# Add development dependency
+uv add --dev pytest
+
+# ❌ PROHIBITED - Manual pip install
+# pip install requests  # BLOCKED: Use uv instead
+```
+
+## Entry Points and CLI (ENFORCED)
+
+### Console Scripts (MANDATORY)
+
+```python
+# pyproject.toml
+[project.scripts]
+my-cli = "my_package.cli:main"
+
+# src/my_package/cli.py
+import argparse
+import sys
+from pathlib import Path
+
+from .core import MyApp
+
+def main():
+    """Main CLI entry point."""
+    parser = argparse.ArgumentParser(description="My Package CLI")
+    parser.add_argument("--config", type=Path, help="Configuration file")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+
+    args = parser.parse_args()
+
+    app = MyApp(config_path=args.config)
+    if args.verbose:
+        app.set_log_level("DEBUG")
+
+    sys.exit(app.run())
+
+if __name__ == "__main__":
+    main()
+```
+
+### Plugin Architecture (ENFORCED)
+
+```python
+# src/my_package/plugins/__init__.py
+from importlib import import_module
+from typing import Type, Protocol
+
+class Plugin(Protocol):
+    """Plugin interface."""
+    name: str
+
+    def initialize(self, app) -> None:
+        """Initialize plugin with app instance."""
+        ...
+
+    def cleanup(self) -> None:
+        """Clean up plugin resources."""
+        ...
+
+def load_plugins() -> dict[str, Type[Plugin]]:
+    """Load all available plugins."""
+    plugins = {}
+
+    # Discover plugins via entry points or configuration
+    for entry_point in importlib.metadata.entry_points(group="my_package.plugins"):
+        plugin_class = entry_point.load()
+        plugins[entry_point.name] = plugin_class
+
+    return plugins
+
+# pyproject.toml - Plugin entry points
+[project.entry-points."my_package.plugins"]
+database = "my_package.plugins.database:DatabasePlugin"
+cache = "my_package.plugins.cache:CachePlugin"
+```
+
+## Application Configuration (ENFORCED)
+
+### Configuration Patterns (MANDATORY)
+
+```python
+# src/my_package/config.py
+from pydantic import BaseSettings, Field
+
+class DatabaseConfig(BaseSettings):
+    """Database configuration."""
+    url: str = Field(..., env="DATABASE_URL")
+    pool_size: int = Field(10, env="DB_POOL_SIZE")
+    max_connections: int = Field(100, env="DB_MAX_CONNECTIONS")
+
+    class Config:
+        env_prefix = "DB_"
+        case_sensitive = False
+
+class APIConfig(BaseSettings):
+    """API configuration."""
+    host: str = Field("localhost", env="API_HOST")
+    port: int = Field(8000, env="API_PORT")
+    debug: bool = Field(False, env="DEBUG")
+
+    class Config:
+        env_prefix = "API_"
+
+class AppConfig(BaseSettings):
+    """Application configuration."""
+    database: DatabaseConfig = DatabaseConfig()
+    api: APIConfig = APIConfig()
+    app_name: str = Field("MyApp", env="APP_NAME")
+    version: str = Field("1.0.0", env="APP_VERSION")
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+
+# Usage
+config = AppConfig()
+print(f"Running {config.app_name} v{config.version}")
+print(f"Database: {config.database.url}")
+```
+
+### Environment Variables (MANDATORY)
+
+```bash
+# .env file
+# Database
+DATABASE_URL=postgresql://user:pass@localhost:5432/mydb
+DB_POOL_SIZE=20
+DB_MAX_CONNECTIONS=100
+
+# API
+API_HOST=0.0.0.0
+API_PORT=8000
+DEBUG=true
+
+# Application
+APP_NAME=MyApplication
+APP_VERSION=1.0.0
+```
+
+## Data Management (ENFORCED)
+
+### Database Layer Organization (MANDATORY)
+
+```python
+# src/my_package/infrastructure/database.py
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
+
+class Database:
+    """Database connection and session management."""
+
+    def __init__(self, url: str):
+        self.engine = create_async_engine(url, echo=False)
+        self.session_factory = sessionmaker(
+            self.engine, class_=AsyncSession, expire_on_commit=False
+        )
+
+    async def get_session(self) -> AsyncSession:
+        """Get database session."""
+        return self.session_factory()
+
+# src/my_package/infrastructure/models.py
+from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
+class User(Base):
+    """User database model."""
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True)
+    name = Column(String)
+    created_at = Column(DateTime)
+
+# src/my_package/infrastructure/repository.py
+from sqlalchemy.ext.asyncio import AsyncSession
+from .models import User
+
+class UserRepository:
+    """User data access layer."""
+
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def get_by_id(self, user_id: int) -> User | None:
+        """Get user by ID."""
+        return await self.session.get(User, user_id)
+
+    async def get_all(self, limit: int = 100) -> list[User]:
+        """Get all users with limit."""
+        result = await self.session.execute(
+            select(User).limit(limit)
+        )
+        return result.scalars().all()
+
+    async def create(self, user: User) -> User:
+        """Create new user."""
+        self.session.add(user)
+        await self.session.commit()
+        await self.session.refresh(user)
+        return user
+```
+
+## Testing Structure (ENFORCED)
+
+### Test Organization (MANDATORY)
+
+```python
+# tests/conftest.py
+import pytest
+import asyncio
+from typing import AsyncGenerator
+from my_package.config import AppConfig
+from my_package.infrastructure.database import Database
+
+@pytest.fixture
+async def test_config() -> AppConfig:
+    """Test configuration."""
+    return AppConfig(
+        database_url="postgresql://test:test@localhost:5432/test_db"
+    )
+
+@pytest.fixture
+async def test_db(test_config) -> AsyncGenerator[Database, None]:
+    """Test database."""
+    db = Database(test_config.database_url)
+
+    # Setup test schema
+    async with db.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    yield db
+
+    # Cleanup
+    async with db.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+
+# tests/unit/test_user_service.py
+import pytest
+from unittest.mock import Mock
+from my_package.core.services import UserService
+from my_package.core.models import User
+
+class TestUserService:
+    """Test UserService functionality."""
+
+    @pytest.fixture
+    def mock_repository(self):
+        """Mock user repository."""
+        return Mock()
+
+    @pytest.fixture
+    def user_service(self, mock_repository):
+        """User service instance."""
+        return UserService(mock_repository)
+
+    def test_get_user_success(self, user_service, mock_repository):
+        """Test successful user retrieval."""
+        # Arrange
+        expected_user = User(id=1, name="Test User")
+        mock_repository.get_by_id.return_value = expected_user
+
+        # Act
+        result = user_service.get_user(1)
+
+        # Assert
+        assert result == expected_user
+        mock_repository.get_by_id.assert_called_once_with(1)
+```
+
+## Documentation Structure (ENFORCED)
+
+### Documentation Organization (MANDATORY)
+
+```text
+docs/
+├── index.md                 # Main documentation
+├── installation.md          # Installation guide
+├── quickstart.md           # Quick start guide
+├── api/                    # API documentation
+│   ├── index.md
+│   ├── core.md
+│   └── infrastructure.md
+├── guides/                 # User guides
+│   ├── configuration.md
+│   └── deployment.md
+├── development/            # Development docs
+│   ├── contributing.md
+│   ├── testing.md
+│   └── architecture.md
+└── mkdocs.yml             # MkDocs configuration
+```
+
+### README Structure (MANDATORY)
+
+```markdown
+# My Package
+
+[![Python Version](https://img.shields.io/badge/python-3.13+-blue.svg)](https://python.org)
+[![PyPI Version](https://img.shields.io/pypi/v/my-package.svg)](https://pypi.org/project/my-package/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+A brief description of what this package does.
+
+## Features
+
+- Feature 1
+- Feature 2
+- Feature 3
+
+## Installation
+
+```bash
+pip install my-package
+# or
+uv add my-package
+```
+
+## Quick Start
+
+```python
+from my_package import MyClass
+
+# Example usage
+instance = MyClass()
+result = instance.do_something()
+```
+
+## Documentation
+
+Full documentation is available at [https://my-package.readthedocs.io/](https://my-package.readthedocs.io/)
+
+## Development
+
+### Setup Development Environment
+
+```bash
+# Clone repository
+git clone https://github.com/username/my-package.git
+cd my-package
+
+# Install development dependencies
+uv sync --extra dev
+
+# Run tests
+pytest
+
+# Run linters
+pre-commit run --all-files
+```
+
+### Contributing
+
+Please see [CONTRIBUTING.md](docs/development/contributing.md) for contribution guidelines.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+```markdown
+
+## Deployment Configuration (ENFORCED)
+
+### Docker Configuration (MANDATORY)
+
+```dockerfile
+# Dockerfile
+FROM python:3.13-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set work directory
+WORKDIR /app
+
+# Install uv
+RUN pip install uv
+
+# Copy pyproject.toml and lock file
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies
+RUN uv sync --frozen --no-install-project
+
+# Copy source code
+COPY src/ ./src/
+
+# Install the project
+RUN uv sync --frozen
+
+# Change ownership
+RUN chown -R appuser:appuser /app
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+# Run the application
+CMD ["uv", "run", "my-package"]
+```
+
+### CI/CD Pipeline (MANDATORY)
+
+```yaml
+# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.13"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    - name: Set up Python ${{ matrix.python-version }}
+      run: uv python install ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: uv sync --extra dev
+
+    - name: Run linters
+      run: |
+        uv run black --check src/
+        uv run isort --check-only src/
+        uv run flake8 src/
+        uv run mypy src/
+
+    - name: Run tests
+      run: uv run pytest --cov=src --cov-report=xml
+
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    - name: Build package
+      run: uv build
+
+    - name: Publish to PyPI
+      run: uv publish
+      env:
+        UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+```
+
+## Violations (BLOCKED)
+
+- ❌ Flat package structure (everything in one directory)
+- ❌ Mixed responsibilities in single modules
+- ❌ Missing pyproject.toml configuration
+- ❌ Manual dependency management (no uv)
+- ❌ Missing virtual environment usage
+- ❌ Incorrect import hierarchy
+- ❌ Missing package entry points
+- ❌ Improper configuration management
+- ❌ Missing test structure
+- ❌ Incomplete documentation
+- ❌ Missing CI/CD configuration
+- ❌ Non-standard project layout
+
+## See Also
+
+- [python-coding-standards.mdc](python-coding-standards.mdc) - Python coding standards
+- [python-testing-standards.mdc](python-testing-standards.mdc) - Python testing standards
+- [maintainability.mdc](maintainability.mdc) - Code maintainability
+
+## Enforcement (MANDATORY)
+
+- **Project Structure Validation**: CI checks for required directory structure
+- **Import Analysis**: Tools verify proper import hierarchy
+- **Dependency Auditing**: Automated checks for dependency management
+- **Configuration Validation**: CI validates pyproject.toml structure
+- **Documentation Checks**: CI ensures documentation completeness
+- **Packaging Verification**: Automated package build and install testing
+- **NO exceptions**: All package structure violations must be fixed before merge

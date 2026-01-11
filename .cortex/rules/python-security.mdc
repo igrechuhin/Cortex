@@ -1,0 +1,2248 @@
+---
+globs: *.py
+alwaysApply: false
+---
+
+# Python Security Standards (MANDATORY - ZERO TOLERANCE)
+
+**ENFORCEMENT**: All rules are MANDATORY. CI MUST fail on violations. NO exceptions.
+
+## Input Validation (ENFORCED)
+
+### Input Sanitization (MANDATORY)
+
+```python
+# ✅ REQUIRED - Comprehensive input validation
+from pydantic import BaseModel, validator, Field
+import re
+
+class UserInput(BaseModel):
+"""Validated user input model."""
+username: str = Field(..., min_length=3, max_length=50)
+email: str = Field(..., regex=r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+age: int | None = Field(None, ge=0, le=150)
+
+@validator('username')
+def validate_username(cls, v):
+    """Validate username format and content."""
+    if not re.match(r'^[a-zA-Z0-9_-]+$', v):
+        raise ValueError('Username contains invalid characters')
+    return v
+
+@validator('email')
+def validate_email_domain(cls, v):
+    """Additional email validation."""
+    # Check for common disposable email domains
+    disposable_domains = {'10minutemail.com', 'guerrillamail.com'}
+    domain = v.split('@')[1].lower()
+    if domain in disposable_domains:
+        raise ValueError('Disposable email domains not allowed')
+    return v
+
+# Usage
+def create_user(user_data: dict):
+"""Create user with validated input."""
+try:
+    validated_input = UserInput(**user_data)
+    # Proceed with validated data
+    return create_user_in_db(validated_input.dict())
+except ValidationError as e:
+    logger.warning(f"Invalid user input: {e}")
+    raise ValueError("Invalid input data") from e
+
+# ❌ PROHIBITED - No input validation
+def create_user_unsafe(user_data: dict):
+# BLOCKED: Direct use of unvalidated input
+username = user_data.get('username')  # No validation
+email = user_data.get('email')        # No validation
+return create_user_in_db(user_data)
+```
+
+### SQL Injection Prevention (MANDATORY)
+
+```python
+# ✅ REQUIRED - Parameterized queries
+import asyncpg
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+async def get_user_by_id_safe(session: AsyncSession, user_id: int):
+    """Safe parameterized query."""
+    # SQLAlchemy parameterized query
+    result = await session.execute(
+        text("SELECT * FROM users WHERE id = :user_id"),
+        {"user_id": user_id}
+    )
+    return result.fetchone()
+
+async def get_user_by_email_safe(pool: asyncpg.Pool, email: str):
+    """Safe parameterized query with asyncpg."""
+    # asyncpg parameterized query
+    async with pool.acquire() as conn:
+        return await conn.fetchrow(
+            "SELECT * FROM users WHERE email = $1",
+            email
+        )
+
+# ❌ PROHIBITED - SQL injection vulnerable
+async def get_user_by_email_unsafe(pool: asyncpg.Pool, email: str):
+    # BLOCKED: String interpolation creates SQL injection vulnerability
+    async with pool.acquire() as conn:
+        query = f"SELECT * FROM users WHERE email = '{email}'"  # VULNERABLE
+        return await conn.fetchrow(query)
+```
+
+## Authentication & Authorization (ENFORCED)
+
+### Secure Password Handling (MANDATORY)
+
+```python
+# ✅ REQUIRED - Secure password hashing
+import hashlib
+import secrets
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+import base64
+
+class PasswordManager:
+    """Secure password management."""
+
+    ITERATIONS = 100_000
+    SALT_LENGTH = 32
+    KEY_LENGTH = 32
+
+    @staticmethod
+    def hash_password(password: str) -> str:
+        """Hash password using PBKDF2."""
+        salt = secrets.token_bytes(PasswordManager.SALT_LENGTH)
+
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=PasswordManager.KEY_LENGTH,
+            salt=salt,
+            iterations=PasswordManager.ITERATIONS,
+        )
+
+        key = kdf.derive(password.encode())
+        hash_with_salt = salt + key
+
+        return base64.b64encode(hash_with_salt).decode()
+
+    @staticmethod
+    def verify_password(password: str, hashed: str) -> bool:
+        """Verify password against hash."""
+        try:
+            hash_with_salt = base64.b64decode(hashed.encode())
+            salt = hash_with_salt[:PasswordManager.SALT_LENGTH]
+            stored_key = hash_with_salt[PasswordManager.SALT_LENGTH:]
+
+            kdf = PBKDF2HMAC(
+                algorithm=hashes.SHA256(),
+                length=PasswordManager.KEY_LENGTH,
+                salt=salt,
+                iterations=PasswordManager.ITERATIONS,
+            )
+
+            key = kdf.derive(password.encode())
+            return secrets.compare_digest(key, stored_key)
+        except Exception:
+            return False
+
+# ❌ PROHIBITED - Insecure password handling
+def hash_password_bad(password: str) -> str:
+    # BLOCKED: MD5 is insecure
+    return hashlib.md5(password.encode()).hexdigest()
+
+def verify_password_bad(password: str, hashed: str) -> bool:
+    # BLOCKED: Timing attack vulnerable
+    return hash_password_bad(password) == hashed
+```
+
+### JWT Token Security (MANDATORY)
+
+```python
+# ✅ REQUIRED - Secure JWT handling
+import jwt
+from datetime import datetime, timedelta, timezone
+from typing import Any
+import secrets
+
+class JWTManager:
+    """Secure JWT token management."""
+
+    ALGORITHM = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES = 15
+    REFRESH_TOKEN_EXPIRE_DAYS = 7
+
+    def __init__(self, secret_key: str):
+        if len(secret_key) < 32:
+            raise ValueError("Secret key must be at least 32 characters")
+        self.secret_key = secret_key
+
+    def create_access_token(self, data: dict[str, Any]) -> str:
+        """Create access token with expiration."""
+        to_encode = data.copy()
+        expire = datetime.now(timezone.utc) + timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES)
+        to_encode.update({"exp": expire, "type": "access"})
+        return jwt.encode(to_encode, self.secret_key, algorithm=self.ALGORITHM)
+
+    def create_refresh_token(self, data: dict[str, Any]) -> str:
+        """Create refresh token with longer expiration."""
+        to_encode = data.copy()
+        expire = datetime.now(timezone.utc) + timedelta(days=self.REFRESH_TOKEN_EXPIRE_DAYS)
+        to_encode.update({"exp": expire, "type": "refresh"})
+        return jwt.encode(to_encode, self.secret_key, algorithm=self.ALGORITHM)
+
+    def verify_token(self, token: str) -> dict[str, Any] | None:
+        """Verify and decode token."""
+        try:
+            payload = jwt.decode(token, self.secret_key, algorithms=[self.ALGORITHM])
+
+            # Check token type and expiration
+            if payload.get("type") not in ["access", "refresh"]:
+                return None
+
+            # Additional custom claims validation
+            if not self._validate_custom_claims(payload):
+                return None
+
+            return payload
+        except jwt.ExpiredSignatureError:
+            return None
+        except jwt.InvalidTokenError:
+            return None
+
+    def _validate_custom_claims(self, payload: dict[str, Any]) -> bool:
+        """Validate custom claims."""
+        # Implement custom validation logic
+        user_id = payload.get("sub")
+        if not user_id or not isinstance(user_id, str):
+            return False
+        return True
+
+    def refresh_access_token(self, refresh_token: str) -> str | None:
+        """Create new access token from valid refresh token."""
+        payload = self.verify_token(refresh_token)
+        if not payload or payload.get("type") != "refresh":
+            return None
+
+        # Create new access token with refreshed data
+        user_data = {k: v for k, v in payload.items() if k not in ["exp", "iat", "type"]}
+        return self.create_access_token(user_data)
+
+# ❌ PROHIBITED - Insecure JWT handling
+def create_token_bad(user_id: str) -> str:
+    # BLOCKED: No expiration, weak algorithm
+    return jwt.encode({"user_id": user_id}, "weak_secret", algorithm="HS256")
+
+def verify_token_bad(token: str) -> dict[str, Any] | None:
+    # BLOCKED: No proper exception handling
+    return jwt.decode(token, "weak_secret", algorithms=["HS256"])
+```
+
+## Data Protection (ENFORCED)
+
+### Sensitive Data Handling (MANDATORY)
+
+```python
+# ✅ REQUIRED - Secure sensitive data handling
+import os
+from cryptography.fernet import Fernet
+
+class DataEncryption:
+    """Data encryption utilities."""
+
+    def __init__(self):
+        key = os.getenv('ENCRYPTION_KEY')
+        if not key:
+            raise ValueError("ENCRYPTION_KEY environment variable required")
+        self.fernet = Fernet(key.encode())
+
+    def encrypt_sensitive_data(self, data: str) -> str:
+        """Encrypt sensitive data."""
+        return self.fernet.encrypt(data.encode()).decode()
+
+    def decrypt_sensitive_data(self, encrypted_data: str) -> str:
+        """Decrypt sensitive data."""
+        return self.fernet.decrypt(encrypted_data.encode()).decode()
+
+class SecureConfig:
+    """Configuration with encrypted sensitive data."""
+
+    def __init__(self):
+        self.encryption = DataEncryption()
+        self._db_password: str | None = None
+
+    @property
+    def database_password(self) -> str:
+        """Get decrypted database password."""
+        if self._db_password is None:
+            encrypted = os.getenv('DB_PASSWORD_ENCRYPTED')
+            if not encrypted:
+                raise ValueError("DB_PASSWORD_ENCRYPTED not set")
+            self._db_password = self.encryption.decrypt_sensitive_data(encrypted)
+        return self._db_password
+
+    def clear_sensitive_data(self):
+        """Clear decrypted sensitive data from memory."""
+        self._db_password = None
+
+# ❌ PROHIBITED - Insecure sensitive data handling
+class InsecureConfig:
+    # BLOCKED: Plain text passwords in code
+    DATABASE_PASSWORD = "super_secret_password123"
+
+    # BLOCKED: Hardcoded secrets
+    API_KEY = "sk-1234567890abcdef"
+
+    # BLOCKED: Sensitive data in logs
+    def log_user_data(self, user_data):
+        print(f"User data: {user_data}")  # May contain sensitive info
+```
+
+### Secure Logging (MANDATORY)
+
+```python
+# ✅ REQUIRED - Secure logging practices
+import logging
+import re
+from typing import Any
+
+class SecureLogger:
+    """Logger that sanitizes sensitive data."""
+
+    SENSITIVE_PATTERNS = [
+        (re.compile(r'password["\']?\s*:\s*["\']([^"\']+)["\']'), 'password: "***"'),
+        (re.compile(r'api_key["\']?\s*:\s*["\']([^"\']+)["\']'), 'api_key: "***"'),
+        (re.compile(r'token["\']?\s*:\s*["\']([^"\']+)["\']'), 'token: "***"'),
+        (re.compile(r'secret["\']?\s*:\s*["\']([^"\']+)["\']'), 'secret: "***"'),
+    ]
+
+    def __init__(self, logger: logging.Logger):
+        self.logger = logger
+
+    def _sanitize_message(self, message: str) -> str:
+        """Sanitize sensitive data from log messages."""
+        sanitized = message
+        for pattern, replacement in self.SENSITIVE_PATTERNS:
+            sanitized = pattern.sub(replacement, sanitized)
+        return sanitized
+
+    def _sanitize_data(self, data: Any) -> Any:
+        """Sanitize sensitive data from structured data."""
+        if isinstance(data, dict):
+            sanitized = {}
+            for key, value in data.items():
+                if any(sensitive in key.lower() for sensitive in ['password', 'secret', 'token', 'key']):
+                    sanitized[key] = "***"
+                else:
+                    sanitized[key] = self._sanitize_data(value)
+            return sanitized
+        elif isinstance(data, (list, tuple)):
+            return [self._sanitize_data(item) for item in data]
+        else:
+            return str(data) if not isinstance(data, (int, float, bool, type(None))) else data
+
+    def info(self, message: str, extra: dict[str, Any] | None = None):
+        """Log info message with sanitization."""
+        sanitized_message = self._sanitize_message(message)
+        sanitized_extra = self._sanitize_data(extra) if extra else None
+        self.logger.info(sanitized_message, extra=sanitized_extra)
+
+    def error(self, message: str, exc_info=None, extra: dict[str, Any] | None = None):
+        """Log error message with sanitization."""
+        sanitized_message = self._sanitize_message(message)
+        sanitized_extra = self._sanitize_data(extra) if extra else None
+        self.logger.error(sanitized_message, exc_info=exc_info, extra=sanitized_extra)
+
+# Usage
+secure_logger = SecureLogger(logging.getLogger(__name__))
+
+# Sensitive data automatically sanitized
+user_data = {"email": "user@example.com", "password": "secret123", "api_key": "sk-123"}
+secure_logger.info("User login attempt", extra={"user_data": user_data})
+
+# ❌ PROHIBITED - Logging sensitive data
+def insecure_logging():
+    password = "secret123"
+    logger.info(f"User password: {password}")  # BLOCKED: Sensitive data in logs
+```
+
+## Secure Dependencies (ENFORCED)
+
+### Dependency Vulnerability Scanning (MANDATORY)
+
+```toml
+# pyproject.toml - Security-focused dependencies
+[tool.uv]
+security = "strict"  # Enable strict security checks
+
+[tool.pip-audit]
+# pip-audit configuration for vulnerability scanning
+ignore-vulns = [
+    # Only ignore if there's a specific justification
+]
+
+[tool.safety]
+# safety configuration for dependency vulnerability checks
+ignore = [
+    # Only ignore if vulnerability doesn't apply or is mitigated
+]
+```
+
+### Secure Dependency Management (MANDATORY)
+
+```bash
+# ✅ REQUIRED - Security-focused dependency management
+# Regular security updates
+uv lock --upgrade  # Update dependencies with security fixes
+
+# Vulnerability scanning
+pip-audit  # Scan for known vulnerabilities
+safety check  # Alternative vulnerability scanner
+
+# Dependency pinning for reproducible builds
+# Use specific versions in pyproject.toml
+dependencies = [
+    "requests>=2.28.0,<3.0.0",  # Pin major versions
+    "fastapi>=0.100.0,<1.0.0",
+]
+
+# Regular dependency updates with security review
+uv add --upgrade requests  # Update specific package
+```
+
+## Network Security (ENFORCED)
+
+### Secure HTTP Client Configuration (MANDATORY)
+
+```python
+# ✅ REQUIRED - Secure HTTP client configuration
+import aiohttp
+import ssl
+from aiohttp import ClientTimeout
+
+class SecureHTTPClient:
+    """Secure HTTP client with proper TLS configuration."""
+
+    def __init__(self):
+        # Create secure SSL context
+        self.ssl_context = ssl.create_default_context()
+        self.ssl_context.check_hostname = True
+        self.ssl_context.verify_mode = ssl.CERT_REQUIRED
+
+        # Disable insecure SSL/TLS versions
+        self.ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+
+        # Configure secure ciphers
+        self.ssl_context.set_ciphers(
+            'ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20'
+        )
+
+        # Set secure timeout
+        self.timeout = ClientTimeout(
+            total=30,      # Total timeout
+            connect=10,    # Connection timeout
+            sock_read=10,  # Socket read timeout
+        )
+
+    async def get(self, url: str, headers: dict | None = None) -> dict:
+        """Make secure GET request."""
+        connector = aiohttp.TCPConnector(
+            ssl=self.ssl_context,
+            limit=100,          # Connection pool limit
+            limit_per_host=10,  # Per-host connection limit
+            ttl_dns_cache=30,   # DNS cache TTL
+        )
+
+        async with aiohttp.ClientSession(
+            connector=connector,
+            timeout=self.timeout,
+            headers=self._get_secure_headers(headers)
+        ) as session:
+            async with session.get(url) as response:
+                return {
+                    'status': response.status,
+                    'headers': dict(response.headers),
+                    'data': await response.read()
+                }
+
+    def _get_secure_headers(self, additional_headers: dict | None) -> dict:
+        """Get secure default headers."""
+        headers = {
+            'User-Agent': 'MyApp/1.0.0',  # Don't expose default user agent
+            'Accept': 'application/json',  # Explicitly accept JSON
+            'X-Requested-With': 'XMLHttpRequest',  # CSRF protection
+        }
+
+        if additional_headers:
+            headers.update(additional_headers)
+
+        return headers
+
+# ❌ PROHIBITED - Insecure HTTP client
+async def insecure_request(url: str):
+    # BLOCKED: No SSL verification, no timeouts
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            return await response.text()  # BLOCKED: No SSL context
+```
+
+### URL Validation and Sanitization (MANDATORY)
+
+```python
+# ✅ REQUIRED - URL validation and sanitization
+from urllib.parse import urlparse, urljoin
+import re
+
+class URLValidator:
+    """URL validation and sanitization utilities."""
+
+    # Allowed schemes
+    ALLOWED_SCHEMES = {'http', 'https'}
+
+    # Dangerous URL patterns
+    DANGEROUS_PATTERNS = [
+        r'\.\.',  # Directory traversal
+        r'localhost',
+        r'127\.0\.0\.1',
+        r'0\.0\.0\.0',
+        r'169\.254\.',  # Link-local
+        r'10\.0\.0\.0/8',  # Private network
+        r'172\.16\.0\.0/12',  # Private network
+        r'192\.168\.0\.0/16',  # Private network
+    ]
+
+    @classmethod
+    def validate_url(cls, url: str, allowed_domains: list | None = None) -> bool:
+        """Validate URL for security."""
+        try:
+            parsed = urlparse(url)
+
+            # Check scheme
+            if parsed.scheme not in cls.ALLOWED_SCHEMES:
+                return False
+
+            # Check for dangerous patterns
+            url_str = url.lower()
+            for pattern in cls.DANGEROUS_PATTERNS:
+                if re.search(pattern, url_str):
+                    return False
+
+            # Check domain whitelist if provided
+            if allowed_domains:
+                domain = parsed.netloc.lower()
+                if not any(domain.endswith(allowed) for allowed in allowed_domains):
+                    return False
+
+            # Check for suspicious characters
+            if any(char in url for char in ['<', '>', '"', "'"]):
+                return False
+
+            return True
+
+        except Exception:
+            return False
+
+    @classmethod
+    def sanitize_url(cls, url: str, base_url: str | None = None) -> str | None:
+        """Sanitize and resolve relative URLs."""
+        try:
+            if base_url:
+                url = urljoin(base_url, url)
+
+            if not cls.validate_url(url):
+                return None
+
+            # Additional sanitization
+            parsed = urlparse(url)
+
+            # Remove userinfo (user:pass@host)
+            sanitized = parsed._replace(netloc=parsed.hostname or parsed.netloc)
+
+            # Remove fragment (#anchor)
+            sanitized = sanitized._replace(fragment='')
+
+            # Remove potentially dangerous query parameters
+            safe_params = {}
+            if parsed.query:
+                from urllib.parse import parse_qs
+                params = parse_qs(parsed.query, keep_blank_values=False)
+                # Only keep known safe parameters
+                safe_param_names = {'id', 'page', 'limit', 'sort'}
+                for param_name in safe_param_names:
+                    if param_name in params:
+                        safe_params[param_name] = params[param_name]
+
+            sanitized = sanitized._replace(query='')
+
+            return sanitized.geturl()
+
+        except Exception:
+            return None
+
+# Usage
+if URLValidator.validate_url(user_input_url, allowed_domains=['example.com']):
+    safe_url = URLValidator.sanitize_url(user_input_url)
+    if safe_url:
+        # Proceed with safe URL
+        pass
+```
+
+## Secure Configuration (ENFORCED)
+
+### Environment Variable Security (MANDATORY)
+
+```python
+# ✅ REQUIRED - Secure environment variable handling
+import os
+from pathlib import Path
+from typing import Any
+
+class SecureEnvironment:
+    """Secure environment variable management."""
+
+    REQUIRED_VARS = {
+        'SECRET_KEY': 'Application secret key (min 32 chars)',
+        'DATABASE_URL': 'Database connection URL',
+        'ENCRYPTION_KEY': 'Data encryption key (32 bytes base64)',
+        'API_KEY': 'External API key',
+    }
+
+    SENSITIVE_VARS = {
+        'SECRET_KEY', 'ENCRYPTION_KEY', 'API_KEY', 'DATABASE_PASSWORD'
+    }
+
+    @classmethod
+    def load_secure_config(cls) -> dict[str, str]:
+        """Load configuration with security validation."""
+        config = {}
+        missing_vars = []
+
+        for var_name, description in cls.REQUIRED_VARS.items():
+            value = os.getenv(var_name)
+            if not value:
+                missing_vars.append(f"{var_name}: {description}")
+                continue
+
+            # Validate sensitive variables
+            if var_name in ['SECRET_KEY', 'ENCRYPTION_KEY'] and len(value) < 32:
+                raise ValueError(f"{var_name} must be at least 32 characters")
+
+            if var_name == 'ENCRYPTION_KEY':
+                try:
+                    import base64
+                    base64.b64decode(value)
+                except Exception:
+                    raise ValueError(f"{var_name} must be valid base64")
+
+            config[var_name] = value
+
+        if missing_vars:
+            raise ValueError(f"Missing required environment variables:\n" +
+                           "\n".join(f"  - {var}" for var in missing_vars))
+
+        return config
+
+    @classmethod
+    def validate_file_permissions(cls, file_path: Path) -> bool:
+        """Validate file permissions for sensitive files."""
+        if not file_path.exists():
+            return False
+
+        # Check if file is readable by others
+        mode = file_path.stat().st_mode
+        others_readable = bool(mode & 0o004)
+
+        if others_readable:
+            logger.warning(f"File {file_path} is readable by others")
+            return False
+
+        return True
+
+# ❌ PROHIBITED - Insecure environment handling
+def load_config_bad():
+    # BLOCKED: No validation, exposes sensitive data
+    config = {
+        'secret_key': os.getenv('SECRET_KEY', 'default_insecure_key'),
+        'db_url': os.getenv('DATABASE_URL', 'sqlite:///default.db'),
+    }
+    print(f"Loaded config: {config}")  # BLOCKED: Logging sensitive data
+    return config
+```
+
+## File System Security (ENFORCED)
+
+### Secure File Operations (MANDATORY)
+
+```python
+# ✅ REQUIRED - Secure file operations
+import os
+import tempfile
+from pathlib import Path
+
+class SecureFileManager:
+    """Secure file operations with proper validation."""
+
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+    ALLOWED_EXTENSIONS = {'.txt', '.json', '.csv', '.pdf'}
+
+    @staticmethod
+    def validate_file_path(file_path: Path, base_dir: Path | None = None) -> bool:
+        """Validate file path for security."""
+        try:
+            # Resolve to absolute path to prevent directory traversal
+            resolved_path = file_path.resolve()
+
+            # Check for directory traversal attempts
+            if '..' in file_path.parts:
+                return False
+
+            # If base directory specified, ensure file is within it
+            if base_dir:
+                base_resolved = base_dir.resolve()
+                if not resolved_path.is_relative_to(base_resolved):
+                    return False
+
+            # Check file extension
+            if file_path.suffix.lower() not in SecureFileManager.ALLOWED_EXTENSIONS:
+                return False
+
+            return True
+
+        except Exception:
+            return False
+
+    @staticmethod
+    def secure_file_upload(uploaded_file, destination_dir: Path) -> Path | None:
+        """Securely handle file upload."""
+        try:
+            # Validate file size
+            file_size = len(uploaded_file.read())
+            uploaded_file.seek(0)  # Reset file pointer
+
+            if file_size > SecureFileManager.MAX_FILE_SIZE:
+                raise ValueError(f"File too large: {file_size} bytes")
+
+            # Generate secure filename
+            secure_filename = SecureFileManager._generate_secure_filename(
+                uploaded_file.filename
+            )
+
+            destination_path = destination_dir / secure_filename
+
+            # Validate destination path
+            if not SecureFileManager.validate_file_path(destination_path, destination_dir):
+                raise ValueError("Invalid file path")
+
+            # Write file atomically
+            with tempfile.NamedTemporaryFile(
+                dir=destination_dir,
+                delete=False,
+                suffix='.tmp'
+            ) as temp_file:
+                temp_path = Path(temp_file.name)
+
+                # Copy file content
+                while chunk := uploaded_file.read(8192):
+                    temp_file.write(chunk)
+
+                temp_file.flush()
+                os.fsync(temp_file.fileno())  # Force write to disk
+
+            # Atomic move to final location
+            temp_path.rename(destination_path)
+
+            # Set secure permissions
+            destination_path.chmod(0o644)
+
+            return destination_path
+
+        except Exception as e:
+            logger.error(f"File upload failed: {e}")
+            return None
+
+    @staticmethod
+    def _generate_secure_filename(original_filename: str) -> str:
+        """Generate secure filename."""
+        import secrets
+        import string
+
+        # Get file extension
+        suffix = Path(original_filename).suffix
+
+        # Generate random filename
+        random_part = ''.join(
+            secrets.choice(string.ascii_letters + string.digits)
+            for _ in range(16)
+        )
+
+        return f"{random_part}{suffix}"
+
+    @staticmethod
+    def secure_temp_file(suffix: str = '') -> Path:
+        """Create secure temporary file."""
+        temp_dir = Path(tempfile.gettempdir()) / 'secure_app'
+        temp_dir.mkdir(exist_ok=True)
+
+        # Ensure temp directory has secure permissions
+        temp_dir.chmod(0o755)
+
+        fd, path = tempfile.mkstemp(
+            suffix=suffix,
+            dir=temp_dir,
+            prefix='secure_'
+        )
+
+        # Close file descriptor, keep path
+        os.close(fd)
+
+        temp_path = Path(path)
+        temp_path.chmod(0o600)  # Owner read/write only
+
+        return temp_path
+
+# ❌ PROHIBITED - Insecure file operations
+def insecure_file_upload(file_data, filename):
+    # BLOCKED: No validation, directory traversal possible
+    with open(filename, 'wb') as f:  # BLOCKED: Direct use of user filename
+        f.write(file_data)
+
+    return filename
+```
+
+## Cryptography Best Practices (ENFORCED)
+
+### Secure Random Generation (MANDATORY)
+
+```python
+# ✅ REQUIRED - Secure random generation
+import secrets
+import os
+
+class SecureRandom:
+    """Secure random value generation."""
+
+    @staticmethod
+    def generate_token(length: int = 32) -> str:
+        """Generate secure random token."""
+        return secrets.token_urlsafe(length)
+
+    @staticmethod
+    def generate_password(length: int = 16) -> str:
+        """Generate secure random password."""
+        import string
+        alphabet = string.ascii_letters + string.digits + string.punctuation
+        return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+    @staticmethod
+    def generate_session_id() -> str:
+        """Generate secure session ID."""
+        return secrets.token_hex(32)  # 64 character hex string
+
+    @staticmethod
+    def generate_csrf_token() -> str:
+        """Generate CSRF token."""
+        return secrets.token_urlsafe(32)
+
+# ❌ PROHIBITED - Insecure random generation
+def insecure_token():
+    # BLOCKED: Uses predictable random
+    import random
+    return ''.join(random.choice('abc123') for _ in range(10))
+```
+
+## Security Monitoring and Auditing (ENFORCED)
+
+### Security Event Logging (MANDATORY)
+
+```python
+# ✅ REQUIRED - Security event logging
+import logging
+import json
+from datetime import datetime
+from typing import Any
+
+class SecurityLogger:
+    """Security event logging and monitoring."""
+
+    def __init__(self, logger: logging.Logger):
+        self.logger = logger
+
+    def log_security_event(self, event_type: str, user_id: str | None,
+                          details: dict[str, Any], severity: str = 'INFO'):
+        """Log security-related events."""
+        event = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'event_type': event_type,
+            'user_id': user_id,
+            'severity': severity,
+            'details': details,
+            'source_ip': self._get_client_ip(),
+            'user_agent': self._get_user_agent()
+        }
+
+        message = f"SECURITY EVENT: {event_type}"
+
+        if severity == 'CRITICAL':
+            self.logger.critical(message, extra={'security_event': event})
+        elif severity == 'ERROR':
+            self.logger.error(message, extra={'security_event': event})
+        elif severity == 'WARNING':
+            self.logger.warning(message, extra={'security_event': event})
+        else:
+            self.logger.info(message, extra={'security_event': event})
+
+    def log_authentication_attempt(self, username: str, success: bool,
+                                 method: str = 'password'):
+        """Log authentication attempts."""
+        severity = 'INFO' if success else 'WARNING'
+        details = {
+            'method': method,
+            'success': success
+        }
+
+        self.log_security_event(
+            'AUTHENTICATION_ATTEMPT',
+            username,
+            details,
+            severity
+        )
+
+    def log_authorization_failure(self, user_id: str, resource: str,
+                                action: str, reason: str):
+        """Log authorization failures."""
+        details = {
+            'resource': resource,
+            'action': action,
+            'reason': reason
+        }
+
+        self.log_security_event(
+            'AUTHORIZATION_FAILURE',
+            user_id,
+            details,
+            'WARNING'
+        )
+
+    def log_suspicious_activity(self, user_id: str | None,
+                              activity_type: str, details: dict[str, Any]):
+        """Log suspicious activity."""
+        self.log_security_event(
+            'SUSPICIOUS_ACTIVITY',
+            user_id,
+            {'activity_type': activity_type, **details},
+            'CRITICAL'
+        )
+
+    def _get_client_ip(self) -> str | None:
+        """Get client IP address."""
+        # Implementation depends on framework
+        # For web frameworks, extract from request
+        return None
+
+    def _get_user_agent(self) -> str | None:
+        """Get user agent string."""
+        # Implementation depends on framework
+        # For web frameworks, extract from request
+        return None
+
+# Usage
+security_logger = SecurityLogger(logging.getLogger('security'))
+
+# Log authentication events
+security_logger.log_authentication_attempt('user123', True)
+security_logger.log_authentication_attempt('attacker', False)
+
+# Log authorization failures
+security_logger.log_authorization_failure(
+    'user123',
+    'admin_panel',
+    'access',
+    'insufficient_permissions'
+)
+
+# Log suspicious activity
+security_logger.log_suspicious_activity(
+    None,
+    'brute_force_attempt',
+    {'ip_address': '192.168.1.100', 'attempts': 50}
+)
+```
+
+## Security Headers and CSP (ENFORCED)
+
+### HTTP Security Headers (MANDATORY)
+
+```python
+# ✅ REQUIRED - Security headers implementation
+
+class SecurityHeaders:
+    """Security headers configuration."""
+
+    @staticmethod
+    def get_security_headers() -> dict[str, str]:
+        """Get comprehensive security headers."""
+        return {
+            # Prevent clickjacking
+            'X-Frame-Options': 'DENY',
+
+            # Prevent MIME type sniffing
+            'X-Content-Type-Options': 'nosniff',
+
+            # Enable XSS protection
+            'X-XSS-Protection': '1; mode=block',
+
+            # Strict transport security
+            'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+
+            # Content Security Policy
+            'Content-Security-Policy': SecurityHeaders._get_csp(),
+
+            # Referrer Policy
+            'Referrer-Policy': 'strict-origin-when-cross-origin',
+
+            # Permissions Policy
+            'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+
+            # Remove server information
+            'Server': 'Web Server',  # Don't expose server type/version
+        }
+
+    @staticmethod
+    def _get_csp() -> str:
+        """Get Content Security Policy."""
+        policies = [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' https://cdn.example.com",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "img-src 'self' data: https://images.example.com",
+            "font-src 'self' https://fonts.gstatic.com",
+            "connect-src 'self' https://api.example.com",
+            "frame-ancestors 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "upgrade-insecure-requests"
+        ]
+        return '; '.join(policies)
+
+# FastAPI implementation
+from fastapi import FastAPI, Request, Response
+from fastapi.middleware.base import BaseHTTPMiddleware
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """FastAPI middleware for security headers."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+
+        # Add security headers
+        headers = SecurityHeaders.get_security_headers()
+        for header_name, header_value in headers.items():
+            response.headers[header_name] = header_value
+
+        return response
+
+# Usage in FastAPI app
+app = FastAPI()
+app.add_middleware(SecurityHeadersMiddleware)
+
+# ❌ PROHIBITED - Missing security headers
+@app.get("/api/data")
+def get_data():
+    # BLOCKED: No security headers
+    return {"data": "sensitive information"}
+```
+
+## Rate Limiting and DoS Protection (ENFORCED)
+
+### Rate Limiting Implementation (MANDATORY)
+
+```python
+# ✅ REQUIRED - Rate limiting implementation
+import asyncio
+import time
+from collections import defaultdict, deque
+
+class RateLimiter:
+    """Token bucket rate limiter."""
+
+    def __init__(self, rate: float, capacity: int):
+        """
+        Initialize rate limiter.
+
+        Args:
+            rate: Tokens per second
+            capacity: Maximum tokens in bucket
+        """
+        self.rate = rate
+        self.capacity = capacity
+        self.tokens: dict[str, float] = {}
+        self.last_update: dict[str, float] = {}
+
+    def is_allowed(self, key: str) -> bool:
+        """Check if request is allowed."""
+        now = time.time()
+
+        # Initialize if first request
+        if key not in self.tokens:
+            self.tokens[key] = self.capacity
+            self.last_update[key] = now
+            return True
+
+        # Calculate tokens to add since last update
+        time_passed = now - self.last_update[key]
+        tokens_to_add = time_passed * self.rate
+
+        # Update tokens
+        self.tokens[key] = min(self.capacity, self.tokens[key] + tokens_to_add)
+        self.last_update[key] = now
+
+        # Check if request can be fulfilled
+        if self.tokens[key] >= 1:
+            self.tokens[key] -= 1
+            return True
+
+        return False
+
+class SlidingWindowRateLimiter:
+    """Sliding window rate limiter."""
+
+    def __init__(self, window_size: int, max_requests: int):
+        """
+        Initialize sliding window rate limiter.
+
+        Args:
+            window_size: Window size in seconds
+            max_requests: Maximum requests per window
+        """
+        self.window_size = window_size
+        self.max_requests = max_requests
+        self.requests: dict[str, deque] = defaultdict(deque)
+
+    def is_allowed(self, key: str) -> bool:
+        """Check if request is allowed."""
+        now = time.time()
+
+        # Clean old requests outside window
+        request_queue = self.requests[key]
+        while request_queue and request_queue[0] < now - self.window_size:
+            request_queue.popleft()
+
+        # Check if under limit
+        if len(request_queue) < self.max_requests:
+            request_queue.append(now)
+            return True
+
+        return False
+
+# FastAPI rate limiting middleware
+from fastapi import HTTPException, Request
+import redis.asyncio as redis
+
+class RedisRateLimiter:
+    """Redis-based distributed rate limiter."""
+
+    def __init__(self, redis_url: str, window_seconds: int = 60, max_requests: int = 100):
+        self.redis = redis.from_url(redis_url)
+        self.window_seconds = window_seconds
+        self.max_requests = max_requests
+
+    async def is_allowed(self, key: str) -> bool:
+        """Check if request is allowed using Redis."""
+        pipe = self.redis.pipeline()
+        now = time.time()
+
+        # Clean old requests and count current requests
+        key_name = f"ratelimit:{key}"
+        pipe.zremrangebyscore(key_name, 0, now - self.window_seconds)
+        pipe.zcard(key_name)
+
+        # Execute pipeline
+        _, request_count = await pipe.execute()
+
+        if request_count >= self.max_requests:
+            return False
+
+        # Add current request
+        await self.redis.zadd(key_name, {str(now): now})
+
+        # Set expiration on key
+        await self.redis.expire(key_name, self.window_seconds)
+
+        return True
+
+    async def get_remaining_requests(self, key: str) -> int:
+        """Get remaining requests in current window."""
+        key_name = f"ratelimit:{key}"
+        count = await self.redis.zcard(key_name)
+        return max(0, self.max_requests - count)
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """FastAPI middleware for rate limiting."""
+
+    def __init__(self, app, rate_limiter: RateLimiter):
+        super().__init__(app)
+        self.rate_limiter = rate_limiter
+
+    async def dispatch(self, request: Request, call_next):
+        # Get client identifier (IP address, user ID, etc.)
+        client_key = self._get_client_key(request)
+
+        if not self.rate_limiter.is_allowed(client_key):
+            raise HTTPException(
+                status_code=429,
+                detail="Rate limit exceeded"
+            )
+
+        response = await call_next(request)
+        return response
+
+    def _get_client_key(self, request: Request) -> str:
+        """Get client identifier for rate limiting."""
+        # Use IP address for anonymous users
+        client_host = request.client.host if request.client else "unknown"
+
+        # For authenticated users, use user ID
+        # user_id = getattr(request.state, 'user_id', None)
+        # if user_id:
+        #     return f"user:{user_id}"
+
+        return f"ip:{client_host}"
+
+# Usage
+rate_limiter = RateLimiter(rate=10, capacity=20)  # 10 requests/second, burst 20
+app.add_middleware(RateLimitMiddleware, rate_limiter=rate_limiter)
+
+# ❌ PROHIBITED - No rate limiting
+@app.get("/api/data")
+async def get_data():
+    # BLOCKED: No rate limiting protection
+    return {"data": "unprotected endpoint"}
+```
+
+## Violations (BLOCKED)
+
+- ❌ SQL injection vulnerabilities
+- ❌ Weak password hashing (MD5, SHA1)
+- ❌ Plain text password storage
+- ❌ Logging sensitive information
+- ❌ Missing input validation
+- ❌ Insecure HTTP configurations
+- ❌ Missing security headers
+- ❌ No rate limiting protection
+- ❌ Insecure random number generation
+- ❌ Directory traversal vulnerabilities
+- ❌ Missing HTTPS enforcement
+- ❌ No CSRF protection
+- ❌ Timing attack vulnerabilities
+- ❌ Use of deprecated cryptographic functions
+
+## See Also
+
+- [python-coding-standards.mdc](python-coding-standards.mdc) - Python coding standards
+- [python-async-patterns.mdc](python-async-patterns.mdc) - Async programming patterns
+- [python-package-structure.mdc](python-package-structure.mdc) - Package organization
+
+## Enforcement (MANDATORY)
+
+- **Dependency Scanning**: Automated vulnerability scanning in CI
+- **Static Security Analysis**: Bandit, Safety, and other security scanners
+- **Penetration Testing**: Regular security testing and vulnerability assessment
+- **Security Headers Check**: Automated validation of security headers
+- **Input Validation Testing**: Comprehensive fuzzing and boundary testing
+- **Cryptography Review**: Manual review of cryptographic implementations
+- **NO exceptions**: All security violations must be fixed before merge
+
+```python
+REQUIRED_VARS = {
+    'DATABASE_URL',
+    'SECRET_KEY',
+    'ENCRYPTION_KEY',
+}
+
+SENSITIVE_VARS = {
+    'SECRET_KEY', 'DATABASE_URL', 'ENCRYPTION_KEY',
+    'API_KEY', 'JWT_SECRET', 'DB_PASSWORD', 'AWS_SECRET_KEY'
+}
+
+@classmethod
+def validate_environment(cls) -> dict[str, str]:
+    """Validate required environment variables."""
+    missing = []
+    invalid = []
+
+    for var_name, description in cls.REQUIRED_VARS.items():
+        value = os.getenv(var_name)
+        if not value:
+            missing.append(f"{var_name}: {description}")
+        elif var_name == 'SECRET_KEY' and len(value) < 32:
+            invalid.append(f"{var_name}: Must be at least 32 characters")
+        elif var_name == 'ENCRYPTION_KEY':
+            try:
+                # Validate base64 encoded 32-byte key
+                import base64
+                decoded = base64.b64decode(value)
+                if len(decoded) != 32:
+                    invalid.append(f"{var_name}: Must be 32 bytes when decoded")
+            except Exception:
+                invalid.append(f"{var_name}: Invalid base64 encoding")
+
+    if missing or invalid:
+        errors = []
+        if missing:
+            errors.append("Missing required variables:")
+            errors.extend(f"  - {msg}" for msg in missing)
+        if invalid:
+            errors.append("Invalid variables:")
+            errors.extend(f"  - {msg}" for msg in invalid)
+        raise ValueError("\n".join(errors))
+
+    return {name: os.getenv(name) for name in cls.REQUIRED_VARS}
+
+@classmethod
+def get_secure_config(cls) -> dict[str, Any]:
+    """Get configuration with sensitive data protection."""
+    config = {}
+
+    for var_name in cls.SENSITIVE_VARS:
+        value = os.getenv(var_name)
+        if value:
+            config[var_name.lower()] = value
+
+    return config
+
+@classmethod
+def log_environment_safety(cls):
+    """Log environment variable safety status."""
+    set_vars = set()
+    for var_name in cls.SENSITIVE_VARS:
+        if os.getenv(var_name):
+            set_vars.add(var_name)
+
+    if set_vars:
+        logger.info(f"Loaded {len(set_vars)} sensitive environment variables")
+    else:
+        logger.warning("No sensitive environment variables found")
+
+# ❌ PROHIBITED - Insecure environment handling
+
+def load_config_bad():
+    # BLOCKED: Hardcoded values
+    SECRET_KEY = "hardcoded_secret_123"  # BLOCKED
+
+    # BLOCKED: No validation
+    DATABASE_URL = os.getenv('DATABASE_URL')  # No validation
+
+    return {'secret_key': SECRET_KEY, 'database_url': DATABASE_URL}
+```
+
+## Extended File System Security (ENFORCED)
+
+### Extended Secure File Operations (MANDATORY)
+
+```python
+# ✅ REQUIRED - Secure file operations
+import os
+import tempfile
+from pathlib import Path
+
+class SecureFileManager:
+"""Secure file operations with path validation."""
+
+DANGEROUS_PATHS = {
+    '/etc', '/usr', '/bin', '/sbin', '/boot',
+    '/root', '/home', '/var', '/usr/local'
+}
+
+def __init__(self, allowed_base_path: Path):
+    self.allowed_base_path = allowed_base_path.resolve()
+
+def validate_path(self, file_path: Path) -> bool:
+    """Validate file path for security."""
+    try:
+        # Resolve symlinks and relative paths
+        resolved_path = file_path.resolve()
+
+        # Check if path is within allowed base directory
+        if not resolved_path.is_relative_to(self.allowed_base_path):
+            return False
+
+        # Check for dangerous paths
+        path_str = str(resolved_path)
+        if any(path_str.startswith(dangerous) for dangerous in self.DANGEROUS_PATHS):
+            return False
+
+        # Check for directory traversal
+        if '..' in resolved_path.parts:
+            return False
+
+        # Additional validation
+        if resolved_path.exists():
+            # Check file permissions (readable by owner only for sensitive files)
+            stat = resolved_path.stat()
+            if stat.st_mode & 0o077:  # Group or other has permissions
+                return False
+
+        return True
+
+    except (OSError, ValueError):
+        return False
+
+def safe_read_file(self, file_path: str) -> str | None:
+    """Safely read file with path validation."""
+    path = Path(file_path)
+
+    if not self.validate_path(path):
+        raise SecurityError(f"Access denied to file: {file_path}")
+
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except (IOError, OSError) as e:
+        raise SecurityError(f"Failed to read file: {e}") from e
+
+def safe_write_file(self, file_path: str, content: str, mode: str = 'w') -> None:
+    """Safely write file with path validation."""
+    path = Path(file_path)
+
+    if not self.validate_path(path):
+        raise SecurityError(f"Access denied to file: {file_path}")
+
+    # Create parent directories securely
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        with open(path, mode, encoding='utf-8') as f:
+            f.write(content)
+
+        # Set secure permissions
+        path.chmod(0o600)  # Owner read/write only
+
+    except (IOError, OSError) as e:
+        raise SecurityError(f"Failed to write file: {e}") from e
+
+def create_secure_temp_file(self, suffix: str = '') -> Path:
+    """Create secure temporary file."""
+    # Use secure temporary directory
+    temp_dir = Path(tempfile.gettempdir()) / 'secure_app_temp'
+
+    # Ensure temp directory exists with secure permissions
+    temp_dir.mkdir(mode=0o700, exist_ok=True)
+
+    # Create temporary file
+    fd, temp_path = tempfile.mkstemp(
+        suffix=suffix,
+        dir=temp_dir,
+        prefix='secure_'
+    )
+
+    # Close file descriptor (file will be opened by caller)
+    os.close(fd)
+
+    temp_file_path = Path(temp_path)
+    temp_file_path.chmod(0o600)  # Secure permissions
+
+    return temp_file_path
+
+class SecurityError(Exception):
+"""Security-related error."""
+pass
+
+# ❌ PROHIBITED - Insecure file operations
+def insecure_file_read(file_path: str):
+# BLOCKED: No path validation
+with open(file_path, 'r') as f:  # Can access any file
+    return f.read()
+
+def insecure_file_write(file_path: str, content: str):
+# BLOCKED: No validation, dangerous paths possible
+with open(file_path, 'w') as f:  # Can write anywhere
+    f.write(content)
+```
+
+## Secure Coding Practices (ENFORCED)
+
+### Code Injection Prevention (MANDATORY)
+
+```python
+# ✅ REQUIRED - Safe code execution
+import ast
+import builtins
+from typing import Any
+
+class SafeEvaluator:
+"""Safe expression evaluation with restricted builtins."""
+
+SAFE_BUILTINS = {
+    'abs', 'all', 'any', 'bool', 'dict', 'enumerate', 'filter',
+    'float', 'int', 'len', 'list', 'map', 'max', 'min', 'range',
+    'round', 'set', 'sorted', 'str', 'sum', 'tuple', 'zip'
+}
+
+def __init__(self):
+    self.safe_builtins = {
+        name: getattr(builtins, name)
+        for name in self.SAFE_BUILTINS
+        if hasattr(builtins, name)
+    }
+
+def evaluate_expression(self, expression: str, context: dict[str, Any]) -> Any:
+    """Safely evaluate mathematical expression."""
+    try:
+        # Parse expression to AST
+        tree = ast.parse(expression, mode='eval')
+
+        # Validate AST nodes
+        if not self._is_safe_ast(tree):
+            raise SecurityError("Unsafe expression")
+
+        # Evaluate with restricted builtins
+        code = compile(tree, '<string>', 'eval')
+        return eval(code, {'__builtins__': self.safe_builtins}, context)
+
+    except (SyntaxError, ValueError, TypeError) as e:
+        raise SecurityError(f"Invalid expression: {e}") from e
+
+def _is_safe_ast(self, node: ast.AST) -> bool:
+    """Check if AST contains only safe operations."""
+    for child in ast.walk(node):
+        # Allow only safe node types
+        if isinstance(child, (ast.Expression, ast.Constant, ast.Name,
+                           ast.BinOp, ast.UnaryOp, ast.Compare,
+                           ast.BoolOp, ast.Tuple, ast.Dict)):
+            continue
+
+        # Block dangerous operations
+        if isinstance(child, (ast.Call, ast.Attribute, ast.Subscript,
+                           ast.Lambda, ast.FunctionDef, ast.ClassDef)):
+            return False
+
+    return True
+
+# Usage
+evaluator = SafeEvaluator()
+
+# Safe expressions
+result = evaluator.evaluate_expression(
+"x + y * 2",
+{"x": 10, "y": 5}
+)  # Returns 20
+
+# ❌ PROHIBITED - Dangerous code execution
+def dangerous_eval(expression: str):
+# BLOCKED: Arbitrary code execution
+return eval(expression)  # Can execute any Python code
+
+def dangerous_exec(code: str):
+# BLOCKED: Code injection vulnerability
+exec(code)  # Can execute arbitrary code
+```
+
+### Secure Serialization (MANDATORY)
+
+```python
+# ✅ REQUIRED - Secure serialization
+import json
+import pickle
+from typing import Any
+
+class SecureSerializer:
+"""Secure data serialization with validation."""
+
+MAX_SIZE = 10 * 1024 * 1024  # 10MB limit
+ALLOWED_TYPES = {
+    'json': {'application/json'},
+    'pickle': {'application/python-pickle'}
+}
+
+@staticmethod
+def safe_json_dumps(data: Any) -> str:
+    """Safely serialize to JSON with size limits."""
+    try:
+        # Check data size before serialization
+        json_str = json.dumps(data, separators=(',', ':'))
+
+        if len(json_str.encode('utf-8')) > SecureSerializer.MAX_SIZE:
+            raise SecurityError("Data too large for serialization")
+
+        return json_str
+
+    except (TypeError, ValueError) as e:
+        raise SecurityError(f"JSON serialization failed: {e}") from e
+
+@staticmethod
+def safe_json_loads(json_str: str) -> Any:
+    """Safely deserialize from JSON."""
+    try:
+        # Limit JSON parsing depth and size
+        if len(json_str.encode('utf-8')) > SecureSerializer.MAX_SIZE:
+            raise SecurityError("JSON data too large")
+
+        return json.loads(json_str, parse_int=float)  # Prevent int overflow
+
+    except (json.JSONDecodeError, ValueError) as e:
+        raise SecurityError(f"JSON deserialization failed: {e}") from e
+
+@staticmethod
+def safe_pickle_dumps(data: Any) -> bytes:
+    """Safely serialize to pickle (use only for trusted data)."""
+    try:
+        # Pickle can execute arbitrary code - use with extreme caution
+        pickled = pickle.dumps(data, protocol=pickle.HIGHEST_PROTOCOL)
+
+        if len(pickled) > SecureSerializer.MAX_SIZE:
+            raise SecurityError("Pickled data too large")
+
+        return pickled
+
+    except (pickle.PicklingError, ValueError) as e:
+        raise SecurityError(f"Pickle serialization failed: {e}") from e
+
+@staticmethod
+def validate_content_type(content_type: str, expected_type: str) -> bool:
+    """Validate content type for serialization."""
+    if expected_type not in SecureSerializer.ALLOWED_TYPES:
+        return False
+
+    return content_type.lower() in SecureSerializer.ALLOWED_TYPES[expected_type]
+
+# ❌ PROHIBITED - Insecure serialization
+def insecure_json_load(json_str: str):
+# BLOCKED: No size limits, can cause DoS
+return json.loads(json_str)
+
+def insecure_pickle_load(pickled_data: bytes):
+# BLOCKED: Can execute arbitrary code
+return pickle.loads(pickled_data)  # Extremely dangerous
+```
+
+## Security Testing (ENFORCED)
+
+### Security Test Patterns (MANDATORY)
+
+```python
+# ✅ REQUIRED - Security-focused testing
+import pytest
+from unittest.mock import patch, MagicMock
+from hypothesis import given, strategies as st
+
+class TestSecurity:
+"""Security test cases."""
+
+def test_sql_injection_prevention(self, db_session):
+    """Test SQL injection prevention."""
+    malicious_inputs = [
+        "'; DROP TABLE users; --",
+        "' OR '1'='1",
+        "admin'--",
+        "'; SELECT * FROM secrets; --"
+    ]
+
+    for malicious_input in malicious_inputs:
+        with pytest.raises(ValueError):  # Should reject malicious input
+            get_user_by_username(db_session, malicious_input)
+
+def test_xss_prevention(self):
+    """Test XSS prevention in HTML output."""
+    malicious_inputs = [
+        "<script>alert('xss')</script>",
+        "<img src=x onerror=alert('xss')>",
+        "javascript:alert('xss')"
+    ]
+
+    for malicious_input in malicious_inputs:
+        sanitized = sanitize_html_input(malicious_input)
+        assert '<script>' not in sanitized.lower()
+        assert 'javascript:' not in sanitized.lower()
+        assert 'onerror' not in sanitized.lower()
+
+@given(st.text(min_size=1, max_size=1000))
+def test_input_validation_comprehensive(self, input_data):
+    """Comprehensive input validation testing with hypothesis."""
+    # This will test thousands of inputs automatically
+    try:
+        validated = validate_user_input(input_data)
+        # If validation passes, ensure input is safe
+        assert len(validated) <= 1000  # Reasonable length limit
+        assert not any(char in validated for char in ['<', '>', '&'])  # No HTML chars
+    except ValidationError:
+        # Validation correctly rejected invalid input
+        pass
+
+def test_file_path_traversal_prevention(self, secure_file_manager):
+    """Test path traversal attack prevention."""
+    dangerous_paths = [
+        "../../../etc/passwd",
+        "..\\..\\..\\windows\\system32\\config\\sam",
+        "/etc/passwd",
+        "C:\\Windows\\System32\\config\\sam"
+    ]
+
+    for dangerous_path in dangerous_paths:
+        assert not secure_file_manager.validate_path(Path(dangerous_path))
+
+def test_secure_headers(self, test_client):
+    """Test secure HTTP headers."""
+    response = test_client.get('/api/data')
+
+    # Security headers should be present
+    assert 'X-Content-Type-Options' in response.headers
+    assert response.headers['X-Content-Type-Options'] == 'nosniff'
+
+    assert 'X-Frame-Options' in response.headers
+    assert response.headers['X-Frame-Options'] == 'DENY'
+
+    assert 'Content-Security-Policy' in response.headers
+
+def test_rate_limiting(self, test_client):
+    """Test rate limiting protection."""
+    # Make many requests quickly
+    responses = []
+    for _ in range(100):
+        response = test_client.get('/api/data')
+        responses.append(response.status_code)
+
+    # Should have some rate limited responses (429)
+    assert 429 in responses
+
+def test_encryption_security(self):
+    """Test encryption security."""
+    plaintext = "sensitive data"
+    encryption = DataEncryption()
+
+    # Encrypt
+    encrypted = encryption.encrypt_sensitive_data(plaintext)
+
+    # Should not contain plaintext
+    assert plaintext not in encrypted
+    assert encrypted != plaintext
+
+    # Decrypt should work
+    decrypted = encryption.decrypt_sensitive_data(encrypted)
+    assert decrypted == plaintext
+
+    # Different encryptions should be different
+    encrypted2 = encryption.encrypt_sensitive_data(plaintext)
+    assert encrypted != encrypted2
+
+# ❌ PROHIBITED - Missing security tests
+class TestWithoutSecurity:
+# BLOCKED: No SQL injection tests
+# BLOCKED: No XSS tests
+# BLOCKED: No input validation tests
+# BLOCKED: No path traversal tests
+
+def test_functionality_only(self):
+    # BLOCKED: Only tests happy path
+    result = my_function("safe_input")
+    assert result is not None
+```
+
+## Security Monitoring (ENFORCED)
+
+### Extended Security Event Logging (MANDATORY)
+
+```python
+# ✅ REQUIRED - Security event monitoring
+import logging
+import json
+from datetime import datetime
+from typing import Any
+import hashlib
+
+class SecurityMonitor:
+"""Security event monitoring and alerting."""
+
+def __init__(self, logger: logging.Logger):
+    self.logger = logger
+    self.security_logger = logging.getLogger('security')
+    self.security_logger.setLevel(logging.INFO)
+
+    # Add JSON formatter for security events
+    handler = logging.StreamHandler()
+    handler.setFormatter(SecurityFormatter())
+    self.security_logger.addHandler(handler)
+
+def log_security_event(self, event_type: str, details: dict[str, Any],
+                      severity: str = 'INFO', user_id: str | None = None):
+    """Log security-related event."""
+    event = {
+        'timestamp': datetime.utcnow().isoformat(),
+        'event_type': event_type,
+        'severity': severity,
+        'user_id': user_id,
+        'details': details,
+        'ip_address': self._get_client_ip(),
+        'user_agent': self._get_user_agent(),
+        'session_id': self._get_session_id()
+    }
+
+    # Create event hash for integrity
+    event_str = json.dumps(event, sort_keys=True)
+    event_hash = hashlib.sha256(event_str.encode()).hexdigest()
+    event['integrity_hash'] = event_hash
+
+    self.security_logger.log(
+        getattr(logging, severity),
+        f"Security event: {event_type}",
+        extra={'security_event': event}
+    )
+
+    # Alert on high-severity events
+    if severity in ['ERROR', 'CRITICAL']:
+        self._send_security_alert(event)
+
+def log_failed_login(self, username: str, ip_address: str, reason: str):
+    """Log failed login attempt."""
+    self.log_security_event(
+        'FAILED_LOGIN',
+        {
+            'username': username,
+            'ip_address': ip_address,
+            'reason': reason,
+            'attempt_count': self._get_failed_attempt_count(username)
+        },
+        severity='WARNING'
+    )
+
+def log_suspicious_activity(self, activity_type: str, details: dict[str, Any]):
+    """Log suspicious activity."""
+    self.log_security_event(
+        'SUSPICIOUS_ACTIVITY',
+        details,
+        severity='ERROR'
+    )
+
+def log_data_access(self, user_id: str, resource: str, action: str):
+    """Log sensitive data access."""
+    self.log_security_event(
+        'DATA_ACCESS',
+        {
+            'resource': resource,
+            'action': action,
+            'user_id': user_id
+        },
+        severity='INFO'
+    )
+
+def _get_client_ip(self) -> str | None:
+    """Get client IP address."""
+    # Implementation depends on framework
+    return None
+
+def _get_user_agent(self) -> str | None:
+    """Get user agent string."""
+    # Implementation depends on framework
+    return None
+
+def _get_session_id(self) -> str | None:
+    """Get session ID."""
+    # Implementation depends on framework
+    return None
+
+def _get_failed_attempt_count(self, username: str) -> int:
+    """Get count of recent failed attempts for user."""
+    # Implementation would check cache/database
+    return 1
+
+def _send_security_alert(self, event: dict[str, Any]):
+    """Send security alert (email, Slack, etc.)."""
+    # Implementation would send alert
+    pass
+
+class SecurityFormatter(logging.Formatter):
+"""JSON formatter for security events."""
+
+def format(self, record):
+    """Format security event as JSON."""
+    if hasattr(record, 'security_event'):
+        return json.dumps(record.security_event, indent=2)
+    return super().format(record)
+
+# Usage
+security_monitor = SecurityMonitor(logging.getLogger(__name__))
+
+# Log various security events
+security_monitor.log_failed_login('admin', '192.168.1.100', 'invalid_password')
+security_monitor.log_data_access('user123', 'user_profiles', 'read')
+security_monitor.log_suspicious_activity('brute_force', {'attempts': 50, 'ip': '10.0.0.1'})
+```
+
+## Extended Security Violations (BLOCKED)
+
+- ❌ Missing input validation on user data
+- ❌ SQL injection vulnerabilities
+- ❌ Weak password hashing (MD5, SHA1)
+- ❌ Plain text password storage
+- ❌ Sensitive data in logs
+- ❌ Insecure JWT handling (no expiration, weak secrets)
+- ❌ Missing HTTPS/TLS configuration
+- ❌ Dangerous URL acceptance
+- ❌ Insecure file operations (path traversal)
+- ❌ Arbitrary code execution (eval, exec)
+- ❌ Insecure serialization (unrestricted pickle)
+- ❌ Missing security-focused tests
+- ❌ No security event monitoring
+- ❌ Hardcoded secrets and credentials
+- ❌ Missing secure headers (CSP, HSTS, etc.)
+- ❌ No rate limiting protection
+- ❌ Insecure random number generation
+- ❌ Missing dependency vulnerability scanning
+- ❌ Improper error message exposure
+
+## Extended See Also
+
+- [python-coding-standards.mdc](python-coding-standards.mdc) - Python coding standards
+- [python-testing-standards.mdc](python-testing-standards.mdc) - Python testing standards
+- [python-async-patterns.mdc](python-async-patterns.mdc) - Async programming patterns
+
+## Extended Enforcement (MANDATORY)
+
+- **Security Code Review**: Mandatory security review for all code changes
+- **Vulnerability Scanning**: Automated scanning in CI/CD pipeline
+- **Security Testing**: Dedicated security test suite with high coverage
+- **Dependency Auditing**: Regular automated dependency vulnerability checks
+- **Security Headers**: Automated checks for secure HTTP headers
+- **Input Validation**: Static analysis for input validation coverage
+- **Secrets Detection**: Automated detection of hardcoded secrets
+- **Incident Response**: Defined process for security incident handling
+- **NO exceptions**: All security violations must be fixed before merge
+
+```python
+REQUIRED_VARS = {
+    'DATABASE_URL',
+    'SECRET_KEY',
+    'ENCRYPTION_KEY',
+}
+
+SENSITIVE_VARS = {
+    'DATABASE_URL',
+    'SECRET_KEY',
+    'ENCRYPTION_KEY',
+    'API_KEY',
+    'JWT_SECRET',
+    'OAUTH_CLIENT_SECRET',
+}
+```
+
+```python
+@classmethod
+def validate_required_vars(cls) -> list:
+    """Validate all required environment variables are set."""
+    missing = []
+    for var in cls.REQUIRED_VARS:
+        if not os.getenv(var):
+            missing.append(var)
+    return missing
+
+@classmethod
+def get_secure_var(cls, name: str, default: str | None = None) -> str | None:
+    """Get environment variable with security checks."""
+    value = os.getenv(name, default)
+
+    if name in cls.SENSITIVE_VARS and value:
+        # Log access to sensitive variables (without values)
+        logger.info(f"Accessing sensitive environment variable: {name}")
+
+    return value
+
+@classmethod
+def load_env_file(cls, env_file: Path) -> dict[str, str]:
+    """Load environment variables from file with validation."""
+    if not env_file.exists():
+        raise FileNotFoundError(f"Environment file not found: {env_file}")
+
+    # Check file permissions (should not be world-readable)
+    if os.name != 'nt':  # Unix-like systems
+        stat_info = env_file.stat()
+        if stat_info.st_mode & 0o077:  # World-readable
+            raise PermissionError(f"Environment file too permissive: {env_file}")
+
+    env_vars = {}
+    with open(env_file, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                if '=' in line:
+                    key, value = line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip()
+
+                    # Validate variable names
+                    if not key.replace('_', '').replace('-', '').isalnum():
+                        raise ValueError(f"Invalid environment variable name: {key}")
+
+                    env_vars[key] = value
+
+    return env_vars
+
+@classmethod
+def validate_env_config(cls) -> dict[str, Any]:
+    """Validate complete environment configuration."""
+    issues = []
+
+    # Check required variables
+    missing = cls.validate_required_vars()
+    if missing:
+        issues.extend([f"Missing required variable: {var}" for var in missing])
+
+    # Check for insecure configurations
+    if os.getenv('DEBUG', '').lower() in ('true', '1', 'yes'):
+        issues.append("DEBUG mode enabled in production")
+
+    if os.getenv('SECRET_KEY', '') == 'development-secret':
+        issues.append("Development secret key in use")
+
+    # Check file permissions for env files
+    env_files = [Path('.env'), Path('.env.local')]
+    for env_file in env_files:
+        if env_file.exists():
+            try:
+                cls.load_env_file(env_file)
+            except PermissionError as e:
+                issues.append(str(e))
+
+    if issues:
+        raise ValueError(f"Environment configuration issues: {issues}")
+
+    return {"status": "valid", "issues": []}
+
+# Usage
+# Validate configuration on startup
+try:
+    SecureEnvironment.validate_env_config()
+    logger.info("Environment configuration validated successfully")
+except ValueError as e:
+    logger.error(f"Environment configuration invalid: {e}")
+    sys.exit(1)
+```
+
+## Advanced Security Testing (ENFORCED)
+
+### Security Test Integration (MANDATORY)
+
+```python
+# tests/test_security.py
+import pytest
+import requests
+from unittest.mock import Mock
+from myapp.security import URLValidator, SecureHTTPClient
+
+class TestSecurity:
+    """Security-focused tests."""
+
+    def test_url_validator_blocks_malicious_urls(self):
+        """Test that URL validator blocks malicious URLs."""
+        malicious_urls = [
+            "http://localhost/admin",
+            "http://127.0.0.1/api",
+            "http://example.com/..%2F..%2Fetc/passwd",
+            "javascript:alert('xss')",
+            "data:text/html,<script>alert('xss')</script>",
+        ]
+
+        for url in malicious_urls:
+            assert not URLValidator.validate_url(url), f"URL should be blocked: {url}"
+
+    def test_sql_injection_prevention(self, mock_db):
+        """Test that SQL injection attacks are prevented."""
+        malicious_inputs = [
+            "'; DROP TABLE users; --",
+            "' OR '1'='1",
+            "admin' --",
+        ]
+
+        for malicious_input in malicious_inputs:
+            with pytest.raises(ValueError):
+                # Should validate input before using in queries
+                validate_sql_input(malicious_input)
+
+    def test_sensitive_data_not_logged(self, caplog):
+        """Test that sensitive data is not logged."""
+        sensitive_data = {
+            "password": "secret123",
+            "api_key": "sk-123456",
+            "token": "jwt-token-here"
+        }
+
+        secure_logger.info("User data", extra={"data": sensitive_data})
+
+        # Check that sensitive data is sanitized in logs
+        log_output = caplog.text
+        assert "secret123" not in log_output
+        assert "sk-123456" not in log_output
+        assert "jwt-token-here" not in log_output
+        assert "***" in log_output  # Sanitized values
+
+    def test_input_validation_comprehensive(self):
+        """Test comprehensive input validation."""
+        test_cases = [
+            # (input, should_pass)
+            ("valid@email.com", True),
+            ("invalid-email", False),
+            ("<script>alert('xss')</script>@email.com", False),
+            ("", False),
+            ("a" * 1000 + "@email.com", False),  # Too long
+        ]
+
+        for email_input, should_pass in test_cases:
+            if should_pass:
+                assert validate_email(email_input)
+            else:
+                with pytest.raises(ValueError):
+                    validate_email(email_input)
+```
+
+## Advanced Security Monitoring (ENFORCED)
+
+### Advanced Security Event Logging (MANDATORY)
+
+```python
+# ✅ REQUIRED - Security event monitoring
+import logging
+import json
+from datetime import datetime
+from typing import Any
+import hashlib
+
+class SecurityLogger:
+    """Security event logging and monitoring."""
+
+    def __init__(self, logger: logging.Logger):
+        self.logger = logger
+
+    def log_security_event(self, event_type: str, details: dict[str, Any],
+                          severity: str = "INFO", user_id: str | None = None):
+        """Log security-related events."""
+        event = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "event_type": event_type,
+            "severity": severity,
+            "user_id": user_id,
+            "details": details,
+            "source_ip": self._get_client_ip(),
+            "user_agent": self._get_user_agent(),
+        }
+
+        # Create event hash for integrity
+        event_str = json.dumps(event, sort_keys=True)
+        event_hash = hashlib.sha256(event_str.encode()).hexdigest()
+        event["integrity_hash"] = event_hash
+
+        # Log with structured format
+        self.logger.log(
+            getattr(logging, severity),
+            f"SECURITY_EVENT: {event_type}",
+            extra={"security_event": event}
+        )
+
+    def log_failed_authentication(self, username: str, reason: str, ip_address: str):
+        """Log failed authentication attempts."""
+        self.log_security_event(
+            "AUTHENTICATION_FAILED",
+            {
+                "username": username,
+                "reason": reason,
+                "ip_address": ip_address,
+            },
+            severity="WARNING"
+        )
+
+    def log_suspicious_activity(self, activity_type: str, details: dict[str, Any],
+                               user_id: str | None = None):
+        """Log suspicious activity."""
+        self.log_security_event(
+            "SUSPICIOUS_ACTIVITY",
+            {
+                "activity_type": activity_type,
+                **details
+            },
+            severity="ERROR",
+            user_id=user_id
+        )
+
+    def log_data_access(self, resource: str, action: str, user_id: str,
+                       success: bool = True):
+        """Log data access events."""
+        severity = "INFO" if success else "WARNING"
+        self.log_security_event(
+            "DATA_ACCESS",
+            {
+                "resource": resource,
+                "action": action,
+                "success": success,
+            },
+            severity=severity,
+            user_id=user_id
+        )
+
+    def _get_client_ip(self) -> str | None:
+        """Get client IP address from request context."""
+        # Implementation depends on framework
+        # For FastAPI/Starlette:
+        # return request.client.host if request else None
+        return None  # Placeholder
+
+    def _get_user_agent(self) -> str | None:
+        """Get user agent from request context."""
+        # Implementation depends on framework
+        # For FastAPI/Starlette:
+        # return request.headers.get("user-agent")
+        return None  # Placeholder
+
+# Usage
+security_logger = SecurityLogger(logging.getLogger("security"))
+
+# Log various security events
+security_logger.log_failed_authentication(
+    username="admin",
+    reason="invalid_password",
+    ip_address="192.168.1.100"
+)
+
+security_logger.log_suspicious_activity(
+    "multiple_failed_logins",
+    {"attempt_count": 5, "time_window_minutes": 10},
+    user_id="user123"
+)
+
+security_logger.log_data_access(
+    resource="user_profiles",
+    action="read",
+    user_id="user123",
+    success=True
+)
+```
+
+## Additional Security Violations (BLOCKED)
+
+- ❌ SQL injection vulnerabilities
+- ❌ Weak password hashing (MD5, SHA1)
+- ❌ Plain text password storage
+- ❌ JWT tokens without expiration
+- ❌ Sensitive data in logs
+- ❌ Insecure HTTP client configuration
+- ❌ Missing input validation
+- ❌ Hardcoded secrets in code
+- ❌ Insecure SSL/TLS configuration
+- ❌ Missing dependency vulnerability scanning
+- ❌ Timing attack vulnerabilities
+- ❌ Missing security event logging
+
+## Additional References
+
+- [python-coding-standards.mdc](python-coding-standards.mdc) - Python coding standards
+- [python-testing-standards.mdc](python-testing-standards.mdc) - Python testing standards
+- [python-async-patterns.mdc](python-async-patterns.mdc) - Python async patterns
+
+## Additional Enforcement (MANDATORY)
+
+- **Static Security Analysis**: Automated tools scan for vulnerabilities
+- **Dependency Scanning**: CI checks for known security vulnerabilities
+- **Input Validation Testing**: Automated tests for input validation
+- **Security Headers**: CI validates secure HTTP configurations
+- **Secret Detection**: CI scans for hardcoded secrets and keys
+- **Security Testing**: Dedicated security test suites
+- **Audit Logging**: All security events must be logged and monitored
+- **NO exceptions**: All security violations must be fixed before merge

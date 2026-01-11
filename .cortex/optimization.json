@@ -1,0 +1,139 @@
+{
+  "enabled": true,
+  "token_budget": {
+    "default_budget": 80000,
+    "max_budget": 100000,
+    "reserve_for_response": 10000
+  },
+  "loading_strategy": {
+    "default": "dependency_aware",
+    "mandatory_files": [
+      "memorybankinstructions.md"
+    ],
+    "priority_order": [
+      "memorybankinstructions.md",
+      "projectBrief.md",
+      "activeContext.md",
+      "systemPatterns.md",
+      "techContext.md",
+      "productContext.md",
+      "progress.md"
+    ]
+  },
+  "summarization": {
+    "enabled": true,
+    "auto_summarize_old_files": false,
+    "age_threshold_days": 90,
+    "target_reduction": 0.5,
+    "strategy": "extract_key_sections",
+    "cache_summaries": true
+  },
+  "relevance": {
+    "keyword_weight": 0.4,
+    "dependency_weight": 0.3,
+    "recency_weight": 0.2,
+    "quality_weight": 0.1
+  },
+  "performance": {
+    "cache_enabled": true,
+    "cache_ttl_seconds": 3600,
+    "max_cache_size_mb": 50
+  },
+  "rules": {
+    "enabled": false,
+    "rules_folder": ".cursorrules",
+    "reindex_interval_minutes": 30,
+    "auto_include_in_context": true,
+    "max_rules_tokens": 5000,
+    "min_relevance_score": 0.3,
+    "shared_rules_enabled": false,
+    "shared_rules_folder": ".shared-rules",
+    "shared_rules_repo": "",
+    "auto_sync_shared_rules": true,
+    "sync_interval_minutes": 60,
+    "rule_priority": "local_overrides_shared",
+    "context_aware_loading": true,
+    "always_include_generic": true,
+    "context_detection": {
+      "enabled": true,
+      "detect_from_task": true,
+      "detect_from_files": true,
+      "language_keywords": {
+        "python": [
+          "python",
+          "django",
+          "flask",
+          "fastapi",
+          "pytest",
+          "py"
+        ],
+        "swift": [
+          "swift",
+          "swiftui",
+          "ios",
+          "uikit",
+          "combine",
+          "cocoa"
+        ],
+        "javascript": [
+          "javascript",
+          "js",
+          "react",
+          "vue",
+          "node",
+          "typescript",
+          "ts"
+        ],
+        "rust": [
+          "rust",
+          "cargo",
+          "rustc"
+        ],
+        "go": [
+          "golang",
+          "go"
+        ],
+        "java": [
+          "java",
+          "spring",
+          "maven",
+          "gradle"
+        ],
+        "csharp": [
+          "c#",
+          "csharp",
+          "dotnet",
+          ".net"
+        ],
+        "cpp": [
+          "c++",
+          "cpp",
+          "cmake"
+        ]
+      }
+    }
+  },
+  "self_evolution": {
+    "enabled": true,
+    "analysis": {
+      "track_usage_patterns": true,
+      "pattern_window_days": 30,
+      "min_access_count": 5,
+      "track_task_patterns": true
+    },
+    "insights": {
+      "auto_generate": false,
+      "min_impact_score": 0.5,
+      "categories": [
+        "usage",
+        "organization",
+        "redundancy",
+        "dependencies",
+        "quality"
+      ]
+    }
+  },
+  "loading": {
+    "strategy": "\"by_dependencies\""
+  }
+}
