@@ -261,8 +261,11 @@ class TestSummarizationEngine:
 
         async def _engine() -> AsyncGenerator[SummarizationEngine, None]:
             with tempfile.TemporaryDirectory() as tmpdir:
+                tmp_path = Path(tmpdir)
+                # Create .cortex directory
+                (tmp_path / ".cortex").mkdir(parents=True, exist_ok=True)
                 token_counter = TokenCounter()
-                metadata_index = MetadataIndex(Path(tmpdir))
+                metadata_index = MetadataIndex(tmp_path)
                 engine = SummarizationEngine(token_counter, metadata_index)
                 yield engine
 

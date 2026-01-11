@@ -656,7 +656,7 @@ async def provide_feedback(
         - "helpful" feedback increases confidence in similar patterns
         - "not_helpful" feedback reduces confidence slightly
         - "incorrect" feedback significantly lowers confidence and may filter future similar suggestions
-        - All feedback is persisted to .memory-bank-learning.json
+        - All feedback is persisted to .cortex/learning.json
         - Learning statistics update after each feedback submission
         - Feedback can be provided at any time, even after suggestion approval/application
     """

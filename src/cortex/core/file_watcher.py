@@ -101,7 +101,7 @@ class MemoryBankWatcher(FileSystemEventHandler):
         """Handle file modification events."""
         if isinstance(event, FileModifiedEvent) and not event.is_directory:
             file_path = Path(str(event.src_path))
-            if file_path.suffix == ".md" and file_path.name != ".memory-bank-index":
+            if file_path.suffix == ".md" and file_path.name != "index.json":
                 self.schedule_update(file_path, "modified")
 
     @override

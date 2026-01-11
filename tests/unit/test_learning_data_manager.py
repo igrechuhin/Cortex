@@ -72,7 +72,7 @@ class TestLearningDataManagerInitialization:
     def test_initialization_with_no_file(self, temp_project_root: Path):
         """Test manager initialization with no existing file."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
 
         # Act
         manager = LearningDataManager(learning_file=learning_file)
@@ -86,7 +86,7 @@ class TestLearningDataManagerInitialization:
     def test_initialization_loads_existing_data(self, temp_project_root: Path):
         """Test manager loads existing learning data."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         learning_data: dict[str, object] = {
             "feedback": {
                 "fb-1": {
@@ -129,7 +129,7 @@ class TestLearningDataManagerInitialization:
     def test_initialization_handles_corrupted_file(self, temp_project_root: Path):
         """Test manager handles corrupted learning file."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         _ = learning_file.write_text("invalid json{")
 
         # Act
@@ -147,7 +147,7 @@ class TestSaveLearningData:
     async def test_save_creates_file_with_data(self, temp_project_root: Path):
         """Test save creates file with learning data."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         manager = LearningDataManager(learning_file=learning_file)
 
         feedback = FeedbackRecord(
@@ -176,7 +176,7 @@ class TestSaveLearningData:
     async def test_save_preserves_all_data_types(self, temp_project_root: Path):
         """Test save preserves feedback, patterns, and preferences."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         manager = LearningDataManager(learning_file=learning_file)
 
         manager.add_feedback(
@@ -225,7 +225,7 @@ class TestFeedbackManagement:
     def test_add_feedback_stores_record(self, temp_project_root: Path):
         """Test adding feedback record."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         manager = LearningDataManager(learning_file=learning_file)
 
         feedback = FeedbackRecord(
@@ -250,7 +250,7 @@ class TestFeedbackManagement:
     def test_get_feedback_stats_calculates_correctly(self, temp_project_root: Path):
         """Test feedback statistics calculation."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         manager = LearningDataManager(learning_file=learning_file)
 
         manager.add_feedback(
@@ -296,7 +296,7 @@ class TestPatternManagement:
     def test_add_pattern_stores_pattern(self, temp_project_root: Path):
         """Test adding learned pattern."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         manager = LearningDataManager(learning_file=learning_file)
 
         pattern = LearnedPattern(
@@ -321,7 +321,7 @@ class TestPatternManagement:
     def test_get_pattern_retrieves_by_id(self, temp_project_root: Path):
         """Test retrieving pattern by ID."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         manager = LearningDataManager(learning_file=learning_file)
 
         pattern = LearnedPattern(
@@ -347,7 +347,7 @@ class TestPatternManagement:
     def test_get_pattern_returns_none_for_nonexistent(self, temp_project_root: Path):
         """Test getting nonexistent pattern returns None."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         manager = LearningDataManager(learning_file=learning_file)
 
         # Act
@@ -359,7 +359,7 @@ class TestPatternManagement:
     def test_get_all_patterns_returns_copy(self, temp_project_root: Path):
         """Test getting all patterns returns copy."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         manager = LearningDataManager(learning_file=learning_file)
 
         pattern = LearnedPattern(
@@ -389,7 +389,7 @@ class TestPreferenceManagement:
     def test_update_preference_stores_value(self, temp_project_root: Path):
         """Test updating user preference."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         manager = LearningDataManager(learning_file=learning_file)
 
         # Act
@@ -401,7 +401,7 @@ class TestPreferenceManagement:
     def test_get_preference_returns_value(self, temp_project_root: Path):
         """Test getting preference value."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         manager = LearningDataManager(learning_file=learning_file)
         manager.update_preference("test_key", "test_value")
 
@@ -414,7 +414,7 @@ class TestPreferenceManagement:
     def test_get_preference_returns_default_for_missing(self, temp_project_root: Path):
         """Test getting missing preference returns default."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         manager = LearningDataManager(learning_file=learning_file)
 
         # Act
@@ -426,7 +426,7 @@ class TestPreferenceManagement:
     def test_get_all_preferences_returns_copy(self, temp_project_root: Path):
         """Test getting all preferences returns copy."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         manager = LearningDataManager(learning_file=learning_file)
         manager.update_preference("key1", "value1")
 
@@ -445,7 +445,7 @@ class TestResetData:
     async def test_reset_feedback_only(self, temp_project_root: Path):
         """Test resetting only feedback records."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         manager = LearningDataManager(learning_file=learning_file)
 
         manager.add_feedback(
@@ -477,7 +477,7 @@ class TestResetData:
     async def test_reset_patterns_only(self, temp_project_root: Path):
         """Test resetting only learned patterns."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         manager = LearningDataManager(learning_file=learning_file)
 
         manager.add_pattern(
@@ -507,7 +507,7 @@ class TestResetData:
     async def test_reset_all_data(self, temp_project_root: Path):
         """Test resetting all learning data."""
         # Arrange
-        learning_file = temp_project_root / ".memory-bank-learning.json"
+        learning_file = temp_project_root / ".cortex/learning.json"
         manager = LearningDataManager(learning_file=learning_file)
 
         manager.add_feedback(

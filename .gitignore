@@ -50,5 +50,17 @@ htmlcov/
 .coverage.*
 .cache
 coverage.xml
-*.cover 
-/.cursor
+*.cover
+
+# Cortex data directories (project-specific, not tracked in this repo)
+# These are tracked in user projects, not in the Cortex server itself
+/.cortex/
+/.cursor/
+
+# Legacy memory bank paths (for migration)
+/.memory-bank/
+/.memory-bank-*
+/memory-bank/
+
+# Cortex backup directories
+.cortex-backup-*

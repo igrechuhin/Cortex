@@ -125,7 +125,7 @@ class OptimizationConfig:
             project_root: Project root directory
         """
         self.project_root: Path = Path(project_root)
-        self.config_path: Path = self.project_root / ".memory-bank-optimization.json"
+        self.config_path: Path = self.project_root / ".cortex" / "optimization.json"
         self.config: dict[str, object] = self._load_config()
 
     def _load_config(self) -> dict[str, object]:

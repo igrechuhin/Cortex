@@ -27,9 +27,7 @@ class TestOptimizationConfigInitialization:
         # Assert
         assert config is not None
         assert config.project_root == temp_project_root
-        assert (
-            config.config_path == temp_project_root / ".memory-bank-optimization.json"
-        )
+        assert config.config_path == temp_project_root / ".cortex/optimization.json"
 
     def test_initialization_loads_defaults_when_no_file(
         self, temp_project_root: Path
@@ -46,7 +44,7 @@ class TestOptimizationConfigInitialization:
     ) -> None:
         """Test OptimizationConfig loads existing config file."""
         # Arrange
-        config_path = temp_project_root / ".memory-bank-optimization.json"
+        config_path = temp_project_root / ".cortex/optimization.json"
         custom_config = {
             "enabled": False,
             "token_budget": {
@@ -74,7 +72,7 @@ class TestConfigFileOperations:
     ) -> None:
         """Test load handles invalid JSON gracefully."""
         # Arrange
-        config_path = temp_project_root / ".memory-bank-optimization.json"
+        config_path = temp_project_root / ".cortex/optimization.json"
         _ = config_path.write_text("{invalid json")
 
         # Act

@@ -12,7 +12,7 @@ from .retry import retry_async
 
 class MetadataIndex:
     """
-    Manages the .memory-bank-index file with:
+    Manages the .cortex/index.json file with:
     - JSON-based storage (human-readable)
     - Atomic writes (write to temp, then rename)
     - Corruption recovery (rebuild from markdown files)
@@ -29,8 +29,9 @@ class MetadataIndex:
             project_root: Root directory of the project
         """
         self.project_root: Path = Path(project_root)
-        self.index_path: Path = self.project_root / ".memory-bank-index"
-        self.memory_bank_dir: Path = self.project_root / "memory-bank"
+        self.cortex_dir: Path = self.project_root / ".cortex"
+        self.index_path: Path = self.cortex_dir / "index.json"
+        self.memory_bank_dir: Path = self.cortex_dir / "memory-bank"
         self._data: dict[str, object] | None = None
 
     async def load(self) -> dict[str, object]:
@@ -60,7 +61,7 @@ class MetadataIndex:
                 raise IndexCorruptedError(
                     "Failed to load memory bank index: Invalid schema structure. "
                     + f"Cause: Missing required fields in index file at {self.index_path}. "
-                    + "Try: Delete '.memory-bank-index' and run get_memory_bank_stats() to rebuild automatically."
+                    + "Try: Delete '.cortex/index.json' and run get_memory_bank_stats() to rebuild automatically."
                 )
 
             if self._data is None:
@@ -76,7 +77,7 @@ class MetadataIndex:
                 error_msg = (
                     f"Failed to load memory bank index: Invalid JSON at line {e.lineno}. "
                     f"Cause: {e.msg}. "
-                    f"Try: Delete '.memory-bank-index' file and run any read operation to rebuild automatically."
+                    f"Try: Delete '.cortex/index.json' file and run any read operation to rebuild automatically."
                 )
             return await self._recover_from_corruption(error_msg)
 
@@ -92,6 +93,9 @@ class MetadataIndex:
         self._data["last_updated"] = datetime.now().isoformat()
 
         async def save_operation() -> None:
+            # Ensure parent directory exists
+            self.index_path.parent.mkdir(parents=True, exist_ok=True)
+
             # Write to temporary file
             temp_path = self.index_path.with_suffix(".tmp")
 

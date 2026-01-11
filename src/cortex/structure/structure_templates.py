@@ -38,21 +38,21 @@ This directory contains all project plans organized by status:
 """
 
 
-def generate_knowledge_readme() -> str:
-    """Generate README content for knowledge directory."""
-    return """# Knowledge Directory
+def generate_memory_bank_readme() -> str:
+    """Generate README content for memory-bank directory."""
+    return """# Memory Bank Directory
 
 This directory contains the Memory Bank knowledge base files.
 
 ## Standard Files
 
-- `memorybankinstructions.md` - Instructions for Memory Bank usage
 - `projectBrief.md` - Project overview and goals
 - `productContext.md` - Product context and user needs
 - `activeContext.md` - Current active context
 - `systemPatterns.md` - System architecture patterns
 - `techContext.md` - Technical stack and decisions
 - `progress.md` - Project progress tracking
+- `roadmap.md` - Development roadmap and milestones
 
 ## Organization
 

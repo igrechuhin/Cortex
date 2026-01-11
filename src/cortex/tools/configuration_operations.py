@@ -89,10 +89,10 @@ async def configure(
             Examples: true, 100000, 0.85, "conservative"
 
         project_root: Path to project root directory. Defaults to current directory.
-            Configuration files are stored in project root as:
-            - .memory-bank-validation.json
-            - .memory-bank-optimization.json
-            - .memory-bank-learning.json
+            Configuration files are stored in .cortex/ as:
+            - .cortex/validation.json
+            - .cortex/optimization.json
+            - .cortex/learning.json
             Example: "/Users/name/project"
 
     Returns:
@@ -267,7 +267,7 @@ async def configure(
         - Learning component includes learned_patterns in view output showing adaptation history
         - Export patterns by setting key="export_patterns" in learning component updates
         - Configuration validation occurs automatically; invalid values return error status
-        - Component-specific configuration files: .memory-bank-validation.json, .memory-bank-optimization.json
+        - Component-specific configuration files: .cortex/validation.json, .cortex/optimization.json
     """
     try:
         root = get_project_root(project_root)

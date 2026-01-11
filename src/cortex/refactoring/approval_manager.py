@@ -90,9 +90,7 @@ class ApprovalManager:
         self.config: dict[str, object] = config or {}  # type: ignore[misc]
 
         # Approval data file
-        self.approval_file: Path = (
-            self.memory_bank_dir.parent / ".memory-bank-approvals.json"
-        )
+        self.approval_file: Path = self.memory_bank_dir.parent / "approvals.json"
 
         # In-memory storage
         self.approvals: dict[str, Approval] = {}

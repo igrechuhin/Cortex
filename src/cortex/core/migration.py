@@ -30,16 +30,17 @@ class MigrationManager:
             project_root: Root directory of the project
         """
         self.project_root: Path = Path(project_root)
-        self.memory_bank_dir: Path = self.project_root / "memory-bank"
-        self.index_path: Path = self.project_root / ".memory-bank-index"
+        self.cortex_dir: Path = self.project_root / ".cortex"
+        self.memory_bank_dir: Path = self.cortex_dir / "memory-bank"
+        self.index_path: Path = self.cortex_dir / "index.json"
 
     async def detect_migration_needed(self) -> bool:
         """
         Detect if project needs migration.
 
         Criteria:
-        - Has memory-bank/ directory with .md files
-        - Does NOT have .memory-bank-index file
+        - Has .cortex/memory-bank/ directory with .md files
+        - Does NOT have .cortex/index.json file
 
         Returns:
             True if migration is needed
@@ -64,20 +65,20 @@ class MigrationManager:
         if not self.memory_bank_dir.exists():
             return {
                 "needs_migration": False,
-                "reason": "No memory-bank directory found",
+                "reason": "No .cortex/memory-bank directory found",
             }
 
         md_files = list(self.memory_bank_dir.glob("*.md"))
         if len(md_files) == 0:
             return {
                 "needs_migration": False,
-                "reason": "No markdown files found in memory-bank directory",
+                "reason": "No markdown files found in .cortex/memory-bank directory",
             }
 
         if self.index_path.exists():
             return {
                 "needs_migration": False,
-                "reason": "Already migrated (.memory-bank-index exists)",
+                "reason": "Already migrated (.cortex/index.json exists)",
             }
 
         total_size = sum(f.stat().st_size for f in md_files)
@@ -90,7 +91,7 @@ class MigrationManager:
             "estimated_tokens": total_size // 4,  # Rough estimate (4 bytes per token)
             "backup_location": str(
                 self.project_root
-                / f".memory-bank-backup-{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                / f".cortex-backup-{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             ),
         }
 
@@ -104,7 +105,7 @@ class MigrationManager:
         3. Build initial metadata index
         4. Create version history snapshots
         5. Compute dependency graph
-        6. Create .memory-bank-index
+        6. Create .cortex/index.json
         7. Verify migration success
 
         Args:
@@ -297,7 +298,7 @@ class MigrationManager:
             Path to backup directory
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_dir = self.project_root / f".memory-bank-backup-{timestamp}"
+        backup_dir = self.project_root / f".cortex-backup-{timestamp}"
 
         if self.memory_bank_dir.exists():
             _ = shutil.copytree(self.memory_bank_dir, backup_dir)
@@ -315,7 +316,7 @@ class MigrationManager:
         if self.index_path.exists():
             self.index_path.unlink()
 
-        history_dir = self.project_root / ".memory-bank-history"
+        history_dir = self.cortex_dir / "history"
         if history_dir.exists():
             shutil.rmtree(history_dir)
 
@@ -339,7 +340,7 @@ class MigrationManager:
             return {"success": False, "error": "Index file not created"}
 
         # Check history directory exists
-        history_dir = self.project_root / ".memory-bank-history"
+        history_dir = self.cortex_dir / "history"
         if not history_dir.exists():
             return {"success": False, "error": "History directory not created"}
 
@@ -383,7 +384,7 @@ class MigrationManager:
         Args:
             keep_last: Number of backups to keep (default: 3)
         """
-        backup_dirs = sorted(self.project_root.glob(".memory-bank-backup-*"))
+        backup_dirs = sorted(self.project_root.glob(".cortex-backup-*"))
 
         if len(backup_dirs) > keep_last:
             for old_backup in backup_dirs[:-keep_last]:
@@ -400,12 +401,12 @@ class MigrationManager:
         Returns:
             List of backup info dicts
         """
-        backup_dirs = sorted(self.project_root.glob(".memory-bank-backup-*"))
+        backup_dirs = sorted(self.project_root.glob(".cortex-backup-*"))
 
         backups: list[dict[str, object]] = []
         for backup_dir in backup_dirs:
             # Extract timestamp from directory name
-            timestamp_str = backup_dir.name.replace(".memory-bank-backup-", "")
+            timestamp_str = backup_dir.name.replace(".cortex-backup-", "")
 
             try:
                 created_time = datetime.strptime(timestamp_str, "%Y%m%d_%H%M%S")

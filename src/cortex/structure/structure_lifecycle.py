@@ -13,7 +13,7 @@ from cortex.structure.lifecycle.setup import StructureSetup
 from cortex.structure.lifecycle.symlinks import CursorSymlinkManager
 from cortex.structure.structure_config import (
     PLAN_TEMPLATES,
-    STANDARD_KNOWLEDGE_FILES,
+    STANDARD_MEMORY_BANK_FILES,
     StructureConfig,
 )
 
@@ -125,7 +125,7 @@ class StructureLifecycleManager:
             "version": self.structure_config["version"],
             "paths": {
                 "root": str(self.get_path("root")),
-                "knowledge": str(self.get_path("knowledge")),
+                "memory_bank": str(self.get_path("memory_bank")),
                 "rules": str(self.get_path("rules")),
                 "plans": str(self.get_path("plans")),
                 "config": str(self.get_path("config")),
@@ -143,6 +143,6 @@ class StructureLifecycleManager:
 # Expose constants and standard files for backward compatibility
 __all__ = [
     "StructureLifecycleManager",
-    "STANDARD_KNOWLEDGE_FILES",
+    "STANDARD_MEMORY_BANK_FILES",
     "PLAN_TEMPLATES",
 ]

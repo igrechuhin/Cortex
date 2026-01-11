@@ -147,14 +147,14 @@ class TestMemoryBankWatcherEventFiltering:
 
     @pytest.mark.asyncio
     async def test_on_modified_ignores_metadata_index(self, tmp_path: Path) -> None:
-        """Test on_modified ignores .memory-bank-index file."""
+        """Test on_modified ignores .cortex/index.json file."""
         callback = AsyncMock()
         watcher = MemoryBankWatcher(tmp_path, callback)
         loop = asyncio.get_event_loop()
         watcher.loop = loop
 
         # Create metadata index event
-        index_file = tmp_path / ".memory-bank-index"
+        index_file = tmp_path / ".cortex" / "index.json"
         event = FileModifiedEvent(str(index_file))
 
         with patch.object(watcher, "schedule_update") as mock_schedule:

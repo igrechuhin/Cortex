@@ -53,7 +53,7 @@ async def check_structure_health(
     - archive_stale: Move inactive plans older than stale_days to archived/
     - organize_plans: Categorize plans by status (active/completed/archived)
     - fix_symlinks: Repair broken Cursor symlinks (memory-bank/, rules/)
-    - update_index: Refresh metadata index (.cursor/.memory-bank-index)
+    - update_index: Refresh metadata index (.cortex/index.json)
     - remove_empty: Remove empty plan directories (active/, completed/, archived/)
 
     Args:

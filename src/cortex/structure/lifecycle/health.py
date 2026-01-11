@@ -5,7 +5,7 @@ This module handles:
 - Directory validation
 - Symlink validation
 - Configuration file validation
-- Knowledge file validation
+- Memory bank file validation
 """
 
 from typing import cast
@@ -65,7 +65,7 @@ class StructureHealthChecker:
         score = self._check_required_directories(health)
         score = self._check_symlinks_validity(health, score)
         score = self._check_config_file(health, score)
-        score = self._check_knowledge_files(health, score)
+        score = self._check_memory_bank_files(health, score)
 
         health["score"] = score
         grade, status = _determine_health_grade_and_status(score)
@@ -139,7 +139,7 @@ class StructureHealthChecker:
             self._extract_health_lists(health)
         )
 
-        required_dirs = ["root", "knowledge", "rules", "plans", "config"]
+        required_dirs = ["root", "memory_bank", "rules", "plans", "config"]
         missing_dirs = self._find_missing_directories(required_dirs)
         score = self._update_score_for_missing_dirs(missing_dirs, score)
 
@@ -299,7 +299,7 @@ class StructureHealthChecker:
         cursor_dir = self.config.project_root / symlink_location
         broken_symlinks: list[str] = []
 
-        for symlink_name in ["knowledge", "rules", "plans"]:
+        for symlink_name in ["memory-bank", "rules", "plans"]:
             symlink_path = cursor_dir / symlink_name
             if symlink_path.is_symlink():
                 if not symlink_path.exists():
@@ -333,31 +333,33 @@ class StructureHealthChecker:
 
         return score
 
-    def _check_knowledge_files(self, health: dict[str, object], score: int) -> int:
-        """Check knowledge files organization.
+    def _check_memory_bank_files(self, health: dict[str, object], score: int) -> int:
+        """Check memory bank files organization.
 
         Args:
             health: Health report dictionary to update
             score: Current health score
 
         Returns:
-            Updated score after knowledge files check
+            Updated score after memory bank files check
         """
         checks_list, issues_list, recommendations_list, _ = self._extract_health_lists(
             health
         )
 
-        knowledge_dir = self.config.get_path("knowledge")
-        if knowledge_dir.exists():
-            knowledge_files = list(knowledge_dir.glob("*.md"))
-            if len(knowledge_files) == 0:
+        memory_bank_dir = self.config.get_path("memory_bank")
+        if memory_bank_dir.exists():
+            memory_bank_files = list(memory_bank_dir.glob("*.md"))
+            if len(memory_bank_files) == 0:
                 score -= 5
-                issues_list.append("No knowledge files found")
+                issues_list.append("No memory bank files found")
                 recommendations_list.append(
-                    "Add memory bank files to knowledge directory"
+                    "Add memory bank files to memory-bank directory"
                 )
             else:
-                checks_list.append(f"✓ Found {len(knowledge_files)} knowledge files")
+                checks_list.append(
+                    f"✓ Found {len(memory_bank_files)} memory bank files"
+                )
 
         self._update_health_dict(health, checks_list, issues_list, recommendations_list)
 

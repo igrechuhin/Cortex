@@ -100,7 +100,7 @@ class RefactoringExecutor:
         )
 
         self.history_file: Path = (
-            self.memory_bank_dir.parent / ".memory-bank-refactoring-history.json"
+            self.memory_bank_dir.parent / "refactoring-history.json"
         )
         self.executions: dict[str, RefactoringExecution] = {}
         self._load_history()

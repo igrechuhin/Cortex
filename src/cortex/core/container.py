@@ -194,7 +194,7 @@ class ManagerContainer:
             project_root: Project root directory
         """
         # Load metadata index if it exists
-        index_path = project_root / ".memory-bank-index"
+        index_path = project_root / ".cortex" / "index.json"
         if index_path.exists():
             try:
                 _ = await self.metadata_index.load()

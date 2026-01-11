@@ -3,7 +3,7 @@
 Migration management for Memory Bank structure.
 
 Handles detection and migration from legacy structure types to the standardized
-.memory-bank/ structure.
+.cortex/ structure.
 """
 
 import shutil
@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.structure.structure_config import (
-    STANDARD_KNOWLEDGE_FILES,
+    STANDARD_MEMORY_BANK_FILES,
     StructureConfig,
 )
 
@@ -52,7 +52,7 @@ class StructureMigrationManager:
         """
         # Check for TradeWing-style
         if (self.project_root / ".cursor" / "plans").exists() and any(
-            (self.project_root / f).exists() for f in STANDARD_KNOWLEDGE_FILES
+            (self.project_root / f).exists() for f in STANDARD_MEMORY_BANK_FILES
         ):
             return "tradewing-style"
 
@@ -63,8 +63,8 @@ class StructureMigrationManager:
             return "doc-mcp-style"
 
         # Check for scattered files
-        scattered_files = list(self.project_root.rglob("memorybankinstructions.md"))
-        if scattered_files and not (self.project_root / ".memory-bank").exists():
+        scattered_files = list(self.project_root.rglob("projectBrief.md"))
+        if scattered_files and not (self.project_root / ".cortex").exists():
             return "scattered-files"
 
         # Check for default Cursor
@@ -153,7 +153,7 @@ class StructureMigrationManager:
 
         backup_dir = (
             self.project_root
-            / f".memory-bank-backup-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+            / f".cortex-backup-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
         )
         try:
             backup_dir.mkdir(parents=True, exist_ok=True)
@@ -223,12 +223,12 @@ class StructureMigrationManager:
 
     def _migrate_tradewing_style(self, report: dict[str, object]) -> None:
         """Migrate TradeWing-style structure."""
-        knowledge_dir = self.get_path("knowledge")
+        memory_bank_dir = self.get_path("memory_bank")
         plans_dir = self.get_path("plans") / "active"
         rules_dir = self.get_path("rules") / "local"
 
         migration_data = self._extract_migration_report_data(report)
-        self._migrate_knowledge_files(knowledge_dir, migration_data)
+        self._migrate_memory_bank_files(memory_bank_dir, migration_data)
         self._migrate_plans(plans_dir, migration_data)
         self._migrate_cursorrules(rules_dir, migration_data)
         report["files_migrated"] = migration_data["files_migrated"]
@@ -242,15 +242,15 @@ class StructureMigrationManager:
 
     def _migrate_scattered_files(self, report: dict[str, object]) -> None:
         """Migrate scattered files."""
-        knowledge_dir = self.get_path("knowledge")
+        memory_bank_dir = self.get_path("memory_bank")
         files_migrated_int, file_mappings_list, errors_list = (
             self._initialize_migration_containers(report)
         )
 
-        for filename in STANDARD_KNOWLEDGE_FILES:
+        for filename in STANDARD_MEMORY_BANK_FILES:
             files_migrated_int = self._migrate_single_file(
                 filename,
-                knowledge_dir,
+                memory_bank_dir,
                 files_migrated_int,
                 file_mappings_list,
                 errors_list,
@@ -286,7 +286,7 @@ class StructureMigrationManager:
     def _migrate_single_file(
         self,
         filename: str,
-        knowledge_dir: Path,
+        memory_bank_dir: Path,
         files_migrated_int: int,
         file_mappings_list: list[dict[str, object]],
         errors_list: list[str],
@@ -297,7 +297,7 @@ class StructureMigrationManager:
             return files_migrated_int
 
         source = files[0]
-        dest = knowledge_dir / filename
+        dest = memory_bank_dir / filename
         try:
             _ = shutil.copy2(source, dest)
             files_migrated_int += 1
@@ -394,13 +394,13 @@ class StructureMigrationManager:
             "errors": errors_list,
         }
 
-    def _migrate_knowledge_files(
-        self, knowledge_dir: Path, migration_data: dict[str, object]
+    def _migrate_memory_bank_files(
+        self, memory_bank_dir: Path, migration_data: dict[str, object]
     ) -> None:
-        """Migrate knowledge files from root to knowledge directory.
+        """Migrate memory bank files from root to memory-bank directory.
 
         Args:
-            knowledge_dir: Target knowledge directory
+            memory_bank_dir: Target memory-bank directory
             migration_data: Migration data dictionary
         """
         files_migrated_int = cast(int, migration_data["files_migrated"])
@@ -409,10 +409,10 @@ class StructureMigrationManager:
         )
         errors_list = cast(list[str], migration_data["errors"])
 
-        for filename in STANDARD_KNOWLEDGE_FILES:
+        for filename in STANDARD_MEMORY_BANK_FILES:
             source = self.project_root / filename
             if source.exists():
-                dest = knowledge_dir / filename
+                dest = memory_bank_dir / filename
                 try:
                     _ = shutil.copy2(source, dest)
                     files_migrated_int += 1
@@ -492,4 +492,4 @@ class StructureMigrationManager:
 
 
 # Export for public API
-__all__ = ["StructureMigrationManager", "STANDARD_KNOWLEDGE_FILES"]
+__all__ = ["StructureMigrationManager", "STANDARD_MEMORY_BANK_FILES"]

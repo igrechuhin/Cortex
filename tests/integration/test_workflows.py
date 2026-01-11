@@ -421,7 +421,7 @@ class TestPhase4Phase5Integration:
 
         # Create large file that should be split
         # Ensure memory-bank directory exists
-        memory_bank_path = temp_project_root / "memory-bank"
+        memory_bank_path = temp_project_root / ".cortex" / "memory-bank"
         memory_bank_path.mkdir(parents=True, exist_ok=True)
 
         # Create file with substantial content to appear in analysis
@@ -441,6 +441,7 @@ class TestPhase4Phase5Integration:
         from cortex.analysis.structure_analyzer import StructureAnalyzer
 
         metadata_index = MetadataIndex(temp_project_root)
+        _ = await metadata_index.load()
         structure_analyzer = StructureAnalyzer(
             temp_project_root, dependency_graph, file_system, metadata_index
         )

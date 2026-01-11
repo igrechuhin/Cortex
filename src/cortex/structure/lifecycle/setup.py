@@ -12,7 +12,7 @@ from typing import cast
 
 from cortex.structure.structure_config import StructureConfig
 from cortex.structure.structure_templates import (
-    generate_knowledge_readme,
+    generate_memory_bank_readme,
     generate_plans_readme,
     generate_rules_readme,
 )
@@ -55,7 +55,7 @@ class StructureSetup:
         """Get list of all required directories."""
         return [
             self.config.get_path("root"),
-            self.config.get_path("knowledge"),
+            self.config.get_path("memory_bank"),
             self.config.get_path("rules"),
             self.config.get_path("rules") / "local",
             self.config.get_path("plans"),
@@ -177,8 +177,8 @@ class StructureSetup:
         readme_files = [
             (self.config.get_path("plans") / "README.md", generate_plans_readme()),
             (
-                self.config.get_path("knowledge") / "README.md",
-                generate_knowledge_readme(),
+                self.config.get_path("memory_bank") / "README.md",
+                generate_memory_bank_readme(),
             ),
             (self.config.get_path("rules") / "README.md", generate_rules_readme()),
         ]

@@ -45,7 +45,7 @@ class TestPhase5Integration:
         dep_graph = DependencyGraph()
 
         pattern_analyzer = PatternAnalyzer(temp_project_root)
-        memory_bank_path = temp_project_root / "memory-bank"
+        memory_bank_path = temp_project_root / ".cortex" / "memory-bank"
         memory_bank_path.mkdir(parents=True, exist_ok=True)
         structure_analyzer = StructureAnalyzer(
             temp_project_root, dep_graph, fs, metadata
@@ -363,38 +363,39 @@ class TestPhase8Integration:
         result = await structure_manager.create_structure(force=False)
 
         # Generate templates separately
-        plans_dir = temp_project_root / ".memory-bank" / "plans"
-        plans_dir.mkdir(parents=True, exist_ok=True)
+        plans_dir = structure_manager.get_path("plans")
         _ = template_manager.create_plan_templates(plans_dir)
 
         # Assert: Structure created
         assert "created_directories" in result
         assert "created_files" in result
 
-        memory_bank_dir = temp_project_root / ".memory-bank"
+        memory_bank_dir = structure_manager.get_path("memory_bank")
         assert memory_bank_dir.exists()
-        assert (memory_bank_dir / "knowledge").exists()
-        assert (memory_bank_dir / "rules" / "local").exists()
-        assert (memory_bank_dir / "plans").exists()
+        assert (structure_manager.get_path("rules") / "local").exists()
+        assert structure_manager.get_path("plans").exists()
 
         # Templates created
-        plans_templates = memory_bank_dir / "plans" / "templates"
+        plans_templates = structure_manager.get_path("plans") / "templates"
         assert plans_templates.exists()
         assert (plans_templates / "feature.md").exists()
 
     async def test_structure_migration_workflow(self, temp_project_root: Path):
         """Test migrating from legacy structure to standardized layout."""
         # Arrange
+        # Remove .cortex directory if it exists (from fixture) to allow detection
+        cortex_dir = temp_project_root / ".cortex"
+        if cortex_dir.exists():
+            import shutil
+
+            shutil.rmtree(cortex_dir)
+
         structure_manager = StructureManager(temp_project_root)
 
         # Create legacy structure (scattered files)
         # Use standard knowledge file names to ensure they're migrated
-        # Create memorybankinstructions.md to trigger scattered-files detection
+        # Create projectBrief.md in root to trigger scattered-files detection
         fs = FileSystemManager(temp_project_root)
-        _ = await fs.write_file(
-            temp_project_root / "memorybankinstructions.md",
-            "# Memory Bank Instructions\n",
-        )
         _ = await fs.write_file(
             temp_project_root / "projectBrief.md", "# Project Brief\n"
         )
@@ -492,7 +493,7 @@ class TestCompleteWorkflow:
         dep_graph = DependencyGraph()
 
         pattern_analyzer = PatternAnalyzer(temp_project_root)
-        memory_bank_path = temp_project_root / "memory-bank"
+        memory_bank_path = temp_project_root / ".cortex" / "memory-bank"
         memory_bank_path.mkdir(parents=True, exist_ok=True)
         structure_analyzer = StructureAnalyzer(
             temp_project_root, dep_graph, fs, metadata
@@ -502,6 +503,9 @@ class TestCompleteWorkflow:
         consolidation_detector = ConsolidationDetector(
             memory_bank_path, min_similarity=0.6
         )
+
+        # Load metadata to index files
+        _ = await metadata.load()
 
         # Create test files with issues
         # Large file (>50KB to trigger large file detection)
@@ -536,6 +540,11 @@ This section contains detailed information that is duplicated across files.
         await pattern_analyzer.record_access("large.md")
         await pattern_analyzer.record_access("doc1.md")
         await pattern_analyzer.record_access("doc2.md")
+
+        # Analyze structure first to populate metadata
+        _ = await metadata.load()
+        _ = await structure_analyzer.analyze_file_organization()
+        await metadata.save()
 
         # Act: Complete workflow
         # 1. Generate insights

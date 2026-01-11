@@ -73,8 +73,8 @@ class TestFileOrganizationAnalysis:
         mock_metadata_index: "MetadataIndex",
         tmp_path: Path,
     ):
-        """Test raises error when memory-bank directory doesn't exist."""
-        # Arrange - use tmp_path which doesn't have memory-bank dir
+        """Test raises error when ".cortex" / "memory-bank" directory doesn't exist."""
+        # Arrange - use tmp_path which doesn't have ".cortex" / "memory-bank" dir
         analyzer = StructureAnalyzer(
             tmp_path,
             mocked_dependency_graph,
@@ -95,7 +95,7 @@ class TestFileOrganizationAnalysis:
         mock_metadata_index: "MetadataIndex",
     ):
         """Test handles empty memory bank directory."""
-        # Arrange - temp_project_root already has memory-bank dir, so it should be empty
+        # Arrange - temp_project_root already has ".cortex" / "memory-bank" dir, so it should be empty
         analyzer = StructureAnalyzer(
             temp_project_root,
             mocked_dependency_graph,
@@ -130,7 +130,7 @@ class TestFileOrganizationAnalysis:
     ):
         """Test analyzes file organization."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / "memory-bank"
+        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
 
         # Create test files with different sizes
         _ = (memory_bank_dir / "small.md").write_text("Small content")
@@ -176,7 +176,7 @@ class TestFileOrganizationAnalysis:
     ):
         """Test identifies large files as an issue."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / "memory-bank"
+        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
 
         # Create very large file (>50KB)
         _ = (memory_bank_dir / "huge.md").write_text("X" * 60000)
@@ -210,7 +210,7 @@ class TestFileOrganizationAnalysis:
     ):
         """Test identifies small files as an issue."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / "memory-bank"
+        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
 
         # Create very small file (<500 bytes)
         _ = (memory_bank_dir / "tiny.md").write_text("X")
@@ -248,7 +248,7 @@ class TestAntiPatternDetection:
     ):
         """Test detects oversized files."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / "memory-bank"
+        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
         # memory_bank_dir already exists
 
         # Create oversized file (>100KB)
@@ -289,7 +289,7 @@ class TestAntiPatternDetection:
     ):
         """Test detects orphaned files."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / "memory-bank"
+        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
         # memory_bank_dir already exists
         _ = (memory_bank_dir / "orphan.md").write_text("Content")
 
@@ -328,7 +328,7 @@ class TestAntiPatternDetection:
     ):
         """Test detects files with excessive dependencies."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / "memory-bank"
+        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
         # memory_bank_dir already exists
         _ = (memory_bank_dir / "hub.md").write_text("Content")
 
@@ -364,7 +364,7 @@ class TestAntiPatternDetection:
     ):
         """Test detects files with excessive dependents."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / "memory-bank"
+        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
         # memory_bank_dir already exists
         _ = (memory_bank_dir / "central.md").write_text("Content")
 
@@ -400,7 +400,7 @@ class TestAntiPatternDetection:
     ):
         """Test detects similar file names."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / "memory-bank"
+        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
         # memory_bank_dir already exists
         _ = (memory_bank_dir / "user-guide.md").write_text("Content")
         _ = (memory_bank_dir / "user-guide-advanced.md").write_text("Content")
@@ -437,7 +437,7 @@ class TestAntiPatternDetection:
     ):
         """Test sorts anti-patterns by severity."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / "memory-bank"
+        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
         # memory_bank_dir already exists
 
         # Create files that will trigger different severity anti-patterns

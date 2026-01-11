@@ -18,7 +18,7 @@ class TestVersionManagerInitialization:
 
         # Assert
         assert manager.project_root == tmp_path
-        assert manager.history_dir == tmp_path / ".memory-bank-history"
+        assert manager.history_dir == tmp_path / ".cortex/history"
         assert manager.keep_versions == 10
 
     def test_initializes_with_custom_keep_versions(self, tmp_path: Path) -> None:
@@ -35,8 +35,8 @@ class TestVersionManagerInitialization:
         manager = VersionManager(tmp_path)
 
         # Assert
-        assert manager.history_dir.name == ".memory-bank-history"
-        assert manager.history_dir.parent == tmp_path
+        assert manager.history_dir.name == "history"
+        assert manager.history_dir.parent == tmp_path / ".cortex"
 
 
 @pytest.mark.asyncio
@@ -254,7 +254,7 @@ class TestGetSnapshotContent:
         _ = snapshot_path.write_text(content)
 
         # Act - use relative path
-        relative_path = Path(".memory-bank-history/test_v1.md")
+        relative_path = Path(".cortex/history/test_v1.md")
         read_content = await manager.get_snapshot_content(relative_path)
 
         # Assert
@@ -302,9 +302,9 @@ class TestRollbackToVersion:
         _ = snapshot_path.write_text(content)
 
         version_history: list[dict[str, object]] = [
-            {"version": 1, "snapshot_path": ".memory-bank-history/test_v1.md"},
-            {"version": 2, "snapshot_path": ".memory-bank-history/test_v2.md"},
-            {"version": 3, "snapshot_path": ".memory-bank-history/test_v3.md"},
+            {"version": 1, "snapshot_path": ".cortex/history/test_v1.md"},
+            {"version": 2, "snapshot_path": ".cortex/history/test_v2.md"},
+            {"version": 3, "snapshot_path": ".cortex/history/test_v3.md"},
         ]
 
         # Act
@@ -321,8 +321,8 @@ class TestRollbackToVersion:
         # Arrange
         manager = VersionManager(tmp_path)
         version_history: list[dict[str, object]] = [
-            {"version": 1, "snapshot_path": ".memory-bank-history/test_v1.md"},
-            {"version": 2, "snapshot_path": ".memory-bank-history/test_v2.md"},
+            {"version": 1, "snapshot_path": ".cortex/history/test_v1.md"},
+            {"version": 2, "snapshot_path": ".cortex/history/test_v2.md"},
         ]
 
         # Act
@@ -338,7 +338,7 @@ class TestRollbackToVersion:
         # Arrange
         manager = VersionManager(tmp_path)
         version_history: list[dict[str, object]] = [
-            {"version": 1, "snapshot_path": ".memory-bank-history/missing_v1.md"}
+            {"version": 1, "snapshot_path": ".cortex/history/missing_v1.md"}
         ]
 
         # Act
@@ -803,7 +803,7 @@ class TestGetSnapshotPath:
         snapshot_path = manager.get_snapshot_path("test.md", 3)
 
         # Assert
-        expected_path = tmp_path / ".memory-bank-history" / "test_v3.md"
+        expected_path = tmp_path / ".cortex/history" / "test_v3.md"
         assert snapshot_path == expected_path
 
     def test_removes_md_extension_from_base_name(self, tmp_path: Path) -> None:

@@ -68,7 +68,7 @@ class ValidationConfig:
             project_root: Path to project root
         """
         self.project_root: Path = project_root
-        self.config_path: Path = project_root / ".memory-bank-validation.json"
+        self.config_path: Path = project_root / ".cortex" / "validation.json"
         self.config: dict[str, object] = self._load_config()
 
     def _load_config(self) -> dict[str, object]:

@@ -3,7 +3,7 @@
 from cortex.structure.structure_config import (
     DEFAULT_STRUCTURE,
     PLAN_TEMPLATES,
-    STANDARD_KNOWLEDGE_FILES,
+    STANDARD_MEMORY_BANK_FILES,
     StructureConfig,
 )
 from cortex.structure.structure_lifecycle import StructureLifecycleManager
@@ -18,6 +18,6 @@ __all__ = [
     "StructureConfig",
     "TemplateManager",
     "DEFAULT_STRUCTURE",
-    "STANDARD_KNOWLEDGE_FILES",
+    "STANDARD_MEMORY_BANK_FILES",
     "PLAN_TEMPLATES",
 ]

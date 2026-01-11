@@ -1020,14 +1020,19 @@ class TestConfigure:
         mock_validation_config.set = MagicMock()
         mock_validation_config.save = AsyncMock()
         mock_validation_config.to_dict = MagicMock(return_value={})
-        mock_managers_dict = {"validation_config": mock_validation_config}
+        mock_managers_dict: dict[str, object] = {
+            "validation_config": mock_validation_config
+        }
+
+        async def mock_get_managers(root: Path) -> dict[str, object]:
+            return mock_managers_dict
 
         with patch(
-            "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            "cortex.tools.configuration_operations.get_managers",
+            side_effect=mock_get_managers,
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.tools.configuration_operations.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute

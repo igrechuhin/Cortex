@@ -10,31 +10,30 @@ Prompts provide better user experience than tools for:
 - Initial project configuration
 - Migration from old formats
 - Rare administrative tasks
+
+Directory Structure:
+    All Cortex data is stored in .cortex/ directory:
+    .cortex/
+    ├── memory-bank/     # Core memory bank files
+    ├── rules/           # Project rules
+    ├── plans/           # Development plans
+    ├── config/          # Configuration files
+    ├── history/         # Version history
+    └── archived/        # Archived content
+
+    .cursor/ contains symlinks for IDE compatibility:
+    .cursor/
+    ├── memory-bank -> ../.cortex/memory-bank
+    ├── rules -> ../.cortex/rules
+    └── plans -> ../.cortex/plans
 """
 
 from cortex.server import mcp
 
-
-@mcp.prompt()
-def initialize_memory_bank() -> str:
-    """Initialize a new Memory Bank with all core files.
-
-    Creates the memory-bank/ directory structure with 7 core files:
-    - projectBrief.md - Foundation document
-    - productContext.md - Product context and requirements
-    - activeContext.md - Current active development context
-    - systemPatterns.md - System architecture patterns
-    - techContext.md - Technical context and decisions
-    - progress.md - Development progress tracking
-    - roadmap.md - Development roadmap and milestones
-
-    Returns:
-        Prompt message guiding the assistant to initialize Memory Bank
-    """
-    return """Please initialize a Memory Bank in my project.
+_INIT_MEMORY_BANK_PROMPT = """Please initialize a Memory Bank in my project.
 
 I need you to:
-1. Create the memory-bank/ directory
+1. Create the .cortex/memory-bank/ directory
 2. Generate all 7 core files from templates:
    - projectBrief.md - Foundation document
    - productContext.md - Product context and requirements
@@ -43,8 +42,8 @@ I need you to:
    - techContext.md - Technical context and decisions
    - progress.md - Development progress tracking
    - roadmap.md - Development roadmap and milestones
-3. Initialize the metadata index
-4. Create initial snapshots for version control
+3. Initialize the metadata index at .cortex/index.json
+4. Create initial snapshots in .cortex/history/
 
 If an old format is detected, please migrate it to the current format.
 
@@ -56,38 +55,33 @@ Expected output format:
   "total_tokens": <token_count>
 }"""
 
-
-@mcp.prompt()
-def setup_project_structure() -> str:
-    """Setup the standardized .cursor/ project structure.
-
-    Creates:
-    - .cursor/memory-bank/ - Core memory bank files
-    - .cursor/rules/ - Project-specific rules
-    - .cursor/plans/ - Development plans
-    - .cursor/plans/archive/ - Archived plans
-    - .cursor/integrations/ - IDE integration configs
-
-    Returns:
-        Prompt message guiding the assistant to setup project structure
-    """
-    return """Please setup the standardized project structure in my project.
+_SETUP_PROJECT_STRUCTURE_PROMPT = """Please setup the standardized Cortex project structure.
 
 I need you to:
-1. Create the .cursor/ directory structure
-2. Setup memory-bank/ with core files
-3. Create rules/ directory for project rules
-4. Setup plans/ directory for development plans
+1. Create the .cortex/ directory structure
+2. Setup .cortex/memory-bank/ with core files
+3. Create .cortex/rules/ directory for project rules
+4. Setup .cortex/plans/ directory for development plans
 5. Generate all necessary template files
-6. Initialize directory indexes
+6. Create .cursor/ symlinks for IDE compatibility
 
 Expected directory structure:
-.cursor/
+.cortex/
 ├── memory-bank/     # Core memory bank files
 ├── rules/           # Project-specific rules
+│   └── local/       # Local rules
 ├── plans/           # Development plans
-│   └── archive/     # Archived plans
-└── integrations/    # IDE integration configs
+│   ├── active/      # Active plans
+│   ├── completed/   # Completed plans
+│   └── archived/    # Archived plans
+├── config/          # Configuration files
+├── history/         # Version history
+└── archived/        # Archived content
+
+.cursor/ (symlinks for IDE compatibility):
+├── memory-bank -> ../.cortex/memory-bank
+├── rules -> ../.cortex/rules
+└── plans -> ../.cortex/plans
 
 Expected output format:
 {
@@ -98,30 +92,22 @@ Expected output format:
   "total_files": <count>
 }"""
 
-
-@mcp.prompt()
-def setup_cursor_integration() -> str:
-    """Setup Cursor IDE integration with MCP server configuration.
-
-    Creates configuration files for Cursor IDE:
-    - .cursor/config.json - IDE settings
-    - .cursor/mcp.json - MCP server config
-
-    Returns:
-        Prompt message guiding the assistant to setup Cursor integration
-    """
-    return """Please setup Cursor IDE integration in my project.
+_SETUP_CURSOR_INTEGRATION_PROMPT = """Please setup Cursor IDE integration in my project.
 
 I need you to:
-1. Create .cursor/ configuration directory
+1. Create .cursor/ directory with symlinks to .cortex/ subdirectories
 2. Generate Cursor-specific config files
 3. Setup MCP server configuration
 4. Configure memory bank integration
 5. Setup rules and context loading
 6. Test the integration
 
+Symlinks to create:
+- .cursor/memory-bank -> ../.cortex/memory-bank
+- .cursor/rules -> ../.cortex/rules
+- .cursor/plans -> ../.cortex/plans
+
 Configuration files to create:
-- .cursor/config.json - IDE settings
 - .cursor/mcp.json - MCP server config with Cortex server
 
 MCP configuration should include:
@@ -138,7 +124,8 @@ Expected output format:
 {
   "status": "success",
   "message": "Cursor integration setup successfully",
-  "config_files": [".cursor/config.json", ".cursor/mcp.json"],
+  "symlinks_created": [".cursor/memory-bank", ".cursor/rules", ".cursor/plans"],
+  "config_files": [".cursor/mcp.json"],
   "mcp_server": {
     "name": "cortex",
     "status": "configured"
@@ -147,38 +134,78 @@ Expected output format:
 
 
 @mcp.prompt()
-def setup_shared_rules(shared_rules_repo_url: str) -> str:
-    """Setup shared rules via Git submodule.
+def initialize_memory_bank() -> str:
+    """Initialize a new Memory Bank with all core files.
 
-    Adds a shared rules repository as a Git submodule to enable
-    cross-project rule sharing.
-
-    Args:
-        shared_rules_repo_url: URL of the shared rules repository
+    Creates the .cortex/memory-bank/ directory structure with 7 core files:
+    - projectBrief.md - Foundation document
+    - productContext.md - Product context and requirements
+    - activeContext.md - Current active development context
+    - systemPatterns.md - System architecture patterns
+    - techContext.md - Technical context and decisions
+    - progress.md - Development progress tracking
+    - roadmap.md - Development roadmap and milestones
 
     Returns:
-        Prompt message guiding the assistant to setup shared rules
+        Prompt message guiding the assistant to initialize Memory Bank
     """
-    return f"""Please setup shared rules in my project.
+    return _INIT_MEMORY_BANK_PROMPT
+
+
+@mcp.prompt()
+def setup_project_structure() -> str:
+    """Setup the standardized .cortex/ project structure.
+
+    Creates:
+    - .cortex/memory-bank/ - Core memory bank files
+    - .cortex/rules/ - Project-specific rules
+    - .cortex/plans/ - Development plans
+    - .cortex/config/ - Configuration files
+    - .cursor/ symlinks for IDE compatibility
+
+    Returns:
+        Prompt message guiding the assistant to setup project structure
+    """
+    return _SETUP_PROJECT_STRUCTURE_PROMPT
+
+
+@mcp.prompt()
+def setup_cursor_integration() -> str:
+    """Setup Cursor IDE integration with symlinks and MCP server configuration.
+
+    Creates symlinks in .cursor/ pointing to .cortex/ subdirectories:
+    - .cursor/memory-bank -> ../.cortex/memory-bank
+    - .cursor/rules -> ../.cortex/rules
+    - .cursor/plans -> ../.cortex/plans
+
+    Also creates MCP server configuration at .cursor/mcp.json
+
+    Returns:
+        Prompt message guiding the assistant to setup Cursor integration
+    """
+    return _SETUP_CURSOR_INTEGRATION_PROMPT
+
+
+_SETUP_SHARED_RULES_PROMPT_TEMPLATE = """Please setup shared rules in my project.
 
 I want to use shared rules from: {shared_rules_repo_url}
 
 I need you to:
 1. Add the shared rules repository as a Git submodule
-2. Clone it to .cursor/rules/shared/
+2. Clone it to .cortex/rules/shared/
 3. Create the rules index
 4. Validate the rules structure
 5. Merge shared rules with my local rules
 
 Commands to run:
-git submodule add {shared_rules_repo_url} .cursor/rules/shared/
+git submodule add {shared_rules_repo_url} .cortex/rules/shared/
 git submodule update --init --recursive
 
 Expected output format:
 {{
   "status": "success",
   "message": "Shared rules setup successfully",
-  "shared_rules_path": ".cursor/rules/shared/",
+  "shared_rules_path": ".cortex/rules/shared/",
   "rules_count": <count>,
   "submodule_url": "{shared_rules_repo_url}",
   "commit": "<commit_hash>"
@@ -186,57 +213,78 @@ Expected output format:
 
 
 @mcp.prompt()
-def check_migration_status() -> str:
-    """Check if Memory Bank needs migration to the latest format.
+def setup_shared_rules(shared_rules_repo_url: str) -> str:
+    """Setup shared rules via Git submodule.
 
-    Detects old format at .cursor/memory-bank/ and checks if migration
-    to memory-bank/ is needed.
+    Adds a shared rules repository as a Git submodule to enable
+    cross-project rule sharing at .cortex/rules/shared/.
+
+    Args:
+        shared_rules_repo_url: URL of the shared rules repository
 
     Returns:
-        Prompt message guiding the assistant to check migration status
+        Prompt message guiding the assistant to setup shared rules
     """
-    return """Please check if my Memory Bank needs migration.
+    return _SETUP_SHARED_RULES_PROMPT_TEMPLATE.format(
+        shared_rules_repo_url=shared_rules_repo_url
+    )
+
+
+_CHECK_MIGRATION_STATUS_PROMPT = """Please check if my project needs migration to the .cortex/ structure.
 
 I need you to:
-1. Detect the current Memory Bank format
-2. Check if it's using an old directory structure
+1. Detect the current project structure
+2. Check if it's using an old directory structure (e.g., .cursor/memory-bank/, memory-bank/, .memory-bank/)
 3. Identify what changes would be needed
 4. Report the migration status
 
-Check for:
-- Old format at .cursor/memory-bank/
-- New format at memory-bank/
-- File structure and metadata validity
+Check for legacy formats:
+- .cursor/memory-bank/ (old Cursor-centric format)
+- memory-bank/ (root-level format)
+- .memory-bank/ (old standardized format)
+
+Current format should be:
+- .cortex/memory-bank/ (new standardized format)
+- .cursor/ containing symlinks to .cortex/
 
 Expected output format (up to date):
-{"status": "up_to_date", "message": "Memory Bank is already using the latest format", "current_location": "memory-bank/", "files_count": 7}
+{"status": "up_to_date", "message": "Project is already using the .cortex/ structure", "current_location": ".cortex/memory-bank/", "files_count": 7}
 
 Expected output format (migration needed):
-{"status": "migration_needed", "message": "Old format detected at .cursor/memory-bank/", "old_location": ".cursor/memory-bank/", "new_location": "memory-bank/", "files_to_migrate": 7}
+{"status": "migration_needed", "message": "Legacy format detected", "old_location": "<detected_location>", "new_location": ".cortex/memory-bank/", "files_to_migrate": 7}
 
 Expected output format (not initialized):
 {"status": "not_initialized", "message": "No Memory Bank found", "suggestion": "Run initialize_memory_bank to create one"}"""
 
 
 @mcp.prompt()
-def migrate_memory_bank() -> str:
-    """Migrate Memory Bank to the latest format.
+def check_migration_status() -> str:
+    """Check if project needs migration to the .cortex/ structure.
 
-    Moves files from .cursor/memory-bank/ to memory-bank/ while
-    preserving all content and version history.
+    Detects legacy formats and checks if migration to .cortex/ is needed.
+    Legacy formats include .cursor/memory-bank/, memory-bank/, .memory-bank/.
 
     Returns:
-        Prompt message guiding the assistant to migrate Memory Bank
+        Prompt message guiding the assistant to check migration status
     """
-    return """Please migrate my Memory Bank to the latest format.
+    return _CHECK_MIGRATION_STATUS_PROMPT
+
+
+_MIGRATE_MEMORY_BANK_PROMPT = """Please migrate my Memory Bank to the .cortex/ structure.
 
 I need you to:
-1. Create the new memory-bank/ directory
-2. Copy all files from .cursor/memory-bank/ to memory-bank/
+1. Create the new .cortex/memory-bank/ directory
+2. Copy all files from the old location to .cortex/memory-bank/
 3. Preserve all content and version history
-4. Update the metadata index
-5. Create snapshots in the new location
-6. Validate the migration succeeded
+4. Update the metadata index to .cortex/index.json
+5. Create snapshots in .cortex/history/
+6. Create .cursor/ symlinks for IDE compatibility
+7. Validate the migration succeeded
+
+Migration mappings:
+- .cursor/memory-bank/ -> .cortex/memory-bank/ (+ symlink .cursor/memory-bank)
+- memory-bank/ -> .cortex/memory-bank/ (+ symlink .cursor/memory-bank)
+- .memory-bank/knowledge/ -> .cortex/memory-bank/
 
 Safety requirements:
 - Automatic rollback if migration fails
@@ -248,41 +296,53 @@ Expected output format:
 {
   "status": "success",
   "message": "Memory Bank migrated successfully",
-  "old_location": ".cursor/memory-bank/",
-  "new_location": "memory-bank/",
+  "old_location": "<detected_location>",
+  "new_location": ".cortex/memory-bank/",
   "files_migrated": 7,
   "versions_migrated": <count>,
+  "symlinks_created": [".cursor/memory-bank"],
   "duration_ms": <time>
 }"""
 
 
 @mcp.prompt()
-def migrate_project_structure() -> str:
-    """Migrate project to the standardized structure.
+def migrate_memory_bank() -> str:
+    """Migrate Memory Bank to the .cortex/ structure.
 
-    Moves files to standardized locations:
-    - memory-bank/ -> .cursor/memory-bank/
-    - rules/ -> .cursor/rules/
-    - .plan/ -> .cursor/plans/
+    Moves files from legacy locations to .cortex/memory-bank/ while
+    preserving all content and version history. Creates .cursor/ symlinks
+    for IDE compatibility.
 
     Returns:
-        Prompt message guiding the assistant to migrate project structure
+        Prompt message guiding the assistant to migrate Memory Bank
     """
-    return """Please migrate my project structure to the standardized format.
+    return _MIGRATE_MEMORY_BANK_PROMPT
+
+
+_MIGRATE_PROJECT_STRUCTURE_PROMPT = """Please migrate my project to the .cortex/ structure.
 
 I need you to:
 1. Detect the current structure
-2. Create the new .cursor/ directory structure
+2. Create the new .cortex/ directory structure
 3. Move existing files to correct locations
 4. Preserve all content and history
 5. Update references and links
-6. Validate the migration
+6. Create .cursor/ symlinks for IDE compatibility
+7. Validate the migration
 
 Migration mappings:
-- memory-bank/ -> .cursor/memory-bank/
-- rules/ -> .cursor/rules/
-- .plan/ -> .cursor/plans/
-- docs/plans/ -> .cursor/plans/
+- .cursor/memory-bank/ -> .cortex/memory-bank/
+- .cursor/rules/ -> .cortex/rules/
+- .cursor/plans/ -> .cortex/plans/
+- memory-bank/ -> .cortex/memory-bank/
+- rules/ -> .cortex/rules/
+- .plan/ -> .cortex/plans/
+- docs/plans/ -> .cortex/plans/
+
+Symlinks to create in .cursor/:
+- .cursor/memory-bank -> ../.cortex/memory-bank
+- .cursor/rules -> ../.cortex/rules
+- .cursor/plans -> ../.cortex/plans
 
 Safety requirements:
 - Dry-run mode available
@@ -292,4 +352,32 @@ Safety requirements:
 - Backup creation before migration
 
 Expected output format:
-{"status": "success", "message": "Project structure migrated successfully", "migrations": {"memory_bank": {"from": "memory-bank/", "to": ".cursor/memory-bank/", "files": 7}, "rules": {"from": "rules/", "to": ".cursor/rules/", "files": <count>}, "plans": {"from": ".plan/", "to": ".cursor/plans/", "files": <count>}}, "links_updated": <count>, "duration_ms": <time>}"""
+{
+  "status": "success",
+  "message": "Project structure migrated successfully",
+  "migrations": {
+    "memory_bank": {"from": "<old_location>", "to": ".cortex/memory-bank/", "files": 7},
+    "rules": {"from": "<old_location>", "to": ".cortex/rules/", "files": <count>},
+    "plans": {"from": "<old_location>", "to": ".cortex/plans/", "files": <count>}
+  },
+  "symlinks_created": [".cursor/memory-bank", ".cursor/rules", ".cursor/plans"],
+  "links_updated": <count>,
+  "duration_ms": <time>
+}"""
+
+
+@mcp.prompt()
+def migrate_project_structure() -> str:
+    """Migrate project to the .cortex/ structure.
+
+    Moves files from legacy locations to .cortex/:
+    - memory-bank -> .cortex/memory-bank/
+    - rules -> .cortex/rules/
+    - plans -> .cortex/plans/
+
+    Creates .cursor/ symlinks for IDE compatibility.
+
+    Returns:
+        Prompt message guiding the assistant to migrate project structure
+    """
+    return _MIGRATE_PROJECT_STRUCTURE_PROMPT

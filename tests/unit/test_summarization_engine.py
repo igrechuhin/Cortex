@@ -32,6 +32,8 @@ class TestSummarizationEngineInitialization:
     ) -> None:
         """Test initialization with default cache directory."""
         # Arrange
+        # Create .cortex directory
+        (tmp_path / ".cortex").mkdir(parents=True, exist_ok=True)
         # Type ignore for mock assignment
         mock_metadata_index.project_root = str(tmp_path)  # type: ignore[assignment]
 
@@ -41,7 +43,7 @@ class TestSummarizationEngineInitialization:
         # Assert
         assert engine.token_counter == mock_token_counter
         assert engine.metadata_index == mock_metadata_index
-        assert engine.cache_dir == tmp_path / ".memory-bank-summaries"
+        assert engine.cache_dir == tmp_path / ".cortex/summaries"
         assert engine.cache_dir.exists()
 
     def test_initialization_with_custom_cache_dir(

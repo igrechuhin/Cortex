@@ -150,7 +150,7 @@ async def _collect_base_stats(
 
 async def _get_history_size(root: Path, version_manager: VersionManager) -> int:
     """Get total disk usage of version history directory."""
-    history_dir = root / ".memory-bank-history"
+    history_dir = root / ".cortex" / "history"
     if not history_dir.exists():
         return 0
     disk_usage = await version_manager.get_disk_usage()

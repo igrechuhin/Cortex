@@ -22,7 +22,7 @@ class FileConflictError(MemoryBankError):
 
 
 class IndexCorruptedError(MemoryBankError):
-    """Raised when .memory-bank-index is corrupted or invalid."""
+    """Raised when .cortex/index.json is corrupted or invalid."""
 
     def __init__(self, reason: str):
         self.reason: str = reason

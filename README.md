@@ -183,21 +183,21 @@ Use these when starting fresh or configuring a new project:
 
 - **initialize_memory_bank** - Create a new Memory Bank with all 7 core files (projectBrief.md, productContext.md, activeContext.md, systemPatterns.md, techContext.md, progress.md, roadmap.md). Use this for new projects or projects without any Memory Bank.
 
-- **setup_project_structure** - Create the full standardized `.cursor/` directory structure including memory-bank/, rules/, plans/, and integrations/. Use this when you want the complete organized structure, not just core files.
+- **setup_project_structure** - Create the full standardized `.cortex/` directory structure including memory-bank/, rules/, plans/, and config/. Creates `.cursor/` symlinks for IDE compatibility.
 
-- **setup_cursor_integration** - Configure Cursor IDE to work with Cortex MCP server. Creates `.cursor/config.json` and `.cursor/mcp.json`. Use this after setting up the project structure if you're using Cursor IDE.
+- **setup_cursor_integration** - Configure Cursor IDE to work with Cortex MCP server. Creates symlinks in `.cursor/` pointing to `.cortex/` subdirectories and `.cursor/mcp.json` for MCP configuration.
 
-- **setup_shared_rules** - Add a shared rules repository as a Git submodule to `.cursor/rules/shared/`. Use this when you want to share coding standards, security rules, or other guidelines across multiple projects.
+- **setup_shared_rules** - Add a shared rules repository as a Git submodule to `.cortex/rules/shared/`. Use this when you want to share coding standards, security rules, or other guidelines across multiple projects.
 
 ### Migration Prompts
 
 Use these when updating an existing project to a newer format:
 
-- **check_migration_status** - Check if your Memory Bank needs migration. Use this first if you're unsure whether your project uses an old format. Returns one of: `up_to_date`, `migration_needed`, or `not_initialized`.
+- **check_migration_status** - Check if your project needs migration to the `.cortex/` structure. Use this first if you're unsure whether your project uses an old format. Returns one of: `up_to_date`, `migration_needed`, or `not_initialized`.
 
-- **migrate_memory_bank** - Move files from old `.cursor/memory-bank/` location to new `memory-bank/` location. Preserves all content and version history. Use this when `check_migration_status` reports `migration_needed`.
+- **migrate_memory_bank** - Move files from old locations (`.cursor/memory-bank/`, `memory-bank/`, `.memory-bank/`) to the new `.cortex/memory-bank/` location. Preserves all content and version history, creates `.cursor/` symlinks for IDE compatibility. Use this when `check_migration_status` reports `migration_needed`.
 
-- **migrate_project_structure** - Reorganize scattered files into the standardized structure. Moves memory-bank/, rules/, and .plan/ directories to their proper `.cursor/` locations. Use this for projects with files in non-standard locations.
+- **migrate_project_structure** - Reorganize scattered files into the standardized `.cortex/` structure. Moves memory-bank/, rules/, and plan directories to their proper `.cortex/` locations and creates `.cursor/` symlinks. Use this for projects with files in non-standard locations.
 
 ### Prompts vs Tools
 
@@ -219,34 +219,32 @@ The Memory Bank consists of core files in Markdown format, stored in a portable 
 
 ### Storage Location
 
-Cortex supports two storage formats, both portable and editor-agnostic:
+Cortex stores all data in `.cortex/` directory:
 
-**Simple format** (legacy): `memory-bank/` - Files stored directly in this directory
+**Primary format**: `.cortex/` - All Cortex-managed files organized into subdirectories
 
-- Used by core file operations
-- Simple flat structure
-- Fully portable across all editors and tools
+- `.cortex/memory-bank/` - Core memory bank files
+- `.cortex/rules/` - Project rules and configuration
+- `.cortex/plans/` - Development plans and roadmaps
+- `.cortex/config/` - Configuration files
+- `.cortex/history/` - Version history
+- `.cortex/index.json` - Metadata index
 
-**Structured format** (recommended): `.memory-bank/` - Organized into subdirectories
+**IDE Integration**: `.cursor/` - Contains symlinks for IDE compatibility
 
-- `.memory-bank/knowledge/` - Core memory bank files
-- `.memory-bank/rules/` - Project rules and configuration
-- `.memory-bank/plans/` - Development plans and roadmaps
-- Better organization for larger projects
-- Configurable via structure configuration
+- `.cursor/memory-bank/` → `../.cortex/memory-bank/` (symlink)
+- `.cursor/rules/` → `../.cortex/rules/` (symlink)
+- `.cursor/plans/` → `../.cortex/plans/` (symlink)
 
-Both formats work with any MCP-compatible client (Cursor, VS Code, CLI tools, etc.).
+This structure keeps the actual files in a portable location while allowing IDEs like Cursor to access them through familiar paths.
 
-### Optional Cursor Integration
+### Legacy Formats (Migrated Automatically)
 
-If you're using Cursor IDE with the structured format, the system can optionally create symlinks in `.cursor/` for seamless integration:
+If your project uses an old format, use the migration prompts to update:
 
-- `.cursor/knowledge/` → `.memory-bank/knowledge/` (symlink)
-- `.cursor/rules/` → `.memory-bank/rules/` (symlink)
-- `.cursor/plans/` → `.memory-bank/plans/` (symlink)
-- `.cursorrules` → `.memory-bank/rules/local/main.cursorrules` (symlink)
-
-This allows Cursor to access the Memory Bank while keeping the actual files in a portable location. The symlinks are optional and can be disabled in the structure configuration.
+- `memory-bank/` (root-level) → `.cortex/memory-bank/`
+- `.cursor/memory-bank/` (Cursor-centric) → `.cortex/memory-bank/`
+- `.memory-bank/knowledge/` (old standardized) → `.cortex/memory-bank/`
 
 ### Core Files (Required)
 

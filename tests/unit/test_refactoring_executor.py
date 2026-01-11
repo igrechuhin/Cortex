@@ -127,7 +127,7 @@ class TestRefactoringExecutorInitialization:
         )
 
         # Create history file
-        history_file = memory_bank_dir.parent / ".memory-bank-refactoring-history.json"
+        history_file = memory_bank_dir.parent / "refactoring-history.json"
         history_data: dict[str, object] = {
             "executions": {
                 "exec-1": {
@@ -140,6 +140,8 @@ class TestRefactoringExecutorInitialization:
                 }
             }
         }
+        # Create parent directory
+        history_file.parent.mkdir(parents=True, exist_ok=True)
         _ = history_file.write_text(json.dumps(history_data))
 
         # Act

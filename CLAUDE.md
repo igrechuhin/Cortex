@@ -117,7 +117,7 @@ The server initializes services in this order:
 **Memory Bank Structure**:
 
 - Core files: `projectBrief.md`, `productContext.md`, `activeContext.md`, `systemPatterns.md`, `techContext.md`, `progress.md`
-- Location: `.cursor/memory-bank/` (MANDATORY)
+- Location: `.cortex/memory-bank/` (primary), `.cursor/memory-bank/` (symlink for IDE compatibility)
 - DRY linking via transclusion: `{{include:path/to/file.md}}`
 - Validation via schema and duplication detection
 
@@ -132,7 +132,7 @@ The server initializes services in this order:
 
 ### Critical Guardrails
 
-**Security** (from .cursor/rules/python-security.mdc):
+**Security** (from .cortex/rules/python-security.mdc):
 
 - **Path traversal protection**: All file paths validated against base directories
 - **Input validation**: Validate all external inputs
@@ -146,7 +146,7 @@ The server initializes services in this order:
 - Context optimization: Within specified token budgets
 - Progressive loading: Incremental context loading
 
-**Code constraints** (from .cursor/rules/):
+**Code constraints** (from .cortex/rules/):
 
 - Production files: <400 lines (MANDATORY) - excluding license headers & imports
 - Functions: <30 lines (MANDATORY) - logical lines, excluding doc comments & blank lines
@@ -175,9 +175,26 @@ The server initializes services in this order:
 
 ## Configuration Essentials
 
-Memory Bank files are stored in `.cursor/memory-bank/` directory:
+All Cortex data is stored in `.cortex/` directory. For IDE compatibility, `.cursor/` contains symlinks:
 
-**Core files**:
+**Directory Structure**:
+
+```text
+.cortex/                    # Primary Cortex data directory
+├── memory-bank/           # Core memory bank files
+├── rules/                 # Project rules
+├── plans/                 # Development plans
+├── config/                # Configuration files
+├── history/               # Version history
+└── index.json             # Metadata index
+
+.cursor/                    # IDE compatibility (symlinks)
+├── memory-bank -> ../.cortex/memory-bank
+├── rules -> ../.cortex/rules
+└── plans -> ../.cortex/plans
+```
+
+**Core Memory Bank files**:
 
 - `projectBrief.md` - Foundation document
 - `productContext.md` - Product context and requirements
@@ -187,19 +204,6 @@ Memory Bank files are stored in `.cursor/memory-bank/` directory:
 - `progress.md` - Development progress tracking
 - `roadmap.md` - Development roadmap and milestones
 
-**Memory Bank Structure**:
-
-```text
-.cursor/memory-bank/
-├── projectBrief.md
-├── productContext.md
-├── activeContext.md
-├── systemPatterns.md
-├── techContext.md
-├── progress.md
-└── roadmap.md
-```
-
 ## Testing Requirements
 
 **Test structure**:
@@ -207,7 +211,7 @@ Memory Bank files are stored in `.cursor/memory-bank/` directory:
 - `tests/unit/` - Unit tests for individual modules
 - `tests/integration/` - Integration tests for cross-module workflows
 
-**Test patterns** (from .cursor/rules/python-testing-standards.mdc):
+**Test patterns** (from .cortex/rules/python-testing-standards.mdc):
 
 - Use Arrange-Act-Assert (AAA) pattern (MANDATORY)
 - Naming: `test_<functionality>_when_<condition>` or `test_<functionality>_<scenario>` (MANDATORY)
@@ -223,7 +227,7 @@ Memory Bank files are stored in `.cursor/memory-bank/` directory:
 - Minimum 90% coverage for new code (MANDATORY)
 - Use `pytest-cov` to track coverage
 
-**Test skipping** (from .cursor/rules/no-test-skipping.mdc):
+**Test skipping** (from .cortex/rules/no-test-skipping.mdc):
 
 - No blanket skips (MANDATORY)
 - Justify every skip with clear reason and linked ticket/issue
@@ -238,7 +242,7 @@ Memory Bank files are stored in `.cursor/memory-bank/` directory:
 3. **Type Hints**: 100% coverage required; use Python 3.13+ built-ins (`list[str]`, `dict[str, int]`, `tuple[str, int]`, `set[str]`, `T | None`) instead of `typing` module types (MANDATORY); use concrete types instead of `object` wherever possible - investigate actual return types and use them (MANDATORY)
 4. **Line Limits**: Production files must be <400 lines, functions <30 lines
 5. **Import Organization**: Standard lib → third-party → local with blank lines between groups
-6. **Memory Bank Location**: All memory bank files MUST be in `.cursor/memory-bank/` directory (MANDATORY)
+6. **Memory Bank Location**: All memory bank files are in `.cortex/memory-bank/` directory (`.cursor/memory-bank/` is a symlink)
 7. **Dependency Injection**: All external dependencies MUST be injected via initializers (MANDATORY)
 8. **Concrete Types**: Use concrete types instead of `object` wherever possible - investigate actual return types (e.g., `list[RefactoringSuggestion]`, `RollbackResult`, `dict[str, str | None]`) and use them instead of generic `object` (MANDATORY)
 9. **Type Specificity**: Make types MORE specific, not less - prefer `dict[str, str]` over `dict[str, object]`, don't replace concrete types with generic ones (MANDATORY)
@@ -254,12 +258,12 @@ Memory Bank files are stored in `.cursor/memory-bank/` directory:
 3. **Write tests**: Add unit tests in `tests/unit/` or integration tests in `tests/integration/`
 4. **Run tests**: Use `gtimeout -k 5 300 python -m pytest -q` for quick validation
 5. **Check line counts**: Ensure no file exceeds 400 lines, no function exceeds 30 lines
-6. **Update memory bank**: After significant changes, update `.cursor/memory-bank/` files (MANDATORY)
+6. **Update memory bank**: After significant changes, update `.cortex/memory-bank/` files (MANDATORY)
 7. **No auto-commit**: Never commit or push without explicit user request (MANDATORY)
 
 ## Memory Bank Workflow (MANDATORY)
 
-**Location**: All memory bank files MUST be in `.cursor/memory-bank/` directory (MANDATORY)
+**Location**: Memory bank files are in `.cortex/memory-bank/` directory (`.cursor/memory-bank/` is a symlink for IDE compatibility)
 
 **Core files required**:
 
@@ -289,9 +293,9 @@ Memory Bank files are stored in `.cursor/memory-bank/` directory:
 
 **Plan archival** (MANDATORY):
 
-- Archive completed plans under `.cursor/plans/archive/PhaseX/MilestoneY/` matching the plan's Phase/Milestone
-- Use `mkdir -p .cursor/plans/archive/PhaseX/MilestoneY` to create archive directory
-- Move plans: `mv .cursor/plans/<plan-name>.plan.md .cursor/plans/archive/PhaseX/MilestoneY/`
+- Archive completed plans under `.cortex/plans/archive/PhaseX/MilestoneY/` matching the plan's Phase/Milestone
+- Use `mkdir -p .cortex/plans/archive/PhaseX/MilestoneY` to create archive directory
+- Move plans: `mv .cortex/plans/<plan-name>.plan.md .cortex/plans/archive/PhaseX/MilestoneY/`
 
 ## File Operations (MANDATORY)
 

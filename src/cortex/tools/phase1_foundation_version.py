@@ -59,7 +59,7 @@ async def get_version_history(
         ```
 
     Note:
-        Version history is stored in .memory-bank-history/ and includes
+        Version history is stored in .cortex/history/ and includes
         automatic snapshots created on each file modification.
     """
     try:

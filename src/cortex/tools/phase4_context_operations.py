@@ -32,9 +32,12 @@ async def optimize_context_impl(
     Returns:
         JSON string with optimization results
     """
-    optimization_config, context_optimizer, metadata_index, fs_manager = (
-        await _setup_optimization_managers(mgrs)
-    )
+    (
+        optimization_config,
+        context_optimizer,
+        metadata_index,
+        fs_manager,
+    ) = await _setup_optimization_managers(mgrs)
 
     if token_budget is None:
         token_budget = optimization_config.get_token_budget()

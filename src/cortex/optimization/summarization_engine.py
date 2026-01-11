@@ -36,7 +36,7 @@ class SummarizationEngine:
         self.token_counter: TokenCounter = token_counter
         self.metadata_index: MetadataIndex = metadata_index
         self.cache_dir: Path = cache_dir or (
-            Path(metadata_index.project_root) / ".memory-bank-summaries"
+            Path(metadata_index.project_root) / ".cortex" / "summaries"
         )
         self.cache_dir.mkdir(exist_ok=True)
 

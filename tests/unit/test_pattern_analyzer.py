@@ -39,8 +39,7 @@ class TestPatternAnalyzerInitialization:
         # Assert
         assert analyzer.project_root == Path(project_root)
         assert (
-            analyzer.access_log_path
-            == Path(project_root) / ".memory-bank-access-log.json"
+            analyzer.access_log_path == Path(project_root) / ".cortex/access-log.json"
         )
         assert analyzer.access_data["version"] == "1.0"
         assert analyzer.access_data["accesses"] == []
@@ -52,7 +51,7 @@ class TestPatternAnalyzerInitialization:
         """Test loads existing access log from disk."""
         # Arrange
         project_root = temp_project_root
-        log_path = Path(project_root) / ".memory-bank-access-log.json"
+        log_path = Path(project_root) / ".cortex/access-log.json"
 
         # Create sample log
         sample_log = {
@@ -99,7 +98,7 @@ class TestPatternAnalyzerInitialization:
         """Test handles corrupted access log gracefully."""
         # Arrange
         project_root = temp_project_root
-        log_path = Path(project_root) / ".memory-bank-access-log.json"
+        log_path = Path(project_root) / ".cortex/access-log.json"
 
         # Create corrupted log
         with open(log_path, "w") as f:
@@ -112,7 +111,7 @@ class TestPatternAnalyzerInitialization:
         assert analyzer.access_data["version"] == "1.0"
         assert analyzer.access_data["accesses"] == []
         # Backup should exist
-        backup_path = Path(project_root) / ".memory-bank-access-log.json.backup"
+        backup_path = Path(project_root) / ".cortex/access-log.json.backup"
         assert backup_path.exists()
 
 
@@ -239,7 +238,7 @@ class TestAccessRecording:
         await analyzer.record_access(file_path)
 
         # Assert
-        log_path = Path(temp_project_root) / ".memory-bank-access-log.json"
+        log_path = Path(temp_project_root) / ".cortex/access-log.json"
         assert log_path.exists()
 
         with open(log_path) as f:
@@ -853,7 +852,7 @@ class TestDataCleanup:
         _ = await analyzer.cleanup_old_data(keep_days=180)
 
         # Assert
-        log_path = Path(temp_project_root) / ".memory-bank-access-log.json"
+        log_path = Path(temp_project_root) / ".cortex/access-log.json"
         with open(log_path) as f:
             data = json.load(f)
         assert len(data["accesses"]) == 0

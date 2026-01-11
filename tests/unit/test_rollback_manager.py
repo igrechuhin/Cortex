@@ -99,7 +99,7 @@ class TestRollbackManagerInitialization:
         version_manager = VersionManager(memory_bank_dir.parent)
 
         # Create history file
-        rollback_file = memory_bank_dir.parent / ".memory-bank-rollbacks.json"
+        rollback_file = memory_bank_dir.parent / "rollbacks.json"
         rollback_data = {
             "rollbacks": {
                 "roll-1": {
@@ -110,6 +110,8 @@ class TestRollbackManagerInitialization:
                 }
             }
         }
+        # Create parent directory
+        rollback_file.parent.mkdir(parents=True, exist_ok=True)
         _ = rollback_file.write_text(json.dumps(rollback_data))
 
         # Act
@@ -970,7 +972,9 @@ class TestSaveRollbacks:
         await manager.save_rollbacks()
 
         # Assert
-        rollback_file = memory_bank_dir.parent / ".memory-bank-rollbacks.json"
+        rollback_file = memory_bank_dir.parent / "rollbacks.json"
+        # Ensure parent directory exists
+        rollback_file.parent.mkdir(parents=True, exist_ok=True)
         assert rollback_file.exists()
         data = json.loads(rollback_file.read_text())
         assert "roll-1" in data["rollbacks"]

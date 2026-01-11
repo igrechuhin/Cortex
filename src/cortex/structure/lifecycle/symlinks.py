@@ -236,9 +236,9 @@ class CursorSymlinkManager:
         report: dict[str, object],
     ) -> None:
         """Create all symlinks for cursor integration."""
-        if symlink_config.get("knowledge"):
+        if symlink_config.get("memory_bank"):
             self.create_symlink(
-                self.config.get_path("knowledge"), cursor_dir / "knowledge", report
+                self.config.get_path("memory_bank"), cursor_dir / "memory-bank", report
             )
 
         if symlink_config.get("rules"):
@@ -250,15 +250,6 @@ class CursorSymlinkManager:
             self.create_symlink(
                 self.config.get_path("plans"), cursor_dir / "plans", report
             )
-
-        if symlink_config.get("cursorrules_main"):
-            main_cursorrules = (
-                self.config.get_path("rules") / "local" / "main.cursorrules"
-            )
-            if main_cursorrules.exists():
-                self.create_symlink(
-                    main_cursorrules, cursor_dir.parent / ".cursorrules", report
-                )
 
 
 def _build_validation_error(error_message: str) -> dict[str, object]:

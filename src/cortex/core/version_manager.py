@@ -23,7 +23,7 @@ class VersionManager:
             keep_versions: Number of versions to keep per file (default: 10)
         """
         self.project_root: Path = Path(project_root)
-        self.history_dir: Path = self.project_root / ".memory-bank-history"
+        self.history_dir: Path = self.project_root / ".cortex" / "history"
         self.keep_versions: int = keep_versions
 
     async def create_snapshot(

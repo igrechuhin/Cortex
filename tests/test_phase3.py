@@ -500,6 +500,8 @@ class TestValidationConfig:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir_path = Path(tmpdir)
+            # Create .cortex directory
+            (tmpdir_path / ".cortex").mkdir(parents=True, exist_ok=True)
 
             # Create and modify config
             config1 = ValidationConfig(tmpdir_path)

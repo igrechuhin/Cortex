@@ -33,8 +33,8 @@ class TestMigrationManagerInitialization:
         manager = MigrationManager(tmp_path)
 
         assert manager.project_root == tmp_path
-        assert manager.memory_bank_dir == tmp_path / "memory-bank"
-        assert manager.index_path == tmp_path / ".memory-bank-index"
+        assert manager.memory_bank_dir == tmp_path / ".cortex" / "memory-bank"
+        assert manager.index_path == tmp_path / ".cortex" / "index.json"
 
     def test_initialization_converts_string_path(self, tmp_path: Path) -> None:
         """Test manager converts string path to Path object."""
@@ -53,7 +53,7 @@ class TestDetectMigrationNeeded:
     async def test_detect_no_migration_when_no_memory_bank_dir(
         self, tmp_path: Path
     ) -> None:
-        """Test returns False when memory-bank directory doesn't exist."""
+        """Test returns False when .cortex/memory-bank directory doesn't exist."""
         manager = MigrationManager(tmp_path)
 
         needs_migration = await manager.detect_migration_needed()
@@ -64,9 +64,10 @@ class TestDetectMigrationNeeded:
     async def test_detect_no_migration_when_already_migrated(
         self, tmp_path: Path
     ) -> None:
-        """Test returns False when .memory-bank-index exists."""
+        """Test returns False when .cortex/index.json exists."""
         manager = MigrationManager(tmp_path)
-        manager.memory_bank_dir.mkdir()
+        manager.memory_bank_dir.mkdir(parents=True)
+        manager.index_path.parent.mkdir(parents=True, exist_ok=True)
         manager.index_path.touch()
 
         needs_migration = await manager.detect_migration_needed()
@@ -75,9 +76,9 @@ class TestDetectMigrationNeeded:
 
     @pytest.mark.asyncio
     async def test_detect_no_migration_when_no_md_files(self, tmp_path: Path) -> None:
-        """Test returns False when memory-bank directory has no .md files."""
+        """Test returns False when .cortex/memory-bank directory has no .md files."""
         manager = MigrationManager(tmp_path)
-        manager.memory_bank_dir.mkdir()
+        manager.memory_bank_dir.mkdir(parents=True)
         # Create a non-.md file
         _ = (manager.memory_bank_dir / "readme.txt").write_text("Not a markdown file")
 
@@ -91,7 +92,7 @@ class TestDetectMigrationNeeded:
     ) -> None:
         """Test returns True when migration is needed."""
         manager = MigrationManager(tmp_path)
-        manager.memory_bank_dir.mkdir()
+        manager.memory_bank_dir.mkdir(parents=True)
         _ = (manager.memory_bank_dir / "test.md").write_text("# Test")
 
         needs_migration = await manager.detect_migration_needed()
@@ -104,20 +105,20 @@ class TestGetMigrationInfo:
 
     @pytest.mark.asyncio
     async def test_info_when_no_memory_bank_dir(self, tmp_path: Path) -> None:
-        """Test returns info when memory-bank directory doesn't exist."""
+        """Test returns info when .cortex/memory-bank directory doesn't exist."""
         manager = MigrationManager(tmp_path)
 
         info = await manager.get_migration_info()
 
         assert info["needs_migration"] is False
         reason = str(info.get("reason", ""))
-        assert "No memory-bank directory" in reason
+        assert "No .cortex/memory-bank directory" in reason
 
     @pytest.mark.asyncio
     async def test_info_when_no_md_files(self, tmp_path: Path) -> None:
         """Test returns info when no .md files exist."""
         manager = MigrationManager(tmp_path)
-        manager.memory_bank_dir.mkdir()
+        manager.memory_bank_dir.mkdir(parents=True)
 
         info = await manager.get_migration_info()
 
@@ -129,7 +130,8 @@ class TestGetMigrationInfo:
     async def test_info_when_already_migrated(self, tmp_path: Path) -> None:
         """Test returns info when already migrated."""
         manager = MigrationManager(tmp_path)
-        manager.memory_bank_dir.mkdir()
+        manager.memory_bank_dir.mkdir(parents=True)
+        manager.index_path.parent.mkdir(parents=True, exist_ok=True)
         manager.index_path.touch()
         _ = (manager.memory_bank_dir / "test.md").write_text("# Test")
 
@@ -143,7 +145,7 @@ class TestGetMigrationInfo:
     async def test_info_when_migration_needed(self, tmp_path: Path) -> None:
         """Test returns detailed info when migration is needed."""
         manager = MigrationManager(tmp_path)
-        manager.memory_bank_dir.mkdir()
+        manager.memory_bank_dir.mkdir(parents=True)
 
         # Create test files
         file1 = manager.memory_bank_dir / "file1.md"
@@ -180,20 +182,20 @@ class TestCreateBackup:
     ) -> None:
         """Test create_backup creates timestamped backup directory."""
         manager = MigrationManager(tmp_path)
-        manager.memory_bank_dir.mkdir()
+        manager.memory_bank_dir.mkdir(parents=True)
         _ = (manager.memory_bank_dir / "test.md").write_text("# Test")
 
         backup_dir = await manager.create_backup()
 
         assert backup_dir.exists()
-        assert backup_dir.name.startswith(".memory-bank-backup-")
+        assert backup_dir.name.startswith(".cortex-backup-")
         assert (backup_dir / "test.md").exists()
 
     @pytest.mark.asyncio
     async def test_create_backup_copies_all_files(self, tmp_path: Path) -> None:
-        """Test create_backup copies all files from memory-bank directory."""
+        """Test create_backup copies all files from .cortex/memory-bank directory."""
         manager = MigrationManager(tmp_path)
-        manager.memory_bank_dir.mkdir()
+        manager.memory_bank_dir.mkdir(parents=True)
 
         # Create multiple files
         _ = (manager.memory_bank_dir / "file1.md").write_text("Content 1")
@@ -210,7 +212,7 @@ class TestCreateBackup:
     async def test_create_backup_when_directory_empty(self, tmp_path: Path) -> None:
         """Test create_backup handles empty memory-bank directory."""
         manager = MigrationManager(tmp_path)
-        manager.memory_bank_dir.mkdir()
+        manager.memory_bank_dir.mkdir(parents=True)
 
         backup_dir = await manager.create_backup()
 
@@ -223,11 +225,12 @@ class TestRollback:
 
     @pytest.mark.asyncio
     async def test_rollback_removes_index_file(self, tmp_path: Path) -> None:
-        """Test rollback removes .memory-bank-index file."""
+        """Test rollback removes .cortex/index.json file."""
         manager = MigrationManager(tmp_path)
+        manager.index_path.parent.mkdir(parents=True, exist_ok=True)
         manager.index_path.touch()
 
-        backup_dir = tmp_path / ".memory-bank-backup-test"
+        backup_dir = tmp_path / ".cortex-backup-test"
         backup_dir.mkdir()
 
         await manager.rollback(backup_dir)
@@ -236,13 +239,13 @@ class TestRollback:
 
     @pytest.mark.asyncio
     async def test_rollback_removes_history_directory(self, tmp_path: Path) -> None:
-        """Test rollback removes .memory-bank-history directory."""
+        """Test rollback removes .cortex/history directory."""
         manager = MigrationManager(tmp_path)
-        history_dir = tmp_path / ".memory-bank-history"
-        history_dir.mkdir()
+        history_dir = tmp_path / ".cortex" / "history"
+        history_dir.mkdir(parents=True)
         _ = (history_dir / "test.txt").write_text("History")
 
-        backup_dir = tmp_path / ".memory-bank-backup-test"
+        backup_dir = tmp_path / ".cortex-backup-test"
         backup_dir.mkdir()
 
         await manager.rollback(backup_dir)
@@ -251,16 +254,16 @@ class TestRollback:
 
     @pytest.mark.asyncio
     async def test_rollback_restores_from_backup(self, tmp_path: Path) -> None:
-        """Test rollback restores memory-bank directory from backup."""
+        """Test rollback restores .cortex/memory-bank directory from backup."""
         manager = MigrationManager(tmp_path)
 
         # Create backup with original content
-        backup_dir = tmp_path / ".memory-bank-backup-test"
+        backup_dir = tmp_path / ".cortex-backup-test"
         backup_dir.mkdir()
         _ = (backup_dir / "original.md").write_text("Original content")
 
         # Create current directory with modified content
-        manager.memory_bank_dir.mkdir()
+        manager.memory_bank_dir.mkdir(parents=True)
         _ = (manager.memory_bank_dir / "modified.md").write_text("Modified content")
 
         await manager.rollback(backup_dir)
@@ -275,7 +278,7 @@ class TestRollback:
     async def test_rollback_handles_missing_backup(self, tmp_path: Path) -> None:
         """Test rollback handles case when backup doesn't exist."""
         manager = MigrationManager(tmp_path)
-        backup_dir = tmp_path / ".memory-bank-backup-nonexistent"
+        backup_dir = tmp_path / ".cortex-backup-nonexistent"
 
         # Should not raise exception
         await manager.rollback(backup_dir)
@@ -288,13 +291,13 @@ class TestMigrate:
     async def test_migrate_creates_backup_by_default(self, tmp_path: Path) -> None:
         """Test migrate creates backup by default."""
         manager = MigrationManager(tmp_path)
-        manager.memory_bank_dir.mkdir()
+        manager.memory_bank_dir.mkdir(parents=True)
         _ = (manager.memory_bank_dir / "test.md").write_text("# Test")
 
         with patch.object(
             manager, "create_backup", new_callable=AsyncMock
         ) as mock_backup:
-            mock_backup.return_value = tmp_path / ".memory-bank-backup-test"
+            mock_backup.return_value = tmp_path / ".cortex-backup-test"
 
             # Mock other dependencies to avoid full migration
             mock_fs = MagicMock()
@@ -351,7 +354,7 @@ class TestMigrate:
     async def test_migrate_skips_backup_when_disabled(self, tmp_path: Path) -> None:
         """Test migrate skips backup when auto_backup=False."""
         manager = MigrationManager(tmp_path)
-        manager.memory_bank_dir.mkdir()
+        manager.memory_bank_dir.mkdir(parents=True)
         _ = (manager.memory_bank_dir / "test.md").write_text("# Test")
 
         with patch.object(
@@ -412,7 +415,7 @@ class TestMigrate:
     async def test_migrate_returns_success_report(self, tmp_path: Path) -> None:
         """Test migrate returns success report on completion."""
         manager = MigrationManager(tmp_path)
-        manager.memory_bank_dir.mkdir()
+        manager.memory_bank_dir.mkdir(parents=True)
         _ = (manager.memory_bank_dir / "test.md").write_text("# Test")
 
         # Mock all dependencies
@@ -463,7 +466,7 @@ class TestMigrate:
     async def test_migrate_raises_on_verification_failure(self, tmp_path: Path) -> None:
         """Test migrate raises MigrationFailedError when verification fails."""
         manager = MigrationManager(tmp_path)
-        manager.memory_bank_dir.mkdir()
+        manager.memory_bank_dir.mkdir(parents=True)
         _ = (manager.memory_bank_dir / "test.md").write_text("# Test")
 
         # Mock verification failure
@@ -502,10 +505,10 @@ class TestMigrate:
     async def test_migrate_rolls_back_on_exception(self, tmp_path: Path) -> None:
         """Test migrate rolls back changes on exception."""
         manager = MigrationManager(tmp_path)
-        manager.memory_bank_dir.mkdir()
+        manager.memory_bank_dir.mkdir(parents=True)
         _ = (manager.memory_bank_dir / "test.md").write_text("# Test")
 
-        backup_dir = tmp_path / ".memory-bank-backup-test"
+        backup_dir = tmp_path / ".cortex-backup-test"
         backup_dir.mkdir()
 
         # Mock exception during migration (after backup is created)
@@ -547,6 +550,7 @@ class TestVerifyMigration:
     async def test_verify_fails_when_history_not_created(self, tmp_path: Path) -> None:
         """Test verification fails when history directory doesn't exist."""
         manager = MigrationManager(tmp_path)
+        manager.index_path.parent.mkdir(parents=True, exist_ok=True)
         manager.index_path.touch()
         md_files: list[Path] = []
 
@@ -560,10 +564,11 @@ class TestVerifyMigration:
     async def test_verify_checks_all_files_in_index(self, tmp_path: Path) -> None:
         """Test verification checks all files are in index."""
         manager = MigrationManager(tmp_path)
+        manager.index_path.parent.mkdir(parents=True, exist_ok=True)
         manager.index_path.touch()
-        (tmp_path / ".memory-bank-history").mkdir()
+        (tmp_path / ".cortex/history").mkdir(parents=True, exist_ok=True)
 
-        md_files = [tmp_path / "memory-bank" / "test.md"]
+        md_files = [tmp_path / ".cortex" / "memory-bank" / "test.md"]
 
         # Mock MetadataIndex
         with patch("cortex.core.migration.MetadataIndex") as mock_index_class:
@@ -582,10 +587,11 @@ class TestVerifyMigration:
     async def test_verify_checks_snapshots_created(self, tmp_path: Path) -> None:
         """Test verification checks all snapshots were created."""
         manager = MigrationManager(tmp_path)
+        manager.index_path.parent.mkdir(parents=True, exist_ok=True)
         manager.index_path.touch()
-        (tmp_path / ".memory-bank-history").mkdir()
+        (tmp_path / ".cortex/history").mkdir(parents=True, exist_ok=True)
 
-        md_files = [tmp_path / "memory-bank" / "test.md"]
+        md_files = [tmp_path / ".cortex" / "memory-bank" / "test.md"]
 
         # Mock MetadataIndex and VersionManager
         with (
@@ -614,14 +620,15 @@ class TestVerifyMigration:
     async def test_verify_succeeds_when_all_checks_pass(self, tmp_path: Path) -> None:
         """Test verification succeeds when all checks pass."""
         manager = MigrationManager(tmp_path)
+        manager.index_path.parent.mkdir(parents=True, exist_ok=True)
         manager.index_path.touch()
-        (tmp_path / ".memory-bank-history").mkdir()
+        (tmp_path / ".cortex/history").mkdir(parents=True, exist_ok=True)
 
-        md_files = [tmp_path / "memory-bank" / "test.md"]
+        md_files = [tmp_path / ".cortex" / "memory-bank" / "test.md"]
 
         # Create snapshot file - use the correct path format
         # VersionManager.get_snapshot_path returns: history_dir / "{base_name}_v{version}.md"
-        snapshot_path = tmp_path / ".memory-bank-history" / "test_v1.md"
+        snapshot_path = tmp_path / ".cortex/history" / "test_v1.md"
         snapshot_path.parent.mkdir(parents=True, exist_ok=True)
         _ = snapshot_path.write_text("{}")
 
@@ -659,18 +666,18 @@ class TestCleanupOldBackups:
 
         # Create 5 backup directories
         for i in range(5):
-            backup_dir = tmp_path / f".memory-bank-backup-2024010{i}_120000"
+            backup_dir = tmp_path / f".cortex-backup-2024010{i}_120000"
             backup_dir.mkdir()
 
         await manager.cleanup_old_backups(keep_last=3)
 
-        remaining_backups = list(tmp_path.glob(".memory-bank-backup-*"))
+        remaining_backups = list(tmp_path.glob(".cortex-backup-*"))
         assert len(remaining_backups) == 3
 
         # Check that the oldest were deleted
-        assert not (tmp_path / ".memory-bank-backup-20240100_120000").exists()
-        assert not (tmp_path / ".memory-bank-backup-20240101_120000").exists()
-        assert (tmp_path / ".memory-bank-backup-20240104_120000").exists()
+        assert not (tmp_path / ".cortex-backup-20240100_120000").exists()
+        assert not (tmp_path / ".cortex-backup-20240101_120000").exists()
+        assert (tmp_path / ".cortex-backup-20240104_120000").exists()
 
     @pytest.mark.asyncio
     async def test_cleanup_does_nothing_when_below_limit(self, tmp_path: Path) -> None:
@@ -679,12 +686,12 @@ class TestCleanupOldBackups:
 
         # Create 2 backup directories
         for i in range(2):
-            backup_dir = tmp_path / f".memory-bank-backup-2024010{i}_120000"
+            backup_dir = tmp_path / f".cortex-backup-2024010{i}_120000"
             backup_dir.mkdir()
 
         await manager.cleanup_old_backups(keep_last=3)
 
-        remaining_backups = list(tmp_path.glob(".memory-bank-backup-*"))
+        remaining_backups = list(tmp_path.glob(".cortex-backup-*"))
         assert len(remaining_backups) == 2
 
     @pytest.mark.asyncio
@@ -694,7 +701,7 @@ class TestCleanupOldBackups:
 
         # Create backup directories
         for i in range(3):
-            backup_dir = tmp_path / f".memory-bank-backup-2024010{i}_120000"
+            backup_dir = tmp_path / f".cortex-backup-2024010{i}_120000"
             backup_dir.mkdir()
 
         # Mock rmtree to raise OSError for first backup
@@ -719,8 +726,8 @@ class TestGetBackupList:
         manager = MigrationManager(tmp_path)
 
         # Create backup directories
-        backup1 = tmp_path / ".memory-bank-backup-20240101_120000"
-        backup2 = tmp_path / ".memory-bank-backup-20240102_130000"
+        backup1 = tmp_path / ".cortex-backup-20240101_120000"
+        backup2 = tmp_path / ".cortex-backup-20240102_130000"
         backup1.mkdir()
         backup2.mkdir()
         _ = (backup1 / "file.md").write_text("Content")
@@ -738,7 +745,7 @@ class TestGetBackupList:
         """Test get_backup_list includes size and timestamp info."""
         manager = MigrationManager(tmp_path)
 
-        backup = tmp_path / ".memory-bank-backup-20240101_120000"
+        backup = tmp_path / ".cortex-backup-20240101_120000"
         backup.mkdir()
         _ = (backup / "file.md").write_text("Test content")
 
@@ -760,7 +767,7 @@ class TestGetBackupList:
         manager = MigrationManager(tmp_path)
 
         # Create backup with invalid timestamp
-        backup = tmp_path / ".memory-bank-backup-invalid"
+        backup = tmp_path / ".cortex-backup-invalid"
         backup.mkdir()
 
         backups = await manager.get_backup_list()

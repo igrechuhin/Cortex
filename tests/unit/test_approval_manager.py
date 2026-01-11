@@ -90,7 +90,7 @@ class TestApprovalManagerInitialization:
     async def test_initialization_loads_existing_data(self, memory_bank_dir: Path):
         """Test manager loads existing approval data."""
         # Arrange
-        approval_file = memory_bank_dir.parent / ".memory-bank-approvals.json"
+        approval_file = memory_bank_dir.parent / "approvals.json"
         approval_data: dict[str, object] = {
             "approvals": {
                 "apr-1": {
@@ -110,6 +110,8 @@ class TestApprovalManagerInitialization:
                 }
             ],
         }
+        # Create parent directory
+        approval_file.parent.mkdir(parents=True, exist_ok=True)
         _ = approval_file.write_text(json.dumps(approval_data))
 
         # Act
@@ -172,6 +174,8 @@ class TestRequestApproval:
     async def test_request_approval_saves_to_disk(self, memory_bank_dir: Path):
         """Test request approval persists to disk."""
         # Arrange
+        # Ensure .cortex directory exists
+        (memory_bank_dir.parent / ".cortex").mkdir(parents=True, exist_ok=True)
         manager = ApprovalManager(memory_bank_dir=memory_bank_dir)
 
         # Act
@@ -182,7 +186,7 @@ class TestRequestApproval:
         )
 
         # Assert
-        approval_file = memory_bank_dir.parent / ".memory-bank-approvals.json"
+        approval_file = memory_bank_dir.parent / "approvals.json"
         assert approval_file.exists()
         data = json.loads(approval_file.read_text())
         assert len(data["approvals"]) == 1

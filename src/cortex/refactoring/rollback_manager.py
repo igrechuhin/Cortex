@@ -70,9 +70,7 @@ class RollbackManager:
         self.config: dict[str, object] = config or {}
 
         # Rollback history file
-        self.rollback_file: Path = (
-            self.memory_bank_dir.parent / ".memory-bank-rollbacks.json"
-        )
+        self.rollback_file: Path = self.memory_bank_dir.parent / "rollbacks.json"
         self.rollbacks: dict[str, RollbackRecord] = {}
 
         # Load existing rollback history

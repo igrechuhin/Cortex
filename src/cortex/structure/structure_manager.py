@@ -11,7 +11,7 @@ from pathlib import Path
 from cortex.structure.structure_config import (
     DEFAULT_STRUCTURE,
     PLAN_TEMPLATES,
-    STANDARD_KNOWLEDGE_FILES,
+    STANDARD_MEMORY_BANK_FILES,
 )
 from cortex.structure.structure_lifecycle import StructureLifecycleManager
 from cortex.structure.structure_migration import StructureMigrationManager
@@ -27,7 +27,7 @@ class StructureManager:
 
     # Expose constants for backward compatibility
     DEFAULT_STRUCTURE = DEFAULT_STRUCTURE
-    STANDARD_KNOWLEDGE_FILES = STANDARD_KNOWLEDGE_FILES
+    STANDARD_MEMORY_BANK_FILES = STANDARD_MEMORY_BANK_FILES
     PLAN_TEMPLATES = PLAN_TEMPLATES
 
     def __init__(self, project_root: Path):
@@ -67,13 +67,13 @@ class StructureManager:
 
         return generate_plans_readme()
 
-    def generate_knowledge_readme(self) -> str:
-        """Generate README content for knowledge directory."""
+    def generate_memory_bank_readme(self) -> str:
+        """Generate README content for memory-bank directory."""
         from cortex.structure.structure_templates import (
-            generate_knowledge_readme,
+            generate_memory_bank_readme,
         )
 
-        return generate_knowledge_readme()
+        return generate_memory_bank_readme()
 
     def generate_rules_readme(self) -> str:
         """Generate README content for rules directory."""
@@ -113,6 +113,6 @@ __all__ = [
     "StructureLifecycleManager",
     "StructureMigrationManager",
     "DEFAULT_STRUCTURE",
-    "STANDARD_KNOWLEDGE_FILES",
+    "STANDARD_MEMORY_BANK_FILES",
     "PLAN_TEMPLATES",
 ]

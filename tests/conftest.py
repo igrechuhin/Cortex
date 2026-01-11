@@ -73,13 +73,15 @@ def temp_project_root() -> Generator[Path, None, None]:
     Create a temporary project root directory for testing.
 
     Yields:
-        Path: Temporary project root path with memory-bank subdirectory
+        Path: Temporary project root path with .cortex/memory-bank subdirectory
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         project_root = Path(tmpdir)
 
-        # Create memory-bank directory
-        memory_bank_dir = project_root / "memory-bank"
+        # Create .cortex directory structure
+        cortex_dir = project_root / ".cortex"
+        cortex_dir.mkdir(exist_ok=True)
+        memory_bank_dir = cortex_dir / "memory-bank"
         memory_bank_dir.mkdir(exist_ok=True)
 
         yield project_root
@@ -96,7 +98,7 @@ def memory_bank_dir(temp_project_root: Path) -> Path:
     Returns:
         Path: memory-bank directory path
     """
-    return temp_project_root / "memory-bank"
+    return temp_project_root / ".cortex" / "memory-bank"
 
 
 # ============================================================================
@@ -812,7 +814,7 @@ def temp_memory_bank(temp_project_root: Path) -> Path:
     Returns:
         Path: Path to a test file in memory-bank directory
     """
-    memory_bank_dir = temp_project_root / "memory-bank"
+    memory_bank_dir = temp_project_root / ".cortex" / "memory-bank"
     memory_bank_dir.mkdir(exist_ok=True, parents=True)
     return memory_bank_dir / "projectBrief.md"
 

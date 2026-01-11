@@ -32,21 +32,21 @@ class TestStructureManagerInitialization:
         # Assert
         assert manager.project_root == tmp_path
         assert manager.structure_config_path == (
-            tmp_path / ".memory-bank" / "config" / "structure.json"
+            tmp_path / ".cortex" / "config" / "structure.json"
         )
         assert manager.structure_config == StructureManager.DEFAULT_STRUCTURE
 
     def test_init_loads_existing_config(self, tmp_path: Path):
         """Test initialization loads existing config file."""
         # Arrange
-        config_path = tmp_path / ".memory-bank" / "config" / "structure.json"
+        config_path = tmp_path / ".cortex" / "config" / "structure.json"
         config_path.parent.mkdir(parents=True, exist_ok=True)
 
         custom_config = {
             "version": "2.0",
             "layout": {
                 "root": ".custom-bank",
-                "knowledge": "docs",
+                "memory_bank": "docs",
                 "rules": "standards",
                 "plans": "roadmap",
                 "config": "conf",
@@ -66,14 +66,14 @@ class TestStructureManagerInitialization:
         layout_raw = manager.structure_config.get("layout")
         assert isinstance(layout_raw, dict)
         layout = cast(dict[str, object], layout_raw)
-        knowledge_value = layout.get("knowledge")
-        assert isinstance(knowledge_value, str)
-        assert knowledge_value == "docs"
+        memory_bank_value = layout.get("memory_bank")
+        assert isinstance(memory_bank_value, str)
+        assert memory_bank_value == "docs"
 
     def test_init_handles_corrupted_config_gracefully(self, tmp_path: Path):
         """Test initialization falls back to defaults with corrupted config."""
         # Arrange
-        config_path = tmp_path / ".memory-bank" / "config" / "structure.json"
+        config_path = tmp_path / ".cortex" / "config" / "structure.json"
         config_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Write invalid JSON
@@ -101,21 +101,21 @@ class TestStructureManagerInitialization:
         for key in required_keys:
             assert key in StructureManager.DEFAULT_STRUCTURE, f"Missing key: {key}"
 
-    def test_standard_knowledge_files_constant(self):
-        """Test STANDARD_KNOWLEDGE_FILES contains expected files."""
+    def test_standard_memory_bank_files_constant(self):
+        """Test STANDARD_MEMORY_BANK_FILES contains expected files."""
         # Arrange
         expected_files = [
-            "memorybankinstructions.md",
             "projectBrief.md",
             "productContext.md",
             "activeContext.md",
             "systemPatterns.md",
             "techContext.md",
             "progress.md",
+            "roadmap.md",
         ]
 
         # Act & Assert
-        assert StructureManager.STANDARD_KNOWLEDGE_FILES == expected_files
+        assert StructureManager.STANDARD_MEMORY_BANK_FILES == expected_files
 
 
 # ============================================================================
@@ -163,7 +163,7 @@ class TestConfigurationManagement:
         root_path = manager.get_path("root")
 
         # Assert
-        assert root_path == tmp_path / ".memory-bank"
+        assert root_path == tmp_path / ".cortex"
 
     def test_get_path_returns_component_path(self, tmp_path: Path):
         """Test get_path returns component sub-directory path."""
@@ -171,12 +171,12 @@ class TestConfigurationManagement:
         manager = StructureManager(tmp_path)
 
         # Act
-        knowledge_path = manager.get_path("knowledge")
+        memory_bank_path = manager.get_path("memory_bank")
         rules_path = manager.get_path("rules")
 
         # Assert
-        assert knowledge_path == tmp_path / ".memory-bank" / "knowledge"
-        assert rules_path == tmp_path / ".memory-bank" / "rules"
+        assert memory_bank_path == tmp_path / ".cortex" / "memory-bank"
+        assert rules_path == tmp_path / ".cortex" / "rules"
 
     def test_get_path_raises_for_unknown_component(self, tmp_path: Path):
         """Test get_path raises ValueError for unknown component."""
@@ -216,7 +216,7 @@ class TestStructureCreation:
 
         # Assert
         assert manager.get_path("root").exists()
-        assert manager.get_path("knowledge").exists()
+        assert manager.get_path("memory_bank").exists()
         assert manager.get_path("rules").exists()
         assert (manager.get_path("rules") / "local").exists()
         assert manager.get_path("plans").exists()
@@ -277,7 +277,7 @@ class TestStructureCreation:
         _ = await manager.create_structure()
 
         # Assert
-        assert (manager.get_path("knowledge") / "README.md").exists()
+        assert (manager.get_path("memory_bank") / "README.md").exists()
         assert (manager.get_path("rules") / "README.md").exists()
         assert (manager.get_path("plans") / "README.md").exists()
 
@@ -374,8 +374,8 @@ class TestLegacyStructureDetection:
         manager = StructureManager(tmp_path)
 
         # Create standard structure
-        (tmp_path / ".memory-bank").mkdir()
-        (tmp_path / ".memory-bank" / "knowledge").mkdir()
+        (tmp_path / ".cortex").mkdir()
+        (tmp_path / ".cortex" / "memory-bank").mkdir()
 
         # Act
         detected = manager.detect_legacy_structure()
@@ -404,7 +404,7 @@ class TestCursorIntegration:
         # Assert
         cursor_dir = tmp_path / ".cursor"
         assert cursor_dir.exists()
-        assert (cursor_dir / "knowledge").exists()
+        assert (cursor_dir / "memory-bank").exists()
         assert (cursor_dir / "rules").exists()
         assert (cursor_dir / "plans").exists()
 
@@ -420,7 +420,7 @@ class TestCursorIntegration:
 
         # Assert
         cursor_dir = tmp_path / ".cursor"
-        assert (cursor_dir / "knowledge").is_symlink()
+        assert (cursor_dir / "memory-bank").is_symlink()
         assert (cursor_dir / "rules").is_symlink()
         assert (cursor_dir / "plans").is_symlink()
 
@@ -516,9 +516,9 @@ class TestStructureHealthChecks:
         _ = manager.setup_cursor_integration()
 
         # Break a symlink by removing target
-        knowledge_dir = manager.get_path("knowledge")
-        if knowledge_dir.exists():
-            shutil.rmtree(knowledge_dir)
+        memory_bank_dir = manager.get_path("memory_bank")
+        if memory_bank_dir.exists():
+            shutil.rmtree(memory_bank_dir)
 
         # Act
         health = manager.check_structure_health()
@@ -582,17 +582,17 @@ class TestReadmeGeneration:
         assert "# Plans Directory" in readme or "Plans" in readme
         assert len(readme) > 100  # Should have substantial content
 
-    def test_generate_knowledge_readme_returns_valid_markdown(self, tmp_path: Path):
-        """Test knowledge README generation returns valid markdown."""
+    def test_generate_memory_bank_readme_returns_valid_markdown(self, tmp_path: Path):
+        """Test memory bank README generation returns valid markdown."""
         # Arrange
         manager = StructureManager(tmp_path)
 
         # Act
-        readme = manager.generate_knowledge_readme()
+        readme = manager.generate_memory_bank_readme()
 
         # Assert
         assert isinstance(readme, str)
-        assert "Knowledge" in readme or "Memory Bank" in readme
+        assert "Memory Bank" in readme or "memory-bank" in readme
         assert len(readme) > 100
 
     def test_generate_rules_readme_returns_valid_markdown(self, tmp_path: Path):
@@ -634,7 +634,7 @@ class TestStructureInfo:
         paths = info.get("paths", {})
         assert isinstance(paths, dict)
         assert "root" in paths
-        assert "knowledge" in paths
+        assert "memory_bank" in paths
         assert "rules" in paths
 
     def test_get_structure_info_includes_existence_status(self, tmp_path: Path):
@@ -699,7 +699,7 @@ class TestMigrationWorkflows:
         assert isinstance(mappings, list)
         assert len(mappings) > 0
         # Should have migrated projectBrief.md
-        assert manager.get_path("knowledge").exists()
+        assert manager.get_path("memory_bank").exists()
 
     async def test_migrate_legacy_structure_creates_backup(self, tmp_path: Path):
         """Test migration creates backup before migrating."""

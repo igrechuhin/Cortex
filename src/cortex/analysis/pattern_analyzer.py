@@ -107,7 +107,7 @@ class PatternAnalyzer:
             project_root: Root directory of the project
         """
         self.project_root: Path = Path(project_root)
-        self.access_log_path: Path = self.project_root / ".memory-bank-access-log.json"
+        self.access_log_path: Path = self.project_root / ".cortex" / "access-log.json"
         self.access_data: AccessLog = self._load_access_log()
 
     def _load_access_log(self) -> AccessLog:
@@ -136,6 +136,8 @@ class PatternAnalyzer:
     async def _save_access_log(self):
         """Save access log to disk."""
         try:
+            # Ensure parent directory exists
+            self.access_log_path.parent.mkdir(parents=True, exist_ok=True)
             async with open_async_text_file(
                 self.access_log_path, "w", "utf-8"
             ) as file_handle:

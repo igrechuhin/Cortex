@@ -54,7 +54,7 @@ class StructureAnalyzer:
         Returns:
             Dictionary with organization analysis
         """
-        memory_bank_dir = self.project_root / "memory-bank"
+        memory_bank_dir = self.project_root / ".cortex" / "memory-bank"
 
         if not memory_bank_dir.exists():
             raise MemoryBankError(f"Memory bank directory not found: {memory_bank_dir}")
@@ -326,7 +326,7 @@ class StructureAnalyzer:
         Returns:
             List of detected anti-patterns with details
         """
-        memory_bank_dir = self.project_root / "memory-bank"
+        memory_bank_dir = self.project_root / ".cortex" / "memory-bank"
         all_files = list(memory_bank_dir.glob("*.md"))
 
         graph = self._build_dependency_graph()

@@ -35,8 +35,8 @@ class TestMetadataIndexInitialization:
 
         # Assert
         assert index.project_root == temp_project_root
-        assert index.index_path == temp_project_root / ".memory-bank-index"
-        assert index.memory_bank_dir == temp_project_root / "memory-bank"
+        assert index.index_path == temp_project_root / ".cortex" / "index.json"
+        assert index.memory_bank_dir == temp_project_root / ".cortex" / "memory-bank"
         assert index.get_data() is None
 
     def test_schema_version_constant(self):

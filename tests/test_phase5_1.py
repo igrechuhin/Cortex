@@ -34,18 +34,20 @@ from cortex.optimization.optimization_config import OptimizationConfig
 def temp_project() -> Generator[Path, None, None]:
     """Create a temporary project directory with sample files."""
     temp_dir = Path(tempfile.mkdtemp())
-    memory_bank_dir = temp_dir / "memory-bank"
+    # Create .cortex directory for config files
+    cortex_dir = temp_dir / ".cortex"
+    cortex_dir.mkdir(parents=True, exist_ok=True)
+    memory_bank_dir = cortex_dir / "memory-bank"
     memory_bank_dir.mkdir(parents=True)
 
     # Create sample markdown files
     files = {
-        "memorybankinstructions.md": "# Instructions\n\nThis is the main instructions file.\n\n"
-        + ("x" * 1000),
         "projectBrief.md": "# Project Brief\n\nProject description.\n\n" + ("y" * 800),
         "activeContext.md": "# Active Context\n\nCurrent work.\n\n" + ("z" * 500),
         "systemPatterns.md": "# System Patterns\n\n[Link](projectBrief.md)\n\n"
         + ("a" * 1500),
         "techContext.md": "# Tech Context\n\nTechnology stack.\n\n" + ("b" * 300),
+        "productContext.md": "# Product Context\n\nProduct context.\n\n" + ("x" * 1000),
         "large_file.md": "# Large File\n\nVery large content.\n\n"
         + ("c" * 60000),  # >50KB
         "small_file.md": "# Small\n\nTiny.\n",  # <500 bytes

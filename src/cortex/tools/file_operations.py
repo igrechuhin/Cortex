@@ -177,7 +177,7 @@ async def manage_file(
           "status": "success",
           "file_name": "activeContext.md",
           "message": "File activeContext.md written successfully",
-          "snapshot_id": "/Users/username/projects/my-app/.memory-bank-snapshots/activeContext.md.v3.snapshot",
+          "snapshot_id": "/Users/username/projects/my-app/.cortex/history/activeContext.md.v3.snapshot",
           "version": 3,
           "tokens": 128
         }
@@ -210,8 +210,8 @@ async def manage_file(
         }
 
     Note:
-        - All file operations are performed within memory-bank/ directory for security
-        - Write operations create versioned snapshots in .memory-bank-snapshots/
+        - All file operations are performed within .cortex/memory-bank/ directory for security
+        - Write operations create versioned snapshots in .cortex/history/
         - Conflict detection prevents concurrent modification (uses content_hash)
         - File locking prevents race conditions during write operations
         - Token counts use tiktoken encoding (cl100k_base) for accurate context sizing

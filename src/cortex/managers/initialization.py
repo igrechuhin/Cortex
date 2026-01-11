@@ -659,7 +659,7 @@ async def _create_schema_validator(
     """Create SchemaValidator instance."""
     from cortex.validation.schema_validator import SchemaValidator
 
-    return SchemaValidator(config_path=project_root / ".memory-bank-validation.json")
+    return SchemaValidator(config_path=project_root / ".cortex" / "validation.json")
 
 
 async def _create_duplication_detector() -> object:
@@ -706,7 +706,7 @@ async def _post_init_setup(project_root: Path, managers: dict[str, object]) -> N
     fs_manager = cast(FileSystemManager, managers["fs"])
 
     # Load metadata index if it exists
-    index_path = project_root / ".memory-bank-index"
+    index_path = project_root / ".cortex" / "index.json"
     if index_path.exists():
         try:
             _ = await metadata_index.load()

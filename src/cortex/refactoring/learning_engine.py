@@ -86,7 +86,7 @@ class LearningEngine:
         self.config: dict[str, object] = config or {}
 
         # Learning data file
-        learning_file = self.memory_bank_dir.parent / ".memory-bank-learning.json"
+        learning_file = self.memory_bank_dir.parent / "learning.json"
 
         # Initialize data manager for persistence
         self.data_manager = LearningDataManager(learning_file)

@@ -14,10 +14,10 @@ from cortex.core.async_file_utils import open_async_text_file
 
 # Default structure definition
 DEFAULT_STRUCTURE: dict[str, object] = {
-    "version": "1.0",
+    "version": "2.0",
     "layout": {
-        "root": ".memory-bank",
-        "knowledge": "knowledge",
+        "root": ".cortex",
+        "memory_bank": "memory-bank",
         "rules": "rules",
         "plans": "plans",
         "config": "config",
@@ -27,10 +27,9 @@ DEFAULT_STRUCTURE: dict[str, object] = {
         "enabled": True,
         "symlink_location": ".cursor",
         "symlinks": {
-            "knowledge": True,
+            "memory_bank": True,
             "rules": True,
             "plans": True,
-            "cursorrules_main": True,
         },
     },
     "housekeeping": {
@@ -47,15 +46,15 @@ DEFAULT_STRUCTURE: dict[str, object] = {
     },
 }
 
-# Standard knowledge files
-STANDARD_KNOWLEDGE_FILES: list[str] = [
-    "memorybankinstructions.md",
+# Standard memory bank files
+STANDARD_MEMORY_BANK_FILES: list[str] = [
     "projectBrief.md",
     "productContext.md",
     "activeContext.md",
     "systemPatterns.md",
     "techContext.md",
     "progress.md",
+    "roadmap.md",
 ]
 
 # Plan templates
@@ -78,7 +77,7 @@ class StructureConfig:
         """
         self.project_root: Path = project_root
         self.structure_config_path: Path = (
-            project_root / ".memory-bank" / "config" / "structure.json"
+            project_root / ".cortex" / "config" / "structure.json"
         )
         self.structure_config: dict[str, object] = self._load_structure_config()
 
