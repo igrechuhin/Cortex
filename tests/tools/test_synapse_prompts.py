@@ -14,12 +14,11 @@ This test suite provides comprehensive coverage for:
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from cortex.tools import synapse_prompts
-
 
 # ============================================================================
 # Fixtures
@@ -184,7 +183,7 @@ class TestLoadPromptsManifest:
         manifest_path = prompts_dir / "prompts-manifest.json"
         manifest_path.write_text('{"valid": "json"}', encoding="utf-8")
 
-        with patch("builtins.open", side_effect=IOError("Permission denied")):
+        with patch("builtins.open", side_effect=OSError("Permission denied")):
             # Act
             result = synapse_prompts._load_prompts_manifest(prompts_dir)
 
@@ -227,7 +226,7 @@ class TestLoadPromptContent:
         prompt_file = prompts_dir / "test-prompt.md"
         prompt_file.write_text("content", encoding="utf-8")
 
-        with patch("builtins.open", side_effect=IOError("Permission denied")):
+        with patch("builtins.open", side_effect=OSError("Permission denied")):
             # Act
             result = synapse_prompts._load_prompt_content(
                 prompts_dir, "general", "test-prompt.md"

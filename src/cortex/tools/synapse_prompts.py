@@ -172,14 +172,14 @@ def _register_synapse_prompts() -> None:
         if not isinstance(category_info, dict):
             continue
 
-        prompts_list_raw = category_info.get("prompts", [])
+        prompts_list_raw = cast(dict[str, object], category_info).get("prompts", [])
         if not isinstance(prompts_list_raw, list):
             continue
 
-        prompts_list: list[object] = prompts_list_raw
+        prompts_list = cast(list[object], prompts_list_raw)
         for prompt_info_raw in prompts_list:
             if isinstance(prompt_info_raw, dict):
-                prompt_info: dict[str, object] = prompt_info_raw
+                prompt_info = cast(dict[str, object], prompt_info_raw)
                 registered_count += _process_prompt_info(
                     prompt_info, prompts_path, category_name
                 )
