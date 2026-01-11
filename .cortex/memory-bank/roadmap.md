@@ -15,9 +15,11 @@
 
 ## Completed Milestones
 
-### 2026-01-11: Shared Rules Setup ✅
-- Added shared rules repository as Git submodule
-- Integrated centralized rule management system
+### 2026-01-11: Shared Rules Repository Migration ✅
+- Migrated all local rules to shared repository structure
+- Rules organized by category (general/, markdown/, python/)
+- Removed duplicate local rule files from `.cortex/rules/`
+- Centralized rule management via Git submodule enabled
 - All tests passing, code quality maintained
 
 ### 2026-01-10: MCP Prompts and Token Counter Improvements ✅
@@ -47,7 +49,7 @@
 ### Current Migration Status
 - Memory bank files migrated to `.cortex/memory-bank/`
 - Plan files migrated from `.plan/` to `.cortex/plans/`
-- Rules files in `.cortex/rules/`
+- Rules files migrated to `.cortex/rules/shared/` (shared repository structure)
 
 ## Notes
 
