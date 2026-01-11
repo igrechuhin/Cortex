@@ -87,7 +87,7 @@ DEFAULT_OPTIMIZATION_CONFIG = {
     },
     "synapse": {
         "enabled": False,
-        "synapse_folder": ".cortex/rules/shared",
+        "synapse_folder": ".cortex/synapse",
         "synapse_repo": "",
         "auto_sync": True,
         "sync_interval_minutes": 60,
@@ -377,7 +377,7 @@ class OptimizationConfig:
 
     def get_synapse_folder(self) -> str:
         """Get Synapse folder path."""
-        return cast(str, self.get("synapse.synapse_folder", ".cortex/rules/shared"))
+        return cast(str, self.get("synapse.synapse_folder", ".cortex/synapse"))
 
     def get_synapse_repo(self) -> str:
         """Get Synapse repository URL."""

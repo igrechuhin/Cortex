@@ -1,3 +1,3 @@
-[submodule ".cortex/rules/shared"]
-	path = .cortex/rules/shared
+[submodule ".cortex/synapse"]
+	path = .cortex/synapse
 	url = https://github.com/igrechuhin/Synapse.git

@@ -1506,7 +1506,7 @@ Manages shared rules repositories via Git submodules for project consistency acr
 async def initialize_shared_rules(
     self,
     repo_url: str,
-    submodule_path: str = "rules/shared"
+    submodule_path: str = "synapse"
 ) -> dict[str, object]
 
 # Synchronization

@@ -240,7 +240,7 @@ To share rules across projects:
 
 This sets up:
 
-- Git submodule at `.memory-bank/rules/shared/`
+- Git submodule at `.cortex/synapse/`
 - Automatic rule synchronization
 - Context-aware rule loading
 

@@ -27,11 +27,19 @@
 - All tests passing (2177 passed, 3 skipped)
 - Improved architecture with proper separation of concerns
 
+### 2026-01-11: Synapse Path Refactoring ✅
+
+- Renamed `.cortex/rules/shared/` to `.cortex/synapse/` for better naming
+- Updated all code references, configuration, and documentation
+- Updated symlinks: `.cursor/synapse` → `../.cortex/synapse`
+- More accurate name reflects that Synapse contains rules, prompts, and config
+- All tests passing, code quality maintained
+
 ### 2026-01-11: Shared Rules Repository Migration ✅
 
 - Migrated all local rules to shared repository structure
 - Rules organized by category (general/, markdown/, python/)
-- Removed duplicate local rule files from `.cortex/rules/`
+- Removed duplicate local rule files
 - Centralized rule management via Git submodule enabled
 - All tests passing, code quality maintained
 

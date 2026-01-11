@@ -187,7 +187,7 @@ Use these when starting fresh or configuring a new project:
 
 - **setup_cursor_integration** - Configure Cursor IDE to work with Cortex MCP server. Creates symlinks in `.cursor/` pointing to `.cortex/` subdirectories and `.cursor/mcp.json` for MCP configuration.
 
-- **setup_shared_rules** - Add a shared rules repository as a Git submodule to `.cortex/rules/shared/`. Use this when you want to share coding standards, security rules, or other guidelines across multiple projects.
+- **setup_shared_rules** - Add a shared rules repository (Synapse) as a Git submodule to `.cortex/synapse/`. Use this when you want to share coding standards, security rules, prompts, or other guidelines across multiple projects.
 
 ### Migration Prompts
 
@@ -224,7 +224,7 @@ Cortex stores all data in `.cortex/` directory:
 **Primary format**: `.cortex/` - All Cortex-managed files organized into subdirectories
 
 - `.cortex/memory-bank/` - Core memory bank files
-- `.cortex/rules/` - Project rules and configuration
+- `.cortex/synapse/` - Synapse repository (shared rules, prompts, and configuration)
 - `.cortex/plans/` - Development plans and roadmaps
 - `.cortex/config/` - Configuration files
 - `.cortex/history/` - Version history
@@ -233,7 +233,7 @@ Cortex stores all data in `.cortex/` directory:
 **IDE Integration**: `.cursor/` - Contains symlinks for IDE compatibility
 
 - `.cursor/memory-bank/` → `../.cortex/memory-bank/` (symlink)
-- `.cursor/rules/` → `../.cortex/rules/` (symlink)
+- `.cursor/synapse/` → `../.cortex/synapse/` (symlink)
 - `.cursor/plans/` → `../.cortex/plans/` (symlink)
 
 This structure keeps the actual files in a portable location while allowing IDEs like Cursor to access them through familiar paths.

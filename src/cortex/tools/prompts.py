@@ -24,7 +24,7 @@ Directory Structure:
     .cursor/ contains symlinks for IDE compatibility:
     .cursor/
     ├── memory-bank -> ../.cortex/memory-bank
-    ├── rules -> ../.cortex/rules
+    ├── synapse -> ../.cortex/synapse
     └── plans -> ../.cortex/plans
 """
 
@@ -60,7 +60,7 @@ _SETUP_PROJECT_STRUCTURE_PROMPT = """Please setup the standardized Cortex projec
 I need you to:
 1. Create the .cortex/ directory structure
 2. Setup .cortex/memory-bank/ with core files
-3. Create .cortex/rules/ directory for project rules
+3. Create .cortex/synapse/ directory for Synapse repository (optional)
 4. Setup .cortex/plans/ directory for development plans
 5. Generate all necessary template files
 6. Create .cursor/ symlinks for IDE compatibility
@@ -80,7 +80,7 @@ Expected directory structure:
 
 .cursor/ (symlinks for IDE compatibility):
 ├── memory-bank -> ../.cortex/memory-bank
-├── rules -> ../.cortex/rules
+├── synapse -> ../.cortex/synapse
 └── plans -> ../.cortex/plans
 
 Expected output format:
@@ -104,7 +104,7 @@ I need you to:
 
 Symlinks to create:
 - .cursor/memory-bank -> ../.cortex/memory-bank
-- .cursor/rules -> ../.cortex/rules
+- .cursor/synapse -> ../.cortex/synapse
 - .cursor/plans -> ../.cortex/plans
 
 Configuration files to create:
@@ -124,7 +124,7 @@ Expected output format:
 {
   "status": "success",
   "message": "Cursor integration setup successfully",
-  "symlinks_created": [".cursor/memory-bank", ".cursor/rules", ".cursor/plans"],
+  "symlinks_created": [".cursor/memory-bank", ".cursor/synapse", ".cursor/plans"],
   "config_files": [".cursor/mcp.json"],
   "mcp_server": {
     "name": "cortex",
@@ -158,7 +158,7 @@ def setup_project_structure() -> str:
 
     Creates:
     - .cortex/memory-bank/ - Core memory bank files
-    - .cortex/rules/ - Project-specific rules
+    - .cortex/synapse/ - Synapse repository (shared rules, prompts, config)
     - .cortex/plans/ - Development plans
     - .cortex/config/ - Configuration files
     - .cursor/ symlinks for IDE compatibility
@@ -175,7 +175,7 @@ def setup_cursor_integration() -> str:
 
     Creates symlinks in .cursor/ pointing to .cortex/ subdirectories:
     - .cursor/memory-bank -> ../.cortex/memory-bank
-    - .cursor/rules -> ../.cortex/rules
+    - .cursor/synapse -> ../.cortex/synapse
     - .cursor/plans -> ../.cortex/plans
 
     Also creates MCP server configuration at .cursor/mcp.json
@@ -194,17 +194,17 @@ Synapse is a shared repository that contains both rules and prompts for cross-pr
 
 I need you to:
 1. Add the Synapse repository as a Git submodule
-2. Clone it to .cortex/rules/shared/
+2. Clone it to .cortex/synapse/
 3. Create the rules index
 4. Validate the structure (should have rules/ and prompts/ subdirectories)
 5. Load the rules and prompts manifests
 
 Commands to run:
-git submodule add {synapse_repo_url} .cortex/rules/shared/
+git submodule add {synapse_repo_url} .cortex/synapse/
 git submodule update --init --recursive
 
 Expected structure:
-.cortex/rules/shared/
+.cortex/synapse/
 ├── LICENSE
 ├── rules/
 │   ├── rules-manifest.json
@@ -221,7 +221,7 @@ Expected output format:
 {{
   "status": "success",
   "message": "Synapse setup successfully",
-  "synapse_path": ".cortex/rules/shared/",
+  "synapse_path": ".cortex/synapse/",
   "rules_count": <count>,
   "prompts_count": <count>,
   "submodule_url": "{synapse_repo_url}",
@@ -234,7 +234,7 @@ def setup_synapse(synapse_repo_url: str) -> str:
     """Setup Synapse via Git submodule.
 
     Adds a Synapse repository as a Git submodule to enable
-    cross-project sharing of rules and prompts at .cortex/rules/shared/.
+    cross-project sharing of rules and prompts at .cortex/synapse/.
 
     Args:
         synapse_repo_url: URL of the Synapse repository
@@ -347,16 +347,16 @@ I need you to:
 
 Migration mappings:
 - .cursor/memory-bank/ -> .cortex/memory-bank/
-- .cursor/rules/ -> .cortex/rules/
+- .cursor/synapse/ -> .cortex/synapse/
 - .cursor/plans/ -> .cortex/plans/
 - memory-bank/ -> .cortex/memory-bank/
-- rules/ -> .cortex/rules/
+- rules/ -> .cortex/synapse/ (if using Synapse)
 - .plan/ -> .cortex/plans/
 - docs/plans/ -> .cortex/plans/
 
 Symlinks to create in .cursor/:
 - .cursor/memory-bank -> ../.cortex/memory-bank
-- .cursor/rules -> ../.cortex/rules
+- .cursor/synapse -> ../.cortex/synapse
 - .cursor/plans -> ../.cortex/plans
 
 Safety requirements:
@@ -372,10 +372,10 @@ Expected output format:
   "message": "Project structure migrated successfully",
   "migrations": {
     "memory_bank": {"from": "<old_location>", "to": ".cortex/memory-bank/", "files": 7},
-    "rules": {"from": "<old_location>", "to": ".cortex/rules/", "files": <count>},
+    "synapse": {"from": "<old_location>", "to": ".cortex/synapse/", "files": <count>},
     "plans": {"from": "<old_location>", "to": ".cortex/plans/", "files": <count>}
   },
-  "symlinks_created": [".cursor/memory-bank", ".cursor/rules", ".cursor/plans"],
+  "symlinks_created": [".cursor/memory-bank", ".cursor/synapse", ".cursor/plans"],
   "links_updated": <count>,
   "duration_ms": <time>
 }"""
@@ -387,7 +387,7 @@ def migrate_project_structure() -> str:
 
     Moves files from legacy locations to .cortex/:
     - memory-bank -> .cortex/memory-bank/
-    - rules -> .cortex/rules/
+    - synapse -> .cortex/synapse/
     - plans -> .cortex/plans/
 
     Creates .cursor/ symlinks for IDE compatibility.

@@ -115,7 +115,7 @@
   },
   "synapse": {
     "enabled": false,
-    "synapse_folder": ".cortex/rules/shared",
+    "synapse_folder": ".cortex/synapse",
     "synapse_repo": "",
     "auto_sync": true,
     "sync_interval_minutes": 60

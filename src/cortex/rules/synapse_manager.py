@@ -35,7 +35,7 @@ class SynapseManager:
     def __init__(
         self,
         project_root: Path,
-        synapse_folder: str = ".cortex/rules/shared",
+        synapse_folder: str = ".cortex/synapse",
         local_rules_folder: str = ".cursorrules",
     ):
         """

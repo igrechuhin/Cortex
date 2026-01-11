@@ -36,12 +36,12 @@ class TestSynapseManagerInitialization:
         # Arrange & Act
         manager = SynapseManager(
             project_root=temp_project_root,
-            synapse_folder="rules/shared",
+            synapse_folder="synapse",
             local_rules_folder="rules/local",
         )
 
         # Assert
-        assert manager.synapse_path == temp_project_root / "rules/shared"
+        assert manager.synapse_path == temp_project_root / "synapse"
         assert manager.local_rules_path == temp_project_root / "rules/local"
 
 

@@ -18,7 +18,7 @@ I want to use shared rules from: [SHARED_RULES_REPO_URL]
 
 I need you to:
 1. Add the shared rules repository as a Git submodule
-2. Clone it to .cursor/rules/shared/
+2. Clone it to .cortex/synapse/
 3. Create the rules index
 4. Validate the rules structure
 5. Merge shared rules with my local rules
@@ -28,7 +28,7 @@ I need you to:
 
 The assistant will:
 
-1. Run `git submodule add [URL] .cursor/rules/shared/`
+1. Run `git submodule add [URL] .cortex/synapse/`
 2. Initialize and update the submodule
 3. Index all rules from the shared repository
 4. Validate rule format and content
@@ -97,7 +97,7 @@ You can configure shared rules behavior:
 
 After successful setup:
 
-1. Review merged rules in `.cursor/rules/`
+1. Review merged rules in `.cortex/synapse/`
 2. Use `sync_shared_rules` to pull updates
 3. Use `get_rules_with_context` for context-aware rule retrieval
 4. Customize merge behavior if needed

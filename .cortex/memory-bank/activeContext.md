@@ -2,13 +2,13 @@
 
 ## Current Focus (2026-01-11)
 
-### Shared Rules Repository Migration
+### Synapse Path Refactoring
 
-- Current Status: Rules Migration Complete (100%)
-- Migrated all local rules to shared repository structure
-- Rules now organized in `.cortex/rules/shared/` by category (general/, markdown/, python/)
-- Removed duplicate local rule files from `.cortex/rules/`
-- Centralized rule management enabled via Git submodule
+- Current Status: Path Refactoring Complete (100%)
+- Renamed `.cortex/rules/shared/` to `.cortex/synapse/` to better reflect content
+- Synapse contains rules, prompts, and other configuration files
+- Updated all code references, configuration, and documentation
+- Updated symlinks: `.cursor/synapse` → `../.cortex/synapse`
 
 ### MCP Prompts and Token Counter Improvements
 
@@ -29,11 +29,11 @@
 
 Migrated all project rules to shared repository structure for centralized management:
 
-1. **Rules Organization** - Reorganized rules into shared repository structure
-   - Rules now located in `.cortex/rules/shared/` directory
-   - Organized by category: `general/`, `markdown/`, `python/`
-   - Removed duplicate local rule files from `.cortex/rules/`
-   - Centralized rule management via Git submodule
+1. **Synapse Path Refactoring** - Renamed path to better reflect content
+   - Synapse repository now located at `.cortex/synapse/` (was `.cortex/rules/shared/`)
+   - Contains rules, prompts, and other configuration files
+   - Updated all references throughout codebase and documentation
+   - Updated symlinks for IDE compatibility
 
 2. **Rule Categories**:
    - **general/**: coding-standards.mdc, maintainability.mdc, no-test-skipping.mdc, testing-standards.mdc
