@@ -22,7 +22,7 @@ from cortex.refactoring.refactoring_engine import RefactoringEngine
 from cortex.refactoring.reorganization_planner import ReorganizationPlanner
 from cortex.refactoring.split_recommender import SplitRecommender
 from cortex.rules.context_detector import ContextDetector
-from cortex.rules.shared_rules_manager import SharedRulesManager
+from cortex.rules.synapse_manager import SynapseManager
 from cortex.structure.structure_manager import StructureManager
 from cortex.structure.template_manager import TemplateManager
 
@@ -296,12 +296,19 @@ class TestPhase6Integration:
     ):
         """Test end-to-end shared rules workflow with context detection."""
         # Arrange
-        shared_rules_manager = SharedRulesManager(temp_project_root)
+        # Use .shared-rules as synapse folder to match test setup
+        synapse_manager = SynapseManager(
+            temp_project_root, synapse_folder=".shared-rules"
+        )
         context_detector = ContextDetector()
 
         # Create mock shared rules structure
         shared_rules_dir = temp_project_root / ".shared-rules"
         shared_rules_dir.mkdir(exist_ok=True)
+
+        # Create rules subdirectory (SynapseManager expects rules/ subdirectory)
+        rules_dir = shared_rules_dir / "rules"
+        rules_dir.mkdir(exist_ok=True)
 
         # Create manifest
         manifest = {
@@ -314,21 +321,21 @@ class TestPhase6Integration:
 
         import json
 
-        _ = (shared_rules_dir / "rules-manifest.json").write_text(json.dumps(manifest))
+        _ = (rules_dir / "rules-manifest.json").write_text(json.dumps(manifest))
 
         # Create rule files
-        python_dir = shared_rules_dir / "python"
+        python_dir = rules_dir / "python"
         python_dir.mkdir(exist_ok=True)
         _ = (python_dir / "style-guide.md").write_text(
             "# Python Style Guide\nUse PEP 8"
         )
 
-        generic_dir = shared_rules_dir / "generic"
+        generic_dir = rules_dir / "generic"
         generic_dir.mkdir(exist_ok=True)
         _ = (generic_dir / "security.md").write_text("# Security\nValidate all inputs")
 
         # Act: Load manifest
-        loaded = await shared_rules_manager.load_rules_manifest()
+        loaded = await synapse_manager.load_rules_manifest()
 
         # Detect context
         context = context_detector.detect_context(

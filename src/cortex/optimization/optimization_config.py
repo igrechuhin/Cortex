@@ -58,12 +58,6 @@ DEFAULT_OPTIMIZATION_CONFIG = {
         "auto_include_in_context": True,
         "max_rules_tokens": 5000,
         "min_relevance_score": 0.3,
-        # Shared rules configuration (NEW in Phase 6)
-        "shared_rules_enabled": False,
-        "shared_rules_folder": ".shared-rules",
-        "shared_rules_repo": "",
-        "auto_sync_shared_rules": True,
-        "sync_interval_minutes": 60,
         "rule_priority": "local_overrides_shared",  # or "shared_overrides_local"
         "context_aware_loading": True,
         "always_include_generic": True,
@@ -90,6 +84,13 @@ DEFAULT_OPTIMIZATION_CONFIG = {
                 "cpp": ["c++", "cpp", "cmake"],
             },
         },
+    },
+    "synapse": {
+        "enabled": False,
+        "synapse_folder": ".cortex/rules/shared",
+        "synapse_repo": "",
+        "auto_sync": True,
+        "sync_interval_minutes": 60,
     },
     "self_evolution": {
         "enabled": True,
@@ -369,6 +370,26 @@ class OptimizationConfig:
     def get_rules_min_relevance(self) -> float:
         """Get minimum relevance score for rules."""
         return cast(float, self.get("rules.min_relevance_score", 0.3))
+
+    def is_synapse_enabled(self) -> bool:
+        """Check if Synapse is enabled."""
+        return cast(bool, self.get("synapse.enabled", False))
+
+    def get_synapse_folder(self) -> str:
+        """Get Synapse folder path."""
+        return cast(str, self.get("synapse.synapse_folder", ".cortex/rules/shared"))
+
+    def get_synapse_repo(self) -> str:
+        """Get Synapse repository URL."""
+        return cast(str, self.get("synapse.synapse_repo", ""))
+
+    def is_synapse_auto_sync(self) -> bool:
+        """Check if Synapse auto-sync is enabled."""
+        return cast(bool, self.get("synapse.auto_sync", True))
+
+    def get_synapse_sync_interval(self) -> int:
+        """Get Synapse sync interval in minutes."""
+        return cast(int, self.get("synapse.sync_interval_minutes", 60))
 
     def is_self_evolution_enabled(self) -> bool:
         """Check if self-evolution is enabled."""

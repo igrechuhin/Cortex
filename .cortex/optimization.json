@@ -46,11 +46,6 @@
     "auto_include_in_context": true,
     "max_rules_tokens": 5000,
     "min_relevance_score": 0.3,
-    "shared_rules_enabled": false,
-    "shared_rules_folder": ".shared-rules",
-    "shared_rules_repo": "",
-    "auto_sync_shared_rules": true,
-    "sync_interval_minutes": 60,
     "rule_priority": "local_overrides_shared",
     "context_aware_loading": true,
     "always_include_generic": true,
@@ -111,7 +106,19 @@
           "cmake"
         ]
       }
-    }
+    },
+    "shared_rules_enabled": false,
+    "shared_rules_folder": ".shared-rules",
+    "shared_rules_repo": "",
+    "auto_sync_shared_rules": true,
+    "sync_interval_minutes": 60
+  },
+  "synapse": {
+    "enabled": false,
+    "synapse_folder": ".cortex/rules/shared",
+    "synapse_repo": "",
+    "auto_sync": true,
+    "sync_interval_minutes": 60
   },
   "self_evolution": {
     "enabled": true,

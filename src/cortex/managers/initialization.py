@@ -49,6 +49,9 @@ from cortex.refactoring.refactoring_executor import RefactoringExecutor
 from cortex.refactoring.reorganization_planner import ReorganizationPlanner
 from cortex.refactoring.rollback_manager import RollbackManager
 from cortex.refactoring.split_recommender import SplitRecommender
+
+# Import Synapse manager
+from cortex.rules.synapse_manager import SynapseManager
 from cortex.templates.active_context import TEMPLATE as ACTIVE_CONTEXT_TEMPLATE
 
 # Import templates and guides
@@ -222,6 +225,10 @@ def _add_optimization_managers(
     managers["rules_manager"] = LazyManager(
         lambda: _create_rules_manager(project_root, core_managers, managers),
         name="rules_manager",
+    )
+    managers["synapse"] = LazyManager(
+        lambda: _create_synapse_manager(project_root, managers),
+        name="synapse",
     )
 
 
@@ -462,6 +469,24 @@ async def _create_rules_manager(
             else None
         ),
         reindex_interval_minutes=optimization_config.get_rules_reindex_interval(),
+    )
+
+
+async def _create_synapse_manager(
+    project_root: Path, managers: dict[str, object]
+) -> SynapseManager:
+    """Create SynapseManager instance."""
+    from cortex.managers.manager_utils import get_manager
+
+    optimization_config = await get_manager(
+        managers, "optimization_config", OptimizationConfig
+    )
+
+    synapse_folder = optimization_config.get_synapse_folder()
+
+    return SynapseManager(
+        project_root=project_root,
+        synapse_folder=synapse_folder,
     )
 
 

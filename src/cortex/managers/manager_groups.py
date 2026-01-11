@@ -81,7 +81,7 @@ MANAGER_GROUPS = [
     ),
     ManagerGroup(
         name="rules",
-        managers=["rules_manager", "shared_rules_manager"],
+        managers=["rules_manager", "synapse_manager"],
         priority=3,
     ),
 ]

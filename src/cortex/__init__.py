@@ -24,7 +24,7 @@ from cortex.refactoring.refactoring_engine import RefactoringEngine
 from cortex.refactoring.refactoring_executor import RefactoringExecutor
 
 # Rules (Phase 6)
-from cortex.rules.shared_rules_manager import SharedRulesManager
+from cortex.rules.synapse_manager import SynapseManager
 
 # Structure (Phase 8)
 from cortex.structure.structure_manager import StructureManager
@@ -55,7 +55,7 @@ __all__ = [
     "RefactoringEngine",
     "RefactoringExecutor",
     # Rules
-    "SharedRulesManager",
+    "SynapseManager",
     # Structure
     "StructureManager",
     # Validation

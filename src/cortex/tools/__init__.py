@@ -17,11 +17,11 @@ Modules:
 - phase5_analysis: Usage pattern and structure analysis (3 tools)
 - phase5_refactoring: Refactoring suggestions (4 tools)
 - phase5_execution: Safe execution and learning (6 tools)
-- phase6_shared_rules: Shared rules repository (4 tools)
+- synapse_tools: Synapse repository tools for rules and prompts (5 tools)
 - phase8_structure: Project structure management (6 tools)
 - prompts: MCP prompt templates for one-time operations (7 prompts)
 
-Total: 52 tools + 7 prompts (Phase 7.10 consolidation + Phase 9.1.1 split)
+Total: 53 tools + 7 prompts
 """
 
 # Import all tool modules to register their decorators
@@ -39,11 +39,11 @@ from . import (
     phase5_analysis,  # noqa: F401
     phase5_execution,  # noqa: F401
     phase5_refactoring,  # noqa: F401
-    phase6_shared_rules,  # noqa: F401
     phase8_structure,  # noqa: F401
     prompts,  # noqa: F401
     refactoring_operations,  # noqa: F401
     rules_operations,  # noqa: F401
+    synapse_tools,  # noqa: F401
     validation_operations,  # noqa: F401
 )
 
@@ -61,7 +61,7 @@ __all__ = [
     "phase5_analysis",
     "phase5_refactoring",
     "phase5_execution",
-    "phase6_shared_rules",
+    "synapse_tools",
     "phase8_structure",
     "prompts",
     "refactoring_operations",

@@ -1,8 +1,9 @@
 """
-Shared Rules Manager for MCP Memory Bank.
+Synapse Manager for MCP Memory Bank.
 
-This module manages shared rules repositories using git submodules, enabling
-cross-project rule sharing with automatic synchronization and context-aware loading.
+This module manages Synapse repositories using git submodules, enabling
+cross-project sharing of rules and prompts with automatic synchronization
+and context-aware loading.
 """
 
 import asyncio
@@ -12,18 +13,20 @@ from pathlib import Path
 from ..core.retry import retry_async
 from ..core.security import InputValidator
 from .context_detector import ContextDetector
+from .prompts_loader import PromptsLoader
 from .rules_loader import RulesLoader
 from .rules_merger import RulesMerger
-from .rules_repository import RulesRepository
+from .synapse_repository import SynapseRepository
 
 
-class SharedRulesManager:
+class SynapseManager:
     """
-    Manage shared rules repository with git integration.
+    Manage Synapse repository with git integration.
 
     Features:
     - Git submodule initialization and synchronization
     - Rules manifest parsing and validation
+    - Prompts manifest parsing and validation
     - Context detection for intelligent rule loading
     - Merge strategies for local and shared rules
     - Automatic rule updates with git commit/push
@@ -32,28 +35,34 @@ class SharedRulesManager:
     def __init__(
         self,
         project_root: Path,
-        shared_rules_folder: str = ".shared-rules",
+        synapse_folder: str = ".cortex/rules/shared",
         local_rules_folder: str = ".cursorrules",
     ):
         """
-        Initialize shared rules manager.
+        Initialize Synapse manager.
 
         Args:
             project_root: Root directory of the project
-            shared_rules_folder: Path to shared rules folder (submodule)
+            synapse_folder: Path to Synapse folder (submodule)
             local_rules_folder: Path to local project rules
         """
         self.project_root: Path = Path(project_root)
-        self.shared_rules_path: Path = self.project_root / shared_rules_folder
+        self.synapse_path: Path = self.project_root / synapse_folder
         self.local_rules_path: Path = self.project_root / local_rules_folder
 
-        self._repository: RulesRepository | None = None
-        self.loader: RulesLoader = RulesLoader(self.shared_rules_path)
+        # Rules are now in synapse_path/rules/
+        self.rules_path: Path = self.synapse_path / "rules"
+        # Prompts are in synapse_path/prompts/
+        self.prompts_path: Path = self.synapse_path / "prompts"
+
+        self._repository: SynapseRepository | None = None
+        self.loader: RulesLoader = RulesLoader(self.rules_path)
+        self.prompts_loader: PromptsLoader = PromptsLoader(self.prompts_path)
         self.merger: RulesMerger = RulesMerger()
         self.context_detector: ContextDetector = ContextDetector()
 
     @property
-    def repository(self) -> RulesRepository:
+    def repository(self) -> SynapseRepository:
         """Get repository instance, creating it if needed."""
         if self._repository is None:
 
@@ -63,8 +72,8 @@ class SharedRulesManager:
                 # but tests can replace it
                 return await self.run_git_command(cmd)
 
-            self._repository = RulesRepository(
-                self.project_root, self.shared_rules_path, git_runner
+            self._repository = SynapseRepository(
+                self.project_root, self.synapse_path, git_runner
             )
         return self._repository
 
@@ -128,14 +137,14 @@ class SharedRulesManager:
         """Get last sync timestamp."""
         return self.repository.last_sync
 
-    async def initialize_shared_rules(
+    async def initialize_synapse(
         self, repo_url: str, force: bool = False, timeout: int = 30
     ) -> dict[str, object]:
         """
-        Initialize shared rules as git submodule.
+        Initialize Synapse as git submodule.
 
         Args:
-            repo_url: Git repository URL for shared rules
+            repo_url: Git repository URL for Synapse
             force: Force re-initialization even if exists
             timeout: Timeout in seconds for git operations
 
@@ -149,7 +158,7 @@ class SharedRulesManager:
             return {
                 "status": "error",
                 "error": f"Invalid git URL: {e}",
-                "action": "initialize_shared_rules",
+                "action": "initialize_synapse",
             }
 
         result = await self.repository.initialize_submodule(validated_url, force)
@@ -161,11 +170,11 @@ class SharedRulesManager:
 
         return result
 
-    async def sync_shared_rules(
+    async def sync_synapse(
         self, pull: bool = True, push: bool = False
     ) -> dict[str, object]:
         """
-        Sync shared rules repository with remote.
+        Sync Synapse repository with remote.
 
         Args:
             pull: Pull latest changes from remote
@@ -248,11 +257,11 @@ class SharedRulesManager:
         """
         return await self.merger.merge_rules(shared_rules, local_rules, priority)
 
-    async def update_shared_rule(
+    async def update_synapse_rule(
         self, category: str, file: str, content: str, commit_message: str
     ) -> dict[str, object]:
         """
-        Update a shared rule and commit/push to remote.
+        Update a Synapse rule and commit/push to remote.
 
         Args:
             category: Category name (e.g., "python")
@@ -264,8 +273,8 @@ class SharedRulesManager:
             Dict with update status
         """
         try:
-            if not self.shared_rules_path.exists():
-                return {"status": "error", "error": "Shared rules not initialized"}
+            if not self.synapse_path.exists():
+                return {"status": "error", "error": "Synapse not initialized"}
 
             rule_path = await self.loader.create_rule_file(category, file, content)
             result = await self.repository.update_file(rule_path, commit_message)
@@ -278,13 +287,13 @@ class SharedRulesManager:
             return result
 
         except Exception as e:
-            return {"status": "error", "error": str(e), "action": "update_shared_rule"}
+            return {"status": "error", "error": str(e), "action": "update_synapse_rule"}
 
-    async def create_shared_rule(
+    async def create_synapse_rule(
         self, category: str, filename: str, content: str, metadata: dict[str, object]
     ) -> dict[str, object]:
         """
-        Create a new shared rule and update manifest.
+        Create a new Synapse rule and update manifest.
 
         Args:
             category: Category name
@@ -296,7 +305,7 @@ class SharedRulesManager:
             Dict with creation status
         """
         try:
-            result = await self.update_shared_rule(
+            result = await self.update_synapse_rule(
                 category=category,
                 file=filename,
                 content=content,
@@ -316,7 +325,7 @@ class SharedRulesManager:
             }
 
         except Exception as e:
-            return {"status": "error", "error": str(e), "action": "create_shared_rule"}
+            return {"status": "error", "error": str(e), "action": "create_synapse_rule"}
 
     async def _update_manifest_for_new_rule(
         self, category: str, filename: str, metadata: dict[str, object]
@@ -331,7 +340,7 @@ class SharedRulesManager:
             )
             await self.loader.save_manifest(updated_manifest)
 
-            manifest_path = self.shared_rules_path / "rules-manifest.json"
+            manifest_path = self.rules_path / "rules-manifest.json"
             _ = await self.repository.update_file(
                 manifest_path,
                 f"Update manifest for new rule: {category}/{filename}",
@@ -348,3 +357,85 @@ class SharedRulesManager:
             Dict with success status, stdout, stderr
         """
         return await self._run_git_command_impl(cmd)
+
+    # =========================================================================
+    # Prompts Methods
+    # =========================================================================
+
+    async def load_prompts_manifest(self) -> dict[str, object] | None:
+        """
+        Load and parse prompts-manifest.json.
+
+        Returns:
+            Parsed manifest dict or None if not found
+        """
+        return await self.prompts_loader.load_manifest()
+
+    def get_prompt_categories(self) -> list[str]:
+        """
+        Get list of available prompt categories.
+
+        Returns:
+            List of category names
+        """
+        return self.prompts_loader.get_categories()
+
+    async def load_prompts_category(self, category: str) -> list[dict[str, object]]:
+        """
+        Load all prompts from a specific category.
+
+        Args:
+            category: Category name (e.g., "python", "general")
+
+        Returns:
+            List of prompt dicts with content and metadata
+        """
+        return await self.prompts_loader.load_category(category)
+
+    async def get_all_prompts(self) -> list[dict[str, object]]:
+        """
+        Load all prompts from all categories.
+
+        Returns:
+            List of all prompt dicts
+        """
+        return await self.prompts_loader.get_all_prompts()
+
+    async def update_synapse_prompt(
+        self, category: str, file: str, content: str, commit_message: str
+    ) -> dict[str, object]:
+        """
+        Update a Synapse prompt and commit/push to remote.
+
+        Args:
+            category: Category name (e.g., "python")
+            file: Prompt filename
+            content: New content for the prompt
+            commit_message: Git commit message
+
+        Returns:
+            Dict with update status
+        """
+        try:
+            if not self.synapse_path.exists():
+                return {"status": "error", "error": "Synapse not initialized"}
+
+            prompt_path = await self.prompts_loader.create_prompt_file(
+                category, file, content
+            )
+            result = await self.repository.update_file(prompt_path, commit_message)
+
+            if result["status"] == "success":
+                result["category"] = category
+                result["file"] = file
+                result["message"] = commit_message
+                result["type"] = "prompt"
+
+            return result
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e),
+                "action": "update_synapse_prompt",
+            }

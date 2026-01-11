@@ -48,7 +48,7 @@ class TestRulesManagerInitialization:
         assert manager.metadata_index == mock_metadata_index
         assert manager.token_counter == mock_token_counter
         assert manager.rules_folder is None
-        assert manager.shared_rules_manager is None
+        assert manager.synapse_manager is None
         assert manager.indexer is not None
 
     def test_initialization_with_custom_rules_folder(
@@ -71,16 +71,16 @@ class TestRulesManagerInitialization:
         # Assert
         assert manager.rules_folder == ".cursorrules"
 
-    def test_initialization_with_shared_rules_manager(
+    def test_initialization_with_synapse_manager(
         self,
         tmp_path: Path,
         mock_file_system: "FileSystemManager",
         mock_metadata_index: "MetadataIndex",
         mock_token_counter: "TokenCounter",
     ):
-        """Test initialization with shared rules manager."""
+        """Test initialization with synapse manager."""
         # Arrange
-        mock_shared_rules = MagicMock()
+        mock_synapse = MagicMock()
 
         # Act
         manager = RulesManager(
@@ -88,11 +88,11 @@ class TestRulesManagerInitialization:
             file_system=mock_file_system,
             metadata_index=mock_metadata_index,
             token_counter=mock_token_counter,
-            shared_rules_manager=mock_shared_rules,
+            synapse_manager=mock_synapse,
         )
 
         # Assert
-        assert manager.shared_rules_manager == mock_shared_rules
+        assert manager.synapse_manager == mock_synapse
 
 
 class TestInitialize:

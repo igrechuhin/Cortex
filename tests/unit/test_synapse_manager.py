@@ -1,4 +1,4 @@
-"""Unit tests for SharedRulesManager - Phase 6"""
+"""Unit tests for SynapseManager"""
 
 import json
 from pathlib import Path
@@ -8,24 +8,24 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 from cortex.rules.context_detector import ContextDetector
-from cortex.rules.shared_rules_manager import SharedRulesManager
+from cortex.rules.synapse_manager import SynapseManager
 
 
-class TestSharedRulesManagerInitialization:
-    """Test SharedRulesManager initialization."""
+class TestSynapseManagerInitialization:
+    """Test SynapseManager initialization."""
 
     def test_initialization_sets_up_paths(self, temp_project_root: Path):
         """Test manager initializes with correct paths."""
         # Arrange & Act
-        manager = SharedRulesManager(
+        manager = SynapseManager(
             project_root=temp_project_root,
-            shared_rules_folder=".shared-rules",
+            synapse_folder=".shared-rules",
             local_rules_folder=".cursorrules",
         )
 
         # Assert
         assert manager.project_root == temp_project_root
-        assert manager.shared_rules_path == temp_project_root / ".shared-rules"
+        assert manager.synapse_path == temp_project_root / ".shared-rules"
         assert manager.local_rules_path == temp_project_root / ".cursorrules"
         assert manager.manifest is None
         assert manager.last_sync is None
@@ -34,14 +34,14 @@ class TestSharedRulesManagerInitialization:
     def test_initialization_with_custom_folders(self, temp_project_root: Path):
         """Test initialization with custom folder names."""
         # Arrange & Act
-        manager = SharedRulesManager(
+        manager = SynapseManager(
             project_root=temp_project_root,
-            shared_rules_folder="rules/shared",
+            synapse_folder="rules/shared",
             local_rules_folder="rules/local",
         )
 
         # Assert
-        assert manager.shared_rules_path == temp_project_root / "rules/shared"
+        assert manager.synapse_path == temp_project_root / "rules/shared"
         assert manager.local_rules_path == temp_project_root / "rules/local"
 
 
@@ -52,7 +52,7 @@ class TestInitializeSharedRules:
     async def test_initialize_creates_new_submodule(self, temp_project_root: Path):
         """Test initializing new git submodule."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
         repo_url = "https://github.com/example/shared-rules.git"
 
         # Mock git command
@@ -60,10 +60,9 @@ class TestInitializeSharedRules:
             return_value={"success": True, "stdout": "", "stderr": ""}
         )
 
-        # Create manifest
-        manifest_path = manager.shared_rules_path
-        manifest_path.mkdir(parents=True, exist_ok=True)
-        manifest_file = manifest_path / "rules-manifest.json"
+        # Create rules directory and manifest
+        manager.rules_path.mkdir(parents=True, exist_ok=True)
+        manifest_file = manager.rules_path / "rules-manifest.json"
         manifest_data: dict[str, object] = {
             "version": "1.0",
             "categories": {"generic": {"rules": []}},
@@ -71,7 +70,7 @@ class TestInitializeSharedRules:
         _ = manifest_file.write_text(json.dumps(manifest_data))
 
         # Act
-        result = await manager.initialize_shared_rules(repo_url, force=False)
+        result = await manager.initialize_synapse(repo_url, force=False)
 
         # Assert
         assert result["status"] == "success"
@@ -81,14 +80,14 @@ class TestInitializeSharedRules:
     async def test_initialize_updates_existing_submodule(self, temp_project_root: Path):
         """Test updating existing submodule."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
         repo_url = "https://github.com/example/shared-rules.git"
 
-        # Create existing directory
-        manager.shared_rules_path.mkdir(parents=True, exist_ok=True)
+        # Create existing rules directory
+        manager.rules_path.mkdir(parents=True, exist_ok=True)
 
-        # Create manifest
-        manifest_file = manager.shared_rules_path / "rules-manifest.json"
+        # Create manifest in rules directory
+        manifest_file = manager.rules_path / "rules-manifest.json"
         manifest_data: dict[str, object] = {
             "version": "1.0",
             "categories": {"python": {"rules": []}, "generic": {"rules": []}},
@@ -101,7 +100,7 @@ class TestInitializeSharedRules:
         )
 
         # Act
-        result = await manager.initialize_shared_rules(repo_url, force=False)
+        result = await manager.initialize_synapse(repo_url, force=False)
 
         # Assert
         assert result["status"] == "success"
@@ -115,23 +114,23 @@ class TestInitializeSharedRules:
     async def test_initialize_with_force_reinitializes(self, temp_project_root: Path):
         """Test force re-initialization."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
         repo_url = "https://github.com/example/shared-rules.git"
 
-        # Create existing directory
-        manager.shared_rules_path.mkdir(parents=True, exist_ok=True)
+        # Create existing rules directory
+        manager.rules_path.mkdir(parents=True, exist_ok=True)
 
         # Mock git commands
         manager.run_git_command = AsyncMock(
             return_value={"success": True, "stdout": "", "stderr": ""}
         )
 
-        # Create manifest
-        manifest_file = manager.shared_rules_path / "rules-manifest.json"
+        # Create manifest in rules directory
+        manifest_file = manager.rules_path / "rules-manifest.json"
         _ = manifest_file.write_text(json.dumps({"version": "1.0", "categories": {}}))
 
         # Act
-        result = await manager.initialize_shared_rules(repo_url, force=True)
+        result = await manager.initialize_synapse(repo_url, force=True)
 
         # Assert
         assert result["status"] == "success"
@@ -140,7 +139,7 @@ class TestInitializeSharedRules:
     async def test_initialize_handles_git_failure(self, temp_project_root: Path):
         """Test handling git command failure."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
         repo_url = "https://github.com/example/shared-rules.git"
 
         # Mock git command failure
@@ -154,7 +153,7 @@ class TestInitializeSharedRules:
         )
 
         # Act
-        result = await manager.initialize_shared_rules(repo_url, force=False)
+        result = await manager.initialize_synapse(repo_url, force=False)
 
         # Assert
         assert result["status"] == "error"
@@ -168,11 +167,11 @@ class TestSyncSharedRules:
     async def test_sync_pulls_changes(self, temp_project_root: Path):
         """Test syncing pulls changes from remote."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
-        manager.shared_rules_path.mkdir(parents=True, exist_ok=True)
+        manager = SynapseManager(project_root=temp_project_root)
+        manager.rules_path.mkdir(parents=True, exist_ok=True)
 
-        # Create manifest
-        manifest_file = manager.shared_rules_path / "rules-manifest.json"
+        # Create manifest in rules directory
+        manifest_file = manager.rules_path / "rules-manifest.json"
         manifest_data: dict[str, object] = {
             "version": "1.0",
             "categories": {"generic": {"rules": []}},
@@ -185,7 +184,7 @@ class TestSyncSharedRules:
         )
 
         # Act
-        result = await manager.sync_shared_rules(pull=True, push=False)
+        result = await manager.sync_synapse(pull=True, push=False)
 
         # Assert
         assert result["status"] == "success"
@@ -196,11 +195,11 @@ class TestSyncSharedRules:
     async def test_sync_pushes_changes(self, temp_project_root: Path):
         """Test syncing pushes changes to remote."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
-        manager.shared_rules_path.mkdir(parents=True, exist_ok=True)
+        manager = SynapseManager(project_root=temp_project_root)
+        manager.rules_path.mkdir(parents=True, exist_ok=True)
 
-        # Create manifest
-        manifest_file = manager.shared_rules_path / "rules-manifest.json"
+        # Create manifest in rules directory
+        manifest_file = manager.rules_path / "rules-manifest.json"
         _ = manifest_file.write_text(json.dumps({"version": "1.0", "categories": {}}))
 
         # Mock git commands
@@ -209,7 +208,7 @@ class TestSyncSharedRules:
         )
 
         # Act
-        result = await manager.sync_shared_rules(pull=False, push=True)
+        result = await manager.sync_synapse(pull=False, push=True)
 
         # Assert
         assert result["status"] == "success"
@@ -219,11 +218,11 @@ class TestSyncSharedRules:
     async def test_sync_detects_changes(self, temp_project_root: Path):
         """Test sync detects added/modified/deleted files."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
-        manager.shared_rules_path.mkdir(parents=True, exist_ok=True)
+        manager = SynapseManager(project_root=temp_project_root)
+        manager.rules_path.mkdir(parents=True, exist_ok=True)
 
-        # Create manifest
-        manifest_file = manager.shared_rules_path / "rules-manifest.json"
+        # Create manifest in rules directory
+        manifest_file = manager.rules_path / "rules-manifest.json"
         _ = manifest_file.write_text(json.dumps({"version": "1.0", "categories": {}}))
 
         # Mock git commands
@@ -240,7 +239,7 @@ class TestSyncSharedRules:
         )
 
         # Act
-        result = await manager.sync_shared_rules(pull=True, push=False)
+        result = await manager.sync_synapse(pull=True, push=False)
 
         # Assert
         assert result["status"] == "success"
@@ -254,10 +253,10 @@ class TestSyncSharedRules:
     async def test_sync_without_submodule_returns_error(self, temp_project_root: Path):
         """Test sync fails gracefully if submodule not initialized."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
 
         # Act
-        result = await manager.sync_shared_rules(pull=True, push=False)
+        result = await manager.sync_synapse(pull=True, push=False)
 
         # Assert
         assert result["status"] == "error"
@@ -273,8 +272,8 @@ class TestLoadRulesManifest:
     async def test_load_manifest_parses_json(self, temp_project_root: Path):
         """Test loading and parsing manifest file."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
-        manager.shared_rules_path.mkdir(parents=True, exist_ok=True)
+        manager = SynapseManager(project_root=temp_project_root)
+        manager.rules_path.mkdir(parents=True, exist_ok=True)
 
         manifest_data: dict[str, object] = {
             "version": "1.0",
@@ -283,7 +282,7 @@ class TestLoadRulesManifest:
                 "generic": {"description": "Generic rules", "rules": []},
             },
         }
-        manifest_file = manager.shared_rules_path / "rules-manifest.json"
+        manifest_file = manager.rules_path / "rules-manifest.json"
         _ = manifest_file.write_text(json.dumps(manifest_data))
 
         # Act
@@ -304,7 +303,7 @@ class TestLoadRulesManifest:
     ):
         """Test loading returns None if manifest doesn't exist."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
 
         # Act
         result = await manager.load_rules_manifest()
@@ -317,10 +316,10 @@ class TestLoadRulesManifest:
     async def test_load_manifest_handles_invalid_json(self, temp_project_root: Path):
         """Test loading handles invalid JSON gracefully."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
-        manager.shared_rules_path.mkdir(parents=True, exist_ok=True)
+        manager = SynapseManager(project_root=temp_project_root)
+        manager.rules_path.mkdir(parents=True, exist_ok=True)
 
-        manifest_file = manager.shared_rules_path / "rules-manifest.json"
+        manifest_file = manager.rules_path / "rules-manifest.json"
         _ = manifest_file.write_text("{ invalid json }")
 
         # Act
@@ -338,7 +337,7 @@ class TestDetectContext:
     async def test_detect_context_delegates_to_detector(self, temp_project_root: Path):
         """Test context detection delegates to ContextDetector."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
         task = "Write Python tests"
 
         # Act
@@ -353,7 +352,7 @@ class TestDetectContext:
     async def test_detect_context_with_files(self, temp_project_root: Path):
         """Test context detection with project files."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
         files = [Path("src/main.py"), Path("src/utils.py")]
 
         # Act
@@ -372,7 +371,7 @@ class TestGetRelevantCategories:
     async def test_get_relevant_categories_delegates(self, temp_project_root: Path):
         """Test getting relevant categories delegates to detector."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
         context: dict[str, object] = {
             "languages": {"python"},
             "frameworks": {"django"},
@@ -397,10 +396,10 @@ class TestLoadCategory:
     async def test_load_category_loads_rules(self, temp_project_root: Path):
         """Test loading rules from a category."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
 
-        # Create category directory and rule file
-        python_dir = manager.shared_rules_path / "python"
+        # Create category directory and rule file in rules_path
+        python_dir = manager.rules_path / "python"
         python_dir.mkdir(parents=True, exist_ok=True)
         rule_file = python_dir / "style.md"
         _ = rule_file.write_text("# Python Style Guide\n\nUse PEP 8.")
@@ -441,7 +440,7 @@ class TestLoadCategory:
     ):
         """Test loading returns empty list for nonexistent category."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
         manager.manifest = {"version": "1.0", "categories": {}}
 
         # Act
@@ -456,11 +455,11 @@ class TestLoadCategory:
     ):
         """Test loading category loads manifest if not already loaded."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
-        manager.shared_rules_path.mkdir(parents=True, exist_ok=True)
+        manager = SynapseManager(project_root=temp_project_root)
+        manager.rules_path.mkdir(parents=True, exist_ok=True)
 
-        # Create manifest
-        manifest_file = manager.shared_rules_path / "rules-manifest.json"
+        # Create manifest in rules directory
+        manifest_file = manager.rules_path / "rules-manifest.json"
         manifest_data: dict[str, object] = {
             "version": "1.0",
             "categories": {"generic": {"rules": []}},
@@ -480,10 +479,10 @@ class TestLoadCategory:
     async def test_load_category_skips_missing_files(self, temp_project_root: Path):
         """Test loading skips rules with missing files."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
 
-        # Create category directory
-        python_dir = manager.shared_rules_path / "python"
+        # Create category directory in rules_path
+        python_dir = manager.rules_path / "python"
         python_dir.mkdir(parents=True, exist_ok=True)
 
         # Create manifest with missing file reference
@@ -509,7 +508,7 @@ class TestMergeRules:
     async def test_merge_local_overrides_shared(self, temp_project_root: Path):
         """Test local rules override shared rules."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
 
         shared_rules: list[dict[str, object]] = [
             {"file": "style.md", "priority": 50, "source": "shared"},
@@ -536,7 +535,7 @@ class TestMergeRules:
     async def test_merge_shared_overrides_local(self, temp_project_root: Path):
         """Test shared rules override local rules."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
 
         shared_rules: list[dict[str, object]] = [
             {"file": "security.md", "priority": 95, "source": "shared"},
@@ -559,7 +558,7 @@ class TestMergeRules:
     async def test_merge_priority_based(self, temp_project_root: Path):
         """Test priority-based merging."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
 
         shared_rules: list[dict[str, object]] = [
             {"file": "rule1.md", "priority": 80, "source": "shared"},
@@ -584,7 +583,7 @@ class TestMergeRules:
     async def test_merge_handles_empty_lists(self, temp_project_root: Path):
         """Test merging handles empty rule lists."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
 
         # Act
         merged = await manager.merge_rules([], [], priority="local_overrides_shared")
@@ -597,14 +596,14 @@ class TestUpdateSharedRule:
     """Test updating shared rules."""
 
     @pytest.mark.asyncio
-    async def test_update_shared_rule_creates_file(self, temp_project_root: Path):
+    async def test_update_synapse_rule_creates_file(self, temp_project_root: Path):
         """Test updating shared rule creates file if needed."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
-        manager.shared_rules_path.mkdir(parents=True, exist_ok=True)
+        manager = SynapseManager(project_root=temp_project_root)
+        manager.synapse_path.mkdir(parents=True, exist_ok=True)
 
-        # Create category directory
-        python_dir = manager.shared_rules_path / "python"
+        # Create category directory in rules_path
+        python_dir = manager.rules_path / "python"
         python_dir.mkdir(parents=True, exist_ok=True)
 
         # Mock git commands
@@ -613,7 +612,7 @@ class TestUpdateSharedRule:
         )
 
         # Act
-        result = await manager.update_shared_rule(
+        result = await manager.update_synapse_rule(
             category="python",
             file="new-rule.md",
             content="# New Rule\n\nContent here.",
@@ -626,13 +625,13 @@ class TestUpdateSharedRule:
         assert rule_path.exists()
 
     @pytest.mark.asyncio
-    async def test_update_shared_rule_modifies_existing(self, temp_project_root: Path):
+    async def test_update_synapse_rule_modifies_existing(self, temp_project_root: Path):
         """Test updating existing rule file."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
 
-        # Create category and existing rule
-        python_dir = manager.shared_rules_path / "python"
+        # Create category and existing rule in rules_path
+        python_dir = manager.rules_path / "python"
         python_dir.mkdir(parents=True, exist_ok=True)
         rule_file = python_dir / "existing.md"
         _ = rule_file.write_text("# Old Content")
@@ -643,7 +642,7 @@ class TestUpdateSharedRule:
         )
 
         # Act
-        result = await manager.update_shared_rule(
+        result = await manager.update_synapse_rule(
             category="python",
             file="existing.md",
             content="# Updated Content",
@@ -655,13 +654,15 @@ class TestUpdateSharedRule:
         assert "Updated Content" in rule_file.read_text()
 
     @pytest.mark.asyncio
-    async def test_update_shared_rule_commits_and_pushes(self, temp_project_root: Path):
+    async def test_update_synapse_rule_commits_and_pushes(
+        self, temp_project_root: Path
+    ):
         """Test updating rule commits and pushes changes."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
-        manager.shared_rules_path.mkdir(parents=True, exist_ok=True)
+        manager = SynapseManager(project_root=temp_project_root)
+        manager.synapse_path.mkdir(parents=True, exist_ok=True)
 
-        generic_dir = manager.shared_rules_path / "generic"
+        generic_dir = manager.rules_path / "generic"
         generic_dir.mkdir(parents=True, exist_ok=True)
 
         # Mock git commands
@@ -674,7 +675,7 @@ class TestUpdateSharedRule:
         manager.run_git_command = mock_git_command
 
         # Act
-        result = await manager.update_shared_rule(
+        result = await manager.update_synapse_rule(
             category="generic",
             file="test.md",
             content="# Test",
@@ -695,14 +696,14 @@ class TestCreateSharedRule:
     """Test creating new shared rules."""
 
     @pytest.mark.asyncio
-    async def test_create_shared_rule_creates_new_file(self, temp_project_root: Path):
+    async def test_create_synapse_rule_creates_new_file(self, temp_project_root: Path):
         """Test creating a brand new shared rule."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
-        manager.shared_rules_path.mkdir(parents=True, exist_ok=True)
+        manager = SynapseManager(project_root=temp_project_root)
+        manager.rules_path.mkdir(parents=True, exist_ok=True)
 
-        # Create manifest
-        manifest_file = manager.shared_rules_path / "rules-manifest.json"
+        # Create manifest in rules directory
+        manifest_file = manager.rules_path / "rules-manifest.json"
         manifest_data: dict[str, object] = {
             "version": "1.0",
             "categories": {"python": {"rules": []}},
@@ -710,8 +711,8 @@ class TestCreateSharedRule:
         _ = manifest_file.write_text(json.dumps(manifest_data))
         manager.manifest = manifest_data
 
-        # Create category directory
-        python_dir = manager.shared_rules_path / "python"
+        # Create category directory in rules_path
+        python_dir = manager.rules_path / "python"
         python_dir.mkdir(parents=True, exist_ok=True)
 
         # Mock git commands
@@ -720,7 +721,7 @@ class TestCreateSharedRule:
         )
 
         # Act
-        result = await manager.create_shared_rule(
+        result = await manager.create_synapse_rule(
             category="python",
             filename="new-rule.md",
             content="# New Rule",
@@ -747,7 +748,7 @@ class TestRunGitCommand:
     async def test_run_git_command_executes_successfully(self, temp_project_root: Path):
         """Test running git command successfully."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
 
         # Mock asyncio.create_subprocess_exec
         mock_process = Mock()
@@ -768,7 +769,7 @@ class TestRunGitCommand:
     async def test_run_git_command_handles_failure(self, temp_project_root: Path):
         """Test running git command handles failure."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
 
         # Mock asyncio.create_subprocess_exec
         mock_process = Mock()
@@ -795,7 +796,7 @@ class TestEdgeCases:
     async def test_load_category_with_corrupted_manifest(self, temp_project_root: Path):
         """Test loading category with invalid manifest data."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
         manager.manifest = {"version": "1.0", "categories": "not-a-dict"}
 
         # Act
@@ -808,7 +809,7 @@ class TestEdgeCases:
     async def test_merge_rules_with_missing_priority(self, temp_project_root: Path):
         """Test merging rules with missing priority field."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
+        manager = SynapseManager(project_root=temp_project_root)
 
         shared_rules: list[dict[str, object]] = [
             {"file": "rule1.md", "source": "shared"}
@@ -827,11 +828,11 @@ class TestEdgeCases:
     async def test_sync_with_empty_diff_output(self, temp_project_root: Path):
         """Test sync handles empty diff output."""
         # Arrange
-        manager = SharedRulesManager(project_root=temp_project_root)
-        manager.shared_rules_path.mkdir(parents=True, exist_ok=True)
+        manager = SynapseManager(project_root=temp_project_root)
+        manager.rules_path.mkdir(parents=True, exist_ok=True)
 
-        # Create manifest
-        manifest_file = manager.shared_rules_path / "rules-manifest.json"
+        # Create manifest in rules directory
+        manifest_file = manager.rules_path / "rules-manifest.json"
         _ = manifest_file.write_text(json.dumps({"version": "1.0", "categories": {}}))
 
         # Mock git commands with empty diff
@@ -844,7 +845,7 @@ class TestEdgeCases:
         )
 
         # Act
-        result = await manager.sync_shared_rules(pull=True, push=False)
+        result = await manager.sync_synapse(pull=True, push=False)
 
         # Assert
         assert result["status"] == "success"

@@ -18,14 +18,14 @@ from .rules_indexer import RulesIndexer
 
 # Import with TYPE_CHECKING to avoid circular imports
 if TYPE_CHECKING:
-    from cortex.rules.shared_rules_manager import SharedRulesManager
+    from cortex.rules.synapse_manager import SynapseManager
 
 
 class RulesManager:
     """
     Manage custom rules from project folders.
 
-    Enhanced to support both local rules and shared rules from git submodules.
+    Enhanced to support both local rules and Synapse rules from git submodules.
     Delegates indexing operations to RulesIndexer.
     """
 
@@ -37,7 +37,7 @@ class RulesManager:
         token_counter: TokenCounter,
         rules_folder: str | None = None,
         reindex_interval_minutes: int = 30,
-        shared_rules_manager: "SharedRulesManager | None" = None,
+        synapse_manager: "SynapseManager | None" = None,
     ):
         """
         Initialize rules manager.
@@ -49,14 +49,14 @@ class RulesManager:
             token_counter: Token counter
             rules_folder: Optional custom rules folder path (relative to project root)
             reindex_interval_minutes: How often to reindex rules (default: 30 min)
-            shared_rules_manager: Optional shared rules manager for cross-project rules
+            synapse_manager: Optional Synapse manager for cross-project rules
         """
         self.project_root: Path = Path(project_root)
         self.file_system: FileSystemManager = file_system
         self.metadata_index: MetadataIndex = metadata_index
         self.token_counter: TokenCounter = token_counter
         self.rules_folder: str | None = rules_folder
-        self.shared_rules_manager: SharedRulesManager | None = shared_rules_manager
+        self.synapse_manager: SynapseManager | None = synapse_manager
 
         # Create indexer for rule file management
         self.indexer: RulesIndexer = RulesIndexer(
@@ -135,7 +135,7 @@ class RulesManager:
         """
         result = self._initialize_result_structure()
 
-        if self.shared_rules_manager and context_aware:
+        if self.synapse_manager and context_aware:
             return await self._get_hybrid_rules(
                 result,
                 task_description,
@@ -195,8 +195,8 @@ class RulesManager:
         project_files: list[Path] | None,
     ) -> dict[str, object]:
         """Detect context and update result structure."""
-        assert self.shared_rules_manager is not None  # Already checked in caller
-        context = await self.shared_rules_manager.detect_context(
+        assert self.synapse_manager is not None  # Already checked in caller
+        context = await self.synapse_manager.detect_context(
             task_description, project_files
         )
         result["context"] = context
@@ -221,8 +221,8 @@ class RulesManager:
         )
 
         # Merge rules
-        assert self.shared_rules_manager is not None  # Already checked in caller
-        merged_rules = await self.shared_rules_manager.merge_rules(
+        assert self.synapse_manager is not None  # Already checked in caller
+        merged_rules = await self.synapse_manager.merge_rules(
             shared_rules=shared_rules,
             local_rules=local_rules,
             priority=rule_priority,
@@ -237,12 +237,12 @@ class RulesManager:
         self, context: dict[str, object]
     ) -> list[dict[str, object]]:
         """Load shared rules based on detected context."""
-        assert self.shared_rules_manager is not None  # Already checked in caller
-        categories = await self.shared_rules_manager.get_relevant_categories(context)
+        assert self.synapse_manager is not None  # Already checked in caller
+        categories = await self.synapse_manager.get_relevant_categories(context)
 
         shared_rules: list[dict[str, object]] = []
         for category in categories:
-            category_rules = await self.shared_rules_manager.load_category(category)
+            category_rules = await self.synapse_manager.load_category(category)
             shared_rules.extend(category_rules)
 
         # Tag rules with source

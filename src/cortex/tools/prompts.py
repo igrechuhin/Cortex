@@ -186,48 +186,63 @@ def setup_cursor_integration() -> str:
     return _SETUP_CURSOR_INTEGRATION_PROMPT
 
 
-_SETUP_SHARED_RULES_PROMPT_TEMPLATE = """Please setup shared rules in my project.
+_SETUP_SYNAPSE_PROMPT_TEMPLATE = """Please setup Synapse in my project.
 
-I want to use shared rules from: {shared_rules_repo_url}
+I want to use Synapse from: {synapse_repo_url}
+
+Synapse is a shared repository that contains both rules and prompts for cross-project sharing.
 
 I need you to:
-1. Add the shared rules repository as a Git submodule
+1. Add the Synapse repository as a Git submodule
 2. Clone it to .cortex/rules/shared/
 3. Create the rules index
-4. Validate the rules structure
-5. Merge shared rules with my local rules
+4. Validate the structure (should have rules/ and prompts/ subdirectories)
+5. Load the rules and prompts manifests
 
 Commands to run:
-git submodule add {shared_rules_repo_url} .cortex/rules/shared/
+git submodule add {synapse_repo_url} .cortex/rules/shared/
 git submodule update --init --recursive
+
+Expected structure:
+.cortex/rules/shared/
+├── LICENSE
+├── rules/
+│   ├── rules-manifest.json
+│   ├── general/
+│   ├── python/
+│   └── ...
+└── prompts/
+    ├── prompts-manifest.json
+    ├── general/
+    ├── python/
+    └── ...
 
 Expected output format:
 {{
   "status": "success",
-  "message": "Shared rules setup successfully",
-  "shared_rules_path": ".cortex/rules/shared/",
+  "message": "Synapse setup successfully",
+  "synapse_path": ".cortex/rules/shared/",
   "rules_count": <count>,
-  "submodule_url": "{shared_rules_repo_url}",
+  "prompts_count": <count>,
+  "submodule_url": "{synapse_repo_url}",
   "commit": "<commit_hash>"
 }}"""
 
 
 @mcp.prompt()
-def setup_shared_rules(shared_rules_repo_url: str) -> str:
-    """Setup shared rules via Git submodule.
+def setup_synapse(synapse_repo_url: str) -> str:
+    """Setup Synapse via Git submodule.
 
-    Adds a shared rules repository as a Git submodule to enable
-    cross-project rule sharing at .cortex/rules/shared/.
+    Adds a Synapse repository as a Git submodule to enable
+    cross-project sharing of rules and prompts at .cortex/rules/shared/.
 
     Args:
-        shared_rules_repo_url: URL of the shared rules repository
+        synapse_repo_url: URL of the Synapse repository
 
     Returns:
-        Prompt message guiding the assistant to setup shared rules
+        Prompt message guiding the assistant to setup Synapse
     """
-    return _SETUP_SHARED_RULES_PROMPT_TEMPLATE.format(
-        shared_rules_repo_url=shared_rules_repo_url
-    )
+    return _SETUP_SYNAPSE_PROMPT_TEMPLATE.format(synapse_repo_url=synapse_repo_url)
 
 
 _CHECK_MIGRATION_STATUS_PROMPT = """Please check if my project needs migration to the .cortex/ structure.

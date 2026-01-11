@@ -1,7 +1,7 @@
 """
-Rules Repository Manager for MCP Memory Bank.
+Synapse Repository Manager for MCP Memory Bank.
 
-This module handles git operations and repository management for shared rules,
+This module handles git operations and repository management for Synapse,
 including initialization, synchronization, and update operations.
 """
 
@@ -12,9 +12,9 @@ from pathlib import Path
 from typing import cast
 
 
-class RulesRepository:
+class SynapseRepository:
     """
-    Manage git repository operations for shared rules.
+    Manage git repository operations for Synapse.
 
     Features:
     - Git submodule initialization and updates
@@ -26,21 +26,21 @@ class RulesRepository:
     def __init__(
         self,
         project_root: Path,
-        shared_rules_path: Path,
+        synapse_path: Path,
         git_command_runner: (
             Callable[[list[str]], Awaitable[dict[str, object]]] | None
         ) = None,
     ):
         """
-        Initialize rules repository manager.
+        Initialize Synapse repository manager.
 
         Args:
             project_root: Root directory of the project
-            shared_rules_path: Path to shared rules folder (submodule)
+            synapse_path: Path to Synapse folder (submodule)
             git_command_runner: Optional callable for running git commands (for testing)
         """
         self.project_root: Path = Path(project_root)
-        self.shared_rules_path: Path = shared_rules_path
+        self.synapse_path: Path = synapse_path
         self.last_sync: datetime | None = None
         self._git_command_runner: (
             Callable[[list[str]], Awaitable[dict[str, object]]] | None
@@ -123,17 +123,17 @@ class RulesRepository:
         self, repo_url: str, force: bool = False
     ) -> dict[str, object]:
         """
-        Initialize shared rules as git submodule.
+        Initialize Synapse as git submodule.
 
         Args:
-            repo_url: Git repository URL for shared rules
+            repo_url: Git repository URL for Synapse
             force: Force re-initialization even if exists
 
         Returns:
             Dict with initialization status and details
         """
         try:
-            if self.shared_rules_path.exists() and not force:
+            if self.synapse_path.exists() and not force:
                 return await self._update_existing_submodule(repo_url)
 
             return await self._add_new_submodule(repo_url, force)
@@ -142,7 +142,7 @@ class RulesRepository:
             return {
                 "status": "error",
                 "error": str(e),
-                "action": "initialize_shared_rules",
+                "action": "initialize_synapse",
             }
 
     async def _update_existing_submodule(self, repo_url: str) -> dict[str, object]:
@@ -161,7 +161,7 @@ class RulesRepository:
                 "update",
                 "--init",
                 "--recursive",
-                str(self.shared_rules_path.relative_to(self.project_root)),
+                str(self.synapse_path.relative_to(self.project_root)),
             ]
         )
 
@@ -170,7 +170,7 @@ class RulesRepository:
                 "status": "success",
                 "action": "updated_existing",
                 "repo_url": repo_url,
-                "local_path": str(self.shared_rules_path),
+                "local_path": str(self.synapse_path),
                 "submodule_added": False,
             }
 
@@ -198,7 +198,7 @@ class RulesRepository:
                 "add",
                 "-f" if force else "",
                 repo_url,
-                str(self.shared_rules_path.relative_to(self.project_root)),
+                str(self.synapse_path.relative_to(self.project_root)),
             ]
         )
 
@@ -218,7 +218,7 @@ class RulesRepository:
             "status": "success",
             "action": "initialized",
             "repo_url": repo_url,
-            "local_path": str(self.shared_rules_path),
+            "local_path": str(self.synapse_path),
             "submodule_added": True,
         }
 
@@ -236,10 +236,10 @@ class RulesRepository:
             Dict with sync status and changes
         """
         try:
-            if not self.shared_rules_path.exists():
+            if not self.synapse_path.exists():
                 return {
                     "status": "error",
-                    "error": "Shared rules folder not found. Run initialize_shared_rules first.",
+                    "error": "Synapse folder not found. Run initialize_synapse first.",
                 }
 
             changes: dict[str, list[str]] = {"added": [], "modified": [], "deleted": []}
@@ -264,7 +264,7 @@ class RulesRepository:
             }
 
         except Exception as e:
-            return {"status": "error", "error": str(e), "action": "sync_shared_rules"}
+            return {"status": "error", "error": str(e), "action": "sync_synapse"}
 
     async def _pull_changes(
         self, changes: dict[str, list[str]]
@@ -284,7 +284,7 @@ class RulesRepository:
                 "update",
                 "--remote",
                 "--merge",
-                str(self.shared_rules_path.relative_to(self.project_root)),
+                str(self.synapse_path.relative_to(self.project_root)),
             ]
         )
 
@@ -307,7 +307,7 @@ class RulesRepository:
             [
                 "git",
                 "-C",
-                str(self.shared_rules_path),
+                str(self.synapse_path),
                 "diff",
                 "--name-status",
                 "HEAD@{1}",
@@ -368,7 +368,7 @@ class RulesRepository:
             return False
 
         result = await self.run_git_command(
-            ["git", "-C", str(self.shared_rules_path), "push"]
+            ["git", "-C", str(self.synapse_path), "push"]
         )
         return cast(bool, result.get("success", False))
 
@@ -378,9 +378,9 @@ class RulesRepository:
             [
                 "git",
                 "-C",
-                str(self.shared_rules_path),
+                str(self.synapse_path),
                 "add",
-                str(file_path.relative_to(self.shared_rules_path)),
+                str(file_path.relative_to(self.synapse_path)),
             ]
         )
         if not add_result["success"]:
@@ -396,7 +396,7 @@ class RulesRepository:
             [
                 "git",
                 "-C",
-                str(self.shared_rules_path),
+                str(self.synapse_path),
                 "commit",
                 "-m",
                 commit_message,
@@ -409,7 +409,7 @@ class RulesRepository:
     async def _git_push_changes(self) -> bool:
         """Push committed changes to remote."""
         push_result = await self.run_git_command(
-            ["git", "-C", str(self.shared_rules_path), "push"]
+            ["git", "-C", str(self.synapse_path), "push"]
         )
         return cast(bool, push_result["success"])
 
@@ -431,7 +431,7 @@ class RulesRepository:
         Add, commit, and push a file change.
 
         Args:
-            file_path: Path to file (relative to shared_rules_path)
+            file_path: Path to file (relative to synapse_path)
             commit_message: Git commit message
 
         Returns:
@@ -457,7 +457,7 @@ class RulesRepository:
             Commit hash or None if failed
         """
         hash_result = await self.run_git_command(
-            ["git", "-C", str(self.shared_rules_path), "rev-parse", "HEAD"]
+            ["git", "-C", str(self.synapse_path), "rev-parse", "HEAD"]
         )
         if hash_result["success"]:
             stdout_value = hash_result["stdout"]
