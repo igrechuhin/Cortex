@@ -98,6 +98,38 @@ async def _execute_single_attempt(
             return await func(*args, **kwargs)
 
 
+def _is_connection_error(e: Exception) -> bool:
+    """Check if exception is connection-related.
+
+    Args:
+        e: Exception to check
+
+    Returns:
+        True if exception is connection-related
+    """
+    connection_error_types = (
+        ConnectionError,
+        BrokenPipeError,
+        OSError,
+        RuntimeError,  # FastMCP may raise RuntimeError for connection issues
+    )
+
+    if isinstance(e, connection_error_types):
+        return True
+
+    error_message = str(e).lower()
+    connection_keywords = [
+        "connection",
+        "broken pipe",
+        "connection reset",
+        "tool not found",
+        "resource",
+        "stdio",
+    ]
+
+    return any(keyword in error_message for keyword in connection_keywords)
+
+
 async def _handle_retry_exception(
     func_name: str,
     timeout: float,
@@ -118,29 +150,7 @@ async def _handle_retry_exception(
             raise error
         return False, stored_exception
 
-    # Handle connection-related errors that should be retried
-    connection_error_types = (
-        ConnectionError,
-        BrokenPipeError,
-        OSError,
-        RuntimeError,  # FastMCP may raise RuntimeError for connection issues
-    )
-
-    # Check if it's a connection-related error by message content
-    is_connection_error = isinstance(e, connection_error_types)
-    error_message = str(e).lower()
-    connection_keywords = [
-        "connection",
-        "broken pipe",
-        "connection reset",
-        "tool not found",
-        "resource",
-        "stdio",
-    ]
-
-    if is_connection_error or any(
-        keyword in error_message for keyword in connection_keywords
-    ):
+    if _is_connection_error(e):
         error, stored_exception = await _handle_connection_error(func_name, attempt, e)
         if error:
             raise error

@@ -1,5 +1,60 @@
 # Progress Log: MCP Memory Bank
 
+## 2026-01-12: Commit Prompt Improvements and Function Length Fix
+
+### Summary (Commit Prompt Improvements and Function Length Fix)
+
+Fixed function length violation in `mcp_stability.py` and improved commit prompt to include code quality checks that match CI workflow requirements.
+
+### Changes Made (Commit Prompt Improvements and Function Length Fix)
+
+#### 1. Fixed `src/cortex/core/mcp_stability.py` - Function Length Violation
+
+- **Issue**: `_handle_retry_exception()` function exceeded 30-line limit (38 lines, excess: 8)
+- **Fix**: Extracted connection error detection logic into `_is_connection_error()` helper function
+- **Impact**: Function now complies with 30-line limit (reduced to 24 logical lines), improved code organization
+- **Lines**: 101-127
+
+#### 2. Enhanced `.cortex/synapse/prompts/commit.md` - Added Code Quality Checks
+
+- **Added**: Mandatory code quality checks step (Step 2) to commit procedure:
+  - File size check (max 400 lines) using `scripts/check_file_sizes.py`
+  - Function length check (max 30 lines) using `scripts/check_function_lengths.py`
+- **Added**: Code Quality Check Failure handling section with detailed fix procedures
+- **Updated**: Success criteria to include code quality checks
+- **Impact**: Commit procedure now matches CI quality gate requirements, prevents CI failures
+
+#### 3. Created `.cortex/plans/phase-3-infrastructure-validation.md` - Infrastructure Validation Plan
+
+- **Proposed**: Extension to Phase 3 validation tools to check project infrastructure consistency
+- **Identified Gap**: Current validation tools only check Memory Bank content, not infrastructure consistency
+- **Solution**: Add `check_type="infrastructure"` to validate commit prompt vs CI workflow alignment
+- **Impact**: Documents gap and proposes solution for proactive infrastructure validation
+
+#### 4. Updated `.cortex/memory-bank/roadmap.md` - Phase 3 Gap Documentation
+
+- **Added**: Note about Phase 3 validation tools gap (only validates Memory Bank content)
+- **Added**: Phase 3 Extension proposal for infrastructure validation
+- **Impact**: Documents the issue and proposed solution
+
+### Verification Results (Commit Prompt Improvements and Function Length Fix)
+
+- **Formatting Status**: ✅ PASS - All files properly formatted
+- **Type Check Status**: ✅ PASS - 0 errors, 0 warnings, 0 informations
+- **File Size Check**: ✅ PASS - All files within 400 line limit
+- **Function Length Check**: ✅ PASS - All functions within 30 line limit
+- **Test Status**: ✅ PASS - All 2270 tests passing (3 skipped)
+- **Coverage Status**: ✅ PASS - 90.24% coverage (exceeds 90% threshold)
+
+### Code Quality (Commit Prompt Improvements and Function Length Fix)
+
+- Fixed function length violation by extracting helper function
+- Improved commit prompt to include code quality checks matching CI
+- Added infrastructure validation plan to address validation gap
+- Maintained 100% test pass rate
+- Zero type errors
+- All code quality standards met
+
 ## 2026-01-12: MCP Connection Stability Improvements
 
 ### Summary (MCP Connection Stability Improvements)

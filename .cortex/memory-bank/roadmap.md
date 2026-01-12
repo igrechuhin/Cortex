@@ -112,7 +112,7 @@
 - **Focus**: Systematic verification of every tool one by one
   - Phase 1: Foundation Tools (5 tools) - 4 verified, 1 blocked
   - Phase 2: Link Management (4 tools) - 1 verified, 3 pending
-  - Phase 3: Validation & Quality (2 tools)
+  - Phase 3: Validation & Quality (2 tools) - ⚠️ **GAP IDENTIFIED**: Only validates Memory Bank content, missing infrastructure consistency validation
   - Phase 4: Token Optimization (6 tools)
   - Phase 5.1: Pattern Analysis (1 tool)
   - Phase 5.2: Refactoring Suggestions (1 tool)
@@ -141,6 +141,20 @@
 - **Impact**: Reduced total issues from 45 to 27 (-40%), medium-severity from 37 to 21 (-43%)
 - Address remaining medium-severity performance issues
 - Target performance score: 9.5/10+
+
+### Phase 3 Extension: Infrastructure Validation (PROPOSED)
+
+- **Status**: 📋 PROPOSED
+- **Priority**: High (Prevents CI failures from infrastructure drift)
+- **Plan**: `.cortex/plans/phase-3-infrastructure-validation.md`
+- **Problem**: Phase 3 validation tools only check Memory Bank content, not project infrastructure consistency
+- **Impact**: Issues like commit prompt missing CI checks are only caught by CI failures
+- **Solution**: Extend `validate` tool with `check_type="infrastructure"` to validate:
+  - Commit prompt vs CI workflow alignment
+  - Code quality standards consistency
+  - Documentation consistency
+  - Configuration consistency
+- **Estimated Effort**: 3-4 hours
 
 ### Phase 9.4+: Future Enhancements
 
