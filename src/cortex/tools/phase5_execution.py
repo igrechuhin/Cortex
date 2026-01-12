@@ -17,9 +17,10 @@ apply_refactoring() with action parameter.
 """
 
 import json
-from typing import Literal, cast
+from typing import Literal
 
 from cortex.managers.initialization import get_managers, get_project_root
+from cortex.managers.manager_utils import get_manager
 from cortex.refactoring.approval_manager import ApprovalManager
 from cortex.refactoring.learning_engine import LearningEngine
 from cortex.refactoring.refactoring_engine import (
@@ -38,7 +39,7 @@ async def _approve_refactoring(
     auto_apply: bool,
 ) -> dict[str, object]:
     """Approve a refactoring suggestion."""
-    approval_manager = cast(ApprovalManager, mgrs["approval_manager"])
+    approval_manager = await get_manager(mgrs, "approval_manager", ApprovalManager)
     return await approval_manager.approve_suggestion(
         suggestion_id=suggestion_id,
         user_comment=user_comment,
@@ -50,7 +51,9 @@ async def _get_suggestion(
     mgrs: dict[str, object], suggestion_id: str
 ) -> dict[str, object] | None:
     """Get a refactoring suggestion by ID."""
-    refactoring_engine = cast(RefactoringEngine, mgrs["refactoring_engine"])
+    refactoring_engine = await get_manager(
+        mgrs, "refactoring_engine", RefactoringEngine
+    )
     suggestion = await refactoring_engine.get_suggestion(suggestion_id)
     return suggestion.to_dict() if suggestion else None
 
@@ -62,7 +65,7 @@ async def _find_approval_id(
     if approval_id:
         return approval_id
 
-    approval_manager = cast(ApprovalManager, mgrs["approval_manager"])
+    approval_manager = await get_manager(mgrs, "approval_manager", ApprovalManager)
     approvals = await approval_manager.get_approvals_for_suggestion(suggestion_id)
     approved = [a for a in approvals if a["status"] == "approved"]
 
@@ -89,7 +92,9 @@ async def _execute_refactoring(
     validate_first: bool,
 ) -> dict[str, object]:
     """Execute an approved refactoring."""
-    refactoring_executor = cast(RefactoringExecutor, mgrs["refactoring_executor"])
+    refactoring_executor = await get_manager(
+        mgrs, "refactoring_executor", RefactoringExecutor
+    )
     return await refactoring_executor.execute_refactoring(
         suggestion_id=suggestion_id,
         approval_id=approval_id,
@@ -109,7 +114,9 @@ async def _mark_as_applied(
     if result.get("status") == "success" and not dry_run:
         execution_id_val = result.get("execution_id")
         if isinstance(execution_id_val, str):
-            approval_manager = cast(ApprovalManager, mgrs["approval_manager"])
+            approval_manager = await get_manager(
+                mgrs, "approval_manager", ApprovalManager
+            )
             _ = await approval_manager.mark_as_applied(
                 approval_id=approval_id, execution_id=execution_id_val
             )
@@ -156,7 +163,7 @@ async def _rollback_refactoring(
     dry_run: bool,
 ) -> dict[str, object]:
     """Rollback a previously applied refactoring."""
-    rollback_manager = cast(RollbackManager, mgrs["rollback_manager"])
+    rollback_manager = await get_manager(mgrs, "rollback_manager", RollbackManager)
     return await rollback_manager.rollback_refactoring(
         execution_id=execution_id,
         restore_snapshot=restore_snapshot,
@@ -482,13 +489,15 @@ async def apply_refactoring(
         return _create_execution_error_response(e)
 
 
-def _extract_feedback_managers(
+async def _extract_feedback_managers(
     mgrs: dict[str, object],
 ) -> tuple[LearningEngine, RefactoringEngine, ApprovalManager]:
     """Extract managers needed for feedback operations."""
-    learning_engine = cast(LearningEngine, mgrs["learning_engine"])
-    refactoring_engine = cast(RefactoringEngine, mgrs["refactoring_engine"])
-    approval_manager = cast(ApprovalManager, mgrs["approval_manager"])
+    learning_engine = await get_manager(mgrs, "learning_engine", LearningEngine)
+    refactoring_engine = await get_manager(
+        mgrs, "refactoring_engine", RefactoringEngine
+    )
+    approval_manager = await get_manager(mgrs, "approval_manager", ApprovalManager)
     return learning_engine, refactoring_engine, approval_manager
 
 
@@ -664,7 +673,7 @@ async def provide_feedback(
         root = get_project_root(project_root)
         mgrs = await get_managers(root)
 
-        managers = _extract_feedback_managers(mgrs)
+        managers = await _extract_feedback_managers(mgrs)
         suggestion = await _get_suggestion_for_feedback(managers[1], suggestion_id)
         if isinstance(suggestion, str):
             return suggestion
