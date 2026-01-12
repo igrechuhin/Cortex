@@ -11,6 +11,7 @@ import json
 from typing import Literal, cast
 
 from cortex.managers.initialization import get_managers, get_project_root
+from cortex.managers.manager_utils import get_manager
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.rules_manager import RulesManager
 from cortex.server import mcp
@@ -531,8 +532,10 @@ async def rules(
         root = get_project_root(project_root)
         mgrs = await get_managers(root)
 
-        rules_manager = cast(RulesManager, mgrs["rules_manager"])
-        optimization_config = cast(OptimizationConfig, mgrs["optimization_config"])
+        rules_manager = await get_manager(mgrs, "rules_manager", RulesManager)
+        optimization_config = await get_manager(
+            mgrs, "optimization_config", OptimizationConfig
+        )
 
         # Check if rules are enabled
         if error_msg := await check_rules_enabled(optimization_config):

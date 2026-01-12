@@ -1,0 +1,33 @@
+{
+  "enabled": true,
+  "auto_validate_on_write": true,
+  "strict_mode": false,
+  "token_budget": {
+    "max_total_tokens": "100000",
+    "warn_at_percentage": 80,
+    "per_file_max": 15000,
+    "per_file_warn": 12000
+  },
+  "duplication": {
+    "enabled": true,
+    "threshold": 0.85,
+    "min_length": 50,
+    "suggest_transclusion": true
+  },
+  "schemas": {
+    "enforce_required_sections": true,
+    "enforce_section_order": false,
+    "custom_schemas": {}
+  },
+  "quality": {
+    "minimum_score": 70,
+    "fail_below": 50,
+    "weights": {
+      "completeness": 0.25,
+      "consistency": 0.25,
+      "freshness": 0.15,
+      "structure": 0.2,
+      "token_efficiency": 0.15
+    }
+  }
+}
