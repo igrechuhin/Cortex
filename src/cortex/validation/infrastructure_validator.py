@@ -9,7 +9,7 @@ Validates project infrastructure consistency, including:
 """
 
 import re
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import TypedDict
 
@@ -104,7 +104,12 @@ class InfrastructureValidator:
         check_code_quality_consistency: bool,
         check_documentation_consistency: bool,
         check_config_consistency: bool,
-    ) -> list[tuple[str, Callable[[], tuple[list[InfrastructureIssue], list[str]]]]]:
+    ) -> list[
+        tuple[
+            str,
+            Callable[[], Awaitable[tuple[list[InfrastructureIssue], list[str]]]],
+        ]
+    ]:
         """Get list of checks to run based on flags.
 
         Args:
@@ -117,7 +122,10 @@ class InfrastructureValidator:
             List of (check_name, check_function) tuples
         """
         checks: list[
-            tuple[str, Callable[[], tuple[list[InfrastructureIssue], list[str]]]]
+            tuple[
+                str,
+                Callable[[], Awaitable[tuple[list[InfrastructureIssue], list[str]]]],
+            ]
         ] = []
         if check_commit_ci_alignment:
             checks.append(("commit_ci_alignment", self._check_commit_ci_alignment))
@@ -136,7 +144,9 @@ class InfrastructureValidator:
     async def _run_check(
         self,
         check_name: str,
-        check_func: Callable[[], tuple[list[InfrastructureIssue], list[str]]],
+        check_func: Callable[
+            [], Awaitable[tuple[list[InfrastructureIssue], list[str]]]
+        ],
         issues: list[InfrastructureIssue],
         recommendations: list[str],
         checks_performed: dict[str, bool],

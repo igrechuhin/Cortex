@@ -678,7 +678,7 @@ async def validate(
         validation_managers = await setup_validation_managers(root)
         return await _dispatch_validation(
             check_type,
-            validation_managers,
+            cast(dict[str, object], validation_managers),
             root,
             file_name,
             similarity_threshold,
@@ -721,16 +721,19 @@ async def _dispatch_validation(
     Returns:
         JSON string with validation results
     """
+    # Type narrowing for validation managers
+    typed_managers = _get_typed_validation_managers(validation_managers)
+
     if check_type == "schema":
-        return await handle_schema_validation(validation_managers, root, file_name)
+        return await handle_schema_validation(typed_managers, root, file_name)
     elif check_type == "duplications":
         return await handle_duplications_validation(
-            validation_managers, root, similarity_threshold, suggest_fixes
+            typed_managers, root, similarity_threshold, suggest_fixes
         )
     elif check_type == "quality":
-        return await handle_quality_validation(validation_managers, root, file_name)
+        return await handle_quality_validation(typed_managers, root, file_name)
     elif check_type == "infrastructure":
-        return await handle_infrastructure_validation(
+        return await _handle_infrastructure_dispatch(
             root,
             check_commit_ci_alignment,
             check_code_quality_consistency,
@@ -739,6 +742,68 @@ async def _dispatch_validation(
         )
     else:
         return create_invalid_check_type_error(check_type)
+
+
+def _get_typed_validation_managers(
+    validation_managers: dict[str, object],
+) -> dict[
+    str,
+    FileSystemManager
+    | MetadataIndex
+    | SchemaValidator
+    | DuplicationDetector
+    | QualityMetrics
+    | ValidationConfig,
+]:
+    """Get typed validation managers from dict[str, object].
+
+    Args:
+        validation_managers: Dictionary of validation managers as object
+
+    Returns:
+        Typed dictionary of validation managers
+    """
+    # Note: dict is invariant, but we know the runtime types are correct
+    return cast(
+        dict[
+            str,
+            FileSystemManager
+            | MetadataIndex
+            | SchemaValidator
+            | DuplicationDetector
+            | QualityMetrics
+            | ValidationConfig,
+        ],
+        validation_managers,
+    )
+
+
+async def _handle_infrastructure_dispatch(
+    root: Path,
+    check_commit_ci_alignment: bool,
+    check_code_quality_consistency: bool,
+    check_documentation_consistency: bool,
+    check_config_consistency: bool,
+) -> str:
+    """Handle infrastructure validation dispatch.
+
+    Args:
+        root: Project root path
+        check_commit_ci_alignment: Check commit prompt vs CI workflow alignment
+        check_code_quality_consistency: Check code quality standards consistency
+        check_documentation_consistency: Check documentation consistency
+        check_config_consistency: Check configuration consistency
+
+    Returns:
+        JSON string with infrastructure validation results
+    """
+    return await handle_infrastructure_validation(
+        root,
+        check_commit_ci_alignment,
+        check_code_quality_consistency,
+        check_documentation_consistency,
+        check_config_consistency,
+    )
 
 
 async def setup_validation_managers(
