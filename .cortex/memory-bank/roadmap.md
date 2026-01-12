@@ -66,6 +66,18 @@
 
 ## Upcoming Milestones
 
+### Phase 10.4: Test Coverage Improvement
+
+- **Status**: Planning
+- **Current Coverage**: 88.52%
+- **Target Coverage**: 90.00%+
+- **Priority**: High (CI failing due to coverage threshold)
+- **Plan**: `.cursor/plans/phase-10.4-test-coverage-improvement.md`
+- **Focus**: Add tests for zero/low-coverage modules
+  - Tier 1: `resources.py` (0%), `manager_groups.py` (0%)
+  - Tier 2: `prompts_loader.py` (13%), `container_factory.py` (44%), `rules_manager.py` (50%)
+  - Tier 3: `synapse_tools.py` (70%), `symlinks.py` (72%), `synapse_repository.py` (77%), `synapse_manager.py` (76%)
+
 ### Phase 9.3.4: Medium-Severity Optimizations
 
 - Address remaining medium-severity performance issues
@@ -87,7 +99,8 @@
 
 ## Notes
 
-- All 2185 tests passing (2 skipped)
-- 90.28% test coverage (exceeds 90% threshold)
+- All 2210 tests passing (3 skipped)
+- **Current Coverage**: 88.52% (below 90% threshold - CI failing)
+- **Target**: 90.00%+ coverage (Phase 10.4 in progress)
 - Zero type errors
 - Zero linting errors

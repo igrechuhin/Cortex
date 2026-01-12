@@ -42,7 +42,7 @@ class SynapseRepository:
         self.project_root: Path = Path(project_root)
         self.synapse_path: Path = synapse_path
         self.last_sync: datetime | None = None
-        self._git_command_runner: (
+        self.git_command_runner: (
             Callable[[list[str]], Awaitable[dict[str, object]]] | None
         ) = git_command_runner
 
@@ -59,8 +59,8 @@ class SynapseRepository:
         Returns:
             Dict with success status, stdout, stderr
         """
-        if self._git_command_runner is not None:
-            return await self._git_command_runner(cmd)
+        if self.git_command_runner is not None:
+            return await self.git_command_runner(cmd)
 
         return await self._run_git_command_internal(cmd, timeout)
 
@@ -73,7 +73,7 @@ class SynapseRepository:
         Args:
             runner: Optional callable for running git commands
         """
-        self._git_command_runner = runner
+        self.git_command_runner = runner
 
     async def _run_git_command_internal(
         self, cmd: list[str], timeout: int = 30

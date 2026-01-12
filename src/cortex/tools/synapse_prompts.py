@@ -16,7 +16,7 @@ from cortex.server import (
 )
 
 
-def _get_synapse_prompts_path() -> Path | None:
+def get_synapse_prompts_path() -> Path | None:
     """Get path to Synapse prompts directory.
 
     Walks up the directory tree from current working directory to find
@@ -47,7 +47,7 @@ def _get_synapse_prompts_path() -> Path | None:
     return None
 
 
-def _load_prompts_manifest(prompts_path: Path) -> dict[str, object] | None:
+def load_prompts_manifest(prompts_path: Path) -> dict[str, object] | None:
     """Load prompts manifest synchronously."""
     manifest_path = prompts_path / "prompts-manifest.json"
     if not manifest_path.exists():
@@ -60,9 +60,7 @@ def _load_prompts_manifest(prompts_path: Path) -> dict[str, object] | None:
         return None
 
 
-def _load_prompt_content(
-    prompts_path: Path, category: str, filename: str
-) -> str | None:
+def load_prompt_content(prompts_path: Path, category: str, filename: str) -> str | None:
     """Load prompt file content synchronously."""
     # Prompts are in the root of prompts/ directory, not in category subdirectories
     prompt_file = prompts_path / filename
@@ -76,7 +74,7 @@ def _load_prompt_content(
         return None
 
 
-def _create_prompt_function(name: str, content: str, description: str) -> None:
+def create_prompt_function(name: str, content: str, description: str) -> None:
     """Create and register a prompt function dynamically.
 
     Stores content in module-level dict and creates function that references it,
@@ -99,7 +97,7 @@ def {name}() -> str:
     exec(func_code, globals())
 
 
-def _process_prompt_info(
+def process_prompt_info(
     prompt_info: dict[str, object], prompts_path: Path, category_name: str
 ) -> int:
     """Process a single prompt info and register it.
@@ -119,7 +117,7 @@ def _process_prompt_info(
     if not isinstance(description, str):
         description = ""
 
-    content = _load_prompt_content(prompts_path, category_name, filename)
+    content = load_prompt_content(prompts_path, category_name, filename)
     if not content:
         return 0
 
@@ -127,7 +125,7 @@ def _process_prompt_info(
     func_name = "".join(c if c.isalnum() or c == "_" else "_" for c in func_name)
 
     try:
-        _create_prompt_function(func_name, content, description)
+        create_prompt_function(func_name, content, description)
         return 1
     except Exception as e:
         from cortex.core.logging_config import logger
@@ -136,7 +134,7 @@ def _process_prompt_info(
         return 0
 
 
-def _log_registration_summary(registered_count: int) -> None:
+def log_registration_summary(registered_count: int) -> None:
     """Log registration summary and verify functions exist."""
     if registered_count > 0:
         from cortex.core.logging_config import logger
@@ -153,13 +151,13 @@ def _log_registration_summary(registered_count: int) -> None:
         logger.debug(f"Registered prompt functions in namespace: {registered_names}")
 
 
-def _register_synapse_prompts() -> None:
+def register_synapse_prompts() -> None:
     """Load and register all Synapse prompts as MCP prompts."""
-    prompts_path = _get_synapse_prompts_path()
+    prompts_path = get_synapse_prompts_path()
     if not prompts_path:
         return
 
-    manifest = _load_prompts_manifest(prompts_path)
+    manifest = load_prompts_manifest(prompts_path)
     if not manifest:
         return
 
@@ -180,12 +178,12 @@ def _register_synapse_prompts() -> None:
         for prompt_info_raw in prompts_list:
             if isinstance(prompt_info_raw, dict):
                 prompt_info = cast(dict[str, object], prompt_info_raw)
-                registered_count += _process_prompt_info(
+                registered_count += process_prompt_info(
                     prompt_info, prompts_path, category_name
                 )
 
-    _log_registration_summary(registered_count)
+    log_registration_summary(registered_count)
 
 
 # Register prompts at import time
-_register_synapse_prompts()
+register_synapse_prompts()

@@ -2,13 +2,13 @@
 Comprehensive tests for Synapse Prompts Registration
 
 This test suite provides comprehensive coverage for:
-- _get_synapse_prompts_path()
-- _load_prompts_manifest()
-- _load_prompt_content()
-- _create_prompt_function()
-- _process_prompt_info()
-- _log_registration_summary()
-- _register_synapse_prompts()
+- get_synapse_prompts_path()
+- load_prompts_manifest()
+- load_prompt_content()
+- create_prompt_function()
+- process_prompt_info()
+- log_registration_summary()
+- register_synapse_prompts()
 - All error paths and edge cases
 """
 
@@ -59,7 +59,7 @@ def sample_manifest(prompts_dir: Path) -> Path:
             }
         },
     }
-    manifest_path.write_text(json.dumps(manifest_data), encoding="utf-8")
+    _ = manifest_path.write_text(json.dumps(manifest_data), encoding="utf-8")
     return manifest_path
 
 
@@ -67,17 +67,19 @@ def sample_manifest(prompts_dir: Path) -> Path:
 def sample_prompt_file(prompts_dir: Path) -> Path:
     """Create sample prompt file."""
     prompt_file = prompts_dir / "test-prompt.md"
-    prompt_file.write_text("# Test Prompt\n\nThis is a test prompt.", encoding="utf-8")
+    _ = prompt_file.write_text(
+        "# Test Prompt\n\nThis is a test prompt.", encoding="utf-8"
+    )
     return prompt_file
 
 
 # ============================================================================
-# Tests for _get_synapse_prompts_path()
+# Tests for get_synapse_prompts_path()
 # ============================================================================
 
 
 class TestGetSynapsePromptsPath:
-    """Tests for _get_synapse_prompts_path()."""
+    """Tests for get_synapse_prompts_path()."""
 
     def test_finds_prompts_from_cwd(self, temp_project_root: Path, prompts_dir: Path):
         """Test finding prompts directory from current working directory."""
@@ -86,7 +88,7 @@ class TestGetSynapsePromptsPath:
             "cortex.tools.synapse_prompts.Path.cwd", return_value=temp_project_root
         ):
             # Act
-            result = synapse_prompts._get_synapse_prompts_path()
+            result = synapse_prompts.get_synapse_prompts_path()
 
             # Assert
             assert result == prompts_dir
@@ -100,7 +102,7 @@ class TestGetSynapsePromptsPath:
         subdir.mkdir()
         with patch("cortex.tools.synapse_prompts.Path.cwd", return_value=subdir):
             # Act
-            result = synapse_prompts._get_synapse_prompts_path()
+            result = synapse_prompts.get_synapse_prompts_path()
 
             # Assert
             assert result == prompts_dir
@@ -116,7 +118,7 @@ class TestGetSynapsePromptsPath:
         with patch("cortex.tools.synapse_prompts.Path.cwd", return_value=Path("/tmp")):
             with patch.object(synapse_prompts, "__file__", str(module_file_path)):
                 # Act
-                result = synapse_prompts._get_synapse_prompts_path()
+                result = synapse_prompts.get_synapse_prompts_path()
 
                 # Assert
                 assert result == prompts_dir
@@ -131,7 +133,7 @@ class TestGetSynapsePromptsPath:
                 str(Path("/tmp") / "nonexistent" / "file.py"),
             ):
                 # Act
-                result = synapse_prompts._get_synapse_prompts_path()
+                result = synapse_prompts.get_synapse_prompts_path()
 
                 # Assert
                 assert result is None
@@ -148,7 +150,7 @@ class TestLoadPromptsManifest:
     def test_loads_valid_manifest(self, prompts_dir: Path, sample_manifest: Path):
         """Test loading valid manifest file."""
         # Act
-        result = synapse_prompts._load_prompts_manifest(prompts_dir)
+        result = synapse_prompts.load_prompts_manifest(prompts_dir)
 
         # Assert
         assert result is not None
@@ -158,7 +160,7 @@ class TestLoadPromptsManifest:
     def test_returns_none_when_manifest_missing(self, prompts_dir: Path):
         """Test returns None when manifest file doesn't exist."""
         # Act
-        result = synapse_prompts._load_prompts_manifest(prompts_dir)
+        result = synapse_prompts.load_prompts_manifest(prompts_dir)
 
         # Assert
         assert result is None
@@ -167,10 +169,10 @@ class TestLoadPromptsManifest:
         """Test returns None when manifest has invalid JSON."""
         # Arrange
         manifest_path = prompts_dir / "prompts-manifest.json"
-        manifest_path.write_text("invalid json", encoding="utf-8")
+        _ = manifest_path.write_text("invalid json", encoding="utf-8")
 
         # Act
-        result = synapse_prompts._load_prompts_manifest(prompts_dir)
+        result = synapse_prompts.load_prompts_manifest(prompts_dir)
 
         # Assert
         assert result is None
@@ -179,28 +181,28 @@ class TestLoadPromptsManifest:
         """Test returns None when file read fails."""
         # Arrange
         manifest_path = prompts_dir / "prompts-manifest.json"
-        manifest_path.write_text('{"valid": "json"}', encoding="utf-8")
+        _ = manifest_path.write_text('{"valid": "json"}', encoding="utf-8")
 
         with patch("builtins.open", side_effect=OSError("Permission denied")):
             # Act
-            result = synapse_prompts._load_prompts_manifest(prompts_dir)
+            result = synapse_prompts.load_prompts_manifest(prompts_dir)
 
             # Assert
             assert result is None
 
 
 # ============================================================================
-# Tests for _load_prompt_content()
+# Tests for load_prompt_content()
 # ============================================================================
 
 
 class TestLoadPromptContent:
-    """Tests for _load_prompt_content()."""
+    """Tests for load_prompt_content()."""
 
     def test_loads_valid_prompt_file(self, prompts_dir: Path, sample_prompt_file: Path):
         """Test loading valid prompt file."""
         # Act
-        result = synapse_prompts._load_prompt_content(
+        result = synapse_prompts.load_prompt_content(
             prompts_dir, "general", "test-prompt.md"
         )
 
@@ -211,7 +213,7 @@ class TestLoadPromptContent:
     def test_returns_none_when_file_missing(self, prompts_dir: Path):
         """Test returns None when prompt file doesn't exist."""
         # Act
-        result = synapse_prompts._load_prompt_content(
+        result = synapse_prompts.load_prompt_content(
             prompts_dir, "general", "nonexistent.md"
         )
 
@@ -222,11 +224,11 @@ class TestLoadPromptContent:
         """Test returns None when file read fails."""
         # Arrange
         prompt_file = prompts_dir / "test-prompt.md"
-        prompt_file.write_text("content", encoding="utf-8")
+        _ = prompt_file.write_text("content", encoding="utf-8")
 
         with patch("builtins.open", side_effect=OSError("Permission denied")):
             # Act
-            result = synapse_prompts._load_prompt_content(
+            result = synapse_prompts.load_prompt_content(
                 prompts_dir, "general", "test-prompt.md"
             )
 
@@ -235,12 +237,12 @@ class TestLoadPromptContent:
 
 
 # ============================================================================
-# Tests for _create_prompt_function()
+# Tests for create_prompt_function()
 # ============================================================================
 
 
 class TestCreatePromptFunction:
-    """Tests for _create_prompt_function()."""
+    """Tests for create_prompt_function()."""
 
     def test_creates_prompt_function(self):
         """Test creating a prompt function dynamically."""
@@ -254,7 +256,7 @@ class TestCreatePromptFunction:
             del globals()[test_name]
 
         # Act
-        synapse_prompts._create_prompt_function(
+        synapse_prompts.create_prompt_function(
             test_name, test_content, test_description
         )
 
@@ -271,7 +273,7 @@ class TestCreatePromptFunction:
         test_content = "Stored content"
 
         # Act
-        synapse_prompts._create_prompt_function(test_name, test_content, "desc")
+        synapse_prompts.create_prompt_function(test_name, test_content, "desc")
 
         # Assert
         assert "_prompt_contents" in synapse_prompts.__dict__
@@ -279,12 +281,12 @@ class TestCreatePromptFunction:
 
 
 # ============================================================================
-# Tests for _process_prompt_info()
+# Tests for process_prompt_info()
 # ============================================================================
 
 
 class TestProcessPromptInfo:
-    """Tests for _process_prompt_info()."""
+    """Tests for process_prompt_info()."""
 
     def test_processes_valid_prompt_info(
         self, prompts_dir: Path, sample_prompt_file: Path
@@ -298,7 +300,7 @@ class TestProcessPromptInfo:
         }
 
         # Act
-        result = synapse_prompts._process_prompt_info(
+        result = synapse_prompts.process_prompt_info(
             cast(dict[str, object], prompt_info), prompts_dir, "general"
         )
 
@@ -311,7 +313,7 @@ class TestProcessPromptInfo:
         prompt_info = {"name": "test", "description": "desc"}
 
         # Act
-        result = synapse_prompts._process_prompt_info(
+        result = synapse_prompts.process_prompt_info(
             cast(dict[str, object], prompt_info), prompts_dir, "general"
         )
 
@@ -324,7 +326,7 @@ class TestProcessPromptInfo:
         prompt_info = {"file": 123, "name": "test"}
 
         # Act
-        result = synapse_prompts._process_prompt_info(
+        result = synapse_prompts.process_prompt_info(
             cast(dict[str, object], prompt_info), prompts_dir, "general"
         )
 
@@ -337,7 +339,7 @@ class TestProcessPromptInfo:
         prompt_info = {"file": "test.md", "name": 123}
 
         # Act
-        result = synapse_prompts._process_prompt_info(
+        result = synapse_prompts.process_prompt_info(
             cast(dict[str, object], prompt_info), prompts_dir, "general"
         )
 
@@ -354,7 +356,7 @@ class TestProcessPromptInfo:
         }
 
         # Act
-        result = synapse_prompts._process_prompt_info(
+        result = synapse_prompts.process_prompt_info(
             cast(dict[str, object], prompt_info), prompts_dir, "general"
         )
 
@@ -373,12 +375,12 @@ class TestProcessPromptInfo:
         }
 
         with patch(
-            "cortex.tools.synapse_prompts._create_prompt_function",
+            "cortex.tools.synapse_prompts.create_prompt_function",
             side_effect=Exception("Registration failed"),
         ):
             # Act
-            result = synapse_prompts._process_prompt_info(
-                prompt_info, prompts_dir, "general"
+            result = synapse_prompts.process_prompt_info(
+                cast(dict[str, object], prompt_info), prompts_dir, "general"
             )
 
             # Assert
@@ -386,19 +388,19 @@ class TestProcessPromptInfo:
 
 
 # ============================================================================
-# Tests for _log_registration_summary()
+# Tests for log_registration_summary()
 # ============================================================================
 
 
 class TestLogRegistrationSummary:
-    """Tests for _log_registration_summary()."""
+    """Tests for log_registration_summary()."""
 
     def test_logs_when_count_greater_than_zero(self):
         """Test logs summary when registered_count > 0."""
         # Arrange
         with patch("cortex.core.logging_config.logger") as mock_logger:
             # Act
-            synapse_prompts._log_registration_summary(5)
+            synapse_prompts.log_registration_summary(5)
 
             # Assert
             mock_logger.info.assert_called_once()
@@ -413,7 +415,7 @@ class TestLogRegistrationSummary:
 
         with patch("cortex.core.logging_config.logger") as mock_logger:
             # Act
-            synapse_prompts._log_registration_summary(1)
+            synapse_prompts.log_registration_summary(1)
 
             # Assert
             mock_logger.debug.assert_called_once()
@@ -427,19 +429,19 @@ class TestLogRegistrationSummary:
         # Arrange
         with patch("cortex.core.logging_config.logger") as mock_logger:
             # Act
-            synapse_prompts._log_registration_summary(0)
+            synapse_prompts.log_registration_summary(0)
 
             # Assert
             mock_logger.info.assert_not_called()
 
 
 # ============================================================================
-# Tests for _register_synapse_prompts()
+# Tests for register_synapse_prompts()
 # ============================================================================
 
 
 class TestRegisterSynapsePrompts:
-    """Tests for _register_synapse_prompts()."""
+    """Tests for register_synapse_prompts()."""
 
     def test_registers_prompts_successfully(
         self, temp_project_root: Path, sample_manifest: Path, sample_prompt_file: Path
@@ -447,7 +449,7 @@ class TestRegisterSynapsePrompts:
         """Test successfully registering prompts."""
         # Arrange
         with patch(
-            "cortex.tools.synapse_prompts._get_synapse_prompts_path",
+            "cortex.tools.synapse_prompts.get_synapse_prompts_path",
             return_value=temp_project_root / ".cortex" / "synapse" / "prompts",
         ):
             # Clear any existing registrations
@@ -456,7 +458,7 @@ class TestRegisterSynapsePrompts:
                     del synapse_prompts.__dict__[key]
 
             # Act
-            synapse_prompts._register_synapse_prompts()
+            synapse_prompts.register_synapse_prompts()
 
             # Assert - function should be registered
             # Note: This test verifies the function runs without error
@@ -466,23 +468,23 @@ class TestRegisterSynapsePrompts:
         """Test handles case when prompts path doesn't exist."""
         # Arrange
         with patch(
-            "cortex.tools.synapse_prompts._get_synapse_prompts_path", return_value=None
+            "cortex.tools.synapse_prompts.get_synapse_prompts_path", return_value=None
         ):
             # Act & Assert - should not raise
-            synapse_prompts._register_synapse_prompts()
+            synapse_prompts.register_synapse_prompts()
 
     def test_handles_missing_manifest(self, temp_project_root: Path, prompts_dir: Path):
         """Test handles case when manifest doesn't exist."""
         # Arrange
         with patch(
-            "cortex.tools.synapse_prompts._get_synapse_prompts_path",
+            "cortex.tools.synapse_prompts.get_synapse_prompts_path",
             return_value=prompts_dir,
         ):
             with patch(
-                "cortex.tools.synapse_prompts._load_prompts_manifest", return_value=None
+                "cortex.tools.synapse_prompts.load_prompts_manifest", return_value=None
             ):
                 # Act & Assert - should not raise
-                synapse_prompts._register_synapse_prompts()
+                synapse_prompts.register_synapse_prompts()
 
     def test_handles_invalid_categories(
         self, temp_project_root: Path, prompts_dir: Path
@@ -491,15 +493,15 @@ class TestRegisterSynapsePrompts:
         # Arrange
         manifest = {"version": "1.0", "categories": "not a dict"}
         with patch(
-            "cortex.tools.synapse_prompts._get_synapse_prompts_path",
+            "cortex.tools.synapse_prompts.get_synapse_prompts_path",
             return_value=prompts_dir,
         ):
             with patch(
-                "cortex.tools.synapse_prompts._load_prompts_manifest",
+                "cortex.tools.synapse_prompts.load_prompts_manifest",
                 return_value=manifest,
             ):
                 # Act & Assert - should not raise
-                synapse_prompts._register_synapse_prompts()
+                synapse_prompts.register_synapse_prompts()
 
     def test_handles_invalid_category_info(
         self, temp_project_root: Path, prompts_dir: Path
@@ -511,15 +513,15 @@ class TestRegisterSynapsePrompts:
             "categories": {"general": "not a dict"},
         }
         with patch(
-            "cortex.tools.synapse_prompts._get_synapse_prompts_path",
+            "cortex.tools.synapse_prompts.get_synapse_prompts_path",
             return_value=prompts_dir,
         ):
             with patch(
-                "cortex.tools.synapse_prompts._load_prompts_manifest",
+                "cortex.tools.synapse_prompts.load_prompts_manifest",
                 return_value=manifest,
             ):
                 # Act & Assert - should not raise
-                synapse_prompts._register_synapse_prompts()
+                synapse_prompts.register_synapse_prompts()
 
     def test_handles_invalid_prompts_list(
         self, temp_project_root: Path, prompts_dir: Path
@@ -531,15 +533,15 @@ class TestRegisterSynapsePrompts:
             "categories": {"general": {"prompts": "not a list"}},
         }
         with patch(
-            "cortex.tools.synapse_prompts._get_synapse_prompts_path",
+            "cortex.tools.synapse_prompts.get_synapse_prompts_path",
             return_value=prompts_dir,
         ):
             with patch(
-                "cortex.tools.synapse_prompts._load_prompts_manifest",
+                "cortex.tools.synapse_prompts.load_prompts_manifest",
                 return_value=manifest,
             ):
                 # Act & Assert - should not raise
-                synapse_prompts._register_synapse_prompts()
+                synapse_prompts.register_synapse_prompts()
 
     def test_handles_non_dict_prompt_info(
         self, temp_project_root: Path, prompts_dir: Path
@@ -551,15 +553,15 @@ class TestRegisterSynapsePrompts:
             "categories": {"general": {"prompts": ["not a dict"]}},
         }
         with patch(
-            "cortex.tools.synapse_prompts._get_synapse_prompts_path",
+            "cortex.tools.synapse_prompts.get_synapse_prompts_path",
             return_value=prompts_dir,
         ):
             with patch(
-                "cortex.tools.synapse_prompts._load_prompts_manifest",
+                "cortex.tools.synapse_prompts.load_prompts_manifest",
                 return_value=manifest,
             ):
                 # Act & Assert - should not raise
-                synapse_prompts._register_synapse_prompts()
+                synapse_prompts.register_synapse_prompts()
 
     def test_processes_prompt_with_default_name(
         self, prompts_dir: Path, sample_prompt_file: Path
@@ -569,7 +571,7 @@ class TestRegisterSynapsePrompts:
         prompt_info = {"file": "test-prompt.md", "description": "Test"}
 
         # Act
-        result = synapse_prompts._process_prompt_info(
+        result = synapse_prompts.process_prompt_info(
             cast(dict[str, object], prompt_info), prompts_dir, "general"
         )
 
@@ -588,7 +590,7 @@ class TestRegisterSynapsePrompts:
         }
 
         # Act
-        result = synapse_prompts._process_prompt_info(
+        result = synapse_prompts.process_prompt_info(
             cast(dict[str, object], prompt_info), prompts_dir, "general"
         )
 
@@ -603,7 +605,7 @@ class TestRegisterSynapsePrompts:
         synapse_prompts.__dict__["_prompt_contents"] = {}
 
         # Act
-        synapse_prompts._create_prompt_function(test_name, test_content, "desc")
+        synapse_prompts.create_prompt_function(test_name, test_content, "desc")
 
         # Assert
         assert synapse_prompts.__dict__["_prompt_contents"][test_name] == test_content
@@ -633,12 +635,12 @@ class TestRegisterSynapsePrompts:
                 }
             },
         }
-        manifest_path.write_text(json.dumps(manifest_data), encoding="utf-8")
-        (prompts_dir / "prompt1.md").write_text("Content 1", encoding="utf-8")
-        (prompts_dir / "prompt2.md").write_text("Content 2", encoding="utf-8")
+        _ = manifest_path.write_text(json.dumps(manifest_data), encoding="utf-8")
+        _ = (prompts_dir / "prompt1.md").write_text("Content 1", encoding="utf-8")
+        _ = (prompts_dir / "prompt2.md").write_text("Content 2", encoding="utf-8")
 
         with patch(
-            "cortex.tools.synapse_prompts._get_synapse_prompts_path",
+            "cortex.tools.synapse_prompts.get_synapse_prompts_path",
             return_value=prompts_dir,
         ):
             # Clear existing registrations
@@ -647,7 +649,7 @@ class TestRegisterSynapsePrompts:
                     del synapse_prompts.__dict__[key]
 
             # Act
-            synapse_prompts._register_synapse_prompts()
+            synapse_prompts.register_synapse_prompts()
 
             # Assert - functions should be registered
             # Note: This verifies the registration flow completes

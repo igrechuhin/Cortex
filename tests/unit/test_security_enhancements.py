@@ -158,7 +158,7 @@ class TestGitOperationTimeouts:
         async def fast_command(cmd: list[str]) -> dict[str, object]:
             return {"success": True, "stdout": "OK", "stderr": ""}
 
-        repo._git_command_runner = fast_command
+        repo.git_command_runner = fast_command
 
         # Act - Call with timeout parameter (should not raise exception)
         result = await repo.run_git_command(["git", "status"], timeout=30)
@@ -189,7 +189,7 @@ class TestGitOperationTimeouts:
             await asyncio.sleep(0.1)  # Faster than timeout
             return {"success": True, "stdout": "OK", "stderr": ""}
 
-        repo._git_command_runner = fast_command
+        repo.git_command_runner = fast_command
 
         # Act
         result = await repo.run_git_command(["git", "status"], timeout=1)

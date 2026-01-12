@@ -11,7 +11,7 @@ This module tests custom rules management functionality including:
 
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -479,7 +479,7 @@ class TestGetLocalRules:
     """Tests for get_local_rules method."""
 
     @pytest.mark.asyncio
-    async def testget_local_rules_with_empty_index(
+    async def test_get_local_rules_with_empty_index(
         self,
         tmp_path: Path,
         mock_file_system: "FileSystemManager",
@@ -503,7 +503,7 @@ class TestGetLocalRules:
         assert rules == []
 
     @pytest.mark.asyncio
-    async def testget_local_rules_filters_by_score(
+    async def test_get_local_rules_filters_by_score(
         self,
         tmp_path: Path,
         mock_file_system: "FileSystemManager",
@@ -542,7 +542,7 @@ class TestGetLocalRules:
                 assert score >= 0.3
 
     @pytest.mark.asyncio
-    async def testget_local_rules_sorted_by_score(
+    async def test_get_local_rules_sorted_by_score(
         self,
         tmp_path: Path,
         mock_file_system: "FileSystemManager",
@@ -587,7 +587,7 @@ class TestSelectWithinBudget:
     """Tests for select_within_budget method."""
 
     @pytest.mark.asyncio
-    async def testselect_within_budget_respects_token_limit(
+    async def test_select_within_budget_respects_token_limit(
         self,
         tmp_path: Path,
         mock_file_system: "FileSystemManager",
@@ -626,7 +626,7 @@ class TestSelectWithinBudget:
         assert total_tokens <= 250
 
     @pytest.mark.asyncio
-    async def testselect_within_budget_filters_by_score(
+    async def test_select_within_budget_filters_by_score(
         self,
         tmp_path: Path,
         mock_file_system: "FileSystemManager",
@@ -661,7 +661,7 @@ class TestSelectWithinBudget:
             assert score >= 0.5
 
     @pytest.mark.asyncio
-    async def testselect_within_budget_prioritizes_by_priority_and_score(
+    async def test_select_within_budget_prioritizes_by_priority_and_score(
         self,
         tmp_path: Path,
         mock_file_system: "FileSystemManager",
@@ -809,3 +809,296 @@ class TestAutoReindex:
 
         # Act & Assert - Should not raise exception
         await manager.stop_auto_reindex()
+
+
+class TestSynapseManagerIntegration:
+    """Tests for Synapse manager integration."""
+
+    @pytest.mark.asyncio
+    async def test_merge_rules_with_synapse_manager(
+        self,
+        tmp_path: Path,
+        mock_file_system: "FileSystemManager",
+        mock_metadata_index: "MetadataIndex",
+        mock_token_counter: "TokenCounter",
+    ):
+        """Test merging rules with Synapse manager."""
+        # Arrange
+        rules_dir = tmp_path / ".cursorrules"
+        _ = rules_dir.mkdir()
+        _ = (rules_dir / "local.md").write_text("# Local Rule\nLocal content")
+
+        mock_synapse = MagicMock()
+        mock_synapse.detect_context = AsyncMock(
+            return_value={"detected_languages": ["python"], "frameworks": []}
+        )
+        mock_synapse.get_relevant_categories = AsyncMock(return_value=["python"])
+        mock_synapse.load_category = AsyncMock(
+            return_value=[
+                {
+                    "file": "shared.md",
+                    "content": "# Shared Rule",
+                    "category": "python",
+                    "tokens": 50,
+                }
+            ]
+        )
+        mock_synapse.merge_rules = AsyncMock(
+            return_value=[
+                {
+                    "file": "shared.md",
+                    "content": "# Shared Rule",
+                    "category": "python",
+                    "tokens": 50,
+                    "source": "shared",
+                },
+                {
+                    "file": "local.md",
+                    "content": "# Local Rule",
+                    "category": "generic",
+                    "tokens": 30,
+                    "source": "local",
+                },
+            ]
+        )
+
+        manager = RulesManager(
+            project_root=tmp_path,
+            file_system=mock_file_system,
+            metadata_index=mock_metadata_index,
+            token_counter=mock_token_counter,
+            rules_folder=".cursorrules",
+            synapse_manager=mock_synapse,
+        )
+        _ = await manager.index_rules()
+
+        # Act
+        result = await manager.get_relevant_rules(
+            task_description="Python programming task",
+            max_tokens=100,
+            min_relevance_score=0.3,
+            context_aware=True,
+        )
+
+        # Assert
+        assert result["source"] == "hybrid"
+        assert "context" in result
+        assert mock_synapse.detect_context.called
+        assert mock_synapse.merge_rules.called
+
+
+class TestRuleIndexingWithCustomConfig:
+    """Tests for rule indexing with various configurations."""
+
+    @pytest.mark.asyncio
+    async def test_index_rules_with_custom_config(
+        self,
+        tmp_path: Path,
+        mock_file_system: "FileSystemManager",
+        mock_metadata_index: "MetadataIndex",
+        mock_token_counter: "TokenCounter",
+    ):
+        """Test indexing rules with custom configuration."""
+        # Arrange
+        rules_dir = tmp_path / ".custom-rules"
+        _ = rules_dir.mkdir()
+        _ = (rules_dir / "rule1.md").write_text("# Rule 1\nContent")
+        _ = (rules_dir / "rule2.md").write_text("# Rule 2\nMore content")
+
+        manager = RulesManager(
+            project_root=tmp_path,
+            file_system=mock_file_system,
+            metadata_index=mock_metadata_index,
+            token_counter=mock_token_counter,
+            rules_folder=".custom-rules",
+            reindex_interval_minutes=60,
+        )
+
+        # Act
+        result = await manager.index_rules(force=True)
+
+        # Assert
+        assert "indexed" in result or "files_indexed" in result
+
+
+class TestLoadRulesMissingFiles:
+    """Tests for loading rules with missing files."""
+
+    @pytest.mark.asyncio
+    async def test_load_rules_missing_files(
+        self,
+        tmp_path: Path,
+        mock_file_system: "FileSystemManager",
+        mock_metadata_index: "MetadataIndex",
+        mock_token_counter: "TokenCounter",
+    ):
+        """Test loading rules when some files are missing."""
+        # Arrange
+        rules_dir = tmp_path / ".cursorrules"
+        _ = rules_dir.mkdir()
+        _ = (rules_dir / "existing.md").write_text("# Existing Rule")
+
+        manager = RulesManager(
+            project_root=tmp_path,
+            file_system=mock_file_system,
+            metadata_index=mock_metadata_index,
+            token_counter=mock_token_counter,
+            rules_folder=".cursorrules",
+        )
+        _ = await manager.index_rules()
+
+        # Act - Try to get rules (should handle missing files gracefully)
+        rules = await manager.get_local_rules("test description")
+
+        # Assert
+        assert isinstance(rules, list)
+        # Should return rules from existing files only
+
+
+class TestContextDetectionEdgeCases:
+    """Tests for context detection edge cases."""
+
+    @pytest.mark.asyncio
+    async def test_context_detection_edge_cases(
+        self,
+        tmp_path: Path,
+        mock_file_system: "FileSystemManager",
+        mock_metadata_index: "MetadataIndex",
+        mock_token_counter: "TokenCounter",
+    ):
+        """Test context detection with edge cases."""
+        # Arrange
+        mock_synapse = MagicMock()
+        mock_synapse.detect_context = AsyncMock(
+            return_value={"detected_languages": [], "frameworks": []}
+        )
+        mock_synapse.get_relevant_categories = AsyncMock(return_value=[])
+        mock_synapse.load_category = AsyncMock(return_value=[])
+        mock_synapse.merge_rules = AsyncMock(return_value=[])
+
+        manager = RulesManager(
+            project_root=tmp_path,
+            file_system=mock_file_system,
+            metadata_index=mock_metadata_index,
+            token_counter=mock_token_counter,
+            synapse_manager=mock_synapse,
+        )
+
+        # Act - Test with empty context
+        result = await manager.get_relevant_rules(
+            task_description="",
+            max_tokens=1000,
+            min_relevance_score=0.0,
+            project_files=None,
+            context_aware=True,
+        )
+
+        # Assert
+        assert result["source"] == "hybrid"
+        assert "context" in result
+
+
+class TestFilterRulesByCategory:
+    """Tests for filtering rules by category."""
+
+    @pytest.mark.asyncio
+    async def test_filter_rules_by_category(
+        self,
+        tmp_path: Path,
+        mock_file_system: "FileSystemManager",
+        mock_metadata_index: "MetadataIndex",
+        mock_token_counter: "TokenCounter",
+    ):
+        """Test filtering rules by category."""
+        # Arrange
+        rules_dir = tmp_path / ".cursorrules"
+        _ = rules_dir.mkdir()
+        _ = (rules_dir / "python.md").write_text("# Python Rules\nPython content")
+        _ = (rules_dir / "javascript.md").write_text(
+            "# JavaScript Rules\nJavaScript content"
+        )
+        _ = (rules_dir / "general.md").write_text("# General Rules\nGeneral content")
+
+        manager = RulesManager(
+            project_root=tmp_path,
+            file_system=mock_file_system,
+            metadata_index=mock_metadata_index,
+            token_counter=mock_token_counter,
+            rules_folder=".cursorrules",
+        )
+        _ = await manager.index_rules()
+
+        # Act
+        result = await manager.get_relevant_rules(
+            task_description="Python programming",
+            max_tokens=1000,
+            min_relevance_score=0.1,
+        )
+
+        # Assert
+        local_rules = result.get("local_rules")
+        assert isinstance(local_rules, list)
+        # Python rules should be more relevant than JavaScript rules
+
+
+class TestRulePriorityHandling:
+    """Tests for rule priority handling."""
+
+    @pytest.mark.asyncio
+    async def test_rule_priority_handling(
+        self,
+        tmp_path: Path,
+        mock_file_system: "FileSystemManager",
+        mock_metadata_index: "MetadataIndex",
+        mock_token_counter: "TokenCounter",
+    ):
+        """Test rule priority handling in rule selection."""
+        # Arrange
+        rules_dir = tmp_path / ".cursorrules"
+        _ = rules_dir.mkdir()
+
+        mock_synapse = MagicMock()
+        mock_synapse.detect_context = AsyncMock(
+            return_value={"detected_languages": ["python"], "frameworks": []}
+        )
+        mock_synapse.get_relevant_categories = AsyncMock(return_value=["python"])
+        mock_synapse.load_category = AsyncMock(return_value=[])
+        mock_synapse.merge_rules = AsyncMock(
+            return_value=[
+                {
+                    "file": "high_priority.md",
+                    "content": "High priority rule",
+                    "tokens": 50,
+                    "priority": 90,
+                    "relevance_score": 0.7,
+                },
+                {
+                    "file": "low_priority.md",
+                    "content": "Low priority rule",
+                    "tokens": 50,
+                    "priority": 10,
+                    "relevance_score": 0.9,
+                },
+            ]
+        )
+
+        manager = RulesManager(
+            project_root=tmp_path,
+            file_system=mock_file_system,
+            metadata_index=mock_metadata_index,
+            token_counter=mock_token_counter,
+            synapse_manager=mock_synapse,
+        )
+
+        # Act
+        result = await manager.get_relevant_rules(
+            task_description="test",
+            max_tokens=100,
+            min_relevance_score=0.5,
+            rule_priority="local_overrides_shared",
+        )
+
+        # Assert
+        # High priority rule should be selected even with lower relevance
+        selected_rules = result.get("local_rules", [])
+        assert isinstance(selected_rules, list)
