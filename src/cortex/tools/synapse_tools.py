@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.managers.initialization import get_managers, get_project_root
+from cortex.managers.manager_utils import get_manager
 from cortex.optimization.rules_manager import RulesManager
 from cortex.rules.synapse_manager import SynapseManager
 from cortex.server import mcp
@@ -120,14 +121,14 @@ async def sync_synapse(pull: bool = True, push: bool = False) -> str:
                 indent=2,
             )
 
-        synapse_manager = cast(SynapseManager, managers["synapse"])
+        synapse_manager = await get_manager(managers, "synapse", SynapseManager)
 
         # Sync Synapse
         result = await synapse_manager.sync_synapse(pull=pull, push=push)
 
         # Trigger reindex if there were changes
-        if result.get("reindex_triggered") and "rules" in managers:
-            rules_manager = cast(RulesManager, managers["rules"])
+        if result.get("reindex_triggered") and "rules_manager" in managers:
+            rules_manager = await get_manager(managers, "rules_manager", RulesManager)
             _ = await rules_manager.index_rules(force=True)
 
         return json.dumps(result, indent=2)
@@ -186,7 +187,7 @@ async def update_synapse_rule(
                 indent=2,
             )
 
-        synapse_manager = cast(SynapseManager, managers["synapse"])
+        synapse_manager = await get_manager(managers, "synapse", SynapseManager)
 
         # Update Synapse rule
         result = await synapse_manager.update_synapse_rule(
@@ -331,7 +332,7 @@ async def get_synapse_prompts(category: str | None = None) -> str:
                 indent=2,
             )
 
-        synapse_manager = cast(SynapseManager, managers["synapse"])
+        synapse_manager = await get_manager(managers, "synapse", SynapseManager)
         _ = await synapse_manager.load_prompts_manifest()
 
         if category:
@@ -397,7 +398,7 @@ async def update_synapse_prompt(
                 indent=2,
             )
 
-        synapse_manager = cast(SynapseManager, managers["synapse"])
+        synapse_manager = await get_manager(managers, "synapse", SynapseManager)
 
         # Update Synapse prompt
         result = await synapse_manager.update_synapse_prompt(
@@ -446,7 +447,7 @@ async def _execute_rules_with_context(
     if validation_error:
         return validation_error
 
-    rules_manager = cast(RulesManager, managers["rules"])
+    rules_manager = await get_manager(managers, "rules_manager", RulesManager)
     file_paths = parse_project_files(project_files)
 
     result = await rules_manager.get_relevant_rules(
@@ -470,7 +471,7 @@ def validate_rules_manager(managers: dict[str, object]) -> dict[str, object] | N
     Returns:
         Error dict if validation fails, None otherwise
     """
-    if "rules" not in managers:
+    if "rules_manager" not in managers:
         return {
             "status": "error",
             "error": "Rules manager not initialized. Enable rules in configuration first.",

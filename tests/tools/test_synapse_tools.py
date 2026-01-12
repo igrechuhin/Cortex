@@ -31,6 +31,16 @@ from cortex.tools.synapse_tools import (
 )
 
 # ============================================================================
+# Helper Functions
+# ============================================================================
+
+
+def _get_manager_helper(mgrs: dict[str, Any], key: str, _: object) -> Any:
+    """Helper function to get manager from dictionary."""
+    return mgrs[key]
+
+
+# ============================================================================
 # Fixtures
 # ============================================================================
 
@@ -107,7 +117,7 @@ def mock_managers_with_synapse(
     mock_synapse_manager: MagicMock, mock_rules_manager: MagicMock
 ) -> dict[str, Any]:
     """Create managers dict with shared rules manager."""
-    return {"synapse": mock_synapse_manager, "rules": mock_rules_manager}
+    return {"synapse": mock_synapse_manager, "rules_manager": mock_rules_manager}
 
 
 @pytest.fixture
@@ -115,7 +125,7 @@ def mock_managers_without_synapse(
     mock_rules_manager: MagicMock,
 ) -> dict[str, MagicMock]:
     """Create managers dict without shared rules manager."""
-    return {"rules": mock_rules_manager}
+    return {"rules_manager": mock_rules_manager}
 
 
 # ============================================================================
@@ -141,6 +151,10 @@ class TestSyncSharedRules:
             patch(
                 "cortex.tools.synapse_tools.get_managers",
                 return_value=mock_managers_with_synapse,
+            ),
+            patch(
+                "cortex.tools.synapse_tools.get_manager",
+                side_effect=_get_manager_helper,
             ),
         ):
             # Act
@@ -170,6 +184,10 @@ class TestSyncSharedRules:
                 "cortex.tools.synapse_tools.get_managers",
                 return_value=mock_managers_with_synapse,
             ),
+            patch(
+                "cortex.tools.synapse_tools.get_manager",
+                side_effect=_get_manager_helper,
+            ),
         ):
             # Act
             result_str = await sync_synapse(pull=True, push=False)
@@ -177,9 +195,9 @@ class TestSyncSharedRules:
 
             # Assert
             assert result["status"] == "success"
-            mock_managers_with_synapse["rules"].index_rules.assert_called_once_with(
-                force=True
-            )
+            mock_managers_with_synapse[
+                "rules_manager"
+            ].index_rules.assert_called_once_with(force=True)
 
     async def test_sync_synapse_not_initialized(self, mock_project_root: Path) -> None:
         """Test sync fails when shared rules not initialized."""
@@ -218,6 +236,10 @@ class TestSyncSharedRules:
             patch(
                 "cortex.tools.synapse_tools.get_managers",
                 return_value=mock_managers_with_synapse,
+            ),
+            patch(
+                "cortex.tools.synapse_tools.get_manager",
+                side_effect=_get_manager_helper,
             ),
         ):
             # Act
@@ -278,6 +300,10 @@ class TestUpdateSharedRule:
             patch(
                 "cortex.tools.synapse_tools.get_managers",
                 return_value=mock_managers_with_synapse,
+            ),
+            patch(
+                "cortex.tools.synapse_tools.get_manager",
+                side_effect=_get_manager_helper,
             ),
         ):
             # Act
@@ -379,6 +405,10 @@ class TestGetRulesWithContext:
                 "cortex.tools.synapse_tools.get_managers",
                 return_value=mock_managers_with_synapse,
             ),
+            patch(
+                "cortex.tools.synapse_tools.get_manager",
+                side_effect=_get_manager_helper,
+            ),
         ):
             # Act
             result_str = await get_synapse_rules(
@@ -413,6 +443,10 @@ class TestGetRulesWithContext:
                 "cortex.tools.synapse_tools.get_managers",
                 return_value=mock_managers_with_synapse,
             ),
+            patch(
+                "cortex.tools.synapse_tools.get_manager",
+                side_effect=_get_manager_helper,
+            ),
         ):
             # Act
             result_str = await get_synapse_rules(
@@ -422,7 +456,9 @@ class TestGetRulesWithContext:
 
             # Assert
             assert result["status"] == "success"
-            mock_managers_with_synapse["rules"].get_relevant_rules.assert_called_once()
+            mock_managers_with_synapse[
+                "rules_manager"
+            ].get_relevant_rules.assert_called_once()
 
     async def test_get_synapse_rules_custom_parameters(
         self,
@@ -439,6 +475,10 @@ class TestGetRulesWithContext:
             patch(
                 "cortex.tools.synapse_tools.get_managers",
                 return_value=mock_managers_with_synapse,
+            ),
+            patch(
+                "cortex.tools.synapse_tools.get_manager",
+                side_effect=_get_manager_helper,
             ),
         ):
             # Act
@@ -542,7 +582,7 @@ class TestHelperFunctions:
     def test_validate_rules_manager_with_manager(self):
         """Test _validate_rules_manager when manager exists."""
         # Arrange
-        managers: dict[str, object] = {"rules": MagicMock()}
+        managers: dict[str, object] = {"rules_manager": MagicMock()}
 
         # Act
         result = validate_rules_manager(managers)
@@ -685,6 +725,10 @@ class TestIntegration:
             patch(
                 "cortex.tools.synapse_tools.get_managers",
                 return_value=mock_managers_with_synapse,
+            ),
+            patch(
+                "cortex.tools.synapse_tools.get_manager",
+                side_effect=_get_manager_helper,
             ),
         ):
             # Act 1: Sync

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Manager initialization and lifecycle management for MCP Memory Bank."""
 
+import collections.abc
 from pathlib import Path
 from typing import cast
 
@@ -225,8 +226,16 @@ def _add_optimization_managers(
         lambda: _create_rules_manager(project_root, core_managers, managers),
         name="rules_manager",
     )
+    def _make_synapse_factory(
+        proj_root: Path, mgrs: dict[str, object]
+    ) -> collections.abc.Callable[[], collections.abc.Awaitable[SynapseManager]]:
+        """Create factory function for SynapseManager."""
+        async def factory() -> SynapseManager:
+            return await _create_synapse_manager(proj_root, mgrs)
+        return factory
+
     managers["synapse"] = LazyManager(
-        lambda: _create_synapse_manager(project_root, managers), name="synapse"
+        _make_synapse_factory(project_root, managers), name="synapse"
     )
 
 
