@@ -241,32 +241,50 @@ For each tool:
 
 ### 2.1 `parse_file_links` - Link Parsing
 
-**Status:** ⏳ PENDING
+**Status:** ✅ VERIFIED (2026-01-12)
 
 **Test Cases:**
 
-1. **Parse Markdown Links**
-   - Parse links in `activeContext.md`
+1. **Parse Markdown Links** ✅ VERIFIED
+   - Parsed links in `test_links.md` (created for testing)
    - **Expected:** JSON with markdown_links array (text, target, line, column)
-   - **Verify:** All links detected, positions accurate
+   - **Actual Result:** ✅ Success - Correctly identified 3 markdown links:
+     - Link to `projectbrief.md` (line 7)
+     - Link to `systemPatterns.md#architecture` with section reference (line 9)
+     - Link to `techContext.md` (line 19)
+     - All links include: text, target, section (when present), line number, type
+   - **Issues Found:** None
 
-2. **Parse Transclusions**
-   - Parse transclusions in file with `{{include:...}}`
+2. **Parse Transclusions** ✅ VERIFIED
+   - Parsed transclusions in `test_links.md`
    - **Expected:** JSON with transclusions array (target, line, column)
-   - **Verify:** Transclusions detected, section references parsed
+   - **Actual Result:** ✅ Success - Correctly identified 3 transclusions:
+     - `{{include:test_verification.md}}` (line 13)
+     - `{{include:test_verification.md#section}}` with section reference (line 15)
+     - `{{include:productContext.md}}` (line 19)
+     - All transclusions include: target, section (when present), line number, type, options
+   - **Issues Found:** None
 
-3. **File Without Links**
-   - Parse file with no links
+3. **File Without Links** ✅ VERIFIED
+   - Parsed `test_no_links.md` (created for testing)
    - **Expected:** Empty arrays, summary with zeros
-   - **Verify:** Handles empty state gracefully
+   - **Actual Result:** ✅ Success - Correctly handled empty state:
+     - markdown_links: [] (empty array)
+     - transclusions: [] (empty array)
+     - summary: {markdown_links: 0, transclusions: 0, total: 0, unique_files: 0}
+   - **Issues Found:** None
 
 **Verification Steps:**
 
-```bash
-# Test markdown links
-# Test transclusions
-# Test empty file
-```
+✅ Test markdown links - PASSED
+✅ Test transclusions - PASSED
+✅ Test empty file - PASSED
+
+**Summary:**
+- Tool correctly parses both markdown links and transclusions
+- Section references in links and transclusions are properly extracted
+- Empty state handled gracefully
+- Response format matches documentation exactly
 
 ---
 
@@ -1075,8 +1093,8 @@ For each tool:
 
 ### Phase 2: Link Management (Day 1-2)
 
-- [ ] 2.1 parse_file_links
-- [ ] 2.2 resolve_transclusions
+- [x] 2.1 parse_file_links - ✅ VERIFIED (2026-01-12)
+- [ ] 2.2 resolve_transclusions - ⏳ BLOCKED (MCP connection issue)
 - [ ] 2.3 validate_links
 - [ ] 2.4 get_link_graph
 
@@ -1150,13 +1168,26 @@ For each tool:
 
 ### High Priority Issues
 
-- **MCP Connection Instability**: Persistent "Tool not found" errors after initial successful tool calls. Affects ability to complete verification. Tools become unavailable after 2-3 successful calls. May be related to MCP server connection timeout, restart, or resource limits.
-  - **Impact:** Blocks completion of Phase 1 (rollback_file_version cannot be tested)
-  - **Pattern:** Tools work initially, then fail with "Tool user-cortex-{tool_name} was not found"
+- **MCP Connection Instability**: Persistent connection issues affecting tool verification. Observed patterns:
+  - **Pattern 1:** "Tool not found" errors after initial successful tool calls
+  - **Pattern 2:** "Connection closed" errors during tool execution
+  - **Pattern 3:** `BrokenResourceError` causing server restarts (observed in logs)
+  - **Impact:** Blocks completion of Phase 1 (rollback_file_version) and Phase 2 (resolve_transclusions)
+  - **Root Cause:** MCP server stdio connection appears unstable, possibly due to:
+    - Connection timeout settings
+    - Resource limits
+    - Server restart/reconnection issues
+    - TaskGroup exception handling
   - **Retry Attempts:** Multiple retries on 2026-01-12 - issue persists
-  - **Action Required:** Investigate MCP server configuration, connection pooling, or timeout settings
+  - **Action Required:** 
+    - Investigate MCP server stdio connection stability
+    - Review timeout and resource limit settings
+    - Check server restart/reconnection logic
+    - Consider connection pooling or keep-alive mechanisms
 
 - **Memory Bank Not Indexed**: `get_memory_bank_stats` reports 0 files despite files existing in `.cortex/memory-bank/`. Files need to be written through `manage_file` to be indexed, or index needs initialization.
+  - **Workaround:** Create test files using `manage_file` write operation to ensure they're indexed
+  - **Impact:** Low - workaround available, but affects verification of tools that expect existing files
 
 ### Low Priority Issues
 
@@ -1196,15 +1227,40 @@ For each tool:
 - Memory bank needs initialization (files exist but not indexed)
 - MCP connection stability issues observed
 
+---
+
+## Phase 2 Verification Summary (2026-01-12)
+
+**Status:** 1/4 tools verified (25% complete)
+
+**Verified Tools:**
+
+1. ✅ `parse_file_links` - Successfully parses markdown links and transclusions
+   - Correctly identifies link text, targets, line numbers, and section references
+   - Handles both markdown links and transclusion directives
+   - Gracefully handles files without links
+
+**Pending Tools:**
+
+1. ⏳ `resolve_transclusions` - BLOCKED by MCP connection issue (connection closed error)
+2. ⏳ `validate_links` - Not yet tested
+3. ⏳ `get_link_graph` - Not yet tested
+
+**Key Findings:**
+
+- `parse_file_links` works perfectly with correct response format
+- Tool correctly extracts section references from both links and transclusions
+- Empty state handling works as expected
+
 **Next Steps:**
 
 - **URGENT:** Resolve MCP connection instability issue blocking tool verification
-  - Investigate MCP server configuration
-  - Check connection pooling/timeout settings
-  - Review MCP server logs for errors
-- Retest `rollback_file_version` once connection is stable
-- Investigate memory bank initialization issue
-- Continue with Phase 2: Link Management Tools (after connection issue resolved)
+  - Investigate MCP server stdio connection stability (BrokenResourceError observed)
+  - Review timeout and resource limit settings
+  - Check server restart/reconnection logic
+- Retest `resolve_transclusions` once connection is stable
+- Continue with remaining Phase 2 tools after connection issue resolved
+- Investigate memory bank initialization issue (workaround: use `manage_file` to create test files)
 
 ---
 

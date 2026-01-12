@@ -28,6 +28,7 @@ Total: 53 tools + 7 prompts
 from . import (
     analysis_operations,  # noqa: F401
     configuration_operations,  # noqa: F401
+    connection_health,  # noqa: F401
     file_operations,  # noqa: F401
     phase1_foundation_dependency,  # noqa: F401
     phase1_foundation_rollback,  # noqa: F401
@@ -51,6 +52,7 @@ from . import (
 __all__ = [
     "analysis_operations",
     "configuration_operations",
+    "connection_health",
     "file_operations",
     "phase1_foundation_dependency",
     "phase1_foundation_rollback",

@@ -70,6 +70,17 @@ REINDEX_INTERVAL_SECONDS = 60  # Interval for rule reindexing (1 minute)
 GIT_OPERATION_TIMEOUT_SECONDS = 30  # Timeout for git operations
 
 # =============================================================================
+# MCP Connection Stability
+# =============================================================================
+
+MCP_TOOL_TIMEOUT_SECONDS = 300  # Maximum time for MCP tool execution (5 minutes)
+MCP_CONNECTION_TIMEOUT_SECONDS = 30  # Timeout for stdio connection operations
+MCP_MAX_CONCURRENT_TOOLS = 5  # Maximum concurrent MCP tool executions
+MCP_CONNECTION_RETRY_ATTEMPTS = 3  # Maximum retry attempts for transient failures
+MCP_CONNECTION_RETRY_DELAY_SECONDS = 1.0  # Delay between retry attempts
+MCP_HEALTH_CHECK_INTERVAL_SECONDS = 60  # Interval for connection health checks
+
+# =============================================================================
 # Performance Thresholds
 # =============================================================================
 

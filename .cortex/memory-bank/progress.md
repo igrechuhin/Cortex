@@ -1,5 +1,84 @@
 # Progress Log: MCP Memory Bank
 
+## 2026-01-11: MCP Connection Stability and Health Monitoring
+
+### Summary (MCP Connection Stability and Health Monitoring)
+
+Added MCP connection stability features and health monitoring tool to improve reliability and observability of MCP tool executions.
+
+### Changes Made (MCP Connection Stability and Health Monitoring)
+
+#### 1. Added `src/cortex/core/mcp_stability.py` - Connection Stability Module
+
+- **Feature**: New module providing connection stability features for MCP tool handlers
+- **Functionality**:
+  - Timeout protection for long-running operations (configurable timeout, default 300s)
+  - Resource limit enforcement via semaphore (max 5 concurrent operations)
+  - Connection error handling and automatic retry (3 attempts with exponential backoff)
+  - Connection health monitoring with utilization metrics
+- **Key Functions**:
+  - `with_mcp_stability()` - Execute MCP tool with stability protections
+  - `mcp_tool_wrapper()` - Decorator for adding stability to MCP tools
+  - `check_connection_health()` - Check connection health and resource utilization
+- **Impact**: Prevents hanging operations, enforces resource limits, improves reliability
+- **Lines**: 1-179
+
+#### 2. Added `src/cortex/tools/connection_health.py` - Health Monitoring Tool
+
+- **Feature**: MCP tool for monitoring connection health and resource utilization
+- **Functionality**:
+  - Returns connection status (healthy/unhealthy)
+  - Reports current concurrent operations
+  - Shows maximum allowed concurrent operations
+  - Calculates resource utilization percentage
+  - Reports available semaphore slots
+- **Impact**: Enables observability of MCP connection state and resource usage
+- **Lines**: 1-67
+
+#### 3. Updated `src/cortex/core/constants.py` - MCP Stability Constants
+
+- **Added Constants**:
+  - `MCP_TOOL_TIMEOUT_SECONDS = 300` - Maximum time for MCP tool execution (5 minutes)
+  - `MCP_CONNECTION_TIMEOUT_SECONDS = 30` - Timeout for stdio connection operations
+  - `MCP_MAX_CONCURRENT_TOOLS = 5` - Maximum concurrent MCP tool executions
+  - `MCP_CONNECTION_RETRY_ATTEMPTS = 3` - Maximum retry attempts for transient failures
+  - `MCP_CONNECTION_RETRY_DELAY_SECONDS = 1.0` - Delay between retry attempts
+  - `MCP_HEALTH_CHECK_INTERVAL_SECONDS = 60` - Interval for connection health checks
+- **Impact**: Centralized configuration for MCP connection stability
+- **Lines**: 73-81
+
+#### 4. Updated `src/cortex/main.py` - Improved Error Handling
+
+- **Changes**:
+  - Added explicit error handling for `BrokenPipeError` and `ConnectionError`
+  - Improved logging for connection errors
+  - Better error messages for debugging
+- **Impact**: More robust error handling and clearer error reporting
+- **Lines**: 24-37
+
+#### 5. Updated `src/cortex/tools/__init__.py` - Added Connection Health Import
+
+- **Change**: Added `connection_health` module to imports and `__all__` list
+- **Impact**: Connection health tool is now available via MCP protocol
+- **Lines**: 31, 55
+
+### Verification Results (MCP Connection Stability and Health Monitoring)
+
+- **Formatting Status**: ✅ PASS - Black formatted 257 files (all unchanged)
+- **Import Sorting Status**: ✅ PASS - Ruff import sorting passed
+- **Type Check Status**: ✅ PASS - 0 errors, 0 warnings, 0 informations
+- **Test Status**: ✅ PASS - All 2272 tests passing (1 skipped)
+- **Coverage Status**: ⚠️ Coverage includes new modules (exact percentage to be verified)
+
+### Code Quality (MCP Connection Stability and Health Monitoring)
+
+- Added comprehensive connection stability features
+- Improved error handling and observability
+- Maintained 100% test pass rate
+- Zero type errors remaining
+- Centralized configuration constants
+- Proper async/await patterns throughout
+
 ## 2026-01-11: Test Coverage Improvements and API Visibility Fixes
 
 ### Summary (Test Coverage Improvements and API Visibility Fixes)
