@@ -17,6 +17,7 @@ from typing import cast
 
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
+from cortex.core.mcp_stability import execute_tool_with_stability
 from cortex.linking.link_parser import LinkParser
 from cortex.linking.link_validator import LinkValidator
 from cortex.linking.transclusion_engine import (
@@ -289,8 +290,8 @@ async def resolve_transclusions(
         - Maximum depth prevents stack overflow from deeply nested or circular transclusions
     """
     try:
-        result = await _execute_transclusion_resolution(
-            file_name, project_root, max_depth
+        result = await execute_tool_with_stability(
+            _execute_transclusion_resolution, file_name, project_root, max_depth
         )
         return json.dumps(result, indent=2)
     except CircularDependencyError as e:

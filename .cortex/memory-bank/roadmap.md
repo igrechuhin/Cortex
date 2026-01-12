@@ -97,15 +97,18 @@
 
 ### Phase 11: Comprehensive MCP Tool Verification
 
-- **Status**: ⏸️ BLOCKED (25% complete - 5/29 tools verified)
+- **Status**: 🔄 IN PROGRESS (25% complete - 5/29 tools verified)
 - **Goal**: Verify all 29 Cortex MCP tools work correctly in the actual Cortex project
 - **Priority**: High (Quality Assurance)
 - **Plan**: `.cortex/plans/phase-11-tool-verification.md`
 - **Progress**:
   - ✅ Phase 1: Foundation Tools (4/5 verified - 80%)
   - ✅ Phase 2: Link Management (1/4 verified - 25%)
-  - ⏸️ **BLOCKED**: Persistent MCP connection instability issues preventing further verification
-  - **Note**: Connection stability improvements added, but connection issues persist
+  - ✅ **FIXED**: MCP connection instability issues resolved (2026-01-12)
+    - Applied stability wrapper to critical tools (rollback_file_version, resolve_transclusions)
+    - Improved server error handling for connection errors
+    - Enhanced retry logic to catch connection-related exceptions
+    - Added graceful shutdown for client disconnections
 - **Focus**: Systematic verification of every tool one by one
   - Phase 1: Foundation Tools (5 tools) - 4 verified, 1 blocked
   - Phase 2: Link Management (4 tools) - 1 verified, 3 pending

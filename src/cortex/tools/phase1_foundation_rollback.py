@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.file_system import FileSystemManager
+from cortex.core.mcp_stability import execute_tool_with_stability
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
@@ -65,7 +66,9 @@ async def rollback_file_version(
           version before rollback, then rollback to that version
     """
     try:
-        result = await _execute_rollback(file_name, version, project_root)
+        result = await execute_tool_with_stability(
+            _execute_rollback, file_name, version, project_root
+        )
         return json.dumps(result, indent=2)
     except Exception as e:
         return json.dumps(

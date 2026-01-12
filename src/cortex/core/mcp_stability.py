@@ -118,7 +118,29 @@ async def _handle_retry_exception(
             raise error
         return False, stored_exception
 
-    if isinstance(e, (ConnectionError, BrokenPipeError, OSError)):
+    # Handle connection-related errors that should be retried
+    connection_error_types = (
+        ConnectionError,
+        BrokenPipeError,
+        OSError,
+        RuntimeError,  # FastMCP may raise RuntimeError for connection issues
+    )
+
+    # Check if it's a connection-related error by message content
+    is_connection_error = isinstance(e, connection_error_types)
+    error_message = str(e).lower()
+    connection_keywords = [
+        "connection",
+        "broken pipe",
+        "connection reset",
+        "tool not found",
+        "resource",
+        "stdio",
+    ]
+
+    if is_connection_error or any(
+        keyword in error_message for keyword in connection_keywords
+    ):
         error, stored_exception = await _handle_connection_error(func_name, attempt, e)
         if error:
             raise error
@@ -219,6 +241,36 @@ def mcp_tool_wrapper(
         return wrapper
 
     return decorator
+
+
+async def execute_tool_with_stability(
+    func: Callable[..., Awaitable[T]],
+    *args: object,
+    timeout: float = MCP_TOOL_TIMEOUT_SECONDS,
+    **kwargs: object,
+) -> T:
+    """Execute MCP tool function with stability protections.
+
+    This is a convenience wrapper for tool execution that provides:
+    - Timeout protection (prevents hanging operations)
+    - Resource limit enforcement (concurrent operations)
+    - Connection error handling
+    - Automatic retry for transient failures
+
+    Args:
+        func: Async function to execute (the tool's business logic)
+        *args: Positional arguments for func
+        timeout: Maximum execution time in seconds
+        **kwargs: Keyword arguments for func
+
+    Returns:
+        Result from func execution
+
+    Raises:
+        TimeoutError: If operation exceeds timeout
+        RuntimeError: If resource limits exceeded or connection fails
+    """
+    return await with_mcp_stability(func, *args, timeout=timeout, **kwargs)
 
 
 async def check_connection_health() -> dict[str, object]:

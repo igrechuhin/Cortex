@@ -20,6 +20,8 @@ def main() -> None:
     """Entry point for the application when run with uvx.
 
     Handles MCP stdio connection with improved error handling and stability.
+    Provides comprehensive error handling for connection issues and ensures
+    graceful shutdown on errors.
     """
     try:
         mcp.run(transport="stdio")
@@ -27,10 +29,17 @@ def main() -> None:
         logger.info("MCP server interrupted by user")
         sys.exit(0)
     except BrokenPipeError as e:
-        logger.error(f"MCP stdio connection broken: {e}")
-        sys.exit(1)
+        logger.warning(f"MCP stdio connection broken (client disconnected): {e}")
+        sys.exit(0)  # Exit gracefully - client disconnected
     except ConnectionError as e:
         logger.error(f"MCP connection error: {e}")
+        sys.exit(1)
+    except OSError as e:
+        # Handle BrokenResourceError and other OS-level connection errors
+        if "Broken pipe" in str(e) or "Connection reset" in str(e):
+            logger.warning(f"MCP connection reset (client disconnected): {e}")
+            sys.exit(0)  # Exit gracefully - client disconnected
+        logger.error(f"MCP OS error: {e}")
         sys.exit(1)
     except Exception as e:
         logger.exception(f"Unexpected error in MCP server: {e}")
