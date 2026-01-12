@@ -2,6 +2,15 @@
 
 ## Current Focus (2026-01-11)
 
+### Phase 11: Comprehensive MCP Tool Verification
+
+- Current Status: Planning Complete, Verification Starting
+- Goal: Verify all 29 Cortex MCP tools work correctly in the actual Cortex project
+- Plan: `.cortex/plans/phase-11-tool-verification.md`
+- Approach: Test each tool systematically with real project data
+- Verification covers all phases from foundation to specific tools
+- Success criteria: All tools execute correctly, JSON responses match documentation, error handling works
+
 ### Synapse Path Refactoring
 
 - Current Status: Path Refactoring Complete (100%)
@@ -120,7 +129,18 @@ From `scripts/analyze_performance.py`:
 
 ## Next Actions
 
-### Immediate (Phase 9.3.4)
+### Immediate (Phase 11)
+
+1. Begin systematic verification of all 29 MCP tools
+   - Start with Phase 1: Foundation Tools (5 tools)
+   - Test each tool with real Cortex project data
+   - Document results, issues, and discrepancies
+   - Verify JSON response formats match documentation
+2. Complete verification across all 8 phases
+3. Generate comprehensive verification report
+4. Document and prioritize any issues found
+
+### Short-Term (Phase 9.3.4)
 
 1. Review remaining high-severity issues in `dependency_graph.py`
    - Note: Some were marked as complete in Phase 9.3.2 but still flagged by static analysis

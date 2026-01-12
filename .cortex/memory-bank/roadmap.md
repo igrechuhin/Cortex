@@ -66,6 +66,23 @@
 
 ## Upcoming Milestones
 
+### Phase 11: Comprehensive MCP Tool Verification
+
+- **Status**: 🚀 IN PROGRESS
+- **Goal**: Verify all 29 Cortex MCP tools work correctly in the actual Cortex project
+- **Priority**: High (Quality Assurance)
+- **Plan**: `.cortex/plans/phase-11-tool-verification.md`
+- **Focus**: Systematic verification of every tool one by one
+  - Phase 1: Foundation Tools (5 tools)
+  - Phase 2: Link Management (4 tools)
+  - Phase 3: Validation & Quality (2 tools)
+  - Phase 4: Token Optimization (6 tools)
+  - Phase 5.1: Pattern Analysis (1 tool)
+  - Phase 5.2: Refactoring Suggestions (1 tool)
+  - Phase 5.3-5.4: Execution & Learning (3 tools)
+  - Phase 6: Shared Rules Repository (5 tools)
+  - Phase 8: Project Structure Management (2 tools)
+
 ### Phase 10.4: Test Coverage Improvement
 
 - **Status**: Planning

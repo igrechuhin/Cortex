@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-01-12T10:42:19.665239",
+  "last_updated": "2026-01-12T10:54:55.087242",
+  "project_root": "/Users/i.grechukhin/Repo/Cortex",
+  "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
+  "files": {
+    "test_verification.md": {
+      "path": "/Users/i.grechukhin/Repo/Cortex/memory-bank/test_verification.md",
+      "exists": true,
+      "read_count": 1,
+      "write_count": 3,
+      "current_version": 3,
+      "version_history": [
+        {
+          "version": 1,
+          "timestamp": "2026-01-12T10:45:37.104903",
+          "content_hash": "sha256:981a7ea0756a9031341c2cb8d9312fe11411cf8e0c09762edb366a6db18db966",
+          "size_bytes": 195,
+          "token_count": 48,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/test_verification_v1.md",
+          "change_description": "Test file for foundation tools verification"
+        },
+        {
+          "version": 2,
+          "timestamp": "2026-01-12T10:48:37.520629",
+          "content_hash": "sha256:9ee1fa227b86a2a819eebd2a2dbe230e674e27e9a7b237eefa2429f7e58eafb2",
+          "size_bytes": 166,
+          "token_count": 41,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/test_verification_v2.md",
+          "change_description": "Updated via MCP"
+        },
+        {
+          "version": 3,
+          "timestamp": "2026-01-12T10:51:43.282218",
+          "content_hash": "sha256:0f50014557df73c89bec10efa3ee6456dcda25df5d9bb8b92eb69f0505cd9e7e",
+          "size_bytes": 202,
+          "token_count": 50,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/test_verification_v3.md",
+          "change_description": "Updated via MCP"
+        }
+      ],
+      "size_bytes": 195,
+      "token_count": 48,
+      "token_model": "cl100k_base",
+      "last_modified": "2026-01-12T10:54:55.087226",
+      "content_hash": "sha256:981a7ea0756a9031341c2cb8d9312fe11411cf8e0c09762edb366a6db18db966",
+      "sections": [
+        {
+          "heading": "# Test Verification File",
+          "level": 1,
+          "line_start": 1,
+          "line_end": 4,
+          "content_hash": "sha256:07add74483d5d244c58579dda4fec3efb4bc19088c725b76837de921aada53e0"
+        },
+        {
+          "heading": "## Test Details",
+          "level": 2,
+          "line_start": 5,
+          "line_end": 8,
+          "content_hash": "sha256:20a55eeac66717a2150a13b6954d314eb4d910e5907d5ecd1e00d7619de398cd"
+        }
+      ],
+      "last_read": "2026-01-12T10:51:43.282709"
+    }
+  },
+  "dependency_graph": {
+    "nodes": [],
+    "edges": [],
+    "progressive_loading_order": []
+  },
+  "usage_analytics": {
+    "total_reads": 0,
+    "total_writes": 0,
+    "files_by_read_frequency": [],
+    "files_by_write_frequency": [],
+    "last_session_start": "2026-01-12T10:42:19.665258",
+    "sessions_count": 0
+  },
+  "totals": {
+    "total_files": 1,
+    "total_size_bytes": 195,
+    "total_tokens": 48,
+    "last_full_scan": "2026-01-12T10:54:55.087240"
+  }
+}
