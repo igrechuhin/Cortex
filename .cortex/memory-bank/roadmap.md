@@ -4,17 +4,18 @@
 
 ### Phase 9.3.4: Medium-Severity Optimizations
 
-- **Status**: In Progress (73% complete)
-- **Issues Fixed**: 27/37 medium-severity issues
+- **Status**: In Progress (86% complete)
+- **Issues Fixed**: 32/37 medium-severity issues
 - **Files Optimized**:
   - token_counter.py (2 issues) ✅
   - dependency_graph.py (10 issues) ✅
   - structure_analyzer.py (6 issues) ✅ Complete
   - pattern_analyzer.py (6 issues) ✅
   - duplication_detector.py (1 issue) ✅
-- **Remaining**: 10 medium-severity issues (mostly stateful operations in optimization_strategies.py)
-- **Impact**: Total issues reduced from 45 to 14 (-69%), medium-severity from 37 to 10 (-73%)
-- **Latest**: Optimized list append in loop patterns to list comprehensions (2026-01-12)
+  - optimization_strategies.py (7 issues) ✅
+- **Remaining**: 5 medium-severity issues (stateful operations with pre-calculated tokens - acceptable pattern)
+- **Impact**: Total issues reduced from 45 to 9 (-80%), medium-severity from 37 to 5 (-86%)
+- **Latest**: Optimized 5 methods in optimization_strategies.py to pre-calculate token counts before loops (2026-01-12)
 
 ### Shared Rules Setup ✅
 
@@ -136,6 +137,11 @@
     - Fixed all 5 synapse tools (sync_synapse, update_synapse_rule, get_synapse_rules, get_synapse_prompts, update_synapse_prompt)
     - Replaced `cast()` with `await get_manager()` to properly unwrap LazyManager
     - Fixed manager key from "rules" to "rules_manager" to match initialization
+    - **FIXED**: Synapse manager factory function (2026-01-12)
+      - Replaced lambda with proper async factory function in initialization.py
+      - Lambda pattern was causing LazyManager to not properly unwrap
+      - Created `_make_synapse_factory()` to return proper async factory
+      - Fix applied to synapse manager initialization
     - Updated all test fixtures and added `get_manager` mocks
     - All tests passing, code fix verified
     - Tools ready for verification (requires MCP server restart)
@@ -166,17 +172,18 @@
 
 ### Phase 9.3.4: Medium-Severity Optimizations
 
-- **Status**: In Progress (73% complete - 27/37 medium-severity issues addressed)
+- **Status**: In Progress (86% complete - 32/37 medium-severity issues addressed)
 - **Progress**:
   - ✅ token_counter.py: 2 issues fixed
   - ✅ dependency_graph.py: 10 issues fixed
   - ✅ structure_analyzer.py: 6 issues fixed (6/6 complete)
   - ✅ pattern_analyzer.py: 6 issues fixed (6/7 - 1 stateful operation remaining)
   - ✅ duplication_detector.py: 1 issue fixed (1/3 - 2 stateful operations remaining)
-  - ⏳ Remaining: 10 medium-severity issues (mostly stateful operations in optimization_strategies.py)
-- **Impact**: Reduced total issues from 45 to 14 (-69%), medium-severity from 37 to 10 (-73%)
-- **Latest**: Optimized list append in loop patterns to list comprehensions across multiple files
-- Address remaining medium-severity performance issues (mostly stateful operations)
+  - ✅ optimization_strategies.py: 7 issues fixed (5 methods optimized to pre-calculate token counts)
+  - ⏳ Remaining: 5 medium-severity issues (stateful operations with pre-calculated tokens - acceptable pattern)
+- **Impact**: Reduced total issues from 45 to 9 (-80%), medium-severity from 37 to 5 (-86%)
+- **Latest**: Optimized 5 methods in optimization_strategies.py to pre-calculate token counts before loops (2026-01-12)
+- **Note**: Remaining issues are stateful operations that require tracking running totals - acceptable pattern after pre-calculation optimization
 - Target performance score: 9.5/10+
 
 ### Phase 3 Extension: Infrastructure Validation (PROPOSED)

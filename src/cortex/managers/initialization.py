@@ -192,6 +192,25 @@ def _add_validation_managers(managers: dict[str, object], project_root: Path) ->
     )
 
 
+def _make_synapse_factory(
+    proj_root: Path, mgrs: dict[str, object]
+) -> collections.abc.Callable[[], collections.abc.Awaitable[SynapseManager]]:
+    """Create factory function for SynapseManager.
+
+    Args:
+        proj_root: Project root directory
+        mgrs: Managers dictionary
+
+    Returns:
+        Factory function that creates SynapseManager
+    """
+
+    async def factory() -> SynapseManager:
+        return await _create_synapse_manager(proj_root, mgrs)
+
+    return factory
+
+
 def _add_optimization_managers(
     managers: dict[str, object],
     project_root: Path,
@@ -226,14 +245,6 @@ def _add_optimization_managers(
         lambda: _create_rules_manager(project_root, core_managers, managers),
         name="rules_manager",
     )
-    def _make_synapse_factory(
-        proj_root: Path, mgrs: dict[str, object]
-    ) -> collections.abc.Callable[[], collections.abc.Awaitable[SynapseManager]]:
-        """Create factory function for SynapseManager."""
-        async def factory() -> SynapseManager:
-            return await _create_synapse_manager(proj_root, mgrs)
-        return factory
-
     managers["synapse"] = LazyManager(
         _make_synapse_factory(project_root, managers), name="synapse"
     )

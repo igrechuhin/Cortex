@@ -312,16 +312,24 @@ class OptimizationStrategies:
         Returns:
             Updated token count
         """
-        for mandatory_file in self.mandatory_files:
-            if mandatory_file in files_content:
-                content = files_content[mandatory_file]
-                file_tokens = self.token_counter.count_tokens(content)
+        # Pre-calculate token counts for all mandatory files
+        file_token_pairs = [
+            (
+                mandatory_file,
+                self.token_counter.count_tokens(files_content[mandatory_file]),
+            )
+            for mandatory_file in self.mandatory_files
+            if mandatory_file in files_content
+        ]
 
-                if total_tokens + file_tokens <= token_budget:
-                    selected_files.append(mandatory_file)
-                    total_tokens += file_tokens
+        # Accumulate files that fit within budget
+        current_tokens = total_tokens
+        for file_name, file_tokens in file_token_pairs:
+            if current_tokens + file_tokens <= token_budget:
+                selected_files.append(file_name)
+                current_tokens += file_tokens
 
-        return total_tokens
+        return current_tokens
 
     def _add_high_scoring_files(
         self,
@@ -344,21 +352,23 @@ class OptimizationStrategies:
             Updated token count
         """
         high_score_threshold = 0.7
-        high_scoring_files = [
-            file_name
+        # Pre-calculate token counts for high-scoring files
+        file_token_pairs = [
+            (file_name, self.token_counter.count_tokens(files_content[file_name]))
             for file_name, score in relevance_scores.items()
-            if score >= high_score_threshold and file_name not in selected_files
+            if score >= high_score_threshold
+            and file_name not in selected_files
+            and file_name in files_content
         ]
 
-        for file_name in high_scoring_files:
-            content = files_content[file_name]
-            file_tokens: int = self.token_counter.count_tokens(content)
-
-            if total_tokens + file_tokens <= token_budget:
+        # Accumulate files that fit within budget
+        current_tokens = total_tokens
+        for file_name, file_tokens in file_token_pairs:
+            if current_tokens + file_tokens <= token_budget:
                 selected_files.append(file_name)
-                total_tokens += file_tokens
+                current_tokens += file_tokens
 
-        return total_tokens
+        return current_tokens
 
     async def _add_medium_scoring_sections(
         self,
@@ -403,6 +413,54 @@ class OptimizationStrategies:
 
         return total_tokens
 
+    def _filter_and_sort_sections(
+        self, section_scores: list[dict[str, object]]
+    ) -> list[dict[str, object]]:
+        """Filter and sort sections by score (highest first).
+
+        Args:
+            section_scores: List of section scores with 'section' and 'score' keys
+
+        Returns:
+            Sorted list of valid sections (score >= 0.5)
+        """
+        valid_sections = [
+            section_data
+            for section_data in section_scores
+            if isinstance(section_data.get("section"), str)
+            and section_data.get("section")
+            and cast(float, section_data.get("score", 0.0)) >= 0.5
+        ]
+        return sorted(
+            valid_sections,
+            key=lambda x: cast(float, x.get("score", 0.0)),
+            reverse=True,
+        )
+
+    def _calculate_section_tokens(
+        self, sorted_sections: list[dict[str, object]], content: str
+    ) -> list[tuple[str, int]]:
+        """Pre-calculate token counts for all sections.
+
+        Args:
+            sorted_sections: Sorted list of section data
+            content: Full file content
+
+        Returns:
+            List of (section_name, token_count) tuples
+        """
+        return [
+            (
+                cast(str, section_data.get("section")),
+                self.token_counter.count_tokens(
+                    self.extract_section_content(
+                        content, cast(str, section_data.get("section"))
+                    )
+                ),
+            )
+            for section_data in sorted_sections
+        ]
+
     def _process_sections_for_file(
         self,
         section_scores: list[dict[str, object]],
@@ -421,29 +479,13 @@ class OptimizationStrategies:
         Returns:
             Tuple of (selected section names, updated token count)
         """
+        sorted_sections = self._filter_and_sort_sections(section_scores)
+        section_token_pairs = self._calculate_section_tokens(sorted_sections, content)
+
+        # Accumulate sections that fit within budget
         file_sections: list[str] = []
         current_tokens = total_tokens
-
-        # Sort sections by score (highest first)
-        sorted_sections = sorted(
-            section_scores,
-            key=lambda x: cast(float, x.get("score", 0.0)),
-            reverse=True,
-        )
-
-        for section_data in sorted_sections:
-            section_name = section_data.get("section", "")
-            if not section_name or not isinstance(section_name, str):
-                continue
-
-            section_score = cast(float, section_data.get("score", 0.0))
-            # Only include sections with score >= 0.5
-            if section_score < 0.5:
-                continue
-
-            section_content = self.extract_section_content(content, section_name)
-            section_tokens = self.token_counter.count_tokens(section_content)
-
+        for section_name, section_tokens in section_token_pairs:
             if current_tokens + section_tokens <= token_budget:
                 file_sections.append(section_name)
                 current_tokens += section_tokens
@@ -553,22 +595,26 @@ class OptimizationStrategies:
             Section content
         """
         lines = content.split("\n")
-        section_lines: list[str] = []
-        in_section = False
+        section_start_idx: int | None = None
+        section_end_idx: int | None = None
 
-        for line in lines:
+        for i, line in enumerate(lines):
             if line.startswith("#"):
                 # Check if this is the target section
                 if section_name in line:
-                    in_section = True
-                    section_lines.append(line)
-                elif in_section:
+                    section_start_idx = i
+                elif section_start_idx is not None:
                     # Reached next section, stop
+                    section_end_idx = i
                     break
-            elif in_section:
-                section_lines.append(line)
 
-        return "\n".join(section_lines)
+        if section_start_idx is None:
+            return ""
+
+        if section_end_idx is None:
+            section_end_idx = len(lines)
+
+        return "\n".join(lines[section_start_idx:section_end_idx])
 
     def _add_mandatory_files_to_priority(
         self,
@@ -578,15 +624,23 @@ class OptimizationStrategies:
         token_budget: int,
     ) -> int:
         """Add mandatory files to priority selection."""
-        for mandatory_file in self.mandatory_files:
-            if mandatory_file in files_content:
-                content = files_content[mandatory_file]
-                file_tokens = self.token_counter.count_tokens(content)
+        # Pre-calculate token counts for all mandatory files
+        file_token_pairs = [
+            (
+                mandatory_file,
+                self.token_counter.count_tokens(files_content[mandatory_file]),
+            )
+            for mandatory_file in self.mandatory_files
+            if mandatory_file in files_content
+        ]
 
-                if total_tokens + file_tokens <= token_budget:
-                    selected_files.append(mandatory_file)
-                    total_tokens += file_tokens
-        return total_tokens
+        # Accumulate files that fit within budget
+        current_tokens = total_tokens
+        for file_name, file_tokens in file_token_pairs:
+            if current_tokens + file_tokens <= token_budget:
+                selected_files.append(file_name)
+                current_tokens += file_tokens
+        return current_tokens
 
     def _add_greedy_files(
         self,
@@ -597,21 +651,25 @@ class OptimizationStrategies:
         token_budget: int,
     ) -> int:
         """Add files greedily by score."""
-        remaining_files = [
-            (file_name, score)
+        # Pre-calculate token counts and sort by relevance score
+        file_token_pairs = [
+            (
+                file_name,
+                self.token_counter.count_tokens(files_content[file_name]),
+                score,
+            )
             for file_name, score in relevance_scores.items()
-            if file_name not in selected_files
+            if file_name not in selected_files and file_name in files_content
         ]
-        remaining_files.sort(key=lambda x: x[1], reverse=True)
+        file_token_pairs.sort(key=lambda x: x[2], reverse=True)
 
-        for file_name, _ in remaining_files:
-            content = files_content[file_name]
-            tokens = self.token_counter.count_tokens(content)
-
-            if total_tokens + tokens <= token_budget:
+        # Accumulate files that fit within budget
+        current_tokens = total_tokens
+        for file_name, tokens, _ in file_token_pairs:
+            if current_tokens + tokens <= token_budget:
                 selected_files.append(file_name)
-                total_tokens += tokens
-        return total_tokens
+                current_tokens += tokens
+        return current_tokens
 
     def _build_priority_result(
         self,
