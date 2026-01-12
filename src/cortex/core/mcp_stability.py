@@ -35,6 +35,126 @@ def _get_semaphore() -> asyncio.Semaphore:
     return _concurrent_tools_semaphore
 
 
+async def _handle_timeout_error(
+    func_name: str, timeout: float, attempt: int, e: asyncio.TimeoutError
+) -> tuple[TimeoutError | None, Exception | None]:
+    """Handle timeout error during retry.
+
+    Args:
+        func_name: Name of the function that timed out
+        timeout: Timeout value in seconds
+        attempt: Current attempt number
+        e: The timeout exception
+
+    Returns:
+        Tuple of (error to raise if final attempt, exception to store)
+    """
+    logger.warning(
+        f"MCP tool {func_name} timed out after {timeout}s (attempt {attempt}/{MCP_CONNECTION_RETRY_ATTEMPTS})"
+    )
+    if attempt == MCP_CONNECTION_RETRY_ATTEMPTS:
+        error = TimeoutError(f"MCP tool {func_name} exceeded timeout of {timeout}s")
+        error.__cause__ = e
+        return error, None
+    return None, e
+
+
+async def _handle_connection_error(
+    func_name: str, attempt: int, e: Exception
+) -> tuple[RuntimeError | None, Exception | None]:
+    """Handle connection error during retry.
+
+    Args:
+        func_name: Name of the function that failed
+        attempt: Current attempt number
+        e: The connection exception
+
+    Returns:
+        Tuple of (error to raise if final attempt, exception to store)
+    """
+    logger.warning(
+        f"MCP connection error in {func_name} (attempt {attempt}/{MCP_CONNECTION_RETRY_ATTEMPTS}): {e}"
+    )
+    if attempt == MCP_CONNECTION_RETRY_ATTEMPTS:
+        error = RuntimeError(
+            f"MCP connection failed for {func_name} after {attempt} attempts"
+        )
+        error.__cause__ = e
+        return error, None
+    await asyncio.sleep(MCP_CONNECTION_RETRY_DELAY_SECONDS * attempt)
+    return None, e
+
+
+async def _execute_single_attempt(
+    func: Callable[..., Awaitable[T]],
+    semaphore: asyncio.Semaphore,
+    timeout: float,
+    args: tuple[object, ...],
+    kwargs: dict[str, object],
+) -> T:
+    """Execute function once with timeout and resource limits."""
+    async with semaphore:
+        async with asyncio.timeout(timeout):
+            return await func(*args, **kwargs)
+
+
+async def _handle_retry_exception(
+    func_name: str,
+    timeout: float,
+    attempt: int,
+    e: Exception,
+    last_exception: Exception | None,
+) -> tuple[bool, Exception | None]:
+    """Handle exception during retry attempt.
+
+    Returns:
+        Tuple of (should_raise, new_last_exception)
+    """
+    if isinstance(e, asyncio.TimeoutError):
+        error, stored_exception = await _handle_timeout_error(
+            func_name, timeout, attempt, e
+        )
+        if error:
+            raise error
+        return False, stored_exception
+
+    if isinstance(e, (ConnectionError, BrokenPipeError, OSError)):
+        error, stored_exception = await _handle_connection_error(func_name, attempt, e)
+        if error:
+            raise error
+        return False, stored_exception
+
+    logger.error(f"MCP tool {func_name} failed: {e}")
+    raise
+
+
+async def _execute_with_retry(
+    func: Callable[..., Awaitable[T]],
+    semaphore: asyncio.Semaphore,
+    timeout: float,
+    args: tuple[object, ...],
+    kwargs: dict[str, object],
+) -> T:
+    """Execute function with retry logic for transient failures."""
+    last_exception: Exception | None = None
+    func_name = func.__name__
+
+    for attempt in range(1, MCP_CONNECTION_RETRY_ATTEMPTS + 1):
+        try:
+            return await _execute_single_attempt(func, semaphore, timeout, args, kwargs)
+        except Exception as e:
+            _, last_exception = await _handle_retry_exception(
+                func_name, timeout, attempt, e, last_exception
+            )
+
+    if last_exception:
+        raise RuntimeError(
+            f"MCP tool {func_name} failed after {MCP_CONNECTION_RETRY_ATTEMPTS} attempts"
+        ) from last_exception
+
+    raise RuntimeError(f"MCP tool {func_name} failed unexpectedly")
+
+
 async def with_mcp_stability(
     func: Callable[..., Awaitable[T]],
     *args: object,
@@ -63,57 +183,7 @@ async def with_mcp_stability(
         RuntimeError: If resource limits exceeded or connection fails
     """
     semaphore = _get_semaphore()
-
-    async def _execute_with_retry() -> T:
-        """Execute function with retry logic for transient failures."""
-        last_exception: Exception | None = None
-
-        for attempt in range(1, MCP_CONNECTION_RETRY_ATTEMPTS + 1):
-            try:
-                # Acquire semaphore to enforce concurrent operation limit
-                async with semaphore:
-                    # Execute with timeout protection
-                    async with asyncio.timeout(timeout):
-                        return await func(*args, **kwargs)
-
-            except asyncio.TimeoutError as e:
-                logger.warning(
-                    f"MCP tool {func.__name__} timed out after {timeout}s (attempt {attempt}/{MCP_CONNECTION_RETRY_ATTEMPTS})"
-                )
-                if attempt == MCP_CONNECTION_RETRY_ATTEMPTS:
-                    raise TimeoutError(
-                        f"MCP tool {func.__name__} exceeded timeout of {timeout}s"
-                    ) from e
-                last_exception = e
-
-            except (ConnectionError, BrokenPipeError, OSError) as e:
-                logger.warning(
-                    f"MCP connection error in {func.__name__} (attempt {attempt}/{MCP_CONNECTION_RETRY_ATTEMPTS}): {e}"
-                )
-                if attempt == MCP_CONNECTION_RETRY_ATTEMPTS:
-                    raise RuntimeError(
-                        f"MCP connection failed for {func.__name__} after {attempt} attempts"
-                    ) from e
-                last_exception = e
-                # Wait before retry
-                await asyncio.sleep(MCP_CONNECTION_RETRY_DELAY_SECONDS * attempt)
-
-            except Exception as e:
-                # Non-transient errors - don't retry
-                logger.error(
-                    f"MCP tool {func.__name__} failed with non-transient error: {e}"
-                )
-                raise
-
-        # Should never reach here, but satisfy type checker
-        if last_exception:
-            raise RuntimeError(
-                f"MCP tool {func.__name__} failed after {MCP_CONNECTION_RETRY_ATTEMPTS} attempts"
-            ) from last_exception
-
-        raise RuntimeError(f"MCP tool {func.__name__} failed unexpectedly")
-
-    return await _execute_with_retry()
+    return await _execute_with_retry(func, semaphore, timeout, args, kwargs)
 
 
 def mcp_tool_wrapper(
