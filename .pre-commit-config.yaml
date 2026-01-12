@@ -37,14 +37,14 @@ repos:
     hooks:
       - id: check-file-sizes
         name: Check file sizes (max 400 lines)
-        entry: python scripts/check_file_sizes.py
+        entry: python .cortex/synapse/scripts/python/check_file_sizes.py
         language: python
         pass_filenames: false
         always_run: true
 
       - id: check-function-lengths
         name: Check function lengths (max 30 lines)
-        entry: python scripts/check_function_lengths.py
+        entry: python .cortex/synapse/scripts/python/check_function_lengths.py
         language: python
         pass_filenames: false
         always_run: true

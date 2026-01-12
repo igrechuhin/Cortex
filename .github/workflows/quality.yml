@@ -30,11 +30,11 @@ jobs:
 
       - name: Check formatting (Black)
         run: |
-          uv run black --check src/ tests/ scripts/
+          uv run black --check src/ tests/ .cortex/synapse/scripts/
 
       - name: Lint with ruff (includes import sorting)
         run: |
-          uv run ruff check src/ tests/ scripts/
+          uv run ruff check src/ tests/ .cortex/synapse/scripts/
 
       - name: Type check with pyright
         run: |
@@ -42,11 +42,11 @@ jobs:
 
       - name: Check file sizes (max 400 lines)
         run: |
-          uv run python scripts/check_file_sizes.py
+          uv run python .cortex/synapse/scripts/python/check_file_sizes.py
 
       - name: Check function lengths (max 30 lines)
         run: |
-          uv run python scripts/check_function_lengths.py
+          uv run python .cortex/synapse/scripts/python/check_function_lengths.py
 
       - name: Run tests
         run: |
