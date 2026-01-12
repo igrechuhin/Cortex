@@ -251,34 +251,29 @@ class DuplicationDetector:
         """Compare sections within signature groups."""
         from itertools import combinations
 
-        similar: list[dict[str, object]] = []
-
-        for group_sections in signature_groups.values():
-            if len(group_sections) <= 1:
-                continue
-
-            # Use itertools.combinations for cleaner O(n²) pairwise comparison
+        similar: list[dict[str, object]] = [
+            {
+                "file1": file1,
+                "section1": section1_name,
+                "file2": file2,
+                "section2": section2_name,
+                "similarity": similarity,
+                "type": "similar",
+                "suggestion": self.generate_refactoring_suggestion(
+                    file1, section1_name, file2, section2_name
+                ),
+            }
+            for group_sections in signature_groups.values()
+            if len(group_sections) > 1
             for (file1, section1_name, content1), (
                 file2,
                 section2_name,
                 content2,
-            ) in combinations(group_sections, 2):
-                similarity = self.compare_sections(content1, content2)
-
-                if self.threshold <= similarity < 1.0:
-                    similar.append(
-                        {
-                            "file1": file1,
-                            "section1": section1_name,
-                            "file2": file2,
-                            "section2": section2_name,
-                            "similarity": similarity,
-                            "type": "similar",
-                            "suggestion": self.generate_refactoring_suggestion(
-                                file1, section1_name, file2, section2_name
-                            ),
-                        }
-                    )
+            ) in combinations(group_sections, 2)
+            if self.threshold
+            <= (similarity := self.compare_sections(content1, content2))
+            < 1.0
+        ]
 
         return similar
 

@@ -161,28 +161,23 @@ class StructureAnalyzer:
         Returns:
             List of orphaned file anti-patterns
         """
-        patterns: list[dict[str, object]] = []
-
-        for file_path in all_files:
-            file_name = file_path.name
-            has_dependencies = False
-
-            if file_name in graph:
-                if graph[file_name].get("dependencies") or graph[file_name].get(
-                    "dependents"
-                ):
-                    has_dependencies = True
-
-            if not has_dependencies:
-                patterns.append(
-                    {
-                        "type": "orphaned_file",
-                        "severity": "medium",
-                        "file": file_name,
-                        "description": "File has no dependencies or dependents",
-                        "recommendation": "Link to other files or consider if it's still needed",
-                    }
+        patterns: list[dict[str, object]] = [
+            {
+                "type": "orphaned_file",
+                "severity": "medium",
+                "file": file_path.name,
+                "description": "File has no dependencies or dependents",
+                "recommendation": "Link to other files or consider if it's still needed",
+            }
+            for file_path in all_files
+            if not (
+                file_path.name in graph
+                and (
+                    graph[file_path.name].get("dependencies")
+                    or graph[file_path.name].get("dependents")
                 )
+            )
+        ]
 
         return patterns
 
@@ -250,7 +245,6 @@ class StructureAnalyzer:
         """
         patterns: list[dict[str, object]] = []
         file_names: list[str] = [f.stem for f in all_files]
-        similar_names: list[tuple[str, str]] = []
 
         # Optimize: Sort names and use sorted order to reduce comparisons
         # Only check adjacent and nearby names in sorted order, as similar
@@ -261,30 +255,27 @@ class StructureAnalyzer:
         # This reduces complexity from O(n²) to O(n*k) where k is window size
         window_size = min(10, len(sorted_names))  # Check next 10 names max
 
-        for i in range(len(sorted_names)):
-            name1_lower = sorted_names[i].lower()
-            # Only check next few names in sorted order
-            for j in range(i + 1, min(i + 1 + window_size, len(sorted_names))):
-                name2_lower = sorted_names[j].lower()
-
-                # Early exit: if names are too different alphabetically, skip rest
-                if name2_lower[0] != name1_lower[0]:
-                    # Different first letter in sorted order - no more matches likely
-                    break
-
-                if name1_lower in name2_lower or name2_lower in name1_lower:
-                    similar_names.append((sorted_names[i], sorted_names[j]))
-
-        for name1, name2 in similar_names:
-            patterns.append(
-                {
-                    "type": "similar_filenames",
-                    "severity": "low",
-                    "files": [f"{name1}.md", f"{name2}.md"],
-                    "description": "Files have similar names",
-                    "recommendation": "Check if content is duplicated or could be consolidated",
-                }
+        similar_names: list[tuple[str, str]] = [
+            (sorted_names[i], sorted_names[j])
+            for i in range(len(sorted_names))
+            for j in range(i + 1, min(i + 1 + window_size, len(sorted_names)))
+            if sorted_names[j].lower()[0] == sorted_names[i].lower()[0]
+            and (
+                sorted_names[i].lower() in sorted_names[j].lower()
+                or sorted_names[j].lower() in sorted_names[i].lower()
             )
+        ]
+
+        patterns = [
+            {
+                "type": "similar_filenames",
+                "severity": "low",
+                "files": [f"{name1}.md", f"{name2}.md"],
+                "description": "Files have similar names",
+                "recommendation": "Check if content is duplicated or could be consolidated",
+            }
+            for name1, name2 in similar_names
+        ]
 
         return patterns
 
@@ -489,24 +480,24 @@ class StructureAnalyzer:
         Returns:
             List of complexity hotspot dictionaries, sorted by score
         """
-        hotspots: list[dict[str, object]] = []
-        for file_name in graph.keys():
-            complexity_score = (
-                depth_map.get(file_name, 0) * 2
-                + fan_in.get(file_name, 0)
-                + fan_out.get(file_name, 0)
-            )
-
-            if complexity_score > 20:
-                hotspots.append(
-                    {
-                        "file": file_name,
-                        "complexity_score": complexity_score,
-                        "depth": depth_map.get(file_name, 0),
-                        "fan_in": fan_in.get(file_name, 0),
-                        "fan_out": fan_out.get(file_name, 0),
-                    }
+        hotspots: list[dict[str, object]] = [
+            {
+                "file": file_name,
+                "complexity_score": complexity_score,
+                "depth": depth_map.get(file_name, 0),
+                "fan_in": fan_in.get(file_name, 0),
+                "fan_out": fan_out.get(file_name, 0),
+            }
+            for file_name in graph.keys()
+            if (
+                complexity_score := (
+                    depth_map.get(file_name, 0) * 2
+                    + fan_in.get(file_name, 0)
+                    + fan_out.get(file_name, 0)
                 )
+            )
+            > 20
+        ]
 
         def get_complexity_score(hotspot: dict[str, object]) -> int:
             """Extract complexity score for sorting."""
@@ -726,13 +717,13 @@ class StructureAnalyzer:
         Returns:
             Deduplicated and sorted chains
         """
-        unique_chains: list[dict[str, object]] = []
         seen: set[tuple[str, ...]] = set()
 
-        for chain in chains:
+        def _is_unique_chain(chain: dict[str, object]) -> bool:
+            """Check if chain is unique and add to seen set."""
             chain_list_raw = chain.get("chain", [])
             if not isinstance(chain_list_raw, list):
-                continue
+                return False
 
             chain_list: list[str] = [
                 str(part)
@@ -742,7 +733,12 @@ class StructureAnalyzer:
             chain_key = tuple(chain_list)
             if chain_key and chain_key not in seen:
                 seen.add(chain_key)
-                unique_chains.append(chain)
+                return True
+            return False
+
+        unique_chains: list[dict[str, object]] = [
+            chain for chain in chains if _is_unique_chain(chain)
+        ]
 
         def get_chain_length(chain: dict[str, object]) -> int:
             """Extract chain length for sorting."""

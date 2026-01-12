@@ -342,20 +342,18 @@ class PatternAnalyzer:
         self, patterns: dict[str, int], min_co_access_count: int
     ) -> list[dict[str, object]]:
         """Format and filter co-access pattern results."""
-        result: list[dict[str, object]] = []
-        for pattern_key, count in patterns.items():
-            if count >= min_co_access_count:
-                files = pattern_key.split("|")
-                result.append(
-                    {
-                        "file_1": files[0],
-                        "file_2": files[1],
-                        "co_access_count": count,
-                        "correlation_strength": (
-                            "high" if count >= 10 else "medium" if count >= 5 else "low"
-                        ),
-                    }
-                )
+        result: list[dict[str, object]] = [
+            {
+                "file_1": files[0],
+                "file_2": files[1],
+                "co_access_count": count,
+                "correlation_strength": (
+                    "high" if count >= 10 else "medium" if count >= 5 else "low"
+                ),
+            }
+            for pattern_key, count in patterns.items()
+            if count >= min_co_access_count and (files := pattern_key.split("|"))
+        ]
         return result
 
     def _sort_by_co_access_count(
@@ -404,14 +402,13 @@ class PatternAnalyzer:
             List of unused files with last access information
         """
         cutoff_str = self._calculate_cutoff_date_str(time_range_days)
-        unused: list[UnusedFileEntry] = []
 
         file_stats = self.access_data["file_stats"]
-        for file_path, stats in file_stats.items():
-            if self._is_file_unused(stats, cutoff_str):
-                unused.append(
-                    self._build_unused_file_entry(file_path, stats, cutoff_str)
-                )
+        unused: list[UnusedFileEntry] = [
+            self._build_unused_file_entry(file_path, stats, cutoff_str)
+            for file_path, stats in file_stats.items()
+            if self._is_file_unused(stats, cutoff_str)
+        ]
 
         return self._sort_unused_files(unused)
 
@@ -432,29 +429,22 @@ class PatternAnalyzer:
             if time_range_days is not None
             else ""
         )
-        result: list[TaskPatternResult] = []
         task_patterns_raw = self.access_data["task_patterns"]
 
-        for task_id, pattern in task_patterns_raw.items():
-            pattern_entry: TaskPatternEntry = pattern
-            if self._should_skip_task_pattern(
-                pattern_entry, time_range_days, cutoff_str
-            ):
-                continue
-
-            files_list = self._extract_files_from_pattern(pattern_entry)
-            description = self._extract_description_from_pattern(pattern_entry)
-            pattern_timestamp = pattern_entry.get("timestamp", "") or ""
-
-            result.append(
-                {
-                    "task_id": str(task_id),
-                    "description": description,
-                    "file_count": len(files_list),
-                    "files": files_list,
-                    "timestamp": pattern_timestamp,
-                }
+        result: list[TaskPatternResult] = [
+            {
+                "task_id": str(task_id),
+                "description": self._extract_description_from_pattern(pattern_entry),
+                "file_count": len(files_list),
+                "files": files_list,
+                "timestamp": pattern_entry.get("timestamp", "") or "",
+            }
+            for task_id, pattern in task_patterns_raw.items()
+            if not self._should_skip_task_pattern(
+                (pattern_entry := pattern), time_range_days, cutoff_str
             )
+            and (files_list := self._extract_files_from_pattern(pattern_entry))
+        ]
 
         result.sort(key=lambda x: x["timestamp"], reverse=True)
         return result
@@ -604,6 +594,36 @@ class PatternAnalyzer:
         peak_day: str | None = str(peak_day_val) if peak_day_val else None
         return peak_hour, peak_day
 
+    def _filter_accesses_by_cutoff(
+        self, accesses_list: list[AccessRecord], cutoff_str: str
+    ) -> list[AccessRecord]:
+        """Filter accesses by cutoff timestamp."""
+        return [
+            access
+            for access in accesses_list
+            if (
+                access_timestamp_str := (
+                    str(access_timestamp_raw)
+                    if (access_timestamp_raw := access.get("timestamp", ""))
+                    else ""
+                )
+            ) and access_timestamp_str >= cutoff_str
+        ]
+
+    def _filter_task_patterns_by_cutoff(
+        self, task_patterns: dict[str, TaskPatternEntry], cutoff_str: str
+    ) -> dict[str, TaskPatternEntry]:
+        """Filter task patterns by cutoff timestamp."""
+        filtered: dict[str, TaskPatternEntry] = {}
+        for task_id, pattern in task_patterns.items():
+            pattern_timestamp_raw: object = pattern.get("timestamp", "")
+            pattern_timestamp_str = (
+                str(pattern_timestamp_raw) if pattern_timestamp_raw else ""
+            )
+            if pattern_timestamp_str >= cutoff_str:
+                filtered[task_id] = pattern
+        return filtered
+
     async def cleanup_old_data(self, keep_days: int = 180):
         """
         Clean up old access logs to prevent unbounded growth.
@@ -614,33 +634,16 @@ class PatternAnalyzer:
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=keep_days)
         cutoff_str = cutoff_date.isoformat()
 
-        # Filter accesses
         accesses_list = self.access_data.get("accesses", [])
         original_count = len(accesses_list)
-
-        filtered_accesses: list[AccessRecord] = []
-        for access in accesses_list:
-            access_timestamp_raw: object = access.get("timestamp", "")
-            access_timestamp_str = (
-                str(access_timestamp_raw) if access_timestamp_raw else ""
-            )
-            if access_timestamp_str >= cutoff_str:
-                filtered_accesses.append(access)
-
+        filtered_accesses = self._filter_accesses_by_cutoff(accesses_list, cutoff_str)
         self.access_data["accesses"] = filtered_accesses
         removed_count = original_count - len(filtered_accesses)
 
-        # Filter task patterns
         task_patterns = self.access_data.get("task_patterns", {})
-        filtered_task_patterns: dict[str, TaskPatternEntry] = {}
-        for task_id, pattern in task_patterns.items():
-            pattern_timestamp_raw: object = pattern.get("timestamp", "")
-            pattern_timestamp_str = (
-                str(pattern_timestamp_raw) if pattern_timestamp_raw else ""
-            )
-            if pattern_timestamp_str >= cutoff_str:
-                filtered_task_patterns[task_id] = pattern
-
+        filtered_task_patterns = self._filter_task_patterns_by_cutoff(
+            task_patterns, cutoff_str
+        )
         self.access_data["task_patterns"] = filtered_task_patterns
 
         await self._save_access_log()
@@ -722,38 +725,43 @@ def create_default_access_log() -> AccessLog:
     }
 
 
+def _create_access_record(access_dict: dict[str, object]) -> AccessRecord:
+    """Create AccessRecord from dictionary."""
+    context_files_raw: object = access_dict.get("context_files")
+    context_files_list: list[object] = (
+        cast(list[object], context_files_raw)
+        if isinstance(context_files_raw, list)
+        else []
+    )
+    return {
+        "timestamp": str(access_dict.get("timestamp", "")),
+        "file": str(access_dict.get("file", "")),
+        "task_id": (
+            str(task_id_raw)
+            if (task_id_raw := access_dict.get("task_id")) is not None
+            else None
+        ),
+        "task_description": (
+            str(desc_raw)
+            if (desc_raw := access_dict.get("task_description")) is not None
+            else None
+        ),
+        "context_files": [str(f) for f in context_files_list],
+    }
+
+
 def _normalize_accesses(accesses_raw: object) -> list[AccessRecord]:
     """Normalize raw accesses data into AccessRecord list."""
-    accesses: list[AccessRecord] = []
     if not isinstance(accesses_raw, list):
-        return accesses
+        return []
 
     accesses_list: list[object] = cast(list[object], accesses_raw)
+    accesses: list[AccessRecord] = []
     for access_item in accesses_list:
-        if isinstance(access_item, dict):
-            access_dict: dict[str, object] = cast(dict[str, object], access_item)
-            context_files_raw: object = access_dict.get("context_files")
-            context_files_list: list[object] = (
-                cast(list[object], context_files_raw)
-                if isinstance(context_files_raw, list)
-                else []
-            )
-            access: AccessRecord = {
-                "timestamp": str(access_dict.get("timestamp", "")),
-                "file": str(access_dict.get("file", "")),
-                "task_id": (
-                    str(task_id_raw)
-                    if (task_id_raw := access_dict.get("task_id")) is not None
-                    else None
-                ),
-                "task_description": (
-                    str(desc_raw)
-                    if (desc_raw := access_dict.get("task_description")) is not None
-                    else None
-                ),
-                "context_files": [str(f) for f in context_files_list],
-            }
-            accesses.append(access)
+        if not isinstance(access_item, dict):
+            continue
+        access_dict: dict[str, object] = cast(dict[str, object], access_item)
+        accesses.append(_create_access_record(access_dict))
     return accesses
 
 
