@@ -12,6 +12,7 @@ from cortex.tools.validation_operations import (
     create_validation_error_response,
     generate_duplication_fixes,
     handle_duplications_validation,
+    handle_infrastructure_validation,
     handle_quality_validation,
     handle_schema_validation,
     read_all_memory_bank_files,
@@ -750,6 +751,58 @@ class TestErrorHelpers:
         assert result_data["error"] == "Test error message"
         assert result_data["error_type"] == "ValueError"
 
+    def testcreate_invalid_check_type_error_includes_infrastructure(self) -> None:
+        """Test that invalid check type error includes infrastructure."""
+        # Act
+        result = create_invalid_check_type_error("invalid_type")
+
+        # Assert
+        result_data = json.loads(result)
+        assert "infrastructure" in result_data["valid_check_types"]
+
+
+class TestHandleInfrastructureValidation:
+    """Test infrastructure validation handler."""
+
+    @pytest.mark.asyncio
+    async def test_handle_infrastructure_validation_success(
+        self, tmp_path: Path
+    ) -> None:
+        """Test successful infrastructure validation."""
+        # Arrange
+        github_dir = tmp_path / ".github" / "workflows"
+        github_dir.mkdir(parents=True)
+        workflow_file = github_dir / "quality.yml"
+        _ = workflow_file.write_text(
+            "name: Test\njobs:\n  test:\n    steps:\n      - name: Test step"
+        )
+
+        synapse_dir = tmp_path / ".cortex" / "synapse" / "prompts"
+        synapse_dir.mkdir(parents=True)
+        commit_file = synapse_dir / "commit.md"
+        _ = commit_file.write_text("# Commit\n\n1. **Test step**\n   Description")
+
+        scripts_dir = tmp_path / "scripts"
+        scripts_dir.mkdir()
+        _ = (scripts_dir / "check_file_sizes.py").write_text("# Script")
+
+        # Act
+        result = await handle_infrastructure_validation(
+            tmp_path,
+            check_commit_ci_alignment=True,
+            check_code_quality_consistency=True,
+            check_documentation_consistency=True,
+            check_config_consistency=True,
+        )
+
+        # Assert
+        result_data = json.loads(result)
+        assert result_data["status"] == "success"
+        assert result_data["check_type"] == "infrastructure"
+        assert "checks_performed" in result_data
+        assert "issues_found" in result_data
+        assert "recommendations" in result_data
+
 
 class TestSetupValidationManagers:
     """Test setup validation managers helper."""
@@ -877,6 +930,41 @@ class TestValidateMainFunction:
             # Assert
             result_data = json.loads(result)
             assert result_data["status"] == "success"
+            mock_handle.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_validate_infrastructure_check(self, tmp_path: Path) -> None:
+        """Test validate function with infrastructure check type."""
+        # Arrange
+        memory_bank_dir = tmp_path / "memory-bank"
+        _ = memory_bank_dir.mkdir()
+
+        with patch(
+            "cortex.tools.validation_operations.handle_infrastructure_validation"
+        ) as mock_handle:
+            mock_handle.return_value = json.dumps(
+                {
+                    "status": "success",
+                    "check_type": "infrastructure",
+                    "checks_performed": {
+                        "commit_ci_alignment": True,
+                        "code_quality_consistency": True,
+                    },
+                    "issues_found": [],
+                    "recommendations": [],
+                }
+            )
+
+            # Act
+            result = await validate(
+                check_type="infrastructure",  # type: ignore[arg-type]
+                project_root=str(tmp_path),
+            )
+
+            # Assert
+            result_data = json.loads(result)
+            assert result_data["status"] == "success"
+            assert result_data["check_type"] == "infrastructure"
             mock_handle.assert_called_once()
 
     @pytest.mark.asyncio

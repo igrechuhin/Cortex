@@ -17,6 +17,7 @@ from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
 from cortex.server import mcp
 from cortex.validation.duplication_detector import DuplicationDetector
+from cortex.validation.infrastructure_validator import InfrastructureValidator
 from cortex.validation.quality_metrics import QualityMetrics
 from cortex.validation.schema_validator import SchemaValidator
 from cortex.validation.validation_config import ValidationConfig
@@ -319,6 +320,35 @@ async def handle_quality_validation(
         )
 
 
+async def handle_infrastructure_validation(
+    root: Path,
+    check_commit_ci_alignment: bool,
+    check_code_quality_consistency: bool,
+    check_documentation_consistency: bool,
+    check_config_consistency: bool,
+) -> str:
+    """Handle infrastructure validation.
+
+    Args:
+        root: Project root path
+        check_commit_ci_alignment: Check commit prompt vs CI workflow alignment
+        check_code_quality_consistency: Check code quality standards consistency
+        check_documentation_consistency: Check documentation consistency
+        check_config_consistency: Check configuration consistency
+
+    Returns:
+        JSON string with infrastructure validation results
+    """
+    validator = InfrastructureValidator(root)
+    result = await validator.validate_infrastructure(
+        check_commit_ci_alignment=check_commit_ci_alignment,
+        check_code_quality_consistency=check_code_quality_consistency,
+        check_documentation_consistency=check_documentation_consistency,
+        check_config_consistency=check_config_consistency,
+    )
+    return json.dumps(result, indent=2)
+
+
 def create_invalid_check_type_error(check_type: str) -> str:
     """Create error response for invalid check type.
 
@@ -332,7 +362,12 @@ def create_invalid_check_type_error(check_type: str) -> str:
         {
             "status": "error",
             "error": f"Invalid check_type: {check_type}",
-            "valid_check_types": ["schema", "duplications", "quality"],
+            "valid_check_types": [
+                "schema",
+                "duplications",
+                "quality",
+                "infrastructure",
+            ],
         },
         indent=2,
     )
@@ -355,32 +390,40 @@ def create_validation_error_response(error: Exception) -> str:
 
 @mcp.tool()
 async def validate(
-    check_type: Literal["schema", "duplications", "quality"],
+    check_type: Literal["schema", "duplications", "quality", "infrastructure"],
     file_name: str | None = None,
     project_root: str | None = None,
     strict_mode: bool = False,
     similarity_threshold: float | None = None,
     suggest_fixes: bool = True,
+    check_commit_ci_alignment: bool = True,
+    check_code_quality_consistency: bool = True,
+    check_documentation_consistency: bool = True,
+    check_config_consistency: bool = True,
 ) -> str:
     """Run validation checks on Memory Bank files for schema compliance, duplications, or quality metrics.
 
-    This consolidated validation tool performs three types of checks on Memory Bank files:
+    This consolidated validation tool performs four types of checks:
     - schema: Validates file structure against Memory Bank schema (required sections, frontmatter)
     - duplications: Detects exact and similar duplicate content across files
     - quality: Calculates quality scores based on completeness, structure, and content
+    - infrastructure: Validates project infrastructure consistency (CI vs commit prompt, code quality, docs, config)
 
     Use this tool to ensure Memory Bank files follow best practices, identify content duplication
-    that could be refactored using transclusion, and assess overall documentation quality.
+    that could be refactored using transclusion, assess overall documentation quality, and validate
+    project infrastructure consistency.
 
     Args:
         check_type: Type of validation to perform
             - "schema": Validate file structure and required sections
             - "duplications": Detect duplicate content across files
             - "quality": Calculate quality scores and metrics
+            - "infrastructure": Validate project infrastructure consistency
         file_name: Specific file to validate (e.g., "projectBrief.md")
             - For schema: validates single file or all files if None
             - For duplications: always checks all files (parameter ignored)
             - For quality: calculates score for single file or overall score if None
+            - For infrastructure: parameter ignored (always validates entire project)
             Examples: "projectBrief.md", "activeContext.md", None
         project_root: Path to project root directory
             - Defaults to current working directory if None
@@ -398,6 +441,14 @@ async def validate(
         suggest_fixes: Include fix suggestions in duplication results (default: True)
             - Only applicable for check_type="duplications"
             - Provides actionable suggestions for using transclusion
+        check_commit_ci_alignment: Check commit prompt vs CI workflow alignment (default: True)
+            - Only applicable for check_type="infrastructure"
+        check_code_quality_consistency: Check code quality standards consistency (default: True)
+            - Only applicable for check_type="infrastructure"
+        check_documentation_consistency: Check documentation consistency (default: True)
+            - Only applicable for check_type="infrastructure"
+        check_config_consistency: Check configuration consistency (default: True)
+            - Only applicable for check_type="infrastructure"
 
     Returns:
         JSON string with validation results. Structure varies by check_type:
@@ -583,11 +634,40 @@ async def validate(
              ]
            }
 
+        4. Validate infrastructure consistency:
+           Input: validate(check_type="infrastructure")
+           Output:
+           {
+             "status": "success",
+             "check_type": "infrastructure",
+             "checks_performed": {
+               "commit_ci_alignment": true,
+               "code_quality_consistency": true,
+               "documentation_consistency": true,
+               "config_consistency": true
+             },
+             "issues_found": [
+               {
+                 "type": "missing_check",
+                 "severity": "high",
+                 "description": "Commit prompt missing check: check file sizes",
+                 "location": ".cortex/synapse/prompts/commit.md",
+                 "suggestion": "Add check file sizes check step to commit prompt",
+                 "ci_check": "check file sizes",
+                 "missing_in_commit": true
+               }
+             ],
+             "recommendations": [
+               "Synchronize commit prompt with CI workflow requirements"
+             ]
+           }
+
     Note:
         - Schema validation checks for required sections, proper frontmatter, and file structure
         - Duplication detection uses content hashing for exact matches and similarity algorithms for near-matches
         - Quality metrics consider completeness (required sections present), structure (proper formatting),
           and content quality (sufficient detail, clear writing)
+        - Infrastructure validation checks project consistency (CI vs commit prompt, code quality, docs, config)
         - The similarity_threshold parameter only affects duplication checks; typical values are 0.8-0.95
         - Suggested fixes for duplications recommend using DRY linking with transclusion syntax
         - Quality scores range from 0-100, with 80+ considered good, 60-79 acceptable, below 60 needs improvement
@@ -596,19 +676,69 @@ async def validate(
     try:
         root = get_project_root(project_root)
         validation_managers = await setup_validation_managers(root)
-
-        if check_type == "schema":
-            return await handle_schema_validation(validation_managers, root, file_name)
-        elif check_type == "duplications":
-            return await handle_duplications_validation(
-                validation_managers, root, similarity_threshold, suggest_fixes
-            )
-        elif check_type == "quality":
-            return await handle_quality_validation(validation_managers, root, file_name)
-        else:
-            return create_invalid_check_type_error(check_type)
+        return await _dispatch_validation(
+            check_type,
+            validation_managers,
+            root,
+            file_name,
+            similarity_threshold,
+            suggest_fixes,
+            check_commit_ci_alignment,
+            check_code_quality_consistency,
+            check_documentation_consistency,
+            check_config_consistency,
+        )
     except Exception as e:
         return create_validation_error_response(e)
+
+
+async def _dispatch_validation(
+    check_type: Literal["schema", "duplications", "quality", "infrastructure"],
+    validation_managers: dict[str, object],
+    root: Path,
+    file_name: str | None,
+    similarity_threshold: float | None,
+    suggest_fixes: bool,
+    check_commit_ci_alignment: bool,
+    check_code_quality_consistency: bool,
+    check_documentation_consistency: bool,
+    check_config_consistency: bool,
+) -> str:
+    """Dispatch validation to appropriate handler.
+
+    Args:
+        check_type: Type of validation to perform
+        validation_managers: Dictionary of validation managers
+        root: Project root path
+        file_name: Optional file name for single-file validation
+        similarity_threshold: Similarity threshold for duplication detection
+        suggest_fixes: Whether to suggest fixes for duplications
+        check_commit_ci_alignment: Check commit prompt vs CI workflow alignment
+        check_code_quality_consistency: Check code quality standards consistency
+        check_documentation_consistency: Check documentation consistency
+        check_config_consistency: Check configuration consistency
+
+    Returns:
+        JSON string with validation results
+    """
+    if check_type == "schema":
+        return await handle_schema_validation(validation_managers, root, file_name)
+    elif check_type == "duplications":
+        return await handle_duplications_validation(
+            validation_managers, root, similarity_threshold, suggest_fixes
+        )
+    elif check_type == "quality":
+        return await handle_quality_validation(validation_managers, root, file_name)
+    elif check_type == "infrastructure":
+        return await handle_infrastructure_validation(
+            root,
+            check_commit_ci_alignment,
+            check_code_quality_consistency,
+            check_documentation_consistency,
+            check_config_consistency,
+        )
+    else:
+        return create_invalid_check_type_error(check_type)
 
 
 async def setup_validation_managers(
