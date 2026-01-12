@@ -75,20 +75,24 @@ class StructureAnalyzer:
 
     def _collect_file_sizes(self, all_files: list[Path]) -> list[dict[str, object]]:
         """Collect file size information for all files."""
-        file_sizes: list[dict[str, object]] = []
-        for file_path in all_files:
+
+        def _get_file_size(file_path: Path) -> dict[str, object] | None:
+            """Get file size info, returning None on error."""
             try:
                 size = file_path.stat().st_size
-                file_sizes.append(
-                    {
-                        "file": file_path.name,
-                        "size_bytes": size,
-                        "size_kb": round(size / 1024, 2),
-                    }
-                )
+                return {
+                    "file": file_path.name,
+                    "size_bytes": size,
+                    "size_kb": round(size / 1024, 2),
+                }
             except OSError:
-                continue
+                return None
 
+        file_sizes = [
+            size_info
+            for file_path in all_files
+            if (size_info := _get_file_size(file_path)) is not None
+        ]
         file_sizes.sort(key=_get_size_bytes_for_sort, reverse=True)
         return file_sizes
 
@@ -102,27 +106,29 @@ class StructureAnalyzer:
         Returns:
             List of oversized file anti-patterns
         """
-        patterns: list[dict[str, object]] = []
 
-        for file_path in all_files:
+        def _check_oversized(file_path: Path) -> dict[str, object] | None:
+            """Check if file is oversized, returning pattern dict or None."""
             try:
                 size = file_path.stat().st_size
-
                 if size > 100000:  # > 100KB
-                    patterns.append(
-                        {
-                            "type": "oversized_file",
-                            "severity": "high",
-                            "file": file_path.name,
-                            "description": f"File is very large ({round(size / 1024, 2)}KB)",
-                            "recommendation": "Consider splitting into multiple smaller files",
-                            "size_bytes": size,
-                        }
-                    )
+                    return {
+                        "type": "oversized_file",
+                        "severity": "high",
+                        "file": file_path.name,
+                        "description": f"File is very large ({round(size / 1024, 2)}KB)",
+                        "recommendation": "Consider splitting into multiple smaller files",
+                        "size_bytes": size,
+                    }
             except OSError:
-                continue
+                pass
+            return None
 
-        return patterns
+        return [
+            pattern
+            for file_path in all_files
+            if (pattern := _check_oversized(file_path)) is not None
+        ]
 
     def _build_dependency_graph(self) -> dict[str, dict[str, list[str]]]:
         """
@@ -192,24 +198,18 @@ class StructureAnalyzer:
         Returns:
             List of excessive dependency anti-patterns
         """
-        patterns: list[dict[str, object]] = []
-
-        for file_name, file_data in graph.items():
-            dep_count = len(file_data.get("dependencies", []))
-
-            if dep_count > 15:
-                patterns.append(
-                    {
-                        "type": "excessive_dependencies",
-                        "severity": "medium",
-                        "file": file_name,
-                        "description": f"File depends on {dep_count} other files",
-                        "recommendation": "Consider reducing dependencies or splitting file",
-                        "dependency_count": dep_count,
-                    }
-                )
-
-        return patterns
+        return [
+            {
+                "type": "excessive_dependencies",
+                "severity": "medium",
+                "file": file_name,
+                "description": f"File depends on {dep_count} other files",
+                "recommendation": "Consider reducing dependencies or splitting file",
+                "dependency_count": dep_count,
+            }
+            for file_name, file_data in graph.items()
+            if (dep_count := len(file_data.get("dependencies", []))) > 15
+        ]
 
     def _detect_excessive_dependents(
         self, graph: dict[str, dict[str, list[str]]]
@@ -223,24 +223,18 @@ class StructureAnalyzer:
         Returns:
             List of excessive dependent anti-patterns
         """
-        patterns: list[dict[str, object]] = []
-
-        for file_name, file_data in graph.items():
-            dependent_count = len(file_data.get("dependents", []))
-
-            if dependent_count > 15:
-                patterns.append(
-                    {
-                        "type": "excessive_dependents",
-                        "severity": "low",
-                        "file": file_name,
-                        "description": f"File is depended upon by {dependent_count} other files",
-                        "recommendation": "This is a central file - ensure it's stable and well-maintained",
-                        "dependent_count": dependent_count,
-                    }
-                )
-
-        return patterns
+        return [
+            {
+                "type": "excessive_dependents",
+                "severity": "low",
+                "file": file_name,
+                "description": f"File is depended upon by {dependent_count} other files",
+                "recommendation": "This is a central file - ensure it's stable and well-maintained",
+                "dependent_count": dependent_count,
+            }
+            for file_name, file_data in graph.items()
+            if (dependent_count := len(file_data.get("dependents", []))) > 15
+        ]
 
     def _detect_similar_filenames(
         self, all_files: list[Path]

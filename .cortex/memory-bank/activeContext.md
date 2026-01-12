@@ -2,6 +2,24 @@
 
 ## Current Focus (2026-01-11)
 
+### Phase 10.4: Test Coverage Improvement ✅
+
+- Current Status: Complete (100%)
+- Coverage: 88.52% → 90.20% (+1.68%)
+- All 2270 tests passing (3 skipped)
+- **Impact**: CI quality gate now passing, improved code quality assurance
+
+### Phase 11: Comprehensive MCP Tool Verification
+
+- Current Status: ⏸️ BLOCKED (5/29 tools verified - 17%)
+- Goal: Verify all 29 Cortex MCP tools work correctly in the actual Cortex project
+- Plan: `.cortex/plans/phase-11-tool-verification.md`
+- Progress:
+  - ✅ Phase 1: Foundation Tools - 4/5 verified (manage_file, get_dependency_graph, get_version_history, get_memory_bank_stats)
+  - ✅ Phase 2: Link Management - 1/4 verified (parse_file_links)
+  - ⏸️ **BLOCKED**: Persistent MCP connection instability issues preventing further verification
+- **Note:** Connection stability improvements added, but connection issues persist
+
 ### MCP Connection Stability and Health Monitoring
 
 - Current Status: Complete (100%)
@@ -10,20 +28,6 @@
 - Updated constants with MCP stability configuration
 - Improved error handling in main.py for better reliability
 - **Impact**: Prevents hanging operations, enforces resource limits, enables health monitoring
-
-### Phase 11: Comprehensive MCP Tool Verification
-
-- Current Status: In Progress (5/29 tools verified - 17%)
-- Goal: Verify all 29 Cortex MCP tools work correctly in the actual Cortex project
-- Plan: `.cortex/plans/phase-11-tool-verification.md`
-- Progress:
-  - ✅ Phase 1: Foundation Tools - 4/5 verified (manage_file, get_dependency_graph, get_version_history, get_memory_bank_stats)
-  - ✅ Phase 2: Link Management - 1/4 verified (parse_file_links)
-  - ⏳ Blocked: MCP connection instability preventing further verification
-- Approach: Test each tool systematically with real project data
-- Verification covers all phases from foundation to specific tools
-- Success criteria: All tools execute correctly, JSON responses match documentation, error handling works
-- **Note:** Connection stability improvements should help address MCP connection instability issues
 
 ### Synapse Path Refactoring
 

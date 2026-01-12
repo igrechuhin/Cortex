@@ -281,6 +281,7 @@ For each tool:
 ✅ Test empty file - PASSED
 
 **Summary:**
+
 - Tool correctly parses both markdown links and transclusions
 - Section references in links and transclusions are properly extracted
 - Empty state handled gracefully
@@ -1179,7 +1180,7 @@ For each tool:
     - Server restart/reconnection issues
     - TaskGroup exception handling
   - **Retry Attempts:** Multiple retries on 2026-01-12 - issue persists
-  - **Action Required:** 
+  - **Action Required:**
     - Investigate MCP server stdio connection stability
     - Review timeout and resource limit settings
     - Check server restart/reconnection logic

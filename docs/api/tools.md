@@ -186,8 +186,16 @@ JSON format:
   "status": "success",
   "format": "json",
   "graph": {
-    "projectBrief.md": ["productContext.md", "techContext.md"],
-    "activeContext.md": ["progress.md"]
+    "files": {
+      "projectBrief.md": {
+        "priority": 1,
+        "dependencies": []
+      },
+      "activeContext.md": {
+        "priority": 2,
+        "dependencies": ["projectBrief.md"]
+      }
+    }
   },
   "loading_order": ["projectBrief.md", "productContext.md", "..."]
 }
@@ -230,8 +238,8 @@ Returns list of versions with timestamps, change types, and descriptions.
     {
       "version": 15,
       "timestamp": "2025-12-25T10:30:00Z",
-      "change_type": "modified",
-      "description": "Updated project goals",
+      "change_type": "update",
+      "change_description": "Updated project goals",
       "token_count": 1250,
       "size_bytes": 5120
     }
@@ -261,10 +269,9 @@ Restores content from a snapshot and creates a new version entry. Does not delet
 {
   "status": "success",
   "file_name": "projectBrief.md",
-  "rolled_back_from_version": 15,
-  "new_version": 16,
-  "token_count": 1200,
-  "message": "Successfully rolled back to version 10"
+  "rolled_back_from_version": 3,
+  "new_version": 6,
+  "token_count": 490
 }
 ```
 

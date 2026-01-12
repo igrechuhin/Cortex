@@ -183,31 +183,29 @@ class TokenCounter:
         lines = content.split("\n")
         total_tokens = self.count_tokens(content)
 
-        sections_list: list[dict[str, object]] = []
-        results: dict[str, object] = {
-            "total_tokens": total_tokens,
-            "sections": sections_list,
-        }
-
-        for section in sections:
-            # Extract section lines (line numbers are 1-indexed)
+        def _process_section(section: dict[str, object]) -> dict[str, object]:
+            """Process a single section and return token count data."""
             start_idx = max(0, cast(int, section["line_start"]) - 1)
             end_idx = min(len(lines), cast(int, section["line_end"]))
-            section_lines = lines[start_idx:end_idx]
-            section_text = "\n".join(section_lines)
-
+            section_text = "\n".join(lines[start_idx:end_idx])
             section_tokens = self.count_tokens(section_text)
             percentage = (
                 (section_tokens / total_tokens * 100) if total_tokens > 0 else 0
             )
+            return {
+                "heading": section["heading"],
+                "token_count": section_tokens,
+                "percentage": round(percentage, 2),
+            }
 
-            sections_list.append(
-                {
-                    "heading": section["heading"],
-                    "token_count": section_tokens,
-                    "percentage": round(percentage, 2),
-                }
-            )
+        sections_list: list[dict[str, object]] = [
+            _process_section(section) for section in sections
+        ]
+
+        results: dict[str, object] = {
+            "total_tokens": total_tokens,
+            "sections": sections_list,
+        }
 
         return results
 
@@ -301,27 +299,31 @@ class TokenCounter:
         if not content:
             return []
 
-        sections: list[dict[str, object]] = []
         lines = content.split("\n")
 
-        for line_num, line in enumerate(lines, start=1):
-            # Only match headers at the start of line (after optional whitespace)
+        def _parse_section(line_num: int, line: str) -> dict[str, object] | None:
+            """Parse a single line to extract section info if it's a header."""
             stripped = line.lstrip()
-            if stripped.startswith("#"):
-                # Count leading # to determine level
-                # Find where # starts
-                hash_start = line.find("#")
-                if hash_start >= 0:
-                    # Count consecutive # characters using string slicing
-                    # This is O(n) but avoids nested loop
-                    hash_section = line[hash_start:]
-                    level = len(hash_section) - len(hash_section.lstrip("#"))
+            if not stripped.startswith("#"):
+                return None
+            hash_start = line.find("#")
+            if hash_start < 0:
+                return None
+            hash_section = line[hash_start:]
+            level = len(hash_section) - len(hash_section.lstrip("#"))
+            if not (1 <= level <= 6):
+                return None
+            return {
+                "title": stripped.lstrip("#").strip(),
+                "level": level,
+                "start_line": line_num,
+            }
 
-                    if 1 <= level <= 6:
-                        title = stripped.lstrip("#").strip()
-                        sections.append(
-                            {"title": title, "level": level, "start_line": line_num}
-                        )
+        sections: list[dict[str, object]] = [
+            section
+            for line_num, line in enumerate(lines, start=1)
+            if (section := _parse_section(line_num, line)) is not None
+        ]
 
         return sections
 

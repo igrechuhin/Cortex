@@ -146,19 +146,19 @@ class DependencyGraph:
         Returns:
             List of file names that depend on this file
         """
-        dependents: list[str] = []
-
         # Check static dependencies
-        for fname, info in self.static_deps.items():
-            if file_name in info["depends_on"]:
-                dependents.append(fname)
+        static_dependents = [
+            fname
+            for fname, info in self.static_deps.items()
+            if file_name in info["depends_on"]
+        ]
 
         # Check dynamic dependencies (Phase 2+)
-        for fname, deps in self.dynamic_deps.items():
-            if file_name in deps:
-                dependents.append(fname)
+        dynamic_dependents = [
+            fname for fname, deps in self.dynamic_deps.items() if file_name in deps
+        ]
 
-        return list(set(dependents))
+        return list(set(static_dependents + dynamic_dependents))
 
     def get_minimal_context(self, target_file: str) -> list[str]:
         """
@@ -299,13 +299,13 @@ class DependencyGraph:
         }
 
         # Build edges using pre-computed dependencies
-        edges: list[dict[str, object]] = []
-        for file_name, deps in all_dependencies.items():
-            for dep in deps:
-                edge = _create_dependency_edge(
-                    file_name, dep, self.dynamic_deps, self.get_file_priority
-                )
-                edges.append(edge)
+        edges: list[dict[str, object]] = [
+            _create_dependency_edge(
+                file_name, dep, self.dynamic_deps, self.get_file_priority
+            )
+            for file_name, deps in all_dependencies.items()
+            for dep in deps
+        ]
 
         return {
             "nodes": nodes,
@@ -328,18 +328,23 @@ class DependencyGraph:
 
     def _add_mermaid_nodes(self, lines: list[str]) -> None:
         """Add nodes to Mermaid diagram."""
-        for file_name, info in self.static_deps.items():
-            category = info["category"]
+
+        def _format_node(file_name: str, category: str) -> str:
+            """Format a single node line."""
             node_id = file_name.replace(".md", "").replace("-", "")
             label = file_name.replace(".md", "")
-            if category == "meta":
-                lines.append(f'    {node_id}["{label}"]:::meta')
-            elif category == "foundation":
-                lines.append(f'    {node_id}["{label}"]:::foundation')
-            elif category == "active":
-                lines.append(f'    {node_id}["{label}"]:::active')
-            else:
-                lines.append(f'    {node_id}["{label}"]')
+            style_map = {
+                "meta": f'    {node_id}["{label}"]:::meta',
+                "foundation": f'    {node_id}["{label}"]:::foundation',
+                "active": f'    {node_id}["{label}"]:::active',
+            }
+            return style_map.get(category, f'    {node_id}["{label}"]')
+
+        node_lines = [
+            _format_node(file_name, info["category"])
+            for file_name, info in self.static_deps.items()
+        ]
+        lines.extend(node_lines)
 
     def _add_mermaid_edges(self, lines: list[str]) -> None:
         """Add edges to Mermaid diagram."""
@@ -347,11 +352,12 @@ class DependencyGraph:
             file_name: self.get_dependencies(file_name)
             for file_name in self.static_deps.keys()
         }
-        for file_name, deps in all_dependencies.items():
-            from_id = file_name.replace(".md", "").replace("-", "")
-            for dep in deps:
-                to_id = dep.replace(".md", "").replace("-", "")
-                lines.append(f"    {to_id} --> {from_id}")
+        edge_lines = [
+            f"    {dep.replace('.md', '').replace('-', '')} --> {file_name.replace('.md', '').replace('-', '')}"
+            for file_name, deps in all_dependencies.items()
+            for dep in deps
+        ]
+        lines.extend(edge_lines)
 
     def _add_mermaid_styling(self, lines: list[str]) -> None:
         """Add styling to Mermaid diagram."""
@@ -469,12 +475,13 @@ class DependencyGraph:
 
         # Get all files reachable via transclusion links
         def get_transclusion_neighbors(node: str) -> list[str]:
-            neighbors: list[str] = []
-            if node in self.link_types:
-                for target, link_type in self.link_types[node].items():
-                    if link_type == "transclusion":
-                        neighbors.append(target)
-            return neighbors
+            if node not in self.link_types:
+                return []
+            return [
+                target
+                for target, link_type in self.link_types[node].items()
+                if link_type == "transclusion"
+            ]
 
         reachable = GraphAlgorithms.get_reachable_nodes(
             start_file, get_transclusion_neighbors
@@ -580,16 +587,14 @@ def _build_dependency_nodes(
     Returns:
         List of node dictionaries
     """
-    nodes: list[dict[str, object]] = []
-    for file_name, info in static_deps.items():
-        nodes.append(
-            {
-                "file": file_name,
-                "priority": info["priority"],
-                "category": info["category"],
-            }
-        )
-    return nodes
+    return [
+        {
+            "file": file_name,
+            "priority": info["priority"],
+            "category": info["category"],
+        }
+        for file_name, info in static_deps.items()
+    ]
 
 
 def _create_dependency_edge(
