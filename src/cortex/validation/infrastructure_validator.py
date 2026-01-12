@@ -116,13 +116,19 @@ class InfrastructureValidator:
         Returns:
             List of (check_name, check_function) tuples
         """
-        checks: list[tuple[str, Callable[[], tuple[list[InfrastructureIssue], list[str]]]]] = []
+        checks: list[
+            tuple[str, Callable[[], tuple[list[InfrastructureIssue], list[str]]]]
+        ] = []
         if check_commit_ci_alignment:
             checks.append(("commit_ci_alignment", self._check_commit_ci_alignment))
         if check_code_quality_consistency:
-            checks.append(("code_quality_consistency", self._check_code_quality_consistency))
+            checks.append(
+                ("code_quality_consistency", self._check_code_quality_consistency)
+            )
         if check_documentation_consistency:
-            checks.append(("documentation_consistency", self._check_documentation_consistency))
+            checks.append(
+                ("documentation_consistency", self._check_documentation_consistency)
+            )
         if check_config_consistency:
             checks.append(("config_consistency", self._check_config_consistency))
         return checks
