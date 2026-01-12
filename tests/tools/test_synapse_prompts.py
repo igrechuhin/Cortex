@@ -14,6 +14,7 @@ This test suite provides comprehensive coverage for:
 
 import json
 from pathlib import Path
+from typing import cast
 from unittest.mock import patch
 
 import pytest
@@ -298,7 +299,7 @@ class TestProcessPromptInfo:
 
         # Act
         result = synapse_prompts._process_prompt_info(
-            prompt_info, prompts_dir, "general"
+            cast(dict[str, object], prompt_info), prompts_dir, "general"
         )
 
         # Assert
@@ -311,7 +312,7 @@ class TestProcessPromptInfo:
 
         # Act
         result = synapse_prompts._process_prompt_info(
-            prompt_info, prompts_dir, "general"
+            cast(dict[str, object], prompt_info), prompts_dir, "general"
         )
 
         # Assert
@@ -324,7 +325,7 @@ class TestProcessPromptInfo:
 
         # Act
         result = synapse_prompts._process_prompt_info(
-            prompt_info, prompts_dir, "general"
+            cast(dict[str, object], prompt_info), prompts_dir, "general"
         )
 
         # Assert
@@ -337,7 +338,7 @@ class TestProcessPromptInfo:
 
         # Act
         result = synapse_prompts._process_prompt_info(
-            prompt_info, prompts_dir, "general"
+            cast(dict[str, object], prompt_info), prompts_dir, "general"
         )
 
         # Assert
@@ -354,7 +355,7 @@ class TestProcessPromptInfo:
 
         # Act
         result = synapse_prompts._process_prompt_info(
-            prompt_info, prompts_dir, "general"
+            cast(dict[str, object], prompt_info), prompts_dir, "general"
         )
 
         # Assert
@@ -569,7 +570,7 @@ class TestRegisterSynapsePrompts:
 
         # Act
         result = synapse_prompts._process_prompt_info(
-            prompt_info, prompts_dir, "general"
+            cast(dict[str, object], prompt_info), prompts_dir, "general"
         )
 
         # Assert
@@ -588,7 +589,7 @@ class TestRegisterSynapsePrompts:
 
         # Act
         result = synapse_prompts._process_prompt_info(
-            prompt_info, prompts_dir, "general"
+            cast(dict[str, object], prompt_info), prompts_dir, "general"
         )
 
         # Assert
