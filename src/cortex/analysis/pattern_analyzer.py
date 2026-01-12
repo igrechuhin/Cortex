@@ -607,7 +607,8 @@ class PatternAnalyzer:
                     if (access_timestamp_raw := access.get("timestamp", ""))
                     else ""
                 )
-            ) and access_timestamp_str >= cutoff_str
+            )
+            and access_timestamp_str >= cutoff_str
         ]
 
     def _filter_task_patterns_by_cutoff(
