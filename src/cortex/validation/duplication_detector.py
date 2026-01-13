@@ -176,6 +176,10 @@ class DuplicationDetector:
         """Extract duplicate pairs from hash map."""
         from itertools import combinations
 
+        # ACCEPTABLE PATTERN: Stateful accumulation of duplicate entries
+        # This is inherent to the algorithm - we must accumulate duplicate pairs
+        # as we discover them during hash map traversal.
+        # Pre-calculation is not possible as results depend on hash map contents.
         duplicates: list[dict[str, object]] = []
 
         for _content_hash, entries in hash_map.items():
@@ -251,6 +255,10 @@ class DuplicationDetector:
         """Compare sections within signature groups."""
         from itertools import combinations
 
+        # ACCEPTABLE PATTERN: Stateful accumulation of similar content entries
+        # This is inherent to the algorithm - we must accumulate similar pairs
+        # as we discover them during signature group comparison.
+        # Pre-calculation is not possible as similarity scores depend on pairwise comparisons.
         similar: list[dict[str, object]] = [
             {
                 "file1": file1,

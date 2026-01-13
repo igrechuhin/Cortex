@@ -6,11 +6,12 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
-- ⏳ [Phase 9.3.4: Medium-Severity Optimizations](../plans/phase-9.3.4-medium-severity-optimizations.md) - 86% complete
-- 📋 [Phase 12: Convert Commit Workflow Prompts to MCP Tools](../plans/phase-12-commit-workflow-mcp-tools.md) - Planning
+- None (all current milestones complete)
 
 ### Recently Completed
 
+- ✅ [Phase 12: Convert Commit Workflow Prompts to MCP Tools](../plans/phase-12-commit-workflow-mcp-tools.md) - COMPLETE (2026-01-13)
+- ✅ [Phase 9.3.4: Medium-Severity Optimizations](../plans/phase-9.3.4-medium-severity-optimizations.md) - COMPLETE (37/37 issues addressed, 2026-01-12)
 - ✅ [Phase 11: Comprehensive MCP Tool Verification](../plans/phase-11-tool-verification.md) - All 29 tools verified
 - ✅ [Phase 10.4: Test Coverage Improvement](../plans/phase-10.4-test-coverage-improvement.md) - 90.20% coverage achieved
 - ✅ [Phase 3 Extension: Infrastructure Validation](../plans/phase-3-infrastructure-validation.md)

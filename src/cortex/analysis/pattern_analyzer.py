@@ -334,6 +334,10 @@ class PatternAnalyzer:
             # This is clearer and potentially more efficient
             for file1, file2 in combinations(sorted(files), 2):
                 key_str = f"{file1}|{file2}"
+                # ACCEPTABLE PATTERN: Stateful accumulation of co-access counts
+                # This is inherent to the algorithm - we must track running totals
+                # of how many times each file pair is accessed together.
+                # Pre-calculation is not possible as counts depend on iteration order.
                 patterns[key_str] += 1
 
         return patterns

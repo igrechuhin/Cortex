@@ -41,6 +41,7 @@ from . import (
     phase5_execution,  # noqa: F401
     phase5_refactoring,  # noqa: F401
     phase8_structure,  # noqa: F401
+    pre_commit_tools,  # noqa: F401
     prompts,  # noqa: F401
     refactoring_operations,  # noqa: F401
     rules_operations,  # noqa: F401
@@ -66,6 +67,7 @@ __all__ = [
     "phase5_execution",
     "synapse_tools",
     "phase8_structure",
+    "pre_commit_tools",
     "prompts",
     "refactoring_operations",
     "rules_operations",
