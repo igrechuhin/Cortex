@@ -18,6 +18,7 @@ from cortex.core.exceptions import (
 )
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.managers.initialization import get_managers, get_project_root
@@ -273,7 +274,9 @@ def _build_read_error_response(file_name: str, root: Path) -> str:
             "error": f"File {file_name} does not exist",
             "available_files": [
                 f.name
-                for f in (root / ".cortex" / "memory-bank").glob("*.md")
+                for f in get_cortex_path(root, CortexResourceType.MEMORY_BANK).glob(
+                    "*.md"
+                )
                 if f.is_file()
             ],
         },
@@ -557,7 +560,7 @@ def _validate_and_get_path(
     fs_manager: FileSystemManager, root: Path, file_name: str
 ) -> tuple[Path | None, str]:
     """Validate file name and get safe file path."""
-    memory_bank_dir = root / ".cortex" / "memory-bank"
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     return _validate_file_path(fs_manager, memory_bank_dir, file_name)
 
 

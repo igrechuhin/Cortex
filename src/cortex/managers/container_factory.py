@@ -17,6 +17,7 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.file_watcher import FileWatcherManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.migration import MigrationManager
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.linking.link_parser import LinkParser
@@ -157,7 +158,7 @@ def create_refactoring_managers_from_optimization(
     optimization_managers: OptimizationManagers,
 ) -> RefactoringManagers:
     """Create refactoring managers from optimization dependencies."""
-    memory_bank_path = project_root / ".cortex" / "memory-bank"
+    memory_bank_path = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
     optimization_config = optimization_managers[0]
     return create_refactoring_managers(memory_bank_path, optimization_config)
 
@@ -169,7 +170,7 @@ def create_execution_managers_from_deps(
     optimization_managers: OptimizationManagers,
 ) -> ExecutionManagers:
     """Create execution managers from all dependencies."""
-    memory_bank_path = project_root / ".cortex" / "memory-bank"
+    memory_bank_path = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
     file_system = foundation_managers[0]
     version_manager = foundation_managers[4]
     metadata_index = foundation_managers[1]

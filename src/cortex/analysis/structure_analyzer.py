@@ -12,6 +12,7 @@ from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.exceptions import MemoryBankError
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 
 class StructureAnalyzer:
@@ -54,7 +55,9 @@ class StructureAnalyzer:
         Returns:
             Dictionary with organization analysis
         """
-        memory_bank_dir = self.project_root / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(
+            self.project_root, CortexResourceType.MEMORY_BANK
+        )
 
         if not memory_bank_dir.exists():
             raise MemoryBankError(f"Memory bank directory not found: {memory_bank_dir}")
@@ -311,7 +314,9 @@ class StructureAnalyzer:
         Returns:
             List of detected anti-patterns with details
         """
-        memory_bank_dir = self.project_root / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(
+            self.project_root, CortexResourceType.MEMORY_BANK
+        )
         all_files = list(memory_bank_dir.glob("*.md"))
 
         graph = self._build_dependency_graph()

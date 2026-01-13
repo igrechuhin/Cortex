@@ -13,6 +13,7 @@ from cortex.core.constants import (
 
 from .async_file_utils import open_async_text_file
 from .exceptions import FileConflictError, FileLockTimeoutError, GitConflictError
+from .path_resolver import CortexResourceType, get_cortex_path
 from .retry import retry_async
 from .security import InputValidator, RateLimiter
 
@@ -40,7 +41,9 @@ class FileSystemManager:
             project_root: Root directory of the project (for path validation)
         """
         self.project_root: Path = Path(project_root).resolve()
-        self.memory_bank_dir: Path = self.project_root / ".cortex" / "memory-bank"
+        self.memory_bank_dir: Path = get_cortex_path(
+            self.project_root, CortexResourceType.MEMORY_BANK
+        )
         self.lock_timeout: int = 5  # seconds
         self.rate_limiter: RateLimiter = RateLimiter(
             max_ops=RATE_LIMIT_OPS_PER_SECOND, window_seconds=1.0

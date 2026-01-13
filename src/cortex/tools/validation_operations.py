@@ -13,6 +13,7 @@ from typing import Literal, cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
 from cortex.server import mcp
@@ -35,7 +36,7 @@ async def validate_schema_single_file(
     file_name: str,
 ) -> str:
     """Validate a single file against schema."""
-    memory_bank_dir = root / ".cortex" / "memory-bank"
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     try:
         file_path = fs_manager.construct_safe_path(memory_bank_dir, file_name)
     except (ValueError, PermissionError) as e:
@@ -63,7 +64,7 @@ async def validate_schema_all_files(
     fs_manager: FileSystemManager, schema_validator: SchemaValidator, root: Path
 ) -> str:
     """Validate all files against schema."""
-    memory_bank_dir = root / ".cortex" / "memory-bank"
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     results_dict: dict[str, object] = {}
     for md_file in memory_bank_dir.glob("*.md"):
         if md_file.is_file():
@@ -82,7 +83,7 @@ async def read_all_memory_bank_files(
     fs_manager: FileSystemManager, root: Path
 ) -> dict[str, str]:
     """Read all markdown files in memory-bank directory."""
-    memory_bank_dir = root / ".cortex" / "memory-bank"
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     files_content: dict[str, str] = {}
     for md_file in memory_bank_dir.glob("*.md"):
         if md_file.is_file():
@@ -129,7 +130,7 @@ async def validate_quality_single_file(
     file_name: str,
 ) -> str:
     """Calculate quality score for a single file."""
-    memory_bank_dir = root / ".cortex" / "memory-bank"
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     try:
         file_path = fs_manager.construct_safe_path(memory_bank_dir, file_name)
     except (ValueError, PermissionError) as e:
@@ -163,7 +164,7 @@ async def validate_quality_all_files(
     root: Path,
 ) -> str:
     """Calculate overall quality score for all files."""
-    memory_bank_dir = root / ".cortex" / "memory-bank"
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     all_files_content: dict[str, str] = {}
     files_metadata: dict[str, dict[str, object]] = {}
     for md_file in memory_bank_dir.glob("*.md"):

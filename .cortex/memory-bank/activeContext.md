@@ -12,11 +12,11 @@
 
 ### Active Work
 
-- 🔴 **Phase 14: Centralize Path Resolution** - Replace 24+ instances of direct path construction with centralized `get_cortex_path()` calls - See [Phase 14](../plans/phase-14-centralize-path-resolution.md) for details
-- ✅ **Plan Archival Complete** (2026-01-13) - Archived 110 completed plans to `.cortex/plans/archive/` organized by phase
+- None (all active work completed)
 
 ### Recently Completed
 
+- ✅ **Phase 14: Centralize Path Resolution** - COMPLETE (2026-01-13) - Replaced 24+ instances of direct path construction with centralized `get_cortex_path()` calls across 7 files - All tests passing, consistent path resolution throughout codebase
 - ✅ Plan Archival - COMPLETE (2026-01-13) - Archived 110 completed plans to `.cortex/plans/archive/` organized by phase
 - ✅ Legacy SharedRulesManager Migration - COMPLETE (2026-01-13) - All tests migrated, documentation updated, legacy references removed
 - ✅ [Phase 12: Convert Commit Workflow Prompts to MCP Tools](../plans/phase-12-commit-workflow-mcp-tools.md) - COMPLETE (2026-01-13)

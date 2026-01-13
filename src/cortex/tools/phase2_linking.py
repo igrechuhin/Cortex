@@ -18,6 +18,7 @@ from typing import cast
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
 from cortex.core.mcp_stability import execute_tool_with_stability
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.linking.link_parser import LinkParser
 from cortex.linking.link_validator import LinkValidator
 from cortex.linking.transclusion_engine import (
@@ -132,7 +133,7 @@ async def parse_file_links(file_name: str, project_root: str | None = None) -> s
         fs_manager = cast(FileSystemManager, mgrs["fs"])
         link_parser = await get_manager(mgrs, "link_parser", LinkParser)
 
-        memory_bank_dir = root / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
         file_path, error_response = _validate_and_get_file_path(
             fs_manager, memory_bank_dir, file_name
         )
@@ -362,7 +363,7 @@ async def _validate_transclusion_file(
         File path or error dict
     """
     fs_manager = cast(FileSystemManager, mgrs["fs"])
-    memory_bank_dir = root / ".cortex" / "memory-bank"
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     try:
         file_path = fs_manager.construct_safe_path(memory_bank_dir, file_name)
     except (ValueError, PermissionError) as e:
@@ -613,7 +614,7 @@ async def validate_links(
         mgrs = await get_managers(root)
         link_validator = await get_manager(mgrs, "link_validator", LinkValidator)
         fs_manager = cast(FileSystemManager, mgrs["fs"])
-        memory_bank_dir = root / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
 
         if file_name:
             return await _validate_single_file(
@@ -817,7 +818,7 @@ async def _build_link_graph_data(
     root = get_project_root(project_root)
     mgrs = await get_managers(root)
 
-    memory_bank_dir = root / ".cortex" / "memory-bank"
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     link_parser = cast(LinkParser, mgrs["link_parser"])
     link_graph = cast(DependencyGraph, mgrs["graph"])
 

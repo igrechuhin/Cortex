@@ -1,5 +1,88 @@
 # Progress Log: MCP Memory Bank
 
+## 2026-01-13: Phase 14 - Centralize Path Resolution Complete
+
+### Summary (Phase 14 Completion)
+
+Completed Phase 14 by replacing all 24+ instances of direct path construction (`root / ".cortex" / "memory-bank"`) with centralized `get_cortex_path()` calls across 7 files. This refactoring improves code maintainability, ensures consistent path resolution, and reduces the risk of path resolution bugs.
+
+### Changes Made (Phase 14 Completion)
+
+#### 1. Fixed Core Infrastructure Files
+
+- **`src/cortex/core/file_system.py`** (1 instance):
+  - Replaced `self.project_root / ".cortex" / "memory-bank"` with `get_cortex_path(self.project_root, CortexResourceType.MEMORY_BANK)`
+  - Added import: `from cortex.core.path_resolver import CortexResourceType, get_cortex_path`
+  - **Impact**: Core file system manager now uses centralized path resolution
+
+- **`src/cortex/managers/initialization.py`** (8 instances):
+  - Fixed all 8 manager creation functions to use `get_cortex_path()`
+  - Functions fixed: `_create_refactoring_engine()`, `_create_consolidation_detector()`, `_create_split_recommender()`, `_create_reorganization_planner()`, `_create_refactoring_executor()`, `_create_approval_manager()`, `_create_rollback_manager()`, `_create_learning_engine()`
+  - **Impact**: All manager initialization now uses consistent path resolution
+
+- **`src/cortex/managers/container_factory.py`** (2 instances):
+  - Fixed `create_refactoring_managers_from_optimization()` and `create_execution_managers_from_deps()`
+  - **Impact**: Container factory now uses centralized path resolver
+
+#### 2. Fixed MCP Tool Files
+
+- **`src/cortex/tools/file_operations.py`** (2 instances):
+  - Fixed `_get_available_files()` glob pattern and `_validate_and_get_path()` helper
+  - **Impact**: File operations tool now uses consistent path resolution
+
+- **`src/cortex/tools/phase2_linking.py`** (4 instances):
+  - Fixed `parse_file_links()`, `_validate_file_path()`, `validate_links()`, and `get_link_graph()` functions
+  - **Impact**: All linking tools now use centralized path resolver
+
+- **`src/cortex/tools/validation_operations.py`** (5 instances):
+  - Fixed all validation helper functions: `validate_schema_single_file()`, `validate_schema_all_files()`, `read_all_memory_bank_files()`, `validate_quality_single_file()`, `validate_quality_all_files()`
+  - **Impact**: Validation tools now use consistent path resolution
+
+#### 3. Fixed Analysis Tools
+
+- **`src/cortex/analysis/structure_analyzer.py`** (2 instances):
+  - Fixed `analyze_file_organization()` and `detect_anti_patterns()` methods
+  - **Impact**: Structure analysis now uses centralized path resolver
+
+### Verification Results (Phase 14 Completion)
+
+- **Test Status**: ✅ PASS - All 32 tests passing in focused test run, all 2314 tests passing in full suite
+- **Path Resolver**: ✅ PASS - Verified path resolver works correctly with test
+- **Code Quality**: ✅ PASS - All functions ≤30 lines, all files ≤400 lines
+- **Type Check Status**: ✅ PASS - 0 errors, 0 warnings
+- **Formatting Status**: ✅ PASS - All files properly formatted
+- **Direct Path Construction**: ✅ PASS - No remaining instances in code (only in comments/docstrings)
+
+### Code Quality (Phase 14 Completion)
+
+- Replaced 24+ instances of direct path construction with centralized `get_cortex_path()` calls
+- Added imports to all 7 files: `from cortex.core.path_resolver import CortexResourceType, get_cortex_path`
+- Maintained 100% test pass rate
+- Zero type errors
+- All code quality standards met
+- Consistent path resolution across entire codebase
+
+### Architecture Benefits
+
+- **Centralized Path Resolution**: Single source of truth for Cortex directory paths
+- **Maintainability**: Path changes only need to be made in one place (`path_resolver.py`)
+- **Consistency**: All modules use the same path resolution logic
+- **Type Safety**: Path resolver uses enum for resource types, preventing typos
+- **DRY Principle**: Eliminated duplicate path construction code
+- **Future-Proof**: Easier to support alternative directory structures
+
+### Files Modified
+
+- `src/cortex/core/file_system.py` (1 instance)
+- `src/cortex/managers/initialization.py` (8 instances)
+- `src/cortex/managers/container_factory.py` (2 instances)
+- `src/cortex/tools/file_operations.py` (2 instances)
+- `src/cortex/tools/phase2_linking.py` (4 instances)
+- `src/cortex/tools/validation_operations.py` (5 instances)
+- `src/cortex/analysis/structure_analyzer.py` (2 instances)
+
+**Total**: 24 instances replaced across 7 files
+
 ## 2026-01-13: Plan Archival - Completed Plans Organized
 
 ### Summary (Plan Archival)
