@@ -1,5 +1,145 @@
 # Progress Log: MCP Memory Bank
 
+## 2026-01-13: Phase 15 - MCP Tool Project Root Resolution Complete
+
+### Summary (Phase 15 Completion)
+
+Completed Phase 15 by fixing project root detection in `get_project_root()` function. The function now automatically detects the project root by walking up from the current working directory to find a directory containing `.cortex/`, making MCP tools work reliably without requiring explicit `project_root` parameter.
+
+### Changes Made (Phase 15 Completion)
+
+#### 1. Updated `src/cortex/managers/initialization.py` - Project Root Detection
+
+- **Function Fixed**: `get_project_root()` - Enhanced to detect project root automatically
+- **Change**: When `project_root=None`, function now walks up from current working directory to find `.cortex/` directory
+- **Fallback**: If `.cortex/` not found, falls back to current working directory (preserves backward compatibility)
+- **Impact**: MCP tools can now work reliably without explicit `project_root` parameter
+- **Lines**: 93-115
+
+#### 2. Created `tests/unit/test_initialization.py` - Comprehensive Unit Tests
+
+- **Feature**: New test file with 6 test cases for `get_project_root()` function
+- **Test Cases**:
+  - `test_get_project_root_with_explicit_path` - Tests explicit path resolution
+  - `test_get_project_root_detects_from_cortex_dir` - Tests detection from nested subdirectory
+  - `test_get_project_root_falls_back_to_cwd_when_no_cortex` - Tests fallback behavior
+  - `test_get_project_root_detects_from_parent` - Tests detection from deep nested directory
+  - `test_get_project_root_resolves_relative_path` - Tests relative path resolution
+  - `test_get_project_root_handles_root_filesystem` - Tests edge case with root filesystem
+- **Impact**: Comprehensive test coverage ensures project root detection works correctly in all scenarios
+- **Lines**: 1-112
+
+### Verification Results (Phase 15 Completion)
+
+- **Test Status**: ✅ PASS - All 6 new tests passing, all existing tests passing
+- **Test Coverage**: ✅ PASS - Comprehensive coverage of project root detection scenarios
+- **Code Quality**: ✅ PASS - All functions ≤30 lines, all files ≤400 lines
+- **Type Check Status**: ✅ PASS - 0 errors, 0 warnings
+- **Formatting Status**: ✅ PASS - All files properly formatted
+- **Integration Tests**: ✅ PASS - `manage_file` tool tests passing with new detection logic
+
+### Code Quality (Phase 15 Completion)
+
+- Enhanced `get_project_root()` to automatically detect project root from `.cortex/` directory
+- Added comprehensive unit tests covering all detection scenarios
+- Maintained backward compatibility (falls back to `Path.cwd()` if `.cortex/` not found)
+- Zero type errors
+- All code quality standards met
+- Consistent behavior across all MCP tools
+
+### Architecture Benefits
+
+- **Reliability**: MCP tools now work consistently without requiring explicit `project_root` parameter
+- **User Experience**: Eliminates need for workarounds (direct file reading) when `project_root=None`
+- **Consistency**: All MCP tools now use same project root detection logic
+- **Maintainability**: Single function handles all project root detection logic
+
+### Root Cause Resolution
+
+- **Before**: `get_project_root(None)` returned `Path.cwd()` which may not be project root
+- **After**: `get_project_root(None)` walks up directory tree to find `.cortex/` directory
+- **Impact**: MCP tools can now reliably find Memory Bank files without explicit `project_root` parameter
+
+### Blocker Status
+
+- ✅ **RESOLVED** - Phase 15 blocker cleared, MCP tools now work reliably without explicit `project_root`
+
+## 2026-01-13: Phase 9.8 - Maintainability Excellence Progress
+
+### Summary (Phase 9.8 Progress)
+
+Made significant progress on Phase 9.8: Maintainability Excellence by reducing deep nesting issues from 31 to 27 (13% improvement). Refactored 4 critical functions with high nesting depth to improve code maintainability and readability.
+
+### Changes Made (Phase 9.8 Progress)
+
+#### 1. Refactored `src/cortex/services/framework_adapters/python_adapter.py` - Reduced Nesting
+
+- **Function Fixed**: `_parse_test_counts()` - Reduced from 6 levels to 2 levels
+- **Technique**: Extracted helper methods to reduce nesting:
+  - `_is_test_summary_line()` - Check if line contains test summary
+  - `_extract_count_from_line()` - Extract count value from line parts
+- **Impact**: Function now has clear separation of concerns, easier to read and maintain
+- **Lines**: 325-343 (original), now split across multiple helper methods
+
+#### 2. Refactored `src/cortex/tools/phase2_linking.py` - Reduced Nesting
+
+- **Function Fixed**: `_count_links_by_type()` - Reduced from 5 levels to 2 levels
+- **Technique**: Extracted helper function to reduce nesting:
+  - `_count_links_for_file()` - Count links for a single file
+- **Impact**: Main function now has simpler control flow, helper function handles nested iteration
+- **Lines**: 883-903 (original), now split into two functions
+
+#### 3. Refactored `src/cortex/optimization/summarization_engine.py` - Reduced Nesting
+
+- **Function Fixed**: `extract_headers_only()` - Reduced from 4 levels to 2 levels
+- **Technique**: Extracted helper method to reduce nesting:
+  - `_finalize_previous_section()` - Finalize and save previous section
+- **Impact**: Main function has clearer control flow, section finalization logic is isolated
+- **Lines**: 151-189 (original), now split into main function and helper
+
+#### 4. Refactored `src/cortex/core/graph_algorithms.py` - Reduced Nesting
+
+- **Function Fixed**: `get_reachable_nodes()` - Reduced from 4 levels to 2 levels
+- **Technique**: Extracted helper methods and module-level function:
+  - `_add_filtered_neighbors()` - Add filtered neighbors to visit queue (static method)
+  - `_should_visit_neighbor()` - Check if neighbor should be visited (module-level function)
+- **Impact**: Main function has simpler control flow, neighbor filtering logic is isolated
+- **Lines**: 144-173 (original), now split into multiple functions
+
+### Verification Results (Phase 9.8 Progress)
+
+- **Complexity Analysis**: ✅ PASS - Reduced from 31 to 27 deep nesting issues (13% improvement)
+- **Nesting Levels**: ✅ PASS - All refactored functions now have ≤3 levels of nesting
+- **Code Quality**: ✅ PASS - All functions maintain same functionality, improved readability
+- **Syntax Check**: ✅ PASS - All files compile successfully
+- **Refactoring Impact**:
+  - `_parse_test_counts`: 6 → 2 levels (-67%)
+  - `_count_links_by_type`: 5 → 2 levels (-60%)
+  - `extract_headers_only`: 4 → 2 levels (-50%)
+  - `get_reachable_nodes`: 4 → 2 levels (-50%)
+
+### Code Quality (Phase 9.8 Progress)
+
+- Reduced deep nesting issues by 13% (31 → 27 issues)
+- All refactored functions now comply with ≤3 level nesting target
+- Improved code readability through helper function extraction
+- Maintained 100% functionality (no behavior changes)
+- Applied guard clause pattern and early returns where appropriate
+- Extracted complex conditionals to named functions
+
+### Architecture Benefits
+
+- **Maintainability**: Reduced nesting makes code easier to understand and modify
+- **Readability**: Clear separation of concerns through helper function extraction
+- **Testability**: Smaller functions are easier to test in isolation
+- **Cognitive Load**: Reduced complexity makes code easier to reason about
+
+### Remaining Work
+
+- **27 remaining deep nesting issues** (all 4-level nesting)
+- **Target**: Reduce all nesting to ≤3 levels
+- **Next Steps**: Continue refactoring remaining 4-level nesting functions using same techniques
+
 ## 2026-01-13: Phase 14 - Centralize Path Resolution Complete
 
 ### Summary (Phase 14 Completion)

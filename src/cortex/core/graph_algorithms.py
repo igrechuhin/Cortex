@@ -166,12 +166,25 @@ class GraphAlgorithms:
                 continue
             reachable.add(current)
 
-            for neighbor in get_neighbors_fn(current):
-                if filter_fn is None or filter_fn(current, neighbor):
-                    if neighbor not in reachable:
-                        to_visit.append(neighbor)
+            GraphAlgorithms._add_filtered_neighbors(
+                current, get_neighbors_fn, filter_fn, reachable, to_visit
+            )
 
         return reachable
+
+    @staticmethod
+    def _add_filtered_neighbors(
+        current: str,
+        get_neighbors_fn: Callable[[str], list[str]],
+        filter_fn: Callable[[str, str], bool] | None,
+        reachable: set[str],
+        to_visit: list[str],
+    ) -> None:
+        """Add filtered neighbors to visit queue."""
+        for neighbor in get_neighbors_fn(current):
+            if not _should_visit_neighbor(current, neighbor, filter_fn, reachable):
+                continue
+            to_visit.append(neighbor)
 
     @staticmethod
     def get_transitive_dependencies(
@@ -241,3 +254,17 @@ class GraphAlgorithms:
                     adj_list[dep].append(node)
 
         return adj_list
+
+
+def _should_visit_neighbor(
+    current: str,
+    neighbor: str,
+    filter_fn: Callable[[str, str], bool] | None,
+    reachable: set[str],
+) -> bool:
+    """Check if neighbor should be visited."""
+    if neighbor in reachable:
+        return False
+    if filter_fn is not None and not filter_fn(current, neighbor):
+        return False
+    return True

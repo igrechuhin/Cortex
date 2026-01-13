@@ -326,21 +326,37 @@ class PythonAdapter(FrameworkAdapter):
         """Parse test passed/failed counts from output."""
         tests_passed = 0
         tests_failed = 0
+
         for line in output.split("\n"):
-            if "passed" in line and "failed" in line:
-                parts = line.split()
-                for i, part in enumerate(parts):
-                    if part == "passed":
-                        try:
-                            tests_passed = int(parts[i - 1])
-                        except (ValueError, IndexError):
-                            pass
-                    elif part == "failed":
-                        try:
-                            tests_failed = int(parts[i - 1])
-                        except (ValueError, IndexError):
-                            pass
+            if not self._is_test_summary_line(line):
+                continue
+
+            parts = line.split()
+            tests_passed = (
+                self._extract_count_from_line(parts, "passed") or tests_passed
+            )
+            tests_failed = (
+                self._extract_count_from_line(parts, "failed") or tests_failed
+            )
+
         return tests_passed, tests_failed
+
+    def _is_test_summary_line(self, line: str) -> bool:
+        """Check if line contains test summary with passed/failed counts."""
+        return "passed" in line and "failed" in line
+
+    def _extract_count_from_line(self, parts: list[str], keyword: str) -> int | None:
+        """Extract count value for given keyword from line parts."""
+        for i, part in enumerate(parts):
+            if part != keyword:
+                continue
+
+            try:
+                return int(parts[i - 1])
+            except (ValueError, IndexError):
+                pass
+
+        return None
 
     def _parse_coverage(self, output: str) -> float | None:
         """Parse coverage percentage from output."""

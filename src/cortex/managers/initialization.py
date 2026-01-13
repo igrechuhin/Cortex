@@ -91,17 +91,31 @@ GUIDES = {
 
 
 def get_project_root(project_root: str | None = None) -> Path:
-    """Get project root directory (defaults to current working directory).
+    """Get project root directory.
+
+    When project_root is None, automatically detects the project root by walking
+    up from the current working directory to find a directory containing .cortex/.
+    Falls back to current working directory if .cortex/ is not found.
 
     Args:
-        project_root: Optional project root path
+        project_root: Optional project root path. If provided, returns resolved path.
+                     If None, attempts to detect project root from .cortex/ directory.
 
     Returns:
         Resolved absolute path to project root
     """
     if project_root:
         return Path(project_root).resolve()
-    return Path.cwd()
+
+    # Try to detect project root by finding .cortex/ directory
+    current = Path.cwd().resolve()
+    for path in [current, *current.parents]:
+        cortex_dir = path / ".cortex"
+        if cortex_dir.is_dir():
+            return path
+
+    # Fallback to current working directory if .cortex/ not found
+    return current
 
 
 async def get_managers(project_root: Path) -> dict[str, object]:

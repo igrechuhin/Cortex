@@ -166,27 +166,33 @@ class SummarizationEngine:
 
         for line in lines:
             if line.startswith("#"):
-                # New section
-                if in_section and current_section_lines:
-                    # Save previous section (header + first para)
-                    result_lines.extend(current_section_lines[:5])
-                    if len(current_section_lines) > 5:
-                        result_lines.append("[...]")
-                    result_lines.append("")
-
+                self._finalize_previous_section(
+                    in_section, current_section_lines, result_lines
+                )
                 result_lines.append(line)
                 current_section_lines = []
                 in_section = True
             elif in_section and line.strip():
                 current_section_lines.append(line)
 
-        # Save last section
-        if current_section_lines:
-            result_lines.extend(current_section_lines[:5])
-            if len(current_section_lines) > 5:
-                result_lines.append("[...]")
+        self._finalize_previous_section(True, current_section_lines, result_lines)
 
         return "\n".join(result_lines)
+
+    def _finalize_previous_section(
+        self,
+        in_section: bool,
+        current_section_lines: list[str],
+        result_lines: list[str],
+    ) -> None:
+        """Finalize and save previous section if it exists."""
+        if not in_section or not current_section_lines:
+            return
+
+        result_lines.extend(current_section_lines[:5])
+        if len(current_section_lines) > 5:
+            result_lines.append("[...]")
+        result_lines.append("")
 
     def parse_sections(self, content: str) -> dict[str, str]:
         """

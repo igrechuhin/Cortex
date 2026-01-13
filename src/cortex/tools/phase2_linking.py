@@ -893,12 +893,35 @@ def _count_links_by_type(link_graph: DependencyGraph) -> tuple[int, int]:
     transclusion_links = 0
 
     for source_file in link_graph.get_all_files():
-        if source_file in link_graph.link_types:
-            for _target, link_type in link_graph.link_types[source_file].items():
-                if link_type == "reference":
-                    reference_links += 1
-                elif link_type == "transclusion":
-                    transclusion_links += 1
+        if source_file not in link_graph.link_types:
+            continue
+
+        ref_count, trans_count = _count_links_for_file(
+            link_graph.link_types[source_file]
+        )
+        reference_links += ref_count
+        transclusion_links += trans_count
+
+    return reference_links, transclusion_links
+
+
+def _count_links_for_file(link_types: dict[str, str]) -> tuple[int, int]:
+    """Count reference and transclusion links for a single file.
+
+    Args:
+        link_types: Dictionary mapping targets to link types
+
+    Returns:
+        Tuple of (reference_count, transclusion_count)
+    """
+    reference_links = 0
+    transclusion_links = 0
+
+    for link_type in link_types.values():
+        if link_type == "reference":
+            reference_links += 1
+        elif link_type == "transclusion":
+            transclusion_links += 1
 
     return reference_links, transclusion_links
 
