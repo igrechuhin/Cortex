@@ -281,17 +281,39 @@ class RulesManager:
         for rule in selected_rules:
             if rule.get("category") == "generic":
                 generic_rules.append(rule)
-            else:
-                detected_languages: object = context.get("detected_languages", [])
-                if isinstance(detected_languages, list):
-                    if rule.get("category") in detected_languages:
-                        language_rules.append(rule)
-                if rule.get("source") == "local":
-                    local_rules.append(rule)
+                continue
+
+            self._categorize_non_generic_rule(
+                rule, context, language_rules, local_rules
+            )
 
         result["generic_rules"] = generic_rules
         result["language_rules"] = language_rules
         result["local_rules"] = local_rules
+
+    def _categorize_non_generic_rule(
+        self,
+        rule: dict[str, object],
+        context: dict[str, object],
+        language_rules: list[dict[str, object]],
+        local_rules: list[dict[str, object]],
+    ) -> None:
+        """Categorize a non-generic rule into language or local categories.
+
+        Args:
+            rule: Rule dictionary to categorize
+            context: Context dictionary with detected languages
+            language_rules: List to append language rules to
+            local_rules: List to append local rules to
+        """
+        detected_languages: object = context.get("detected_languages", [])
+        if isinstance(detected_languages, list):
+            rule_category = rule.get("category")
+            if rule_category in detected_languages:
+                language_rules.append(rule)
+
+        if rule.get("source") == "local":
+            local_rules.append(rule)
 
     def _cast_to_rule_list(self, raw_value: object) -> list[dict[str, object]]:
         """Cast raw value to rule list."""

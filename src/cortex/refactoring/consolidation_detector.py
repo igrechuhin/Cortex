@@ -339,20 +339,9 @@ class ConsolidationDetector:
             hash1 = self._compute_content_hash(content1)
 
             for heading2, content2, hash2 in sections2_with_hashes:
-                # Performance optimization: Fast exact-match check using hashes
-                # Avoids expensive SequenceMatcher for identical content
-                if hash1 == hash2:
-                    # Exact match - similarity is 1.0
-                    similarity = 1.0
-                else:
-                    # Different content - check cache first, then compute
-                    cache_key = (hash1, hash2)
-                    if cache_key in self._similarity_cache:
-                        similarity = self._similarity_cache[cache_key]
-                    else:
-                        similarity = self.calculate_similarity(content1, content2)
-                        # Cache the result for future comparisons
-                        self._similarity_cache[cache_key] = similarity
+                similarity = self._calculate_similarity_with_cache(
+                    content1, content2, hash1, hash2
+                )
 
                 # Early termination: Only create opportunities if similarity meets threshold
                 if similarity >= self.min_similarity:
@@ -374,6 +363,35 @@ class ConsolidationDetector:
             content_hash = self._compute_content_hash(content)
             sections_with_hashes.append((heading, content, content_hash))
         return sections_with_hashes
+
+    def _calculate_similarity_with_cache(
+        self, content1: str, content2: str, hash1: str, hash2: str
+    ) -> float:
+        """Calculate similarity with caching optimization.
+
+        Args:
+            content1: First content block
+            content2: Second content block
+            hash1: Hash of first content
+            hash2: Hash of second content
+
+        Returns:
+            Similarity score 0.0-1.0
+        """
+        # Performance optimization: Fast exact-match check using hashes
+        # Avoids expensive SequenceMatcher for identical content
+        if hash1 == hash2:
+            return 1.0
+
+        # Different content - check cache first, then compute
+        cache_key = (hash1, hash2)
+        if cache_key in self._similarity_cache:
+            return self._similarity_cache[cache_key]
+
+        similarity = self.calculate_similarity(content1, content2)
+        # Cache the result for future comparisons
+        self._similarity_cache[cache_key] = similarity
+        return similarity
 
     async def detect_similar_sections(
         self, file_contents: dict[str, str]
@@ -452,18 +470,9 @@ class ConsolidationDetector:
                 content2 = contents[j]
                 hash2 = content_hashes[j]
 
-                # Fast exact-match check using hashes
-                if hash1 == hash2:
-                    similarity = 1.0
-                else:
-                    # Check cache first
-                    cache_key = (hash1, hash2)
-                    if cache_key in self._similarity_cache:
-                        similarity = self._similarity_cache[cache_key]
-                    else:
-                        similarity = self.calculate_similarity(content1, content2)
-                        self._similarity_cache[cache_key] = similarity
-
+                similarity = self._calculate_similarity_with_cache(
+                    content1, content2, hash1, hash2
+                )
                 similarities.append(similarity)
 
         if not similarities:

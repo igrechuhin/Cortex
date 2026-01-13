@@ -92,8 +92,6 @@ class TestGetProjectRoot:
         original_cwd = Path.cwd()
 
         try:
-            import os
-
             os.chdir(tmp_path)
             relative_path = "project"
 

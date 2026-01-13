@@ -595,18 +595,9 @@ class OptimizationStrategies:
             Section content
         """
         lines = content.split("\n")
-        section_start_idx: int | None = None
-        section_end_idx: int | None = None
-
-        for i, line in enumerate(lines):
-            if line.startswith("#"):
-                # Check if this is the target section
-                if section_name in line:
-                    section_start_idx = i
-                elif section_start_idx is not None:
-                    # Reached next section, stop
-                    section_end_idx = i
-                    break
+        section_start_idx, section_end_idx = self._find_section_bounds(
+            lines, section_name
+        )
 
         if section_start_idx is None:
             return ""
@@ -615,6 +606,33 @@ class OptimizationStrategies:
             section_end_idx = len(lines)
 
         return "\n".join(lines[section_start_idx:section_end_idx])
+
+    def _find_section_bounds(
+        self, lines: list[str], section_name: str
+    ) -> tuple[int | None, int | None]:
+        """Find start and end indices for a section.
+
+        Args:
+            lines: List of content lines
+            section_name: Section name to find
+
+        Returns:
+            Tuple of (start_index, end_index), both may be None
+        """
+        section_start_idx: int | None = None
+
+        for i, line in enumerate(lines):
+            if not line.startswith("#"):
+                continue
+
+            # Check if this is the target section
+            if section_name in line:
+                section_start_idx = i
+            elif section_start_idx is not None:
+                # Reached next section, stop
+                return (section_start_idx, i)
+
+        return (section_start_idx, None)
 
     def _add_mandatory_files_to_priority(
         self,

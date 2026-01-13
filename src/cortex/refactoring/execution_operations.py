@@ -131,30 +131,30 @@ class ExecutionOperations:
         """Update source files to use transclusion syntax."""
         for file_path in files:
             full_path = self.memory_bank_dir / file_path
-            if full_path.exists():
-                content_tuple = await self.fs_manager.read_file(full_path)
-                content, _ = content_tuple
+            if not full_path.exists():
+                continue
 
-                parsed_sections = self.fs_manager.parse_sections(content)
+            content_tuple = await self.fs_manager.read_file(full_path)
+            content, _ = content_tuple
 
-                for section in sections:
-                    section_file = section.get("file")
-                    if section_file == file_path:
-                        section_title_raw = section.get("section", "")
-                        section_title = (
-                            str(section_title_raw)
-                            if section_title_raw is not None
-                            else ""
-                        )
-                        transclusion = (
-                            f"{{{{include: {extraction_target}#{section_title}}}}}"
-                        )
+            parsed_sections = self.fs_manager.parse_sections(content)
 
-                        content = self._replace_section_with_transclusion(
-                            content, parsed_sections, section_title, transclusion
-                        )
+            for section in sections:
+                section_file = section.get("file")
+                if section_file != file_path:
+                    continue
 
-                _ = await self.fs_manager.write_file(full_path, content)
+                section_title_raw = section.get("section", "")
+                section_title = (
+                    str(section_title_raw) if section_title_raw is not None else ""
+                )
+                transclusion = f"{{{{include: {extraction_target}#{section_title}}}}}"
+
+                content = self._replace_section_with_transclusion(
+                    content, parsed_sections, section_title, transclusion
+                )
+
+            _ = await self.fs_manager.write_file(full_path, content)
 
     def _replace_section_with_transclusion(
         self,
@@ -251,13 +251,17 @@ class ExecutionOperations:
             heading = str(section.get("heading", ""))
             heading_title = heading.lstrip("#").strip()
 
-            if heading_title in section_titles:
-                line_start = int(section.get("line_start", 0))
-                line_end = int(section.get("line_end", 0))
+            if heading_title not in section_titles:
+                continue
 
-                if line_start > 0 and line_end >= line_start:
-                    for line_num in range(line_start - 1, line_end):
-                        lines_to_remove.add(line_num)
+            line_start = int(section.get("line_start", 0))
+            line_end = int(section.get("line_end", 0))
+
+            if line_start <= 0 or line_end < line_start:
+                continue
+
+            for line_num in range(line_start - 1, line_end):
+                lines_to_remove.add(line_num)
 
         remaining_lines = [
             line for i, line in enumerate(lines) if i not in lines_to_remove

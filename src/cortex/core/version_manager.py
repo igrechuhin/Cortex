@@ -263,17 +263,38 @@ class VersionManager:
 
         # Check all snapshots
         for snapshot in self.history_dir.glob("*_v*.md"):
-            # Extract base name from snapshot name (remove _v{version}.md)
-            snapshot_name = snapshot.stem  # filename_v1
-            parts = snapshot_name.rsplit("_v", 1)
-            if len(parts) == 2:
-                base_name = parts[0]
-                if base_name not in valid_base_names:
-                    # Orphaned snapshot - remove
-                    try:
-                        snapshot.unlink()
-                    except OSError:
-                        pass
+            if self._is_orphaned_snapshot(snapshot, valid_base_names):
+                self._remove_snapshot(snapshot)
+
+    def _is_orphaned_snapshot(self, snapshot: Path, valid_base_names: set[str]) -> bool:
+        """Check if snapshot is orphaned (file no longer exists).
+
+        Args:
+            snapshot: Path to snapshot file
+            valid_base_names: Set of valid base file names
+
+        Returns:
+            True if snapshot is orphaned
+        """
+        snapshot_name = snapshot.stem  # filename_v1
+        parts = snapshot_name.rsplit("_v", 1)
+
+        if len(parts) != 2:
+            return False
+
+        base_name = parts[0]
+        return base_name not in valid_base_names
+
+    def _remove_snapshot(self, snapshot: Path) -> None:
+        """Remove an orphaned snapshot file.
+
+        Args:
+            snapshot: Path to snapshot file to remove
+        """
+        try:
+            snapshot.unlink()
+        except OSError:
+            pass
 
     async def export_version_history(
         self, file_name: str, version_history: list[dict[str, object]], limit: int = 10

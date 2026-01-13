@@ -45,17 +45,7 @@ class PatternManager:
             return f"consolidation-sim-{int(similarity * 10)}"
 
         elif suggestion_type == "split":
-            # Pattern: split based on file size
-            file_size_val = suggestion_details.get("file_tokens", 0)
-            file_size = (
-                int(file_size_val) if isinstance(file_size_val, (int, float)) else 0
-            )
-            if file_size > 10000:
-                return "split-large-file"
-            elif file_size > 5000:
-                return "split-medium-file"
-            else:
-                return "split-small-file"
+            return self._extract_split_pattern_key(suggestion_details)
 
         elif suggestion_type == "reorganization":
             # Pattern: reorganization by goal
@@ -64,6 +54,24 @@ class PatternManager:
             return f"reorganization-{goal}"
 
         return None
+
+    def _extract_split_pattern_key(self, suggestion_details: dict[str, object]) -> str:
+        """Extract pattern key for split suggestions based on file size.
+
+        Args:
+            suggestion_details: Suggestion details dictionary
+
+        Returns:
+            Pattern key string
+        """
+        file_size_val = suggestion_details.get("file_tokens", 0)
+        file_size = int(file_size_val) if isinstance(file_size_val, (int, float)) else 0
+
+        if file_size > 10000:
+            return "split-large-file"
+        if file_size > 5000:
+            return "split-medium-file"
+        return "split-small-file"
 
     def extract_conditions(
         self, suggestion_details: dict[str, object]

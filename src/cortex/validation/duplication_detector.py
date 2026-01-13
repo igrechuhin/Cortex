@@ -114,10 +114,7 @@ class DuplicationDetector:
             match = re.match(r"^(#{2,})\s+(.+)$", line)
             if match:
                 # Save previous section if exists
-                if current_section and current_content:
-                    section_text = "\n".join(current_content).strip()
-                    if len(section_text) >= self.min_length:
-                        sections.append((current_section, section_text))
+                self._save_section_if_valid(sections, current_section, current_content)
 
                 # Start new section
                 current_section = match.group(2).strip()
@@ -127,12 +124,29 @@ class DuplicationDetector:
                 current_content.append(line)
 
         # Save last section
-        if current_section:
-            section_text = "\n".join(current_content).strip()
-            if len(section_text) >= self.min_length:
-                sections.append((current_section, section_text))
+        self._save_section_if_valid(sections, current_section, current_content)
 
         return sections
+
+    def _save_section_if_valid(
+        self,
+        sections: list[tuple[str, str]],
+        section_name: str | None,
+        content_lines: list[str],
+    ) -> None:
+        """Save section to list if it exists and meets minimum length.
+
+        Args:
+            sections: List to append valid sections to
+            section_name: Name of current section, or None
+            content_lines: Lines of content for the section
+        """
+        if not section_name or not content_lines:
+            return
+
+        section_text = "\n".join(content_lines).strip()
+        if len(section_text) >= self.min_length:
+            sections.append((section_name, section_text))
 
     def find_exact_duplicates(
         self, all_sections: dict[str, list[tuple[str, str]]]

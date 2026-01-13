@@ -126,24 +126,46 @@ class ReorganizationStrategies:
 
         for category, files in current_categories.items():
             category_str = str(category)
-            files_list: list[str]
-            if isinstance(files, list):
-                files_list = [str(f) for f in cast(list[object], files)]
-            elif isinstance(files, tuple):
-                files_list = [str(f) for f in cast(tuple[object, ...], files)]
-            else:
-                files_list = []
+            files_list = self._normalize_files_list(files)
+
             if category_str == "uncategorized":
-                # Try to assign to appropriate categories
-                for file in files_list:
-                    # Default to context if unclear
-                    if "context" not in proposed_categories:
-                        proposed_categories["context"] = []
-                    proposed_categories["context"].append(file)
+                self._assign_uncategorized_files(files_list, proposed_categories)
             else:
                 proposed_categories[category_str] = files_list
 
         return proposed_categories
+
+    def _normalize_files_list(self, files: object) -> list[str]:
+        """Normalize files input to list of strings.
+
+        Args:
+            files: Files input (list, tuple, or other)
+
+        Returns:
+            List of file name strings
+        """
+        if isinstance(files, list):
+            return [str(f) for f in cast(list[object], files)]
+        if isinstance(files, tuple):
+            return [str(f) for f in cast(tuple[object, ...], files)]
+        return []
+
+    def _assign_uncategorized_files(
+        self,
+        files_list: list[str],
+        proposed_categories: dict[str, list[str]],
+    ) -> None:
+        """Assign uncategorized files to appropriate categories.
+
+        Args:
+            files_list: List of uncategorized file names
+            proposed_categories: Dictionary to add files to
+        """
+        for file in files_list:
+            # Default to context if unclear
+            if "context" not in proposed_categories:
+                proposed_categories["context"] = []
+            proposed_categories["context"].append(file)
 
     def propose_simplified_structure(
         self, current_structure: dict[str, object]

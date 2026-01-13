@@ -261,26 +261,46 @@ class InfrastructureValidator:
                 return checks
 
             for _job_name, job_config in workflow["jobs"].items():
-                if "steps" not in job_config:
-                    continue
-
-                for step in job_config["steps"]:
-                    if "name" in step:
-                        step_name = step["name"]
-                        step_run = step.get("run", "")
-
-                        check_name = self._normalize_check_name(step_name)
-                        checks.append(
-                            {
-                                "name": check_name,
-                                "description": step_name,
-                                "run": step_run,
-                            }
-                        )
+                self._extract_checks_from_job(job_config, checks)
         except Exception:
             pass
 
         return checks
+
+    def _extract_checks_from_job(
+        self, job_config: dict[str, object], checks: list[dict[str, str]]
+    ) -> None:
+        """Extract checks from a single job configuration.
+
+        Args:
+            job_config: Job configuration dictionary
+            checks: List to append extracted checks to
+        """
+        if "steps" not in job_config:
+            return
+
+        steps = job_config["steps"]
+        if not isinstance(steps, list):
+            return
+
+        for step in steps:
+            if not isinstance(step, dict):
+                continue
+
+            if "name" not in step:
+                continue
+
+            step_name = str(step["name"])
+            step_run = str(step.get("run", ""))
+
+            check_name = self._normalize_check_name(step_name)
+            checks.append(
+                {
+                    "name": check_name,
+                    "description": step_name,
+                    "run": step_run,
+                }
+            )
 
     async def _extract_commit_steps(self) -> list[dict[str, str]]:
         """Extract procedure steps from commit prompt.

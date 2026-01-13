@@ -622,14 +622,13 @@ class StructureAnalyzer:
         """
         if score >= 90:
             return ("A", "excellent")
-        elif score >= 80:
+        if score >= 80:
             return ("B", "good")
-        elif score >= 70:
+        if score >= 70:
             return ("C", "acceptable")
-        elif score >= 60:
+        if score >= 60:
             return ("D", "needs_improvement")
-        else:
-            return ("F", "poor")
+        return ("F", "poor")
 
     def _generate_complexity_recommendations(
         self, max_depth: int, cyclomatic: int, avg_deps: float

@@ -129,27 +129,40 @@ class ExecutionValidator:
     ) -> None:
         """Check dependency integrity for delete/rename/move operations."""
         for op in operations:
-            if op.operation_type in ["delete", "rename", "move"]:
-                # Check if other files depend on this file
-                target_file = op.target_file
-                all_files = await self.get_all_memory_bank_files()
+            if op.operation_type not in ["delete", "rename", "move"]:
+                continue
 
-                for file_path in all_files:
-                    if file_path == target_file:
-                        continue
+            # Check if other files depend on this file
+            target_file = op.target_file
+            all_files = await self.get_all_memory_bank_files()
 
-                    # Check for links to the target file
-                    content, _ = await self.fs_manager.read_file(
-                        self.memory_bank_dir / file_path
-                    )
-                    if (
-                        target_file in content
-                        or target_file.replace(".md", "") in content
-                    ):
-                        warnings.append(
-                            f"File {file_path} may have links to {target_file}. "
-                            + "Links may need to be updated."
-                        )
+            for file_path in all_files:
+                if file_path == target_file:
+                    continue
+
+                await self._check_file_dependencies(file_path, target_file, warnings)
+
+    async def _check_file_dependencies(
+        self, file_path: str, target_file: str, warnings: list[str]
+    ) -> None:
+        """Check if a file has dependencies on target file.
+
+        Args:
+            file_path: File to check for dependencies
+            target_file: Target file that may be referenced
+            warnings: List to append warnings to
+        """
+        content, _ = await self.fs_manager.read_file(self.memory_bank_dir / file_path)
+
+        has_dependency = (
+            target_file in content or target_file.replace(".md", "") in content
+        )
+
+        if has_dependency:
+            warnings.append(
+                f"File {file_path} may have links to {target_file}. "
+                + "Links may need to be updated."
+            )
 
     def _check_token_budget_impact(
         self, suggestion: dict[str, object], warnings: list[str]
