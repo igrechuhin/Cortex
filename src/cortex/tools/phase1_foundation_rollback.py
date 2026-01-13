@@ -12,6 +12,7 @@ from typing import cast
 from cortex.core.file_system import FileSystemManager
 from cortex.core.mcp_stability import execute_tool_with_stability
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.managers.initialization import get_managers, get_project_root
@@ -250,7 +251,7 @@ async def _validate_rollback_file(
     Returns:
         File path or error dict
     """
-    memory_bank_dir = root / "memory-bank"
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     try:
         return fs_manager.construct_safe_path(memory_bank_dir, file_name)
     except (ValueError, PermissionError) as e:

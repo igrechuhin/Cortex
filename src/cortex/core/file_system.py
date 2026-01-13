@@ -40,7 +40,7 @@ class FileSystemManager:
             project_root: Root directory of the project (for path validation)
         """
         self.project_root: Path = Path(project_root).resolve()
-        self.memory_bank_dir: Path = self.project_root / "memory-bank"
+        self.memory_bank_dir: Path = self.project_root / ".cortex" / "memory-bank"
         self.lock_timeout: int = 5  # seconds
         self.rate_limiter: RateLimiter = RateLimiter(
             max_ops=RATE_LIMIT_OPS_PER_SECOND, window_seconds=1.0

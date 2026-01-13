@@ -26,6 +26,7 @@ from cortex.linking.transclusion_engine import (
     MaxDepthExceededError,
     TransclusionEngine,
 )
+from tests.helpers.path_helpers import ensure_test_cortex_structure
 
 
 class TestLinkParser:
@@ -146,8 +147,7 @@ class TestTransclusionEngine:
     def setup_method(self):
         """Set up test fixtures."""
         self.temp_dir = Path(tempfile.mkdtemp())
-        self.memory_bank_dir = self.temp_dir / "memory-bank"
-        self.memory_bank_dir.mkdir()
+        self.memory_bank_dir = ensure_test_cortex_structure(self.temp_dir)
 
         self.fs_manager = FileSystemManager(self.temp_dir)
         self.link_parser = LinkParser()
@@ -294,8 +294,7 @@ class TestLinkValidator:
     def setup_method(self):
         """Set up test fixtures."""
         self.temp_dir = Path(tempfile.mkdtemp())
-        self.memory_bank_dir = self.temp_dir / "memory-bank"
-        self.memory_bank_dir.mkdir()
+        self.memory_bank_dir = ensure_test_cortex_structure(self.temp_dir)
 
         self.fs_manager = FileSystemManager(self.temp_dir)
         self.link_parser = LinkParser()
@@ -389,8 +388,7 @@ class TestDependencyGraphDynamic:
     def setup_method(self):
         """Set up test fixtures."""
         self.temp_dir = Path(tempfile.mkdtemp())
-        self.memory_bank_dir = self.temp_dir / "memory-bank"
-        self.memory_bank_dir.mkdir()
+        self.memory_bank_dir = ensure_test_cortex_structure(self.temp_dir)
 
         self.graph = DependencyGraph()
         self.link_parser = LinkParser()

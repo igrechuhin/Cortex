@@ -21,6 +21,10 @@ from cortex.linking.transclusion_engine import TransclusionEngine
 from cortex.optimization.relevance_scorer import RelevanceScorer
 from cortex.validation.quality_metrics import QualityMetrics
 from cortex.validation.schema_validator import SchemaValidator
+from tests.helpers.path_helpers import (
+    ensure_test_cortex_structure,
+    get_test_memory_bank_dir,
+)
 
 # ============================================================================
 # Phase 1-2 Integration: File Operations + Linking
@@ -45,7 +49,8 @@ class TestPhase1Phase2Integration:
 See [Project Brief](projectBrief.md) for details.
 Check [Active Context](activeContext.md#current-work) for status.
 """
-        file_path = temp_project_root / "memory-bank" / "test.md"
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        file_path = memory_bank_dir / "test.md"
         _ = await file_system.write_file(file_path, content_with_links)
 
         # Parse links from the file
@@ -71,19 +76,19 @@ Check [Active Context](activeContext.md#current-work) for status.
         content = """# Source File
 [Target File](target.md)
 """
-        source_path = temp_project_root / "memory-bank" / "source.md"
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        source_path = memory_bank_dir / "source.md"
         _ = await file_system.write_file(source_path, content)
 
         # Create target file
-        target_path = temp_project_root / "memory-bank" / "target.md"
+        target_path = memory_bank_dir / "target.md"
         _ = await file_system.write_file(target_path, "# Target File\n")
 
         # Act: Parse links and build graph
         source_content, _ = await file_system.read_file(source_path)
         _ = await link_parser.parse_file(source_content)
-        await dependency_graph.build_from_links(
-            temp_project_root / "memory-bank", link_parser
-        )
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        await dependency_graph.build_from_links(memory_bank_dir, link_parser)
 
         # Assert: Check dependencies
         deps = dependency_graph.get_dependencies("source.md")
@@ -102,7 +107,8 @@ Check [Active Context](activeContext.md#current-work) for status.
         source_content = """# Main Document
 {{include: projectBrief.md#overview}}
 """
-        main_path = temp_project_root / "memory-bank" / "main.md"
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        main_path = memory_bank_dir / "main.md"
         _ = await file_system.write_file(main_path, source_content)
 
         # Act: Resolve transclusion
@@ -121,8 +127,9 @@ Check [Active Context](activeContext.md#current-work) for status.
         link_validator = LinkValidator(file_system, link_parser)
 
         # Create file with link
-        source_path = temp_project_root / "memory-bank" / "source.md"
-        target_path = temp_project_root / "memory-bank" / "target.md"
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        source_path = memory_bank_dir / "source.md"
+        target_path = memory_bank_dir / "target.md"
         _ = await file_system.write_file(source_path, "[Target](target.md)")
         _ = await file_system.write_file(target_path, "# Target")
 
@@ -193,7 +200,8 @@ This is the overview section.
 
 See [Active Context](activeContext.md) for details.
 """
-        file_path = temp_project_root / "memory-bank" / "projectBrief.md"
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        file_path = memory_bank_dir / "projectBrief.md"
         _ = await file_system.write_file(file_path, content)
 
         # Act: Validate schema
@@ -216,13 +224,14 @@ See [Active Context](activeContext.md) for details.
         _ = LinkParser()
 
         # Create files with links
-        source_path = temp_project_root / "memory-bank" / "source.md"
-        target_path = temp_project_root / "memory-bank" / "target.md"
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        source_path = memory_bank_dir / "source.md"
+        target_path = memory_bank_dir / "target.md"
         _ = await file_system.write_file(source_path, "[Target](target.md)")
         _ = await file_system.write_file(target_path, "# Target File\nContent here.")
 
         # Act: Calculate quality metrics
-        source_path = temp_project_root / "memory-bank" / "source.md"
+        source_path = memory_bank_dir / "source.md"
         source_content, _ = await file_system.read_file(source_path)
         source_metadata = await metadata_index.get_file_metadata("source.md")
         metrics = await quality_metrics.calculate_file_score(
@@ -266,8 +275,9 @@ content length for the duplication detector to identify it.
             f"# Document 2\n{duplicate_section}\n## Additional\nUnique content 2."
         )
 
-        file1_path = temp_project_root / "memory-bank" / "file1.md"
-        file2_path = temp_project_root / "memory-bank" / "file2.md"
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        file1_path = memory_bank_dir / "file1.md"
+        file2_path = memory_bank_dir / "file2.md"
         _ = await file_system.write_file(file1_path, content1)
         _ = await file_system.write_file(file2_path, content2)
 
@@ -329,8 +339,9 @@ class TestPhase3Phase4Integration:
         relevance_scorer = RelevanceScorer(dependency_graph, metadata_index)
 
         # Create multiple files
-        file1_path = temp_project_root / "memory-bank" / "file1.md"
-        file2_path = temp_project_root / "memory-bank" / "file2.md"
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        file1_path = memory_bank_dir / "file1.md"
+        file2_path = memory_bank_dir / "file2.md"
         file1_content = "# File 1\n" + "Content " * 100
         file2_content = "# File 2\n" + "Content " * 100
         _ = await file_system.write_file(file1_path, file1_content)
@@ -376,8 +387,9 @@ class TestPhase3Phase4Integration:
         high_quality = "# High Quality\n" + "Well-structured content. " * 50
         low_quality = "# Low Quality\n" + "x " * 10
 
-        high_path = temp_project_root / "memory-bank" / "high.md"
-        low_path = temp_project_root / "memory-bank" / "low.md"
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        high_path = memory_bank_dir / "high.md"
+        low_path = memory_bank_dir / "low.md"
         _ = await file_system.write_file(high_path, high_quality)
         _ = await file_system.write_file(low_path, low_quality)
 
@@ -421,8 +433,7 @@ class TestPhase4Phase5Integration:
 
         # Create large file that should be split
         # Ensure memory-bank directory exists
-        memory_bank_path = temp_project_root / ".cortex" / "memory-bank"
-        memory_bank_path.mkdir(parents=True, exist_ok=True)
+        memory_bank_path = ensure_test_cortex_structure(temp_project_root)
 
         # Create file with substantial content to appear in analysis
         large_content = (
@@ -472,7 +483,8 @@ class TestPhase4Phase5Integration:
 
         # Create file with optimization opportunities
         content = "# File\n" + ("Duplicate section. " * 100)
-        file_path = temp_project_root / "memory-bank" / "optimize.md"
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        file_path = memory_bank_dir / "optimize.md"
         _ = await file_system.write_file(file_path, content)
 
         # Act: Check token count
@@ -514,7 +526,8 @@ This is a new document.
 
 See [Project Brief](projectBrief.md) for context.
 """
-        file_path = temp_project_root / "memory-bank" / "new.md"
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        file_path = memory_bank_dir / "new.md"
         _ = await file_system.write_file(file_path, content)
 
         # Act 2: Create version snapshot
@@ -553,9 +566,10 @@ See [Project Brief](projectBrief.md) for context.
         link_parser = LinkParser()
 
         # Create multiple linked files
-        base_path = temp_project_root / "memory-bank" / "base.md"
-        child_path = temp_project_root / "memory-bank" / "child.md"
-        grandchild_path = temp_project_root / "memory-bank" / "grandchild.md"
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        base_path = memory_bank_dir / "base.md"
+        child_path = memory_bank_dir / "child.md"
+        grandchild_path = memory_bank_dir / "grandchild.md"
         _ = await file_system.write_file(base_path, "# Base\n[Child](child.md)")
         _ = await file_system.write_file(
             child_path, "# Child\n[Grandchild](grandchild.md)"
@@ -563,7 +577,7 @@ See [Project Brief](projectBrief.md) for context.
         _ = await file_system.write_file(grandchild_path, "# Grandchild\nContent.")
 
         # Act: Build dependency graph
-        memory_bank_path = temp_project_root / "memory-bank"
+        memory_bank_path = get_test_memory_bank_dir(temp_project_root)
         await dependency_graph.build_from_links(memory_bank_path, link_parser)
 
         # Assert: Check dependencies
@@ -599,7 +613,8 @@ See [Project Brief](projectBrief.md) for context.
 
         # Create file with quality issues
         content = "# Document\n" + ("Low quality content. " * 50)
-        file_path = temp_project_root / "memory-bank" / "doc.md"
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        file_path = memory_bank_dir / "doc.md"
         _ = await file_system.write_file(file_path, content)
 
         # Act 1: Validate quality
@@ -625,7 +640,8 @@ See [Project Brief](projectBrief.md) for context.
         token_counter = TokenCounter()
 
         # Create initial file
-        file_path = temp_project_root / "memory-bank" / "doc.md"
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        file_path = memory_bank_dir / "doc.md"
         initial_content = """# Document
 
 ## Section 1
@@ -687,15 +703,16 @@ New content.
         link_parser = LinkParser()
 
         # Create circular dependencies
-        a_path = temp_project_root / "memory-bank" / "a.md"
-        b_path = temp_project_root / "memory-bank" / "b.md"
-        c_path = temp_project_root / "memory-bank" / "c.md"
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        a_path = memory_bank_dir / "a.md"
+        b_path = memory_bank_dir / "b.md"
+        c_path = memory_bank_dir / "c.md"
         _ = await file_system.write_file(a_path, "[B](b.md)")
         _ = await file_system.write_file(b_path, "[C](c.md)")
         _ = await file_system.write_file(c_path, "[A](a.md)")
 
         # Act: Build graph and detect cycles
-        memory_bank_path = temp_project_root / "memory-bank"
+        memory_bank_path = get_test_memory_bank_dir(temp_project_root)
         await dependency_graph.build_from_links(memory_bank_path, link_parser)
         cycles = dependency_graph.detect_cycles()
 
@@ -716,8 +733,9 @@ New content.
         _ = SchemaValidator()
 
         # Create source and target files
-        target_path = temp_project_root / "memory-bank" / "target.md"
-        source_path = temp_project_root / "memory-bank" / "source.md"
+        memory_bank_dir = get_test_memory_bank_dir(temp_project_root)
+        target_path = memory_bank_dir / "target.md"
+        source_path = memory_bank_dir / "source.md"
         target_content = """# Target
 
 ## Section

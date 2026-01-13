@@ -183,8 +183,8 @@ class TestCreateRefactoringManagersFromOptimization:
         optimization_managers = create_optimization_managers_from_deps(
             temp_project_root, foundation_managers
         )
-        # Factory uses project_root / "memory-bank" not .cortex/memory-bank
-        memory_bank_path = temp_project_root / "memory-bank"
+        # Factory uses project_root / ".cortex" / "memory-bank"
+        memory_bank_path = temp_project_root / ".cortex" / "memory-bank"
         memory_bank_path.mkdir(parents=True, exist_ok=True)
 
         # Act
@@ -214,8 +214,8 @@ class TestCreateExecutionManagersFromDeps:
         optimization_managers = create_optimization_managers_from_deps(
             temp_project_root, foundation_managers
         )
-        # Factory uses project_root / "memory-bank" not .cortex/memory-bank
-        memory_bank_path = temp_project_root / "memory-bank"
+        # Factory uses project_root / ".cortex" / "memory-bank"
+        memory_bank_path = temp_project_root / ".cortex" / "memory-bank"
         memory_bank_path.mkdir(parents=True, exist_ok=True)
 
         # Act
@@ -251,8 +251,8 @@ class TestCreateAllManagers:
     def test_create_all_managers_integration(self, temp_project_root: Path):
         """Test creating all managers in integration."""
         # Arrange
-        # Factory uses project_root / "memory-bank" not .cortex/memory-bank
-        memory_bank_path = temp_project_root / "memory-bank"
+        # Factory uses project_root / ".cortex" / "memory-bank"
+        memory_bank_path = temp_project_root / ".cortex" / "memory-bank"
         memory_bank_path.mkdir(parents=True, exist_ok=True)
 
         # Act
@@ -319,8 +319,8 @@ class TestCreateAllManagers:
     def test_error_handling_invalid_dependencies(self, temp_project_root: Path):
         """Test error handling when dependencies are invalid."""
         # Arrange
-        # Factory uses project_root / "memory-bank" not .cortex/memory-bank
-        memory_bank_path = temp_project_root / "memory-bank"
+        # Factory uses project_root / ".cortex" / "memory-bank"
+        memory_bank_path = temp_project_root / ".cortex" / "memory-bank"
         memory_bank_path.mkdir(parents=True, exist_ok=True)
 
         # Act & Assert - Should not raise errors even with non-existent paths

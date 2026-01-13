@@ -34,9 +34,10 @@ async def _initialize_memory_bank_helper(project_root: str) -> str:
     import json
     from pathlib import Path
 
+    from tests.helpers.path_helpers import ensure_test_cortex_structure
+
     root = Path(project_root)
-    memory_bank_dir = root / ".cortex" / "memory-bank"
-    memory_bank_dir.mkdir(exist_ok=True, parents=True)
+    memory_bank_dir = ensure_test_cortex_structure(root)
 
     # Create basic files if they don't exist
     basic_files = [

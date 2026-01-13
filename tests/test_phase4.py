@@ -29,6 +29,9 @@ from cortex.optimization.progressive_loader import ProgressiveLoader
 # Import Phase 4 modules
 from cortex.optimization.relevance_scorer import RelevanceScorer
 from cortex.optimization.summarization_engine import SummarizationEngine
+from tests.helpers.path_helpers import (
+    ensure_test_cortex_structure,
+)
 
 
 class TestRelevanceScorer:
@@ -211,9 +214,9 @@ class TestProgressiveLoader:
                 tmppath = Path(tmpdir)
 
                 # Create test files
-                (tmppath / "memory-bank").mkdir(exist_ok=True)
-                _ = (tmppath / "memory-bank" / "test1.md").write_text("Test content 1")
-                _ = (tmppath / "memory-bank" / "test2.md").write_text("Test content 2")
+                memory_bank_dir = ensure_test_cortex_structure(tmppath)
+                _ = (memory_bank_dir / "test1.md").write_text("Test content 1")
+                _ = (memory_bank_dir / "test2.md").write_text("Test content 2")
 
                 fs_manager = FileSystemManager(tmppath)
                 metadata_index = MetadataIndex(tmppath)

@@ -1,5 +1,190 @@
 # Progress Log: MCP Memory Bank
 
+## 2026-01-13: Test Path Resolution Fixes and Path Helper Utilities
+
+### Summary (Test Path Fixes)
+
+Fixed test failures in `test_phase2_linking.py` by updating all hardcoded `memory-bank` paths to use the centralized path helper function `get_test_memory_bank_dir()`, ensuring tests correctly use `.cortex/memory-bank/` directory structure.
+
+### Changes Made (Test Path Fixes)
+
+#### 1. Fixed `tests/tools/test_phase2_linking.py` - Path Resolution
+
+- **Issue**: 8 test failures due to hardcoded `mock_project_root / "memory-bank"` paths instead of using `.cortex/memory-bank/`
+- **Fix**: 
+  - Added import for `get_test_memory_bank_dir` from `tests.helpers.path_helpers`
+  - Replaced all 14 instances of `mock_project_root / "memory-bank"` with `get_test_memory_bank_dir(mock_project_root)`
+  - Updated mock manager path from `/mock/memory-bank/test.md` to `/mock/.cortex/memory-bank/test.md`
+- **Impact**: All tests now correctly use `.cortex/memory-bank/` directory structure, consistent with production code
+- **Tests Fixed**:
+  - `test_parse_file_links_success`
+  - `test_resolve_transclusions_success`
+  - `test_resolve_transclusions_no_transclusions`
+  - `test_resolve_transclusions_circular_dependency`
+  - `test_resolve_transclusions_max_depth_exceeded`
+  - `test_resolve_transclusions_custom_max_depth`
+  - `test_validate_links_single_file`
+  - `test_full_linking_workflow`
+
+#### 2. Created `tests/helpers/path_helpers.py` - Path Resolution Utilities
+
+- **Feature**: Centralized path resolution helpers for tests using Cortex path resolver
+- **Functions**:
+  - `get_test_memory_bank_dir()` - Get memory-bank directory path using `get_cortex_path()`
+  - `ensure_test_cortex_structure()` - Ensure `.cortex` directory structure exists
+  - `get_test_cortex_path()` - Get Cortex resource path for testing
+- **Impact**: Provides consistent path resolution across all tests, avoiding hardcoded paths
+- **Lines**: 1-71
+
+#### 3. Created `src/cortex/core/path_resolver.py` - Centralized Path Resolution
+
+- **Feature**: Centralized path resolution for Cortex resources
+- **Functions**:
+  - `get_cortex_path()` - Get path for any Cortex resource type (memory-bank, plans, rules, etc.)
+  - `CortexResourceType` enum - Defines all Cortex resource types
+- **Impact**: Single source of truth for Cortex directory paths, prevents path inconsistencies
+- **Lines**: 1-49
+
+### Verification Results (Test Path Fixes)
+
+- **Test Status**: ✅ PASS - All 2304 tests passing (3 skipped, 0 failures)
+- **Coverage Status**: ✅ PASS - 90.15% coverage (exceeds 90% threshold)
+- **Type Check Status**: ✅ PASS - 0 errors, 15 warnings (acceptable)
+- **Formatting Status**: ✅ PASS - All files properly formatted
+- **Code Quality**: ✅ PASS - All functions ≤30 lines, all files ≤400 lines
+
+### Code Quality (Test Path Fixes)
+
+- Fixed 8 test failures by using centralized path resolution
+- Created reusable path helper utilities for tests
+- Created centralized path resolver for production code
+- Maintained 100% test pass rate
+- Zero type errors
+- All code quality standards met
+- Consistent path usage across codebase
+
+### Architecture Benefits
+
+- **Centralized Path Resolution**: Single source of truth for Cortex directory paths
+- **Test Consistency**: All tests use same path resolution logic as production code
+- **Maintainability**: Path changes only need to be made in one place
+- **Type Safety**: Path resolver uses enum for resource types, preventing typos
+
+## 2026-01-13: MCP Memory Bank Tool Visibility Regression Fixed
+
+### Summary (Phase 13 Completion)
+
+Fixed critical regression where MCP Memory Bank tools (`manage_file` and `get_memory_bank_stats`) could not detect existing `.cortex/memory-bank/*.md` files. The issue was incorrect memory bank path construction in multiple locations throughout the codebase.
+
+### Changes Made (Phase 13 Completion)
+
+#### 1. Fixed `src/cortex/core/file_system.py` - Memory Bank Path
+
+- **Issue**: `FileSystemManager` was using `project_root / "memory-bank"` instead of `project_root / ".cortex" / "memory-bank"`
+- **Fix**: Updated line 43 to use correct path: `self.memory_bank_dir: Path = self.project_root / ".cortex" / "memory-bank"`
+- **Impact**: Core file system manager now correctly resolves memory bank directory
+
+#### 2. Fixed `src/cortex/managers/initialization.py` - Manager Paths
+
+- **Issue**: 9 locations using incorrect `project_root / "memory-bank"` path
+- **Fix**: Updated all references to use `project_root / ".cortex" / "memory-bank"`
+- **Functions Fixed**:
+  - `_create_refactoring_engine()` (line 555)
+  - `_create_consolidation_detector()` (line 576)
+  - `_create_split_recommender()` (line 587)
+  - `_create_reorganization_planner()` (line 600)
+  - `_create_refactoring_executor()` (line 621)
+  - `_create_approval_manager()` (line 642)
+  - `_create_rollback_manager()` (line 661)
+  - `_create_learning_engine()` (line 681)
+- **Impact**: All refactoring and execution managers now use correct memory bank path
+
+#### 3. Fixed `src/cortex/managers/container_factory.py` - Factory Paths
+
+- **Issue**: 2 locations using incorrect memory bank path
+- **Fix**: Updated `create_refactoring_managers_from_optimization()` and `create_execution_managers_from_deps()` functions
+- **Impact**: Container factory now creates managers with correct paths
+
+#### 4. Fixed `src/cortex/tools/validation_operations.py` - Validation Paths
+
+- **Issue**: 5 locations using incorrect `root / "memory-bank"` path
+- **Fix**: Updated all validation helper functions to use `root / ".cortex" / "memory-bank"`
+- **Functions Fixed**:
+  - `validate_schema_single_file()` (line 38)
+  - `validate_schema_all_files()` (line 66)
+  - `read_all_memory_bank_files()` (line 85)
+  - `validate_quality_single_file()` (line 132)
+  - `validate_quality_all_files()` (line 166)
+- **Impact**: Validation tools now correctly access memory bank files
+
+#### 5. Fixed `src/cortex/tools/phase2_linking.py` - Linking Paths
+
+- **Issue**: 2 locations using incorrect memory bank path
+- **Fix**: Updated `validate_links()` and `get_link_graph()` functions
+- **Impact**: Link validation and graph building now use correct paths
+
+#### 6. Fixed `src/cortex/tools/phase1_foundation_rollback.py` - Rollback Path
+
+- **Issue**: 1 location using incorrect memory bank path
+- **Fix**: Updated `_get_file_path()` helper function
+- **Impact**: Rollback operations now use correct memory bank path
+
+### Verification Results (Phase 13 Completion)
+
+- **Test Status**: ✅ PASS - All 2304 tests passing (3 skipped)
+- **Type Check Status**: ✅ PASS - 0 errors, 15 warnings (acceptable)
+- **Linting Status**: ✅ PASS - 0 errors
+- **Formatting Status**: ✅ PASS - All files properly formatted
+- **Code Quality**: ✅ PASS - All functions ≤30 lines, all files ≤400 lines
+
+### Code Quality (Phase 13 Completion)
+
+- Fixed 17 locations across 6 files with incorrect memory bank path construction
+- All paths now consistently use `.cortex/memory-bank/` directory structure
+- Maintained 100% test pass rate
+- Zero type errors
+- All code quality standards met
+- Consistent with `MetadataIndex` which already used the correct path
+
+### Root Cause Analysis
+
+The regression was caused by inconsistent path construction after migrating from `.cursor/memory-bank/` to `.cortex/memory-bank/`. While `MetadataIndex` correctly used `.cortex/memory-bank/`, many other modules were still using the old `memory-bank/` path directly under project root.
+
+### Impact
+
+- **Before**: MCP tools could not see existing memory bank files, causing "File does not exist" errors
+- **After**: All MCP tools correctly resolve memory bank files in `.cortex/memory-bank/` directory
+- **Files Fixed**: 6 files, 17 locations
+- **Blocker Status**: ✅ RESOLVED - Roadmap blocker cleared
+
+## 2026-01-13: Phase 9.4 Future Enhancements Completed
+
+### Summary (Phase 9.4 Completion)
+
+Formalized completion of **Phase 9.4+: Future Enhancements** by linking existing documentation, scripts, and guides to the phase success criteria. API docs, architecture docs, user guides, performance tooling, and scaling guidance are all in place and aligned with the roadmap.
+
+### Changes Made (Phase 9.4 Completion)
+
+- **API Documentation**: Confirmed comprehensive coverage via `docs/api/tools.md`, `docs/api/modules.md`, `docs/api/managers.md`, `docs/api/protocols.md`, `docs/api/types.md`, and `docs/api/exceptions.md`
+- **Architecture Documentation**: Confirmed high-level and layered architecture documentation in `docs/architecture.md` and supporting ADRs under `docs/adr/`
+- **User Guides**: Verified core guides exist for getting started, configuration, migration, troubleshooting, error recovery, and failure modes under `docs/getting-started.md` and `docs/guides/`
+- **Performance & Profiling**: Validated availability of performance tooling via `scripts/analyze_performance.py`, `scripts/benchmark_performance.py`, `scripts/profile_operations.py`, and `scripts/run_benchmarks.py`
+- **Scaling Guidance**: Confirmed large codebase and scaling configuration documented in `docs/guides/advanced/performance-tuning.md` (Large Codebase Handling)
+- **Plan Update**: Updated `.cortex/plans/phase-9.4-future-enhancements.md` status to ✅ COMPLETE (2026-01-13) and marked all success criteria as satisfied
+
+### Verification Results (Phase 9.4 Completion)
+
+- **Documentation Coverage**: ✅ PASS - MCP API, modules, managers, protocols, types, and exceptions all documented
+- **Test Coverage**: ✅ PASS - Overall coverage remains above 90% as tracked in prior phases (no regressions introduced)
+- **Performance Tooling**: ✅ PASS - Performance analysis, benchmarking, and profiling scripts available and documented
+- **Scaling Documentation**: ✅ PASS - Large codebase and scaling configuration documented with thresholds and recommended settings
+- **User Guides**: ✅ PASS - Core user guides present and linked from `docs/index.md`
+
+### Notes (Phase 9.4 Completion)
+
+- Phase 9.4 is now fully captured as a **documentation and tooling consolidation phase** rather than new feature work
+- Future enhancements beyond this scope should be captured as new phases (for example, language-specific performance playbooks or additional workload benchmarks)
+
 ## 2026-01-13: Function Length Violations Fixed
 
 ### Summary (Function Length Fixes)

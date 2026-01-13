@@ -29,7 +29,7 @@ class TestFileSystemManagerInitialization:
         assert manager.project_root == temp_project_root.resolve()
         assert (
             manager.memory_bank_dir.resolve()
-            == (temp_project_root / "memory-bank").resolve()
+            == (temp_project_root / ".cortex" / "memory-bank").resolve()
         )
         assert manager.lock_timeout == 5.0
 
@@ -52,7 +52,7 @@ class TestPathValidation:
         """Test validation succeeds for path within project."""
         # Arrange
         manager = FileSystemManager(temp_project_root)
-        valid_path = temp_project_root / "memory-bank" / "test.md"
+        valid_path = temp_project_root / ".cortex" / "memory-bank" / "test.md"
 
         # Act
         result = manager.validate_path(valid_path)
@@ -79,7 +79,15 @@ class TestPathValidation:
         # Arrange
         manager = FileSystemManager(temp_project_root)
         # Try to traverse outside project using ../
-        traversal_path = temp_project_root / "memory-bank" / ".." / ".." / "outside.md"
+        traversal_path = (
+            temp_project_root
+            / ".cortex"
+            / "memory-bank"
+            / ".."
+            / ".."
+            / ".."
+            / "outside.md"
+        )
 
         # Act
         result = manager.validate_path(traversal_path)
@@ -626,7 +634,7 @@ class TestFileUtilities:
         """Test cleanup_locks removes stale lock files."""
         # Arrange
         manager = FileSystemManager(temp_project_root)
-        memory_bank_dir = temp_project_root / "memory-bank"
+        memory_bank_dir = temp_project_root / ".cortex" / "memory-bank"
         memory_bank_dir.mkdir(exist_ok=True)
 
         # Create some lock files

@@ -157,7 +157,7 @@ def create_refactoring_managers_from_optimization(
     optimization_managers: OptimizationManagers,
 ) -> RefactoringManagers:
     """Create refactoring managers from optimization dependencies."""
-    memory_bank_path = project_root / "memory-bank"
+    memory_bank_path = project_root / ".cortex" / "memory-bank"
     optimization_config = optimization_managers[0]
     return create_refactoring_managers(memory_bank_path, optimization_config)
 
@@ -169,7 +169,7 @@ def create_execution_managers_from_deps(
     optimization_managers: OptimizationManagers,
 ) -> ExecutionManagers:
     """Create execution managers from all dependencies."""
-    memory_bank_path = project_root / "memory-bank"
+    memory_bank_path = project_root / ".cortex" / "memory-bank"
     file_system = foundation_managers[0]
     version_manager = foundation_managers[4]
     metadata_index = foundation_managers[1]

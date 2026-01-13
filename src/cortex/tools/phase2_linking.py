@@ -613,7 +613,7 @@ async def validate_links(
         mgrs = await get_managers(root)
         link_validator = await get_manager(mgrs, "link_validator", LinkValidator)
         fs_manager = cast(FileSystemManager, mgrs["fs"])
-        memory_bank_dir = root / "memory-bank"
+        memory_bank_dir = root / ".cortex" / "memory-bank"
 
         if file_name:
             return await _validate_single_file(

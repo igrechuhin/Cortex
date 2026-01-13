@@ -552,7 +552,7 @@ async def _create_refactoring_engine(
     optimization_config = await get_manager(
         managers, "optimization_config", OptimizationConfig
     )
-    memory_bank_path = project_root / "memory-bank"
+    memory_bank_path = project_root / ".cortex" / "memory-bank"
 
     return RefactoringEngine(
         memory_bank_path=memory_bank_path,
@@ -573,7 +573,7 @@ async def _create_consolidation_detector(
     project_root: Path,
 ) -> ConsolidationDetector:
     """Create ConsolidationDetector instance."""
-    memory_bank_path = project_root / "memory-bank"
+    memory_bank_path = project_root / ".cortex" / "memory-bank"
     return ConsolidationDetector(
         memory_bank_path=memory_bank_path,
         min_similarity=0.80,
@@ -584,7 +584,7 @@ async def _create_consolidation_detector(
 
 async def _create_split_recommender(project_root: Path) -> SplitRecommender:
     """Create SplitRecommender instance."""
-    memory_bank_path = project_root / "memory-bank"
+    memory_bank_path = project_root / ".cortex" / "memory-bank"
     return SplitRecommender(
         memory_bank_path=memory_bank_path,
         max_file_size=5000,
@@ -597,7 +597,7 @@ async def _create_reorganization_planner(
     project_root: Path,
 ) -> ReorganizationPlanner:
     """Create ReorganizationPlanner instance."""
-    memory_bank_path = project_root / "memory-bank"
+    memory_bank_path = project_root / ".cortex" / "memory-bank"
     return ReorganizationPlanner(
         memory_bank_path=memory_bank_path,
         max_dependency_depth=5,
@@ -618,7 +618,7 @@ async def _create_refactoring_executor(
     optimization_config = await get_manager(
         managers, "optimization_config", OptimizationConfig
     )
-    memory_bank_path = project_root / "memory-bank"
+    memory_bank_path = project_root / ".cortex" / "memory-bank"
 
     return RefactoringExecutor(
         memory_bank_dir=memory_bank_path,
@@ -639,7 +639,7 @@ async def _create_approval_manager(
     optimization_config = await get_manager(
         managers, "optimization_config", OptimizationConfig
     )
-    memory_bank_path = project_root / "memory-bank"
+    memory_bank_path = project_root / ".cortex" / "memory-bank"
 
     return ApprovalManager(
         memory_bank_dir=memory_bank_path, config=optimization_config.config
@@ -658,7 +658,7 @@ async def _create_rollback_manager(
     optimization_config = await get_manager(
         managers, "optimization_config", OptimizationConfig
     )
-    memory_bank_path = project_root / "memory-bank"
+    memory_bank_path = project_root / ".cortex" / "memory-bank"
 
     return RollbackManager(
         memory_bank_dir=memory_bank_path,
@@ -678,7 +678,7 @@ async def _create_learning_engine(
     optimization_config = await get_manager(
         managers, "optimization_config", OptimizationConfig
     )
-    memory_bank_path = project_root / "memory-bank"
+    memory_bank_path = project_root / ".cortex" / "memory-bank"
 
     return LearningEngine(
         memory_bank_dir=memory_bank_path,

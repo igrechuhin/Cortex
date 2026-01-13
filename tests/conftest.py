@@ -19,6 +19,11 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from tests.helpers.path_helpers import (
+    ensure_test_cortex_structure,
+    get_test_memory_bank_dir,
+)
+
 if TYPE_CHECKING:
     from cortex.core.dependency_graph import DependencyGraph
     from cortex.core.metadata_index import MetadataIndex
@@ -78,11 +83,8 @@ def temp_project_root() -> Generator[Path, None, None]:
     with tempfile.TemporaryDirectory() as tmpdir:
         project_root = Path(tmpdir)
 
-        # Create .cortex directory structure
-        cortex_dir = project_root / ".cortex"
-        cortex_dir.mkdir(exist_ok=True)
-        memory_bank_dir = cortex_dir / "memory-bank"
-        memory_bank_dir.mkdir(exist_ok=True)
+        # Create .cortex directory structure using path resolver
+        _ = ensure_test_cortex_structure(project_root)
 
         yield project_root
 
@@ -98,7 +100,7 @@ def memory_bank_dir(temp_project_root: Path) -> Path:
     Returns:
         Path: memory-bank directory path
     """
-    return temp_project_root / ".cortex" / "memory-bank"
+    return get_test_memory_bank_dir(temp_project_root)
 
 
 # ============================================================================
@@ -814,8 +816,7 @@ def temp_memory_bank(temp_project_root: Path) -> Path:
     Returns:
         Path: Path to a test file in memory-bank directory
     """
-    memory_bank_dir = temp_project_root / ".cortex" / "memory-bank"
-    memory_bank_dir.mkdir(exist_ok=True, parents=True)
+    memory_bank_dir = ensure_test_cortex_structure(temp_project_root)
     return memory_bank_dir / "projectBrief.md"
 
 

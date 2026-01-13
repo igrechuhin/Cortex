@@ -50,7 +50,7 @@ class TestCheckFileExists:
     ) -> None:
         """Test returns True when target file exists."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         # Create a test file
@@ -71,7 +71,7 @@ class TestCheckFileExists:
     ) -> None:
         """Test returns False when target file does not exist."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         # Act
@@ -88,7 +88,7 @@ class TestCheckFileExists:
     ) -> None:
         """Test returns False when target is a directory."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         # Create a directory
@@ -114,7 +114,7 @@ class TestCheckSectionExists:
     ) -> None:
         """Test returns True when section exists in file."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         # Create file with sections
@@ -139,7 +139,7 @@ class TestCheckSectionExists:
     ) -> None:
         """Test returns False when section does not exist."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         # Create file with sections
@@ -163,7 +163,7 @@ class TestCheckSectionExists:
     ) -> None:
         """Test section matching is case-insensitive."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         test_file = memory_bank_dir / "test.md"
@@ -189,7 +189,7 @@ class TestCheckSectionExists:
     ) -> None:
         """Test returns False and empty list when file doesn't exist."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         # Act
@@ -209,7 +209,7 @@ class TestCheckSectionExists:
     ) -> None:
         """Test extracts headings of all levels."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         test_file = memory_bank_dir / "test.md"
@@ -422,7 +422,7 @@ class TestGenerateFileNotFoundSuggestion:
     ) -> None:
         """Test suggests similar files when they exist."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         # Create similar files
@@ -450,7 +450,7 @@ class TestGenerateFileNotFoundSuggestion:
     ) -> None:
         """Test suggests creating file when no similar files exist."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         # Act
@@ -540,7 +540,7 @@ class TestValidateFile:
     ) -> None:
         """Test validates file with all valid links."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         # Create target file
@@ -586,7 +586,7 @@ class TestValidateFile:
     ) -> None:
         """Test detects link to non-existent file."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         source_file = memory_bank_dir / "source.md"
@@ -626,7 +626,7 @@ class TestValidateFile:
     ) -> None:
         """Test detects link to non-existent section."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         # Create target file without the referenced section
@@ -670,7 +670,7 @@ class TestValidateFile:
     ) -> None:
         """Test validates link without section reference."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         target_file = memory_bank_dir / "target.md"
@@ -713,7 +713,7 @@ class TestValidateFile:
     ) -> None:
         """Test validates transclusion links."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         target_file = memory_bank_dir / "target.md"
@@ -758,7 +758,7 @@ class TestValidateAll:
     ) -> None:
         """Test validates all markdown files in directory."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         # Create multiple files
@@ -800,7 +800,7 @@ class TestValidateAll:
     ) -> None:
         """Test aggregates statistics across all files."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         # Create files
@@ -856,7 +856,7 @@ class TestValidateAll:
     ) -> None:
         """Test collects all broken links with file context."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         file1 = memory_bank_dir / "file1.md"
@@ -896,7 +896,7 @@ class TestValidateAll:
     ) -> None:
         """Test handles errors during file processing gracefully."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         file1 = memory_bank_dir / "file1.md"
@@ -922,7 +922,7 @@ class TestValidateAll:
     ) -> None:
         """Test empty directory returns zero statistics."""
         # Arrange
-        fs = FileSystemManager(memory_bank_dir.parent)
+        fs = FileSystemManager(memory_bank_dir.parent.parent)
         validator = LinkValidator(fs, mock_link_parser)
 
         # Create empty directory
