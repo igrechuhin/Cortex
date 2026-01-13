@@ -1,5 +1,18 @@
 # Product Context: MCP Memory Bank
 
+## Architecture: Cross-Project Helper MCP
+
+**CRITICAL**: This MCP is a helper tool for OTHER projects, not a standalone application. Key architectural principles:
+
+- **Language-Agnostic**: Must work with projects in ANY language (Python, TypeScript, JavaScript, Rust, Go, Java, C++, etc.)
+- **Environment-Agnostic**: Must work across different OS (Linux, macOS, Windows), different environments, different build systems
+- **Configuration-Agnostic**: Must work with different Synapse configurations, different project structures, different tooling
+- **Tool Count Optimization**: Editors have limited MCP tool capacity - must optimize by merging related tools or reusing existing tools where possible
+- **Auto-Detection**: Tools should auto-detect language, test framework, and build tools from project structure
+- **Graceful Fallback**: Must handle projects without standard tooling or with custom setups
+
+All MCP tools must be designed with these constraints in mind. Tools that are language-specific or environment-specific must use auto-detection and fallback mechanisms.
+
 ## Problem Statement
 
 AI coding assistants (like Claude in Cursor) have no memory between sessions. Each conversation starts fresh, requiring developers to repeatedly explain project context, architecture, patterns, and decisions. This leads to:
