@@ -265,6 +265,22 @@ def _validate_file_path(
         return (None, error_json)
 
 
+def _build_read_error_response(file_name: str, root: Path) -> str:
+    """Build error response for read operation when file doesn't exist."""
+    return json.dumps(
+        {
+            "status": "error",
+            "error": f"File {file_name} does not exist",
+            "available_files": [
+                f.name
+                for f in (root / ".cortex" / "memory-bank").glob("*.md")
+                if f.is_file()
+            ],
+        },
+        indent=2,
+    )
+
+
 async def _handle_read_operation(
     file_path: Path,
     file_name: str,
@@ -275,16 +291,7 @@ async def _handle_read_operation(
 ) -> str:
     """Handle read operation."""
     if not file_path.exists():
-        return json.dumps(
-            {
-                "status": "error",
-                "error": f"File {file_name} does not exist",
-                "available_files": [
-                    f.name for f in (root / "memory-bank").glob("*.md") if f.is_file()
-                ],
-            },
-            indent=2,
-        )
+        return _build_read_error_response(file_name, root)
 
     content_str, _ = await fs_manager.read_file(file_path)
     result: dict[str, object] = {
@@ -550,7 +557,7 @@ def _validate_and_get_path(
     fs_manager: FileSystemManager, root: Path, file_name: str
 ) -> tuple[Path | None, str]:
     """Validate file name and get safe file path."""
-    memory_bank_dir = root / "memory-bank"
+    memory_bank_dir = root / ".cortex" / "memory-bank"
     return _validate_file_path(fs_manager, memory_bank_dir, file_name)
 
 

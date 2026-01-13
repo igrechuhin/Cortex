@@ -13,6 +13,7 @@
 - **Memory bank location**: All memory bank files MUST be in `.cursor/memory-bank/` directory; core files: projectBrief.md, productContext.md, systemPatterns.md, techContext.md, activeContext.md, progress.md, roadmap.md.
 - **Performance posture**: Avoid O(n²) regressions; record metrics where required; keep tests under 10s per case.
 - **No auto-commit**: Never create commits or push without explicit user request; follow documented commit workflow when requested.
+- **MCP tool error handling**: When encountering unexpected results from Cortex MCP tools, immediately create an investigation plan at `.cortex/plans/` and link it as a blocker (ASAP priority) in `.cortex/memory-bank/roadmap.md`. This ensures all tool issues are tracked and addressed systematically.
 
 ## Expectations for LLM Agents in This Repo
 

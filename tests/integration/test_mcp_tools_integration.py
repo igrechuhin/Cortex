@@ -35,7 +35,7 @@ async def _initialize_memory_bank_helper(project_root: str) -> str:
     from pathlib import Path
 
     root = Path(project_root)
-    memory_bank_dir = root / "memory-bank"
+    memory_bank_dir = root / ".cortex" / "memory-bank"
     memory_bank_dir.mkdir(exist_ok=True, parents=True)
 
     # Create basic files if they don't exist
@@ -121,7 +121,8 @@ class TestMCPToolWorkflows:
         _ = await _initialize_memory_bank_helper(project_root_str)
 
         # Create file with links
-        file_system = temp_project_root / "memory-bank" / "test.md"
+        file_system = temp_project_root / ".cortex" / "memory-bank" / "test.md"
+        file_system.parent.mkdir(exist_ok=True, parents=True)
         _ = file_system.write_text(
             "[Project Brief](projectBrief.md)\n[Active Context](activeContext.md)"
         )
@@ -255,7 +256,8 @@ class TestMCPToolWorkflows:
         _ = await _initialize_memory_bank_helper(project_root_str)
 
         # Create linked files
-        file_system = temp_project_root / "memory-bank"
+        file_system = temp_project_root / ".cortex" / "memory-bank"
+        file_system.mkdir(exist_ok=True, parents=True)
         _ = (file_system / "parent.md").write_text("[Child](child.md)")
         _ = (file_system / "child.md").write_text("# Child\nContent.")
 
@@ -332,7 +334,8 @@ class TestMCPToolErrorHandling:
         _ = await _initialize_memory_bank_helper(project_root_str)
 
         # Create file with broken link
-        file_system = temp_project_root / "memory-bank" / "broken.md"
+        file_system = temp_project_root / ".cortex" / "memory-bank" / "broken.md"
+        file_system.parent.mkdir(exist_ok=True, parents=True)
         _ = file_system.write_text("[Broken Link](nonexistent.md)")
 
         # Act: Validate links

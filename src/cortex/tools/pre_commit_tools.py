@@ -30,6 +30,15 @@ class PreCommitResult(TypedDict):
     success: bool
 
 
+class CheckStats(TypedDict):
+    """Statistics for pre-commit checks."""
+
+    total_errors: int
+    total_warnings: int
+    files_modified: list[str]
+    checks_performed: list[str]
+
+
 def _get_adapter(
     language_info: LanguageInfo, project_root: str | None
 ) -> PythonAdapter | None:
@@ -146,10 +155,10 @@ def _execute_all_checks(
     strict_mode: bool,
     timeout: int | None,
     coverage_threshold: float,
-) -> tuple[dict[str, CheckResult | TestResult], dict[str, int | list[str]]]:
+) -> tuple[dict[str, CheckResult | TestResult], CheckStats]:
     """Execute all requested checks."""
     results: dict[str, CheckResult | TestResult] = {}
-    stats = {
+    stats: CheckStats = {
         "total_errors": 0,
         "total_warnings": 0,
         "files_modified": [],
@@ -172,7 +181,7 @@ def _process_fix_errors_check(
     checks_to_perform: list[str],
     strict_mode: bool,
     results: dict[str, CheckResult | TestResult],
-    stats: dict[str, int | list[str]],
+    stats: CheckStats,
 ) -> None:
     """Process fix_errors check if requested."""
     if "fix_errors" in checks_to_perform:
@@ -188,7 +197,7 @@ def _process_format_check(
     adapter: PythonAdapter,
     checks_to_perform: list[str],
     results: dict[str, CheckResult | TestResult],
-    stats: dict[str, int | list[str]],
+    stats: CheckStats,
 ) -> None:
     """Process format check if requested."""
     if "format" in checks_to_perform:
@@ -203,7 +212,7 @@ def _process_type_check(
     adapter: PythonAdapter,
     checks_to_perform: list[str],
     results: dict[str, CheckResult | TestResult],
-    stats: dict[str, int | list[str]],
+    stats: CheckStats,
 ) -> None:
     """Process type_check check if requested."""
     if "type_check" in checks_to_perform:
@@ -217,7 +226,7 @@ def _process_quality_check(
     adapter: PythonAdapter,
     checks_to_perform: list[str],
     results: dict[str, CheckResult | TestResult],
-    stats: dict[str, int | list[str]],
+    stats: CheckStats,
 ) -> None:
     """Process quality check if requested."""
     if "quality" in checks_to_perform:
@@ -233,7 +242,7 @@ def _process_tests_check(
     timeout: int | None,
     coverage_threshold: float,
     results: dict[str, CheckResult | TestResult],
-    stats: dict[str, int | list[str]],
+    stats: CheckStats,
 ) -> None:
     """Process tests check if requested."""
     if "tests" in checks_to_perform:
@@ -286,7 +295,7 @@ def _execute_tests(
 
 def _build_response(
     results: dict[str, CheckResult | TestResult],
-    stats: dict[str, int | list[str]],
+    stats: CheckStats,
     detected_language: str,
 ) -> str:
     """Build JSON response."""

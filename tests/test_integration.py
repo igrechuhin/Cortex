@@ -25,7 +25,7 @@ async def _initialize_memory_bank_helper(project_root: str) -> str:
     from pathlib import Path
 
     root = Path(project_root)
-    memory_bank_dir = root / "memory-bank"
+    memory_bank_dir = root / ".cortex" / "memory-bank"
     memory_bank_dir.mkdir(exist_ok=True, parents=True)
 
     # Create basic files if they don't exist
