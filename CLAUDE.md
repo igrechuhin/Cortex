@@ -96,7 +96,7 @@ The server initializes services in this order:
 22. **RefactoringExecutor** - Execute refactorings safely
 23. **RollbackManager** - Rollback capabilities
 24. **LearningEngine** - Learn from feedback
-25. **SharedRulesManager** - Manage shared rules repositories
+25. **SynapseManager** - Manage shared rules repositories (replaces SharedRulesManager)
 26. **StructureManager** - Manage project structure
 
 ### Key Design Patterns

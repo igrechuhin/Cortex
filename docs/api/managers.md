@@ -1629,49 +1629,91 @@ Learns from user feedback.
 
 ## Rules Managers
 
-### SharedRulesManager
+### SynapseManager
 
-Manages shared rules repositories.
+Manages shared rules repositories via Git submodules (Synapse).
 
-**Module:** `cortex.rules.shared_rules_manager`
-
-**Implements:** `RulesManagerProtocol`
+**Module:** `cortex.rules.synapse_manager`
 
 **Constructor:**
 
 ```python
 def __init__(
     self,
-    rules_dir: Path,
-    token_counter: TokenCounterProtocol,
-    config: dict[str, object] | None = None,
+    project_root: Path,
+    synapse_folder: str = ".cortex/synapse",
+    local_rules_folder: str = ".cursorrules",
 )
 ```
 
 **Key Methods:**
 
-#### index_rules
+#### initialize_synapse
 
 ```python
-async def index_rules(self, force: bool = False) -> dict[str, object]
-```
-
-Index rules from directory.
-
-#### get_relevant_rules
-
-```python
-async def get_relevant_rules(
-    self,
-    task_description: str,
-    max_tokens: int | None = None,
-    min_relevance: float | None = None,
+async def initialize_synapse(
+    self, repo_url: str, force: bool = False, timeout: int = 30
 ) -> dict[str, object]
 ```
 
-Get rules relevant to task.
+Initialize Synapse as git submodule.
 
-**See Protocol documentation for full API.**
+#### sync_synapse
+
+```python
+async def sync_synapse(self, pull: bool = True, push: bool = False) -> dict[str, object]
+```
+
+Sync Synapse repository with remote.
+
+#### load_rules_manifest
+
+```python
+async def load_rules_manifest(self) -> dict[str, object] | None
+```
+
+Load and parse rules-manifest.json.
+
+#### detect_context
+
+```python
+async def detect_context(
+    self, task_description: str, project_files: list[Path] | None = None
+) -> dict[str, object]
+```
+
+Detect context for intelligent rule loading.
+
+#### get_relevant_categories
+
+```python
+async def get_relevant_categories(self, context: dict[str, object]) -> list[str]
+```
+
+Get relevant rule categories based on detected context.
+
+#### load_category
+
+```python
+async def load_category(self, category: str) -> list[dict[str, object]]
+```
+
+Load all rules from a specific category.
+
+#### merge_rules
+
+```python
+async def merge_rules(
+    self,
+    shared_rules: list[dict[str, object]],
+    local_rules: list[dict[str, object]],
+    priority: str = "local_overrides_shared",
+) -> list[dict[str, object]]
+```
+
+Merge shared and local rules based on priority strategy.
+
+**Note:** `SharedRulesManager` has been replaced by `SynapseManager`. See `cortex.rules.synapse_manager` for the current implementation.
 
 ---
 

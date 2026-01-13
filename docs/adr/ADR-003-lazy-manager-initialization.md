@@ -19,7 +19,7 @@ Cortex consists of 26 specialized managers that provide various capabilities:
 9. **Analysis** (3): PatternAnalyzer, StructureAnalyzer, InsightEngine
 10. **Refactoring** (3): RefactoringEngine, RefactoringExecutor, RollbackManager
 11. **Learning** (1): LearningEngine
-12. **Shared Rules** (1): SharedRulesManager
+12. **Shared Rules** (1): SynapseManager
 13. **Structure** (1): StructureManager
 
 Each manager has initialization costs:
@@ -292,7 +292,7 @@ async def validate_memory_bank() -> dict[str, object]:
 22. MigrationManager
 23. FileWatcher
 24. LearningEngine
-25. SharedRulesManager
+25. SynapseManager
 26. StructureManager
 
 ### Dependency Graph
@@ -338,7 +338,7 @@ Tier 7 (Advanced)
     MigrationManager → VersionManager
     FileWatcher → FileSystemManager
     LearningEngine → MetadataIndex
-    SharedRulesManager → FileSystemManager
+    SynapseManager → FileSystemManager
     StructureManager → FileSystemManager
 ```
 

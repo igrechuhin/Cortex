@@ -77,14 +77,14 @@ class RateLimiter:
 | File Names | ✅ `validate_file_name()` | FileSystemManager | ✅ Good |
 | File Paths | ✅ `validate_path()` | FileSystemManager | ✅ Good |
 | String Input | ✅ `validate_string_input()` | Not widely used | ⚠️ Underutilized |
-| Git URLs | ✅ `validate_git_url()` | SharedRulesManager | ✅ Good |
+| Git URLs | ✅ `validate_git_url()` | SynapseManager | ✅ Good |
 
 ### Validation Coverage by Component
 
 **✅ PROTECTED:**
 
 - File system operations (all validated via FileSystemManager)
-- Git clone/push operations (URL validation in SharedRulesManager)
+- Git clone/push operations (URL validation in SynapseManager)
 - Path construction (validated before access)
 
 **⚠️ NEEDS VALIDATION:**

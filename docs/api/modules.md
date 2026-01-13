@@ -1488,43 +1488,49 @@ Configuration for learning and adaptation strategies.
 
 Phase 6 integrates shared rules via Git submodules for cross-project consistency.
 
-### SharedRulesManager
+### SynapseManager
 
-**Location:** `src/cortex/shared_rules_manager.py`
+**Location:** `src/cortex/rules/synapse_manager.py`
 
 **Description:**
-Manages shared rules repositories via Git submodules for project consistency across teams.
+Manages shared rules repositories via Git submodules (Synapse) for project consistency across teams.
 
 **Key Classes:**
 
-- `SharedRulesManager` - Shared rules management
+- `SynapseManager` - Synapse repository management
 
 **Public Methods:**
 
 ```python
 # Initialization
-async def initialize_shared_rules(
-    self,
-    repo_url: str,
-    submodule_path: str = "synapse"
+async def initialize_synapse(
+    self, repo_url: str, force: bool = False, timeout: int = 30
 ) -> dict[str, object]
 
 # Synchronization
-async def sync_shared_rules(self) -> dict[str, object]
-async def fetch_updates(self) -> dict[str, object]
-async def push_local_rules(self) -> dict[str, object]
+async def sync_synapse(self, pull: bool = True, push: bool = False) -> dict[str, object]
 
 # Rules Management
-async def get_shared_rules(self) -> dict[str, object]
+async def load_rules_manifest(self) -> dict[str, object] | None
+async def detect_context(
+    self, task_description: str, project_files: list[Path] | None = None
+) -> dict[str, object]
+async def get_relevant_categories(self, context: dict[str, object]) -> list[str]
+async def load_category(self, category: str) -> list[dict[str, object]]
 async def merge_rules(
     self,
-    local_rules: dict[str, object],
-    shared_rules: dict[str, object]
-) -> dict[str, object]
+    shared_rules: list[dict[str, object]],
+    local_rules: list[dict[str, object]],
+    priority: str = "local_overrides_shared",
+) -> list[dict[str, object]]
 
-# Status
-async def get_shared_rules_status(self) -> dict[str, object]
+# Prompts Management
+async def load_prompts_manifest(self) -> dict[str, object] | None
+async def load_prompts_category(self, category: str) -> list[dict[str, object]]
+async def get_all_prompts(self) -> list[dict[str, object]]
 ```
+
+**Note:** `SharedRulesManager` has been replaced by `SynapseManager`. The new implementation provides enhanced features including prompts management and improved context detection.
 
 ---
 
@@ -1962,8 +1968,11 @@ async def get_managers() -> ManagersCollection:
 
 **Shared Rules (Phase 6):**
 
-- SharedRulesManager → FileSystemManager
+- SynapseManager → FileSystemManager
 - ContextDetector → None
+- RulesLoader → FileSystemManager
+- RulesMerger → None
+- SynapseRepository → FileSystemManager
 
 **Architecture (Phase 7):**
 

@@ -234,8 +234,8 @@ class TestGitOperationTimeouts:
         assert timeout_used == 30  # Default timeout
 
 
-class TestSharedRulesManagerSecurity:
-    """Test security enhancements in SynapseManager (replaces SharedRulesManager)."""
+class TestSynapseManagerSecurity:
+    """Test security enhancements in SynapseManager."""
 
     @pytest.mark.asyncio
     async def test_initialize_shared_rules_validates_url(self):

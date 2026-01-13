@@ -53,7 +53,7 @@ def mock_project_root(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def mock_synapse_manager():
-    """Create mock SharedRulesManager."""
+    """Create mock SynapseManager."""
     manager = MagicMock()
     manager.sync_synapse = AsyncMock(
         return_value={

@@ -1,59 +1,36 @@
 """
 Test suite for Phase 6: Shared Rules Repository
 
-Tests the SharedRulesManager module and integration with RulesManager.
-
-NOTE: This test file references SharedRulesManager which has been replaced by SynapseManager.
-These tests need to be migrated to use SynapseManager. For now, the tests are skipped.
+Tests the SynapseManager module and integration with RulesManager.
 """
-
-# pyright: reportGeneralTypeIssues=false, reportMissingParameterType=false, reportAttributeAccessIssue=false, reportAssignmentType=false, reportCallIssue=false, reportUnknownMemberType=false, reportImplicitStringConcatenation=false
-# This file contains legacy tests for SharedRulesManager which has been replaced.
-# Type errors are expected and will be resolved when tests are migrated to SynapseManager.
-# The file is skipped at module level, so these errors don't affect runtime.
 
 import json
 import tempfile
 from pathlib import Path
 from typing import cast
 
-import pytest
-
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.token_counter import TokenCounter
 from cortex.optimization.rules_manager import RulesManager
-
-# TODO: Migrate these tests to use SynapseManager instead of SharedRulesManager
-# SharedRulesManager has been replaced by SynapseManager in src/cortex/rules/synapse_manager.py
-# Type stub for legacy tests - SharedRulesManager no longer exists
 from cortex.rules.synapse_manager import SynapseManager
 
-# Type alias for legacy test compatibility
-SharedRulesManager = SynapseManager  # type: ignore[misc,assignment]
 
-pytest.skip(
-    "SharedRulesManager has been replaced by SynapseManager. "
-    "These tests need to be migrated.",
-    allow_module_level=True,
-)
-
-
-async def test_shared_rules_manager_initialization():
-    """Test SharedRulesManager initialization."""
-    print("Testing SharedRulesManager initialization...")
+async def test_synapse_manager_initialization():
+    """Test SynapseManager initialization."""
+    print("Testing SynapseManager initialization...")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         project_root = Path(tmpdir)
 
-        manager = SharedRulesManager(
-            project_root=project_root, shared_rules_folder=".shared-rules"
+        manager = SynapseManager(
+            project_root=project_root, synapse_folder=".cortex/synapse"
         )
 
         assert manager.project_root == project_root
-        assert manager.shared_rules_path == project_root / ".shared-rules"
+        assert manager.synapse_path == project_root / ".cortex/synapse"
         assert manager.manifest is None
-        print("✓ SharedRulesManager initialized successfully")
+        print("✓ SynapseManager initialized successfully")
 
 
 async def test_context_detection():
@@ -63,7 +40,7 @@ async def test_context_detection():
     with tempfile.TemporaryDirectory() as tmpdir:
         project_root = Path(tmpdir)
 
-        manager = SharedRulesManager(project_root=project_root)
+        manager = SynapseManager(project_root=project_root)
 
         # Test Python context
         context = await manager.detect_context(
@@ -115,7 +92,7 @@ async def test_get_relevant_categories():
     with tempfile.TemporaryDirectory() as tmpdir:
         project_root = Path(tmpdir)
 
-        manager = SharedRulesManager(project_root=project_root)
+        manager = SynapseManager(project_root=project_root)
 
         context = {
             "detected_languages": ["python"],
@@ -144,8 +121,10 @@ async def test_rules_manifest_loading():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         project_root = Path(tmpdir)
-        shared_rules_path = project_root / ".shared-rules"
-        shared_rules_path.mkdir()
+        synapse_path = project_root / ".cortex/synapse"
+        synapse_path.mkdir(parents=True)
+        rules_path = synapse_path / "rules"
+        rules_path.mkdir()
 
         # Create a mock manifest
         manifest = {
@@ -177,12 +156,12 @@ async def test_rules_manifest_loading():
             },
         }
 
-        manifest_path = shared_rules_path / "rules-manifest.json"
+        manifest_path = rules_path / "rules-manifest.json"
         with open(manifest_path, "w") as f:
             json.dump(manifest, f, indent=2)
 
-        manager = SharedRulesManager(
-            project_root=project_root, shared_rules_folder=".shared-rules"
+        manager = SynapseManager(
+            project_root=project_root, synapse_folder=".cortex/synapse"
         )
 
         loaded_manifest = await manager.load_rules_manifest()
@@ -202,11 +181,13 @@ async def test_load_category():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         project_root = Path(tmpdir)
-        shared_rules_path = project_root / ".shared-rules"
-        shared_rules_path.mkdir()
+        synapse_path = project_root / ".cortex/synapse"
+        synapse_path.mkdir(parents=True)
+        rules_path = synapse_path / "rules"
+        rules_path.mkdir()
 
         # Create category folder and rule file
-        generic_path = shared_rules_path / "generic"
+        generic_path = rules_path / "generic"
         generic_path.mkdir()
 
         rule_content = "# Coding Standards\n\nAlways write clean code."
@@ -231,12 +212,12 @@ async def test_load_category():
             },
         }
 
-        manifest_path = shared_rules_path / "rules-manifest.json"
+        manifest_path = rules_path / "rules-manifest.json"
         with open(manifest_path, "w") as f:
             json.dump(manifest, f, indent=2)
 
-        manager = SharedRulesManager(
-            project_root=project_root, shared_rules_folder=".shared-rules"
+        manager = SynapseManager(
+            project_root=project_root, synapse_folder=".cortex/synapse"
         )
 
         _ = await manager.load_rules_manifest()
@@ -246,7 +227,6 @@ async def test_load_category():
         assert rules[0]["file"] == "coding-standards.md"
         assert rules[0]["content"] == rule_content
         assert rules[0]["priority"] == 100
-        assert rules[0]["source"] == "shared"
         print("✓ Category rules loaded successfully")
 
 
@@ -257,7 +237,7 @@ async def test_merge_rules():
     with tempfile.TemporaryDirectory() as tmpdir:
         project_root = Path(tmpdir)
 
-        manager = SharedRulesManager(project_root=project_root)
+        manager = SynapseManager(project_root=project_root)
 
         shared_rules = [
             {"file": "rule1.md", "content": "Shared rule 1", "priority": 100},
@@ -302,7 +282,7 @@ async def test_merge_rules():
 
 
 async def test_rules_manager_integration():
-    """Test RulesManager integration with SharedRulesManager."""
+    """Test RulesManager integration with SynapseManager."""
     print("Testing RulesManager integration...")
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -313,24 +293,24 @@ async def test_rules_manager_integration():
         metadata_index = MetadataIndex(project_root)
         token_counter = TokenCounter()
 
-        # Create shared rules manager
-        shared_rules_manager = SharedRulesManager(
-            project_root=project_root, shared_rules_folder=".shared-rules"
+        # Create synapse manager
+        synapse_manager = SynapseManager(
+            project_root=project_root, synapse_folder=".cortex/synapse"
         )
 
-        # Create rules manager with shared rules support
+        # Create rules manager with synapse support
         rules_manager = RulesManager(
             project_root=project_root,
             file_system=fs_manager,
             metadata_index=metadata_index,
             token_counter=token_counter,
             rules_folder=".cursorrules",
-            shared_rules_manager=shared_rules_manager,
+            synapse_manager=synapse_manager,
         )
 
-        # Test that shared rules manager is set
-        assert rules_manager.shared_rules_manager is not None
-        print("✓ RulesManager integrated with SharedRulesManager")
+        # Test that synapse manager is set
+        assert rules_manager.synapse_manager is not None
+        print("✓ RulesManager integrated with SynapseManager")
 
 
 async def test_get_relevant_rules_with_context():
@@ -345,12 +325,14 @@ async def test_get_relevant_rules_with_context():
         metadata_index = MetadataIndex(project_root)
         token_counter = TokenCounter()
 
-        # Create shared rules structure
-        shared_rules_path = project_root / ".shared-rules"
-        shared_rules_path.mkdir()
+        # Create synapse structure
+        synapse_path = project_root / ".cortex/synapse"
+        synapse_path.mkdir(parents=True)
+        rules_path = synapse_path / "rules"
+        rules_path.mkdir()
 
         # Create generic category
-        generic_path = shared_rules_path / "generic"
+        generic_path = rules_path / "generic"
         generic_path.mkdir()
 
         generic_rule = generic_path / "coding-standards.md"
@@ -358,7 +340,7 @@ async def test_get_relevant_rules_with_context():
             _ = f.write("# Coding Standards\n\nWrite clean code.")
 
         # Create python category
-        python_path = shared_rules_path / "python"
+        python_path = rules_path / "python"
         python_path.mkdir()
 
         python_rule = python_path / "style-guide.md"
@@ -390,13 +372,13 @@ async def test_get_relevant_rules_with_context():
             },
         }
 
-        manifest_path = shared_rules_path / "rules-manifest.json"
+        manifest_path = rules_path / "rules-manifest.json"
         with open(manifest_path, "w") as f:
             json.dump(manifest, f, indent=2)
 
-        # Create shared and rules managers
-        shared_rules_manager = SharedRulesManager(
-            project_root=project_root, shared_rules_folder=".shared-rules"
+        # Create synapse and rules managers
+        synapse_manager = SynapseManager(
+            project_root=project_root, synapse_folder=".cortex/synapse"
         )
 
         rules_manager = RulesManager(
@@ -404,7 +386,7 @@ async def test_get_relevant_rules_with_context():
             file_system=fs_manager,
             metadata_index=metadata_index,
             token_counter=token_counter,
-            shared_rules_manager=shared_rules_manager,
+            synapse_manager=synapse_manager,
         )
 
         # Get relevant rules
@@ -436,7 +418,7 @@ async def run_all_tests():
     print("=" * 60 + "\n")
 
     tests = [
-        ("SharedRulesManager Initialization", test_shared_rules_manager_initialization),
+        ("SynapseManager Initialization", test_synapse_manager_initialization),
         ("Context Detection", test_context_detection),
         ("Get Relevant Categories", test_get_relevant_categories),
         ("Rules Manifest Loading", test_rules_manifest_loading),
