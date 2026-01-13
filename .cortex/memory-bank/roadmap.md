@@ -4,10 +4,11 @@
 
 ### Active Work
 
-- None (all current blockers resolved)
+- 🔴 **Phase 14: Centralize Path Resolution** - Replace direct path constructions with centralized path resolver - See [Phase 14](../plans/phase-14-centralize-path-resolution.md) for details
 
 ### Recent Findings
 
+- ✅ **Plan Archival**: Archived 110 completed plans to `.cortex/plans/archive/` organized by phase - Improved plan directory organization and compliance with archival requirements (2026-01-13)
 - ✅ **Legacy SharedRulesManager Migration**: Completed migration from SharedRulesManager to SynapseManager - All tests migrated, documentation updated, legacy references removed (2026-01-13)
 - ✅ **Test Path Resolution Fixed**: Fixed 8 test failures in `test_phase2_linking.py` by using centralized path helpers - All tests now use `.cortex/memory-bank/` consistently (2026-01-13)
 - ✅ **Path Helper Utilities Created**: Added `tests/helpers/path_helpers.py` and `src/cortex/core/path_resolver.py` for centralized path resolution (2026-01-13)
@@ -45,4 +46,4 @@
 
 ## Upcoming Milestones
 
-- None (all roadmap items completed)
+- 🔴 [Phase 14: Centralize Path Resolution Using Path Resolver](../plans/phase-14-centralize-path-resolution.md) - PENDING - Replace 24+ instances of direct path construction (`root / ".cortex" / "memory-bank"`) with centralized `get_cortex_path()` calls for consistency and maintainability

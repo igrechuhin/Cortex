@@ -817,7 +817,7 @@ async def _build_link_graph_data(
     root = get_project_root(project_root)
     mgrs = await get_managers(root)
 
-    memory_bank_dir = root / "memory-bank"
+    memory_bank_dir = root / ".cortex" / "memory-bank"
     link_parser = cast(LinkParser, mgrs["link_parser"])
     link_graph = cast(DependencyGraph, mgrs["graph"])
 
