@@ -213,6 +213,7 @@ def _create_strategy_handlers(
     Returns:
         Dictionary mapping strategy names to handler functions
     """
+
     async def _priority_handler() -> OptimizationResult:
         return await strategies.optimize_by_priority(
             relevance_scores, files_content, token_budget

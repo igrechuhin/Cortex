@@ -27,6 +27,34 @@ Cortex is structured as an MCP (Model Context Protocol) server with a modular, l
 - **Template Method** - Standardized tool response patterns
 - **Strategy Pattern** - Multiple loading strategies (dependency-aware, by-relevance, etc.)
 - **Observer Pattern** - File watching for external change detection
+- **Language-Agnostic Script Pattern** - All procedures use scripts from `.cortex/synapse/scripts/{language}/` instead of hardcoded commands
+
+## Language-Agnostic Pattern (CRITICAL)
+
+**MANDATORY**: All procedures, prompts, and tool implementations MUST follow language-agnostic patterns:
+
+1. **Script-Based Operations**: Use scripts from `.cortex/synapse/scripts/{language}/` directory
+   - Scripts auto-detect language, directories, and appropriate tools
+   - Scripts handle environment differences (.venv, uv, system tools)
+   - Scripts match CI workflow behavior automatically
+
+2. **Pattern References**: Use `{language}` placeholder in documentation
+   - Example: `.cortex/synapse/scripts/{language}/check_linting.py`
+   - Never hardcode language-specific paths or commands
+
+3. **No Hardcoded Commands**: Never reference specific tools directly
+   - ❌ Wrong: "Run `ruff check src/`"
+   - ✅ Correct: "Run `.cortex/synapse/scripts/{language}/check_linting.py`"
+
+4. **Auto-Detection**: Scripts handle language detection internally
+   - Scripts find appropriate tools for detected language
+   - Scripts adapt to project structure automatically
+
+**Violation Examples to Avoid**:
+- Hardcoding `black`, `ruff`, `pyright`, `prettier`, `eslint` commands
+- Using language-specific paths like `src/`, `tests/` without script abstraction
+- Writing procedures that assume Python/TypeScript/etc.
+- Including language-specific examples in general procedures
 
 ## Component Relationships
 

@@ -40,9 +40,7 @@ class ConfigProtocol(Protocol):
         ...
 
 
-def _get_component_handler(
-    component: str,
-) -> Callable[
+ComponentHandler = Callable[
     [
         dict[str, object],
         str,
@@ -51,7 +49,10 @@ def _get_component_handler(
         object | None,
     ],
     Awaitable[str],
-] | None:
+]
+
+
+def _get_component_handler(component: str) -> ComponentHandler | None:
     """Get component handler function.
 
     Args:
@@ -60,19 +61,7 @@ def _get_component_handler(
     Returns:
         Handler function or None if component not found
     """
-    component_handlers: dict[
-        str,
-        Callable[
-            [
-                dict[str, object],
-                str,
-                dict[str, object] | None,
-                str | None,
-                object | None,
-            ],
-            Awaitable[str],
-        ],
-    ] = {
+    component_handlers: dict[str, ComponentHandler] = {
         "validation": configure_validation,
         "optimization": configure_optimization,
         "learning": configure_learning,

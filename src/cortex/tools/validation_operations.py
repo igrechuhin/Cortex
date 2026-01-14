@@ -10,7 +10,7 @@ Total: 1 tool
 import json
 from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal, TypeAlias, cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
@@ -634,7 +634,7 @@ async def validate(
         return create_validation_error_response(e)
 
 
-type ValidationManagers = dict[
+ValidationManagers: TypeAlias = dict[
     str,
     FileSystemManager
     | MetadataIndex

@@ -13,6 +13,37 @@
 
 All MCP tools must be designed with these constraints in mind. Tools that are language-specific or environment-specific must use auto-detection and fallback mechanisms.
 
+### Language-Agnostic Implementation Requirements
+
+**MANDATORY**: All procedures, prompts, and documentation MUST be language-agnostic:
+
+1. **Use Scripts, Not Hardcoded Commands**:
+   - ✅ **CORRECT**: Use `.cortex/synapse/scripts/{language}/check_linting.py` (language-agnostic script)
+   - ❌ **WRONG**: Use `uv run ruff check src/ tests/` (hardcoded Python command)
+   - Scripts auto-detect language, directories, and appropriate tools
+   - Scripts handle different environments (.venv, uv, system tools)
+
+2. **Pattern-Based References**:
+   - ✅ **CORRECT**: "Execute language-specific script: `.cortex/synapse/scripts/{language}/check_formatting.py`"
+   - ❌ **WRONG**: "Run `black --check src/ tests/` for Python"
+   - Use `{language}` placeholder pattern for language-specific paths
+   - Scripts handle language detection internally
+
+3. **No Language-Specific Examples in Procedures**:
+   - ✅ **CORRECT**: "Run formatter check script (auto-detects formatter for project language)"
+   - ❌ **WRONG**: "Run `black --check` for Python, `prettier --check` for JavaScript"
+   - Procedures should describe WHAT to do, not HOW (scripts handle HOW)
+
+4. **Exception Handling**:
+   - If a script doesn't exist, provide fallback guidance that's still language-agnostic
+   - Example: "If script doesn't exist, run formatter in check-only mode manually (script will detect appropriate formatter)"
+
+**CRITICAL**: When writing or updating procedures (like commit.md), prompts, or documentation:
+- NEVER hardcode language-specific commands (e.g., `ruff`, `black`, `pyright`, `prettier`, `eslint`)
+- ALWAYS reference scripts from `.cortex/synapse/scripts/{language}/` directory
+- ALWAYS use `{language}` placeholder pattern
+- ALWAYS assume scripts handle language detection and tool selection
+
 ## Problem Statement
 
 AI coding assistants (like Claude in Cursor) have no memory between sessions. Each conversation starts fresh, requiring developers to repeatedly explain project context, architecture, patterns, and decisions. This leads to:

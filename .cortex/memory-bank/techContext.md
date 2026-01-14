@@ -68,20 +68,22 @@ pip install -e ".dev]"
 
 ## Tool Usage Patterns
 
-### Code Formatting
+**NOTE**: These are examples for THIS project (Python). For language-agnostic procedures, use scripts from `.cortex/synapse/scripts/{language}/` instead.
+
+### Code Formatting (This Project - Python)
 
 ```bash
 ./.venv/bin/black .
 ./.venv/bin/ruff check --fix .
 ```
 
-### Type Checking
+### Type Checking (This Project - Python)
 
 ```bash
 ./.venv/bin/pyright src/ tests/
 ```
 
-### Testing
+### Testing (This Project - Python)
 
 ```bash
 # Run all tests
@@ -91,6 +93,24 @@ pip install -e ".dev]"
 # With coverage
 ./.venv/bin/pytest --cov=src --cov-report=html
 ```
+
+### Language-Agnostic Pattern (For Procedures)
+
+**CRITICAL**: When writing procedures or prompts, use language-agnostic scripts:
+
+```bash
+# ✅ CORRECT: Language-agnostic script
+python .cortex/synapse/scripts/{language}/check_linting.py
+
+# ❌ WRONG: Hardcoded Python command
+ruff check src/ tests/
+```
+
+Scripts auto-detect:
+- Project language (Python, TypeScript, Rust, etc.)
+- Appropriate tools (ruff/black for Python, eslint/prettier for JS/TS, etc.)
+- Source/test directories
+- Build system (.venv, uv, system tools)
 
 ### MCP Server Execution
 

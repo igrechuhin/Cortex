@@ -36,6 +36,17 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 - Testing: AAA pattern, 90%+ coverage target
 - Formatting: Black + Ruff (import sorting)
 
+## Language-Agnostic Principle (CRITICAL)
+
+**MANDATORY**: All procedures, prompts, and documentation MUST be language-agnostic:
+
+- ✅ Use scripts from `.cortex/synapse/scripts/{language}/` directory
+- ✅ Use `{language}` placeholder pattern in references
+- ❌ NEVER hardcode language-specific commands (e.g., `ruff`, `black`, `pyright`)
+- ❌ NEVER assume a specific language in procedures
+- Scripts handle language detection, tool selection, and directory detection automatically
+- This ensures Cortex works with ANY language (Python, TypeScript, Rust, Go, etc.)
+
 ## Project Structure
 
 ```text
