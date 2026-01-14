@@ -83,6 +83,7 @@
 
 ## Upcoming Milestones
 
+- [Phase 18: Markdown Lint Fix Tool](../plans/phase-18-markdown-lint-fix-tool.md) - PLANNED (2026-01-14) - Create tool to automatically scan all modified markdown files (git-based) in working copy, detect markdownlint errors, and fix them automatically - Reduces manual linting error fixes and maintains consistent markdown formatting
 - [Conditional Prompt Registration](../plans/conditional-prompt-registration.md) - PLANNED - Conditionally register setup/migration prompts only when project is not properly configured - For properly configured projects, only show prompts relevant for active development - Prevents prompt list pollution with one-time setup prompts
 - [Phase 9: Excellence 9.8+](../plans/phase-9-excellence-98.md) - IN PROGRESS (50% complete, 120-150 hours estimated) - Target: 9.8+/10 across all quality metrics
   - Phase 9.1: Rules Compliance Excellence - COMPLETE ✅
