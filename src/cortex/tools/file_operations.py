@@ -562,12 +562,12 @@ def build_write_error_response(
     error: FileConflictError | FileLockTimeoutError | GitConflictError,
 ) -> str:
     """Build error response for write operation with recovery suggestions."""
-    error_type = type(error).__name__
     if isinstance(error, FileConflictError):
         action_required, context = _get_file_conflict_details(error)
     elif isinstance(error, FileLockTimeoutError):
         action_required, context = _get_lock_timeout_details(error)
-    elif isinstance(error, GitConflictError):
+    else:
+        # error must be GitConflictError based on type signature
         action_required = (
             f"File '{error.file_name}' contains Git conflict markers. "
             "Resolve the Git merge conflict first by removing conflict markers "
@@ -575,12 +575,6 @@ def build_write_error_response(
             "Then retry the write operation."
         )
         context = {"file_name": error.file_name}
-    else:
-        action_required = (
-            "Review the error details and retry the write operation. "
-            "Check file permissions and ensure the memory bank directory is accessible."
-        )
-        context = {"error_type": error_type}
 
     # Type cast: context is dict[str, object] compatible
     import json
