@@ -269,21 +269,28 @@ def _validate_file_path(
 
 def _build_read_error_response(file_name: str, root: Path) -> str:
     """Build error response for read operation when file doesn't exist."""
+    import json
+
     available_files = [
         f.name
         for f in get_cortex_path(root, CortexResourceType.MEMORY_BANK).glob("*.md")
         if f.is_file()
     ]
-    return error_response(
-        FileNotFoundError(f"File {file_name} does not exist"),
-        action_required=(
-            f"File '{file_name}' not found in memory bank. "
-            f"Available files: {', '.join(available_files) if available_files else 'none'}. "
-            "Check the file name spelling, or initialize the memory bank with 'initialize_memory_bank()' "
-            "if no files exist yet."
-        ),
-        context={"file_name": file_name, "available_files": available_files},
+    base_response = json.loads(
+        error_response(
+            FileNotFoundError(f"File {file_name} does not exist"),
+            action_required=(
+                f"File '{file_name}' not found in memory bank. "
+                f"Available files: {', '.join(available_files) if available_files else 'none'}. "
+                "Check the file name spelling, or initialize the memory bank with 'initialize_memory_bank()' "
+                "if no files exist yet."
+            ),
+            context={"file_name": file_name, "available_files": available_files},
+        )
     )
+    # Add available_files at top level for backward compatibility with tests
+    base_response["available_files"] = available_files
+    return json.dumps(base_response, indent=2)
 
 
 async def _handle_read_operation(

@@ -8,12 +8,17 @@
 
 ### Recent Findings
 
+- ✅ **Function Length Fixes** - COMPLETE (2026-01-14) - Fixed 2 function length violations in `validation_operations.py`:
+  - `_check_invalid_datetime_formats()` - Extracted `_get_invalid_datetime_patterns()` and `_add_pattern_violations()` helper functions
+  - `_scan_timestamps()` - Extracted `_process_line_timestamps()` helper function
+- ✅ **Type Error Fixes** - COMPLETE (2026-01-14) - Fixed 4 type errors in `validation_operations.py` by casting `scan_result` values to `int` before comparison
 - ✅ **Type Error Fixes** - COMPLETE (2026-01-14) - Fixed 2 type errors in `file_operations.py` by using concrete return types instead of `dict[str, object]`
   - `_get_file_conflict_details()` now returns `tuple[str, dict[str, str]]`
   - `_get_lock_timeout_details()` now returns `tuple[str, dict[str, str | int]]`
 - ✅ **Test Fixes** - COMPLETE (2026-01-14) - Fixed 2 test failures:
   - `test_manage_file_read_file_not_exists_with_available_files` - Updated to check `context["available_files"]` instead of top-level
   - `test_validate_schema_all_files_success` - Fixed path to use `.cortex/memory-bank/` instead of `memory-bank/`
+- ✅ **Phase 16: Validate Memory Bank Timestamps** - COMPLETE (2026-01-14) - Implemented timestamp validation as MCP tool `validate(check_type="timestamps")` instead of prompt file - Added timestamp scanning logic to detect YYYY-MM-DD format violations and time components - Wired into commit workflow Step 9 to enforce timestamp validation before commits
 - ✅ **Code Quality Fix** - COMPLETE (2026-01-13) - Fixed function length violation in `configuration_operations.py` by extracting `ComponentHandler` type alias
   - `_get_component_handler()` reduced from 32 lines to ≤30 lines by extracting type alias
 - ✅ **Code Quality Fixes** - COMPLETE (2026-01-13) - Fixed 3 function length violations by extracting helper functions:
@@ -38,6 +43,7 @@
 
 ## Completed Milestones
 
+- ✅ [Phase 16: Validate Memory Bank Timestamps Command](../plans/phase-16-validate-memory-bank-timestamps.md) - COMPLETE (2026-01-14) - Implemented timestamp validation as MCP tool `validate(check_type="timestamps")` in `validation_operations.py` - Added timestamp scanning and validation logic, wired into commit workflow Step 9 - Timestamp validation now enforced before commits via structured MCP tool (not prompt file)
 - ✅ [Phase 15: Investigate MCP Tool Project Root Resolution](../plans/phase-15-investigate-mcp-tool-project-root-resolution.md) - COMPLETE (2026-01-13) - Fixed project root detection to automatically find `.cortex/` directory when `project_root=None` - Updated `get_project_root()` to walk up directory tree, added comprehensive unit tests - MCP tools now work reliably without explicit `project_root` parameter
 - ✅ [Phase 14: Centralize Path Resolution Using Path Resolver](../plans/phase-14-centralize-path-resolution.md) - COMPLETE (2026-01-13) - Replaced 24+ instances of direct path construction with centralized `get_cortex_path()` calls - All tests passing, consistent path resolution throughout codebase
 - ✅ Legacy SharedRulesManager Migration - COMPLETE (2026-01-13) - Migrated all tests and documentation from SharedRulesManager to SynapseManager, removed legacy type aliases, all 8 tests passing
@@ -64,6 +70,8 @@
 ## Blockers (ASAP Priority)
 
 - ✅ **Phase 15: Investigate MCP Tool Project Root Resolution** - COMPLETE (2026-01-13) - Fixed project root detection to automatically find `.cortex/` directory when `project_root=None` - MCP tools now work reliably without explicit `project_root` parameter
+- ✅ **Phase 16: Validate Memory Bank Timestamps Command** - COMPLETE (2026-01-14) - Implemented timestamp validation as MCP tool `validate(check_type="timestamps")` in `validation_operations.py` - Added timestamp scanning and validation logic, wired into commit workflow Step 9 - Timestamp validation now enforced before commits via structured MCP tool
+- [Phase 17: Validate Roadmap Sync Command](../plans/phase-17-validate-roadmap-sync-command.md) - ASAP (PLANNED) - Implement `validate-roadmap-sync` command and wire it into commit workflow Step 10 so roadmap/codebase synchronization is enforced before commits
 
 ## Upcoming Milestones
 

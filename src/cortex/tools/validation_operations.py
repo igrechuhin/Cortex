@@ -8,7 +8,9 @@ Total: 1 tool
 """
 
 import json
+import re
 from collections.abc import Awaitable, Callable
+from datetime import datetime
 from pathlib import Path
 from typing import Literal, TypeAlias, cast
 
@@ -91,6 +93,352 @@ async def read_all_memory_bank_files(
             content, _ = await fs_manager.read_file(md_file)
             files_content[md_file.name] = content
     return files_content
+
+
+def _check_valid_datetime_patterns(
+    line: str, line_num: int, datetime_pattern: str
+) -> tuple[int, list[dict[str, object]]]:
+    """Check for valid YYYY-MM-DDTHH:MM format timestamps.
+
+    Returns:
+        Tuple of (valid_count, violations)
+    """
+    valid_count = 0
+    violations: list[dict[str, object]] = []
+    datetime_matches = re.finditer(datetime_pattern, line)
+    for match in datetime_matches:
+        timestamp_str = match.group(0)
+        try:
+            _ = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M")
+            valid_count += 1
+        except ValueError:
+            violations.append(
+                {
+                    "line": line_num,
+                    "content": line.strip()[:80],
+                    "timestamp": timestamp_str,
+                    "issue": "Invalid timestamp (not a valid calendar date/time)",
+                }
+            )
+    return valid_count, violations
+
+
+def _check_invalid_date_only_patterns(
+    line: str, line_num: int, date_pattern: str
+) -> tuple[int, list[dict[str, object]]]:
+    """Check for date-only patterns (YYYY-MM-DD without time).
+
+    These are invalid as timestamps must include time component.
+
+    Returns:
+        Tuple of (invalid_count, violations)
+    """
+    invalid_format_count = 0
+    violations: list[dict[str, object]] = []
+    date_matches = re.finditer(date_pattern, line)
+    for match in date_matches:
+        date_str = match.group(1)
+        if re.search(rf"{re.escape(date_str)}T\d", line):
+            continue
+        try:
+            _ = datetime.strptime(date_str, "%Y-%m-%d")
+            invalid_format_count += 1
+            violations.append(
+                {
+                    "line": line_num,
+                    "content": line.strip()[:80],
+                    "timestamp": date_str,
+                    "issue": "Missing time component (should be YYYY-MM-DDTHH:MM)",
+                }
+            )
+        except ValueError:
+            pass
+    return invalid_format_count, violations
+
+
+def _get_invalid_datetime_patterns() -> list[tuple[str, str]]:
+    """Get patterns for invalid datetime formats.
+
+    Returns:
+        List of (pattern, issue_message) tuples
+    """
+    return [
+        (
+            r"\b\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}\b",
+            "Space separator (should use T: YYYY-MM-DDTHH:MM)",
+        ),
+        (
+            r"\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\b",
+            "Contains seconds (should be YYYY-MM-DDTHH:MM)",
+        ),
+        (
+            r"\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}[Z+-]\d{2}:\d{2}\b",
+            "Contains timezone (should be YYYY-MM-DDTHH:MM)",
+        ),
+        (
+            r"\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z\b",
+            "Contains timezone (should be YYYY-MM-DDTHH:MM)",
+        ),
+    ]
+
+
+def _add_pattern_violations(
+    line: str,
+    line_num: int,
+    pattern: str,
+    issue_msg: str,
+    violations: list[dict[str, object]],
+) -> int:
+    """Add violations for a pattern match.
+
+    Returns:
+        Count of violations added
+    """
+    count = 0
+    for match in re.finditer(pattern, line):
+        count += 1
+        violations.append(
+            {
+                "line": line_num,
+                "content": line.strip()[:80],
+                "timestamp": match.group(0),
+                "issue": issue_msg,
+            }
+        )
+    return count
+
+
+def _check_invalid_datetime_formats(
+    line: str, line_num: int
+) -> tuple[int, list[dict[str, object]]]:
+    """Check for invalid datetime formats (wrong separator, seconds, timezone, etc.).
+
+    Returns:
+        Tuple of (invalid_count, violations)
+    """
+    invalid_format_count = 0
+    violations: list[dict[str, object]] = []
+    patterns = _get_invalid_datetime_patterns()
+    for pattern, issue_msg in patterns:
+        count = _add_pattern_violations(line, line_num, pattern, issue_msg, violations)
+        invalid_format_count += count
+    return invalid_format_count, violations
+
+
+def _check_other_date_formats(
+    line: str, line_num: int, other_date_pattern: str
+) -> tuple[int, list[dict[str, object]]]:
+    """Check for other non-standard date formats.
+
+    Returns:
+        Tuple of (invalid_count, violations)
+    """
+    invalid_format_count = 0
+    violations: list[dict[str, object]] = []
+    other_matches = re.finditer(other_date_pattern, line)
+    for match in other_matches:
+        date_str = match.group(1)
+        if re.search(rf"{re.escape(date_str)}T\d", line):
+            continue
+        invalid_format_count += 1
+        violations.append(
+            {
+                "line": line_num,
+                "content": line.strip()[:80],
+                "timestamp": date_str,
+                "issue": "Non-standard date format (should be YYYY-MM-DDTHH:MM)",
+            }
+        )
+    return invalid_format_count, violations
+
+
+def _process_line_timestamps(
+    line: str, line_num: int, patterns: dict[str, str]
+) -> tuple[int, int, list[dict[str, object]]]:
+    """Process a single line for timestamp validation.
+
+    Returns:
+        Tuple of (valid_count, invalid_count, violations)
+    """
+    valid_count = invalid_format_count = 0
+    violations: list[dict[str, object]] = []
+
+    v_count, dt_violations = _check_valid_datetime_patterns(
+        line, line_num, patterns["datetime"]
+    )
+    valid_count += v_count
+    violations.extend(dt_violations)
+
+    inv_count, date_violations = _check_invalid_date_only_patterns(
+        line, line_num, patterns["date"]
+    )
+    invalid_format_count += inv_count
+    violations.extend(date_violations)
+
+    inv_count, dt_format_violations = _check_invalid_datetime_formats(line, line_num)
+    invalid_format_count += inv_count
+    violations.extend(dt_format_violations)
+
+    inv_count, o_violations = _check_other_date_formats(
+        line, line_num, patterns["other"]
+    )
+    invalid_format_count += inv_count
+    violations.extend(o_violations)
+
+    return valid_count, invalid_format_count, violations
+
+
+def _scan_timestamps(content: str) -> dict[str, object]:
+    """Scan content for timestamps and validate format.
+
+    Args:
+        content: File content to scan
+
+    Returns:
+        Dictionary with validation results:
+        - valid_count: Number of valid YYYY-MM-DDTHH:MM timestamps
+        - invalid_format_count: Number of invalid timestamp formats
+        - invalid_with_time_count: Number of dates with incorrect time format (deprecated, kept for compatibility)
+        - violations: List of violation details
+    """
+    patterns = {
+        "datetime": r"\b(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})\b",
+        "date": r"\b(\d{4}-\d{2}-\d{2})\b",
+        "other": r"\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{2,4}[/-]\d{1,2}[/-]\d{1,2})\b",
+    }
+    valid_count = invalid_format_count = invalid_with_time_count = 0
+    violations: list[dict[str, object]] = []
+
+    for line_num, line in enumerate(content.split("\n"), start=1):
+        v_count, inv_count, line_violations = _process_line_timestamps(
+            line, line_num, patterns
+        )
+        valid_count += v_count
+        invalid_format_count += inv_count
+        violations.extend(line_violations)
+
+    return {
+        "valid_count": valid_count,
+        "invalid_format_count": invalid_format_count,
+        "invalid_with_time_count": invalid_with_time_count,
+        "violations": violations[:20],
+    }
+
+
+async def validate_timestamps_single_file(
+    fs_manager: FileSystemManager, root: Path, file_name: str
+) -> str:
+    """Validate timestamps in a single Memory Bank file.
+
+    Args:
+        fs_manager: File system manager
+        root: Project root path
+        file_name: Name of file to validate
+
+    Returns:
+        JSON string with timestamp validation results
+    """
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+    try:
+        file_path = fs_manager.construct_safe_path(memory_bank_dir, file_name)
+    except (ValueError, PermissionError) as e:
+        return json.dumps(
+            {"status": "error", "error": f"Invalid file name: {e}"}, indent=2
+        )
+    if not file_path.exists():
+        return json.dumps(
+            {"status": "error", "error": f"File {file_name} does not exist"}, indent=2
+        )
+    content, _ = await fs_manager.read_file(file_path)
+    scan_result = _scan_timestamps(content)
+
+    invalid_format_count = cast(int, scan_result["invalid_format_count"])
+    invalid_with_time_count = cast(int, scan_result["invalid_with_time_count"])
+    has_blocking_violations = invalid_format_count > 0 or invalid_with_time_count > 0
+
+    result: dict[str, object] = {
+        "status": "success",
+        "check_type": "timestamps",
+        "file_name": file_name,
+        "valid_count": scan_result["valid_count"],
+        "invalid_format_count": scan_result["invalid_format_count"],
+        "invalid_with_time_count": scan_result["invalid_with_time_count"],
+        "violations": scan_result["violations"],
+        "valid": not has_blocking_violations,
+    }
+
+    return json.dumps(result, indent=2)
+
+
+def _process_file_timestamps(
+    file_name: str, content: str
+) -> tuple[dict[str, object], int, int, int]:
+    """Process timestamps for a single file.
+
+    Returns:
+        Tuple of (file_result, valid_count, invalid_format_count, invalid_with_time_count)
+    """
+    scan_result = _scan_timestamps(content)
+    valid_count = cast(int, scan_result["valid_count"])
+    invalid_format_count = cast(int, scan_result["invalid_format_count"])
+    invalid_with_time_count = cast(int, scan_result["invalid_with_time_count"])
+
+    has_blocking_violations = invalid_format_count > 0 or invalid_with_time_count > 0
+
+    file_result = {
+        "valid_count": scan_result["valid_count"],
+        "invalid_format_count": scan_result["invalid_format_count"],
+        "invalid_with_time_count": scan_result["invalid_with_time_count"],
+        "violations": scan_result["violations"],
+        "valid": not has_blocking_violations,
+    }
+
+    return file_result, valid_count, invalid_format_count, invalid_with_time_count
+
+
+async def validate_timestamps_all_files(
+    fs_manager: FileSystemManager, root: Path
+) -> str:
+    """Validate timestamps across all Memory Bank files.
+
+    Args:
+        fs_manager: File system manager
+        root: Project root path
+
+    Returns:
+        JSON string with timestamp validation results for all files
+    """
+    files_content = await read_all_memory_bank_files(fs_manager, root)
+    results: dict[str, dict[str, object]] = {}
+    total_valid = 0
+    total_invalid_format = 0
+    total_invalid_with_time = 0
+
+    for file_name, content in files_content.items():
+        file_result, v_count, inv_fmt, inv_time = _process_file_timestamps(
+            file_name, content
+        )
+        results[file_name] = file_result
+        total_valid += v_count
+        total_invalid_format += inv_fmt
+        total_invalid_with_time += inv_time
+
+    has_any_blocking_violations = (
+        total_invalid_format > 0 or total_invalid_with_time > 0
+    )
+
+    result: dict[str, object] = {
+        "status": "success",
+        "check_type": "timestamps",
+        "total_valid": total_valid,
+        "total_invalid_format": total_invalid_format,
+        "total_invalid_with_time": total_invalid_with_time,
+        "files_valid": all(r["valid"] for r in results.values()),
+        "results": results,
+        "valid": not has_any_blocking_violations,
+    }
+
+    return json.dumps(result, indent=2)
 
 
 async def validate_duplications(
@@ -330,9 +678,47 @@ async def handle_infrastructure_validation(
     return json.dumps(result, indent=2)
 
 
+async def handle_timestamps_validation(
+    validation_managers: dict[
+        str,
+        FileSystemManager
+        | MetadataIndex
+        | SchemaValidator
+        | DuplicationDetector
+        | QualityMetrics
+        | ValidationConfig,
+    ],
+    root: Path,
+    file_name: str | None,
+) -> str:
+    """Handle timestamps validation routing.
+
+    Args:
+        validation_managers: Dictionary of validation managers
+        root: Project root path
+        file_name: Optional specific file to validate
+
+    Returns:
+        JSON string with timestamps validation results
+    """
+    if file_name:
+        return await validate_timestamps_single_file(
+            cast(FileSystemManager, validation_managers["fs_manager"]),
+            root,
+            file_name,
+        )
+    else:
+        return await validate_timestamps_all_files(
+            cast(FileSystemManager, validation_managers["fs_manager"]),
+            root,
+        )
+
+
 @mcp.tool()
 async def validate(
-    check_type: Literal["schema", "duplications", "quality", "infrastructure"],
+    check_type: Literal[
+        "schema", "duplications", "quality", "infrastructure", "timestamps"
+    ],
     file_name: str | None = None,
     project_root: str | None = None,
     strict_mode: bool = False,
@@ -343,13 +729,14 @@ async def validate(
     check_documentation_consistency: bool = True,
     check_config_consistency: bool = True,
 ) -> str:
-    """Run validation checks on Memory Bank files for schema compliance, duplications, or quality metrics.
+    """Run validation checks on Memory Bank files for schema compliance, duplications, quality metrics, or timestamps.
 
-    This consolidated validation tool performs four types of checks:
+    This consolidated validation tool performs five types of checks:
     - schema: Validates file structure against Memory Bank schema (required sections, frontmatter)
     - duplications: Detects exact and similar duplicate content across files
     - quality: Calculates quality scores based on completeness, structure, and content
     - infrastructure: Validates project infrastructure consistency (CI vs commit prompt, code quality, docs, config)
+    - timestamps: Validates that all timestamps use YYYY-MM-DDTHH:MM format (ISO 8601 date-time without seconds/timezone)
 
     Use this tool to ensure Memory Bank files follow best practices, identify content duplication
     that could be refactored using transclusion, assess overall documentation quality, and validate
@@ -361,11 +748,13 @@ async def validate(
             - "duplications": Detect duplicate content across files
             - "quality": Calculate quality scores and metrics
             - "infrastructure": Validate project infrastructure consistency
+            - "timestamps": Validate timestamp format (YYYY-MM-DDTHH:MM, ISO 8601 date-time without seconds/timezone)
         file_name: Specific file to validate (e.g., "projectBrief.md")
             - For schema: validates single file or all files if None
             - For duplications: always checks all files (parameter ignored)
             - For quality: calculates score for single file or overall score if None
             - For infrastructure: parameter ignored (always validates entire project)
+            - For timestamps: validates single file or all files if None
             Examples: "projectBrief.md", "activeContext.md", None
         project_root: Path to project root directory
             - Defaults to current working directory if None
@@ -604,12 +993,55 @@ async def validate(
              ]
            }
 
+        5. Validate timestamps across all files:
+           Input: validate(check_type="timestamps")
+           Output:
+           {
+             "status": "success",
+             "check_type": "timestamps",
+             "total_valid": 45,
+             "total_invalid_format": 0,
+             "total_invalid_with_time": 2,
+             "files_valid": false,
+             "results": {
+               "progress.md": {
+                 "valid_count": 12,
+                 "invalid_format_count": 0,
+                 "invalid_with_time_count": 2,
+                 "violations": [
+                   {
+                     "line": 15,
+                     "content": "- ✅ Feature X - COMPLETE (2026-01-13)",
+                     "timestamp": "2026-01-13",
+                     "issue": "Missing time component (should be YYYY-MM-DDTHH:MM)"
+                   },
+                   {
+                     "line": 16,
+                     "content": "- ✅ Feature Y - COMPLETE (2026-01-13T12:00:00Z)",
+                     "timestamp": "2026-01-13T12:00:00Z",
+                     "issue": "Contains timezone (should be YYYY-MM-DDTHH:MM)"
+                   }
+                 ],
+                 "valid": false
+               },
+               "roadmap.md": {
+                 "valid_count": 8,
+                 "invalid_format_count": 0,
+                 "invalid_with_time_count": 0,
+                 "violations": [],
+                 "valid": true
+               }
+             },
+             "valid": false
+           }
+
     Note:
         - Schema validation checks for required sections, proper frontmatter, and file structure
         - Duplication detection uses content hashing for exact matches and similarity algorithms for near-matches
         - Quality metrics consider completeness (required sections present), structure (proper formatting),
           and content quality (sufficient detail, clear writing)
         - Infrastructure validation checks project consistency (CI vs commit prompt, code quality, docs, config)
+        - Timestamp validation ensures all timestamps use YYYY-MM-DDTHH:MM format (ISO 8601 date-time without seconds/timezone)
         - The similarity_threshold parameter only affects duplication checks; typical values are 0.8-0.95
         - Suggested fixes for duplications recommend using DRY linking with transclusion syntax
         - Quality scores range from 0-100, with 80+ considered good, 60-79 acceptable, below 60 needs improvement
@@ -670,11 +1102,16 @@ def _create_validation_handlers(
             check_documentation_consistency,
             check_config_consistency,
         ),
+        "timestamps": lambda: handle_timestamps_validation(
+            typed_managers, root, file_name
+        ),
     }
 
 
 async def _dispatch_validation(
-    check_type: Literal["schema", "duplications", "quality", "infrastructure"],
+    check_type: Literal[
+        "schema", "duplications", "quality", "infrastructure", "timestamps"
+    ],
     validation_managers: dict[str, object],
     root: Path,
     file_name: str | None,
