@@ -19,6 +19,7 @@ from cortex.core.exceptions import (
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.responses import error_response
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.managers.initialization import get_managers, get_project_root
@@ -268,19 +269,20 @@ def _validate_file_path(
 
 def _build_read_error_response(file_name: str, root: Path) -> str:
     """Build error response for read operation when file doesn't exist."""
-    return json.dumps(
-        {
-            "status": "error",
-            "error": f"File {file_name} does not exist",
-            "available_files": [
-                f.name
-                for f in get_cortex_path(root, CortexResourceType.MEMORY_BANK).glob(
-                    "*.md"
-                )
-                if f.is_file()
-            ],
-        },
-        indent=2,
+    available_files = [
+        f.name
+        for f in get_cortex_path(root, CortexResourceType.MEMORY_BANK).glob("*.md")
+        if f.is_file()
+    ]
+    return error_response(
+        FileNotFoundError(f"File {file_name} does not exist"),
+        action_required=(
+            f"File '{file_name}' not found in memory bank. "
+            f"Available files: {', '.join(available_files) if available_files else 'none'}. "
+            "Check the file name spelling, or initialize the memory bank with 'initialize_memory_bank()' "
+            "if no files exist yet."
+        ),
+        context={"file_name": file_name, "available_files": available_files},
     )
 
 
@@ -514,31 +516,100 @@ async def _execute_write_flow(
     return build_write_response(file_name, version_info, token_counter, content)
 
 
+def _get_file_conflict_details(
+    error: FileConflictError,
+) -> tuple[str, dict[str, str]]:
+    """Get action_required and context for FileConflictError."""
+    action_required = (
+        f"File '{error.file_name}' was modified externally. "
+        "Read the file again to get the latest content, review changes, "
+        "and merge your changes before writing. "
+        "Use 'manage_file(operation=\"read\")' to get current content."
+    )
+    context = {
+        "file_name": error.file_name,
+        "expected_hash": error.expected_hash[:8] + "...",
+        "actual_hash": error.actual_hash[:8] + "...",
+    }
+    return action_required, context
+
+
+def _get_lock_timeout_details(
+    error: FileLockTimeoutError,
+) -> tuple[str, dict[str, str | int]]:
+    """Get action_required and context for FileLockTimeoutError."""
+    action_required = (
+        f"Could not acquire lock for '{error.file_name}' after {error.timeout_seconds}s. "
+        "Wait and retry, check for stale lock files in memory-bank directory, "
+        "or verify no other process is accessing the file. "
+        "If locks are stale, remove .lock files manually."
+    )
+    context = {
+        "file_name": error.file_name,
+        "timeout_seconds": error.timeout_seconds,
+    }
+    return action_required, context
+
+
 def build_write_error_response(
     error: FileConflictError | FileLockTimeoutError | GitConflictError,
 ) -> str:
-    """Build error response for write operation."""
-    return json.dumps(
-        {
-            "status": "error",
-            "error": str(error),
-            "error_type": type(error).__name__,
-            "suggestion": "Check for file locks or conflicts",
-        },
-        indent=2,
+    """Build error response for write operation with recovery suggestions."""
+    error_type = type(error).__name__
+    if isinstance(error, FileConflictError):
+        action_required, context = _get_file_conflict_details(error)
+    elif isinstance(error, FileLockTimeoutError):
+        action_required, context = _get_lock_timeout_details(error)
+    elif isinstance(error, GitConflictError):
+        action_required = (
+            f"File '{error.file_name}' contains Git conflict markers. "
+            "Resolve the Git merge conflict first by removing conflict markers "
+            "(<<<<<<<, =======, >>>>>>>) and choosing the desired content. "
+            "Then retry the write operation."
+        )
+        context = {"file_name": error.file_name}
+    else:
+        action_required = (
+            "Review the error details and retry the write operation. "
+            "Check file permissions and ensure the memory bank directory is accessible."
+        )
+        context = {"error_type": error_type}
+
+    # Type cast: context is dict[str, object] compatible
+    import json
+    from typing import cast
+
+    context_dict = cast(dict[str, object], context)
+    base_response = json.loads(
+        error_response(error, action_required=action_required, context=context_dict)
     )
+    # Add 'suggestion' field for backward compatibility with tests
+    base_response["suggestion"] = action_required
+    return json.dumps(base_response, indent=2)
 
 
 def build_invalid_operation_error(operation: str) -> str:
     """Build error response for invalid operation."""
-    return json.dumps(
-        {
-            "status": "error",
-            "error": f"Invalid operation: {operation}",
-            "valid_operations": ["read", "write", "metadata"],
-        },
-        indent=2,
+    import json
+
+    valid_operations = ["read", "write", "metadata"]
+    base_response = json.loads(
+        error_response(
+            ValueError(f"Invalid operation: {operation}"),
+            action_required=(
+                f"Use one of the valid operations: {', '.join(valid_operations)}. "
+                f"Received: '{operation}'. "
+                f"Example: {{'operation': '{valid_operations[0]}', 'file_name': 'projectBrief.md'}}"
+            ),
+            context={
+                "invalid_operation": operation,
+                "valid_operations": valid_operations,
+            },
+        )
     )
+    # Add valid_operations at top level for backward compatibility with tests
+    base_response["valid_operations"] = valid_operations
+    return json.dumps(base_response, indent=2)
 
 
 async def _initialize_managers(

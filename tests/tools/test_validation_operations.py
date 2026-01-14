@@ -30,7 +30,7 @@ class TestValidateSchemaHelpers:
     """Test schema validation helper functions."""
 
     @pytest.mark.asyncio
-    async def testvalidate_schema_single_file_success(
+    async def test_validate_schema_single_file_success(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:
         """Test successful single file schema validation."""
@@ -63,7 +63,7 @@ class TestValidateSchemaHelpers:
         assert result_data["validation"]["valid"] is True
 
     @pytest.mark.asyncio
-    async def testvalidate_schema_single_file_invalid_name(
+    async def test_validate_schema_single_file_invalid_name(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:
         """Test schema validation with invalid file name."""
@@ -86,7 +86,7 @@ class TestValidateSchemaHelpers:
         assert "Path traversal detected" in result_data["error"]
 
     @pytest.mark.asyncio
-    async def testvalidate_schema_single_file_permission_error(
+    async def test_validate_schema_single_file_permission_error(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:
         """Test schema validation with permission error."""
@@ -109,7 +109,7 @@ class TestValidateSchemaHelpers:
         assert "Access denied" in result_data["error"]
 
     @pytest.mark.asyncio
-    async def testvalidate_schema_single_file_not_found(
+    async def test_validate_schema_single_file_not_found(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:
         """Test schema validation when file does not exist."""
@@ -133,13 +133,14 @@ class TestValidateSchemaHelpers:
         assert "does not exist" in result_data["error"]
 
     @pytest.mark.asyncio
-    async def testvalidate_schema_all_files_success(
+    async def test_validate_schema_all_files_success(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:
         """Test successful all files schema validation."""
         # Arrange
-        memory_bank_dir = tmp_path / "memory-bank"
-        _ = memory_bank_dir.mkdir()
+        cortex_dir = tmp_path / ".cortex"
+        memory_bank_dir = cortex_dir / "memory-bank"
+        _ = memory_bank_dir.mkdir(parents=True)
 
         file1 = memory_bank_dir / "file1.md"
         file2 = memory_bank_dir / "file2.md"
@@ -309,7 +310,7 @@ class TestValidateDuplications:
     """Test duplication validation."""
 
     @pytest.mark.asyncio
-    async def testvalidate_duplications_with_custom_threshold(
+    async def test_validate_duplications_with_custom_threshold(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:
         """Test duplication validation with custom threshold."""
@@ -348,7 +349,7 @@ class TestValidateDuplications:
         assert mock_detector.threshold == 0.9
 
     @pytest.mark.asyncio
-    async def testvalidate_duplications_with_default_threshold(
+    async def test_validate_duplications_with_default_threshold(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:
         """Test duplication validation with default threshold from config."""
@@ -386,7 +387,7 @@ class TestValidateDuplications:
         assert mock_detector.threshold == 0.85
 
     @pytest.mark.asyncio
-    async def testvalidate_duplications_with_fixes(
+    async def test_validate_duplications_with_fixes(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:
         """Test duplication validation with fix suggestions."""
@@ -431,7 +432,7 @@ class TestValidateQuality:
     """Test quality validation helpers."""
 
     @pytest.mark.asyncio
-    async def testvalidate_quality_single_file_success(
+    async def test_validate_quality_single_file_success(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:
         """Test successful quality validation for single file."""
@@ -467,7 +468,7 @@ class TestValidateQuality:
         assert result_data["score"]["overall"] == 85
 
     @pytest.mark.asyncio
-    async def testvalidate_quality_single_file_invalid_name(
+    async def test_validate_quality_single_file_invalid_name(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:
         """Test quality validation with invalid file name."""
@@ -492,7 +493,7 @@ class TestValidateQuality:
         assert "Invalid file name" in result_data["error"]
 
     @pytest.mark.asyncio
-    async def testvalidate_quality_single_file_not_found(
+    async def test_validate_quality_single_file_not_found(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:
         """Test quality validation when file does not exist."""
@@ -517,7 +518,7 @@ class TestValidateQuality:
         assert "does not exist" in result_data["error"]
 
     @pytest.mark.asyncio
-    async def testvalidate_quality_all_files_success(
+    async def test_validate_quality_all_files_success(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:
         """Test successful quality validation for all files."""
@@ -565,7 +566,7 @@ class TestValidationHandlers:
     """Test validation handler functions."""
 
     @pytest.mark.asyncio
-    async def testhandle_schema_validation_with_file(self, tmp_path: Path) -> None:
+    async def test_handle_schema_validation_with_file(self, tmp_path: Path) -> None:
         """Test schema validation handler with specific file."""
         # Arrange
         mock_managers: dict[str, Any] = {
@@ -595,7 +596,7 @@ class TestValidationHandlers:
         assert result_data["file_name"] == "test.md"
 
     @pytest.mark.asyncio
-    async def testhandle_schema_validation_all_files(self, tmp_path: Path) -> None:
+    async def test_handle_schema_validation_all_files(self, tmp_path: Path) -> None:
         """Test schema validation handler for all files."""
         # Arrange
         mock_managers: dict[str, Any] = {
@@ -623,7 +624,7 @@ class TestValidationHandlers:
         assert "results" in result_data
 
     @pytest.mark.asyncio
-    async def testhandle_duplications_validation(self, tmp_path: Path) -> None:
+    async def test_handle_duplications_validation(self, tmp_path: Path) -> None:
         """Test duplications validation handler."""
         # Arrange
         mock_managers: dict[str, Any] = {
@@ -655,7 +656,7 @@ class TestValidationHandlers:
         assert result_data["threshold"] == 0.9
 
     @pytest.mark.asyncio
-    async def testhandle_quality_validation_with_file(self, tmp_path: Path) -> None:
+    async def test_handle_quality_validation_with_file(self, tmp_path: Path) -> None:
         """Test quality validation handler with specific file."""
         # Arrange
         mock_managers: dict[str, Any] = {
@@ -687,7 +688,7 @@ class TestValidationHandlers:
         assert result_data["file_name"] == "test.md"
 
     @pytest.mark.asyncio
-    async def testhandle_quality_validation_all_files(self, tmp_path: Path) -> None:
+    async def test_handle_quality_validation_all_files(self, tmp_path: Path) -> None:
         """Test quality validation handler for all files."""
         # Arrange
         mock_managers: dict[str, Any] = {
@@ -1096,7 +1097,7 @@ class TestValidateMainFunction:
             mock_handle.assert_called_once()
 
     @pytest.mark.asyncio
-    async def testvalidate_duplications_check(self, tmp_path: Path) -> None:
+    async def test_validate_duplications_check(self, tmp_path: Path) -> None:
         """Test validate function with duplications check type."""
         # Arrange
         memory_bank_dir = tmp_path / "memory-bank"

@@ -107,6 +107,44 @@ async def sync_synapse(pull: bool = True, push: bool = False) -> str:
         - reindex_triggered: Boolean indicating if rules reindex occurred
         - last_sync: ISO timestamp of sync operation
         - error: Error message (only present if status is "error")
+
+    Examples:
+        Example 1: Pull latest changes from remote
+        >>> await sync_synapse(pull=True, push=False)
+        {
+          "status": "success",
+          "pulled": true,
+          "pushed": false,
+          "changes": {
+            "added": ["python/async-patterns.mdc"],
+            "modified": ["general/code-style.mdc"],
+            "deleted": []
+          },
+          "reindex_triggered": true,
+          "last_sync": "2026-01-13T10:30:00Z"
+        }
+
+        Example 2: Push local changes to remote
+        >>> await sync_synapse(pull=False, push=True)
+        {
+          "status": "success",
+          "pulled": false,
+          "pushed": true,
+          "changes": {
+            "added": [],
+            "modified": ["python/type-hints.mdc"],
+            "deleted": []
+          },
+          "reindex_triggered": false,
+          "last_sync": "2026-01-13T10:35:00Z"
+        }
+
+        Example 3: Error - Synapse not initialized
+        >>> await sync_synapse()
+        {
+          "status": "error",
+          "error": "Synapse not initialized. Run setup_synapse first."
+        }
     """
     try:
         project_root = get_project_root()
@@ -173,6 +211,34 @@ async def update_synapse_rule(
         - message: Commit message used (only on success)
         - commit_hash: Git commit hash (optional, if available)
         - error: Error message (only present if status is "error")
+
+    Examples:
+        Example 1: Update a Python style guide rule
+        >>> await update_synapse_rule(
+        ...     category="python",
+        ...     file="style-guide.mdc",
+        ...     content="# Python Style Guide\n\n## Type Hints\n\nAll functions must...",
+        ...     commit_message="Update Python style guide with type hint requirements"
+        ... )
+        {
+          "status": "success",
+          "category": "python",
+          "file": "style-guide.mdc",
+          "message": "Update Python style guide with type hint requirements",
+          "commit_hash": "a1b2c3d4e5f6"
+        }
+
+        Example 2: Error - Synapse not initialized
+        >>> await update_synapse_rule(
+        ...     category="python",
+        ...     file="test.mdc",
+        ...     content="test",
+        ...     commit_message="test"
+        ... )
+        {
+          "status": "error",
+          "error": "Synapse not initialized. Run setup_synapse first."
+        }
     """
     try:
         project_root = get_project_root()
@@ -249,6 +315,85 @@ async def get_synapse_rules(
         - total_tokens: Actual token count of returned rules
         - token_budget: Maximum token limit specified
         - source: Rules source ("mixed", "shared_only", "local_only")
+
+    Examples:
+        Example 1: Get rules for Python async task
+        >>> await get_synapse_rules(
+        ...     task_description="Implement async file operations with proper error handling",
+        ...     max_tokens=8000,
+        ...     min_relevance_score=0.4
+        ... )
+        {
+          "status": "success",
+          "task_description": "Implement async file operations with proper error handling",
+          "context": {
+            "languages": ["python"],
+            "frameworks": [],
+            "task_type": "implementation"
+          },
+          "rules_loaded": {
+            "generic": [
+              {
+                "file": "general/error-handling.mdc",
+                "tokens": 450,
+                "priority": "high",
+                "relevance_score": 0.92
+              }
+            ],
+            "language": [
+              {
+                "file": "python/async-patterns.mdc",
+                "category": "python",
+                "tokens": 680,
+                "priority": "high",
+                "relevance_score": 0.88
+              }
+            ],
+            "local": []
+          },
+          "total_tokens": 1130,
+          "token_budget": 8000,
+          "source": "mixed"
+        }
+
+        Example 2: Get rules with project file context
+        >>> await get_synapse_rules(
+        ...     task_description="Refactor authentication module",
+        ...     project_files="src/auth.py, tests/test_auth.py",
+        ...     max_tokens=10000
+        ... )
+        {
+          "status": "success",
+          "task_description": "Refactor authentication module",
+          "context": {
+            "languages": ["python"],
+            "frameworks": [],
+            "task_type": "refactoring"
+          },
+          "rules_loaded": {
+            "generic": [
+              {
+                "file": "general/refactoring-patterns.mdc",
+                "tokens": 520,
+                "priority": "medium",
+                "relevance_score": 0.75
+              }
+            ],
+            "language": [
+              {
+                "file": "python/code-organization.mdc",
+                "category": "python",
+                "tokens": 420,
+                "priority": "medium",
+                "relevance_score": 0.68
+              }
+            ],
+            "local": []
+          },
+          "total_tokens": 940,
+          "token_budget": 10000,
+          "source": "mixed"
+        }
     """
     try:
         result = await _execute_rules_with_context(
@@ -318,6 +463,55 @@ async def get_synapse_prompts(category: str | None = None) -> str:
         - categories: List of available categories (if no category specified)
         - total_count: Number of prompts returned
         - error: Error message (only present if status is "error")
+
+    Examples:
+        Example 1: Get all prompts
+        >>> await get_synapse_prompts()
+        {
+          "status": "success",
+          "categories": ["python", "general", "testing"],
+          "prompts": [
+            {
+              "file": "code-review.md",
+              "name": "Code Review",
+              "category": "general",
+              "description": "Comprehensive code review checklist",
+              "keywords": ["review", "quality", "checklist"]
+            },
+            {
+              "file": "refactor-template.md",
+              "name": "Refactoring Template",
+              "category": "python",
+              "description": "Template for refactoring Python code",
+              "keywords": ["refactor", "python", "template"]
+            }
+          ],
+          "total_count": 2
+        }
+
+        Example 2: Get prompts for specific category
+        >>> await get_synapse_prompts(category="python")
+        {
+          "status": "success",
+          "category": "python",
+          "prompts": [
+            {
+              "file": "refactor-template.md",
+              "name": "Refactoring Template",
+              "category": "python",
+              "description": "Template for refactoring Python code",
+              "keywords": ["refactor", "python", "template"]
+            }
+          ],
+          "total_count": 1
+        }
+
+        Example 3: Error - Synapse not initialized
+        >>> await get_synapse_prompts()
+        {
+          "status": "error",
+          "error": "Synapse not initialized. Run setup_synapse first."
+        }
     """
     try:
         project_root = get_project_root()
@@ -384,6 +578,35 @@ async def update_synapse_prompt(
         - type: "prompt" (only on success)
         - commit_hash: Git commit hash (optional, if available)
         - error: Error message (only present if status is "error")
+
+    Examples:
+        Example 1: Update a code review prompt
+        >>> await update_synapse_prompt(
+        ...     category="general",
+        ...     file="code-review.md",
+        ...     content="# Code Review Checklist\n\n## Security\n\n- Check for...",
+        ...     commit_message="Add security section to code review prompt"
+        ... )
+        {
+          "status": "success",
+          "category": "general",
+          "file": "code-review.md",
+          "message": "Add security section to code review prompt",
+          "type": "prompt",
+          "commit_hash": "b2c3d4e5f6a7"
+        }
+
+        Example 2: Error - Synapse not initialized
+        >>> await update_synapse_prompt(
+        ...     category="general",
+        ...     file="test.md",
+        ...     content="test",
+        ...     commit_message="test"
+        ... )
+        {
+          "status": "error",
+          "error": "Synapse not initialized. Run setup_synapse first."
+        }
     """
     try:
         project_root = get_project_root()

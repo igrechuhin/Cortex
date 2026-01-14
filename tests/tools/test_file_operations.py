@@ -409,7 +409,7 @@ class TestManageFileEdgeCases:
 class TestHelperFunctions:
     """Test helper functions for comprehensive coverage."""
 
-    def testextract_sections_with_multiple_headings(self):
+    def test_extract_sections_with_multiple_headings(self):
         """Test section extraction with multiple headings."""
         # Arrange
         content = """# Main Title
@@ -443,7 +443,7 @@ Final section
         assert sections[3]["heading"] == "## Section 3"
         assert sections[3]["level"] == 2
 
-    def testextract_sections_with_no_headings(self):
+    def test_extract_sections_with_no_headings(self):
         """Test section extraction with no level 2 headings."""
         # Arrange
         content = "Just plain text without headings"
@@ -455,7 +455,7 @@ Final section
         assert len(sections) == 0
         assert sections == []
 
-    def testextract_sections_with_whitespace(self):
+    def test_extract_sections_with_whitespace(self):
         """Test section extraction only extracts lines starting with ##."""
         # Arrange
         content = """
@@ -557,7 +557,7 @@ Final section
             file_name, version_info
         )
 
-    def testbuild_write_response(self):
+    def test_build_write_response(self):
         """Test write response builder."""
         # Arrange
         file_name = "test.md"
@@ -584,7 +584,7 @@ Final section
         assert response["version"] == 6
         assert response["tokens"] == 50
 
-    def testvalidate_write_content_with_none(self):
+    def test_validate_write_content_with_none(self):
         """Test content validation with None."""
         # Act
         result = validate_write_content(None)
@@ -595,7 +595,7 @@ Final section
         assert error["status"] == "error"
         assert "required" in error["error"]
 
-    def testvalidate_write_content_with_valid_content(self):
+    def test_validate_write_content_with_valid_content(self):
         """Test content validation with valid content."""
         # Act
         result = validate_write_content("Valid content")
@@ -603,7 +603,7 @@ Final section
         # Assert
         assert result is None
 
-    def testbuild_write_error_response_file_conflict(self):
+    def test_build_write_error_response_file_conflict(self):
         """Test write error response for file conflict."""
         # Arrange
         error = FileConflictError("test.md", "expected_hash", "actual_hash")
@@ -617,7 +617,7 @@ Final section
         assert response["error_type"] == "FileConflictError"
         assert "suggestion" in response
 
-    def testbuild_write_error_response_lock_timeout(self):
+    def test_build_write_error_response_lock_timeout(self):
         """Test write error response for lock timeout."""
         # Arrange
         error = FileLockTimeoutError("test.md", 10)
@@ -631,7 +631,7 @@ Final section
         assert response["error_type"] == "FileLockTimeoutError"
         assert "suggestion" in response
 
-    def testbuild_write_error_response_git_conflict(self):
+    def test_build_write_error_response_git_conflict(self):
         """Test write error response for git conflict."""
         # Arrange
         error = GitConflictError("test.md")
@@ -645,7 +645,7 @@ Final section
         assert response["error_type"] == "GitConflictError"
         assert "suggestion" in response
 
-    def testbuild_invalid_operation_error(self):
+    def test_build_invalid_operation_error(self):
         """Test invalid operation error builder."""
         # Act
         response_str = build_invalid_operation_error("delete")
@@ -699,7 +699,7 @@ class TestEdgeCasesForCoverage:
                 result = json.loads(result_str)
                 assert result["status"] == "error"
                 assert "does not exist" in result["error"]
-                assert "available_files" in result
+                assert "available_files" in result["context"]
 
     async def test_manage_file_read_with_metadata_found(self):
         """Test read with metadata when metadata exists (line 299)."""

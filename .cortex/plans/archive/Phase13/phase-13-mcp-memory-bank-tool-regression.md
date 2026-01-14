@@ -63,9 +63,11 @@ This mismatch indicates a path resolution or metadata index issue in the Memory 
 ## Solution Implemented
 
 ### Root Cause
+
 The issue was incorrect memory bank path construction in multiple locations. Several modules were using `project_root / "memory-bank"` instead of `project_root / ".cortex" / "memory-bank"`.
 
 ### Files Fixed
+
 1. **`src/cortex/core/file_system.py`** (line 43):
    - Changed: `self.memory_bank_dir: Path = self.project_root / "memory-bank"`
    - To: `self.memory_bank_dir: Path = self.project_root / ".cortex" / "memory-bank"`
@@ -87,13 +89,14 @@ The issue was incorrect memory bank path construction in multiple locations. Sev
    - Fixed memory bank directory path reference
 
 ### Total Fixes
+
 - **17 locations** fixed across 6 files
 - All memory bank paths now correctly use `.cortex/memory-bank/` directory structure
 - Consistent with `MetadataIndex` which already used the correct path
 
 ### Verification
+
 - All tests passing (2304 tests, 3 skipped)
 - No linting errors
 - No type errors
 - Code follows all quality standards
-

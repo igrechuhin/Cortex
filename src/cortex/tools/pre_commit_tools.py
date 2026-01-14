@@ -88,7 +88,110 @@ async def execute_pre_commit_checks(
         strict_mode: Whether to treat warnings as errors. Default: False.
 
     Returns:
-        JSON string with pre-commit check results.
+        JSON string with pre-commit check results containing:
+        - status: "success" or "error"
+        - language: Detected or specified language
+        - checks: Dictionary of check results (fix_errors, format, type_check, quality, tests)
+        - stats: Summary statistics (total_errors, total_warnings, files_modified)
+        - error: Error message (only if status is "error")
+
+    Examples:
+        Example 1: Run all checks with auto-detection
+        >>> await execute_pre_commit_checks()
+        {
+          "status": "success",
+          "language": "python",
+          "checks": {
+            "fix_errors": {
+              "status": "passed",
+              "errors": 0,
+              "warnings": 2,
+              "message": "All errors fixed"
+            },
+            "format": {
+              "status": "passed",
+              "files_formatted": 3,
+              "message": "Code formatted successfully"
+            },
+            "type_check": {
+              "status": "passed",
+              "errors": 0,
+              "message": "Type checking passed"
+            },
+            "quality": {
+              "status": "passed",
+              "score": 9.5,
+              "message": "Code quality excellent"
+            },
+            "tests": {
+              "status": "passed",
+              "tests_run": 1520,
+              "tests_passed": 1520,
+              "coverage": 0.92,
+              "message": "All tests passed"
+            }
+          },
+          "stats": {
+            "total_errors": 0,
+            "total_warnings": 2,
+            "files_modified": ["src/file1.py"],
+            "checks_performed": ["fix_errors", "format", "type_check", "quality", "tests"]
+          }
+        }
+
+        Example 2: Run specific checks with strict mode
+        >>> await execute_pre_commit_checks(
+        ...     checks=["format", "type_check"],
+        ...     strict_mode=True
+        ... )
+        {
+          "status": "success",
+          "language": "python",
+          "checks": {
+            "format": {
+              "status": "passed",
+              "files_formatted": 0,
+              "message": "Code already formatted"
+            },
+            "type_check": {
+              "status": "passed",
+              "errors": 0,
+              "message": "Type checking passed"
+            }
+          },
+          "stats": {
+            "total_errors": 0,
+            "total_warnings": 0,
+            "files_modified": [],
+            "checks_performed": ["format", "type_check"]
+          }
+        }
+
+        Example 3: Run with custom coverage threshold
+        >>> await execute_pre_commit_checks(
+        ...     checks=["tests"],
+        ...     coverage_threshold=0.95,
+        ...     timeout=60
+        ... )
+        {
+          "status": "success",
+          "language": "python",
+          "checks": {
+            "tests": {
+              "status": "passed",
+              "tests_run": 1520,
+              "tests_passed": 1520,
+              "coverage": 0.96,
+              "message": "All tests passed, coverage above threshold"
+            }
+          },
+          "stats": {
+            "total_errors": 0,
+            "total_warnings": 0,
+            "files_modified": [],
+            "checks_performed": ["tests"]
+          }
+        }
     """
     try:
         root_str = _get_project_root_str(project_root)

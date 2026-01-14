@@ -1,5 +1,83 @@
 # Progress Log: MCP Memory Bank
 
+## 2026-01-14: Type Error Fixes and Test Corrections
+
+### Summary
+
+Fixed type errors and test failures during commit procedure. Applied code formatting and verified all tests pass with 90.45% coverage.
+
+### Changes Made
+
+#### Type Error Fixes
+
+**File: `src/cortex/tools/file_operations.py`:**
+
+- `_get_file_conflict_details()` - Changed return type from `tuple[str, dict[str, object]]` to `tuple[str, dict[str, str]]` to match actual return value
+- `_get_lock_timeout_details()` - Changed return type from `tuple[str, dict[str, object]]` to `tuple[str, dict[str, str | int]]` to match actual return value
+
+#### Test Fixes
+
+**File: `tests/tools/test_file_operations.py`:**
+
+- `test_manage_file_read_file_not_exists_with_available_files` - Updated assertion to check `result["context"]["available_files"]` instead of top-level `result["available_files"]` to match new error response structure
+
+**File: `tests/tools/test_validation_operations.py`:**
+
+- `test_validate_schema_all_files_success` - Fixed test to create files in `.cortex/memory-bank/` directory instead of `memory-bank/` to match `get_cortex_path()` behavior
+
+#### Code Formatting
+
+- Applied Black formatting to `src/cortex/tools/configuration_operations.py` and `src/cortex/tools/file_operations.py`
+
+### Verification Results
+
+- **Type Check**: ✅ PASS - 0 type errors (down from 2)
+- **Linter Check**: ✅ PASS - 0 linting errors
+- **Formatter Check**: ✅ PASS - All files properly formatted
+- **Test Status**: ✅ PASS - 2346 tests passing, 2 skipped (100% pass rate)
+- **Test Coverage**: ✅ PASS - 90.45% coverage (meets 90% threshold)
+
+### Impact
+
+- **Type Safety**: Improved - Concrete types used instead of generic `object` types
+- **Test Reliability**: Enhanced - Tests now correctly validate error response structure and path resolution
+- **Code Quality**: Maintained - All quality checks passing
+
+## 2026-01-13: Phase 9.6 - Code Style Excellence Complete
+
+### Summary (Phase 9.6 Completion)
+
+Completed Phase 9.6 Code Style Excellence by adding comprehensive docstring examples to all MCP tools that were missing them. Enhanced 5 synapse tools and 1 pre-commit tool with detailed examples showing usage patterns, input/output formats, and error scenarios. All protocols already had comprehensive docstrings with examples, so no changes were needed there.
+
+### Changes Made (Phase 9.6 Completion)
+
+#### Enhanced Tool Docstrings with Examples
+
+**Synapse Tools (`src/cortex/tools/synapse_tools.py`):**
+
+- `sync_synapse()` - Added 3 examples (pull only, push only, error case)
+- `update_synapse_rule()` - Added 2 examples (success case, error case)
+- `get_synapse_rules()` - Added 2 examples (with task description, with project files)
+- `get_synapse_prompts()` - Added 3 examples (all prompts, category-specific, error case)
+- `update_synapse_prompt()` - Added 2 examples (success case, error case)
+
+**Pre-Commit Tools (`src/cortex/tools/pre_commit_tools.py`):**
+
+- `execute_pre_commit_checks()` - Added 3 examples (all checks, specific checks, custom coverage threshold)
+
+### Verification Results (Phase 9.6 Completion)
+
+- **Test Status**: ✅ PASS - All 25 synapse tool tests passing
+- **Code Quality**: ✅ PASS - All docstrings follow consistent format with examples
+- **Documentation**: ✅ PASS - All public MCP tools now have comprehensive examples
+- **Protocol Docstrings**: ✅ VERIFIED - All protocols already have comprehensive docstrings with examples
+
+### Impact (Phase 9.6)
+
+- **Developer Experience**: Improved - All MCP tools now have clear usage examples
+- **Documentation Quality**: Enhanced - Examples show real-world usage patterns
+- **Code Style Score**: Maintained at 9.5/10 (target: 9.8/10) - Core features complete, remaining work deferred to Phase 9.6.1
+
 ## 2026-01-13: Phase 9.8 - Maintainability Excellence Complete
 
 ### Summary (Phase 9.8 Completion)
@@ -11,6 +89,7 @@ Completed Phase 9.8 Maintainability Excellence by eliminating all deep nesting i
 #### Refactored 14 Functions with Deep Nesting
 
 **Guard Clauses & Early Returns:**
+
 - `_find_section_end()` in `transclusion_engine.py`
 - `_score_by_age()` in `quality_metrics.py`
 - `get_grade()` in `quality_metrics.py`
@@ -18,12 +97,14 @@ Completed Phase 9.8 Maintainability Excellence by eliminating all deep nesting i
 - `_determine_health_grade_and_status()` in `health.py`
 
 **Helper Extraction:**
+
 - `calculate_consistency()` in `quality_metrics.py` - Extracted `_extract_broken_links()` helper
 - `_load_config()` in `optimization_config.py` - Guard clauses
 - `_load_config()` in `validation_config.py` - Guard clauses
 - `load_custom_schemas()` in `schema_validator.py` - Guard clauses
 
 **Strategy Dispatch Pattern:**
+
 - `_apply_optimization_strategy()` in `context_optimizer.py`
 - `_categorize_indexing_result()` in `rules_indexer.py`
 - `_migrate_files_by_type()` in `structure_migration.py`
@@ -113,7 +194,7 @@ Continued progress on Phase 9.8 Maintainability Excellence by reducing deep nest
 - Extracted complex conditionals to named functions
 - Improved code organization through logical separation
 
-### Architecture Benefits
+### Architecture Benefits (Deep Nesting Reduction - Batch 2)
 
 - **Maintainability**: Reduced nesting makes code easier to understand and modify
 - **Readability**: Clear separation of concerns through helper method extraction
@@ -121,14 +202,14 @@ Continued progress on Phase 9.8 Maintainability Excellence by reducing deep nest
 - **Cognitive Load**: Reduced complexity makes code easier to reason about
 - **Code Reuse**: Helper methods can be reused where appropriate
 
-### Overall Progress
+### Overall Progress (Batch 2)
 
 - **Starting Point**: 31 deep nesting issues (from original baseline)
 - **First Batch**: 31 → 20 (35% improvement)
 - **Second Batch**: 20 → 14 (30% improvement in batch, 55% total improvement)
 - **Total Improvement**: 31 → 14 (55% improvement from original baseline)
 
-### Remaining Work
+### Remaining Work (Batch 2)
 
 - **14 remaining deep nesting issues** (all 4-level nesting)
 - **Target**: Reduce all nesting to ≤3 levels
@@ -213,7 +294,7 @@ Continued progress on Phase 9.8 Maintainability Excellence by reducing deep nest
 - Extracted complex conditionals to named functions
 - Reused helper methods to reduce code duplication
 
-### Architecture Benefits
+### Architecture Benefits (Deep Nesting Reduction - Phase 9.8 Continued)
 
 - **Maintainability**: Reduced nesting makes code easier to understand and modify
 - **Readability**: Clear separation of concerns through helper method extraction
@@ -221,13 +302,13 @@ Continued progress on Phase 9.8 Maintainability Excellence by reducing deep nest
 - **Cognitive Load**: Reduced complexity makes code easier to reason about
 - **Code Reuse**: Shared helper methods reduce duplication
 
-### Remaining Work
+### Remaining Work (Continued)
 
 - **20 remaining deep nesting issues** (all 4-level nesting)
 - **Target**: Reduce all nesting to ≤3 levels
 - **Next Steps**: Continue refactoring remaining 4-level nesting functions using same techniques (guard clauses, helper extraction, early returns)
 
-### Overall Progress
+### Overall Progress (Continued)
 
 - **Starting Point**: 31 deep nesting issues (from previous work)
 - **Previous Reduction**: 31 → 27 (13% improvement)
@@ -281,7 +362,7 @@ Completed Phase 15 by fixing project root detection in `get_project_root()` func
 - All code quality standards met
 - Consistent behavior across all MCP tools
 
-### Architecture Benefits
+### Architecture Benefits (Project Root Detection)
 
 - **Reliability**: MCP tools now work consistently without requiring explicit `project_root` parameter
 - **User Experience**: Eliminates need for workarounds (direct file reading) when `project_root=None`
@@ -361,14 +442,14 @@ Made significant progress on Phase 9.8: Maintainability Excellence by reducing d
 - Applied guard clause pattern and early returns where appropriate
 - Extracted complex conditionals to named functions
 
-### Architecture Benefits
+### Architecture Benefits (Deep Nesting Reduction - Phase 9.8)
 
 - **Maintainability**: Reduced nesting makes code easier to understand and modify
 - **Readability**: Clear separation of concerns through helper function extraction
 - **Testability**: Smaller functions are easier to test in isolation
 - **Cognitive Load**: Reduced complexity makes code easier to reason about
 
-### Remaining Work
+### Remaining Work (Progress)
 
 - **27 remaining deep nesting issues** (all 4-level nesting)
 - **Target**: Reduce all nesting to ≤3 levels
@@ -436,7 +517,7 @@ Completed Phase 14 by replacing all 24+ instances of direct path construction (`
 - All code quality standards met
 - Consistent path resolution across entire codebase
 
-### Architecture Benefits
+### Architecture Benefits (Path Resolution Centralization)
 
 - **Centralized Path Resolution**: Single source of truth for Cortex directory paths
 - **Maintainability**: Path changes only need to be made in one place (`path_resolver.py`)
@@ -512,7 +593,7 @@ Archived 110 completed plan files from `.cortex/plans/` to `.cortex/plans/archiv
 - Preserved all plan files (moved, not deleted)
 - Organized by phase for easy reference
 
-### Architecture Benefits
+### Architecture Benefits (Plan Archival)
 
 - **Organization**: Clear separation between active and completed plans
 - **Maintainability**: Easier to find active work vs historical plans
@@ -530,7 +611,7 @@ Completed migration from legacy `SharedRulesManager` to `SynapseManager` across 
 #### 1. Migrated `tests/test_phase6.py` - Test Suite Migration
 
 - **Issue**: Test file used legacy `SharedRulesManager` type alias and was skipped at module level
-- **Fix**: 
+- **Fix**:
   - Removed `pytest.skip()` and type alias workaround
   - Replaced all `SharedRulesManager` references with `SynapseManager`
   - Updated initialization parameters: `shared_rules_folder` → `synapse_folder`, `.shared-rules` → `.cortex/synapse`
@@ -595,7 +676,7 @@ Completed migration from legacy `SharedRulesManager` to `SynapseManager` across 
 - Zero legacy workarounds remaining
 - Clean codebase with consistent naming
 
-### Architecture Benefits
+### Architecture Benefits (Legacy Migration)
 
 - **Consistency**: Single manager class (`SynapseManager`) instead of legacy alias
 - **Clarity**: No confusion between old and new implementations
@@ -613,7 +694,7 @@ Fixed test failures in `test_phase2_linking.py` by updating all hardcoded `memor
 #### 1. Fixed `tests/tools/test_phase2_linking.py` - Path Resolution
 
 - **Issue**: 8 test failures due to hardcoded `mock_project_root / "memory-bank"` paths instead of using `.cortex/memory-bank/`
-- **Fix**: 
+- **Fix**:
   - Added import for `get_test_memory_bank_dir` from `tests.helpers.path_helpers`
   - Replaced all 14 instances of `mock_project_root / "memory-bank"` with `get_test_memory_bank_dir(mock_project_root)`
   - Updated mock manager path from `/mock/memory-bank/test.md` to `/mock/.cortex/memory-bank/test.md`
@@ -665,7 +746,7 @@ Fixed test failures in `test_phase2_linking.py` by updating all hardcoded `memor
 - All code quality standards met
 - Consistent path usage across codebase
 
-### Architecture Benefits
+### Architecture Benefits (Test Path Resolution)
 
 - **Centralized Path Resolution**: Single source of truth for Cortex directory paths
 - **Test Consistency**: All tests use same path resolution logic as production code
@@ -752,7 +833,7 @@ Fixed critical regression where MCP Memory Bank tools (`manage_file` and `get_me
 
 The regression was caused by inconsistent path construction after migrating from `.cursor/memory-bank/` to `.cortex/memory-bank/`. While `MetadataIndex` correctly used `.cortex/memory-bank/`, many other modules were still using the old `memory-bank/` path directly under project root.
 
-### Impact
+### Impact (Memory Bank Regression Fix)
 
 - **Before**: MCP tools could not see existing memory bank files, causing "File does not exist" errors
 - **After**: All MCP tools correctly resolve memory bank files in `.cortex/memory-bank/` directory
@@ -914,7 +995,7 @@ Completed Phase 12 by converting commit workflow prompt files to structured MCP 
 - Zero type errors
 - All code quality standards met
 
-### Architecture Benefits
+### Architecture Benefits (Pre-Commit Tool)
 
 - **Type Safety**: Structured parameters and return values instead of text interpretation
 - **Language Auto-Detection**: Automatically detects project language and tooling
@@ -1070,7 +1151,7 @@ Fixed LazyManager unwrapping issue in Phase 5 execution tools by replacing `cast
 #### 2. Updated `.cortex/memory-bank/roadmap.md` - Phase 11 Progress
 
 - **Change**: Updated Phase 11 tool verification progress from 59% (17/29) to 79% (23/29)
-- **Details**: 
+- **Details**:
   - Phase 5.1: Pattern Analysis (1/1 verified - 100%) ✅ COMPLETE
   - Phase 5.2: Refactoring Suggestions (1/1 verified - 100%) ✅ COMPLETE
   - Phase 5.3-5.4: Execution & Learning (3/3 verified - 100%) ✅ COMPLETE
@@ -1124,7 +1205,7 @@ Fixed Black formatting issue that caused CI failure and improved commit procedur
 - **Impact**: Prevents committing code that would fail CI checks by catching errors early
 - **Rationale**: Ensures all compiler errors, type errors, formatting issues, and warnings are fixed before testing
 
-#### 3. Updated Synapse Submodule
+#### 3. Updated Synapse Submodule (Commit Procedure)
 
 - **Change**: Committed and pushed commit.md improvements to Synapse repository
 - **Commit**: 379fa84 - "Add fix-errors step to commit procedure"
@@ -1435,7 +1516,7 @@ Started Phase 9.3.4 medium-severity performance optimizations, addressing list a
 - Zero type errors
 - All optimizations verified with tests
 
-### Remaining Work
+### Remaining Work (Performance Optimization)
 
 - **structure_analyzer.py**: 5 remaining medium-severity issues (lines 171, 282, 285, 507, 751)
 - **pattern_analyzer.py**: 7 medium-severity issues + 1 string split in loop
@@ -1648,7 +1729,7 @@ Added dynamic Synapse prompts registration module that automatically loads and r
 - **Impact**: Synapse prompts are now automatically registered when tools module is imported
 - **Lines**: 46
 
-#### 3. Updated Synapse Submodule
+#### 3. Updated Synapse Submodule (Synapse Prompts)
 
 - **Change**: Committed and pushed Synapse submodule changes including prompts and rules directories
 - **Files Added**: 18 files (prompts, rules, LICENSE update)
@@ -1978,39 +2059,39 @@ Fixed test function naming issues in `tests/tools/test_rules_operations.py`, ens
 
 #### 1. Fixed `tests/tools/test_rules_operations.py` - Test Function Naming
 
-- **Issue**: 26 test functions missing underscores in their names (e.g., `testcheck_rules_enabled_when_enabled` instead of `test_check_rules_enabled_when_enabled`)
+- **Issue**: 26 test functions missing underscores in their names (e.g., `test_check_rules_enabled_when_enabled` instead of `test_check_rules_enabled_when_enabled`)
 - **Fix**: Added underscores to all test function names to follow pytest naming conventions
 - **Impact**: All test functions now properly discoverable by pytest
 - **Lines**: Multiple lines throughout the file
 
 ### Test Functions Fixed (test_rules_operations.py - List)
 
-- `testcheck_rules_enabled_when_enabled` → `test_check_rules_enabled_when_enabled`
-- `testcheck_rules_enabled_when_disabled` → `test_check_rules_enabled_when_disabled`
-- `testhandle_index_operation_success` → `test_handle_index_operation_success`
-- `testhandle_index_operation_with_force` → `test_handle_index_operation_with_force`
-- `testvalidate_get_relevant_params_valid` → `test_validate_get_relevant_params_valid`
-- `testvalidate_get_relevant_params_none` → `test_validate_get_relevant_params_none`
-- `testvalidate_get_relevant_params_empty` → `test_validate_get_relevant_params_empty`
-- `testresolve_config_defaults_both_provided` → `test_resolve_config_defaults_both_provided`
-- `testresolve_config_defaults_both_none` → `test_resolve_config_defaults_both_none`
-- `testresolve_config_defaults_max_tokens_provided` → `test_resolve_config_defaults_max_tokens_provided`
-- `testresolve_config_defaults_min_score_provided` → `test_resolve_config_defaults_min_score_provided`
-- `testextract_all_rules_all_categories` → `test_extract_all_rules_all_categories`
-- `testextract_all_rules_some_categories` → `test_extract_all_rules_some_categories`
-- `testextract_all_rules_empty` → `test_extract_all_rules_empty`
-- `testextract_all_rules_non_list_values` → `test_extract_all_rules_non_list_values`
-- `testcalculate_total_tokens_from_dict` → `test_calculate_total_tokens_from_dict`
-- `testcalculate_total_tokens_from_rules` → `test_calculate_total_tokens_from_rules`
-- `testcalculate_total_tokens_mixed_types` → `test_calculate_total_tokens_mixed_types`
-- `testcalculate_total_tokens_zero` → `test_calculate_total_tokens_zero`
-- `testhandle_get_relevant_operation_success` → `test_handle_get_relevant_operation_success`
-- `testhandle_get_relevant_operation_defaults` → `test_handle_get_relevant_operation_defaults`
-- `testbuild_get_relevant_response` → `test_build_get_relevant_response`
-- `testdispatch_operation_index` → `test_dispatch_operation_index`
-- `testdispatch_operation_get_relevant` → `test_dispatch_operation_get_relevant`
-- `testdispatch_operation_get_relevant_missing_task` → `test_dispatch_operation_get_relevant_missing_task`
-- `testdispatch_operation_invalid` → `test_dispatch_operation_invalid`
+- `test_check_rules_enabled_when_enabled` → `test_check_rules_enabled_when_enabled`
+- `test_check_rules_enabled_when_disabled` → `test_check_rules_enabled_when_disabled`
+- `test_handle_index_operation_success` → `test_handle_index_operation_success`
+- `test_handle_index_operation_with_force` → `test_handle_index_operation_with_force`
+- `test_validate_get_relevant_params_valid` → `test_validate_get_relevant_params_valid`
+- `test_validate_get_relevant_params_none` → `test_validate_get_relevant_params_none`
+- `test_validate_get_relevant_params_empty` → `test_validate_get_relevant_params_empty`
+- `test_resolve_config_defaults_both_provided` → `test_resolve_config_defaults_both_provided`
+- `test_resolve_config_defaults_both_none` → `test_resolve_config_defaults_both_none`
+- `test_resolve_config_defaults_max_tokens_provided` → `test_resolve_config_defaults_max_tokens_provided`
+- `test_resolve_config_defaults_min_score_provided` → `test_resolve_config_defaults_min_score_provided`
+- `test_extract_all_rules_all_categories` → `test_extract_all_rules_all_categories`
+- `test_extract_all_rules_some_categories` → `test_extract_all_rules_some_categories`
+- `test_extract_all_rules_empty` → `test_extract_all_rules_empty`
+- `test_extract_all_rules_non_list_values` → `test_extract_all_rules_non_list_values`
+- `test_calculate_total_tokens_from_dict` → `test_calculate_total_tokens_from_dict`
+- `test_calculate_total_tokens_from_rules` → `test_calculate_total_tokens_from_rules`
+- `test_calculate_total_tokens_mixed_types` → `test_calculate_total_tokens_mixed_types`
+- `test_calculate_total_tokens_zero` → `test_calculate_total_tokens_zero`
+- `test_handle_get_relevant_operation_success` → `test_handle_get_relevant_operation_success`
+- `test_handle_get_relevant_operation_defaults` → `test_handle_get_relevant_operation_defaults`
+- `test_build_get_relevant_response` → `test_build_get_relevant_response`
+- `test_dispatch_operation_index` → `test_dispatch_operation_index`
+- `test_dispatch_operation_get_relevant` → `test_dispatch_operation_get_relevant`
+- `test_dispatch_operation_get_relevant_missing_task` → `test_dispatch_operation_get_relevant_missing_task`
+- `test_dispatch_operation_invalid` → `test_dispatch_operation_invalid`
 
 ### Test Functions Fixed (test_rules_operations.py)
 
@@ -2042,34 +2123,34 @@ Fixed test function naming issues in test file, ensuring all test functions foll
 
 #### 1. Fixed `tests/tools/test_phase1_foundation.py` - Test Function Naming
 
-- **Issue**: 21 test functions missing underscores in their names (e.g., `testextract_version_history_valid_list` instead of `test_extract_version_history_valid_list`)
+- **Issue**: 21 test functions missing underscores in their names (e.g., `test_extract_version_history_valid_list` instead of `test_extract_version_history_valid_list`)
 - **Fix**: Added underscores to all test function names to follow pytest naming conventions
 - **Impact**: All test functions now properly discoverable by pytest
 - **Lines**: 850, 871, 885, 899, 919, 940, 960, 990, 1009, 1032, 1051, 1070, 1084, 1098, 1112, 1141, 1155, 1169, 1183, 1204, 1227
 
 ### Test Functions Fixed (test_phase1_foundation.py)
 
-- `testextract_version_history_valid_list()` → `test_extract_version_history_valid_list()`
-- `testextract_version_history_invalid_format()` → `test_extract_version_history_invalid_format()`
-- `testextract_version_history_missing_field()` → `test_extract_version_history_missing_field()`
-- `testsort_and_limit_versions()` → `test_sort_and_limit_versions()`
-- `testsort_and_limit_versions_with_float_versions()` → `test_sort_and_limit_versions_with_float_versions()`
-- `testsort_and_limit_versions_with_missing_version()` → `test_sort_and_limit_versions_with_missing_version()`
-- `testformat_versions_for_export_all_fields()` → `test_format_versions_for_export_all_fields()`
-- `testformat_versions_for_export_minimal_fields()` → `test_format_versions_for_export_minimal_fields()`
-- `testsum_file_field()` → `test_sum_file_field()`
-- `testsum_file_field_missing_field()` → `test_sum_file_field_missing_field()`
-- `testsum_file_field_non_numeric()` → `test_sum_file_field_non_numeric()`
-- `testextract_last_updated_success()` → `test_extract_last_updated_success()`
-- `testextract_last_updated_missing_field()` → `test_extract_last_updated_missing_field()`
-- `testextract_last_updated_invalid_structure()` → `test_extract_last_updated_invalid_structure()`
-- `testbuild_summary_dict()` → `test_build_summary_dict()`
-- `testcalculate_token_status_healthy()` → `test_calculate_token_status_healthy()`
-- `testcalculate_token_status_warning()` → `test_calculate_token_status_warning()`
-- `testcalculate_token_status_over_budget()` → `test_calculate_token_status_over_budget()`
-- `testcalculate_totals()` → `test_calculate_totals()`
-- `testbuild_rollback_success_response()` → `test_build_rollback_success_response()`
-- `testbuild_rollback_error_response()` → `test_build_rollback_error_response()`
+- `test_extract_version_history_valid_list()` → `test_extract_version_history_valid_list()`
+- `test_extract_version_history_invalid_format()` → `test_extract_version_history_invalid_format()`
+- `test_extract_version_history_missing_field()` → `test_extract_version_history_missing_field()`
+- `test_sort_and_limit_versions()` → `test_sort_and_limit_versions()`
+- `test_sort_and_limit_versions_with_float_versions()` → `test_sort_and_limit_versions_with_float_versions()`
+- `test_sort_and_limit_versions_with_missing_version()` → `test_sort_and_limit_versions_with_missing_version()`
+- `test_format_versions_for_export_all_fields()` → `test_format_versions_for_export_all_fields()`
+- `test_format_versions_for_export_minimal_fields()` → `test_format_versions_for_export_minimal_fields()`
+- `test_sum_file_field()` → `test_sum_file_field()`
+- `test_sum_file_field_missing_field()` → `test_sum_file_field_missing_field()`
+- `test_sum_file_field_non_numeric()` → `test_sum_file_field_non_numeric()`
+- `test_extract_last_updated_success()` → `test_extract_last_updated_success()`
+- `test_extract_last_updated_missing_field()` → `test_extract_last_updated_missing_field()`
+- `test_extract_last_updated_invalid_structure()` → `test_extract_last_updated_invalid_structure()`
+- `test_build_summary_dict()` → `test_build_summary_dict()`
+- `test_calculate_token_status_healthy()` → `test_calculate_token_status_healthy()`
+- `test_calculate_token_status_warning()` → `test_calculate_token_status_warning()`
+- `test_calculate_token_status_over_budget()` → `test_calculate_token_status_over_budget()`
+- `test_calculate_totals()` → `test_calculate_totals()`
+- `test_build_rollback_success_response()` → `test_build_rollback_success_response()`
+- `test_build_rollback_error_response()` → `test_build_rollback_error_response()`
 
 ### Verification Results (test_phase1_foundation.py)
 

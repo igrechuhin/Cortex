@@ -1,15 +1,22 @@
 # Active Context: Cortex
 
-## Current Focus (2026-01-13)
+## Current Focus (2026-01-14)
 
 See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
-- Code quality improvements: Fixed function length violations and type errors
+- Commit procedure: Fixed type errors and test failures
 
 ### Recently Completed
 
+- ✅ Type error fixes (2026-01-14) - Fixed 2 type errors in `file_operations.py` by using concrete return types instead of `dict[str, object]`
+  - `_get_file_conflict_details()` now returns `tuple[str, dict[str, str]]`
+  - `_get_lock_timeout_details()` now returns `tuple[str, dict[str, str | int]]`
+- ✅ Test fixes (2026-01-14) - Fixed 2 test failures:
+  - `test_manage_file_read_file_not_exists_with_available_files` - Updated to check `context["available_files"]` instead of top-level
+  - `test_validate_schema_all_files_success` - Fixed path to use `.cortex/memory-bank/` instead of `memory-bank/`
+- ✅ Code formatting (2026-01-14) - Applied Black formatting to 2 files
 - ✅ Code quality fixes (2026-01-13) - Fixed 3 function length violations by extracting helper functions
   - `_apply_optimization_strategy()` in `context_optimizer.py` - Extracted `_create_strategy_handlers()` helper
   - `configure()` in `configuration_operations.py` - Extracted `_get_component_handler()` helper
@@ -23,7 +30,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Project Health
 
-- **Test Coverage**: 90.32% (2318 tests passing, 2 skipped) ✅
+- **Test Coverage**: 90.45% (2346 tests passing, 2 skipped) ✅
 - **Type Errors**: 0 ✅
 - **Linting Errors**: 0 ✅
 - **Performance Score**: 9.0/10
@@ -35,17 +42,6 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 - Type hints: 100% coverage required
 - Testing: AAA pattern, 90%+ coverage target
 - Formatting: Black + Ruff (import sorting)
-
-## Language-Agnostic Principle (CRITICAL)
-
-**MANDATORY**: All procedures, prompts, and documentation MUST be language-agnostic:
-
-- ✅ Use scripts from `.cortex/synapse/scripts/{language}/` directory
-- ✅ Use `{language}` placeholder pattern in references
-- ❌ NEVER hardcode language-specific commands (e.g., `ruff`, `black`, `pyright`)
-- ❌ NEVER assume a specific language in procedures
-- Scripts handle language detection, tool selection, and directory detection automatically
-- This ensures Cortex works with ANY language (Python, TypeScript, Rust, Go, etc.)
 
 ## Project Structure
 

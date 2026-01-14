@@ -11,6 +11,7 @@ import json
 from collections.abc import Awaitable, Callable
 from typing import Literal, Protocol
 
+from cortex.core.responses import error_response
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
 from cortex.optimization.optimization_config import OptimizationConfig
@@ -306,16 +307,42 @@ async def configure(
         if handler:
             return await handler(mgrs, action, settings, key, value)
 
-        return create_error_response(
-            f"Unknown component: {component}",
-            valid_components=["validation", "optimization", "learning"],
-        )
+        return _create_invalid_component_error(component)
 
     except Exception as e:
-        return json.dumps(
-            {"status": "error", "error": str(e), "error_type": e.__class__.__name__},
-            indent=2,
-        )
+        return _create_configuration_exception_error(e, component, action)
+
+
+def _create_invalid_component_error(component: str) -> str:
+    """Create error response for invalid component."""
+    return create_error_response(
+        f"Unknown component: {component}",
+        valid_components=["validation", "optimization", "learning"],
+        action_required=(
+            f"Use one of the valid components: 'validation', 'optimization', or 'learning'. "
+            f"Received: '{component}'. "
+            f"Example: {{'component': 'validation', 'action': 'view'}}"
+        ),
+        context={
+            "invalid_component": component,
+            "valid_components": ["validation", "optimization", "learning"],
+        },
+    )
+
+
+def _create_configuration_exception_error(
+    e: Exception, component: str, action: str
+) -> str:
+    """Create error response for configuration exception."""
+    return error_response(
+        e,
+        action_required=(
+            "Review the error details and verify your configuration parameters. "
+            "Check that component, action, and settings are valid. "
+            "Run with 'action=view' to see current configuration."
+        ),
+        context={"component": component, "action": action},
+    )
 
 
 async def configure_validation(
@@ -338,7 +365,17 @@ async def configure_validation(
         return await handle_validation_reset(validation_config)
     else:
         return create_error_response(
-            f"Unknown action: {action}", valid_actions=["view", "update", "reset"]
+            f"Unknown action: {action}",
+            valid_actions=["view", "update", "reset"],
+            action_required=(
+                f"Use one of the valid actions: 'view', 'update', or 'reset'. "
+                f"Received: '{action}'. "
+                f"Example: {{'component': 'validation', 'action': 'view'}}"
+            ),
+            context={
+                "invalid_action": action,
+                "valid_actions": ["view", "update", "reset"],
+            },
         )
 
 
@@ -367,6 +404,23 @@ async def handle_validation_reset(validation_config: ValidationConfig) -> str:
     )
 
 
+def _create_invalid_action_error(action: str) -> str:
+    """Create error response for invalid action."""
+    return create_error_response(
+        f"Unknown action: {action}",
+        valid_actions=["view", "update", "reset"],
+        action_required=(
+            f"Use one of the valid actions: 'view', 'update', or 'reset'. "
+            f"Received: '{action}'. "
+            f"Example: {{'component': 'validation', 'action': 'view'}}"
+        ),
+        context={
+            "invalid_action": action,
+            "valid_actions": ["view", "update", "reset"],
+        },
+    )
+
+
 async def configure_optimization(
     mgrs: dict[str, object],
     action: str,
@@ -390,9 +444,7 @@ async def configure_optimization(
     elif action == "reset":
         return await handle_optimization_reset(optimization_config)
     else:
-        return create_error_response(
-            f"Unknown action: {action}", valid_actions=["view", "update", "reset"]
-        )
+        return _create_invalid_action_error(action)
 
 
 async def handle_optimization_update(
@@ -423,6 +475,18 @@ async def handle_optimization_reset(
     )
 
 
+async def _initialize_learning_components(
+    mgrs: dict[str, object],
+) -> tuple[LearningEngine, OptimizationConfig, AdaptationConfig]:
+    """Initialize learning-related components."""
+    learning_engine = await get_manager(mgrs, "learning_engine", LearningEngine)
+    optimization_config = await get_manager(
+        mgrs, "optimization_config", OptimizationConfig
+    )
+    adaptation_config = AdaptationConfig(base_config=optimization_config.config)
+    return learning_engine, optimization_config, adaptation_config
+
+
 async def configure_learning(
     mgrs: dict[str, object],
     action: str,
@@ -431,12 +495,9 @@ async def configure_learning(
     value: object | None,
 ) -> str:
     """Configure learning settings."""
-    learning_engine = await get_manager(mgrs, "learning_engine", LearningEngine)
-    optimization_config = await get_manager(
-        mgrs, "optimization_config", OptimizationConfig
+    learning_engine, optimization_config, adaptation_config = (
+        await _initialize_learning_components(mgrs)
     )
-
-    adaptation_config = AdaptationConfig(base_config=optimization_config.config)
 
     if action == "view":
         return handle_learning_view(learning_engine, adaptation_config)
@@ -454,9 +515,7 @@ async def configure_learning(
             learning_engine, optimization_config, adaptation_config
         )
     else:
-        return create_error_response(
-            f"Unknown action: {action}", valid_actions=["view", "update", "reset"]
-        )
+        return _create_invalid_action_error(action)
 
 
 def handle_learning_view(
@@ -553,11 +612,82 @@ def create_success_response(
     return json.dumps(response, indent=2)
 
 
+def _generate_action_required(error: str, extra_fields: dict[str, object]) -> str:
+    """Generate action_required message from error and extra_fields."""
+    if "Unknown component" in error:
+        valid_components_raw = extra_fields.get("valid_components", [])
+        valid_components = (
+            valid_components_raw if isinstance(valid_components_raw, list) else []
+        )
+        valid_components_str = [str(c) for c in valid_components]
+        return (
+            f"Use one of the valid components: {', '.join(valid_components_str)}. "
+            f"Example: {{'component': '{valid_components_str[0] if valid_components_str else 'validation'}'}}"
+        )
+    elif "Unknown action" in error:
+        valid_actions_raw = extra_fields.get("valid_actions", [])
+        valid_actions = valid_actions_raw if isinstance(valid_actions_raw, list) else []
+        valid_actions_str = [str(a) for a in valid_actions]
+        return (
+            f"Use one of the valid actions: {', '.join(valid_actions_str)}. "
+            f"Example: {{'action': '{valid_actions_str[0] if valid_actions_str else 'view'}'}}"
+        )
+    else:
+        return (
+            "Review the error message and correct the configuration parameters. "
+            "Check the tool documentation for valid parameter values."
+        )
+
+
 def create_error_response(error: str, **extra_fields: object) -> str:
-    """Create an error response with optional extra fields."""
-    response: dict[str, object] = {"status": "error", "error": error}
-    response.update(extra_fields)
-    return json.dumps(response, indent=2)
+    """Create an error response with optional extra fields and recovery suggestions.
+
+    Args:
+        error: Error message string
+        **extra_fields: Additional fields to include in response (e.g., action_required, context)
+
+    Returns:
+        JSON string with standardized error response
+    """
+    import json
+
+    # Extract action_required and context if provided
+    action_required = extra_fields.pop("action_required", None)
+    context = extra_fields.pop("context", None)
+
+    # Generate default action_required if not provided
+    if not action_required:
+        action_required = _generate_action_required(error, extra_fields)
+
+    # Build context from extra_fields if not explicitly provided
+    if not context and extra_fields:
+        context = extra_fields
+
+    # Type assertions for error_response
+    action_required_str: str | None = (
+        str(action_required) if action_required is not None else None
+    )
+    context_dict: dict[str, object] | None = (
+        context if isinstance(context, dict) else None
+    )
+
+    # Create base error response
+    base_response = json.loads(
+        error_response(
+            ValueError(error),
+            action_required=action_required_str,
+            context=context_dict,
+        )
+    )
+
+    # Merge top-level fields from extra_fields (for backward compatibility with tests)
+    # Fields like valid_components, valid_actions should be at top level
+    top_level_fields = ["valid_components", "valid_actions", "valid_operations"]
+    for field in top_level_fields:
+        if field in extra_fields:
+            base_response[field] = extra_fields[field]
+
+    return json.dumps(base_response, indent=2)
 
 
 def get_learned_patterns(learning_engine: LearningEngine) -> dict[str, object]:
