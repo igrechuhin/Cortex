@@ -168,18 +168,31 @@ class QualityMetrics:
 
         # Deduct for broken links if provided
         if link_validation:
-            broken_links_raw: object = link_validation.get("broken_links", [])
-            broken_links: list[str] = []
-            if isinstance(broken_links_raw, list):
-                broken_links_list = cast(list[object], broken_links_raw)
-                for item_obj in broken_links_list:
-                    if item_obj is not None:
-                        # Type checker needs explicit conversion
-                        item_value: object = item_obj
-                        broken_links.append(str(item_value))
+            broken_links = self._extract_broken_links(link_validation)
             score -= len(broken_links) * 3  # 3 points per broken link
 
         return max(0.0, score)
+
+    def _extract_broken_links(self, link_validation: dict[str, object]) -> list[str]:
+        """Extract broken links from validation data.
+
+        Args:
+            link_validation: Link validation results
+
+        Returns:
+            List of broken link strings
+        """
+        broken_links_raw: object = link_validation.get("broken_links", [])
+        if not isinstance(broken_links_raw, list):
+            return []
+
+        broken_links: list[str] = []
+        broken_links_list = cast(list[object], broken_links_raw)
+        for item_obj in broken_links_list:
+            if item_obj is not None:
+                broken_links.append(str(item_obj))
+
+        return broken_links
 
     def calculate_freshness(
         self, files_metadata: dict[str, dict[str, object]]
@@ -232,16 +245,16 @@ class QualityMetrics:
         Returns:
             Freshness score 0-100
         """
+        # Use early returns to reduce nesting
         if days_old <= 7:
             return 100.0
-        elif days_old <= 30:
+        if days_old <= 30:
             return 80.0
-        elif days_old <= 90:
+        if days_old <= 90:
             return 60.0
-        elif days_old <= 180:
+        if days_old <= 180:
             return 40.0
-        else:
-            return 20.0
+        return 20.0
 
     def calculate_file_freshness(self, metadata: dict[str, object]) -> float:
         """Calculate freshness for a single file.
@@ -364,16 +377,16 @@ class QualityMetrics:
         Returns:
             Letter grade A/B/C/D/F
         """
+        # Use early returns to reduce nesting
         if score >= 90:
             return "A"
-        elif score >= 80:
+        if score >= 80:
             return "B"
-        elif score >= 70:
+        if score >= 70:
             return "C"
-        elif score >= 60:
+        if score >= 60:
             return "D"
-        else:
-            return "F"
+        return "F"
 
     def get_status(self, score: float) -> str:
         """

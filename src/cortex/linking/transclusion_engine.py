@@ -422,16 +422,21 @@ class TransclusionEngine:
         self, lines: list[str], section_start: int, section_level: int | None
     ) -> int:
         """Find end of section (next heading of same or higher level)."""
-        section_end = len(lines)
-        if section_level is not None:
-            for i in range(section_start + 1, len(lines)):
-                heading_match = re.match(r"^(#+)\s+", lines[i].strip())
-                if heading_match:
-                    level = len(heading_match.group(1))
-                    if level <= section_level:
-                        section_end = i
-                        break
-        return section_end
+        # Early return if no section level specified
+        if section_level is None:
+            return len(lines)
+
+        # Find next heading at same or higher level
+        for i in range(section_start + 1, len(lines)):
+            heading_match = re.match(r"^(#+)\s+", lines[i].strip())
+            if not heading_match:
+                continue
+
+            level = len(heading_match.group(1))
+            if level <= section_level:
+                return i
+
+        return len(lines)
 
     def detect_circular_dependency(self, target: str) -> bool:
         """

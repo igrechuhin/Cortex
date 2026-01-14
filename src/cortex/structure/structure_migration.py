@@ -7,6 +7,7 @@ Handles detection and migration from legacy structure types to the standardized
 """
 
 import shutil
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from typing import cast
@@ -189,14 +190,17 @@ class StructureMigrationManager:
             legacy_type: Type of legacy structure
             report: Migration report to update
         """
-        if legacy_type == "tradewing-style":
-            self._migrate_tradewing_style(report)
-        elif legacy_type == "doc-mcp-style":
-            self._migrate_doc_mcp_style(report)
-        elif legacy_type == "scattered-files":
-            self._migrate_scattered_files(report)
-        elif legacy_type == "cursor-default":
-            self._migrate_cursor_default(report)
+        # Dispatch table for migration strategies
+        migration_handlers: dict[str, Callable[[dict[str, object]], None]] = {
+            "tradewing-style": self._migrate_tradewing_style,
+            "doc-mcp-style": self._migrate_doc_mcp_style,
+            "scattered-files": self._migrate_scattered_files,
+            "cursor-default": self._migrate_cursor_default,
+        }
+
+        handler = migration_handlers.get(legacy_type)
+        if handler:
+            handler(report)
 
     def _archive_legacy_files_if_requested(
         self, report: dict[str, object], archive: bool

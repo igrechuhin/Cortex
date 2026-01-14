@@ -140,27 +140,28 @@ class OptimizationConfig:
             This method uses synchronous I/O during initialization for simplicity.
             For performance-critical paths, consider using async alternatives.
         """
-        if self.config_path.exists():
-            try:
-                with open(self.config_path) as f:
-                    user_config_raw = cast(object, json.load(f))
-                    if not isinstance(user_config_raw, dict):
-                        return cast(dict[str, object], DEFAULT_OPTIMIZATION_CONFIG)
-                    user_config: dict[str, object] = cast(
-                        dict[str, object], user_config_raw
-                    )
+        # Early return if config file doesn't exist
+        if not self.config_path.exists():
+            return cast(dict[str, object], deepcopy(DEFAULT_OPTIMIZATION_CONFIG))
 
-                # Merge with defaults
-                return self.merge_configs(
-                    cast(dict[str, object], DEFAULT_OPTIMIZATION_CONFIG),
-                    user_config,
-                )
+        try:
+            with open(self.config_path) as f:
+                user_config_raw = cast(object, json.load(f))
+        except (OSError, json.JSONDecodeError) as e:
+            print(f"Warning: Failed to load optimization config: {e}")
+            return cast(dict[str, object], deepcopy(DEFAULT_OPTIMIZATION_CONFIG))
 
-            except (OSError, json.JSONDecodeError) as e:
-                print(f"Warning: Failed to load optimization config: {e}")
-                return cast(dict[str, object], deepcopy(DEFAULT_OPTIMIZATION_CONFIG))
+        # Validate config type
+        if not isinstance(user_config_raw, dict):
+            return cast(dict[str, object], DEFAULT_OPTIMIZATION_CONFIG)
 
-        return cast(dict[str, object], deepcopy(DEFAULT_OPTIMIZATION_CONFIG))
+        user_config: dict[str, object] = cast(dict[str, object], user_config_raw)
+
+        # Merge with defaults
+        return self.merge_configs(
+            cast(dict[str, object], DEFAULT_OPTIMIZATION_CONFIG),
+            user_config,
+        )
 
     def merge_configs(
         self, default: dict[str, object], user: dict[str, object]

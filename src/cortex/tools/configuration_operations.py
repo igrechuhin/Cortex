@@ -8,6 +8,7 @@ Total: 1 tool
 """
 
 import json
+from collections.abc import Awaitable, Callable
 from typing import Literal, Protocol
 
 from cortex.managers.initialization import get_managers, get_project_root
@@ -37,6 +38,46 @@ class ConfigProtocol(Protocol):
             None for ValidationConfig/AdaptationConfig, bool for OptimizationConfig
         """
         ...
+
+
+def _get_component_handler(
+    component: str,
+) -> Callable[
+    [
+        dict[str, object],
+        str,
+        dict[str, object] | None,
+        str | None,
+        object | None,
+    ],
+    Awaitable[str],
+] | None:
+    """Get component handler function.
+
+    Args:
+        component: Component name (validation, optimization, learning)
+
+    Returns:
+        Handler function or None if component not found
+    """
+    component_handlers: dict[
+        str,
+        Callable[
+            [
+                dict[str, object],
+                str,
+                dict[str, object] | None,
+                str | None,
+                object | None,
+            ],
+            Awaitable[str],
+        ],
+    ] = {
+        "validation": configure_validation,
+        "optimization": configure_optimization,
+        "learning": configure_learning,
+    }
+    return component_handlers.get(component)
 
 
 @mcp.tool()
@@ -272,18 +313,14 @@ async def configure(
     try:
         root = get_project_root(project_root)
         mgrs = await get_managers(root)
+        handler = _get_component_handler(component)
+        if handler:
+            return await handler(mgrs, action, settings, key, value)
 
-        if component == "validation":
-            return await configure_validation(mgrs, action, settings, key, value)
-        elif component == "optimization":
-            return await configure_optimization(mgrs, action, settings, key, value)
-        elif component == "learning":
-            return await configure_learning(mgrs, action, settings, key, value)
-        else:
-            return create_error_response(
-                f"Unknown component: {component}",
-                valid_components=["validation", "optimization", "learning"],
-            )
+        return create_error_response(
+            f"Unknown component: {component}",
+            valid_components=["validation", "optimization", "learning"],
+        )
 
     except Exception as e:
         return json.dumps(

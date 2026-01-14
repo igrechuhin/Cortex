@@ -24,16 +24,16 @@ def _determine_health_grade_and_status(
     Returns:
         Tuple of (grade, status)
     """
+    # Use early returns to reduce nesting
     if score >= 90:
         return "A", "healthy"
-    elif score >= 75:
+    if score >= 75:
         return "B", "good"
-    elif score >= 60:
+    if score >= 60:
         return "C", "fair"
-    elif score >= 50:
+    if score >= 50:
         return "D", "warning"
-    else:
-        return "F", "critical"
+    return "F", "critical"
 
 
 class StructureHealthChecker:

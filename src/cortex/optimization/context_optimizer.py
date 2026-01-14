@@ -6,6 +6,8 @@ that fit within token budgets while maximizing information value.
 Delegates strategy implementations to OptimizationStrategies.
 """
 
+from collections.abc import Awaitable, Callable
+
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.token_counter import TokenCounter
 
@@ -192,6 +194,53 @@ def _extract_relevance_scores(
     return relevance_scores
 
 
+def _create_strategy_handlers(
+    strategies: OptimizationStrategies,
+    task_description: str,
+    relevance_scores: dict[str, float],
+    files_content: dict[str, str],
+    token_budget: int,
+) -> dict[str, Callable[[], Awaitable[OptimizationResult]]]:
+    """Create strategy handler functions.
+
+    Args:
+        strategies: OptimizationStrategies instance
+        task_description: Description of task
+        relevance_scores: Dictionary mapping file names to relevance scores
+        files_content: Dictionary mapping file names to content
+        token_budget: Maximum tokens allowed
+
+    Returns:
+        Dictionary mapping strategy names to handler functions
+    """
+    async def _priority_handler() -> OptimizationResult:
+        return await strategies.optimize_by_priority(
+            relevance_scores, files_content, token_budget
+        )
+
+    async def _dependency_handler() -> OptimizationResult:
+        return await strategies.optimize_by_dependencies(
+            relevance_scores, files_content, token_budget
+        )
+
+    async def _section_handler() -> OptimizationResult:
+        return await strategies.optimize_with_sections(
+            task_description, relevance_scores, files_content, token_budget
+        )
+
+    async def _hybrid_handler() -> OptimizationResult:
+        return await strategies.optimize_hybrid(
+            task_description, relevance_scores, files_content, token_budget
+        )
+
+    return {
+        "priority": _priority_handler,
+        "dependency_aware": _dependency_handler,
+        "section_level": _section_handler,
+        "hybrid": _hybrid_handler,
+    }
+
+
 async def _apply_optimization_strategy(
     strategies: OptimizationStrategies,
     strategy: str,
@@ -213,27 +262,11 @@ async def _apply_optimization_strategy(
     Returns:
         OptimizationResult with selected content
     """
-    if strategy == "priority":
-        return await strategies.optimize_by_priority(
-            relevance_scores, files_content, token_budget
-        )
-    elif strategy == "dependency_aware":
-        return await strategies.optimize_by_dependencies(
-            relevance_scores, files_content, token_budget
-        )
-    elif strategy == "section_level":
-        return await strategies.optimize_with_sections(
-            task_description, relevance_scores, files_content, token_budget
-        )
-    elif strategy == "hybrid":
-        return await strategies.optimize_hybrid(
-            task_description, relevance_scores, files_content, token_budget
-        )
-    else:
-        # Default to dependency_aware
-        return await strategies.optimize_by_dependencies(
-            relevance_scores, files_content, token_budget
-        )
+    handlers = _create_strategy_handlers(
+        strategies, task_description, relevance_scores, files_content, token_budget
+    )
+    handler = handlers.get(strategy, handlers["dependency_aware"])
+    return await handler()
 
 
 def _update_result_metadata(

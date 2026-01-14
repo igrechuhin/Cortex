@@ -153,16 +153,18 @@ class PreferenceManager:
         total_val = pref.get("total", 0)
         total = int(total_val) if isinstance(total_val, (int, float)) else 0
 
+        # Early return for insufficient data
         if total < 3:
             return "Not enough data yet"
-        elif score > 0.7:
+
+        # Use early returns to reduce nesting
+        if score > 0.7:
             return "Strongly preferred - show more"
-        elif score > 0.5:
+        if score > 0.5:
             return "Somewhat preferred"
-        elif score > 0.3:
+        if score > 0.3:
             return "Neutral - user is selective"
-        else:
-            return "Not preferred - reduce frequency"
+        return "Not preferred - reduce frequency"
 
     def get_learning_recommendations(self) -> list[str]:
         """Get recommendations for improving the system."""

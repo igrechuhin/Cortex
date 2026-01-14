@@ -83,32 +83,35 @@ class ValidationConfig:
             For performance-critical paths, consider using async alternatives.
         """
 
-        if self.config_path.exists():
-            try:
-                with open(self.config_path) as f:
-                    user_config_raw = cast(object, json.load(f))
-                    if not isinstance(user_config_raw, dict):
-                        return copy.deepcopy(DEFAULT_CONFIG)
-                    user_config: dict[str, object] = cast(
-                        dict[str, object], user_config_raw
-                    )
-                    # Merge with defaults (user config takes precedence)
-                    return self.merge_configs(
-                        copy.deepcopy(DEFAULT_CONFIG),
-                        user_config,
-                    )
-            except Exception as e:
-                error_detail = str(e)
-                error_type = type(e).__name__
-                print(
-                    f"Failed to load validation config from {self.config_path}: {error_type}: {error_detail}. "
-                    + "Cause: Invalid JSON format or file read error. "
-                    + "Try: Fix JSON syntax errors, check file permissions, "
-                    + "or delete config file to use default values."
-                )
-                return copy.deepcopy(DEFAULT_CONFIG)
-        else:
+        # Early return if config file doesn't exist
+        if not self.config_path.exists():
             return copy.deepcopy(DEFAULT_CONFIG)
+
+        try:
+            with open(self.config_path) as f:
+                user_config_raw = cast(object, json.load(f))
+        except Exception as e:
+            error_detail = str(e)
+            error_type = type(e).__name__
+            print(
+                f"Failed to load validation config from {self.config_path}: {error_type}: {error_detail}. "
+                + "Cause: Invalid JSON format or file read error. "
+                + "Try: Fix JSON syntax errors, check file permissions, "
+                + "or delete config file to use default values."
+            )
+            return copy.deepcopy(DEFAULT_CONFIG)
+
+        # Validate config type
+        if not isinstance(user_config_raw, dict):
+            return copy.deepcopy(DEFAULT_CONFIG)
+
+        user_config: dict[str, object] = cast(dict[str, object], user_config_raw)
+
+        # Merge with defaults (user config takes precedence)
+        return self.merge_configs(
+            copy.deepcopy(DEFAULT_CONFIG),
+            user_config,
+        )
 
     def merge_configs(
         self, default: dict[str, object], user: dict[str, object]

@@ -168,17 +168,22 @@ class SchemaValidator:
         try:
             with open(config_path) as f:
                 config_raw = cast(object, json.load(f))
-                if isinstance(config_raw, dict):
-                    config: dict[str, object] = cast(dict[str, object], config_raw)
-                    custom_schemas_raw: object = config.get("custom_schemas", {})
-                    if isinstance(custom_schemas_raw, dict):
-                        return cast(dict[str, object], custom_schemas_raw)
-                return {}
         except Exception as e:
             from cortex.core.logging_config import logger
 
             logger.warning(f"Failed to load custom schemas from {config_path}: {e}")
             return {}
+
+        # Validate config type
+        if not isinstance(config_raw, dict):
+            return {}
+
+        config: dict[str, object] = cast(dict[str, object], config_raw)
+        custom_schemas_raw: object = config.get("custom_schemas", {})
+        if not isinstance(custom_schemas_raw, dict):
+            return {}
+
+        return cast(dict[str, object], custom_schemas_raw)
 
     def extract_sections(self, content: str) -> list[str]:
         """

@@ -8,6 +8,7 @@ Total: 1 tool
 """
 
 import json
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Literal, cast
 
@@ -633,6 +634,45 @@ async def validate(
         return create_validation_error_response(e)
 
 
+type ValidationManagers = dict[
+    str,
+    FileSystemManager
+    | MetadataIndex
+    | SchemaValidator
+    | DuplicationDetector
+    | QualityMetrics
+    | ValidationConfig,
+]
+
+
+def _create_validation_handlers(
+    typed_managers: ValidationManagers,
+    root: Path,
+    file_name: str | None,
+    similarity_threshold: float | None,
+    suggest_fixes: bool,
+    check_commit_ci_alignment: bool,
+    check_code_quality_consistency: bool,
+    check_documentation_consistency: bool,
+    check_config_consistency: bool,
+) -> dict[str, Callable[[], Awaitable[str]]]:
+    """Create validation handler functions."""
+    return {
+        "schema": lambda: handle_schema_validation(typed_managers, root, file_name),
+        "duplications": lambda: handle_duplications_validation(
+            typed_managers, root, similarity_threshold, suggest_fixes
+        ),
+        "quality": lambda: handle_quality_validation(typed_managers, root, file_name),
+        "infrastructure": lambda: _handle_infrastructure_dispatch(
+            root,
+            check_commit_ci_alignment,
+            check_code_quality_consistency,
+            check_documentation_consistency,
+            check_config_consistency,
+        ),
+    }
+
+
 async def _dispatch_validation(
     check_type: Literal["schema", "duplications", "quality", "infrastructure"],
     validation_managers: dict[str, object],
@@ -662,40 +702,28 @@ async def _dispatch_validation(
     Returns:
         JSON string with validation results
     """
-    # Type narrowing for validation managers
     typed_managers = _get_typed_validation_managers(validation_managers)
+    handlers = _create_validation_handlers(
+        typed_managers,
+        root,
+        file_name,
+        similarity_threshold,
+        suggest_fixes,
+        check_commit_ci_alignment,
+        check_code_quality_consistency,
+        check_documentation_consistency,
+        check_config_consistency,
+    )
+    handler = handlers.get(check_type)
+    if handler:
+        return await handler()
 
-    if check_type == "schema":
-        return await handle_schema_validation(typed_managers, root, file_name)
-    elif check_type == "duplications":
-        return await handle_duplications_validation(
-            typed_managers, root, similarity_threshold, suggest_fixes
-        )
-    elif check_type == "quality":
-        return await handle_quality_validation(typed_managers, root, file_name)
-    elif check_type == "infrastructure":
-        return await _handle_infrastructure_dispatch(
-            root,
-            check_commit_ci_alignment,
-            check_code_quality_consistency,
-            check_documentation_consistency,
-            check_config_consistency,
-        )
-    else:
-        return create_invalid_check_type_error(check_type)
+    return create_invalid_check_type_error(check_type)
 
 
 def _get_typed_validation_managers(
     validation_managers: dict[str, object],
-) -> dict[
-    str,
-    FileSystemManager
-    | MetadataIndex
-    | SchemaValidator
-    | DuplicationDetector
-    | QualityMetrics
-    | ValidationConfig,
-]:
+) -> ValidationManagers:
     """Get typed validation managers from dict[str, object].
 
     Args:

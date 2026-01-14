@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-12T10:42:19.665239",
-  "last_updated": "2026-01-12T11:17:49.069300",
+  "last_updated": "2026-01-13T19:54:34.224728",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
@@ -104,6 +104,77 @@
         }
       ],
       "last_read": "2026-01-12T11:17:49.068115"
+    },
+    "tool-verification-summary-2026-01-13.md": {
+      "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/tool-verification-summary-2026-01-13.md",
+      "exists": true,
+      "read_count": 0,
+      "write_count": 1,
+      "current_version": 1,
+      "version_history": [
+        {
+          "version": 1,
+          "timestamp": "2026-01-13T19:54:34.222092",
+          "content_hash": "sha256:a317ed43e2955f6f211977c0f87ab86954ef16ac3003221a659d1e1137946f5d",
+          "size_bytes": 5149,
+          "token_count": 1282,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/tool-verification-summary-2026-01-13_v1.md",
+          "change_description": "Updated via MCP"
+        }
+      ],
+      "size_bytes": 5149,
+      "token_count": 1282,
+      "token_model": "cl100k_base",
+      "last_modified": "2026-01-13T19:54:34.223097",
+      "content_hash": "sha256:a317ed43e2955f6f211977c0f87ab86954ef16ac3003221a659d1e1137946f5d",
+      "sections": [
+        {
+          "heading": "## Tools Verified Today",
+          "level": 2
+        },
+        {
+          "heading": "### Phase 2k Management (4/4ls - 100 complete)",
+          "level": 2
+        },
+        {
+          "heading": "### Phase 3: Validation & Quality (2/2 tools - 100% complete)",
+          "level": 2
+        },
+        {
+          "heading": "### Phase4n Optimization (Partial verification)",
+          "level": 2
+        },
+        {
+          "heading": "### Phase 51 Pattern Analysis (1/1 tool - 10ete)",
+          "level": 2
+        },
+        {
+          "heading": "### Phase52: Refactoring Suggestions (1/1 tool - 100% complete)",
+          "level": 2
+        },
+        {
+          "heading": "### Phase 8: Project Structure Management (2/2 tools -100% complete)",
+          "level": 2
+        },
+        {
+          "heading": "## Summary Statistics",
+          "level": 2
+        },
+        {
+          "heading": "## Key Findings",
+          "level": 2
+        },
+        {
+          "heading": "## Next Steps",
+          "level": 2
+        },
+        {
+          "heading": "## Notes",
+          "level": 2
+        }
+      ],
+      "last_read": "2026-01-13T19:54:34.223097"
     }
   },
   "dependency_graph": {
@@ -120,9 +191,9 @@
     "sessions_count": 0
   },
   "totals": {
-    "total_files": 2,
-    "total_size_bytes": 602,
-    "total_tokens": 149,
-    "last_full_scan": "2026-01-12T11:17:49.068129"
+    "total_files": 3,
+    "total_size_bytes": 5751,
+    "total_tokens": 1431,
+    "last_full_scan": "2026-01-13T19:54:34.223112"
   }
 }

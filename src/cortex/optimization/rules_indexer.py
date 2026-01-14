@@ -15,6 +15,7 @@ Performance optimizations (Phase 10.3.1 Day 5):
 import asyncio
 import hashlib
 import re
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import cast
@@ -173,15 +174,18 @@ class RulesIndexer:
             unchanged_files: List to append unchanged files
             errors: List to append error messages
         """
-        status = result["status"]
-        if status == "indexed":
-            indexed_files.append(cast(str, result["file_key"]))
-        elif status == "updated":
-            updated_files.append(cast(str, result["file_key"]))
-        elif status == "unchanged":
-            unchanged_files.append(cast(str, result["file_key"]))
-        elif status == "error":
-            errors.append(cast(str, result["error"]))
+        status = cast(str, result["status"])
+        # Dispatch table for status categorization
+        status_handlers: dict[str, Callable[[], None]] = {
+            "indexed": lambda: indexed_files.append(cast(str, result["file_key"])),
+            "updated": lambda: updated_files.append(cast(str, result["file_key"])),
+            "unchanged": lambda: unchanged_files.append(cast(str, result["file_key"])),
+            "error": lambda: errors.append(cast(str, result["error"])),
+        }
+
+        handler = status_handlers.get(status)
+        if handler:
+            handler()
 
     async def _index_single_rule_file(self, file_path: Path) -> dict[str, object]:
         """Index a single rule file.
