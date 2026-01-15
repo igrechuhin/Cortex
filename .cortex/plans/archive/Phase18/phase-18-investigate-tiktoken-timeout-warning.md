@@ -15,17 +15,20 @@ Investigate and resolve the Tiktoken encoding load timeout warning that occurs w
 ## Problem
 
 **Observed Warning:**
+
 ```
 Tiktoken encoding 'cl100k_base' load timed out after 5.0s. Falling back to word-based estimation.
 ```
 
 **Impact:**
+
 - Token counting accuracy is reduced (word-based estimation vs. exact tiktoken encoding)
 - Context optimization may be less precise
 - Performance metrics and token budgets may be inaccurate
 - User experience may be affected if token counts are significantly off
 
 **Current Implementation:**
+
 - `TokenCounter._load_tiktoken_with_timeout()` uses `ThreadPoolExecutor` with 5-second timeout
 - Falls back gracefully to word-based estimation (`~1 token per 4 characters`)
 - Lazy loading on first use (via `@property encoding`)
@@ -35,6 +38,7 @@ Tiktoken encoding 'cl100k_base' load timed out after 5.0s. Falling back to word-
 **Location:** `src/cortex/core/token_counter.py`
 
 **Key Code:**
+
 ```python
 def _load_tiktoken_with_timeout(
     self, timeout_seconds: float = 5.0
@@ -54,6 +58,7 @@ def _load_tiktoken_with_timeout(
 ```
 
 **Why This Matters:**
+
 - Token counting is critical for context optimization and budget management
 - Accurate token counts ensure proper context window management
 - Fallback estimation is less accurate (±20% variance possible)
@@ -186,6 +191,7 @@ TokenCounter.encoding (property)
 ### Potential Solutions
 
 **Solution 1: Increase Timeout with Retry**
+
 ```python
 def _load_tiktoken_with_timeout(
     self, timeout_seconds: float = 15.0, max_retries: int = 2
@@ -202,6 +208,7 @@ def _load_tiktoken_with_timeout(
 ```
 
 **Solution 2: Pre-load at Startup**
+
 ```python
 # In container_factory.py or manager initialization
 token_counter = TokenCounter()
@@ -209,6 +216,7 @@ await token_counter.ensure_encoding_loaded()  # Pre-load encoding
 ```
 
 **Solution 3: Async Loading**
+
 ```python
 async def _load_tiktoken_async(self) -> object | None:
     """Load tiktoken encoding asynchronously."""
@@ -284,7 +292,7 @@ async def _load_tiktoken_async(self) -> object | None:
 - `src/cortex/core/token_counter.py` - Current implementation
 - `docs/api/managers.md` - TokenCounter documentation
 - `tests/unit/test_token_counter.py` - Existing tests
-- Tiktoken documentation: https://github.com/openai/tiktoken
+- Tiktoken documentation: <https://github.com/openai/tiktoken>
 
 ## Implementation Summary
 

@@ -51,6 +51,7 @@ Added 7 new protocol definitions (lines 660-929, +269 lines):
    - `get_relevant_rules()` - Retrieve relevant rules
 
 **Impact:**
+
 - Protocol coverage: 17 → 24 protocols (+41%)
 - Complete protocol coverage for ManagerContainer
 - All manager types now have protocol definitions
@@ -69,6 +70,7 @@ Added 7 new protocol definitions (lines 660-929, +269 lines):
    - Runtime only imports protocols and core layer dependencies
 
 2. **Runtime Imports (lines 13-38):**
+
    ```python
    # Only protocols and core layer
    from cortex.core.file_watcher import FileWatcherManager
@@ -79,6 +81,7 @@ Added 7 new protocol definitions (lines 660-929, +269 lines):
    ```
 
 3. **TYPE_CHECKING Imports (lines 41-67):**
+
    ```python
    if TYPE_CHECKING:
        # All concrete types for IDE support
@@ -96,12 +99,14 @@ Added 7 new protocol definitions (lines 660-929, +269 lines):
      - `"AdaptationConfig"`
 
 5. **Runtime Factory Import (line 177):**
+
    ```python
    # Import at runtime to avoid circular dependency
    from cortex.managers.container_factory import create_all_managers
    ```
 
 **Impact:**
+
 - ✅ Zero runtime imports from higher layers to core
 - ✅ Full IDE type support via TYPE_CHECKING
 - ✅ Clear separation: runtime vs type-checking dependencies
@@ -111,8 +116,9 @@ Added 7 new protocol definitions (lines 660-929, +269 lines):
 ### ✅ Step 3: Moved container_factory.py to Managers Layer (100% Complete)
 
 **Files Modified:**
+
 1. Moved: `src/cortex/core/container_factory.py` → `src/cortex/managers/container_factory.py`
-2. Updated: [src/cortex/managers/__init__.py](../src/cortex/managers/__init__.py)
+2. Updated: [src/cortex/managers/**init**.py](../src/cortex/managers/__init__.py)
 3. Updated: [src/cortex/core/container.py](../src/cortex/core/container.py) (imports)
 
 **Changes:**
@@ -121,7 +127,8 @@ Added 7 new protocol definitions (lines 660-929, +269 lines):
    - Relocated 537-line file from core to managers layer
    - Rationale: Factory creates instances from ALL layers, belongs in L8 (managers)
 
-2. **Updated managers/__init__.py:**
+2. **Updated managers/**init**.py:**
+
    ```python
    from .container_factory import (
        AnalysisManagers,
@@ -140,6 +147,7 @@ Added 7 new protocol definitions (lines 660-929, +269 lines):
    - Both now reference `cortex.managers.container_factory`
 
 **Impact:**
+
 - ✅ Core layer no longer has forward dependencies
 - ✅ Factory properly located in coordinating layer
 - ✅ Clean layer boundary established
@@ -151,12 +159,14 @@ Added 7 new protocol definitions (lines 660-929, +269 lines):
 ### Before Implementation
 
 **Problems:**
+
 - Core layer (L0) imported from 5 higher layers
 - 23 circular dependency cycles detected
 - 7 layer boundary violations
 - Forward dependencies: core → analysis, linking, optimization, refactoring, managers
 
 **Dependency Analysis Results:**
+
 ```
 === Circular Dependencies ===
 Found 21 circular dependency cycle(s):
@@ -178,12 +188,14 @@ Found 7 layer violation(s):
 ### After Implementation
 
 **Improvements:**
+
 - ✅ Core layer has **ZERO runtime imports** from higher layers
 - ✅ All concrete type imports isolated to TYPE_CHECKING blocks
 - ✅ Clear dependency flow: `managers → high layers → core`
 - ✅ Protocol-based dependency inversion
 
 **Expected Results** (once dependency analyzer updated):
+
 - Circular dependencies: 23 → 0-2 (-91% to -100%)
 - Layer violations: 7 → 1 (only tools→server remains)
 - Architecture score: 9.0 → 9.5/10 (+0.5)
@@ -199,12 +211,14 @@ Found 7 layer violation(s):
 **Choice:** Use Python's `TYPE_CHECKING` constant to separate type hints from runtime imports
 
 **Rationale:**
+
 - Standard Python pattern (PEP 563, PEP 649)
 - IDE gets full type information
 - No runtime circular import errors
 - Zero performance overhead
 
 **Implementation:**
+
 ```python
 from typing import TYPE_CHECKING
 
@@ -221,6 +235,7 @@ else:
 **Choice:** Use string forward references for types without protocols
 
 **Example:**
+
 ```python
 optimization_config: "OptimizationConfig"
 insight_engine: "InsightEngine"
@@ -229,6 +244,7 @@ adaptation_config: "AdaptationConfig"
 ```
 
 **Rationale:**
+
 - Maintains type safety
 - Avoids runtime imports
 - Clear that these need protocol definitions in future
@@ -238,6 +254,7 @@ adaptation_config: "AdaptationConfig"
 **Choice:** Move `create_all_managers` import inside `create()` method
 
 **Before:**
+
 ```python
 from cortex.core.container_factory import create_all_managers
 
@@ -248,6 +265,7 @@ class ManagerContainer:
 ```
 
 **After:**
+
 ```python
 class ManagerContainer:
     @classmethod
@@ -257,6 +275,7 @@ class ManagerContainer:
 ```
 
 **Rationale:**
+
 - Delays import until actually needed
 - Prevents loading factory at module import time
 - Breaks potential circular dependency chain
@@ -266,6 +285,7 @@ class ManagerContainer:
 **Choice:** Update all type annotations to use protocols where available
 
 **Example:**
+
 ```python
 # Before
 progressive_loader: ProgressiveLoader
@@ -277,6 +297,7 @@ rules_manager: RulesManagerProtocol
 ```
 
 **Rationale:**
+
 - True dependency inversion
 - Loose coupling between modules
 - Better testability (easy to mock)
@@ -287,6 +308,7 @@ rules_manager: RulesManagerProtocol
 ## Verification
 
 ### Syntax Validation
+
 ```bash
 ✅ python3 -m py_compile src/cortex/core/protocols.py
 ✅ python3 -m py_compile src/cortex/core/container.py
@@ -297,6 +319,7 @@ rules_manager: RulesManagerProtocol
 All syntax checks passed successfully.
 
 ### Import Validation
+
 ```python
 # Test runtime imports (no circular dependency errors)
 import sys
@@ -313,12 +336,14 @@ from cortex.managers import container_factory
 ### Step 4: Update Tests (1-2 hours) - NOT STARTED
 
 **Tasks:**
+
 1. Update test imports to reflect new structure
 2. Verify container.py tests pass
 3. Verify container_factory.py tests pass (now in managers/)
 4. Add tests for protocol compliance
 
 **Files to Update:**
+
 - `tests/unit/test_container.py`
 - `tests/unit/test_container_factory.py` (if exists)
 - `tests/integration/test_managers_initialization.py`
@@ -328,11 +353,13 @@ from cortex.managers import container_factory
 **Task:** Modify `scripts/analyze_dependencies.py` to ignore TYPE_CHECKING imports
 
 **Current Issue:**
+
 - Analyzer treats all imports equally
 - Reports TYPE_CHECKING imports as runtime dependencies
 - Shows false positive circular dependencies
 
 **Solution:**
+
 ```python
 def get_module_imports(file_path: Path) -> Set[str]:
     """Extract imports, excluding TYPE_CHECKING blocks."""
@@ -355,12 +382,14 @@ def get_module_imports(file_path: Path) -> Set[str]:
 ### Step 6: Run Full Verification (30 min) - NOT STARTED
 
 **Tasks:**
+
 1. Run updated dependency analysis
 2. Run full test suite
 3. Verify architecture score improvement
 4. Document final results
 
 **Expected Results:**
+
 - Circular dependencies: 23 → 0-2
 - Layer violations: 7 → 1 (tools→server)
 - All tests passing (1,537+)
@@ -384,21 +413,25 @@ def get_module_imports(file_path: Path) -> Set[str]:
 ## Benefits Achieved
 
 ### 1. Architectural Clarity
+
 - ✅ Core layer is now truly foundational
 - ✅ Clear dependency flow: managers → high layers → core
 - ✅ Layer boundaries enforced at runtime
 
 ### 2. Development Experience
+
 - ✅ Full IDE type support maintained
 - ✅ No loss of autocomplete or type checking
 - ✅ Clear separation of concerns
 
 ### 3. Maintainability
+
 - ✅ Protocol-based abstractions
 - ✅ Easier to test (mock protocols)
 - ✅ Reduced coupling between modules
 
 ### 4. Performance
+
 - ✅ No runtime overhead (TYPE_CHECKING = False at runtime)
 - ✅ Factory loaded only when needed
 - ✅ Lazy import of concrete types
@@ -511,17 +544,20 @@ def get_module_imports(file_path: Path) -> Set[str]:
 ## Final Verification Results
 
 ### Step 4: Update Tests ✅
+
 - **Status:** COMPLETE
 - **Result:** All 1,747 tests passing (100% pass rate)
 - **Coverage:** 84% overall, no breaking changes
 - **Impact:** Container factory move fully backward compatible
 
 ### Step 5: Update Dependency Analyzer ✅
+
 - **Status:** COMPLETE
 - **Modifications:** Added TYPE_CHECKING block detection and `is_type_checking_block()` helper
 - **Result:** Analyzer now correctly distinguishes type-checking imports from runtime imports
 
 ### Step 6: Full Verification ✅
+
 - **Status:** COMPLETE
 - **Final Metrics:**
   - Circular dependencies: 23 → 14 (-39%)
@@ -535,12 +571,14 @@ The analyzer still shows `core → managers` dependency due to deferred imports 
 ## Architecture Impact Summary
 
 ### Before Implementation
+
 - 23 circular dependency cycles
 - 7 layer boundary violations
 - Core layer had module-level imports from: analysis, linking, managers, optimization, refactoring
 - Architecture score: 9.0/10
 
 ### After Implementation
+
 - 14 circular dependency cycles (-39%)
 - 2 layer boundary violations (-71%)
   - `core → managers` (deferred/lazy import - acceptable)
@@ -550,6 +588,7 @@ The analyzer still shows `core → managers` dependency due to deferred imports 
 - Architecture score: 9.5/10 (+0.5)
 
 ### Key Achievement
+
 **100% elimination of module-level forward dependencies from core layer** - The core layer no longer has compile-time dependencies on higher layers. All concrete type imports are confined to TYPE_CHECKING blocks, breaking circular import chains while maintaining full IDE type support.
 
 ## Conclusion
@@ -561,6 +600,7 @@ Successfully completed all six steps of Phase 9.2.3, significantly reducing circ
 **Next Phase:** Phase 9.3 (Performance Optimization) or Phase 9.2.4 (Optimize remaining circular dependencies)
 
 **Impact:**
+
 - Architecture improved from 9.0/10 to 9.5/10 (+0.5)
 - Circular dependencies reduced by 39%
 - Layer violations reduced by 71%

@@ -25,6 +25,7 @@ I need you to:
 ## What Happens
 
 The assistant will:
+
 1. Create new `memory-bank/` directory
 2. Copy all files with content preservation
 3. Migrate version history and snapshots
@@ -69,6 +70,7 @@ The assistant will:
 ## Post-Migration
 
 After successful migration:
+
 1. Verify all files are in `memory-bank/`
 2. Check that content is intact
 3. Test basic operations (read, write, validate)
@@ -78,6 +80,7 @@ After successful migration:
 ## Rollback
 
 If you need to rollback:
+
 - The old directory `.cursor/memory-bank/` is preserved
 - Use `rollback_file_version` tool to restore specific files
 - Contact support if automatic rollback failed

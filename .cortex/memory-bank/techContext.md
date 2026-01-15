@@ -107,6 +107,7 @@ ruff check src/ tests/
 ```
 
 Scripts auto-detect:
+
 - Project language (Python, TypeScript, Rust, etc.)
 - Appropriate tools (ruff/black for Python, eslint/prettier for JS/TS, etc.)
 - Source/test directories

@@ -32,6 +32,7 @@ Protocol for safe file I/O operations with conflict detection, content hashing, 
 **Module:** `cortex.core.protocols.file_system`
 
 **Used By:**
+
 - FileSystemManager - Concrete implementation
 - DependencyGraph - Reading files for dependency analysis
 - TransclusionEngine - Reading and resolving transclusions
@@ -48,9 +49,11 @@ def validate_path(self, file_path: Path) -> bool
 Validate that a path is safe and within project bounds.
 
 **Parameters:**
+
 - `file_path` (Path) - Path to validate
 
 **Returns:**
+
 - `bool` - True if path is valid and safe
 
 **Purpose:** Prevents directory traversal attacks by ensuring paths stay within project root.
@@ -66,12 +69,15 @@ async def read_file(self, file_path: Path) -> tuple[str, str]
 Read file and return content with SHA-256 hash.
 
 **Parameters:**
+
 - `file_path` (Path) - Path to file to read
 
 **Returns:**
+
 - `tuple[str, str]` - (content, content_hash)
 
 **Raises:**
+
 - `FileNotFoundError` - If file doesn't exist
 - `MemoryBankError` - For other I/O errors
 
@@ -99,15 +105,18 @@ async def write_file(
 Write content to file with optional conflict detection.
 
 **Parameters:**
+
 - `file_path` (Path) - Path to file
 - `content` (str) - Content to write
 - `expected_hash` (str | None) - Expected current hash for conflict detection (optional)
 - `create_version` (bool) - Whether to create version snapshot (default: True)
 
 **Returns:**
+
 - `str` - New content hash
 
 **Raises:**
+
 - `ConflictError` - If expected_hash provided and doesn't match current content
 - `MemoryBankError` - For other write errors
 
@@ -134,9 +143,11 @@ def compute_hash(self, content: str) -> str
 Compute SHA-256 hash of content.
 
 **Parameters:**
+
 - `content` (str) - Content to hash
 
 **Returns:**
+
 - `str` - Hex digest of SHA-256 hash
 
 **Usage Example:**
@@ -158,9 +169,11 @@ def parse_sections(self, content: str) -> list[dict[str, str | int]]
 Parse markdown content into sections by headers.
 
 **Parameters:**
+
 - `content` (str) - Markdown content
 
 **Returns:**
+
 - `list[dict[str, str | int]]` - List of section dictionaries with:
   - `title` (str) - Section header text
   - `level` (int) - Header level (1-6)
@@ -193,9 +206,11 @@ async def file_exists(self, file_path: Path) -> bool
 Check if file exists.
 
 **Parameters:**
+
 - `file_path` (Path) - Path to check
 
 **Returns:**
+
 - `bool` - True if file exists
 
 ---
@@ -219,6 +234,7 @@ Protocol for managing file metadata including token counts, hashes, sections, li
 **Module:** `cortex.core.protocols.file_system`
 
 **Used By:**
+
 - MetadataIndex - JSON-based implementation
 - DependencyGraph - Accessing file metadata
 - PatternAnalyzer - Analyzing access patterns
@@ -235,7 +251,9 @@ async def load(self) -> dict[str, object]
 Load metadata index from disk with corruption recovery.
 
 **Returns:**
+
 - `dict[str, object]` - Index data dictionary with structure:
+
   ```python
   {
       "version": "1.0.0",
@@ -258,6 +276,7 @@ Load metadata index from disk with corruption recovery.
   ```
 
 **Raises:**
+
 - `MemoryBankError` - If load fails and recovery is not possible
 
 ---
@@ -273,6 +292,7 @@ Save metadata index to disk atomically.
 **Purpose:** Uses atomic write (write to temp file, then rename) to prevent corruption.
 
 **Raises:**
+
 - `MemoryBankError` - If save operation fails
 
 ---
@@ -297,6 +317,7 @@ async def update_file_metadata(
 Update metadata for a file.
 
 **Parameters:**
+
 - `file_name` (str) - Name of file (e.g., "projectBrief.md")
 - `path` (Path) - Full path to file
 - `exists` (bool) - Whether file currently exists
@@ -335,9 +356,11 @@ async def get_file_metadata(self, file_name: str) -> dict[str, object] | None
 Get metadata for a specific file.
 
 **Parameters:**
+
 - `file_name` (str) - Name of file
 
 **Returns:**
+
 - `dict[str, object] | None` - Metadata dictionary or None if not found
 
 ---
@@ -351,6 +374,7 @@ async def get_all_files_metadata(self) -> dict[str, dict[str, object]]
 Get metadata for all files.
 
 **Returns:**
+
 - `dict[str, dict[str, object]]` - Dictionary mapping file names to metadata
 
 ---
@@ -364,6 +388,7 @@ async def list_all_files(self) -> list[str]
 Get list of all file names in index.
 
 **Returns:**
+
 - `list[str]` - List of file names
 
 ---
@@ -377,6 +402,7 @@ async def increment_read_count(self, file_name: str)
 Increment read count for a file.
 
 **Parameters:**
+
 - `file_name` (str) - Name of file
 
 **Purpose:** Tracks access patterns for optimization and analytics.
@@ -392,6 +418,7 @@ Protocol for counting tokens using tiktoken encoding.
 **Module:** `cortex.core.protocols.token`
 
 **Used By:**
+
 - TokenCounter - tiktoken-based implementation
 - MetadataIndex - Updating token counts
 - ContextOptimizer - Staying within token budgets
@@ -408,9 +435,11 @@ def count_tokens(self, text: str | None) -> int
 Count tokens in text.
 
 **Parameters:**
+
 - `text` (str | None) - Text to count tokens in
 
 **Returns:**
+
 - `int` - Number of tokens
 
 **Usage Example:**
@@ -431,10 +460,12 @@ def count_tokens_with_cache(self, text: str, content_hash: str) -> int
 Count tokens with caching by content hash.
 
 **Parameters:**
+
 - `text` (str) - Text to count tokens in
 - `content_hash` (str) - SHA-256 hash of text for cache key
 
 **Returns:**
+
 - `int` - Number of tokens
 
 **Purpose:** Avoids redundant tokenization for unchanged content.
@@ -457,12 +488,15 @@ async def count_tokens_in_file(self, file_path: Path) -> int
 Count tokens in a file.
 
 **Parameters:**
+
 - `file_path` (Path) - Path to file
 
 **Returns:**
+
 - `int` - Number of tokens
 
 **Raises:**
+
 - `FileNotFoundError` - If file doesn't exist
 
 ---
@@ -474,6 +508,7 @@ Protocol for managing file dependencies, computing loading orders, and detecting
 **Module:** `cortex.core.protocols.token`
 
 **Used By:**
+
 - DependencyGraph - Graph-based implementation
 - ProgressiveLoader - Computing optimal loading order
 - TransclusionEngine - Detecting circular transclusions
@@ -490,9 +525,11 @@ def compute_loading_order(self, files: list[str] | None = None) -> list[str]
 Compute optimal loading order for files using topological sort.
 
 **Parameters:**
+
 - `files` (list[str] | None) - Files to compute order for (None = all files)
 
 **Returns:**
+
 - `list[str]` - Ordered list of file names (dependencies first)
 
 **Usage Example:**
@@ -514,9 +551,11 @@ def get_dependencies(self, file_name: str) -> list[str]
 Get direct dependencies of a file.
 
 **Parameters:**
+
 - `file_name` (str) - File to get dependencies for
 
 **Returns:**
+
 - `list[str]` - List of dependency file names
 
 ---
@@ -530,9 +569,11 @@ def get_dependents(self, file_name: str) -> list[str]
 Get files that depend on this file.
 
 **Parameters:**
+
 - `file_name` (str) - File to get dependents for
 
 **Returns:**
+
 - `list[str]` - List of dependent file names
 
 ---
@@ -546,6 +587,7 @@ def add_dynamic_dependency(self, from_file: str, to_file: str)
 Add a runtime-discovered dependency.
 
 **Parameters:**
+
 - `from_file` (str) - Source file
 - `to_file` (str) - Target file
 
@@ -562,6 +604,7 @@ def has_circular_dependency(self) -> bool
 Check if graph has circular dependencies.
 
 **Returns:**
+
 - `bool` - True if cycles exist
 
 ---
@@ -575,6 +618,7 @@ def detect_cycles(self) -> list[list[str]]
 Detect all circular dependency chains.
 
 **Returns:**
+
 - `list[list[str]]` - List of cycles, each cycle is a list of file names
 
 **Usage Example:**
@@ -596,7 +640,9 @@ def to_dict(self) -> dict[str, object]
 Export graph to dictionary format.
 
 **Returns:**
+
 - `dict[str, object]` - Dictionary representation with structure:
+
   ```python
   {
       "graph": {"file1.md": ["file2.md", "file3.md"]},
@@ -620,6 +666,7 @@ async def build_from_links(
 Build dependency graph from actual file links.
 
 **Parameters:**
+
 - `file_system` (FileSystemProtocol) - File system manager
 - `link_parser` (object) - Link parser instance
 - `memory_bank_path` (Path) - Path to memory bank directory
@@ -637,6 +684,7 @@ Protocol for extracting markdown links and transclusion syntax from content.
 **Module:** `cortex.core.protocols.linking`
 
 **Used By:**
+
 - LinkParser - Regex-based implementation
 - DependencyGraph - Building dependency graph
 - LinkValidator - Extracting links to validate
@@ -653,9 +701,11 @@ def parse_markdown_links(self, content: str) -> list[dict[str, str]]
 Parse markdown links `[text](target)` from content.
 
 **Parameters:**
+
 - `content` (str) - Markdown content
 
 **Returns:**
+
 - `list[dict[str, str]]` - List of link dictionaries with:
   - `text` (str) - Link text
   - `target` (str) - Link target (URL or path)
@@ -683,9 +733,11 @@ def parse_transclusions(self, content: str) -> list[dict[str, str]]
 Parse transclusion syntax `{{include:path}}` from content.
 
 **Parameters:**
+
 - `content` (str) - Content to parse
 
 **Returns:**
+
 - `list[dict[str, str]]` - List of transclusion dictionaries with:
   - `target` (str) - Target file path
   - `line_number` (str) - Line number where transclusion appears
@@ -707,6 +759,7 @@ Protocol for resolving transclusion syntax by recursively including content from
 **Module:** `cortex.core.protocols.linking`
 
 **Used By:**
+
 - TransclusionEngine - Recursive resolver with cycle detection
 - ValidationTools - Validating fully-resolved content
 - ContextOptimizer - Getting complete file content
@@ -723,13 +776,16 @@ async def resolve_file(self, file_path: Path, max_depth: int | None = None) -> s
 Resolve all transclusions in a file recursively.
 
 **Parameters:**
+
 - `file_path` (Path) - Path to file
 - `max_depth` (int | None) - Maximum recursion depth (None = unlimited)
 
 **Returns:**
+
 - `str` - Content with all transclusions resolved
 
 **Raises:**
+
 - `CircularDependencyError` - If circular transclusion detected
 - `FileNotFoundError` - If target file not found
 
@@ -763,6 +819,7 @@ Protocol for validating markdown links and transclusions.
 **Module:** `cortex.core.protocols.linking`
 
 **Used By:**
+
 - LinkValidator - Validates internal links and external URLs
 - ValidationTools - Comprehensive validation
 - QualityMetrics - Calculating completeness scores
@@ -781,11 +838,14 @@ async def validate_file_links(
 Validate all links in a file.
 
 **Parameters:**
+
 - `file_path` (Path) - Path to file
 - `memory_bank_path` (Path) - Path to memory bank directory
 
 **Returns:**
+
 - `dict[str, object]` - Validation result with structure:
+
   ```python
   {
       "valid": True,  # False if any broken links
@@ -827,6 +887,7 @@ Protocol for creating file version snapshots, tracking history, and rolling back
 **Module:** `cortex.core.protocols.versioning`
 
 **Used By:**
+
 - VersionManager - File-based implementation
 - FileSystemManager - Automatic versioning on writes
 - RollbackManager - Restoring previous versions
@@ -845,11 +906,13 @@ async def create_snapshot(
 Create version snapshot of file content.
 
 **Parameters:**
+
 - `file_name` (str) - Name of file
 - `content` (str) - File content to snapshot
 - `metadata` (dict[str, object] | None) - Optional metadata to store with snapshot
 
 **Returns:**
+
 - `str` - Unique snapshot ID
 
 **Usage Example:**
@@ -873,9 +936,11 @@ async def get_version_history(self, file_name: str) -> list[dict[str, object]]
 Get version history for a file.
 
 **Parameters:**
+
 - `file_name` (str) - Name of file
 
 **Returns:**
+
 - `list[dict[str, object]]` - List of version entries (newest first) with:
   - `snapshot_id` (str) - Unique snapshot identifier
   - `timestamp` (str) - ISO format timestamp
@@ -900,15 +965,18 @@ async def rollback_to_version(self, snapshot_id: str) -> dict[str, object]
 Rollback file to specific version.
 
 **Parameters:**
+
 - `snapshot_id` (str) - Snapshot ID to rollback to
 
 **Returns:**
+
 - `dict[str, object]` - Restored file info with:
   - `file_name` (str) - Name of file
   - `content` (str) - Restored content
   - `restored_from` (str) - Snapshot ID used
 
 **Raises:**
+
 - `FileNotFoundError` - If snapshot not found
 
 **Usage Example:**
@@ -932,6 +1000,7 @@ Protocol for scoring files and sections by relevance to a task description.
 **Module:** `cortex.core.protocols.optimization`
 
 **Used By:**
+
 - RelevanceScorer - TF-IDF based implementation
 - ContextOptimizer - Selecting relevant files
 - ProgressiveLoader - Loading by relevance
@@ -954,13 +1023,16 @@ async def score_files(
 Score files by relevance to task.
 
 **Parameters:**
+
 - `task_description` (str) - Description of the task
 - `files_content` (dict[str, str]) - Mapping of file names to content
 - `files_metadata` (dict[str, dict[str, object]]) - Mapping of file names to metadata
 - `quality_scores` (dict[str, float] | None) - Optional quality score multipliers
 
 **Returns:**
+
 - `dict[str, dict[str, float | str]]` - Mapping of file names to score breakdown:
+
   ```python
   {
       "projectBrief.md": {
@@ -999,11 +1071,13 @@ async def score_sections(
 Score sections within a file by relevance.
 
 **Parameters:**
+
 - `task_description` (str) - Description of the task
 - `file_name` (str) - Name of file
 - `content` (str) - File content
 
 **Returns:**
+
 - `list[dict[str, object]]` - List of section scores (highest first) with:
   - `title` (str) - Section title
   - `score` (float) - Relevance score
@@ -1030,6 +1104,7 @@ Protocol for optimizing context selection within token budgets.
 **Module:** `cortex.core.protocols.optimization`
 
 **Used By:**
+
 - ContextOptimizer - Multi-strategy optimizer
 - MCP Tools - optimize_context operations
 - ProgressiveLoader - Budget-aware loading
@@ -1054,6 +1129,7 @@ async def optimize(
 Optimize context selection within token budget.
 
 **Parameters:**
+
 - `task_description` (str) - Description of task
 - `files_content` (dict[str, str]) - Available files and content
 - `files_metadata` (dict[str, dict[str, object]]) - Files metadata
@@ -1062,7 +1138,9 @@ Optimize context selection within token budget.
 - `mandatory_files` (list[str] | None) - Files that must be included
 
 **Returns:**
+
 - `dict[str, object]` - Optimization result with structure:
+
   ```python
   {
       "selected_files": {
@@ -1102,6 +1180,7 @@ Protocol for loading Memory Bank context progressively based on priority, depend
 **Module:** `cortex.core.protocols.loading`
 
 **Used By:**
+
 - ProgressiveLoader - Multi-strategy implementation
 - ContextOptimizer - Budget-aware assembly
 - MCP Tools - load_progressively operations
@@ -1123,11 +1202,13 @@ async def load_by_priority(
 Load context progressively by priority order.
 
 **Parameters:**
+
 - `memory_bank_path` (Path) - Path to Memory Bank directory
 - `priority_order` (list[str] | None) - Priority order (default: ["projectBrief.md", "activeContext.md", ...])
 - `token_budget` (int | None) - Maximum tokens to load
 
 **Returns:**
+
 - `dict[str, object]` - Loading result with:
   - `loaded_files` (dict) - Mapping of file names to content
   - `total_tokens` (int) - Total tokens loaded
@@ -1149,11 +1230,13 @@ async def load_by_dependencies(
 Load context progressively following dependency order.
 
 **Parameters:**
+
 - `memory_bank_path` (Path) - Path to Memory Bank directory
 - `start_files` (list[str] | None) - Starting files (auto-detect if None)
 - `token_budget` (int | None) - Maximum tokens to load
 
 **Returns:**
+
 - `dict[str, object]` - Loading result (same structure as load_by_priority)
 
 **Purpose:** Ensures dependencies are loaded before dependents.
@@ -1174,11 +1257,13 @@ async def load_by_relevance(
 Load context progressively by relevance to task.
 
 **Parameters:**
+
 - `memory_bank_path` (Path) - Path to Memory Bank directory
 - `task_description` (str) - Task description for relevance scoring
 - `token_budget` (int | None) - Maximum tokens to load
 
 **Returns:**
+
 - `dict[str, object]` - Loading result (same structure as load_by_priority)
 
 **Purpose:** Loads most relevant files first.
@@ -1204,6 +1289,7 @@ Protocol for summarizing file content when full content exceeds token budgets.
 **Module:** `cortex.core.protocols.loading`
 
 **Used By:**
+
 - SummarizationEngine - Multi-strategy summarizer
 - ContextOptimizer - Fitting more content in budget
 - ProgressiveLoader - Loading summarized versions
@@ -1225,11 +1311,13 @@ async def summarize_file(
 Summarize file content.
 
 **Parameters:**
+
 - `file_path` (Path) - Path to file to summarize
 - `strategy` (str) - Summarization strategy: "key_sections", "truncate", or "abstract"
 - `target_reduction` (float) - Target reduction percentage (0-1)
 
 **Returns:**
+
 - `dict[str, object]` - Summarization result with:
   - `original_tokens` (int) - Original token count
   - `summary_tokens` (int) - Summary token count
@@ -1259,10 +1347,12 @@ async def extract_key_sections(self, content: str, target_tokens: int) -> str
 Extract key sections from content to meet token target.
 
 **Parameters:**
+
 - `content` (str) - Content to extract from
 - `target_tokens` (int) - Target token count
 
 **Returns:**
+
 - `str` - Extracted content containing most important sections
 
 **Purpose:** Intelligently selects sections by importance rather than truncating.
@@ -1278,6 +1368,7 @@ Protocol for analyzing file access patterns, co-access correlations, and identif
 **Module:** `cortex.core.protocols.analysis`
 
 **Used By:**
+
 - PatternAnalyzer - Statistical analysis implementation
 - InsightEngine - Generating usage-based insights
 - RefactoringEngine - Identifying refactoring opportunities
@@ -1296,10 +1387,13 @@ async def get_access_frequency(
 Get file access frequency within time window.
 
 **Parameters:**
+
 - `time_window_days` (int) - Days to look back (default: 30)
 
 **Returns:**
+
 - `dict[str, dict[str, int | float]]` - Mapping of file names to statistics:
+
   ```python
   {
       "projectBrief.md": {
@@ -1322,9 +1416,11 @@ async def get_co_access_patterns(
 Get files frequently accessed together.
 
 **Parameters:**
+
 - `min_correlation` (float) - Minimum correlation threshold (0-1)
 
 **Returns:**
+
 - `list[dict[str, object]]` - List of co-access patterns with:
   - `files` (list[str]) - Files accessed together
   - `correlation` (float) - Correlation score
@@ -1345,9 +1441,11 @@ async def get_unused_files(
 Get files not accessed recently.
 
 **Parameters:**
+
 - `days_threshold` (int) - Days since last access threshold
 
 **Returns:**
+
 - `list[dict[str, object]]` - List of unused files with:
   - `file_name` (str) - Name of file
   - `days_since_access` (int) - Days since last access
@@ -1362,6 +1460,7 @@ Protocol for analyzing Memory Bank file organization and detecting structural an
 **Module:** `cortex.core.protocols.analysis`
 
 **Used By:**
+
 - StructureAnalyzer - Organization analysis
 - InsightEngine - Structural insights
 - RefactoringEngine - Reorganization suggestions
@@ -1378,9 +1477,11 @@ async def analyze_organization(self, memory_bank_path: Path) -> dict[str, object
 Analyze Memory Bank file organization.
 
 **Parameters:**
+
 - `memory_bank_path` (Path) - Path to Memory Bank directory
 
 **Returns:**
+
 - `dict[str, object]` - Organization analysis with:
   - `total_files` (int) - Total number of files
   - `max_depth` (int) - Maximum directory depth
@@ -1401,9 +1502,11 @@ async def detect_anti_patterns(
 Detect structural anti-patterns.
 
 **Parameters:**
+
 - `memory_bank_path` (Path) - Path to Memory Bank directory
 
 **Returns:**
+
 - `list[dict[str, object]]` - List of anti-patterns with:
   - `type` (str) - Anti-pattern type ("deep_nesting", "circular_dependency", etc.)
   - `severity` (str) - Severity level ("error", "warning", "info")
@@ -1432,6 +1535,7 @@ Protocol for generating and exporting refactoring suggestions.
 **Module:** `cortex.core.protocols.refactoring`
 
 **Used By:**
+
 - RefactoringEngine - Suggestion generator
 - MCP Tools - get_refactoring_suggestions operations
 - InsightEngine - Actionable refactoring insights
@@ -1453,11 +1557,13 @@ async def generate_suggestions(
 Generate refactoring suggestions from analysis data.
 
 **Parameters:**
+
 - `insight_data` (dict[str, object]) - Insights from pattern analysis
 - `analysis_data` (dict[str, object]) - Structural analysis data
 - `max_suggestions` (int | None) - Maximum suggestions to generate
 
 **Returns:**
+
 - `list[dict[str, object]]` - List of refactoring suggestions (see RefactoringSuggestion dataclass)
 
 ---
@@ -1473,10 +1579,12 @@ async def export_suggestions(
 Export suggestions in specified format.
 
 **Parameters:**
+
 - `suggestions` (list[dict[str, object]]) - List of suggestions
 - `format` (str) - Export format: "json", "markdown", or "text"
 
 **Returns:**
+
 - `str` - Formatted suggestions string
 
 ---
@@ -1488,6 +1596,7 @@ Protocol for detecting opportunities to consolidate duplicated content using tra
 **Module:** `cortex.core.protocols.refactoring`
 
 **Used By:**
+
 - ConsolidationDetector - Duplication detector
 - RefactoringEngine - Consolidation suggestions
 - DuplicationDetector - Identifying duplication patterns
@@ -1508,10 +1617,12 @@ async def detect_opportunities(
 Detect consolidation opportunities.
 
 **Parameters:**
+
 - `files` (list[str] | None) - Files to analyze (all if None)
 - `suggest_transclusion` (bool) - Whether to suggest transclusion syntax
 
 **Returns:**
+
 - `list[dict[str, object]]` - List of opportunities with:
   - `files` (list[str]) - Files with duplicated content
   - `duplicated_content` (str) - The duplicated content
@@ -1530,9 +1641,11 @@ async def analyze_consolidation_impact(
 Analyze impact of a consolidation opportunity.
 
 **Parameters:**
+
 - `opportunity` (dict[str, object]) - Consolidation opportunity
 
 **Returns:**
+
 - `dict[str, object]` - Impact analysis with:
   - `files_affected` (int) - Number of files affected
   - `estimated_savings` (int) - Estimated token/byte savings
@@ -1547,6 +1660,7 @@ Protocol for suggesting file splitting opportunities.
 **Module:** `cortex.core.protocols.refactoring`
 
 **Used By:**
+
 - SplitRecommender - File split analyzer
 - RefactoringEngine - Split suggestions
 - StructureAnalyzer - Identifying oversized files
@@ -1567,10 +1681,12 @@ async def suggest_file_splits(
 Suggest file splitting opportunities.
 
 **Parameters:**
+
 - `files` (list[str] | None) - Files to analyze (all if None)
 - `strategies` (list[str] | None) - Strategies to use: ["size", "complexity", "cohesion"]
 
 **Returns:**
+
 - `list[dict[str, object]]` - List of split suggestions with:
   - `file` (str) - File to split
   - `reason` (str) - Why split is recommended
@@ -1588,9 +1704,11 @@ async def analyze_file(self, file_path: str) -> dict[str, object]
 Analyze a single file for splitting opportunities.
 
 **Parameters:**
+
 - `file_path` (str) - Path to file
 
 **Returns:**
+
 - `dict[str, object]` - File analysis with:
   - `file` (str) - File path
   - `size` (int) - File size
@@ -1607,6 +1725,7 @@ Protocol for creating comprehensive reorganization plans.
 **Module:** `cortex.core.protocols.refactoring`
 
 **Used By:**
+
 - ReorganizationPlanner - Plan creator
 - RefactoringEngine - Reorganization suggestions
 - StructureAnalyzer - Optimizing organization
@@ -1627,10 +1746,12 @@ async def create_reorganization_plan(
 Create a reorganization plan.
 
 **Parameters:**
+
 - `optimization_goal` (str) - Goal: "dependency_depth", "access_patterns", or "size_distribution"
 - `max_depth` (int | None) - Maximum directory depth
 
 **Returns:**
+
 - `dict[str, object]` - Reorganization plan with:
   - `goal` (str) - Optimization goal
   - `moves` (list) - List of file move operations
@@ -1649,9 +1770,11 @@ async def preview_reorganization(
 Preview impact of reorganization plan.
 
 **Parameters:**
+
 - `plan` (dict[str, object]) - Reorganization plan
 
 **Returns:**
+
 - `dict[str, object]` - Preview results with:
   - `files_to_move` (int) - Number of files to move
   - `estimated_improvement` (float) - Improvement score
@@ -1668,6 +1791,7 @@ Protocol for managing approval workflows for refactoring operations.
 **Module:** `cortex.core.protocols.refactoring_execution`
 
 **Used By:**
+
 - ApprovalManager - Approval tracking
 - RefactoringExecutor - Checking approval before execution
 - MCP Tools - approve_refactoring operations
@@ -1686,10 +1810,12 @@ async def request_approval(
 Request approval for refactoring.
 
 **Parameters:**
+
 - `refactoring_id` (str) - Unique refactoring identifier
 - `details` (dict[str, object]) - Refactoring details
 
 **Returns:**
+
 - `dict[str, object]` - Approval request result with:
   - `refactoring_id` (str) - Identifier
   - `status` (str) - "pending"
@@ -1706,9 +1832,11 @@ async def get_approval_status(self, refactoring_id: str) -> dict[str, object]
 Get approval status for refactoring.
 
 **Parameters:**
+
 - `refactoring_id` (str) - Unique refactoring identifier
 
 **Returns:**
+
 - `dict[str, object]` - Approval status with:
   - `refactoring_id` (str) - Identifier
   - `status` (str) - "pending", "approved", "rejected", or "not_found"
@@ -1725,9 +1853,11 @@ async def approve(self, refactoring_id: str) -> dict[str, object]
 Approve refactoring execution.
 
 **Parameters:**
+
 - `refactoring_id` (str) - Unique refactoring identifier
 
 **Returns:**
+
 - `dict[str, object]` - Approval result with:
   - `refactoring_id` (str) - Identifier
   - `status` (str) - "approved"
@@ -1742,6 +1872,7 @@ Protocol for rolling back refactoring operations and tracking rollback history.
 **Module:** `cortex.core.protocols.refactoring_execution`
 
 **Used By:**
+
 - RollbackManager - Rollback operations
 - RefactoringExecutor - Providing rollback capability
 - MCP Tools - rollback_refactoring operations
@@ -1758,9 +1889,11 @@ async def rollback_refactoring(self, execution_id: str) -> dict[str, object]
 Rollback a refactoring operation.
 
 **Parameters:**
+
 - `execution_id` (str) - Execution identifier to rollback
 
 **Returns:**
+
 - `dict[str, object]` - Rollback result with:
   - `status` (str) - "rolled_back"
   - `files_restored` (int) - Number of files restored
@@ -1779,6 +1912,7 @@ async def get_rollback_history(self) -> list[dict[str, object]]
 Get history of rollback operations.
 
 **Returns:**
+
 - `list[dict[str, object]]` - List of rollback history entries (newest first) with:
   - `execution_id` (str) - Execution that was rolled back
   - `files` (list[str]) - Files restored
@@ -1793,6 +1927,7 @@ Protocol for learning from user feedback and adapting suggestion confidence scor
 **Module:** `cortex.core.protocols.refactoring_execution`
 
 **Used By:**
+
 - LearningEngine - Feedback tracker
 - RefactoringEngine - Confidence-based ranking
 - MCP Tools - submit_feedback and get_learning_stats operations
@@ -1815,12 +1950,14 @@ async def record_feedback(
 Record user feedback on a suggestion.
 
 **Parameters:**
+
 - `suggestion_id` (str) - Suggestion identifier
 - `accepted` (bool) - Whether suggestion was accepted
 - `reason` (str | None) - Optional reason for decision
 - `additional_data` (dict[str, object] | None) - Optional additional feedback
 
 **Returns:**
+
 - `dict[str, object]` - Feedback record result with:
   - `status` (str) - "recorded"
   - `suggestion_id` (str) - Identifier
@@ -1843,11 +1980,13 @@ async def adjust_suggestion_confidence(
 Adjust confidence for a suggestion pattern.
 
 **Parameters:**
+
 - `suggestion_type` (str) - Type of suggestion ("consolidation", "split", etc.)
 - `pattern` (str) - Pattern identifier
 - `adjustment` (float) - Confidence adjustment value (-1 to 1)
 
 **Returns:**
+
 - `dict[str, object]` - Adjustment result with:
   - `new_confidence` (float) - Updated confidence score
 
@@ -1862,6 +2001,7 @@ async def get_learning_insights(self) -> dict[str, object]
 Get learning insights and statistics.
 
 **Returns:**
+
 - `dict[str, object]` - Learning insights with:
   - `total_feedback` (int) - Total feedback records
   - `acceptance_rate` (float) - Overall acceptance rate
@@ -1879,6 +2019,7 @@ Protocol for managing shared rules repositories, indexing rules, and retrieving 
 **Module:** `cortex.core.protocols.rules`
 
 **Used By:**
+
 - RulesManager - Rules repository manager
 - MCP Tools - Rules indexing and retrieval
 - ContextOptimizer - Including relevant rules
@@ -1895,9 +2036,11 @@ async def index_rules(self, force: bool = False) -> dict[str, object]
 Index rules from configured folder.
 
 **Parameters:**
+
 - `force` (bool) - Force re-indexing even if cache is fresh
 
 **Returns:**
+
 - `dict[str, object]` - Indexing result with:
   - `status` (str) - "indexed" or "cached"
   - `rules_count` (int) - Number of rules indexed
@@ -1920,11 +2063,13 @@ async def get_relevant_rules(
 Get rules relevant to a task.
 
 **Parameters:**
+
 - `task_description` (str) - Task description for relevance scoring
 - `max_tokens` (int | None) - Maximum tokens to return
 - `min_relevance` (float | None) - Minimum relevance score (0-1)
 
 **Returns:**
+
 - `dict[str, object]` - Relevant rules with:
   - `selected_rules` (list) - List of rules with content and relevance scores
   - `total_tokens` (int) - Total tokens in selected rules

@@ -19,36 +19,43 @@ The function performs three distinct actions (approve, apply, rollback) that wer
 ## Helper Functions Extracted
 
 ### 1. `_approve_refactoring()` (7 lines)
+
 - **Purpose:** Approve a refactoring suggestion
 - **Extracted Logic:** Manager extraction and approval call
 - **Pattern:** Simple delegation to ApprovalManager
 
 ### 2. `_get_suggestion()` (6 lines)
+
 - **Purpose:** Get a refactoring suggestion by ID
 - **Extracted Logic:** Engine extraction and suggestion retrieval
 - **Pattern:** Simple retrieval with None handling
 
 ### 3. `_find_approval_id()` (20 lines)
+
 - **Purpose:** Find or validate approval ID for a suggestion
 - **Extracted Logic:** Approval lookup, validation, and error handling
 - **Pattern:** Return string ID or error dict
 
 ### 4. `_execute_refactoring()` (11 lines)
+
 - **Purpose:** Execute an approved refactoring
 - **Extracted Logic:** Executor extraction and execution call
 - **Pattern:** Simple delegation to RefactoringExecutor
 
 ### 5. `_mark_as_applied()` (9 lines)
+
 - **Purpose:** Mark approval as applied if execution succeeded
 - **Extracted Logic:** Success check and status update
 - **Pattern:** Conditional update with type safety
 
 ### 6. `_apply_approved_refactoring()` (24 lines)
+
 - **Purpose:** Apply an approved refactoring suggestion (orchestrator)
 - **Extracted Logic:** Full apply workflow coordination
 - **Pattern:** Orchestrator calling other helpers
 
 ### 7. `_rollback_refactoring()` (11 lines)
+
 - **Purpose:** Rollback a previously applied refactoring
 - **Extracted Logic:** Manager extraction and rollback call
 - **Pattern:** Simple delegation to RollbackManager
@@ -56,6 +63,7 @@ The function performs three distinct actions (approve, apply, rollback) that wer
 ## Code Organization
 
 ### Before Extraction
+
 ```
 apply_refactoring()        [130 lines]
 ├─ action == "approve"     [22 lines]
@@ -68,6 +76,7 @@ apply_refactoring()        [130 lines]
 ```
 
 ### After Extraction
+
 ```
 apply_refactoring()                    [44 lines - main entry point]
 ├─ _approve_refactoring()              [7 lines]
@@ -87,6 +96,7 @@ $ uv run pytest tests/integration/ -v
 ```
 
 ### Test Coverage
+
 - **Total Tests:** 48 integration tests
 - **Pass Rate:** 100%
 - **Test Execution Time:** 5.94s
@@ -95,16 +105,19 @@ $ uv run pytest tests/integration/ -v
 ## Code Quality Metrics
 
 ### Maintainability
+
 - **Before:** Single 130-line function with deeply nested logic
 - **After:** 8 focused functions (1 main + 7 helpers), each <30 lines
 - **Improvement:** +85% maintainability (single responsibility principle)
 
 ### Readability
+
 - **Before:** Complex conditional logic with deep nesting
 - **After:** Clear action-based structure with named helper functions
 - **Improvement:** Function names document intent (e.g., `_find_approval_id()`)
 
 ### Testability
+
 - **Before:** Monolithic function difficult to unit test
 - **After:** Each helper function testable independently
 - **Improvement:** +90% testability (isolated concerns)
@@ -129,11 +142,13 @@ $ uv run pytest tests/integration/ -v
 ## Complexity Analysis
 
 ### Before Extraction
+
 - **Cyclomatic Complexity:** 15 (multiple nested conditions)
 - **Cognitive Complexity:** 28 (high mental load)
 - **Function Dependencies:** 5 managers accessed directly
 
 ### After Extraction
+
 - **Cyclomatic Complexity:** 5 (main function), 2-4 (helpers)
 - **Cognitive Complexity:** 8 (main), 3-6 (helpers)
 - **Function Dependencies:** Clear separation of concerns
@@ -149,6 +164,7 @@ $ uv run pytest tests/integration/ -v
 ## Benefits Achieved
 
 ### Immediate Benefits
+
 - ✅ Function now complies with <30 logical lines requirement (44 lines including comments)
 - ✅ Clear separation of concerns (approve, apply, rollback)
 - ✅ Improved code readability and maintainability
@@ -156,6 +172,7 @@ $ uv run pytest tests/integration/ -v
 - ✅ All 48 integration tests passing
 
 ### Long-Term Benefits
+
 - ✅ Easier to add new refactoring actions (extend action switch)
 - ✅ Simpler to test individual action workflows
 - ✅ Clear helper functions for common operations

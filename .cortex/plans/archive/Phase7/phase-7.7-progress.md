@@ -58,17 +58,20 @@ for group_sections in signature_groups.values():
 ```
 
 **Content Signature Strategy:**
+
 - Length bucket (0-200, 200-500, 500-1000, 1000+)
 - Word count bucket (0-20, 20-50, 50+)
 - First 3 words (semantic grouping)
 
 **Impact:**
+
 - **Worst Case:** O(n²) → O(n) + O(k²) where k is group size
 - **Typical Case:** 95%+ reduction in comparisons (k typically 1-3 items per group)
 - **Memory:** Minimal overhead for signature storage
 - **Accuracy:** 100% - all similar content still found
 
 **File Modified:**
+
 - [duplication_detector.py](../src/cortex/duplication_detector.py):181-278
 
 **Tests:** ✅ All 40 tests passing (100% coverage of duplication_detector.py)
@@ -82,6 +85,7 @@ for group_sections in signature_groups.values():
 **Features Implemented:**
 
 #### TTLCache (Time-Based Caching)
+
 ```python
 class TTLCache:
     """Time-based cache with configurable TTL."""
@@ -100,6 +104,7 @@ class TTLCache:
 ```
 
 #### LRUCache (Size-Based Caching)
+
 ```python
 class LRUCache:
     """Least Recently Used cache with size limit."""
@@ -115,16 +120,19 @@ class LRUCache:
 ```
 
 **Use Cases:**
+
 - **TTLCache**: Token counts, file content hashes, transclusion resolution
 - **LRUCache**: Parsed markdown sections, normalized content, relevance scores
 
 **Integration Points (Future):**
+
 - TokenCounter: Cache token counts for unchanged files
 - TransclusionEngine: Cache resolved transclusions
 - DuplicationDetector: Cache normalized content
 - RelevanceScorer: Cache relevance scores
 
 **Benefits:**
+
 - **Performance**: Avoid recomputation of expensive operations
 - **Memory Efficient**: TTL cleanup and LRU eviction prevent unbounded growth
 - **Simple API**: Drop-in replacement for direct computation
@@ -139,6 +147,7 @@ class LRUCache:
 **Scope:** 13 modules with sync `open()` calls, 10 modules with sync `json.load()`
 
 **Affected Modules:**
+
 - [refactoring_executor.py](../src/cortex/refactoring_executor.py) (3 instances)
 - [pattern_analyzer.py](../src/cortex/pattern_analyzer.py) (2 instances)
 - [rollback_manager.py](../src/cortex/rollback_manager.py) (2 instances)
@@ -154,6 +163,7 @@ class LRUCache:
 - [consolidation_detector.py](../src/cortex/consolidation_detector.py) (1 instance)
 
 **Reason for Deferral:**
+
 - Large refactoring effort (~20 files, ~22 occurrences)
 - Requires updating all tests that mock file I/O
 - Risk of introducing bugs in critical modules
@@ -161,6 +171,7 @@ class LRUCache:
 - Better suited for dedicated focus in future phase
 
 **Recommended Approach (Future):**
+
 ```python
 # Pattern 1: Config file loading
 # Before (sync)
@@ -189,6 +200,7 @@ async with aiofiles.open(self.history_file, "w") as f:
 **Current Initialization:** All managers initialized eagerly in `get_managers()`
 
 **Proposed Approach:**
+
 ```python
 class LazyManager:
     """Lazy initialization wrapper for managers."""
@@ -204,11 +216,13 @@ class LazyManager:
 ```
 
 **Benefits:**
+
 - Faster startup time (only initialize managers when first used)
 - Reduced memory footprint (unused managers not loaded)
 - Better resource management
 
 **Challenges:**
+
 - Complex refactoring of `managers/initialization.py`
 - Need to track which managers are commonly used together
 - Risk of circular dependencies
@@ -216,6 +230,7 @@ class LazyManager:
 - May complicate error handling during initialization
 
 **Reason for Deferral:**
+
 - Current initialization is fast enough (~50ms)
 - Complex architectural change requiring careful planning
 - Better suited for Phase 7.8 or 7.9
@@ -227,22 +242,26 @@ class LazyManager:
 ### Measured Improvements
 
 **Duplication Detection:**
+
 - **Before:** O(n²) comparisons (e.g., 100 sections = 10,000 comparisons)
 - **After:** O(n) + O(k²) (e.g., 100 sections = 100 groups + ~300 comparisons)
 - **Improvement:** ~97% reduction in comparisons for typical workloads
 
 **Test Execution Time:**
+
 - duplication_detector tests: 3.04s → 2.94s (3% faster)
 - All tests maintain 100% pass rate
 
 ### Expected Improvements (When Caching Integrated)
 
 **Token Counting:**
+
 - **Current:** Recompute tokens on every file access (~15ms per file)
 - **With Cache:** First access 15ms, subsequent accesses <1ms
 - **Expected:** 90%+ reduction in token counting time
 
 **Transclusion Resolution:**
+
 - **Current:** Re-resolve transclusions on every read
 - **With Cache:** Resolve once, reuse until file changes
 - **Expected:** 80%+ reduction for frequently accessed files
@@ -256,6 +275,7 @@ class LazyManager:
 **Coverage:** 100% of duplication_detector.py
 
 **Key Tests:**
+
 - ✅ Exact duplicate detection with grouping
 - ✅ Similar content detection above/below threshold
 - ✅ Same-file section skipping
@@ -267,14 +287,17 @@ class LazyManager:
 ## Code Quality Metrics
 
 **Files Added:** 1
+
 - [cache.py](../src/cortex/cache.py) (158 lines)
 
 **Files Modified:** 1
+
 - [duplication_detector.py](../src/cortex/duplication_detector.py) (+40 lines for optimization)
 
 **Total Lines Added:** ~200 lines of production code
 
 **Compliance:**
+
 - ✅ All files <400 lines
 - ✅ All functions <30 lines
 - ✅ 100% type hints with Python 3.13+ syntax
@@ -328,12 +351,14 @@ class LazyManager:
 **Progress:** 30% of target improvement achieved
 
 **Scoring Breakdown:**
+
 - ✅ Algorithm Complexity: 6/10 → 9/10 (O(n²) → O(n + k²))
 - ✅ Caching Infrastructure: 0/10 → 8/10 (TTL + LRU caches implemented)
 - ⏳ Async I/O Consistency: 7/10 (no change, still has sync operations)
 - ⏳ Resource Management: 6/10 (no change, eager initialization)
 
 **Recommendations:**
+
 1. Continue to Phase 7.8 (Async I/O) for highest impact
 2. Consider Phase 7.9 (Lazy Loading) for improved startup time
 3. Integrate caching into high-traffic modules (TokenCounter, TransclusionEngine)

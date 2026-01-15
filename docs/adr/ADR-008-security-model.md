@@ -25,6 +25,7 @@ As an MCP server running locally with Claude Desktop, we must ensure:
 ### Threat Model
 
 **Assets to Protect**:
+
 1. Memory bank files (`.cursor/memory-bank/*.md`)
 2. Project source code
 3. File system integrity
@@ -32,6 +33,7 @@ As an MCP server running locally with Claude Desktop, we must ensure:
 5. System resources
 
 **Threat Actors**:
+
 1. **Malicious User Input**: Path traversal, command injection
 2. **Compromised Dependencies**: Vulnerable third-party libraries
 3. **Local Privilege Escalation**: Unauthorized file access
@@ -39,6 +41,7 @@ As an MCP server running locally with Claude Desktop, we must ensure:
 5. **Denial of Service**: Resource exhaustion
 
 **Attack Vectors**:
+
 1. **Path Traversal**: `../../etc/passwd` in file paths
 2. **Command Injection**: Shell commands in file names
 3. **Symlink Attacks**: Symlinks to sensitive files
@@ -49,24 +52,28 @@ As an MCP server running locally with Claude Desktop, we must ensure:
 ### Security Requirements
 
 **Confidentiality**:
+
 - Memory bank files only accessible to authorized user
 - No data sent to external services without explicit consent
 - Sensitive data never logged
 - Secure file permissions
 
 **Integrity**:
+
 - Files protected from unauthorized modification
 - Atomic operations prevent corruption
 - Hash verification detects tampering
 - Conflict detection prevents data loss
 
 **Availability**:
+
 - Resilient to malformed inputs
 - Resource limits prevent DoS
 - Graceful degradation on errors
 - Fast recovery from failures
 
 **Compliance**:
+
 - GDPR compliance (user data privacy)
 - No telemetry without consent
 - Right to delete data
@@ -75,6 +82,7 @@ As an MCP server running locally with Claude Desktop, we must ensure:
 ### Existing Security Patterns
 
 **Python Security Best Practices**:
+
 - Use `pathlib.Path` for path operations (safer than string manipulation)
 - Validate file paths against base directory
 - Use `aiofiles` for safe async I/O
@@ -82,12 +90,14 @@ As an MCP server running locally with Claude Desktop, we must ensure:
 - Use parameterized queries (if database used)
 
 **File System Security**:
+
 - Check file existence before operations
 - Use exclusive locks for writes
 - Atomic write operations (write to temp, then rename)
 - Proper error handling for file operations
 
 **Input Validation**:
+
 - Whitelist allowed characters
 - Validate file extensions
 - Check file sizes
@@ -559,11 +569,13 @@ async def test_file_size_limit():
 ### Dependency Security
 
 **Minimal Dependencies**:
+
 - `mcp` - MCP SDK (trusted)
 - `aiofiles` - Async file I/O (widely used, simple)
 - `pydantic` - Data validation (trusted)
 
 **Security Practices**:
+
 - Pin dependency versions
 - Regular security audits (`pip-audit`)
 - Monitor for CVEs
@@ -585,36 +597,42 @@ dependencies = [
 ### Positive
 
 **1. Defense in Depth**:
+
 - Multiple security layers
 - Failure in one layer doesn't compromise security
 - Redundant protections
 - Comprehensive coverage
 
 **2. Path Traversal Protection**:
+
 - All file paths validated
 - Symlink resolution secure
 - Base directory enforcement
 - No unauthorized file access
 
 **3. Data Integrity**:
+
 - Atomic operations prevent corruption
 - Conflict detection prevents data loss
 - Hash verification detects tampering
 - File locking prevents race conditions
 
 **4. Privacy-First**:
+
 - No telemetry by default
 - All data local
 - User controls data
 - GDPR compliant
 
 **5. Resource Protection**:
+
 - Prevents DoS attacks
 - Memory limits enforced
 - File size limits enforced
 - Recursion depth limits enforced
 
 **6. Testable Security**:
+
 - Security tests for all threat vectors
 - Clear security requirements
 - Automated security checks
@@ -623,36 +641,42 @@ dependencies = [
 ### Negative
 
 **1. Performance Overhead**:
+
 - Path validation adds latency (~1ms per operation)
 - Hash calculation for conflict detection (~10ms for 1MB file)
 - File locking adds contention
 - Resource checks add overhead
 
 **2. Complexity**:
+
 - Multiple security layers to maintain
 - More code to test
 - Error handling more complex
 - Debugging harder
 
 **3. False Positives**:
+
 - Legitimate operations may be blocked
 - Path validation may be too strict
 - File size limits may be too low
 - Need configuration options
 
 **4. User Experience**:
+
 - Security errors can be confusing
 - Users may not understand why operations blocked
 - Need clear error messages
 - Need documentation
 
 **5. Maintenance Burden**:
+
 - Security updates required
 - Dependency monitoring needed
 - Regular audits required
 - Stay current with threats
 
 **6. Limited Flexibility**:
+
 - Base directory restriction may be limiting
 - File size limits may be insufficient for large projects
 - Recursion depth limits may be too low
@@ -661,18 +685,21 @@ dependencies = [
 ### Neutral
 
 **1. Threat Model Assumptions**:
+
 - Assumes local attacker (not remote)
 - Assumes MCP protocol is secure
 - Assumes Claude Desktop is trusted
 - Context-dependent
 
 **2. Security vs Usability**:
+
 - Trade-off: strict security vs user freedom
 - Balance required
 - Configuration options help
 - User education important
 
 **3. Zero Trust**:
+
 - All inputs validated (including from Claude)
 - Paranoid approach
 - May seem excessive
@@ -685,12 +712,14 @@ dependencies = [
 **Approach**: Trust all inputs, no validation.
 
 **Pros**:
+
 - Simple implementation
 - No overhead
 - Maximum flexibility
 - Fast
 
 **Cons**:
+
 - Vulnerable to all attacks
 - No data protection
 - No integrity guarantees
@@ -703,12 +732,14 @@ dependencies = [
 **Approach**: Run in sandboxed environment (Docker, firejail, etc.).
 
 **Pros**:
+
 - Strong isolation
 - OS-level protection
 - Proven technology
 - Defense against unknown threats
 
 **Cons**:
+
 - Requires Docker/container runtime
 - Complex setup
 - Performance overhead
@@ -721,12 +752,14 @@ dependencies = [
 **Approach**: User grants explicit capabilities for each operation.
 
 **Pros**:
+
 - Fine-grained control
 - Explicit authorization
 - Clear permissions
 - Good user understanding
 
 **Cons**:
+
 - Poor user experience (too many prompts)
 - Friction in workflow
 - Users may approve everything
@@ -739,12 +772,14 @@ dependencies = [
 **Approach**: Sign all files, verify signatures on read.
 
 **Pros**:
+
 - Strong integrity guarantees
 - Detect any tampering
 - Non-repudiation
 - Audit trail
 
 **Cons**:
+
 - Complex key management
 - Performance overhead
 - Overkill for local tool
@@ -757,12 +792,14 @@ dependencies = [
 **Approach**: Only allow reading, no writes.
 
 **Pros**:
+
 - No data integrity concerns
 - Very safe
 - Simple implementation
 - No conflicts possible
 
 **Cons**:
+
 - Can't create or modify memory bank
 - Defeats purpose of tool
 - Users want write access
@@ -775,12 +812,14 @@ dependencies = [
 **Approach**: Call external service for security decisions.
 
 **Pros**:
+
 - Centralized security logic
 - Expert security decisions
 - Regular updates
 - Shared threat intelligence
 
 **Cons**:
+
 - Network dependency
 - Privacy concerns
 - Latency overhead
@@ -815,7 +854,7 @@ If security vulnerability discovered:
 
 ### Security Contact
 
-Report security issues to: security@cortex.dev (future)
+Report security issues to: <security@cortex.dev> (future)
 
 ### Regular Security Tasks
 

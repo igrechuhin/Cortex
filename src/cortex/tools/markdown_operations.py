@@ -4,7 +4,7 @@ Markdown Operations Tools
 This module contains MCP tools for markdown file operations.
 
 Total: 1 tool
-- fix_markdown_lint: Fix markdownlint errors in modified markdown files
+- fix_markdown_lint: Fix markdownlint errors in markdown files (modified or all files)
 """
 
 import asyncio
@@ -100,6 +100,39 @@ def _parse_untracked_files(stdout: str, project_root: Path, files: list[Path]) -
             file_path = project_root / line[3:].strip()
             if file_path.suffix in (".md", ".mdc") and file_path not in files:
                 files.append(file_path)
+
+
+async def _get_all_markdown_files(project_root: Path) -> list[Path]:
+    """Get all markdown files in the project.
+
+    Args:
+        project_root: Root directory of the project
+
+    Returns:
+        List of all markdown file paths
+    """
+    files: list[Path] = []
+    exclude_parts = [
+        "/.git/",
+        "/node_modules/",
+        "/.venv/",
+        "/venv/",
+        "/__pycache__/",
+        "/.pytest_cache/",
+        "/htmlcov/",
+        "/.coverage",
+        "/.cortex/history/",  # Version history files
+        "/.cortex/snapshots/",  # Snapshot files
+    ]
+    for pattern in ("**/*.md", "**/*.mdc"):
+        for file_path in project_root.rglob(pattern):
+            # Skip common directories that shouldn't be linted
+            file_str = str(file_path)
+            if any(part in file_str for part in exclude_parts):
+                continue
+            if file_path.is_file() and file_path not in files:
+                files.append(file_path)
+    return sorted(set(files))
 
 
 async def _get_modified_markdown_files(
@@ -312,16 +345,19 @@ async def fix_markdown_lint(
     project_root: str | None = None,
     include_untracked: bool = False,
     dry_run: bool = False,
+    check_all_files: bool = False,
 ) -> str:
-    """Fix markdownlint errors in modified markdown files.
+    """Fix markdownlint errors in markdown files.
 
-    Automatically scans modified markdown files in the working copy,
+    Automatically scans markdown files in the working copy,
     detects markdownlint errors, and fixes them automatically.
 
     Args:
         project_root: Path to project root directory. If None, uses current directory.
         include_untracked: Include untracked markdown files (default: False)
         dry_run: Check for errors without fixing them (default: False)
+        check_all_files: Check all markdown files in project, not just modified ones (default: False)
+            When True, scans all .md and .mdc files in the project instead of only git-modified files.
 
     Returns:
         JSON string with fix results containing:
@@ -353,23 +389,36 @@ async def fix_markdown_lint(
           "error_message": null
         }
 
-        Example 2: Check for errors without fixing (dry-run)
-        >>> await fix_markdown_lint(dry_run=True)
+        Example 2: Check all markdown files for errors
+        >>> await fix_markdown_lint(check_all_files=True)
         {
           "success": true,
-          "files_processed": 3,
+          "files_processed": 45,
+          "files_fixed": 12,
+          "files_unchanged": 33,
+          "files_with_errors": 0,
+          "results": [...],
+          "error_message": null
+        }
+
+        Example 3: Check for errors without fixing (dry-run)
+        >>> await fix_markdown_lint(dry_run=True, check_all_files=True)
+        {
+          "success": true,
+          "files_processed": 45,
           "files_fixed": 0,
-          "files_unchanged": 1,
-          "files_with_errors": 2,
+          "files_unchanged": 33,
+          "files_with_errors": 12,
           "results": [...],
           "error_message": null
         }
 
     Note:
         - Requires markdownlint-cli2 to be installed: npm install -g markdownlint-cli2
-        - Only processes files tracked by git (staged, unstaged, optionally untracked)
+        - When check_all_files=False: Only processes files tracked by git (staged, unstaged, optionally untracked)
+        - When check_all_files=True: Processes all .md and .mdc files in the project (excludes .git, node_modules, venv, etc.)
         - Only processes .md and .mdc files
-        - Returns error if not in a git repository
+        - Returns error if not in a git repository (when check_all_files=False)
         - Returns error if markdownlint-cli2 is not available
     """
     try:
@@ -381,7 +430,10 @@ async def fix_markdown_lint(
             return validation_error
 
         # Get and process files
-        files = await _get_modified_markdown_files(root_path, include_untracked)
+        if check_all_files:
+            files = await _get_all_markdown_files(root_path)
+        else:
+            files = await _get_modified_markdown_files(root_path, include_untracked)
         if not files:
             return _create_empty_success_response()
 

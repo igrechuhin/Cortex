@@ -8,6 +8,7 @@
 ## Overview
 
 This phase addresses **CRITICAL blocking issues** that must be fixed before any code can be merged:
+
 - 2 type errors in file_system.py
 - 4 failing tests
 - 7 implicit string concatenation warnings
@@ -19,18 +20,21 @@ These are mandatory fixes required for CI/CD pipeline success.
 ## Critical Issues Summary
 
 ### 🔴 Type Errors (CRITICAL)
+
 - **Location:** [file_system.py:145, 225](../src/cortex/core/file_system.py)
 - **Issue:** Return type mismatch - returning CoroutineType instead of declared types
 - **Impact:** Type system violations, CI fails
 - **Severity:** CRITICAL
 
 ### 🔴 Test Failures (CRITICAL)
+
 - **Count:** 4 failing tests
 - **Pass Rate:** 1916/1920 (99.8%)
 - **Impact:** CI pipeline fails
 - **Severity:** HIGH
 
 ### ⚠️ Style Warnings (HIGH)
+
 - **Location:** [file_system.py](../src/cortex/core/file_system.py)
 - **Issue:** 7 implicit string concatenation warnings
 - **Impact:** Pyright warnings, style inconsistency
@@ -54,6 +58,7 @@ These are mandatory fixes required for CI/CD pipeline success.
    - Verify if additional await is needed
 
 2. **Fix read_file type error (line 145)**
+
    ```python
    # Current (INCORRECT)
    async def read_file(...) -> tuple[str, str]:
@@ -81,6 +86,7 @@ These are mandatory fixes required for CI/CD pipeline success.
    - Apply same fix as read_file
 
 4. **Run type checker verification**
+
    ```bash
    .venv/bin/pyright src/cortex/core/file_system.py
    ```
@@ -88,6 +94,7 @@ These are mandatory fixes required for CI/CD pipeline success.
 5. **Verify no new type errors introduced**
 
 #### Success Criteria
+
 - ✅ Zero type errors in file_system.py
 - ✅ Pyright passes on file_system.py
 - ✅ All 40 file_system tests still passing
@@ -105,6 +112,7 @@ These are mandatory fixes required for CI/CD pipeline success.
 **Location:** [tests/unit/test_transclusion_engine.py](../tests/unit/test_transclusion_engine.py)
 
 **Failure:**
+
 ```python
 assert 'Circular transclusion detected' in str(excinfo.value)
 # Actual: "Failed to resolve transclusion: Circular dependency detected.
@@ -114,10 +122,12 @@ assert 'Circular transclusion detected' in str(excinfo.value)
 **Root Cause:** Error message format changed but test not updated
 
 **Fix Options:**
+
 1. Update test assertion to match new message format
 2. Update error message to match test expectation (not recommended)
 
 **Recommended Fix:**
+
 ```python
 # Update test assertion
 assert 'Circular dependency detected' in str(excinfo.value)
@@ -130,6 +140,7 @@ assert 'target.md' in str(excinfo.value) and 'forms a cycle' in str(excinfo.valu
 **Location:** [tests/unit/test_transclusion_engine.py](../tests/unit/test_transclusion_engine.py)
 
 **Action Required:**
+
 1. Run test with verbose output to see actual error
 2. Identify root cause
 3. Fix test or implementation
@@ -143,6 +154,7 @@ pytest tests/unit/test_transclusion_engine.py::TestResolveTransclusion::test_res
 **Location:** [tests/unit/test_validation_config.py](../tests/unit/test_validation_config.py)
 
 **Action Required:**
+
 1. Run test to see failure details
 2. Check validation logic in validation_config.py
 3. Verify type validation is working correctly
@@ -156,6 +168,7 @@ pytest tests/unit/test_validation_config.py::TestValidateConfig::test_validate_i
 **Location:** [tests/unit/test_validation_config.py](../tests/unit/test_validation_config.py)
 
 **Action Required:**
+
 1. Run test to see failure details
 2. Check quality weights validation logic
 3. Fix validation or update test expectations
@@ -165,6 +178,7 @@ pytest tests/unit/test_validation_config.py::TestValidateConfig::test_validate_i
 ```
 
 #### Success Criteria
+
 - ✅ All 1920 tests passing (100% pass rate)
 - ✅ No test skips or xfails without justification
 - ✅ Test execution time <35 seconds
@@ -190,6 +204,7 @@ pytest tests/unit/test_validation_config.py::TestValidateConfig::test_validate_i
 #### Fix Strategy
 
 **Option A: Single f-string (RECOMMENDED)**
+
 ```python
 # Before
 raise ValueError(
@@ -205,6 +220,7 @@ raise ValueError(
 ```
 
 **Option B: Explicit concatenation**
+
 ```python
 # After (alternative)
 raise ValueError(
@@ -215,6 +231,7 @@ raise ValueError(
 ```
 
 **Option C: Multi-line f-string**
+
 ```python
 # After (if message is very long)
 raise ValueError(
@@ -229,15 +246,19 @@ raise ValueError(
 2. **Apply fix consistently** - use Option A for all
 3. **Verify message formatting** - ensure messages are still readable
 4. **Run Pyright** to verify warnings eliminated:
+
    ```bash
    .venv/bin/pyright src/cortex/core/file_system.py
    ```
+
 5. **Run tests** to ensure error messages still work:
+
    ```bash
    pytest tests/unit/test_file_system.py -v
    ```
 
 #### Success Criteria
+
 - ✅ Zero implicit string concatenation warnings
 - ✅ All error messages still readable and informative
 - ✅ All 40 file_system tests still passing
@@ -248,32 +269,38 @@ raise ValueError(
 ## Phase Completion Checklist
 
 ### Pre-Implementation
+
 - [ ] Review all critical issues in detail
 - [ ] Understand root causes
 - [ ] Plan fix approach for each issue
 
 ### Implementation
+
 - [ ] **Milestone 10.1.1:** Fix type errors (2 fixes)
 - [ ] **Milestone 10.1.2:** Fix failing tests (4 fixes)
 - [ ] **Milestone 10.1.3:** Fix string concatenation (7 fixes)
 
 ### Verification
+
 - [ ] Run Pyright - zero errors
 - [ ] Run full test suite - 100% pass rate
 - [ ] Run Ruff - zero violations
 - [ ] Verify no regressions
 
 ### Code Quality
+
 - [ ] Format with Black: `black .`
 - [ ] Sort imports with isort: `isort .`
 - [ ] Verify formatting: `black --check .`
 
 ### Documentation
+
 - [ ] Update activeContext.md
 - [ ] Update progress.md
 - [ ] Create completion summary
 
 ### Final Validation
+
 - [ ] All 1920 tests passing
 - [ ] Zero type errors
 - [ ] Zero Pyright warnings
@@ -306,16 +333,19 @@ raise ValueError(
 ## Risk Assessment
 
 ### High Risk
+
 - **Type error fixes may reveal deeper issues** in retry_async decorator
   - Mitigation: Thoroughly test retry_async behavior
   - Fallback: Refactor retry_async if needed
 
 ### Medium Risk
+
 - **Test fixes may require implementation changes**
   - Mitigation: Prefer test updates over implementation changes
   - Fallback: If implementation change needed, ensure backward compatibility
 
 ### Low Risk
+
 - **String concatenation fixes** are straightforward
   - Mitigation: Apply consistently, test thoroughly
 
@@ -324,9 +354,11 @@ raise ValueError(
 ## Dependencies
 
 ### Blocks
+
 - Phase 10.2 (File Size Compliance) - Cannot proceed until CI passes
 
 ### Blocked By
+
 - None - This is the critical path
 
 ---
@@ -347,6 +379,7 @@ raise ValueError(
 ## Next Steps
 
 After Phase 10.1 completion:
+
 1. ✅ All tests passing
 2. ✅ Zero type errors
 3. ✅ CI/CD ready

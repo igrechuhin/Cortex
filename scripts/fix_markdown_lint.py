@@ -52,6 +52,11 @@ async def main() -> int:
         help="Include untracked markdown files",
     )
     _ = parser.add_argument(
+        "--check-all",
+        action="store_true",
+        help="Check all markdown files in project, not just modified ones",
+    )
+    _ = parser.add_argument(
         "--json",
         action="store_true",
         help="Output results as JSON",
@@ -70,6 +75,7 @@ async def main() -> int:
         project_root=project_root_str,
         include_untracked=args.include_untracked,
         dry_run=args.dry_run,
+        check_all_files=args.check_all,
     )
 
     # Parse result

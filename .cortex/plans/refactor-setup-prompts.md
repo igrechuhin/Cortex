@@ -1,10 +1,13 @@
 # Refactor Setup Prompts: Simplify to 3 Prompts
 
 ## Status
+
 Planning
 
 ## Goal
+
 Simplify the setup prompt system from 4 separate prompts to 3 unified prompts that better match user workflows:
+
 - `initialize` - Complete setup for new projects (with default synapse_repo_url)
 - `migrate` - For projects with old/legacy structure (does initialize + migration, then removes legacy)
 - `setup_synapse` - Allows overriding the default synapse_repo_url (always available)
@@ -12,18 +15,22 @@ Simplify the setup prompt system from 4 separate prompts to 3 unified prompts th
 ## Context
 
 ### Current State
+
 Currently, there are 4 setup prompts:
+
 1. `initialize_memory_bank` - Creates memory bank with 7 core files
 2. `setup_project_structure` - Creates full `.cortex/` directory structure
 3. `setup_cursor_integration` - Configures Cursor IDE integration
 4. `setup_synapse` - Adds Synapse repository as Git submodule
 
 And 3 migration prompts:
+
 1. `check_migration_status` - Checks if migration is needed
 2. `migrate_memory_bank` - Migrates memory bank files
 3. `migrate_project_structure` - Migrates entire project structure
 
 ### Problems with Current Approach
+
 - Too many prompts for what should be simple operations
 - Users need to run multiple prompts in sequence for complete setup
 - Migration prompts are separate from initialization, causing confusion
@@ -31,6 +38,7 @@ And 3 migration prompts:
 - Users must manually chain operations
 
 ### User Requirements
+
 1. **`initialize`** - Should be a single prompt that:
    - Creates complete `.cortex/` structure (memory-bank, plans, config)
    - Initializes memory bank with 7 core files
@@ -138,34 +146,40 @@ And 3 migration prompts:
 ## Implementation Steps
 
 ### Step 1: Create New Prompt Templates
+
 - [ ] Create `_INITIALIZE_PROMPT` template combining all initialization steps
 - [ ] Create `_MIGRATE_PROMPT` template combining migration steps
 - [ ] Update `_SETUP_SYNAPSE_PROMPT_TEMPLATE` with default parameter
 
 ### Step 2: Update Prompt Registration
+
 - [ ] Remove old prompt function definitions
 - [ ] Add new `initialize()` prompt function with conditional registration
 - [ ] Add new `migrate()` prompt function with conditional registration
 - [ ] Update `setup_synapse()` to always be registered with default parameter
 
 ### Step 3: Update Conditional Logic
+
 - [ ] Review and update `config_status.py` if needed
 - [ ] Ensure conditional registration logic works correctly
 - [ ] Test conditional registration in different project states
 
 ### Step 4: Update Documentation
+
 - [ ] Update README.md "Setup Prompts" section
 - [ ] Update README.md "Which Prompt Should I Use?" table
 - [ ] Update docs/prompts/README.md
 - [ ] Create/update prompt documentation files
 
 ### Step 5: Update Tests
+
 - [ ] Update `test_conditional_prompts.py` for new prompts
 - [ ] Add integration tests for new prompt flows
 - [ ] Remove tests for old prompts
 - [ ] Ensure all tests pass
 
 ### Step 6: Verification
+
 - [ ] Test `initialize` prompt in uninitialized project
 - [ ] Test `migrate` prompt in project with legacy structure
 - [ ] Test `setup_synapse` with default and custom URLs
@@ -177,6 +191,7 @@ And 3 migration prompts:
 ### New Prompt Structure
 
 #### `initialize` Prompt
+
 ```python
 @mcp.prompt()
 def initialize() -> str:
@@ -197,6 +212,7 @@ def initialize() -> str:
 **Conditional Registration**: `if not _config_status["memory_bank_initialized"] and not _config_status["structure_configured"]`
 
 #### `migrate` Prompt
+
 ```python
 @mcp.prompt()
 def migrate() -> str:
@@ -216,6 +232,7 @@ def migrate() -> str:
 **Conditional Registration**: `if _config_status["migration_needed"]`
 
 #### `setup_synapse` Prompt
+
 ```python
 @mcp.prompt()
 def setup_synapse(synapse_repo_url: str = "https://github.com/igrechuhin/Synapse.git") -> str:
@@ -235,14 +252,18 @@ def setup_synapse(synapse_repo_url: str = "https://github.com/igrechuhin/Synapse
 ### Prompt Content Structure
 
 #### Initialize Prompt Content
+
 Should guide through:
+
 1. Creating `.cortex/` directory structure
 2. Initializing memory bank with 7 core files
 3. Setting up Cursor integration (symlinks + mcp.json)
 4. Optionally setting up Synapse with default URL
 
 #### Migrate Prompt Content
+
 Should guide through:
+
 1. Detecting legacy structure
 2. Creating new `.cortex/` structure (via initialize steps)
 3. Migrating all legacy files to new structure
@@ -271,19 +292,25 @@ Should guide through:
 ## Risks & Mitigation
 
 ### Risk 1: Breaking Existing Workflows
-**Mitigation**: 
+
+**Mitigation**:
+
 - Keep migration logic intact
 - Ensure new prompts cover all functionality of old prompts
 - Test thoroughly with different project states
 
 ### Risk 2: Conditional Registration Logic Issues
+
 **Mitigation**:
+
 - Review `config_status.py` logic carefully
 - Add comprehensive tests for different project states
 - Ensure edge cases are handled
 
 ### Risk 3: Migration Not Completing Properly
+
 **Mitigation**:
+
 - Ensure migration prompt includes initialization step
 - Test migration flow thoroughly
 - Ensure legacy cleanup only happens after successful migration

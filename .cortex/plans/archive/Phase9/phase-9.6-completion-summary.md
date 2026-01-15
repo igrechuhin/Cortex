@@ -27,6 +27,7 @@ Phase 9.6 focused on improving code style through named constants extraction, al
 **Created:** [src/cortex/core/constants.py](../src/cortex/core/constants.py)
 
 **Contents:**
+
 - File size limits (3 constants)
 - Token budget defaults (4 constants)
 - Similarity thresholds (4 constants)
@@ -50,12 +51,14 @@ Phase 9.6 focused on improving code style through named constants extraction, al
 **Modules Updated:** 7 files
 
 #### 2.1 duplication_detector.py
+
 - **Replaced:** `0.85` → `SIMILARITY_THRESHOLD_DUPLICATE`
 - **Replaced:** `50` → `MIN_SECTION_LENGTH_CHARS`
 - **Added:** Algorithm comment explaining hash-based grouping approach
 - **Added:** Detailed docstring for `calculate_similarity()` with complexity analysis
 
 #### 2.2 validation_config.py
+
 - **Replaced:** `0.85` → `SIMILARITY_THRESHOLD_DUPLICATE`
 - **Replaced:** `50` → `MIN_SECTION_LENGTH_CHARS`
 - **Replaced:** `0.25, 0.25, 0.15, 0.20, 0.15` → Quality weight constants
@@ -63,18 +66,21 @@ Phase 9.6 focused on improving code style through named constants extraction, al
 - **Impact:** 8 magic numbers eliminated
 
 #### 2.3 quality_metrics.py
+
 - **Replaced:** `0.25, 0.25, 0.15, 0.20, 0.15` → Quality weight constants
 - **Added:** Algorithm comment explaining weighted scoring rationale
 - **Added:** Detailed docstring for `_calculate_weighted_score()`
 - **Impact:** 5 magic numbers eliminated
 
 #### 2.4 file_system.py
+
 - **Replaced:** `100` → `RATE_LIMIT_OPS_PER_SECOND`
 - **Replaced:** `0.1` → `LOCK_POLL_INTERVAL_SECONDS`
 - **Added:** Design decision comment explaining file locking strategy
 - **Impact:** 2 magic numbers eliminated
 
 #### 2.5 cache.py
+
 - **Replaced:** `300` → `CACHE_TTL_SECONDS`
 - **Replaced:** `100` → `CACHE_MAX_SIZE`
 - **Added:** Design decision comments for TTL and LRU policies
@@ -82,11 +88,13 @@ Phase 9.6 focused on improving code style through named constants extraction, al
 - **Impact:** 2 magic numbers eliminated
 
 #### 2.6 security.py
+
 - **Replaced:** `100` → `RATE_LIMIT_OPS_PER_SECOND`
 - **Added:** Design decision comment explaining sliding window rate limiting
 - **Impact:** 1 magic number eliminated
 
 #### 2.7 managers/initialization.py
+
 - **Note:** Already uses constants from consolidation_detector.py (`target_reduction=0.30`)
 - **No changes needed:** Already compliant
 
@@ -99,6 +107,7 @@ Phase 9.6 focused on improving code style through named constants extraction, al
 **Modules Enhanced:** 5 modules
 
 #### 3.1 duplication_detector.py
+
 ```python
 # Algorithm: Content similarity detection using hash-based grouping.
 # Purpose: Efficiently find duplicate and similar sections across files.
@@ -107,11 +116,13 @@ Phase 9.6 focused on improving code style through named constants extraction, al
 ```
 
 **Also added comments for:**
+
 - Hybrid similarity scoring (SequenceMatcher + Jaccard)
 - Content signature computation
 - Pairwise comparison strategy
 
 #### 3.2 quality_metrics.py
+
 ```python
 # Algorithm: Weighted sum of quality components
 # Purpose: Combine multiple quality dimensions into single 0-100 score
@@ -122,6 +133,7 @@ Phase 9.6 focused on improving code style through named constants extraction, al
 ```
 
 #### 3.3 file_system.py
+
 ```python
 # Algorithm: Polling-based file lock with exponential backoff opportunity
 # Purpose: Prevent concurrent writes to same file
@@ -131,7 +143,9 @@ Phase 9.6 focused on improving code style through named constants extraction, al
 ```
 
 #### 3.4 cache.py
+
 **TTLCache:**
+
 ```python
 # Design Decision: TTL-based cache eviction
 # Context: Need to balance memory usage with cache hit rate
@@ -141,6 +155,7 @@ Phase 9.6 focused on improving code style through named constants extraction, al
 ```
 
 **LRUCache:**
+
 ```python
 # Design Decision: LRU eviction policy
 # Context: Need size-bounded cache with intelligent eviction
@@ -150,6 +165,7 @@ Phase 9.6 focused on improving code style through named constants extraction, al
 ```
 
 #### 3.5 security.py
+
 ```python
 # Design Decision: Sliding window rate limiting
 # Context: Need to prevent abuse of file operations without blocking legitimate use
@@ -165,6 +181,7 @@ Phase 9.6 focused on improving code style through named constants extraction, al
 **Modules Enhanced:** 4 modules (file_system.py, cache.py, security.py, duplication_detector.py)
 
 **Template Used:**
+
 ```python
 # Design Decision: <Topic>
 # Context: <Why this decision was needed>
@@ -180,12 +197,14 @@ Phase 9.6 focused on improving code style through named constants extraction, al
 ## What Was Deferred
 
 ### 1. Tool Docstring Enhancements ⏸️
+
 **Reason:** Substantial work requiring review of 25+ MCP tools
 **Estimated Effort:** 1-2 hours
 **Priority:** Medium
 **Plan:** Complete in Phase 9.6.1 follow-up
 
 ### 2. Protocol Docstring Enhancements ⏸️
+
 **Reason:** Requires careful consideration of implementation examples
 **Estimated Effort:** 0.5-1 hours
 **Priority:** Medium
@@ -238,9 +257,11 @@ Phase 9.6 focused on improving code style through named constants extraction, al
 ## Files Modified
 
 ### New Files (1)
+
 1. `src/cortex/core/constants.py` (147 lines)
 
 ### Modified Files (7)
+
 1. `src/cortex/validation/duplication_detector.py`
 2. `src/cortex/validation/validation_config.py`
 3. `src/cortex/validation/quality_metrics.py`
@@ -257,30 +278,39 @@ Phase 9.6 focused on improving code style through named constants extraction, al
 ## Key Achievements
 
 ### 1. Zero Magic Numbers in Critical Paths ✅
+
 All magic numbers in core algorithms, validation, and caching have been replaced with named constants. This dramatically improves maintainability and makes threshold tuning centralized.
 
 ### 2. Comprehensive Constants Module ✅
+
 Created a well-organized constants module with:
+
 - Clear categorization (10 categories)
 - Inline documentation for every constant
 - Sensible default values
 - Easy-to-modify threshold values
 
 ### 3. Algorithm Transparency ✅
+
 All complex algorithms now have explanatory comments describing:
+
 - Purpose and approach
 - Complexity analysis
 - Rationale for design choices
 
 ### 4. Design Decision Documentation ✅
+
 Critical design decisions are now documented directly in code:
+
 - File locking strategy
 - Cache eviction policies
 - Rate limiting approach
 - Similarity detection algorithms
 
 ### 5. Improved Docstring Quality ✅
+
 Enhanced docstrings for complex methods with:
+
 - Algorithm explanations
 - Complexity analysis
 - Usage examples where appropriate
@@ -296,6 +326,7 @@ Enhanced docstrings for complex methods with:
 **Remaining Gap:** -0.2 points
 
 **What's Left to Reach 9.8/10:**
+
 1. ⏸️ Tool docstring enhancements (estimated +0.1)
 2. ⏸️ Protocol docstring enhancements (estimated +0.1)
 
@@ -329,20 +360,24 @@ Enhanced docstrings for complex methods with:
 ## Recommendations for Phase 9.6.1
 
 ### Priority 1: Tool Docstring Enhancement
+
 **Effort:** 1-2 hours
 **Impact:** +0.1 to code style score
 
 **Approach:**
+
 1. Review all 25 MCP tools
 2. Add usage examples to docstrings
 3. Document error responses
 4. Explain parameter options
 
 ### Priority 2: Protocol Docstring Enhancement
+
 **Effort:** 0.5-1 hours
 **Impact:** +0.1 to code style score
 
 **Approach:**
+
 1. Review 24 protocol definitions
 2. Document required methods
 3. Add implementation examples
@@ -375,10 +410,12 @@ Enhanced docstrings for complex methods with:
 ## Next Steps
 
 ### Immediate (Phase 9.6.1)
+
 1. ✅ **Phase 9.6 Core Complete** - Constants, algorithm comments, design decisions
 2. ⏸️ **Phase 9.6.1 Deferred** - Tool and protocol docstring enhancements (1-2 hours)
 
 ### Future (Phase 9.7+)
+
 1. 🟢 **Phase 9.7:** Error handling excellence (next priority)
 2. 🟢 **Phase 9.8:** Maintainability improvements
 3. 🟢 **Phase 9.9:** Final integration and verification

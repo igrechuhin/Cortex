@@ -1227,6 +1227,7 @@ class CustomValidator:
 **Issue: Memory Bank sync conflicts in multi-repo setup**
 
 Solution:
+
 ```bash
 # Reset to shared state
 cortex sync_shared_rules --force --strategy=theirs
@@ -1238,6 +1239,7 @@ cortex merge_rules --base=shared --local=current --remote=incoming
 **Issue: Transclusion loops detected**
 
 Solution:
+
 ```json
 {
   "transclusion": {
@@ -1251,6 +1253,7 @@ Solution:
 **Issue: CI/CD validation timeout**
 
 Solution:
+
 ```json
 {
   "validation": {

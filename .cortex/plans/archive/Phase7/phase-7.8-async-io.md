@@ -95,6 +95,7 @@ Based on grep analysis, the following modules contain sync `open()` calls:
 Group operations by pattern:
 
 **Pattern A: JSON Config Load/Save** (8 modules)
+
 - validation_config.py
 - optimization_config.py
 - schema_validator.py
@@ -105,19 +106,23 @@ Group operations by pattern:
 - structure_manager.py
 
 **Pattern B: JSON History Load/Save** (1 module)
+
 - refactoring_executor.py
 
 **Pattern C: File Content Read** (3 modules)
+
 - split_recommender.py
 - dependency_graph.py
 - consolidation_detector.py
 
 **Pattern D: Cache Load/Save** (1 module)
+
 - summarization_engine.py
 
 ### Step 2: Create Conversion Template (30 minutes)
 
 **Template for JSON Load:**
+
 ```python
 # Before (sync)
 try:
@@ -136,6 +141,7 @@ except FileNotFoundError:
 ```
 
 **Template for JSON Save:**
+
 ```python
 # Before (sync)
 with open(self.config_path, "w") as f:
@@ -147,6 +153,7 @@ async with aiofiles.open(self.config_path, "w") as f:
 ```
 
 **Template for Text Read:**
+
 ```python
 # Before (sync)
 with open(file_path, encoding="utf-8") as f:
@@ -160,6 +167,7 @@ async with aiofiles.open(file_path, encoding="utf-8") as f:
 ### Step 3: Convert Modules by Pattern (3-4 hours)
 
 **Phase 3a: Pattern A - Config Modules** (1.5 hours)
+
 1. validation_config.py
 2. optimization_config.py
 3. schema_validator.py
@@ -170,24 +178,29 @@ async with aiofiles.open(file_path, encoding="utf-8") as f:
 8. structure_manager.py
 
 **Phase 3b: Pattern B - History Module** (30 minutes)
+
 1. refactoring_executor.py
 
 **Phase 3c: Pattern C - Content Reading** (45 minutes)
+
 1. split_recommender.py
 2. dependency_graph.py
 3. consolidation_detector.py
 
 **Phase 3d: Pattern D - Cache Module** (15 minutes)
+
 1. summarization_engine.py
 
 ### Step 4: Update Tests (1-2 hours)
 
 For each converted module:
+
 1. Update test fixtures to mock `aiofiles.open()` instead of `open()`
 2. Ensure all file operation tests still pass
 3. Add async markers where needed
 
 **Example Test Update:**
+
 ```python
 # Before
 def test_load_config(tmp_path):
@@ -211,6 +224,7 @@ async def test_load_config(tmp_path):
 ### Step 5: Validation & Performance Testing (1 hour)
 
 1. **Run Full Test Suite:**
+
    ```bash
    gtimeout -k 5 600 ./.venv/bin/pytest -v
    ```
@@ -249,6 +263,7 @@ async def test_load_config(tmp_path):
 **Risk:** Converting methods to async changes their signatures, potentially breaking callers.
 
 **Mitigation:**
+
 - Review all call sites for each converted method
 - Update callers to use `await` where needed
 - Use IDE refactoring tools to find all references
@@ -259,6 +274,7 @@ async def test_load_config(tmp_path):
 **Risk:** Mocking async file operations is more complex than sync.
 
 **Mitigation:**
+
 - Use `pytest-asyncio` fixtures
 - Create reusable mock helpers for `aiofiles.open()`
 - Document async testing patterns in [testing.md](../docs/development/testing.md)
@@ -268,6 +284,7 @@ async def test_load_config(tmp_path):
 **Risk:** Async overhead might slow down small file operations.
 
 **Mitigation:**
+
 - Benchmark before/after conversion
 - Focus on correctness first, optimize if needed
 - Most files are small (<10KB), minimal impact expected
@@ -277,6 +294,7 @@ async def test_load_config(tmp_path):
 **Risk:** Missing some sync file operations during conversion.
 
 **Mitigation:**
+
 - Re-run grep after conversion to verify all instances converted
 - Code review checklist with explicit file I/O checks
 - Add CI check to prevent future sync file operations
@@ -288,6 +306,7 @@ async def test_load_config(tmp_path):
 ### Unit Tests
 
 For each converted module:
+
 1. Verify file loading works with async
 2. Verify file saving works with async
 3. Test error handling (FileNotFoundError, PermissionError, etc.)
@@ -334,6 +353,7 @@ For each converted module:
 If conversion causes issues:
 
 1. **Immediate Rollback:**
+
    ```bash
    git checkout HEAD -- src/cortex/[affected-files]
    ```
@@ -352,10 +372,12 @@ If conversion causes issues:
 ## Dependencies
 
 **Python Packages:**
+
 - `aiofiles>=23.0.0` (already in requirements)
 - `pytest-asyncio>=0.21.0` (already in dev dependencies)
 
 **Tools:**
+
 - grep/ripgrep for finding sync operations
 - IDE refactoring for updating call sites
 - Black + isort for formatting
@@ -365,6 +387,7 @@ If conversion causes issues:
 ## Expected Outcomes
 
 **Performance Score Impact:**
+
 - Current: 7.5/10
 - After Phase 7.8: 8.5/10
 - Contributing factors:
@@ -373,6 +396,7 @@ If conversion causes issues:
   - Improved resource management
 
 **Code Quality Impact:**
+
 - Architectural consistency: All I/O operations follow same pattern
 - Maintainability: Easier to reason about async flow
 - Future-proof: Ready for high-concurrency scenarios
@@ -382,12 +406,14 @@ If conversion causes issues:
 ## Checklist
 
 ### Preparation
+
 - [x] Review all 22 sync file operations
 - [x] Create conversion templates
 - [x] Set up test environment
 - [x] Document current performance baselines
 
 ### Implementation
+
 - [x] Convert Pattern A modules (8 modules)
 - [x] Convert Pattern B module (1 module)
 - [x] Convert Pattern C modules (3 modules)
@@ -396,19 +422,22 @@ If conversion causes issues:
 - [x] Format all modified files
 
 ### Validation
+
 - [x] Run full test suite (1,701 tests - all passing ✅)
 - [x] Verify no regressions
-- [x] Review with grep: no remaining sync operations (except intentional __init__ loads)
+- [x] Review with grep: no remaining sync operations (except intentional **init** loads)
 - [ ] Run performance benchmarks (deferred - no performance-critical changes)
 - [ ] Check memory usage (deferred - minimal impact expected)
 
 ### Documentation
-- [x] Update module docstrings (added notes about sync __init__ methods)
+
+- [x] Update module docstrings (added notes about sync **init** methods)
 - [ ] Update architecture.md (deferred)
 - [ ] Update contributing.md (deferred)
 - [ ] Update testing.md (deferred)
 
 ### Completion
+
 - [x] All tests passing (1,701/1,701 ✅)
 - [x] Code formatted (black + isort)
 - [x] Phase 7.8 complete

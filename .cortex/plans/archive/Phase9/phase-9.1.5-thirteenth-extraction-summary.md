@@ -24,29 +24,37 @@ This function was refactored using a category-based detection pattern, where ant
 ### Detection Categories
 
 #### 1. Oversized Files Detection
+
 - `_detect_oversized_files()` - Detect files >100KB
 
 #### 2. Graph Building
+
 - `_build_dependency_graph()` - Build dependency graph from DependencyGraph manager
 
 #### 3. Orphaned Files Detection
+
 - `_detect_orphaned_files()` - Detect files with no dependencies or dependents
 
 #### 4. Excessive Dependencies Detection
+
 - `_detect_excessive_dependencies()` - Detect files depending on >15 other files
 
 #### 5. Excessive Dependents Detection
+
 - `_detect_excessive_dependents()` - Detect files depended upon by >15 other files
 
 #### 6. Similar Filenames Detection
+
 - `_detect_similar_filenames()` - Detect files with similar names (potential duplication)
 
 #### 7. Sorting Utility
+
 - `_sort_patterns_by_severity()` - Sort patterns by severity (high > medium > low)
 
 ### Main Function
 
 The main `detect_anti_patterns()` function now orchestrates these detectors:
+
 1. Get all markdown files from memory-bank directory
 2. Build dependency graph
 3. Run all detection categories
@@ -57,6 +65,7 @@ The main `detect_anti_patterns()` function now orchestrates these detectors:
 ## Extracted Helper Functions
 
 ### 1. `_detect_oversized_files(all_files: list[Path]) -> list[dict[str, object]]`
+
 **Purpose:** Detect files larger than 100KB
 **Lines:** 19 logical lines
 **Type:** File size checker
@@ -64,12 +73,14 @@ The main `detect_anti_patterns()` function now orchestrates these detectors:
 **Returns:** List of oversized file anti-patterns
 
 ### 2. `_build_dependency_graph() -> dict[str, dict[str, list[str]]]`
+
 **Purpose:** Build dependency graph from DependencyGraph manager
 **Lines:** 13 logical lines
 **Type:** Graph builder
 **Benefit:** Reusable for other analyses
 
 ### 3. `_detect_orphaned_files(all_files: list[Path], graph: dict) -> list[dict[str, object]]`
+
 **Purpose:** Detect files with no dependencies or dependents
 **Lines:** 20 logical lines
 **Type:** Graph-based detector
@@ -77,6 +88,7 @@ The main `detect_anti_patterns()` function now orchestrates these detectors:
 **Returns:** List of orphaned file anti-patterns
 
 ### 4. `_detect_excessive_dependencies(graph: dict) -> list[dict[str, object]]`
+
 **Purpose:** Detect files depending on more than 15 other files
 **Lines:** 18 logical lines
 **Type:** Graph-based detector
@@ -84,6 +96,7 @@ The main `detect_anti_patterns()` function now orchestrates these detectors:
 **Returns:** List of excessive dependency anti-patterns
 
 ### 5. `_detect_excessive_dependents(graph: dict) -> list[dict[str, object]]`
+
 **Purpose:** Detect files depended upon by more than 15 other files
 **Lines:** 18 logical lines
 **Type:** Graph-based detector
@@ -91,6 +104,7 @@ The main `detect_anti_patterns()` function now orchestrates these detectors:
 **Returns:** List of excessive dependent anti-patterns
 
 ### 6. `_detect_similar_filenames(all_files: list[Path]) -> list[dict[str, object]]`
+
 **Purpose:** Detect files with similar names (potential duplication)
 **Lines:** 23 logical lines
 **Type:** String similarity checker
@@ -98,6 +112,7 @@ The main `detect_anti_patterns()` function now orchestrates these detectors:
 **Returns:** List of similar filename anti-patterns
 
 ### 7. `_sort_patterns_by_severity(patterns: list[dict[str, object]]) -> list[dict[str, object]]`
+
 **Purpose:** Sort anti-patterns by severity (high > medium > low)
 **Lines:** 14 logical lines
 **Type:** Pure sorting utility
@@ -106,6 +121,7 @@ The main `detect_anti_patterns()` function now orchestrates these detectors:
 ## Before and After
 
 ### Before (97 logical lines)
+
 ```python
 async def detect_anti_patterns(self) -> list[dict[str, object]]:
     """Detect organizational anti-patterns..."""
@@ -174,6 +190,7 @@ async def detect_anti_patterns(self) -> list[dict[str, object]]:
 ```
 
 ### After (16 logical lines)
+
 ```python
 async def detect_anti_patterns(self) -> list[dict[str, object]]:
     """
@@ -200,23 +217,27 @@ async def detect_anti_patterns(self) -> list[dict[str, object]]:
 ## Benefits
 
 ### Readability
+
 - ✅ Main function now clearly shows the high-level flow: get files → build graph → run detectors → sort → return
 - ✅ Each helper has a single, focused responsibility (one anti-pattern type)
 - ✅ Helper names clearly describe what they detect
 - ✅ Detection logic is isolated and testable independently
 
 ### Maintainability
+
 - ✅ Easy to add new anti-pattern detectors without modifying existing code
 - ✅ Easy to modify detection criteria for individual patterns
 - ✅ Clear separation between different detection categories
 - ✅ Graph building is centralized and reusable
 
 ### Reusability
+
 - ✅ `_build_dependency_graph()` can be reused for other analyses
 - ✅ `_sort_patterns_by_severity()` is a pure function reusable for any severity-based sorting
 - ✅ Individual detectors can be called independently for targeted analysis
 
 ### Testability
+
 - ✅ Each detector can be unit tested independently
 - ✅ Graph builder can be tested separately
 - ✅ Sorting utility is a pure function easy to test
@@ -224,11 +245,13 @@ async def detect_anti_patterns(self) -> list[dict[str, object]]:
 ## Testing
 
 ### Integration Tests
+
 - ✅ All 48 integration tests passing (100% pass rate)
 - ✅ No behavioral changes - output format identical
 - ✅ Anti-pattern detection logic preserved exactly
 
 ### Code Formatting
+
 - ✅ Already formatted with black (no changes needed)
 - ✅ Imports organized with isort
 - ✅ 100% compliance with project style guidelines
@@ -236,6 +259,7 @@ async def detect_anti_patterns(self) -> list[dict[str, object]]:
 ## Impact on Phase 9.1.5
 
 ### Progress Update
+
 - **Completed:** 13 of 140 functions (9.3%)
 - **Previous:** 12 of 140 functions (8.6%)
 - **Improvement:** +0.7 percentage points
@@ -243,6 +267,7 @@ async def detect_anti_patterns(self) -> list[dict[str, object]]:
 - **Actual Time:** 2 hours (on schedule)
 
 ### Cumulative Statistics
+
 - **Total Functions Extracted:** 13
 - **Total Lines Reduced:** 97 → 16 (this function) + previous extractions
 - **Average Reduction:** ~80% across all 13 functions
@@ -251,6 +276,7 @@ async def detect_anti_patterns(self) -> list[dict[str, object]]:
 ## Next Steps
 
 **Priority #14:** `check_structure_health()` in [structure/structure_lifecycle.py](../src/cortex/structure/structure_lifecycle.py)
+
 - **Lines:** 93 logical lines
 - **Excess:** 63 lines
 - **Estimated Effort:** 2-3 hours
@@ -280,6 +306,7 @@ All tests pass, code is properly formatted, and the project has now created 100 
 ---
 
 **See Also:**
+
 - [Phase 9.1.5 Function Extraction Report](./phase-9.1.5-function-extraction-report.md)
 - [Phase 9.1 Rules Compliance](./phase-9.1-rules-compliance.md)
 - [STATUS.md](./STATUS.md)

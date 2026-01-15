@@ -7,10 +7,12 @@ This guide provides solutions for common errors in Cortex.
 ### FileNotFoundError
 
 **Symptoms:**
+
 - Error message: `Failed to read/get file size/get modification time for 'filename'`
 - File operations fail
 
 **Causes:**
+
 - The requested file doesn't exist
 - File path is incorrect
 - Memory bank not initialized
@@ -18,6 +20,7 @@ This guide provides solutions for common errors in Cortex.
 **Solutions:**
 
 1. **Initialize Memory Bank:**
+
    ```bash
    # Run initialization to create default files
    initialize_memory_bank()
@@ -29,6 +32,7 @@ This guide provides solutions for common errors in Cortex.
    - Check for typos in the filename
 
 3. **Verify Memory Bank Directory:**
+
    ```bash
    ls -la .cursor/memory-bank/
    # OR
@@ -38,10 +42,12 @@ This guide provides solutions for common errors in Cortex.
 ### PermissionError
 
 **Symptoms:**
+
 - Error message: `Failed to read/write/create directory 'filename': Permission denied`
 - Cannot access files or directories
 
 **Causes:**
+
 - Insufficient file system permissions
 - File or directory owned by different user
 - Read-only file system
@@ -49,11 +55,13 @@ This guide provides solutions for common errors in Cortex.
 **Solutions:**
 
 1. **Check File Permissions:**
+
    ```bash
    ls -la <file>
    ```
 
 2. **Change Ownership (if appropriate):**
+
    ```bash
    chown <user> <file>
    # OR for entire directory:
@@ -61,6 +69,7 @@ This guide provides solutions for common errors in Cortex.
    ```
 
 3. **Change Permissions:**
+
    ```bash
    chmod 644 <file>  # For files
    chmod 755 <directory>  # For directories
@@ -73,10 +82,12 @@ This guide provides solutions for common errors in Cortex.
 ### FileConflictError
 
 **Symptoms:**
+
 - Error message: `Failed to write 'filename': File was modified externally`
 - Write operations fail with hash mismatch
 
 **Causes:**
+
 - File modified by external process or user
 - Concurrent modifications
 - Stale content hash
@@ -101,11 +112,13 @@ This guide provides solutions for common errors in Cortex.
 ### FileLockTimeoutError
 
 **Symptoms:**
+
 - Error message: `Failed to acquire lock on 'filename' after 5s`
 - Operations hang or timeout
 - Stale `.lock` files exist
 
 **Causes:**
+
 - Another process is writing to the file
 - Process crash left stale lock
 - Network file system issues
@@ -118,6 +131,7 @@ This guide provides solutions for common errors in Cortex.
    - Retry your operation
 
 2. **Check for Stale Locks:**
+
    ```bash
    # List lock files
    ls -la memory-bank/*.lock
@@ -127,12 +141,14 @@ This guide provides solutions for common errors in Cortex.
    ```
 
 3. **Remove Stale Locks:**
+
    ```bash
    # Remove locks older than 5 minutes
    find memory-bank/ -name "*.lock" -mmin +5 -delete
    ```
 
 4. **Verify No Other Processes:**
+
    ```bash
    # Check for MCP server processes
    ps aux | grep cortex
@@ -141,16 +157,19 @@ This guide provides solutions for common errors in Cortex.
 ### GitConflictError
 
 **Symptoms:**
+
 - Error message: `Git conflict markers detected in content`
 - Cannot save file with conflict markers
 
 **Causes:**
+
 - Unresolved git merge conflict
 - File contains `<<<<<<<`, `=======`, `>>>>>>>` markers
 
 **Solutions:**
 
 1. **Resolve Git Conflicts:**
+
    ```bash
    # View git status
    git status
@@ -171,11 +190,13 @@ This guide provides solutions for common errors in Cortex.
 ### IndexCorruptedError
 
 **Symptoms:**
+
 - Error message: `Failed to load memory bank index: Invalid schema structure`
 - Error message: `Invalid JSON at line X`
 - Metadata operations fail
 
 **Causes:**
+
 - Corrupted `.memory-bank-index` file
 - Invalid JSON in index
 - Disk failure during write
@@ -184,6 +205,7 @@ This guide provides solutions for common errors in Cortex.
 **Solutions:**
 
 1. **Delete and Rebuild Index:**
+
    ```bash
    # Delete corrupted index
    rm .memory-bank-index
@@ -193,17 +215,20 @@ This guide provides solutions for common errors in Cortex.
    ```
 
 2. **Verify with Validation:**
+
    ```bash
    # After rebuild, validate
    validate_memory_bank()
    ```
 
 3. **Check Disk Space:**
+
    ```bash
    df -h
    ```
 
 4. **Check File System Health (if recurring):**
+
    ```bash
    # macOS
    diskutil verifyVolume /
@@ -217,10 +242,12 @@ This guide provides solutions for common errors in Cortex.
 ### CircularDependencyError
 
 **Symptoms:**
+
 - Error message: `Circular dependency detected: fileA.md -> fileB.md -> fileA.md`
 - Transclusion resolution fails
 
 **Causes:**
+
 - File A includes file B
 - File B includes file A (or chain back to A)
 - Creates infinite loop
@@ -244,10 +271,12 @@ This guide provides solutions for common errors in Cortex.
 ### MaxDepthExceededError
 
 **Symptoms:**
+
 - Error message: `Maximum transclusion depth (5) exceeded`
 - Deep nested includes fail
 
 **Causes:**
+
 - Too many nested `{{include:}}` directives
 - Default depth limit of 5 reached
 
@@ -258,6 +287,7 @@ This guide provides solutions for common errors in Cortex.
    - Include files directly rather than through chains
 
 2. **Increase Depth Limit:**
+
    ```python
    # When initializing TransclusionEngine
    engine = TransclusionEngine(
@@ -274,9 +304,11 @@ This guide provides solutions for common errors in Cortex.
 ### Section Not Found
 
 **Symptoms:**
+
 - Error message: `Failed to transclude section 'Section Name': Section heading not found`
 
 **Causes:**
+
 - Section heading doesn't exist in target file
 - Case sensitivity mismatch
 - Special characters in heading
@@ -289,6 +321,7 @@ This guide provides solutions for common errors in Cortex.
    - Check for special characters
 
 2. **List Available Sections:**
+
    ```python
    # Parse file to see available sections
    result = await parse_file_links(file_name)
@@ -296,6 +329,7 @@ This guide provides solutions for common errors in Cortex.
    ```
 
 3. **Fix Include Directive:**
+
    ```markdown
    # Before (incorrect case)
    {{include:techContext.md#api reference}}
@@ -309,10 +343,12 @@ This guide provides solutions for common errors in Cortex.
 ### Invalid Configuration
 
 **Symptoms:**
+
 - Error messages about invalid config values
 - Config validation fails
 
 **Causes:**
+
 - Invalid JSON syntax in `.memory-bank-validation.json`
 - Invalid config values (out of range, wrong type)
 - Corrupted config file
@@ -320,6 +356,7 @@ This guide provides solutions for common errors in Cortex.
 **Solutions:**
 
 1. **Fix JSON Syntax:**
+
    ```bash
    # Validate JSON
    python -m json.tool .memory-bank-validation.json
@@ -331,6 +368,7 @@ This guide provides solutions for common errors in Cortex.
    - Check types (string, number, boolean)
 
 3. **Delete Config to Use Defaults:**
+
    ```bash
    # Backup current config
    mv .memory-bank-validation.json .memory-bank-validation.json.bak
@@ -339,6 +377,7 @@ This guide provides solutions for common errors in Cortex.
    ```
 
 4. **Reset to Defaults:**
+
    ```python
    # In code
    validation_config.reset_to_defaults()
@@ -350,10 +389,12 @@ This guide provides solutions for common errors in Cortex.
 ### Git Operation Failed
 
 **Symptoms:**
+
 - Shared rules sync fails
 - Git commands return errors
 
 **Causes:**
+
 - Network unavailable
 - Git repository unreachable
 - Authentication failure
@@ -362,21 +403,25 @@ This guide provides solutions for common errors in Cortex.
 **Solutions:**
 
 1. **Check Network Connectivity:**
+
    ```bash
    ping github.com
    ```
 
 2. **Verify Git Credentials:**
+
    ```bash
    git config --list | grep user
    ```
 
 3. **Check Repository Access:**
+
    ```bash
    git ls-remote <repository-url>
    ```
 
 4. **Retry Sync:**
+
    ```python
    # Sync will retry automatically with backoff
    await sync_shared_rules()
@@ -391,18 +436,21 @@ This guide provides solutions for common errors in Cortex.
 Cortex automatically retries transient failures:
 
 ### File Operations
+
 - **Retries:** 3 attempts
 - **Base Delay:** 0.5 seconds
 - **Max Delay:** 10 seconds
 - **Retry On:** OSError, IOError, PermissionError, BlockingIOError
 
 ### Git Operations
+
 - **Retries:** 2 attempts
 - **Base Delay:** 1.0 second
 - **Max Delay:** 10 seconds
 - **Retry On:** OSError, ConnectionError, TimeoutError
 
 ### Metadata Index
+
 - **Retries:** 3 attempts
 - **Base Delay:** 0.5 seconds
 - **Max Delay:** 10 seconds
@@ -413,18 +461,21 @@ Retries use exponential backoff with jitter to avoid thundering herd problems.
 ## Graceful Degradation
 
 ### Token Counting
+
 - **Primary:** tiktoken (accurate)
 - **Fallback:** Word-based estimation (~1 token per 4 characters)
 - **Trigger:** tiktoken unavailable or import fails
 - **Install:** `pip install tiktoken`
 
 ### Shared Rules
+
 - **Primary:** Git-based shared rules
 - **Fallback:** Local rules only
 - **Trigger:** Git unavailable or network issues
 - **Note:** `degraded: true` flag in responses
 
 ### Configuration
+
 - **Primary:** User config from `.memory-bank-validation.json`
 - **Fallback:** Default configuration values
 - **Trigger:** Config file missing, corrupted, or invalid
@@ -448,6 +499,7 @@ Retries use exponential backoff with jitter to avoid thundering herd problems.
    - Ensure sufficient space for operations
 
 5. **Regular Validation:**
+
    ```python
    # Run periodic validation
    result = await validate_memory_bank()
@@ -464,6 +516,7 @@ If you continue to experience issues:
    - Look for warning/error messages
 
 2. **Validate Installation:**
+
    ```bash
    pip show cortex
    python -c "import cortex; print(cortex.__version__)"

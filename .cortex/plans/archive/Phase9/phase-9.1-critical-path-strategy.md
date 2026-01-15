@@ -10,6 +10,7 @@
 ## Current State
 
 ### File Size Violations
+
 **Total:** 33 files over 400 lines
 **Critical Path:** Top 10 files (≥724 lines, total +4,238 lines over limit)
 
@@ -27,6 +28,7 @@
 | 10 | structure_analyzer.py | 724 | +324 | P0 |
 
 ### Function Length Violations
+
 **Total:** 102 violations in 43 files
 **Critical Path:** Top 15 functions (≥53 lines, +23 to +40 lines over)
 
@@ -57,6 +59,7 @@
 Extract top 15 function violations using systematic approach:
 
 **Extraction Pattern:**
+
 1. Identify helper function boundaries
 2. Extract logical blocks (validation, processing, finalization)
 3. Create descriptive helper function names
@@ -80,6 +83,7 @@ async def adjust_suggestion_confidence(self, feedback: dict[str, object]) -> Non
 ```
 
 **Files to Process:**
+
 1. learning_engine.py (3 functions: #1, #10, #14)
 2. structure_analyzer.py (2 functions: #2, #12)
 3. execution_validator.py (1 function: #3)
@@ -110,6 +114,7 @@ analysis/
 ```
 
 **Split Strategy:**
+
 - Move `generate_insights()` + helpers → insight_generator.py
 - Move `export_*()` methods → insight_formatter.py
 - Move `_generate_*_insights()` → insight_analyzer.py
@@ -211,6 +216,7 @@ analysis/
 ## Testing Strategy
 
 ### After Each Function Extraction
+
 ```bash
 # Run tests for the modified module
 pytest tests/unit/test_<module>.py -v
@@ -220,6 +226,7 @@ pytest tests/unit/test_<module>.py --cov=src/cortex/<path>/<module>.py --cov-rep
 ```
 
 ### After Each File Split
+
 ```bash
 # Run full test suite
 gtimeout -k 5 300 python -m pytest -q
@@ -229,6 +236,7 @@ uv run cortex --version
 ```
 
 ### Final Validation
+
 ```bash
 # Full test suite
 gtimeout -k 5 600 ./.venv/bin/pytest
@@ -245,21 +253,25 @@ python3 scripts/analyze_function_lengths.py
 ## Success Criteria
 
 ### File Size Compliance (Top 10)
+
 - ✅ 0 files >400 lines in top 10
 - ✅ All splits <400 lines each
 - ✅ No duplicated code
 
 ### Function Length Compliance (Top 15)
+
 - ✅ 15 functions extracted to <30 lines
 - ✅ Helper functions properly named
 - ✅ Test coverage maintained
 
 ### Test Quality
+
 - ✅ All tests passing (100% pass rate)
 - ✅ No regressions introduced
 - ✅ Coverage maintained/improved
 
 ### Code Quality
+
 - ✅ Imports updated correctly
 - ✅ Type hints preserved
 - ✅ Docstrings maintained
@@ -270,14 +282,17 @@ python3 scripts/analyze_function_lengths.py
 ## Risk Mitigation
 
 ### Breaking Changes
+
 - **Risk:** File splits break imports
 - **Mitigation:** Update all imports atomically, test after each split
 
 ### Test Failures
+
 - **Risk:** Refactoring breaks functionality
 - **Mitigation:** Run tests after every change, revert if tests fail
 
 ### Time Overrun
+
 - **Risk:** 10-15h estimate insufficient
 - **Mitigation:** Focus on P0 files first, defer remaining if needed
 

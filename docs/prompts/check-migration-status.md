@@ -22,6 +22,7 @@ I need you to:
 ## What Happens
 
 The assistant will:
+
 1. Check for old format at `.cursor/memory-bank/`
 2. Check for new format at `memory-bank/`
 3. Validate file structure and metadata

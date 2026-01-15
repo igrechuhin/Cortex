@@ -5,6 +5,7 @@ This document describes all known failure modes in Cortex, their causes, impacts
 ## Overview
 
 Cortex implements multiple layers of error handling:
+
 - **Automatic Retry:** Transient failures are retried with exponential backoff
 - **Graceful Degradation:** Optional features fall back to simpler alternatives
 - **Error Recovery:** Corrupted data can be automatically rebuilt
@@ -20,6 +21,7 @@ These failures can prevent the system from operating and require immediate actio
 **Impact:** All metadata operations may fail
 
 **Symptoms:**
+
 - `IndexCorruptedError` on startup or operations
 - Error: "Invalid JSON at line X"
 - Error: "Invalid schema structure"
@@ -27,6 +29,7 @@ These failures can prevent the system from operating and require immediate actio
 - Inconsistent dependency graph
 
 **Causes:**
+
 - Disk failure during write operation
 - Concurrent modification by multiple processes
 - Invalid JSON syntax in `.memory-bank-index` file
@@ -34,6 +37,7 @@ These failures can prevent the system from operating and require immediate actio
 - File system corruption
 
 **Impact:**
+
 - File metadata may be stale or missing
 - Token counts may be incorrect
 - Dependency information may be wrong
@@ -43,6 +47,7 @@ These failures can prevent the system from operating and require immediate actio
 **Recovery Procedure:**
 
 1. **Automatic Recovery (Preferred):**
+
    ```bash
    # Delete corrupted index
    rm .memory-bank-index
@@ -58,6 +63,7 @@ These failures can prevent the system from operating and require immediate actio
    - Regenerates metadata
 
 2. **Manual Verification:**
+
    ```bash
    # After rebuild, validate
    validate_memory_bank()
@@ -73,6 +79,7 @@ These failures can prevent the system from operating and require immediate actio
    - Check for concurrent processes
 
 **Prevention:**
+
 - Enable atomic writes (default: enabled)
 - Use file locking (default: enabled)
 - Maintain regular backups
@@ -90,6 +97,7 @@ These failures can prevent the system from operating and require immediate actio
 **Impact:** File operations blocked, server may become unresponsive
 
 **Symptoms:**
+
 - Operations hang indefinitely
 - `FileLockTimeoutError` after 5 seconds
 - Error: "Failed to acquire lock after 5s"
@@ -97,6 +105,7 @@ These failures can prevent the system from operating and require immediate actio
 - Multiple processes waiting
 
 **Causes:**
+
 - Process crash during locked operation
 - Server terminated without cleanup
 - Network file system latency issues
@@ -104,6 +113,7 @@ These failures can prevent the system from operating and require immediate actio
 - Lock file not released properly
 
 **Impact:**
+
 - All write operations to locked file blocked
 - Read operations may be delayed
 - Server appears frozen for that file
@@ -112,6 +122,7 @@ These failures can prevent the system from operating and require immediate actio
 **Recovery Procedure:**
 
 1. **Identify Stale Locks:**
+
    ```bash
    # List lock files with timestamps
    ls -lh memory-bank/*.lock
@@ -121,6 +132,7 @@ These failures can prevent the system from operating and require immediate actio
    ```
 
 2. **Verify No Active Processes:**
+
    ```bash
    # Check for running MCP servers
    ps aux | grep cortex
@@ -130,6 +142,7 @@ These failures can prevent the system from operating and require immediate actio
    ```
 
 3. **Remove Stale Locks:**
+
    ```bash
    # Remove specific lock
    rm memory-bank/filename.md.lock
@@ -139,6 +152,7 @@ These failures can prevent the system from operating and require immediate actio
    ```
 
 4. **Restart Server (if needed):**
+
    ```bash
    # Stop MCP server
    pkill -f cortex
@@ -147,6 +161,7 @@ These failures can prevent the system from operating and require immediate actio
    ```
 
 **Prevention:**
+
 - Use single MCP server instance
 - Implement proper shutdown handlers
 - Configure appropriate timeout (default: 5s)
@@ -164,17 +179,20 @@ These failures can prevent the system from operating and require immediate actio
 **Impact:** Potential unauthorized file access
 
 **Symptoms:**
+
 - `PermissionError`: "Path outside project root"
 - File operations rejected
 - Validation failures
 
 **Causes:**
+
 - Malicious input with path traversal (../)
 - Incorrect project root configuration
 - Symbolic link manipulation
 - Absolute paths outside project
 
 **Impact:**
+
 - Operations correctly rejected (defense working)
 - No data corruption
 - No unauthorized access
@@ -182,6 +200,7 @@ These failures can prevent the system from operating and require immediate actio
 **Recovery Procedure:**
 
 1. **Verify Project Root:**
+
    ```python
    # Check configured project root
    print(file_system.project_root)
@@ -193,12 +212,14 @@ These failures can prevent the system from operating and require immediate actio
    - No absolute paths outside project
 
 3. **Check File Paths:**
+
    ```bash
    # Verify all files are within project
    find . -name "*.md" -not -path "./.git/*"
    ```
 
 **Prevention:**
+
 - All paths validated on input (enabled by default)
 - Paths resolved to absolute before validation
 - No operations allowed outside project root
@@ -218,12 +239,14 @@ These failures degrade functionality but allow system to continue operating.
 **Impact:** Shared rules may be outdated, local rules still work
 
 **Symptoms:**
+
 - `GitOperationError` during sync
 - Error: "Git pull failed with exit code 1"
 - Network timeout errors
 - Shared rules not updated
 
 **Causes:**
+
 - Network unavailable
 - Git repository unreachable
 - Authentication failure
@@ -231,12 +254,14 @@ These failures degrade functionality but allow system to continue operating.
 - Git not installed
 
 **Impact:**
+
 - Shared rules may be stale
 - Local rules continue working
 - System marks status as `degraded: true`
 - Context-aware rule loading reduced
 
 **Degradation Behavior:**
+
 ```json
 {
   "status": "degraded",
@@ -250,30 +275,35 @@ These failures degrade functionality but allow system to continue operating.
 **Recovery Procedure:**
 
 1. **Check Network:**
+
    ```bash
    ping github.com
    curl -I https://github.com
    ```
 
 2. **Verify Git Access:**
+
    ```bash
    git --version
    git ls-remote <repo-url>
    ```
 
 3. **Check Credentials:**
+
    ```bash
    git config --list | grep credential
    ssh -T git@github.com  # For SSH
    ```
 
 4. **Retry Sync:**
+
    ```python
    # Auto-retries with backoff
    result = await sync_shared_rules()
    ```
 
 5. **Handle Conflicts:**
+
    ```bash
    # If local changes conflict
    cd .shared-rules
@@ -284,6 +314,7 @@ These failures degrade functionality but allow system to continue operating.
    ```
 
 **Prevention:**
+
 - Check network connectivity before sync
 - Use credential caching
 - Sync during low-traffic periods
@@ -300,23 +331,27 @@ These failures degrade functionality but allow system to continue operating.
 **Impact:** Token counts less accurate but usable
 
 **Symptoms:**
+
 - Warning: "tiktoken not available, using word-based estimation"
 - Token counts approximate
 - Budget estimates less precise
 
 **Causes:**
+
 - `tiktoken` not installed
 - tiktoken import failed
 - Encoding download failed
 - Python version incompatibility
 
 **Impact:**
+
 - Token counts ~80% accurate
 - Token budgets slightly off
 - Optimization less precise
 - System continues functioning
 
 **Degradation Behavior:**
+
 - Uses word-based estimation: ~1 token per 4 characters
 - Less accurate than tiktoken (±20%)
 - Sufficient for most use cases
@@ -325,27 +360,32 @@ These failures degrade functionality but allow system to continue operating.
 **Recovery Procedure:**
 
 1. **Install tiktoken:**
+
    ```bash
    pip install tiktoken
    ```
 
 2. **Verify Installation:**
+
    ```bash
    python -c "import tiktoken; print('OK')"
    ```
 
 3. **Clear Cache:**
+
    ```python
    token_counter.clear_cache()
    ```
 
 4. **Re-run Operations:**
+
    ```python
    # Token counts will now be accurate
    result = await get_memory_bank_stats()
    ```
 
 **Prevention:**
+
 - Include tiktoken in requirements
 - Test installation in CI/CD
 - Document as recommended dependency
@@ -360,23 +400,27 @@ These failures degrade functionality but allow system to continue operating.
 **Impact:** Falls back to default configuration
 
 **Symptoms:**
+
 - Warning: "Failed to load config"
 - Error: "Invalid JSON format"
 - Config validation errors
 
 **Causes:**
+
 - Invalid JSON syntax in `.memory-bank-validation.json`
 - Invalid config values (out of range)
 - File corruption
 - Manual editing errors
 
 **Impact:**
+
 - System uses default configuration
 - Custom settings ignored
 - Validation rules at defaults
 - No data loss
 
 **Degradation Behavior:**
+
 - Loads default config automatically
 - Warns about fallback
 - System operates normally
@@ -385,6 +429,7 @@ These failures degrade functionality but allow system to continue operating.
 **Recovery Procedure:**
 
 1. **Validate JSON:**
+
    ```bash
    python -m json.tool .memory-bank-validation.json
    ```
@@ -395,6 +440,7 @@ These failures degrade functionality but allow system to continue operating.
    - Verify quotes around strings
 
 3. **Fix Config Values:**
+
    ```python
    # Validate config
    errors = validation_config.validate_config()
@@ -402,6 +448,7 @@ These failures degrade functionality but allow system to continue operating.
    ```
 
 4. **Reset to Defaults (if needed):**
+
    ```bash
    # Backup current
    mv .memory-bank-validation.json .memory-bank-validation.json.bak
@@ -410,6 +457,7 @@ These failures degrade functionality but allow system to continue operating.
    ```
 
 5. **Recreate Config:**
+
    ```python
    validation_config.reset_to_defaults()
    # Customize as needed
@@ -418,6 +466,7 @@ These failures degrade functionality but allow system to continue operating.
    ```
 
 **Prevention:**
+
 - Validate config after manual edits
 - Use API to modify config when possible
 - Backup config before changes
@@ -433,24 +482,28 @@ These failures degrade functionality but allow system to continue operating.
 **Impact:** Content not included, error comment inserted
 
 **Symptoms:**
+
 - `<!-- TRANSCLUSION ERROR: ... -->` in output
 - Missing included content
 - Circular dependency detected
 - Section not found
 
 **Causes:**
+
 - Circular transclusion (A includes B includes A)
 - Maximum depth exceeded (>5 levels)
 - Target file not found
 - Section heading doesn't exist
 
 **Impact:**
+
 - Specific transclusion fails
 - Other transclusions work
 - Error marked in output
 - No data corruption
 
 **Degradation Behavior:**
+
 ```markdown
 <!-- TRANSCLUSION ERROR: Circular dependency detected:
 fileA.md -> fileB.md -> fileA.md -->
@@ -479,6 +532,7 @@ fileA.md -> fileB.md -> fileA.md -->
    - Verify exact heading text
 
 **Prevention:**
+
 - Plan transclusion hierarchy
 - Avoid bidirectional includes
 - Keep depth under 5 levels
@@ -595,6 +649,7 @@ initialize_memory_bank()
 Test these scenarios in development:
 
 1. **Simulate Index Corruption:**
+
    ```bash
    # Create invalid JSON
    echo "{invalid}" > .memory-bank-index
@@ -602,6 +657,7 @@ Test these scenarios in development:
    ```
 
 2. **Simulate Lock Timeout:**
+
    ```bash
    # Create stale lock
    touch memory-bank/test.md.lock
@@ -609,12 +665,14 @@ Test these scenarios in development:
    ```
 
 3. **Simulate Network Failure:**
+
    ```python
    # Mock git commands to fail
    # Verify graceful degradation
    ```
 
 4. **Simulate tiktoken Unavailable:**
+
    ```python
    # Uninstall tiktoken temporarily
    # Verify estimation fallback

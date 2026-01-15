@@ -14,6 +14,7 @@ Investigate and fix the MCP server crash caused by `BrokenResourceError` in the 
 ## Problem
 
 **Observed Error:**
+
 ```
 2026-01-14 17:41:08.914 [error] Unexpected error in MCP server: unhandled errors in a TaskGroup (1 sub-exception)
   + Exception Group Traceback (most recent call last):
@@ -40,12 +41,14 @@ Investigate and fix the MCP server crash caused by `BrokenResourceError` in the 
 ```
 
 **Additional Context:**
+
 - Client error: "Received a response for an unknown message ID: Request cancelled"
 - Error occurs during TaskGroup cleanup when exiting `stdio_server` context
 - The `stdin_reader` task continues trying to send messages after the resource is closed
 - Current error handling in `main.py` doesn't catch `ExceptionGroup` or `anyio.BrokenResourceError` specifically
 
 **Impact:**
+
 - Server crashes instead of gracefully handling client disconnections
 - Poor user experience when client cancels requests
 - Server instability during normal operation
@@ -56,6 +59,7 @@ Investigate and fix the MCP server crash caused by `BrokenResourceError` in the 
 **Location:** `src/cortex/main.py`
 
 **Current Error Handling:**
+
 ```python
 def main() -> None:
     try:
@@ -81,12 +85,14 @@ def main() -> None:
 ```
 
 **Issues:**
+
 1. `ExceptionGroup` (Python 3.11+) is not caught - it's a `BaseException`, not an `Exception`
 2. `anyio.BrokenResourceError` is not explicitly handled
 3. The generic `Exception` handler catches it but logs as "Unexpected error" instead of graceful disconnection
 4. No handling for `BaseExceptionGroup` which wraps the `BrokenResourceError`
 
 **Related Code:**
+
 - `src/cortex/core/mcp_stability.py` - Has `_is_connection_error()` helper but doesn't handle `ExceptionGroup`
 - Phase 11 plan documents similar `BrokenResourceError` issues
 - ADR-006 shows exception group handling patterns but not applied to main entry point
@@ -141,6 +147,7 @@ def main() -> None:
 ### Step 1: Update `main.py` Error Handling
 
 **Changes:**
+
 - Import `BaseExceptionGroup` from `builtins` (Python 3.11+)
 - Import `anyio` to access `BrokenResourceError`
 - Add handler for `BaseExceptionGroup` that extracts nested exceptions
@@ -148,6 +155,7 @@ def main() -> None:
 - Ensure graceful exit for client disconnections
 
 **Code Pattern:**
+
 ```python
 import sys
 from builtins import BaseExceptionGroup  # Python 3.11+
@@ -199,10 +207,12 @@ def main() -> None:
 ### Step 2: Update `mcp_stability.py`
 
 **Changes:**
+
 - Update `_is_connection_error()` to recognize `anyio.BrokenResourceError`
 - Add `BrokenResourceError` to connection error types
 
 **Code Pattern:**
+
 ```python
 import anyio
 
@@ -220,6 +230,7 @@ def _is_connection_error(e: Exception) -> bool:
 ### Step 3: Add Tests
 
 **Test Cases:**
+
 1. Test `BaseExceptionGroup` with `BrokenResourceError` extraction
 2. Test direct `anyio.BrokenResourceError` handling
 3. Test graceful shutdown on client disconnection
@@ -230,6 +241,7 @@ def _is_connection_error(e: Exception) -> bool:
 ### Step 4: Documentation Updates
 
 **Files to Update:**
+
 - `docs/development/error-handling.md` (if exists)
 - `docs/troubleshooting.md` (if exists)
 - Add to `CLAUDE.md` under "Common Pitfalls"
@@ -277,6 +289,7 @@ def _is_connection_error(e: Exception) -> bool:
 ### Risk 1: Breaking Existing Error Handling
 
 **Mitigation:**
+
 - Keep all existing exception handlers
 - Add new handlers before generic `Exception` handler
 - Test all existing error paths still work
@@ -284,6 +297,7 @@ def _is_connection_error(e: Exception) -> bool:
 ### Risk 2: Python Version Compatibility
 
 **Mitigation:**
+
 - `BaseExceptionGroup` is Python 3.11+ only
 - Check Python version before importing
 - Provide fallback for older Python versions (if needed)
@@ -291,6 +305,7 @@ def _is_connection_error(e: Exception) -> bool:
 ### Risk 3: Masking Real Errors
 
 **Mitigation:**
+
 - Only treat `BrokenResourceError` as graceful disconnection
 - Log all other exceptions in exception groups as errors
 - Maintain distinction between warnings and errors

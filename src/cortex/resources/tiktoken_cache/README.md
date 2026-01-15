@@ -15,6 +15,7 @@ python scripts/populate_tiktoken_cache.py
 ```
 
 This will download common encoding files:
+
 - `cl100k_base` - GPT-4, GPT-3.5-turbo, text-embedding-ada-002
 - `o200k_base` - GPT-4o models
 - `p50k_base` - Codex models
@@ -48,6 +49,7 @@ The cache files are automatically included in the package distribution, allowing
 ## Fallback Behavior
 
 If bundled cache is not available or empty:
+
 - Tiktoken will attempt to download encoding files from network
 - If network is unavailable, falls back to word-based token estimation
 - System continues to function with reduced accuracy

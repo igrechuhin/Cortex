@@ -130,6 +130,7 @@ tools/
 ```
 
 **Tasks:**
+
 1. Create 4 new files with appropriate tool groupings
 2. Move MCP tool registrations to new files
 3. Update imports in all callers
@@ -138,6 +139,7 @@ tools/
 6. Update documentation
 
 **Success Criteria:**
+
 - ✅ 4 files created, all <400 lines
 - ✅ All 6 tools working identically
 - ✅ All tests passing
@@ -182,25 +184,28 @@ tools/
 #### Priority 2: High Severity (10 hours)
 
 7-11. **5 files (685-672 lines)** → 2 files each (4h each = 20h, but overlap reduces to 10h)
-   - shared_rules_manager.py → git operations + rule loading
-   - managers/initialization.py → core managers + optional managers
-   - learning_engine.py → data collection + adaptation logic
-   - metadata_index.py → index operations + corruption recovery
-   - approval_manager.py → approval workflow + approval storage
+
+- shared_rules_manager.py → git operations + rule loading
+- managers/initialization.py → core managers + optional managers
+- learning_engine.py → data collection + adaptation logic
+- metadata_index.py → index operations + corruption recovery
+- approval_manager.py → approval workflow + approval storage
 
 #### Priority 3: Medium Severity (10 hours)
 
 12-20. **9 files (611-488 lines)** → keep as single files, just trim (1-2h each = 10h)
-   - Remove dead code
-   - Extract large helper functions
-   - Move constants to separate file
-   - Consolidate imports
+
+- Remove dead code
+- Extract large helper functions
+- Move constants to separate file
+- Consolidate imports
 
 ---
 
 ### 9.1.3: Fix Integration Test Failures (4-6 hours)
 
 **Approach:**
+
 1. **Investigate failures** (1-2h)
    - Run each test individually with verbose output
    - Compare expected vs actual API signatures
@@ -217,6 +222,7 @@ tools/
    - Ensure backward compatibility
 
 **Tests to Fix:**
+
 - `test_initialize_read_write_workflow` → Update `manage_file()` calls
 - `test_link_parsing_and_validation_workflow` → No API changes, likely data issue
 - `test_validation_workflow` → Update `validate()` calls
@@ -229,12 +235,14 @@ tools/
 ### 9.1.4: Complete TODO Implementations (2-4 hours)
 
 **Option A: Complete Implementation (4h)**
+
 - Implement transclusion integration in refactoring operations
 - Add section content replacement via transclusion
 - Add section removal from original file
 - Add comprehensive tests
 
 **Option B: Verify & Remove (2h) - RECOMMENDED**
+
 - Verify refactoring works without transclusion features
 - Add tests to confirm current functionality
 - Remove TODO comments
@@ -247,6 +255,7 @@ tools/
 ### 9.1.5: Extract Long Functions (10-15 hours)
 
 **Approach:**
+
 1. **AST Analysis** (2h)
    - Build Python script to scan all files
    - Identify functions >30 logical lines
@@ -262,6 +271,7 @@ tools/
 **Extraction Rate:** 6-8 functions/hour (with testing)
 
 **Example Extraction Pattern:**
+
 ```python
 # Before (45 lines)
 async def complex_operation(self, data: dict[str, object]) -> Result:
@@ -296,14 +306,17 @@ async def complex_operation(self, data: dict[str, object]) -> Result:
 ## Implementation Order
 
 ### Week 1: Critical Blockers
+
 **Mon-Tue (16h):** Phase 9.1.1 - Split consolidated.py
 **Wed-Thu (16h):** Phase 9.1.2 Priority 1 (Files 2-3)
 **Fri (8h):** Phase 9.1.3 - Fix integration tests
 
 ### Week 2: Core Modules
+
 **Mon-Fri (40h):** Phase 9.1.2 Priority 1 (Files 4-6) + Priority 2 (Files 7-11)
 
 ### Week 3: Function Extraction & Cleanup
+
 **Mon-Tue (16h):** Phase 9.1.5 - Extract long functions
 **Wed (8h):** Phase 9.1.4 - Complete TODOs
 **Thu-Fri (16h):** Phase 9.1.2 Priority 3 + Validation
@@ -313,11 +326,13 @@ async def complex_operation(self, data: dict[str, object]) -> Result:
 ## Testing Strategy
 
 ### Continuous Testing
+
 - Run test suite after each file split
 - Verify server startup after major changes
 - Check import integrity continuously
 
 ### Validation Checkpoints
+
 1. After consolidated.py split: Full test suite
 2. After each core module split: Targeted test suite
 3. After integration test fixes: Integration suite
@@ -325,6 +340,7 @@ async def complex_operation(self, data: dict[str, object]) -> Result:
 5. After function extraction: Affected module tests
 
 ### Final Validation
+
 - ✅ All 1,747 tests passing (100%)
 - ✅ Zero files >400 lines
 - ✅ Zero functions >30 lines
@@ -336,24 +352,30 @@ async def complex_operation(self, data: dict[str, object]) -> Result:
 ## Risk Mitigation
 
 ### High Risk: Breaking Changes
+
 **Risk:** File splits may break existing functionality
 **Mitigation:**
+
 - Incremental splitting with continuous testing
 - Keep git commits small and atomic
 - Test server startup after each change
 - Maintain backward compatibility
 
 ### Medium Risk: Time Overrun
+
 **Risk:** 60-80 hours may not be sufficient
 **Mitigation:**
+
 - Start with highest-impact files (consolidated.py)
 - Parallelize work where possible
 - Use automated refactoring tools
 - Focus on P0/P1 files first
 
 ### Low Risk: Test Coverage Drop
+
 **Risk:** Refactoring may reduce coverage
 **Mitigation:**
+
 - Run coverage reports after each change
 - Add tests for new module boundaries
 - Maintain 100% coverage on critical paths
@@ -365,26 +387,31 @@ async def complex_operation(self, data: dict[str, object]) -> Result:
 ### Phase 9.1 Completion Criteria
 
 **File Size Compliance:**
+
 - ✅ 0 files >400 lines (currently 20)
 - ✅ Average file size: <300 lines
 - ✅ Largest file: <400 lines
 
 **Function Length Compliance:**
+
 - ✅ 0 functions >30 logical lines (currently ~100-150)
 - ✅ Average function size: <20 lines
 - ✅ Complex functions extracted
 
 **Test Quality:**
+
 - ✅ 1,747/1,747 tests passing (100%)
 - ✅ 0 skipped tests without justification
 - ✅ Integration test coverage complete
 
 **Code Quality:**
+
 - ✅ 0 TODO comments in production
 - ✅ All implementations complete
 - ✅ CI/CD passes all checks
 
 **Rules Compliance Score:**
+
 - Current: 6.0/10
 - Target: 9.8/10
 - Improvement: +3.8 points
@@ -394,6 +421,7 @@ async def complex_operation(self, data: dict[str, object]) -> Result:
 ## Deliverables
 
 ### Code Artifacts
+
 1. ✅ 4 new tool operation files (from consolidated.py split)
 2. ✅ 12+ new module files (from core module splits)
 3. ✅ 100+ extracted helper functions
@@ -402,6 +430,7 @@ async def complex_operation(self, data: dict[str, object]) -> Result:
 6. ✅ Updated imports and dependencies
 
 ### Documentation
+
 1. ✅ Architecture updates for new file structure
 2. ✅ API documentation for split modules
 3. ✅ Migration guide for file relocations
@@ -409,6 +438,7 @@ async def complex_operation(self, data: dict[str, object]) -> Result:
 5. ✅ Updated README.md and STATUS.md
 
 ### Quality Reports
+
 1. ✅ File size compliance report
 2. ✅ Function length compliance report
 3. ✅ Test coverage report
@@ -419,11 +449,13 @@ async def complex_operation(self, data: dict[str, object]) -> Result:
 ## Next Steps
 
 ### Immediate Action
+
 1. **Review and approve Phase 9.1 plan**
 2. **Begin Phase 9.1.1: Split consolidated.py** (8 hours, highest impact)
 3. **Set up progress tracking** (GitHub issues or project board)
 
 ### After Phase 9.1 Completion
+
 - **Validate rules compliance:** 6.0 → 9.8/10 ✅
 - **Proceed to Phase 9.2:** Architecture refinement
 - **Update overall progress:** Track toward 9.8+/10 overall

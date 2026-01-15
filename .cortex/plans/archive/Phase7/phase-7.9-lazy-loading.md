@@ -12,27 +12,32 @@
 ### Completed (December 27, 2025)
 
 ✅ **Step 1: LazyManager Wrapper (Complete)**
+
 - Created [lazy_manager.py](../src/cortex/lazy_manager.py) with full async support
 - Thread-safe with asyncio.Lock for concurrent access
 - Implements invalidation for cache clearing
 - 100% test coverage (6 tests passing)
 
 ✅ **Step 2: Manager Organization (Complete)**
+
 - Created [manager_groups.py](../src/cortex/manager_groups.py)
 - Organized managers into 8 groups by priority (1=core, 2=frequent, 3=occasional, 4=rare)
 - Ready for gradual lazy loading implementation
 
 ✅ **Step 3: Helper Utilities (Complete)**
+
 - Created [manager_utils.py](../src/cortex/manager_utils.py)
 - Implements `get_manager()` for type-safe unwrapping of LazyManager instances
 - Ready for use in MCP tools
 
 ✅ **Testing Infrastructure (Complete)**
+
 - Unit tests for LazyManager: [test_lazy_manager.py](../tests/unit/test_lazy_manager.py)
 - 6 comprehensive tests covering initialization, concurrency, invalidation, exceptions
 - All 1707 tests passing
 
 ✅ **Bug Fixes**
+
 - Fixed pre-existing async/await bug in [test_structure_manager.py:774](../tests/unit/test_structure_manager.py#L774)
 
 ### Remaining Work
@@ -40,17 +45,20 @@
 The following steps are deferred for incremental implementation:
 
 ⏳ **Step 4: Refactor get_managers() (Deferred)**
+
 - Full refactoring of [managers/initialization.py](../src/cortex/managers/initialization.py)
 - Replace eager initialization with LazyManager wrappers for non-core managers
 - Requires careful migration to avoid breaking existing code
 - **Recommendation**: Implement incrementally, one manager group at a time
 
 ⏳ **Step 5: Update MCP Tools (Deferred)**
+
 - Update ~82 MCP tools in `tools/` directory to use `get_manager()` helper
 - Add LazyManager unwrapping logic
 - **Recommendation**: Update as-needed when modifying tools, not all at once
 
 ⏳ **Step 6: Performance Benchmarks (Deferred)**
+
 - Measure startup time improvements
 - Measure memory footprint reduction
 - Compare before/after metrics
@@ -72,6 +80,7 @@ Implement lazy initialization for managers to improve startup time and reduce me
 **File:** [managers/initialization.py](../src/cortex/managers/initialization.py)
 
 **Current Behavior:**
+
 - All 26+ managers initialized on first call
 - Initialization time: ~50ms (acceptable but can be improved)
 - Memory footprint: ~15-20MB before any operations
@@ -509,12 +518,14 @@ async def test_mcp_tools_work_with_lazy_managers():
 ### Startup Time
 
 **Before:**
+
 ```
 Initialization: 50ms
 Memory: 20MB
 ```
 
 **After (Expected):**
+
 ```
 Core only: 15ms (70% faster)
 Full lazy: 20ms (60% faster)
@@ -522,6 +533,7 @@ Memory: 8MB (60% reduction)
 ```
 
 **Measurement:**
+
 ```python
 import time
 from pathlib import Path
@@ -551,6 +563,7 @@ async def benchmark_initialization():
 **Risk:** Manager A needs Manager B, but Manager B needs Manager A.
 
 **Mitigation:**
+
 - Review dependency graph before implementation
 - Use dependency injection to break cycles
 - Document manager dependencies clearly
@@ -560,6 +573,7 @@ async def benchmark_initialization():
 **Risk:** LazyManager wrappers complicate type checking.
 
 **Mitigation:**
+
 - Use helper function `get_manager()` for type-safe unwrapping
 - Add type stubs for LazyManager
 - Document pattern in contributing guide
@@ -569,6 +583,7 @@ async def benchmark_initialization():
 **Risk:** Lazy initialization makes it harder to debug initialization errors.
 
 **Mitigation:**
+
 - Add logging for manager initialization
 - Include manager name in LazyManager
 - Clear error messages for initialization failures
@@ -589,6 +604,7 @@ async def benchmark_initialization():
 ## Rollback Plan
 
 If issues arise:
+
 1. Keep eager initialization as fallback
 2. Add config flag to disable lazy loading
 3. Revert to eager initialization if blocking issues
@@ -598,6 +614,7 @@ If issues arise:
 ## Expected Outcomes
 
 **Performance Score Impact:**
+
 - Current: 8.5/10 (after Phase 7.8)
 - After Phase 7.9: 9.0/10
 - Contributing factors:
@@ -606,6 +623,7 @@ If issues arise:
   - Better resource management
 
 **Benefits:**
+
 - Faster CLI startup
 - Reduced memory footprint for simple operations
 - More scalable for large projects

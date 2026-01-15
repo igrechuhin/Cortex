@@ -484,7 +484,9 @@ async def _fix_markdown_and_update_files(
     return _process_markdown_results(markdown_result, files_modified)
 
 
-def _extract_dict_from_object(obj: object, default: dict[str, object]) -> dict[str, object]:
+def _extract_dict_from_object(
+    obj: object, default: dict[str, object]
+) -> dict[str, object]:
     """Extract dict from object with type checking."""
     return cast(dict[str, object], obj) if isinstance(obj, dict) else default
 
@@ -499,7 +501,9 @@ def _extract_int_from_object(obj: object, default: int) -> int:
     return int(obj) if isinstance(obj, (int, str)) else default
 
 
-def _extract_check_results(results: dict[str, object]) -> tuple[dict[str, object], dict[str, object], dict[str, object]]:
+def _extract_check_results(
+    results: dict[str, object],
+) -> tuple[dict[str, object], dict[str, object], dict[str, object]]:
     """Extract check result dicts from results."""
     fix_errors_check_obj = results.get("fix_errors", {})
     fix_errors_check = _extract_dict_from_object(fix_errors_check_obj, {})
@@ -522,10 +526,14 @@ def _extract_fix_statistics(
     warnings = _extract_list_from_object(fix_errors_check.get("warnings", []), [])
     errors_fixed = len(errors)
     warnings_fixed = len(warnings)
-    formatting_issues_fixed = _extract_int_from_object(format_check.get("files_formatted", 0), 0)
+    formatting_issues_fixed = _extract_int_from_object(
+        format_check.get("files_formatted", 0), 0
+    )
     type_errors = _extract_list_from_object(type_check_result.get("errors", []), [])
     type_errors_fixed = len(type_errors)
-    files_modified_list = _extract_list_from_object(fix_errors_result.get("files_modified", []), [])
+    files_modified_list = _extract_list_from_object(
+        fix_errors_result.get("files_modified", []), []
+    )
     files_modified = list(set(cast(list[str], files_modified_list)))
 
     return (

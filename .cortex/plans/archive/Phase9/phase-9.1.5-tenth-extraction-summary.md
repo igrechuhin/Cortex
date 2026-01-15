@@ -21,6 +21,7 @@ Successfully extracted the tenth long function `get_relevant_rules()` from 103 l
 ### Refactoring Approach
 
 Applied **multi-stage pipeline pattern with dual paths**:
+
 - Main function routes to appropriate path (hybrid or local-only)
 - Separate pipelines for context-aware and legacy behavior
 - Stage-based helpers for each pipeline step
@@ -116,9 +117,11 @@ gtimeout -k 5 60 .venv/bin/pytest tests/integration/ -q
 ### Function Length Compliance
 
 Before:
+
 - `get_relevant_rules()`: 103 lines (73 lines over limit)
 
 After:
+
 - `get_relevant_rules()`: 23 lines ✅ (compliant, 7 lines under limit)
 - `_get_hybrid_rules()`: 17 lines ✅ (compliant)
 - `_categorize_rules()`: 24 lines ✅ (compliant)
@@ -155,6 +158,7 @@ After:
 This pattern works well for functions that have multiple execution paths with complex processing:
 
 **Structure:**
+
 ```python
 async def complex_function(**kwargs):
     """Main entry point."""
@@ -188,6 +192,7 @@ async def _path_b(result, ...):
 ```
 
 **Benefits:**
+
 - Clear separation between execution paths
 - Stage-based decomposition for complex paths
 - Orchestrator functions coordinate pipeline stages
@@ -195,6 +200,7 @@ async def _path_b(result, ...):
 - Testable components
 
 **Applicable To:**
+
 - Functions with multiple execution paths
 - Complex data processing pipelines
 - Context-aware vs legacy behavior
@@ -224,6 +230,7 @@ async def _path_b(result, ...):
 ### Next Priority
 
 **#11:** Next function in priority list (check function extraction report)
+
 - Estimated: 2 hours
 - Pattern: TBD based on function structure
 
@@ -298,6 +305,7 @@ Successfully extracted the tenth function `get_relevant_rules()` from 103 to 23 
 ---
 
 **See Also:**
+
 - [phase-9.1.5-function-extraction-report.md](./phase-9.1.5-function-extraction-report.md)
 - [phase-9.1.5-first-extraction-summary.md](./phase-9.1.5-first-extraction-summary.md)
 - [phase-9.1.5-second-extraction-summary.md](./phase-9.1.5-second-extraction-summary.md)

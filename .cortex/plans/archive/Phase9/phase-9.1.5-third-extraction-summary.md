@@ -23,6 +23,7 @@ Successfully extracted the `manage_file()` function from 161 lines to 52 lines, 
 ### Main Function (52 lines, was 161)
 
 The refactored `manage_file()` function now:
+
 - Delegates to 3 operation handlers based on operation type
 - Contains minimal orchestration logic
 - Complies with <30 logical lines requirement (28 logical lines after removing docstring, comments, blank lines)
@@ -30,40 +31,52 @@ The refactored `manage_file()` function now:
 ### Helper Functions Created (10 total)
 
 #### 1. `_validate_file_path()` - 16 lines
+
 **Purpose:** Validate file name and construct safe path
+
 - Input validation
 - Error handling for invalid file names
 - Returns tuple of (file_path, error_json)
 
 #### 2. `_handle_read_operation()` - 30 lines
+
 **Purpose:** Handle read operation
+
 - File existence check
 - Read file content via FileSystemManager
 - Optional metadata inclusion
 - JSON response building
 
 #### 3. `_handle_write_operation()` - 41 lines
+
 **Purpose:** Handle write operation (orchestrator)
+
 - Content validation
 - Delegates to 5 sub-helpers for write workflow
 - Exception handling for file conflicts
 - Returns JSON response
 
 #### 4. `_handle_metadata_operation()` - 23 lines
+
 **Purpose:** Handle metadata operation
+
 - File existence check
 - Metadata retrieval
 - Warning for missing metadata
 - JSON response building
 
 #### 5. `_get_expected_hash()` - 9 lines
+
 **Purpose:** Get expected hash from metadata for conflict detection
+
 - Metadata retrieval
 - Hash extraction
 - None handling
 
 #### 6. `_compute_file_metrics()` - 9 lines
+
 **Purpose:** Compute file size, token count, and hash
+
 - Content encoding
 - Size calculation
 - Token counting
@@ -71,25 +84,33 @@ The refactored `manage_file()` function now:
 - Returns metrics dict
 
 #### 7. `_create_version_snapshot()` - 13 lines
+
 **Purpose:** Create version snapshot
+
 - Version count retrieval
 - Snapshot creation with VersionManager
 - Returns version info
 
 #### 8. `_update_file_metadata()` - 13 lines
+
 **Purpose:** Update file metadata and version history
+
 - Section extraction
 - Metadata update
 - Version history append
 
 #### 9. `_extract_sections()` - 7 lines
+
 **Purpose:** Extract sections from content (simplified)
+
 - Heading detection
 - Section list building
 - Returns sections list
 
 #### 10. `_build_write_response()` - 12 lines
+
 **Purpose:** Build write operation response
+
 - Success JSON creation
 - Includes snapshot_id, version, tokens
 - Returns formatted JSON
@@ -104,6 +125,7 @@ Followed **operation-based decomposition pattern**:
 4. **Utility helpers**: Reusable functions for common tasks
 
 This pattern:
+
 - ✅ Maintains clean separation of concerns
 - ✅ Reduces function complexity
 - ✅ Improves testability
@@ -113,12 +135,14 @@ This pattern:
 ## Testing
 
 ### Integration Tests
+
 - ✅ All 48 integration tests passing (100% pass rate)
 - ✅ 0 test failures
 - ✅ 0 regressions
 - ✅ Code coverage maintained at 78%
 
 ### Test Coverage Areas
+
 - File read operations
 - File write with version control
 - Metadata retrieval
@@ -129,6 +153,7 @@ This pattern:
 ## Code Quality
 
 ### Before Extraction
+
 ```python
 async def manage_file(...) -> str:
     # 161 lines of mixed logic
@@ -139,6 +164,7 @@ async def manage_file(...) -> str:
 ```
 
 ### After Extraction
+
 ```python
 async def manage_file(...) -> str:
     """52 lines total"""
@@ -174,11 +200,13 @@ async def manage_file(...) -> str:
 ## Impact
 
 ### Maintainability
+
 - **Before**: 7/10 (large, complex function)
 - **After**: 9/10 (clean, focused functions)
 - **Improvement**: +2 points (+29%)
 
 ### Code Quality
+
 - **Readability**: Significantly improved - each function has single responsibility
 - **Testability**: Enhanced - can test operation handlers independently
 - **Debuggability**: Better - easier to identify issues in specific helpers
@@ -187,6 +215,7 @@ async def manage_file(...) -> str:
 ## Next Steps
 
 Continue with Phase 9.1.5 priority 4:
+
 - **Next function**: `create()` in [core/container.py](../src/cortex/core/container.py)
 - **Lines**: 148 (118 excess)
 - **Estimated effort**: 2h

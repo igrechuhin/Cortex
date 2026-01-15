@@ -1293,6 +1293,7 @@ cortex detect_leaks \
 **Issue: High memory usage**
 
 Solutions:
+
 - Reduce cache size
 - Enable memory limits
 - Use streaming for large files
@@ -1301,6 +1302,7 @@ Solutions:
 **Issue: Slow validation**
 
 Solutions:
+
 - Enable caching for validation results
 - Use incremental validation
 - Parallelize validation tasks
@@ -1309,6 +1311,7 @@ Solutions:
 **Issue: Cache thrashing**
 
 Solutions:
+
 - Increase cache size
 - Adjust TTL values
 - Switch eviction strategy (LRU → LFU)

@@ -34,6 +34,7 @@ Extracted the `_create_symlink()` method which had grown to 45 physical lines, v
 **Stage-Based Decomposition Pattern:**
 
 The extraction follows a clear multi-stage workflow:
+
 1. **Extract** report data structures
 2. **Remove** existing symlink (with early return on error)
 3. **Create** platform-specific symlink
@@ -67,6 +68,7 @@ This pattern maps cleanly to the function's natural workflow stages.
 ## Testing
 
 All integration tests pass (48/48):
+
 ```bash
 pytest tests/integration/ -q
 ================================ 48 passed in 4.52s ================================
@@ -75,6 +77,7 @@ pytest tests/integration/ -q
 ## Code Formatting
 
 Code formatted with black and isort:
+
 - ✅ Black: 1 file reformatted
 - ✅ isort: Imports organized
 - ✅ All tests passing after formatting
@@ -89,6 +92,7 @@ Code formatted with black and isort:
 ## Next Steps
 
 Continue with the fifteenth extraction:
+
 - **Target:** `_initialize_managers()` in managers/initialization.py (91 logical lines per AST) or
 - **Actual Target:** Next actual >30 physical line function in priority order
 

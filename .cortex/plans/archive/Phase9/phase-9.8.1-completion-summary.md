@@ -36,6 +36,7 @@ Phase 9.8.1 continued the maintainability improvements from Phase 9.8 by address
 **Applied in:** `rules_repository.py:_parse_diff_changes`
 
 **Before (5 levels):**
+
 ```python
 async def _parse_diff_changes(self, changes: dict[str, list[str]]) -> None:
     diff_result = await self.run_git_command([...])
@@ -59,6 +60,7 @@ async def _parse_diff_changes(self, changes: dict[str, list[str]]) -> None:
 ```
 
 **After (2 levels):**
+
 ```python
 async def _parse_diff_changes(self, changes: dict[str, list[str]]) -> None:
     diff_result = await self.run_git_command([...])
@@ -92,6 +94,7 @@ def _process_diff_line(self, line: str, changes: dict[str, list[str]]) -> None:
 ```
 
 **Improvements:**
+
 - 5 levels → 2 levels nesting (-60%)
 - Early returns reduce nesting
 - Dictionary dispatch replaces if-elif chain
@@ -102,6 +105,7 @@ def _process_diff_line(self, line: str, changes: dict[str, list[str]]) -> None:
 **Applied in:** `execution_validator.py:_extract_reorganization_operations`
 
 **Before (5 levels):**
+
 ```python
 def _extract_reorganization_operations(
     self, suggestion: dict[str, object], suggestion_id: str
@@ -129,6 +133,7 @@ def _extract_reorganization_operations(
 ```
 
 **After (2 levels):**
+
 ```python
 def _extract_reorganization_operations(
     self, suggestion: dict[str, object], suggestion_id: str
@@ -158,6 +163,7 @@ def _extract_reorganization_operations(
 ```
 
 **Improvements:**
+
 - 5 levels → 2 levels nesting (-60%)
 - Dictionary dispatch table replaces if-elif chains
 - More extensible (easy to add new action types)
@@ -168,6 +174,7 @@ def _extract_reorganization_operations(
 **Applied in:** `link_parser.py:parse_transclusion_options`
 
 **Before (5 levels):**
+
 ```python
 def parse_transclusion_options(self, options_str: str | None) -> dict[str, object]:
     if not options_str:
@@ -199,6 +206,7 @@ def parse_transclusion_options(self, options_str: str | None) -> dict[str, objec
 ```
 
 **After (2 levels):**
+
 ```python
 def parse_transclusion_options(self, options_str: str | None) -> dict[str, object]:
     if not options_str:
@@ -245,6 +253,7 @@ def _parse_option_value(self, value: str) -> object:
 ```
 
 **Improvements:**
+
 - 5 levels → 2 levels nesting (-60%)
 - Separated parsing logic into focused methods
 - Each method has single responsibility
@@ -345,6 +354,7 @@ gtimeout -k 5 300 ./.venv/bin/pytest tests/unit/ \
 ```
 
 **Results:**
+
 - ✅ 126 tests passing
 - ✅ 1,474 tests deselected (not relevant)
 - ✅ 0 failures
@@ -429,6 +439,7 @@ Phase 9.8.1 successfully continued the maintainability improvements from Phase 9
 ✅ **All 126 tests passing** with zero regressions
 
 **Impact:**
+
 - Clearer code structure
 - Reduced cognitive complexity
 - Better separation of concerns

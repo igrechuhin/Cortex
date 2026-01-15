@@ -9,6 +9,7 @@
 ## Extraction Results
 
 ### Function Analyzed
+
 - **File:** `tools/analysis_operations.py`
 - **Function:** `suggest_refactoring()`
 - **Original Size:** 111 logical lines
@@ -53,6 +54,7 @@
 ### Refactoring Pattern
 
 **Action-Based Pattern:**
+
 - Validation → Manager Setup → Preview Handling → Action Processing
 - Each refactoring type (consolidation/splits/reorganization) has dedicated handler
 - Clear separation between orchestration and implementation
@@ -62,19 +64,23 @@
 ## Testing Results
 
 ### Integration Tests
+
 - **Total Tests:** 48
 - **Passed:** 48 (100% pass rate) ✅
 - **Failed:** 0
 - **Duration:** 4.31 seconds
 
 ### Test Verification
+
 All integration tests in `tests/integration/` passed:
+
 - ✅ Manager integration tests
 - ✅ MCP tools integration tests
 - ✅ Phase 5/6/8 workflow tests
 - ✅ Complete workflow tests
 
 ### Code Quality
+
 - ✅ All helper functions follow type hint requirements
 - ✅ Clean separation of concerns
 - ✅ No breaking changes to public API
@@ -85,6 +91,7 @@ All integration tests in `tests/integration/` passed:
 ## Impact Summary
 
 ### Before Extraction
+
 ```python
 @mcp.tool()
 async def suggest_refactoring(...):
@@ -99,6 +106,7 @@ async def suggest_refactoring(...):
 ```
 
 ### After Extraction
+
 ```python
 @mcp.tool()
 async def suggest_refactoring(...):
@@ -117,6 +125,7 @@ async def suggest_refactoring(...):
 ```
 
 ### Code Organization
+
 - **Original:** Single 111-line function
 - **Refactored:** 1 main function (21 lines) + 8 helpers
 - **Total Lines:** Still 111 logical lines total, but distributed for maintainability
@@ -126,6 +135,7 @@ async def suggest_refactoring(...):
 ## Phase 9.1.5 Progress Update
 
 ### Completed Extractions (7 of 140)
+
 1. ✅ `configure()` in configuration_operations.py (225 → 28 lines, 87% reduction)
 2. ✅ `validate()` in validation_operations.py (196 → 59 lines, 70% reduction)
 3. ✅ `manage_file()` in file_operations.py (161 → 52 lines, 68% reduction)
@@ -135,12 +145,14 @@ async def suggest_refactoring(...):
 7. ✅ **`suggest_refactoring()` in tools/analysis_operations.py (111 → 21 lines, 82% reduction)** ⭐ NEW
 
 ### Aggregate Statistics
+
 - **Functions completed:** 7 of 140 (5.0%)
 - **Total logical lines reduced:** 1,201 → 236 (965 lines removed, 80% average reduction)
 - **Helper functions created:** 57 total (8 + 7 + 10 + 7 + 7 + 8 + 8)
 - **All tests passing:** 48/48 integration tests ✅
 
 ### Next Target
+
 - **Function #8:** Next largest function from the extraction report
 - **Estimated time:** 30-45 minutes per function
 - **Remaining:** 133 functions (95.0%)
@@ -174,9 +186,11 @@ async def suggest_refactoring(...):
 ## Files Modified
 
 ### Source Files
+
 - [src/cortex/tools/analysis_operations.py](../src/cortex/tools/analysis_operations.py)
 
 ### Changes
+
 - Added 8 private helper functions
 - Reduced main function from 111 to 21 logical lines
 - All functionality preserved
@@ -187,6 +201,7 @@ async def suggest_refactoring(...):
 ## Compliance Status
 
 ### Rules Compliance
+
 - ✅ Function length: 21 lines (<30 line limit)
 - ✅ File length: Still under 400 lines
 - ✅ Type hints: 100% coverage
@@ -194,6 +209,7 @@ async def suggest_refactoring(...):
 - ✅ Code style: Black + isort formatting
 
 ### Quality Metrics
+
 - **Maintainability:** Improved (complex function → simple orchestration)
 - **Readability:** Enhanced (clear action-based structure)
 - **Testability:** Maintained (integration tests passing)

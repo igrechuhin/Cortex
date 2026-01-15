@@ -18,6 +18,7 @@ Successfully fixed **2 integration test failures** (not 6 as initially estimated
 ## Problem Analysis
 
 ### Initial Assessment
+
 - Plan indicated 6 failing tests
 - Actual investigation revealed only **2 failing tests**:
   1. `test_validation_workflow`
@@ -28,18 +29,21 @@ Successfully fixed **2 integration test failures** (not 6 as initially estimated
 #### Test 1: test_validation_workflow (2 bugs)
 
 **Bug 1: LazyManager AttributeError**
+
 - **Issue:** Code was calling `duplication_detector.scan_all_files()` on a LazyManager wrapper
 - **Location:** [validation_operations.py:223-224](../src/cortex/tools/validation_operations.py#L223-L224)
 - **Cause:** Direct cast from `mgrs["duplication_detector"]` instead of using `get_manager()` helper
 - **Impact:** Quality validation completely broken
 
 **Bug 2: Duplications Response Format**
+
 - **Issue:** Code tried to iterate over dict as if it were a list
 - **Location:** [validation_operations.py:152](../src/cortex/tools/validation_operations.py#L152)
 - **Cause:** `scan_all_files()` returns `dict[str, object]` with keys `exact_duplicates`, `similar_content`, but code assumed it returned a list
 - **Impact:** Duplications validation completely broken
 
 **Bug 3: Response Structure**
+
 - **Issue:** Quality validation response nested `overall_score` under `score` key, but tests expected it at root
 - **Cause:** Phase 7.10 API changes not reflected in response format
 - **Impact:** Test assertions failing due to response shape mismatch
@@ -47,6 +51,7 @@ Successfully fixed **2 integration test failures** (not 6 as initially estimated
 #### Test 2: test_version_history_workflow
 
 **Bug: Version History Not Persisted**
+
 - **Issue:** `get_version_history()` returned 0 versions after 2 writes
 - **Location:** [file_operations.py:141-150](../src/cortex/tools/file_operations.py#L141-L150)
 - **Cause:** `version_manager.create_snapshot()` creates snapshot but doesn't update metadata index
@@ -60,6 +65,7 @@ Successfully fixed **2 integration test failures** (not 6 as initially estimated
 ### Fix 1: LazyManager Usage ([validation_operations.py:222-225](../src/cortex/tools/validation_operations.py#L222-L225))
 
 **Before:**
+
 ```python
 duplication_detector = cast(
     DuplicationDetector, mgrs["duplication_detector"]
@@ -68,6 +74,7 @@ duplication_data = await duplication_detector.scan_all_files(...)
 ```
 
 **After:**
+
 ```python
 # Get duplication data (already unwrapped at line 56-58)
 duplication_data = await duplication_detector.scan_all_files(...)
@@ -80,6 +87,7 @@ duplication_data = await duplication_detector.scan_all_files(...)
 ### Fix 2: Duplications Response Format ([validation_operations.py:140-169](../src/cortex/tools/validation_operations.py#L140-L169))
 
 **Before:**
+
 ```python
 duplications = await duplication_detector.scan_all_files(files_content)
 
@@ -94,6 +102,7 @@ if suggest_fixes and duplications:  # Wrong check - always truthy
 ```
 
 **After:**
+
 ```python
 duplications = await duplication_detector.scan_all_files(files_content)
 duplications_dict = cast(dict[str, object], duplications)
@@ -115,6 +124,7 @@ if suggest_fixes and duplications_dict.get("duplicates_found", 0) > 0:
 ```
 
 **Key Changes:**
+
 1. Flatten duplication dict into root response instead of nesting
 2. Check `duplicates_found` count instead of dict truthiness
 3. Access `exact_duplicates` and `similar_content` arrays correctly
@@ -125,6 +135,7 @@ if suggest_fixes and duplications_dict.get("duplicates_found", 0) > 0:
 ### Fix 3: Quality Response Structure ([validation_operations.py:226-241](../src/cortex/tools/validation_operations.py#L226-L241))
 
 **Before:**
+
 ```python
 overall_score = await quality_metrics.calculate_overall_score(...)
 return json.dumps({
@@ -134,6 +145,7 @@ return json.dumps({
 ```
 
 **After:**
+
 ```python
 overall_score = await quality_metrics.calculate_overall_score(...)
 # Flatten the score dict into the response root, preserving operation status
@@ -151,6 +163,7 @@ return json.dumps(result, indent=2)
 ```
 
 **Key Changes:**
+
 1. Flatten score dict into root response
 2. Preserve operation `status` ("success") separate from health `status` ("warning")
 3. Rename health status to `health_status` to avoid conflict
@@ -196,21 +209,25 @@ if file_meta:
 ## Test Results
 
 ### Before Fixes
+
 ```
 2 failed, 46 passed in 5.64s
 ```
 
 **Failures:**
+
 - `test_validation_workflow` - AttributeError: 'LazyManager' object has no attribute 'scan_all_files'
 - `test_version_history_workflow` - AssertionError: assert 0 >= 2
 
 ### After Fixes
+
 ```
 48 passed in 5.06s
 ✅ 100% pass rate
 ```
 
 **Coverage:**
+
 - Overall: 39% (up from 23% - focused on validation and file operations)
 - validation_operations.py: 66% coverage
 - file_operations.py: 75% coverage
@@ -221,6 +238,7 @@ if file_meta:
 ## Files Modified
 
 ### 1. [src/cortex/tools/validation_operations.py](../src/cortex/tools/validation_operations.py)
+
 - **Lines changed:** ~30 lines
 - **Changes:**
   - Fixed LazyManager usage (line 222-225)
@@ -229,6 +247,7 @@ if file_meta:
 - **Impact:** All validation workflows now functional
 
 ### 2. [src/cortex/tools/file_operations.py](../src/cortex/tools/file_operations.py)
+
 - **Lines changed:** ~13 lines
 - **Changes:**
   - Added version history tracking to metadata (line 170-183)
@@ -239,6 +258,7 @@ if file_meta:
 ## Code Quality
 
 ### Formatting
+
 ```bash
 black src/cortex/tools/validation_operations.py src/cortex/tools/file_operations.py
 # 2 files reformatted
@@ -248,6 +268,7 @@ isort src/cortex/tools/validation_operations.py src/cortex/tools/file_operations
 ```
 
 ### Compliance
+
 - ✅ All functions <30 lines
 - ✅ All files <400 lines
 - ✅ 100% type hints
@@ -259,18 +280,21 @@ isort src/cortex/tools/validation_operations.py src/cortex/tools/file_operations
 ## Impact Analysis
 
 ### Direct Impact
+
 - ✅ 2 failing tests → 0 failing tests
 - ✅ 48/48 integration tests passing (100% pass rate)
 - ✅ Validation workflow fully operational
 - ✅ Version history fully operational
 
 ### Indirect Impact
+
 - ✅ Unblocked Phase 9.1 progress
 - ✅ Improved code quality (better LazyManager usage patterns)
 - ✅ Improved architecture (version manager ↔ metadata index bridge)
 - ✅ Test coverage improvements (+16% on affected modules)
 
 ### Phase 9.1 Progress
+
 - **Before:** 2 of 78 hours (2.6%)
 - **After:** 4 of 78 hours (5.1%)
 - **Progress:** +2.5% (+2h)
@@ -280,21 +304,25 @@ isort src/cortex/tools/validation_operations.py src/cortex/tools/file_operations
 ## Lessons Learned
 
 ### 1. LazyManager Usage Pattern
+
 **Problem:** Direct casting from manager dict bypasses lazy initialization
 **Solution:** Always use `get_manager()` helper for type-safe unwrapping
 **Prevention:** Add linting rule or pattern check for direct dict access
 
 ### 2. API Contract Testing
+
 **Problem:** Phase 7.10 API changes not reflected in response formats
 **Solution:** Integration tests caught mismatches, but we need contract tests
 **Prevention:** Add JSON schema validation for all tool responses
 
 ### 3. Separation of Concerns
+
 **Problem:** Version manager creates snapshots, but metadata index stores history - disconnect
 **Solution:** Create explicit bridge between the two systems
 **Prevention:** Document cross-module dependencies and data flows
 
 ### 4. Estimation Accuracy
+
 **Observation:** Estimated 6 failing tests, actual was 2 (67% overestimate)
 **Reason:** Conservative estimation without investigation
 **Action:** Always investigate before estimating complex debugging tasks
@@ -304,16 +332,19 @@ isort src/cortex/tools/validation_operations.py src/cortex/tools/file_operations
 ## Next Steps
 
 ### Immediate (Phase 9.1.4)
+
 - [ ] Complete 2 TODO implementations in refactoring_executor.py
 - [ ] Estimated: 2-4 hours
 - [ ] Impact: Remove technical debt, improve code quality
 
 ### Short-term (Phase 9.1.5)
+
 - [ ] Extract 100+ long functions to <30 lines
 - [ ] Estimated: 10-15 hours
 - [ ] Impact: Achieve 100% rules compliance on function length
 
 ### Medium-term (Phase 9.2-9.9)
+
 - [ ] Address remaining Phase 9 metrics
 - [ ] Estimated: 70+ hours
 - [ ] Impact: Achieve 9.8/10 across all quality metrics
@@ -323,21 +354,25 @@ isort src/cortex/tools/validation_operations.py src/cortex/tools/file_operations
 ## Metrics
 
 ### Time Efficiency
+
 - **Estimated:** 4-6 hours
 - **Actual:** 2 hours
 - **Efficiency:** **67% faster than estimated** ⭐
 
 ### Test Success Rate
+
 - **Before:** 95.8% (46/48)
 - **After:** 100% (48/48)
 - **Improvement:** +4.2%
 
 ### Code Coverage
+
 - **validation_operations.py:** 50% → 66% (+16%)
 - **file_operations.py:** 13% → 75% (+62%)
 - **duplication_detector.py:** 10% → 92% (+82%)
 
 ### Rules Compliance Progress
+
 - **Before Phase 9.1.3:** 6.0/10
 - **After Phase 9.1.3:** 6.0/10 (no change - fixes were bug fixes, not compliance improvements)
 - **Next Target:** 9.8/10 (Phase 9.1.4-9.1.5)
@@ -349,6 +384,7 @@ isort src/cortex/tools/validation_operations.py src/cortex/tools/file_operations
 Phase 9.1.3 successfully fixed all integration test failures ahead of schedule. The actual scope was smaller than estimated (2 tests vs 6), but the fixes addressed critical bugs in validation and version history workflows.
 
 **Key Achievements:**
+
 - ✅ 100% integration test pass rate restored
 - ✅ All validation workflows operational
 - ✅ Version history tracking fixed

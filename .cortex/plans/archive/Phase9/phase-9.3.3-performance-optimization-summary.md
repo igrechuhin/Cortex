@@ -155,6 +155,7 @@ def _compare_within_groups(
 **After Phase 9.3.3:** 9.0/10 (+0.1)
 
 **High-Severity Issues:**
+
 - Before: 8 issues
 - After: 6 issues (-25%)
 

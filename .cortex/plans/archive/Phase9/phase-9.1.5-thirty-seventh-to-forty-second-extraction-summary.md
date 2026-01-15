@@ -172,4 +172,3 @@ Successfully extracted 6 functions in a batch, reducing function violations from
 - All async correctness maintained
 - All type hints preserved
 - All tests passing without modification
-

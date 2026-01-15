@@ -62,6 +62,7 @@ The codebase has a centralized path resolver (`src/cortex/core/path_resolver.py`
    - Line 43: `self.memory_bank_dir: Path = self.project_root / ".cortex" / "memory-bank"`
 
 **Impact:**
+
 - Inconsistent path resolution across codebase
 - Harder to maintain if path structure changes
 - Violates DRY principle
@@ -75,6 +76,7 @@ Replace all direct path constructions with centralized `get_cortex_path()` calls
 ### Implementation Strategy
 
 #### Phase 1: Core Infrastructure (Foundation)
+
 1. **Verify Path Resolver Completeness**
    - [ ] Ensure `CortexResourceType` enum covers all needed resource types
    - [ ] Verify `get_cortex_path()` handles all cases correctly
@@ -87,36 +89,40 @@ Replace all direct path constructions with centralized `get_cortex_path()` calls
    - **Impact**: Core infrastructure uses centralized resolver
 
 #### Phase 2: MCP Tools (User-Facing)
-3. **Update MCP Tool Files**
+
+1. **Update MCP Tool Files**
    - [ ] Fix `src/cortex/tools/file_operations.py` (2 instances)
    - [ ] Fix `src/cortex/tools/phase2_linking.py` (4 instances)
    - [ ] Fix `src/cortex/tools/validation_operations.py` (5 instances)
    - **Impact**: All MCP tools use consistent path resolution
 
 #### Phase 3: Analysis & Structure (Internal)
-4. **Update Analysis Tools**
+
+1. **Update Analysis Tools**
    - [ ] Fix `src/cortex/analysis/structure_analyzer.py` (2 instances)
    - **Impact**: Analysis tools use centralized resolver
 
 #### Phase 4: Testing & Validation
-5. **Add Tests**
+
+1. **Add Tests**
    - [ ] Add unit tests for path resolver usage in each fixed module
    - [ ] Add integration tests to verify path resolution consistency
    - [ ] Add regression tests to prevent future direct path construction
    - [ ] Verify all existing tests still pass
 
-6. **Code Quality Checks**
+2. **Code Quality Checks**
    - [ ] Add linting rule to detect direct path construction (if possible)
    - [ ] Update code review guidelines to prefer path resolver
    - [ ] Document path resolver usage in coding standards
 
 #### Phase 5: Documentation & Cleanup
-7. **Update Documentation**
+
+1. **Update Documentation**
    - [ ] Update coding standards to mandate path resolver usage
    - [ ] Add examples of correct path resolution in developer docs
    - [ ] Update ADRs if path resolution is architectural decision
 
-8. **Final Verification**
+2. **Final Verification**
    - [ ] Run full test suite
    - [ ] Verify no regressions
    - [ ] Check code coverage for path resolver usage
@@ -127,6 +133,7 @@ Replace all direct path constructions with centralized `get_cortex_path()` calls
 ### Pattern to Replace
 
 **Before:**
+
 ```python
 memory_bank_dir = root / ".cortex" / "memory-bank"
 # or
@@ -136,6 +143,7 @@ memory_bank_dir = self.project_root / ".cortex" / "memory-bank"
 ```
 
 **After:**
+
 ```python
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
@@ -173,16 +181,19 @@ memory_bank_dir = get_cortex_path(self.project_root, CortexResourceType.MEMORY_B
 ## Testing Strategy
 
 ### Unit Tests
+
 - Test each module after refactoring to verify path resolution
 - Test path resolver with different project root configurations
 - Test edge cases (missing directories, symlinks, etc.)
 
 ### Integration Tests
+
 - Test end-to-end Memory Bank operations
 - Test MCP tools with path resolver
 - Verify consistency across all tools
 
 ### Regression Tests
+
 - Add tests that detect direct path construction
 - Add linting rules if possible
 - Document in code review checklist

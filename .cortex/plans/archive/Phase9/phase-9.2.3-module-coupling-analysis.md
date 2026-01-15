@@ -98,19 +98,19 @@ Level 11: main          (Entry point)
 
 #### Other Significant Cycles
 
-14. **managers ↔ analysis**
+1. **managers ↔ analysis**
     - `managers → analysis → core → managers`
     - Impact: Manager initialization depends on analysis
 
-15. **optimization ↔ rules**
+2. **optimization ↔ rules**
     - `optimization → rules → core → managers → optimization`
     - Impact: Optimization and rules are tightly coupled
 
-16. **refactoring ↔ linking**
+3. **refactoring ↔ linking**
     - `refactoring → linking → core → managers → refactoring`
     - Impact: Refactoring depends on linking
 
-17. **validation ↔ managers**
+4. **validation ↔ managers**
     - `validation → core → managers → validation`
     - Impact: Validation coupled with managers
 
@@ -161,6 +161,7 @@ Level 11: main          (Entry point)
 ### Primary Issue: Forward Dependencies in Core Layer
 
 The `core` layer has imports from:
+
 - `analysis` (L4) - 4 levels up
 - `linking` (L1) - 1 level up
 - `managers` (L8) - 8 levels up
@@ -168,6 +169,7 @@ The `core` layer has imports from:
 - `refactoring` (L5) - 5 levels up
 
 **Why This Is Problematic:**
+
 1. Violates dependency inversion principle
 2. Creates tight coupling between foundation and application layers
 3. Makes testing difficult (can't test core in isolation)
@@ -177,6 +179,7 @@ The `core` layer has imports from:
 ### Likely Source Files
 
 Based on layer violation patterns, likely problematic files:
+
 - `core/container_factory.py` - Likely imports high-level managers
 - `core/container.py` - May reference high-level types
 - `managers/initialization.py` - Creates circular dependencies with core
@@ -188,6 +191,7 @@ Based on layer violation patterns, likely problematic files:
 ### Phase 1: Identify and Fix Core Layer Violations (Priority: P0)
 
 **Tasks:**
+
 1. Audit all imports in `core/` directory
 2. Identify specific forward dependencies
 3. Refactor to use dependency injection or protocols
@@ -195,6 +199,7 @@ Based on layer violation patterns, likely problematic files:
 5. Update tests to verify no circular dependencies
 
 **Expected Impact:**
+
 - Eliminate 13+ circular dependency cycles
 - Fix 5 critical layer boundary violations
 - Architecture score: 9.0 → 9.5/10
@@ -202,12 +207,14 @@ Based on layer violation patterns, likely problematic files:
 ### Phase 2: Refactor Manager Initialization (Priority: P1)
 
 **Tasks:**
+
 1. Move `managers/initialization.py` logic higher in the stack
 2. Use factory pattern with injected dependencies
 3. Eliminate `core → managers` dependency
 4. Update ManagerRegistry to avoid circular imports
 
 **Expected Impact:**
+
 - Eliminate 8+ circular dependency cycles
 - Fix 1 critical layer boundary violation
 - Improve testability significantly
@@ -215,11 +222,13 @@ Based on layer violation patterns, likely problematic files:
 ### Phase 3: Optimize Optimization/Rules Coupling (Priority: P2)
 
 **Tasks:**
+
 1. Refactor `rules` layer to level 2 or 3 (before optimization)
 2. Use protocols for rules interfaces in optimization
 3. Inject rules dependencies rather than importing directly
 
 **Expected Impact:**
+
 - Eliminate 3+ circular dependency cycles
 - Fix 1 medium-severity layer violation
 - Cleaner separation of concerns
@@ -227,12 +236,14 @@ Based on layer violation patterns, likely problematic files:
 ### Phase 4: Document and Enforce Architecture (Priority: P1)
 
 **Tasks:**
+
 1. Create `docs/architecture/layering.md` with clear rules
 2. Add automated architecture tests
 3. Update CI/CD to check for layer violations
 4. Create architecture diagrams
 
 **Expected Impact:**
+
 - Prevent future architectural degradation
 - Improve maintainability
 - Better onboarding for new developers
@@ -312,6 +323,7 @@ tools:
 ### Phase 9.2.3 Success Criteria
 
 ✅ **Success Criteria:**
+
 1. Zero circular dependencies (0/23 → 0)
 2. Maximum 1 acceptable layer violation (7 → 0-1)
 3. Core layer has zero forward dependencies (5 → 0)
@@ -355,6 +367,7 @@ tools:
 
 **Risk:** Refactoring core layer may break existing functionality
 **Mitigation:**
+
 - Run full test suite after each change
 - Use feature flags for gradual rollout
 - Create backup branch before major refactoring
@@ -364,6 +377,7 @@ tools:
 
 **Risk:** Adding abstraction layers may impact performance
 **Mitigation:**
+
 - Profile before and after changes
 - Use lazy loading and caching strategically
 - Benchmark critical paths
@@ -373,6 +387,7 @@ tools:
 
 **Risk:** Changes may outpace documentation updates
 **Mitigation:**
+
 - Document architectural decisions as they're made
 - Include docs in definition of done
 - Review docs during code review
@@ -384,6 +399,7 @@ tools:
 Phase 9.2.3 has identified significant architectural technical debt in the form of 23 circular dependencies and 7 layer boundary violations. The primary issue is the `core` layer having forward dependencies to 5 higher-level layers, creating extensive coupling.
 
 **Recommended Path Forward:**
+
 1. Focus on eliminating `core` layer forward dependencies (P0)
 2. Refactor manager initialization to break circular dependencies (P1)
 3. Optimize optimization/rules coupling (P2)

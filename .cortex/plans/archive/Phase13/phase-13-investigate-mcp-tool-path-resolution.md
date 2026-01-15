@@ -14,14 +14,17 @@ The `manage_file` MCP tool in `src/cortex/tools/file_operations.py` has incorrec
 ### Issue Details
 
 **Current Behavior:**
+
 - Tool looks for files in `root / "memory-bank"` (line 553)
 - Tool lists available files from `root / "memory-bank"` (line 283)
 
 **Expected Behavior:**
+
 - Tool should look for files in `root / ".cortex" / "memory-bank"`
 - This matches the actual file location and how `MetadataIndex` resolves paths
 
 **Impact:**
+
 - Initial read operations fail with "File does not exist" errors
 - Forces fallback to direct file reading instead of using MCP tools
 - Inconsistent behavior between different parts of the codebase

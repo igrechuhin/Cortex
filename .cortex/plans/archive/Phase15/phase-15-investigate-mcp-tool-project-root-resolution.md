@@ -15,17 +15,20 @@ The `manage_file` MCP tool (and potentially other MCP tools) cannot find Memory 
 ### Issue Details
 
 **Current Behavior:**
+
 - When `project_root=None`, tool uses `get_project_root(None)` which calls `Path.cwd()`
 - `Path.cwd()` returns the current working directory of the MCP server process
 - This may not match the actual project root where `.cortex/memory-bank/` exists
 - Tool returns "File does not exist" errors even though files are present
 
 **Expected Behavior:**
+
 - Tool should detect the correct project root when `project_root=None`
 - Should use workspace root or detect project root from `.cortex/` directory presence
 - Should work consistently whether `project_root` is provided or not
 
 **Impact:**
+
 - MCP tools cannot reliably access Memory Bank files without explicit `project_root` parameter
 - Forces workarounds (direct file reading) instead of using MCP tools
 - Inconsistent behavior between tools that require `project_root` vs those that don't

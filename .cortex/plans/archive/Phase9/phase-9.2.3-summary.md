@@ -12,12 +12,14 @@
 ### 1. Comprehensive Dependency Analysis ✅
 
 Created automated dependency analysis tool ([scripts/analyze_dependencies.py](../../scripts/analyze_dependencies.py)) that:
+
 - Maps all inter-layer dependencies
 - Detects circular dependencies (found 23 cycles)
 - Identifies layer boundary violations (found 7 violations)
 - Provides clear visualization of dependency issues
 
 **Output:**
+
 ```
 === Circular Dependencies ===
 Found 23 circular dependency cycle(s)
@@ -36,6 +38,7 @@ Found 7 layer violation(s):
 ### 2. Root Cause Identification ✅
 
 Identified specific source files causing forward dependencies:
+
 - **core/container.py** - Lines 12-57: Concrete imports from 3 higher layers
 - **core/container_factory.py** - Lines 12-39: Creates instances from all layers
 
@@ -44,6 +47,7 @@ Identified specific source files causing forward dependencies:
 ### 3. Detailed Documentation Created ✅
 
 Created comprehensive documentation:
+
 1. **[phase-9.2.3-module-coupling-analysis.md](.cursor/plans/phase-9.2.3-module-coupling-analysis.md)** (~400 lines)
    - Complete circular dependency listing
    - Layer violation analysis
@@ -61,12 +65,14 @@ Created comprehensive documentation:
 Designed comprehensive solution using Python's TYPE_CHECKING pattern:
 
 **Strategy:**
+
 1. Use `TYPE_CHECKING` to separate runtime from type-checking imports
 2. Move `container_factory.py` from `core/` to `managers/` layer
 3. Add 7 missing protocol definitions
 4. Update all dependent modules and tests
 
 **Expected Impact:**
+
 - Eliminate 23 → 0-2 circular dependencies (-91% to -100%)
 - Fix 7 → 0-1 layer violations (-86% to -100%)
 - Remove all 5 forward dependencies from core layer (-100%)
@@ -79,6 +85,7 @@ Designed comprehensive solution using Python's TYPE_CHECKING pattern:
 ### Problem: Core Layer Forward Dependencies
 
 The `core` layer is supposed to be the foundation, but it currently depends on:
+
 - `analysis` layer (4 levels up)
 - `linking` layer (1 level up)
 - `managers` layer (8 levels up!)
@@ -90,11 +97,13 @@ This violates the dependency inversion principle and creates tight coupling.
 ### Solution: TYPE_CHECKING Pattern
 
 Python's `TYPE_CHECKING` allows us to:
+
 1. Import concrete types for IDE/type-checker support (at type-check time)
 2. Use protocol types at runtime (no circular imports)
 3. Maintain full type safety without runtime dependencies
 
 **Example:**
+
 ```python
 from typing import TYPE_CHECKING
 from cortex.core.protocols import InsightEngineProtocol
@@ -110,6 +119,7 @@ insight_engine: InsightEngineProtocol  # or 'InsightEngine' as string
 ### Architecture: Clear Layer Hierarchy
 
 Established clear layer hierarchy:
+
 ```
 L0: core           → Foundation (file system, metadata, exceptions)
 L1: linking        → Link parsing, transclusion
@@ -154,6 +164,7 @@ L11: main          → Entry point
 | Verify & document | 30min | docs/architecture/ |
 
 **Success Criteria:**
+
 - ✅ Zero circular dependencies in core layer
 - ✅ Zero layer boundary violations (except tools→server)
 - ✅ All 1,537+ tests passing
@@ -250,12 +261,14 @@ L11: main          → Entry point
 Phase 9.2.3 analysis successfully identified and designed a solution for the 23 circular dependencies and 7 layer boundary violations in the codebase. The primary issue is the `core` layer having forward dependencies to 5 higher-level layers, which can be resolved using Python's TYPE_CHECKING pattern and moving factory logic to the appropriate layer.
 
 **Key Achievement:**
+
 - Comprehensive dependency analysis complete
 - Root cause identified
 - Solution designed and documented
 - Implementation plan ready
 
 **Next:**
+
 - Begin implementation (6-8 hours estimated)
 - Target: Architecture score 9.0 → 9.8/10
 

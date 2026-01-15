@@ -17,6 +17,7 @@ Cortex provides automated refactoring suggestions to improve memory bank quality
 ### The Learning Problem
 
 **Static Rules** (no learning):
+
 ```python
 def suggest_consolidation(files: list[File]) -> list[Suggestion]:
     """Suggest consolidation based on fixed rules."""
@@ -28,6 +29,7 @@ def suggest_consolidation(files: list[File]) -> list[Suggestion]:
 ```
 
 **Problems**:
+
 - Fixed threshold doesn't work for all projects
 - Can't learn user preferences (some want 0.7, others 0.9)
 - No improvement over time
@@ -37,6 +39,7 @@ def suggest_consolidation(files: list[File]) -> list[Suggestion]:
 ### Requirements
 
 **Functional Requirements**:
+
 - Capture user feedback (accept/reject/modify)
 - Learn from feedback to improve future suggestions
 - Personalize to user/project preferences
@@ -44,6 +47,7 @@ def suggest_consolidation(files: list[File]) -> list[Suggestion]:
 - Support multiple learning signals (explicit and implicit)
 
 **Non-Functional Requirements**:
+
 - Privacy-preserving (no sensitive data sent to cloud)
 - Fast learning (updates in real-time)
 - Explainable (show why confidence changed)
@@ -51,6 +55,7 @@ def suggest_consolidation(files: list[File]) -> list[Suggestion]:
 - Storage-efficient (learning data should be small)
 
 **Design Constraints**:
+
 - Local-first (no required cloud dependency)
 - No machine learning libraries (keep dependencies minimal)
 - Simple algorithms (interpretable, debuggable)
@@ -59,18 +64,21 @@ def suggest_consolidation(files: list[File]) -> list[Suggestion]:
 ### Learning Signals
 
 **Explicit Feedback**:
+
 1. **Accept**: User approves and applies suggestion
 2. **Reject**: User explicitly dismisses suggestion
 3. **Modify**: User edits suggestion before applying
 4. **Revert**: User undoes applied suggestion
 
 **Implicit Feedback**:
+
 1. **Ignored**: Suggestion shown but not acted on
 2. **Manual Action**: User performs suggested action without using tool
 3. **Repeated Rejection**: Same suggestion type rejected multiple times
 4. **Patterns**: User's actual refactoring patterns
 
 **Context Features**:
+
 1. **File similarity**: How similar are files being consolidated?
 2. **File size**: How large are files involved?
 3. **Duplication percentage**: How much content is duplicated?
@@ -313,6 +321,7 @@ class LearningEngine:
 ### Feature Engineering
 
 **Consolidation Features**:
+
 ```python
 def extract_consolidation_features(
     file1: str,
@@ -330,6 +339,7 @@ def extract_consolidation_features(
 ```
 
 **Split Features**:
+
 ```python
 def extract_split_features(file: str) -> dict[str, float]:
     """Extract features for split suggestion."""
@@ -531,36 +541,42 @@ async def approve_refactoring(
 ### Positive
 
 **1. Continuous Improvement**:
+
 - Suggestions get better over time
 - Learns from mistakes
 - Adapts to user preferences
 - No manual threshold tuning
 
 **2. Personalization**:
+
 - Per-project preferences
 - Per-user preferences (future)
 - Adapts to project patterns
 - Respects user decisions
 
 **3. Explainability**:
+
 - Clear confidence scores
 - Explanation of why confidence is what it is
 - Historical data visible
 - Debuggable
 
 **4. Privacy-Preserving**:
+
 - All data stored locally
 - No cloud dependency
 - User controls data
 - No sensitive data exposure
 
 **5. Lightweight**:
+
 - No ML dependencies
 - Simple statistics
 - Fast (<10ms inference)
 - Small storage footprint
 
 **6. Robust**:
+
 - Handles contradictory feedback
 - Smoothing prevents overfitting
 - Graceful handling of edge cases
@@ -569,36 +585,42 @@ async def approve_refactoring(
 ### Negative
 
 **1. Limited Learning Capability**:
+
 - Simple statistics only
 - Can't learn complex patterns
 - No feature interaction modeling
 - Linear relationships only
 
 **2. Cold Start Problem**:
+
 - No history initially
 - Moderate confidence for new types
 - Requires feedback to improve
 - Slow learning at first
 
 **3. Storage Growth**:
+
 - Feedback history grows over time
 - No automatic pruning
 - May need manual cleanup
 - Could impact performance with 1000s of events
 
 **4. Feature Engineering**:
+
 - Manual feature selection required
 - Features may not capture all factors
 - Requires domain expertise
 - Hard to know which features matter
 
 **5. No Cross-Project Learning**:
+
 - Each project starts from scratch
 - Can't leverage common patterns
 - Duplicated learning across projects
 - Could benefit from aggregation
 
 **6. Implicit Feedback Limited**:
+
 - Only explicit feedback used initially
 - Ignoring rich implicit signals
 - Could learn more from behavior
@@ -607,18 +629,21 @@ async def approve_refactoring(
 ### Neutral
 
 **1. Feature Similarity**:
+
 - Cosine similarity chosen (other metrics possible)
 - Works well for normalized features
 - May not be optimal for all cases
 - Could experiment with alternatives
 
 **2. Smoothing**:
+
 - Laplace smoothing used (add-one)
 - Prevents zero confidence
 - Conservative approach
 - Could use other smoothing techniques
 
 **3. Threshold Learning**:
+
 - Accuracy maximization chosen
 - Could optimize other metrics (F1, precision, recall)
 - Context-dependent choice
@@ -631,12 +656,14 @@ async def approve_refactoring(
 **Approach**: Fixed thresholds and rules.
 
 **Pros**:
+
 - Simple
 - Predictable
 - No storage needed
 - Fast
 
 **Cons**:
+
 - No improvement
 - Can't adapt
 - Same mistakes repeated
@@ -666,12 +693,14 @@ class MLLearningEngine:
 ```
 
 **Pros**:
+
 - More accurate
 - Handles complex patterns
 - Learns feature interactions
 - Proven algorithms
 
 **Cons**:
+
 - Heavy dependency (scikit-learn)
 - Slow training/inference
 - Not interpretable
@@ -684,11 +713,13 @@ class MLLearningEngine:
 **Approach**: Model as RL problem with rewards.
 
 **Pros**:
+
 - Optimal for sequential decisions
 - Learns from delayed rewards
 - Handles exploration/exploitation
 
 **Cons**:
+
 - Very complex
 - Requires lots of data
 - Hard to debug
@@ -701,12 +732,14 @@ class MLLearningEngine:
 **Approach**: Send feedback to cloud, learn centrally.
 
 **Pros**:
+
 - Cross-project learning
 - More data = better learning
 - Shared knowledge
 - Professional ML infrastructure
 
 **Cons**:
+
 - Privacy concerns
 - Requires cloud dependency
 - Network latency
@@ -723,12 +756,14 @@ class MLLearningEngine:
 ```
 
 **Pros**:
+
 - Interpretable rules
 - Easy to understand
 - Explainable
 - Fast inference
 
 **Cons**:
+
 - Hard to mine automatically
 - Requires lots of data
 - Rigid (hard thresholds)
@@ -741,12 +776,14 @@ class MLLearningEngine:
 **Approach**: Model dependencies between features as Bayesian network.
 
 **Pros**:
+
 - Handles uncertainty well
 - Models feature dependencies
 - Probabilistically sound
 - Good with sparse data
 
 **Cons**:
+
 - Complex implementation
 - Hard to visualize
 - Slow inference
@@ -766,12 +803,14 @@ lookup_table = {
 ```
 
 **Pros**:
+
 - Simple
 - Fast lookup
 - Exact matching
 - Easy to implement
 
 **Cons**:
+
 - No generalization
 - Exact matches rare
 - Storage explodes
@@ -784,6 +823,7 @@ lookup_table = {
 ### Data Privacy
 
 All learning data stays local:
+
 - Stored in `.memory-bank-learning.json`
 - Never sent to cloud
 - User controls data
@@ -792,6 +832,7 @@ All learning data stays local:
 ### Performance Optimization
 
 **Indexing**:
+
 ```python
 class LearningEngine:
     def __init__(self):
@@ -804,6 +845,7 @@ class LearningEngine:
 ```
 
 **Caching**:
+
 ```python
 from functools import lru_cache
 
@@ -823,17 +865,20 @@ def calculate_similarity(features1_tuple, features2_tuple):
 ### Testing Strategy
 
 **Unit Tests**:
+
 - Test confidence calculation
 - Test similarity calculation
 - Test threshold learning
 - Test feedback storage
 
 **Integration Tests**:
+
 - Test full learning loop
 - Test persistence
 - Test with real feedback patterns
 
 **Simulation Tests**:
+
 - Simulate user feedback
 - Verify learning convergence
 - Test edge cases

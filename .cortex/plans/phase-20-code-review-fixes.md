@@ -23,6 +23,7 @@ The codebase demonstrates excellent overall quality with strong architecture, co
 ## Approach
 
 Address issues in priority order:
+
 1. **Critical blockers** (test import error) - Fix immediately to unblock testing
 2. **Rules violations** (file size limits) - Split large files incrementally
 3. **Type errors** (test warnings) - Fix unused call result warnings
@@ -38,11 +39,13 @@ Address issues in priority order:
 **Impact:** High - Unblocks test execution
 
 **Issue:**
+
 - `tests/unit/test_fix_markdown_lint.py` tries to import functions that don't exist
 - Trying to import `check_markdownlint_available`, `get_modified_markdown_files`, `run_command`, `run_markdownlint_fix` from `scripts/fix_markdown_lint.py`
 - These functions are private in `src/cortex/tools/markdown_operations.py`
 
 **Fix:**
+
 1. Update `tests/unit/test_fix_markdown_lint.py` to:
    - Import from `cortex.tools.markdown_operations` instead of `scripts/fix_markdown_lint`
    - Test the public MCP tool `fix_markdown_lint` instead of private helpers
@@ -54,6 +57,7 @@ Address issues in priority order:
    - Test coverage maintained
 
 **Success Criteria:**
+
 - ✅ Test collection succeeds without ImportError
 - ✅ All tests in `test_fix_markdown_lint.py` pass
 - ✅ Test suite can run completely
@@ -67,10 +71,12 @@ Address issues in priority order:
 **Impact:** Medium - Improves code quality
 
 **Issue:**
+
 - 15 unused call result warnings in test files
 - Type checker errors in `test_fix_markdown_lint.py` (import issues)
 
 **Files Affected:**
+
 - `tests/integration/test_conditional_prompts.py` - 4 warnings
 - `tests/tools/test_validation_operations.py` - 7 warnings
 - `tests/unit/test_config_status.py` - 4 warnings
@@ -78,7 +84,9 @@ Address issues in priority order:
 - `tests/unit/test_language_detector.py` - 8 warnings
 
 **Fix:**
+
 1. For each unused call result:
+
    ```python
    # Before:
    os.makedirs(path)  # Warning: unused call result
@@ -92,6 +100,7 @@ Address issues in priority order:
    - Fix any remaining type checker warnings
 
 **Success Criteria:**
+
 - ✅ 0 unused call result warnings
 - ✅ 0 type errors in test files
 - ✅ All tests still pass
@@ -121,6 +130,7 @@ Address issues in priority order:
 **Fix Strategy:**
 
 **3.1: Split `validation_operations.py` (1063 → ≤400 lines)**
+
 - Extract validation schema logic → `validation_schema.py`
 - Extract validation duplication logic → `validation_duplication.py`
 - Extract validation quality logic → `validation_quality.py`
@@ -129,6 +139,7 @@ Address issues in priority order:
 - Ensure all tests pass
 
 **3.2: Split `phase2_linking.py` (1052 → ≤400 lines)**
+
 - Extract link parsing logic → `link_parser_operations.py`
 - Extract transclusion resolution → `transclusion_operations.py`
 - Extract link validation → `link_validation_operations.py`
@@ -137,6 +148,7 @@ Address issues in priority order:
 - Ensure all tests pass
 
 **3.3: Split `pattern_analyzer.py` (973 → ≤400 lines)**
+
 - Extract pattern detection logic → `pattern_detection.py`
 - Extract pattern analysis → `pattern_analysis.py`
 - Extract refactoring suggestions → `refactoring_suggestions.py`
@@ -145,6 +157,7 @@ Address issues in priority order:
 - Ensure all tests pass
 
 **3.4: Split `rollback_manager.py` (928 → ≤400 lines)**
+
 - Extract version snapshot logic → `version_snapshots.py`
 - Extract rollback execution → `rollback_execution.py`
 - Extract conflict resolution → `rollback_conflicts.py`
@@ -153,6 +166,7 @@ Address issues in priority order:
 - Ensure all tests pass
 
 **3.5: Split `template_manager.py` (891 → ≤400 lines)**
+
 - Extract template loading → `template_loader.py`
 - Extract template rendering → `template_renderer.py`
 - Extract template validation → `template_validator.py`
@@ -161,6 +175,7 @@ Address issues in priority order:
 - Ensure all tests pass
 
 **3.6: Split `initialization.py` (886 → ≤400 lines)**
+
 - Extract manager initialization → `manager_initialization.py`
 - Extract dependency resolution → `dependency_resolution.py`
 - Extract health checks → `initialization_health.py`
@@ -169,6 +184,7 @@ Address issues in priority order:
 - Ensure all tests pass
 
 **3.7: Split `structure_analyzer.py` (875 → ≤400 lines)**
+
 - Extract structure detection → `structure_detection.py`
 - Extract structure analysis → `structure_analysis.py`
 - Extract structure metrics → `structure_metrics.py`
@@ -177,6 +193,7 @@ Address issues in priority order:
 - Ensure all tests pass
 
 **3.8: Split `optimization_strategies.py` (822 → ≤400 lines)**
+
 - Extract strategy implementations → `strategy_implementations.py`
 - Extract strategy selection → `strategy_selection.py`
 - Extract strategy metrics → `strategy_metrics.py`
@@ -185,6 +202,7 @@ Address issues in priority order:
 - Ensure all tests pass
 
 **3.9: Split `phase8_structure.py` (821 → ≤400 lines)**
+
 - Extract structure operations → `structure_operations.py`
 - Extract structure validation → `structure_validation.py`
 - Extract structure creation → `structure_creation.py`
@@ -193,6 +211,7 @@ Address issues in priority order:
 - Ensure all tests pass
 
 **3.10: Split `phase5_execution.py` (781 → ≤400 lines)**
+
 - Extract execution planning → `execution_planning.py`
 - Extract execution validation → `execution_validation.py`
 - Extract execution monitoring → `execution_monitoring.py`
@@ -201,6 +220,7 @@ Address issues in priority order:
 - Ensure all tests pass
 
 **General Guidelines:**
+
 - Extract helper functions into separate utility modules
 - Move large classes into separate files (one public type per file rule)
 - Prioritize largest violations first
@@ -210,6 +230,7 @@ Address issues in priority order:
 - Verify file size compliance after each split
 
 **Success Criteria:**
+
 - ✅ All 10 files ≤400 lines
 - ✅ All functions ≤30 lines (maintained)
 - ✅ All tests pass
@@ -231,6 +252,7 @@ Address issues in priority order:
 **Risk:** User-provided commit messages not sanitized before git operations
 
 **Fix:**
+
 1. Create `src/cortex/security/input_sanitizer.py`:
    - Add `sanitize_commit_message()` function
    - Remove control characters, shell metacharacters
@@ -248,6 +270,7 @@ Address issues in priority order:
    - Verify git operations work correctly with sanitized messages
 
 **Success Criteria:**
+
 - ✅ Commit messages sanitized before git operations
 - ✅ Unit tests for sanitization function
 - ✅ All git operations work correctly
@@ -261,6 +284,7 @@ Address issues in priority order:
 **Risk:** No HTML escaping for exported content
 
 **Fix:**
+
 1. Create `src/cortex/security/html_escaper.py`:
    - Add `escape_html()` function
    - Escape HTML special characters (`<`, `>`, `&`, `"`, `'`)
@@ -277,6 +301,7 @@ Address issues in priority order:
    - Verify JSON exports are valid
 
 **Success Criteria:**
+
 - ✅ HTML escaping applied to exported content
 - ✅ Unit tests for HTML escaping function
 - ✅ JSON exports remain valid
@@ -290,6 +315,7 @@ Address issues in priority order:
 **Risk:** Malicious regex patterns could cause denial of service
 
 **Fix:**
+
 1. Create `src/cortex/security/regex_validator.py`:
    - Add `validate_regex_pattern()` function
    - Check pattern complexity (nesting depth, quantifiers)
@@ -307,6 +333,7 @@ Address issues in priority order:
    - Verify valid patterns still work correctly
 
 **Success Criteria:**
+
 - ✅ Regex patterns validated before use
 - ✅ Unit tests for regex validation function
 - ✅ Valid patterns still work correctly
@@ -322,17 +349,20 @@ Address issues in priority order:
 
 **Issue:**
 2 TODO comments in production code:
+
 1. `src/cortex/tools/pre_commit_tools.py:61` - "TODO: Add other language adapters as needed"
 2. `src/cortex/tools/validation_operations.py:771` - Same TODO in error message
 
 **Status:** ✅ Already tracked in roadmap.md (Future Enhancements section)
 
 **Fix:**
+
 1. Verify TODO comments are tracked in roadmap (already done)
 2. Optionally: Add issue references or roadmap links to TODO comments
 3. Optionally: Create GitHub issues for tracking (if using GitHub)
 
 **Success Criteria:**
+
 - ✅ All TODO comments tracked in roadmap
 - ✅ TODO comments include roadmap references (optional)
 - ✅ No untracked TODO comments in production code
@@ -392,6 +422,7 @@ Address issues in priority order:
 
 **Risk:** Splitting large files may introduce import errors or break functionality  
 **Mitigation:**
+
 - Split files incrementally, one at a time
 - Run full test suite after each split
 - Verify all imports updated correctly
@@ -401,6 +432,7 @@ Address issues in priority order:
 
 **Risk:** Input sanitization may break legitimate use cases  
 **Mitigation:**
+
 - Test sanitization with real-world inputs
 - Ensure sanitization is permissive for valid inputs
 - Add comprehensive unit tests
@@ -410,6 +442,7 @@ Address issues in priority order:
 
 **Risk:** File splitting takes longer than estimated (40-60 hours)  
 **Mitigation:**
+
 - Prioritize largest violations first
 - Split files incrementally
 - Can be done in multiple phases if needed

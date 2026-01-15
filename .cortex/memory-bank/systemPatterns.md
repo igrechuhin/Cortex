@@ -51,6 +51,7 @@ Cortex is structured as an MCP (Model Context Protocol) server with a modular, l
    - Scripts adapt to project structure automatically
 
 **Violation Examples to Avoid**:
+
 - Hardcoding `black`, `ruff`, `pyright`, `prettier`, `eslint` commands
 - Using language-specific paths like `src/`, `tests/` without script abstraction
 - Writing procedures that assume Python/TypeScript/etc.
@@ -59,6 +60,7 @@ Cortex is structured as an MCP (Model Context Protocol) server with a modular, l
 ## Component Relationships
 
 ### Core Services Stack (Initialization Order)
+
 1ileSystemManager → File I/O, locking, hashing
 2. MetadataIndex → JSON index for file metadata
 3. TokenCounter → tiktoken integration
@@ -76,6 +78,7 @@ Cortex is structured as an MCP (Model Context Protocol) server with a modular, l
 - **Phase 5alysis/Refactoring)**: Depends on Phase 1-4, adds PatternAnalyzer, RefactoringEngine
 
 ## Critical Implementation Paths1*File Operations** - All file operations go through FileSystemManager with locking
+
 2t Loading** - Progressive loading with token budget management
 3. **Transclusion Resolution** - Recursive resolution with cycle detection
 4. **Validation Pipeline** - Schema → Duplication → Quality metrics

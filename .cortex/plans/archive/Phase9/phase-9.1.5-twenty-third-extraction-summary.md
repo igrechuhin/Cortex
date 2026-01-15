@@ -21,6 +21,7 @@ Successfully extracted the `generate_insights()` function in `insight_engine.py`
 ## Extraction Pattern: Category-Based Processing Pipeline
 
 The function processes insights through multiple stages:
+
 1. Category selection (determine which categories to process)
 2. Insight generation (generate insights for each category)
 3. Filtering and sorting (filter by impact score and sort)
@@ -244,4 +245,3 @@ The twenty-third function extraction successfully reduced the `generate_insights
 **Status:** ✅ **COMPLETE** - Ready for commit
 **Progress:** 23/140 functions extracted (16.4% complete)
 **Violations:** 64 remaining (down from 65)
-

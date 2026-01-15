@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cortex.tools.pre_commit_tools import execute_pre_commit_checks
+from cortex.tools.pre_commit_tools import execute_pre_commit_checks, fix_quality_issues
 
 
 class TestExecutePreCommitChecks:
@@ -135,3 +135,86 @@ class TestExecutePreCommitChecks:
 
             assert result["status"] == "error"
             assert "Test error" in result["error"]
+
+
+class TestFixQualityIssues:
+    """Test fix_quality_issues tool."""
+
+    @pytest.mark.asyncio
+    async def test_fix_quality_issues_error_path(self) -> None:
+        """Test error path when execute_pre_commit_checks returns error."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            (project_root / ".venv").mkdir()
+
+            with patch(
+                "cortex.tools.pre_commit_tools.execute_pre_commit_checks"
+            ) as mock_execute:
+                mock_execute.return_value = json.dumps(
+                    {"status": "error", "error": "Test error"}
+                )
+
+                result_json = await fix_quality_issues(project_root=str(project_root))
+                result = json.loads(result_json)
+
+                assert result["status"] == "error"
+                assert result["error_message"] == "Test error"
+                assert result["errors_fixed"] == 0
+                assert result["files_modified"] == []
+
+    @pytest.mark.asyncio
+    async def test_fix_quality_issues_exception_handling(self) -> None:
+        """Test exception handling in fix_quality_issues."""
+        with patch(
+            "cortex.tools.pre_commit_tools._get_project_root_str"
+        ) as mock_root:
+            mock_root.side_effect = Exception("Root error")
+
+            result_json = await fix_quality_issues()
+            result = json.loads(result_json)
+
+            assert result["status"] == "error"
+            assert result["error_message"] == "Root error"
+            assert result["errors_fixed"] == 0
+
+    @pytest.mark.asyncio
+    async def test_fix_quality_issues_success_path(self) -> None:
+        """Test success path in fix_quality_issues."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            (project_root / ".venv").mkdir()
+
+            with (
+                patch(
+                    "cortex.tools.pre_commit_tools.execute_pre_commit_checks"
+                ) as mock_execute,
+                patch(
+                    "cortex.tools.pre_commit_tools.fix_markdown_lint"
+                ) as mock_markdown,
+            ):
+                mock_execute.return_value = json.dumps(
+                    {
+                        "status": "success",
+                        "checks": {
+                            "fix_errors": {
+                                "errors": [],
+                                "warnings": [],
+                                "files_modified": ["file1.py"],
+                            },
+                            "format": {"files_formatted": 1},
+                            "type_check": {"errors": 0, "warnings": 0},
+                        },
+                    }
+                )
+                mock_markdown.return_value = json.dumps(
+                    {"success": True, "files_fixed": 1, "files_processed": 1}
+                )
+
+                result_json = await fix_quality_issues(project_root=str(project_root))
+                result = json.loads(result_json)
+
+                assert result["status"] == "success"
+                assert result["errors_fixed"] >= 0
+                assert len(result["files_modified"]) >= 0

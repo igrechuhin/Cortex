@@ -31,6 +31,7 @@ Phase 9.8 focused on reducing code complexity and improving maintainability thro
 - Integration-ready for CI/CD
 
 **Features:**
+
 - Detects functions with complexity >10
 - Identifies nesting depth >3 levels
 - Provides human-readable issue descriptions
@@ -47,6 +48,7 @@ Phase 9.8 focused on reducing code complexity and improving maintainability thro
 | refactoring_engine.py | `_determine_refactoring_type_from_insight` | 12 complexity | 5 complexity | **-58%** |
 
 **Techniques Applied:**
+
 - Guard clause pattern for early returns
 - Extracted validation logic to helper functions
 - Named helper methods for clarity
@@ -55,6 +57,7 @@ Phase 9.8 focused on reducing code complexity and improving maintainability thro
 **Examples:**
 
 **Before (15 complexity):**
+
 ```python
 def validate_file_name(name: str) -> str:
     if not name:
@@ -70,6 +73,7 @@ def validate_file_name(name: str) -> str:
 ```
 
 **After (2 complexity):**
+
 ```python
 def validate_file_name(name: str) -> str:
     # Early validation and sanitization
@@ -98,6 +102,7 @@ def validate_file_name(name: str) -> str:
 | reorganization_planner.py | `infer_categories` | 6 levels nesting | 2 levels | **-67%** |
 
 **Techniques Applied:**
+
 - Strategy dispatch pattern (dictionary-based routing)
 - Extracted category matching logic
 - Keyword mapping dictionaries
@@ -106,6 +111,7 @@ def validate_file_name(name: str) -> str:
 **Examples:**
 
 **Before (7 levels):**
+
 ```python
 async def execute_operation(self, operation: RefactoringOperation) -> None:
     if operation.operation_type == "consolidate":
@@ -120,6 +126,7 @@ async def execute_operation(self, operation: RefactoringOperation) -> None:
 ```
 
 **After (2 levels):**
+
 ```python
 async def execute_operation(self, operation: RefactoringOperation) -> None:
     """Execute using dispatch table for reduced complexity."""
@@ -183,6 +190,7 @@ self._operation_handlers = {
 **Purpose:** Reduce nesting by using early returns
 
 **Example:**
+
 ```python
 # Before
 if condition1:
@@ -207,6 +215,7 @@ if not condition3:
 ```
 
 **Applied in:**
+
 - `validate_file_name` (security.py)
 - `validate_git_url` (security.py)
 
@@ -215,6 +224,7 @@ if not condition3:
 **Purpose:** Replace if-elif chains with dictionary lookup
 
 **Example:**
+
 ```python
 # Before
 if op_type == "consolidate":
@@ -235,6 +245,7 @@ if handler:
 ```
 
 **Applied in:**
+
 - `execute_operation` (execution_operations.py)
 
 ### 3. Extract Method Pattern ✅
@@ -242,6 +253,7 @@ if handler:
 **Purpose:** Break down complex functions into smaller, focused helpers
 
 **Example:**
+
 ```python
 # Before
 def complex_validation(data):
@@ -259,6 +271,7 @@ def _validate_security(data): ...
 ```
 
 **Applied in:**
+
 - `validate_file_name` → 6 helper methods
 - `validate_git_url` → 5 helper methods
 - `_determine_refactoring_type_from_insight` → 2 helper methods
@@ -269,6 +282,7 @@ def _validate_security(data): ...
 **Purpose:** Replace hardcoded logic with data structures
 
 **Example:**
+
 ```python
 # Before
 if "context" in filename or "active" in filename or "system" in filename:
@@ -290,6 +304,7 @@ for category, keywords in CATEGORY_KEYWORDS.items():
 ```
 
 **Applied in:**
+
 - `infer_categories` (reorganization_planner.py)
 
 ---
@@ -318,13 +333,13 @@ for category, keywords in CATEGORY_KEYWORDS.items():
 
 ### Supporting Changes (2 files)
 
-4. **src/cortex/refactoring/reorganization_planner.py** (~+15 lines)
+1. **src/cortex/refactoring/reorganization_planner.py** (~+15 lines)
    - Refactored `infer_categories` (6 levels → 2 levels nesting)
    - Extracted `_categorize_file` method
    - Data-driven keyword mapping
    - All tests passing ✅
 
-5. **scripts/analyze_complexity.py** (NEW, ~240 lines)
+2. **scripts/analyze_complexity.py** (NEW, ~240 lines)
    - Comprehensive complexity analysis tool
    - AST-based analysis
    - Actionable reports
@@ -378,6 +393,7 @@ gtimeout -k 5 300 ./.venv/bin/pytest tests/unit/test_security.py \
 ```
 
 **Results:**
+
 - ✅ 125 tests passing
 - ✅ 0 failures
 - ✅ 0 regressions
@@ -489,6 +505,7 @@ Phase 9.8 (Core) successfully achieved its primary objectives:
 **Maintainability Score Improvement:** 9.0/10 → 9.3/10 (+0.3 points)
 
 **Impact:**
+
 - More readable code
 - Easier to understand and modify
 - Reduced cognitive load

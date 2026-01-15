@@ -70,12 +70,14 @@ These errors are detected by the IDE's markdownlint extension but require manual
   4. Reports results
 
 **Pros**:
+
 - Simple to implement
 - Easy to run standalone
 - Can be integrated into pre-commit hooks
 - No MCP server dependency
 
 **Cons**:
+
 - Requires npm/node.js for markdownlint-cli2
 - Not directly accessible via MCP tools
 
@@ -89,11 +91,13 @@ These errors are detected by the IDE's markdownlint extension but require manual
   3. Returns structured results
 
 **Pros**:
+
 - Accessible via MCP protocol
 - Can be called from IDE
 - Structured JSON responses
 
 **Cons**:
+
 - More complex implementation
 - Requires MCP server to be running
 - May be overkill for simple script
@@ -120,6 +124,7 @@ These errors are detected by the IDE's markdownlint extension but require manual
 ### Step 2: Implement Git File Detection
 
 1. **Create helper function** to get modified markdown files:
+
    ```python
    async def get_modified_markdown_files(project_root: Path) -> list[Path]:
        """Get list of modified markdown files from git."""
@@ -139,6 +144,7 @@ These errors are detected by the IDE's markdownlint extension but require manual
 ### Step 3: Implement Markdownlint Integration
 
 1. **Create markdownlint runner**:
+
    ```python
    async def run_markdownlint_fix(file_path: Path, project_root: Path) -> dict[str, object]:
        """Run markdownlint --fix on a file."""
@@ -340,6 +346,7 @@ Based on the user's error examples:
 **Risk**: Tool fails if markdownlint-cli2 is not installed.
 
 **Mitigation**:
+
 - Check for markdownlint availability at startup
 - Provide clear error message with installation instructions
 - Document dependency in README
@@ -349,6 +356,7 @@ Based on the user's error examples:
 **Risk**: Tool fails if git is not available or not in a git repository.
 
 **Mitigation**:
+
 - Check for git availability
 - Check if current directory is a git repository
 - Provide fallback option to specify files manually
@@ -358,6 +366,7 @@ Based on the user's error examples:
 **Risk**: Auto-fix might introduce incorrect changes.
 
 **Mitigation**:
+
 - Test thoroughly with various error types
 - Support dry-run mode to preview changes
 - Provide detailed reporting of what was fixed
@@ -368,6 +377,7 @@ Based on the user's error examples:
 **Risk**: Tool might be slow with many files.
 
 **Mitigation**:
+
 - Process files in parallel (if async)
 - Report progress for large batches
 - Optimize git commands

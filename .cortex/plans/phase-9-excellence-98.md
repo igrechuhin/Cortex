@@ -44,11 +44,13 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ## Phase 9 Sub-Phases Overview
 
 ### Phase 9.1: Rules Compliance Excellence (P0 - CRITICAL)
+
 **Goal:** 6.0 → 9.8/10
 **Effort:** 60-80 hours
 **Status:** 🔴 CRITICAL BLOCKER
 
 **Tasks:**
+
 1. **Split 20 oversized files** (60-70 hours)
    - consolidated.py: 1,189 → 4 files <400 lines each (8h)
    - insight_engine.py: 763 → 2 files (4h)
@@ -77,6 +79,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
    - Maintain test coverage
 
 **Success Criteria:**
+
 - ✅ Zero files >400 lines
 - ✅ Zero functions >30 logical lines
 - ✅ 100% test pass rate (1,747/1,747)
@@ -86,11 +89,13 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ---
 
 ### Phase 9.2: Architecture Refinement (P1)
+
 **Goal:** 8.5 → 9.8/10
 **Effort:** 12-16 hours
 **Status:** 🟡 HIGH PRIORITY
 
 **Tasks:**
+
 1. **Strengthen protocol boundaries** (4-6 hours)
    - Add 5+ missing protocol definitions
    - Ensure all cross-module interfaces use protocols
@@ -107,6 +112,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
    - Document architecture decisions
 
 **Success Criteria:**
+
 - ✅ All cross-module interfaces use protocols
 - ✅ Zero global state in production code
 - ✅ Clear layering documented
@@ -115,11 +121,13 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ---
 
 ### Phase 9.3: Performance Optimization (P1)
+
 **Goal:** 8.5 → 9.8/10
 **Effort:** 16-20 hours
 **Status:** 🟡 HIGH PRIORITY
 
 **Tasks:**
+
 1. **Profile and optimize hot paths** (6-8 hours)
    - Run profiler on key operations
    - Identify O(n²) patterns in structure_analyzer
@@ -142,6 +150,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
    - Implement streaming where possible
 
 **Success Criteria:**
+
 - ✅ All operations <200ms (p95)
 - ✅ Memory usage <50MB for typical projects
 - ✅ Zero O(n²) algorithms on large datasets
@@ -150,11 +159,13 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ---
 
 ### Phase 9.4: Security Excellence (P1)
+
 **Goal:** 9.0 → 9.8/10
 **Effort:** 10-14 hours
 **Status:** 🟡 HIGH PRIORITY
 
 **Tasks:**
+
 1. **Comprehensive security audit** (4-6 hours)
    - Audit all file operations
    - Review git operations
@@ -172,6 +183,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
    - Add security headers/metadata
 
 **Success Criteria:**
+
 - ✅ 100% of file operations audited
 - ✅ Security documentation complete
 - ✅ No vulnerabilities in static analysis
@@ -180,11 +192,13 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ---
 
 ### Phase 9.5: Test Coverage Excellence (P2)
+
 **Goal:** 9.5 → 9.8/10
 **Effort:** 8-12 hours
 **Status:** 🟢 MEDIUM PRIORITY
 
 **Tasks:**
+
 1. **Improve tool module coverage** (6-8 hours)
    - phase6_shared_rules.py: 19% → 85%+
    - phase8_structure.py: 12% → 85%+
@@ -198,6 +212,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
    - Boundary conditions
 
 **Success Criteria:**
+
 - ✅ Overall coverage: 83% → 90%+
 - ✅ All tool modules: >85% coverage
 - ✅ Critical paths: 100% coverage
@@ -205,11 +220,13 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ---
 
 ### Phase 9.6: Code Style Polish (P2)
+
 **Goal:** 9.5 → 9.8/10
 **Effort:** 4-6 hours
 **Status:** 🟢 MEDIUM PRIORITY
 
 **Tasks:**
+
 1. **Add explanatory comments** (2-3 hours)
    - Complex algorithms
    - Non-obvious design decisions
@@ -226,6 +243,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
    - Add type information where helpful
 
 **Success Criteria:**
+
 - ✅ All complex algorithms commented
 - ✅ Zero magic numbers
 - ✅ All public APIs have examples
@@ -233,11 +251,13 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ---
 
 ### Phase 9.7: Error Handling Polish (P2)
+
 **Goal:** 9.5 → 9.8/10
 **Effort:** 4-6 hours
 **Status:** 🟢 MEDIUM PRIORITY
 
 **Tasks:**
+
 1. **Improve error messages** (2-3 hours)
    - Make messages more actionable
    - Add recovery suggestions
@@ -249,6 +269,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
    - Document failure modes
 
 **Success Criteria:**
+
 - ✅ All error messages actionable
 - ✅ Recovery suggestions documented
 - ✅ Graceful degradation implemented
@@ -256,11 +277,13 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ---
 
 ### Phase 9.8: Maintainability Polish (P2)
+
 **Goal:** 9.0 → 9.8/10
 **Effort:** 4-6 hours
 **Status:** 🟢 MEDIUM PRIORITY
 
 **Tasks:**
+
 1. **Code complexity reduction** (2-3 hours)
    - Simplify complex conditionals
    - Extract nested logic
@@ -272,6 +295,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
    - Add module-level documentation
 
 **Success Criteria:**
+
 - ✅ Cyclomatic complexity <10 for all functions
 - ✅ Nesting depth <4 levels
 - ✅ Clear module organization
@@ -279,11 +303,13 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ---
 
 ### Phase 9.9: Final Integration & Validation (P2)
+
 **Goal:** Validate 9.8+/10 achievement
 **Effort:** 6-8 hours
 **Status:** 🟢 MEDIUM PRIORITY
 
 **Tasks:**
+
 1. **Comprehensive testing** (2-3 hours)
    - Full test suite (100% pass rate)
    - Integration test validation
@@ -300,6 +326,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
    - Create Phase 9 completion summary
 
 **Success Criteria:**
+
 - ✅ All tests passing (100%)
 - ✅ All quality metrics ≥9.8/10
 - ✅ Documentation complete and accurate
@@ -309,34 +336,42 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ## Implementation Strategy
 
 ### Week 1-2: Critical Violations (Phase 9.1)
+
 **Focus:** Rules compliance
 **Effort:** 60-80 hours
 **Deliverables:**
+
 - All 20 files split to <400 lines
 - Integration tests fixed
 - TODOs completed
 - Long functions extracted
 
 ### Week 3: Architecture & Performance (Phases 9.2-9.3)
+
 **Focus:** System optimization
 **Effort:** 28-36 hours
 **Deliverables:**
+
 - Protocol boundaries strengthened
 - Performance optimized
 - Benchmarks established
 
 ### Week 4: Security & Testing (Phases 9.4-9.5)
+
 **Focus:** Security and coverage
 **Effort:** 18-26 hours
 **Deliverables:**
+
 - Security audit complete
 - Test coverage >90%
 - Security docs published
 
 ### Week 5: Polish & Validation (Phases 9.6-9.9)
+
 **Focus:** Final refinements
 **Effort:** 18-26 hours
 **Deliverables:**
+
 - All metrics ≥9.8/10
 - Comprehensive validation
 - Phase 9 completion summary
@@ -346,18 +381,21 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ## Risk Assessment
 
 ### High Risk
+
 - **File splitting complexity** - May break existing tests
   - *Mitigation:* Incremental splitting with continuous testing
 - **Performance regression** - Optimization may introduce bugs
   - *Mitigation:* Comprehensive benchmarks before/after
 
 ### Medium Risk
+
 - **Time overrun** - 120-150 hours is significant
   - *Mitigation:* Prioritize P0/P1 tasks first
 - **Test coverage gaps** - Hard to reach 90%+ on tool modules
   - *Mitigation:* Focus on critical paths first
 
 ### Low Risk
+
 - **Documentation drift** - Docs may become outdated
   - *Mitigation:* Update docs continuously during changes
 
@@ -366,6 +404,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ## Success Metrics
 
 ### Phase 9 Goals
+
 - ✅ **Architecture:** 8.5 → 9.8/10 (+1.3)
 - ✅ **Test Coverage:** 9.5 → 9.8/10 (+0.3)
 - ✅ **Documentation:** 9.8/10 (maintained)
@@ -377,6 +416,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 - ✅ **Rules Compliance:** 6.0 → 9.8/10 (+3.8)
 
 ### Overall Target
+
 - **Current:** 7.8/10
 - **Target:** 9.8/10
 - **Improvement:** +2.0 points (+26%)
@@ -386,6 +426,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ## Deliverables
 
 ### Code Deliverables
+
 1. ✅ 20 files split to <400 lines each
 2. ✅ 100+ functions extracted to <30 lines
 3. ✅ 6 integration tests fixed
@@ -396,6 +437,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 8. ✅ Comprehensive test suite
 
 ### Documentation Deliverables
+
 1. ✅ Phase 9 implementation plans (9 sub-phases)
 2. ✅ Security best practices guide
 3. ✅ Architecture decision records
@@ -411,6 +453,7 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 **Timeline:** 4-5 weeks (at 30-35 hours/week)
 
 **Breakdown:**
+
 - Phase 9.1 (Rules): 60-80 hours (50-53%)
 - Phase 9.2 (Architecture): 12-16 hours (10-11%)
 - Phase 9.3 (Performance): 16-20 hours (13-14%)
@@ -426,12 +469,14 @@ Phase 9 builds on Phase 7's achievements (9.2/10) to reach excellence at 9.8+/10
 ## Next Steps
 
 ### Immediate Actions
+
 1. **Review and approve Phase 9 plan**
 2. **Prioritize sub-phases** (focus on P0/P1 first)
 3. **Begin Phase 9.1** (rules compliance)
 4. **Set up tracking** (progress dashboard)
 
 ### Recommended Start
+
 **Phase 9.1.1: Split consolidated.py** (8 hours, highest impact)
 
 ---

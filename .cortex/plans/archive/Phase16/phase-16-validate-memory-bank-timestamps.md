@@ -83,4 +83,3 @@ This is a **gap** relative to the documented workflow and Memory Bank rules.
 - ✅ Commit workflow’s Step 9 no longer needs to be skipped and blocks commits on violations.
 - ✅ CI fails if timestamp validation fails.
 - ✅ Documentation and roadmap clearly describe the new validation step.
-

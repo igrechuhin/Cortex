@@ -3,10 +3,12 @@
 **Date:** 2026-01-07
 **Status:** ✅ COMPLETE
 **Modules:**
+
 - [rules_indexer.py](../src/cortex/optimization/rules_indexer.py)
 - [insight_formatter.py](../src/cortex/analysis/insight_formatter.py)
 
 **Test Coverage:**
+
 - rules_indexer.py: 90% (28/28 tests passing)
 - insight_formatter.py: 14% (no dedicated tests, integrated testing)
 
@@ -23,6 +25,7 @@ Optimized `rules_indexer.py` and `insight_formatter.py` for 40-60% and 20-40% pe
 #### Module-Level Constants (Lines 24-40)
 
 **Before:**
+
 ```python
 def find_rule_files(self, rules_path: Path) -> list[Path]:
     rule_files: list[Path] = []
@@ -43,6 +46,7 @@ def find_rule_files(self, rules_path: Path) -> list[Path]:
 ```
 
 **After:**
+
 ```python
 # Module-level constants for performance (compiled once at import)
 _RULE_FILE_PATTERNS: frozenset[str] = frozenset([
@@ -65,6 +69,7 @@ def find_rule_files(self, rules_path: Path) -> list[Path]:
 ```
 
 **Impact:**
+
 - Pattern list created once at module load vs. every method call
 - Set-based duplicate detection (O(1) membership check)
 - Reduced memory allocations
@@ -74,6 +79,7 @@ def find_rule_files(self, rules_path: Path) -> list[Path]:
 #### Optimized File Scanning (Lines 276-308)
 
 **Before:**
+
 ```python
 def find_rule_files(self, rules_path: Path) -> list[Path]:
     rule_files: list[Path] = []
@@ -91,6 +97,7 @@ def find_rule_files(self, rules_path: Path) -> list[Path]:
 ```
 
 **After:**
+
 ```python
 def find_rule_files(self, rules_path: Path) -> list[Path]:
     rule_files_set: set[Path] = set()
@@ -109,6 +116,7 @@ def find_rule_files(self, rules_path: Path) -> list[Path]:
 ```
 
 **Impact:**
+
 - O(directories + patterns) - optimized from O(directories × patterns²)
 - Set operations prevent duplicate additions upfront
 - Single sort operation at the end
@@ -118,6 +126,7 @@ def find_rule_files(self, rules_path: Path) -> list[Path]:
 #### Pre-Compiled Regex for Section Parsing (Lines 310-360)
 
 **Before:**
+
 ```python
 def parse_rule_sections(self, content: str) -> list[dict[str, object]]:
     for line in content.split("\n"):
@@ -126,6 +135,7 @@ def parse_rule_sections(self, content: str) -> list[dict[str, object]]:
 ```
 
 **After:**
+
 ```python
 # Module-level pre-compiled pattern
 _HEADING_PATTERN: re.Pattern[str] = re.compile(r"^#+\s*(.+)$")
@@ -138,6 +148,7 @@ def parse_rule_sections(self, content: str) -> list[dict[str, object]]:
 ```
 
 **Impact:**
+
 - Pattern compiled once at module load vs. regex overhead per invocation
 - More accurate heading detection (handles spacing correctly)
 - Cleaner code with proper regex parsing
@@ -149,6 +160,7 @@ def parse_rule_sections(self, content: str) -> list[dict[str, object]]:
 #### Pre-Allocated List Capacity for Markdown (Lines 114-150)
 
 **Before:**
+
 ```python
 def _format_insights_markdown(self, insights_list: list[InsightDict]) -> list[str]:
     lines: list[str] = []
@@ -163,6 +175,7 @@ def _format_insights_markdown(self, insights_list: list[InsightDict]) -> list[st
 ```
 
 **After:**
+
 ```python
 def _format_insights_markdown(self, insights_list: list[InsightDict]) -> list[str]:
     # Pre-allocate list capacity (estimate ~6 lines per insight)
@@ -181,6 +194,7 @@ def _format_insights_markdown(self, insights_list: list[InsightDict]) -> list[st
 ```
 
 **Impact:**
+
 - Pre-allocated list reduces reallocation overhead
 - Batch `extend()` instead of individual `append()` calls for recommendations
 - Estimated capacity of 6 lines per insight provides good balance
@@ -190,6 +204,7 @@ def _format_insights_markdown(self, insights_list: list[InsightDict]) -> list[st
 #### Pre-Allocated List Capacity for Text (Lines 190-219)
 
 **Before:**
+
 ```python
 def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
     lines: list[str] = []
@@ -200,6 +215,7 @@ def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
 ```
 
 **After:**
+
 ```python
 def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
     # Pre-allocate list capacity (estimate ~4 lines per insight)
@@ -216,6 +232,7 @@ def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
 ```
 
 **Impact:**
+
 - Similar pre-allocation strategy
 - Estimated capacity of 4 lines per insight (text format is simpler than markdown)
 - Reduced reallocation overhead
@@ -238,17 +255,20 @@ def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
 | Recommendation formatting | Individual appends | Batch extend | **15-25%** |
 
 **Overall Expected:**
+
 - rules_indexer.py: 40-60% faster for typical rule indexing operations
 - insight_formatter.py: 20-40% faster for insight export operations
 
 ### Benchmarking
 
 **rules_indexer.py workflow:**
+
 1. **File scanning:** ~50% faster (set-based dedup + module-level patterns)
 2. **Section parsing:** ~30% faster (pre-compiled regex)
 3. **Duplicate detection:** ~40% faster (set operations vs. list+set conversion)
 
 **insight_formatter.py workflow:**
+
 1. **Markdown export:** ~25% faster (pre-allocated lists + batch extend)
 2. **Text export:** ~20% faster (pre-allocated lists)
 3. **Memory usage:** ~15% reduction (fewer reallocations)
@@ -268,6 +288,7 @@ def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
 ```
 
 **Results:**
+
 - ✅ **28/28 tests passing** (100% pass rate)
 - ✅ **Coverage: 90%** (improved from 85%)
 - ✅ **No functionality changes** (backward compatible)
@@ -291,6 +312,7 @@ def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
 **Note:** No dedicated tests exist for this module (integrated testing only)
 
 **Validation:**
+
 - ✅ **Module imports successfully**
 - ✅ **Type hints verified**
 - ✅ **Code formatted with black**
@@ -303,6 +325,7 @@ def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
 ### Style Compliance
 
 #### rules_indexer.py
+
 - ✅ **Formatted with black** (100% compliance)
 - ✅ **Type hints:** 100% coverage
 - ✅ **Function sizes:** All <30 lines
@@ -310,6 +333,7 @@ def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
 - ✅ **Python 3.13+ features:** frozenset, pre-compiled regex
 
 #### insight_formatter.py
+
 - ✅ **Formatted with black** (100% compliance)
 - ✅ **Type hints:** 100% coverage
 - ✅ **Function sizes:** All <30 lines
@@ -319,11 +343,13 @@ def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
 ### Documentation
 
 #### rules_indexer.py
+
 - ✅ **Module docstring updated** with optimization notes
 - ✅ **Performance characteristics documented** (Big-O)
 - ✅ **Module-level constants documented** with purpose
 
 #### insight_formatter.py
+
 - ✅ **Module docstring updated** with optimization notes
 - ✅ **Method docstrings updated** with performance characteristics
 - ✅ **Algorithm comments added** for pre-allocation strategy
@@ -343,6 +369,7 @@ def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
 ### Critical Path Progress
 
 **Phase 10.3.1 Progress:**
+
 - ✅ Day 1: consolidation_detector.py (80-95% improvement)
 - ✅ Day 2: relevance_scorer.py (60-80% improvement)
 - ✅ Day 3: pattern_analyzer.py (70-85% improvement)
@@ -384,6 +411,7 @@ def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
 ### Day 6: Benchmarking and Validation
 
 **Tasks:**
+
 1. Run comprehensive benchmark suite
 2. Compare before/after metrics for all 5 optimized modules
 3. Validate performance score improvement (8.9/10 → 9.2/10 expected)
@@ -391,6 +419,7 @@ def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
 5. Update documentation with final results
 
 **Expected Impact:**
+
 - Final performance validation
 - Documentation updates
 - Phase 10.3.1 completion

@@ -9,6 +9,7 @@
 ## Problem Summary
 
 The `core` layer has forward dependencies to higher-level layers through:
+
 1. **container.py** - Imports concrete implementations from analysis, optimization, and refactoring layers
 2. **container_factory.py** - Factory methods that create instances from all layers
 
@@ -34,6 +35,7 @@ Use Python's `TYPE_CHECKING` pattern to separate runtime dependencies from type-
 ### Step 1: Refactor `container.py` (2-3 hours)
 
 **Current Problem:**
+
 ```python
 # Lines 12-57: Concrete imports from higher layers
 from cortex.analysis.insight_engine import InsightEngine
@@ -43,6 +45,7 @@ from cortex.refactoring.approval_manager import ApprovalManager
 ```
 
 **Solution:**
+
 ```python
 from typing import TYPE_CHECKING
 
@@ -62,6 +65,7 @@ if TYPE_CHECKING:
 ```
 
 **Changes Required:**
+
 1. Add `if TYPE_CHECKING:` block
 2. Move concrete imports into TYPE_CHECKING block
 3. Update type hints to use protocols at runtime, concrete types in TYPE_CHECKING
@@ -77,11 +81,13 @@ if TYPE_CHECKING:
 **New Location:** `src/cortex/managers/container_factory.py`
 
 **Rationale:**
+
 - Factory methods create instances from all layers
 - Belongs in `managers` layer (L8) which coordinates all managers
 - Removes forward dependencies from `core` layer
 
 **Changes Required:**
+
 1. Move file: `core/container_factory.py` → `managers/container_factory.py`
 2. Update imports in dependent files:
    - `core/container.py`
@@ -91,6 +97,7 @@ if TYPE_CHECKING:
 4. Update documentation
 
 **Impact:**
+
 - Eliminates 5 layer boundary violations
 - Eliminates 13+ circular dependencies
 - Core layer becomes truly foundational
@@ -100,6 +107,7 @@ if TYPE_CHECKING:
 ### Step 3: Update `container.py` to Use Moved Factory (30 min)
 
 **Current:**
+
 ```python
 from cortex.core.container_factory import (
     create_all_managers,
@@ -108,6 +116,7 @@ from cortex.core.container_factory import (
 ```
 
 **New:**
+
 ```python
 from typing import TYPE_CHECKING
 
@@ -119,6 +128,7 @@ if TYPE_CHECKING:
 ```
 
 **Changes:**
+
 1. Move factory import to TYPE_CHECKING block
 2. Update `ManagerContainer.create()` method to accept factory as parameter
 3. Document that factory must be provided from managers layer
@@ -140,6 +150,7 @@ Some managers used in container don't have protocols yet. Need to add:
 **Location:** `src/cortex/core/protocols.py`
 
 **Template:**
+
 ```python
 class ConsolidationDetectorProtocol(Protocol):
     """Protocol for consolidation detection."""
@@ -158,11 +169,13 @@ class ConsolidationDetectorProtocol(Protocol):
 ### Step 5: Update Tests (1 hour)
 
 **Files to Update:**
+
 - `tests/unit/test_container.py`
 - `tests/unit/test_container_factory.py` → Move to `tests/unit/managers/`
 - `tests/integration/test_managers_initialization.py`
 
 **Changes:**
+
 1. Update import paths
 2. Test that container works with protocol types
 3. Test that factory creates correct instances
@@ -179,6 +192,7 @@ python3 scripts/analyze_dependencies.py
 ```
 
 **Expected Output:**
+
 ```
 === Circular Dependencies ===
 ✅ No circular dependencies found!
@@ -349,6 +363,7 @@ if TYPE_CHECKING:
 ## Success Criteria
 
 ✅ **Must Have:**
+
 1. Zero circular dependencies in core layer
 2. Zero layer boundary violations (except tools→server)
 3. All tests passing (1,537+)
@@ -356,12 +371,14 @@ if TYPE_CHECKING:
 5. Architecture score reaches 9.8/10
 
 ✅ **Should Have:**
+
 1. Documentation updated
 2. Architecture diagram created
 3. Dependency rules documented
 4. CI/CD checks added
 
 ✅ **Nice to Have:**
+
 1. Performance benchmarks
 2. Migration guide for other projects
 3. Blog post about the refactoring
@@ -373,6 +390,7 @@ if TYPE_CHECKING:
 ### Phase 9.2.4: Optimize Optimization/Rules Coupling
 
 After fixing core layer:
+
 1. Move rules layer to L2 or L3
 2. Refactor optimization → rules dependency
 3. Use protocols for rules interfaces
@@ -383,6 +401,7 @@ After fixing core layer:
 ### Phase 9.3: Architecture Documentation
 
 After all coupling fixes:
+
 1. Create docs/architecture/layering.md
 2. Create docs/architecture/dependency-rules.md
 3. Update architecture diagrams
@@ -396,6 +415,7 @@ After all coupling fixes:
 ## Conclusion
 
 This fix strategy addresses the root cause of 23 circular dependencies by:
+
 1. Using TYPE_CHECKING to separate runtime from type-checking imports
 2. Moving factory logic to the appropriate layer (managers)
 3. Adding missing protocols for complete abstraction

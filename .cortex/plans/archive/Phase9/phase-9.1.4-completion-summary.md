@@ -39,6 +39,7 @@ def _replace_section_with_transclusion(
 ```
 
 **Functionality:**
+
 - Parses markdown content into sections using `FileSystemManager.parse_sections()`
 - Matches sections by title (removing `#` prefix from headings)
 - Replaces section content while preserving the heading
@@ -60,6 +61,7 @@ def _remove_sections(
 ```
 
 **Functionality:**
+
 - Parses markdown content into sections
 - Identifies all line ranges for sections to remove
 - Builds new content without removed lines
@@ -70,10 +72,12 @@ def _remove_sections(
 ### 3. Integration Updates
 
 **Modified Methods:**
+
 - `_update_source_files_with_transclusions()` - Now calls `_replace_section_with_transclusion()`
 - `execute_split()` - Now calls `_remove_sections()` with proper section parsing
 
 **Type Safety:**
+
 - Proper handling of section data structures
 - Explicit type annotations for all parameters
 - Safe casting and validation
@@ -89,6 +93,7 @@ pytest tests/unit/test_refactoring_executor.py -v
 ```
 
 **Results:**
+
 - ✅ 25/25 tests passing (100% pass rate)
 - ✅ 79% code coverage on refactoring_executor.py
 - ✅ Specific consolidation test passing
@@ -101,6 +106,7 @@ pytest -q
 ```
 
 **Results:**
+
 - ✅ 1,740/1,749 tests passing (99.5% pass rate)
 - ⚠️ 7 pre-existing test failures in consolidated tools (unrelated to changes)
 - ✅ 2 skipped tests (expected)
@@ -140,6 +146,7 @@ Both implementations leverage the existing `FileSystemManager.parse_sections()` 
 ### Line-Based Manipulation
 
 Both methods work with line indices to:
+
 - Precisely identify section boundaries
 - Replace or remove content without affecting other sections
 - Maintain file structure and formatting
@@ -147,6 +154,7 @@ Both methods work with line indices to:
 ### Section Matching
 
 Sections are matched by extracting titles from headings:
+
 ```python
 heading_title = heading.lstrip("#").strip()
 ```
@@ -170,6 +178,7 @@ This ensures consistent matching regardless of heading level (`#`, `##`, `###`, 
 ### Phase 9 Progress
 
 **Phase 9.1 Sub-phases:**
+
 - ✅ Phase 9.1.1: Split consolidated.py (100%)
 - ✅ Phase 9.1.2: Split structure_manager.py (100%)
 - ✅ Phase 9.1.3: Fix integration tests (100%)
@@ -206,6 +215,7 @@ This ensures consistent matching regardless of heading level (`#`, `##`, `###`, 
 **Immediate:** Phase 9.1.5 - Extract 100+ long functions to <30 lines
 
 **Priority Order:**
+
 1. Scan codebase for functions >30 logical lines
 2. Prioritize by severity (worst offenders first)
 3. Extract helper methods systematically

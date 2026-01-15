@@ -39,6 +39,7 @@ All MCP tools must be designed with these constraints in mind. Tools that are la
    - Example: "If script doesn't exist, run formatter in check-only mode manually (script will detect appropriate formatter)"
 
 **CRITICAL**: When writing or updating procedures (like commit.md), prompts, or documentation:
+
 - NEVER hardcode language-specific commands (e.g., `ruff`, `black`, `pyright`, `prettier`, `eslint`)
 - ALWAYS reference scripts from `.cortex/synapse/scripts/{language}/` directory
 - ALWAYS use `{language}` placeholder pattern

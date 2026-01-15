@@ -67,6 +67,7 @@ class ManagerRegistry:
 ```
 
 **Benefits:**
+
 - ✅ Testable - Each test can create its own registry instance
 - ✅ No hidden dependencies - Registry is explicitly passed/injected
 - ✅ Isolated state - Multiple registries can coexist
@@ -77,12 +78,14 @@ class ManagerRegistry:
 **Modified file**: [src/cortex/managers/initialization.py](../../src/cortex/managers/initialization.py)
 
 **Changes:**
+
 - ❌ Removed module-level `_managers` global variable
 - ✅ Updated `get_managers()` to use `ManagerRegistry` internally
 - ✅ Added deprecation notice recommending direct `ManagerRegistry` usage
 - ✅ Maintained backward compatibility for existing code
 
 **Before:**
+
 ```python
 # Global managers storage (per project root)
 _managers: dict[str, dict[str, object]] = {}
@@ -96,6 +99,7 @@ async def get_managers(project_root: Path) -> dict[str, object]:
 ```
 
 **After:**
+
 ```python
 async def get_managers(project_root: Path) -> dict[str, object]:
     """Get or initialize managers for a project with lazy loading.
@@ -163,6 +167,7 @@ logger = setup_logging()
 **Architecture Score**: 8.5 → 9.0/10 (+0.5 improvement)
 
 **Improvements:**
+
 1. ✅ **Zero mutable global state** in production code (excluding documented exceptions)
 2. ✅ **Proper dependency injection** through `ManagerRegistry`
 3. ✅ **Improved testability** - registry can be mocked/stubbed
@@ -172,12 +177,14 @@ logger = setup_logging()
 ### Testing Results
 
 **Test Execution:**
+
 - ✅ 1,537 tests passing (99.4% pass rate)
 - ❌ 9 tests failing (pre-existing issues unrelated to changes)
 - ✅ All file system and manager lifecycle tests passing
 - ✅ No new test failures introduced
 
 **Failures are pre-existing:**
+
 - `test_context_detector.py` - Framework detection issues
 - `test_migration.py` - Verification logic issues
 - `test_optimization_strategies.py` - Section selection logic
@@ -320,6 +327,7 @@ async def test_my_feature(registry, tmp_path):
 ### Phase 9.2.3: Optimize Module Coupling (4-6 hours)
 
 **Tasks:**
+
 1. Analyze circular dependencies with tools
 2. Establish clear layer boundaries (Core → Linking → Validation → Optimization → Analysis → Refactoring)
 3. Document architecture decisions in [docs/architecture/](../../docs/architecture/)
@@ -327,6 +335,7 @@ async def test_my_feature(registry, tmp_path):
 5. Refactor any problematic cross-layer dependencies
 
 **Target areas:**
+
 - Analysis layer dependencies (pattern/structure analyzers)
 - Refactoring layer dependencies (engine/executor/rollback)
 - Tool-to-manager coupling (reduce direct manager access)
@@ -361,12 +370,14 @@ async def test_my_feature(registry, tmp_path):
 Phase 9.2.2 successfully eliminated all mutable global state from production code, implementing proper dependency injection through the new `ManagerRegistry` class. The changes improve testability, clarity, and architectural quality while maintaining 100% backward compatibility.
 
 **Key Metrics:**
+
 - ✅ 0 global mutable variables (excluding 2 documented exceptions)
 - ✅ 1,537/1,546 tests passing (99.4%)
 - ✅ 100% backward compatibility maintained
 - ✅ Architecture score improved: 8.5 → 9.0/10
 
 **Impact:**
+
 - Better testability through injectable registry
 - Clearer dependencies and lifecycle management
 - Improved maintainability and code organization

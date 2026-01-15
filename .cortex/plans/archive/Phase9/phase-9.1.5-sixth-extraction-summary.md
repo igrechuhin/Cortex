@@ -12,6 +12,7 @@
 Successfully extracted the sixth long function `_generate_dependency_insights()` from [insight_engine.py](../src/cortex/analysis/insight_engine.py), reducing it from 130 lines to 20 lines (85% reduction). This function generates three types of dependency-related insights: complexity metrics, orphaned files, and excessive dependencies.
 
 **Progress Update:**
+
 - **Phase 9.1.5:** 6 of 140 functions completed (4.3%)
 - **Total Reduction:** 1,436 → 326 lines across 6 functions (77% average)
 
@@ -45,6 +46,7 @@ Each stage required extracting both the insight generation logic and multiple he
 ### Extraction Approach
 
 **Before (130 lines):**
+
 ```python
 async def _generate_dependency_insights(self) -> list[InsightDict]:
     """Generate insights about dependency structure."""
@@ -70,6 +72,7 @@ async def _generate_dependency_insights(self) -> list[InsightDict]:
 ```
 
 **After (20 lines):**
+
 ```python
 async def _generate_dependency_insights(self) -> list[InsightDict]:
     """Generate insights about dependency structure."""
@@ -103,8 +106,10 @@ Created **8 helper methods** organized by responsibility:
 ### 1. Main Insight Generators (3 methods)
 
 #### `_generate_complexity_insight() -> InsightDict | None` (32 lines)
+
 **Purpose:** Generate insight about dependency complexity
 **Key Responsibilities:**
+
 - Fetch complexity metrics from structure analyzer
 - Extract and validate assessment data
 - Build insight dictionary with evidence and recommendations
@@ -113,8 +118,10 @@ Created **8 helper methods** organized by responsibility:
 **Pattern:** Async orchestrator that calls 5 sync helper methods
 
 #### `_generate_orphaned_files_insight(anti_patterns) -> InsightDict | None` (28 lines)
+
 **Purpose:** Generate insight about orphaned files
 **Key Responsibilities:**
+
 - Filter anti-patterns for orphaned files
 - Build insight with count and examples
 - Return `None` if fewer than 2 orphaned files
@@ -122,8 +129,10 @@ Created **8 helper methods** organized by responsibility:
 **Pattern:** Sync filter-and-build method
 
 #### `_generate_excessive_dependencies_insight(anti_patterns) -> InsightDict | None` (28 lines)
+
 **Purpose:** Generate insight about files with too many dependencies
 **Key Responsibilities:**
+
 - Filter anti-patterns for excessive dependencies
 - Build insight with count and examples
 - Return `None` if no excessive dependencies found
@@ -133,22 +142,27 @@ Created **8 helper methods** organized by responsibility:
 ### 2. Data Extraction Helpers (5 methods)
 
 #### `_extract_assessment(complexity) -> dict[str, object]` (6 lines)
+
 **Purpose:** Safely extract assessment dictionary from complexity metrics
 **Type Safety:** Validates `isinstance(dict)` before casting
 
 #### `_extract_complexity_score(assessment) -> int` (4 lines)
+
 **Purpose:** Extract complexity score as integer
 **Type Safety:** Validates numeric types before conversion
 
 #### `_build_complexity_description(assessment) -> str` (7 lines)
+
 **Purpose:** Build description from assessment issues
 **Type Safety:** Validates list type and converts items to strings
 
 #### `_extract_complexity_hotspots(complexity) -> list[dict[str, object]]` (10 lines)
+
 **Purpose:** Extract top 3 complexity hotspots
 **Type Safety:** Validates list and dict types at each level
 
 #### `_extract_recommendations(assessment) -> list[str]` (7 lines)
+
 **Purpose:** Extract recommendations as string list
 **Type Safety:** Filters out `None` values and converts to strings
 
@@ -157,28 +171,33 @@ Created **8 helper methods** organized by responsibility:
 ## Key Improvements
 
 ### 1. Separation of Concerns ✅
+
 - **Main function:** High-level orchestration (20 lines)
 - **Insight generators:** Business logic for each insight type
 - **Data extractors:** Type-safe data extraction utilities
 
 ### 2. Type Safety Enhanced ✅
+
 - All helper methods have explicit return types
 - Type guards (`isinstance`) before casting
 - Clear distinction between `object` and concrete types
 - Use of `| None` for optional returns
 
 ### 3. Readability ✅
+
 - Clear method names describe purpose
 - Each helper has single responsibility
 - Reduced nesting depth (3 levels → 2 levels)
 - Inline comments preserved for clarity
 
 ### 4. Testability ✅
+
 - Helper methods can be unit tested independently
 - Clear boundaries between async and sync operations
 - Easy to mock `structure_analyzer` calls
 
 ### 5. Maintainability ✅
+
 - Each insight type isolated in its own method
 - Data extraction logic centralized
 - Easy to add new insight types
@@ -189,11 +208,13 @@ Created **8 helper methods** organized by responsibility:
 ## Compliance Achievement
 
 ### Before Extraction
+
 - ❌ **Line Count:** 130 lines (100 lines over limit)
 - ❌ **Complexity:** High cyclomatic complexity
 - ❌ **Maintainability:** Difficult to modify individual insights
 
 ### After Extraction
+
 - ✅ **Line Count:** 20 lines (10 lines under limit)
 - ✅ **Complexity:** Low - simple orchestration
 - ✅ **Maintainability:** Each concern isolated and testable
@@ -204,11 +225,13 @@ Created **8 helper methods** organized by responsibility:
 ## Testing Results
 
 ### Integration Tests
+
 ```bash
 gtimeout -k 5 300 .venv/bin/python -m pytest tests/integration/ -v
 ```
 
 **Results:**
+
 - ✅ All 48 integration tests passing (100% pass rate)
 - ✅ No regressions in Phase 5 workflows
 - ✅ Dependency insights generation verified
@@ -217,6 +240,7 @@ gtimeout -k 5 300 .venv/bin/python -m pytest tests/integration/ -v
 **Test Duration:** 5.68 seconds (well within timeout)
 
 ### Code Formatting
+
 - ✅ Black formatting applied
 - ✅ isort import sorting applied
 - ✅ All linting rules satisfied
@@ -289,6 +313,7 @@ gtimeout -k 5 300 .venv/bin/python -m pytest tests/integration/ -v
 **Estimated Effort:** 2 hours
 
 **Extraction Strategy:**
+
 - Split by `refactoring_type` parameter
 - Extract consolidation suggestion builder
 - Extract split suggestion builder
@@ -369,6 +394,7 @@ gtimeout -k 5 300 .venv/bin/python -m pytest tests/integration/ -v
 ✅ **Sixth function extraction complete and successful!**
 
 **Key Achievements:**
+
 - 85% line reduction (130 → 20 lines)
 - 8 well-structured helper methods
 - 100% test pass rate maintained
@@ -381,6 +407,7 @@ gtimeout -k 5 300 .venv/bin/python -m pytest tests/integration/ -v
 ---
 
 **See Also:**
+
 - [Phase 9.1.5 Function Extraction Report](./phase-9.1.5-function-extraction-report.md)
 - [Fifth Extraction Summary](./phase-9.1.5-fifth-extraction-summary.md)
 - [Phase 9.1 Rules Compliance Plan](./phase-9.1-rules-compliance.md)

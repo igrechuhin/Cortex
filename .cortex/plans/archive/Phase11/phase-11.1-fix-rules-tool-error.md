@@ -11,6 +11,7 @@
 During Phase 11 tool verification, a critical bug was discovered in the `rules` tool that prevents it from executing. The tool attempts to call `is_rules_enabled()` on a `LazyManager` wrapper object instead of the actual `OptimizationConfig` instance.
 
 **Error:**
+
 ```
 AttributeError: 'LazyManager' object has no attribute 'is_rules_enabled'
 ```
@@ -48,6 +49,7 @@ The `get_manager()` function properly unwraps LazyManager instances by calling `
 **File:** `src/cortex/tools/rules_operations.py`
 
 **Lines to fix:**
+
 - Line 534: `rules_manager = cast(RulesManager, mgrs["rules_manager"])` - Should also use `get_manager()`
 - Line 535: `optimization_config = cast(OptimizationConfig, mgrs["optimization_config"])` - Should use `get_manager()`
 
@@ -66,12 +68,14 @@ from cortex.managers.manager_utils import get_manager
 Replace the `cast()` calls with proper `get_manager()` calls:
 
 **Before:**
+
 ```python
 rules_manager = cast(RulesManager, mgrs["rules_manager"])
 optimization_config = cast(OptimizationConfig, mgrs["optimization_config"])
 ```
 
 **After:**
+
 ```python
 rules_manager = await get_manager(mgrs, "rules_manager", RulesManager)
 optimization_config = await get_manager(
@@ -102,6 +106,7 @@ optimization_config = await get_manager(
 ### Manual Testing
 
 1. **Test Index Operation:**
+
    ```python
    # Should work without AttributeError
    result = await rules(
@@ -111,6 +116,7 @@ optimization_config = await get_manager(
    ```
 
 2. **Test Get Relevant Operation:**
+
    ```python
    # Should work without AttributeError
    result = await rules(

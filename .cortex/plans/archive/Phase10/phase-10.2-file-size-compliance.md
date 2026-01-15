@@ -10,6 +10,7 @@
 This phase addresses **4 CRITICAL file size violations** that block production readiness. The 400-line limit is MANDATORY per `.cursor/rules/maintainability.mdc`.
 
 **Current Violations:**
+
 1. [protocols.py](../src/cortex/core/protocols.py): 2,234 lines ⚠️ **459% OVER LIMIT**
 2. [phase4_optimization.py](../src/cortex/tools/phase4_optimization.py): 1,554 lines ⚠️ **289% OVER LIMIT**
 3. [reorganization_planner.py](../src/cortex/refactoring/reorganization_planner.py): 962 lines ⚠️ **141% OVER LIMIT**
@@ -47,6 +48,7 @@ This phase addresses **4 CRITICAL file size violations** that block production r
 #### Current State Analysis
 
 **File:** [src/cortex/core/protocols.py](../src/cortex/core/protocols.py)
+
 - **Lines:** 2,234 (production code)
 - **Violation:** 459% over 400-line limit
 - **Content:** 24+ Protocol definitions (PEP 544)
@@ -55,6 +57,7 @@ This phase addresses **4 CRITICAL file size violations** that block production r
 #### Architecture
 
 **Current Structure:**
+
 ```
 protocols.py (2,234 lines)
 ├── FileSystemProtocol (~300 lines)
@@ -68,6 +71,7 @@ protocols.py (2,234 lines)
 ```
 
 **Target Structure:**
+
 ```
 core/protocols/ (new directory)
 ├── __init__.py (100 lines) - Re-export all protocols for backward compatibility
@@ -83,6 +87,7 @@ core/protocols/ (new directory)
 #### Implementation Strategy
 
 **Step 1: Create Directory Structure**
+
 ```bash
 mkdir -p src/cortex/core/protocols
 touch src/cortex/core/protocols/__init__.py
@@ -93,6 +98,7 @@ touch src/cortex/core/protocols/__init__.py
 Extract in this order (lowest dependencies first):
 
 1. **file_system.py** (300 lines)
+
    ```python
    """File system protocols."""
    from pathlib import Path
@@ -106,6 +112,7 @@ Extract in this order (lowest dependencies first):
    ```
 
 2. **token.py** (150 lines)
+
    ```python
    """Token counting protocols."""
    from typing import Protocol
@@ -122,7 +129,8 @@ Extract in this order (lowest dependencies first):
 6. **optimization.py** (400 lines)
 7. **refactoring.py** (350 lines)
 
-**Step 3: Create Backward-Compatible __init__.py**
+**Step 3: Create Backward-Compatible **init**.py**
+
 ```python
 """
 Protocol definitions for Cortex.
@@ -160,6 +168,7 @@ __all__ = [
 **Step 4: Update All Import Statements**
 
 No changes needed! Existing code uses:
+
 ```python
 from cortex.core.protocols import FileSystemProtocol
 ```
@@ -172,6 +181,7 @@ This still works because `__init__.py` re-exports everything.
 2. **Check imports:** All 46+ modules import successfully
 3. **Type checking:** `pyright src/`
 4. **Line count verification:**
+
    ```bash
    find src/cortex/core/protocols -name "*.py" -exec wc -l {} +
    ```
@@ -179,6 +189,7 @@ This still works because `__init__.py` re-exports everything.
 #### Testing Strategy
 
 1. **Import Tests:** Verify all protocols still importable
+
    ```python
    def test_protocol_imports():
        from cortex.core.protocols import (
@@ -190,16 +201,19 @@ This still works because `__init__.py` re-exports everything.
    ```
 
 2. **Backward Compatibility:** Ensure existing code works
+
    ```bash
    pytest tests/ -k protocol
    ```
 
 3. **Type Checking:** Verify Protocol usage
+
    ```bash
    pyright src/ --ignoreexternal
    ```
 
 #### Success Criteria
+
 - ✅ All protocol files <400 lines
 - ✅ Backward compatibility maintained
 - ✅ All 1920 tests passing
@@ -218,6 +232,7 @@ This still works because `__init__.py` re-exports everything.
 #### Current State Analysis
 
 **File:** [src/cortex/tools/phase4_optimization.py](../src/cortex/tools/phase4_optimization.py)
+
 - **Lines:** 1,554 (production code)
 - **Violation:** 289% over 400-line limit
 - **Content:** 4 MCP tool handlers + helpers
@@ -226,6 +241,7 @@ This still works because `__init__.py` re-exports everything.
 #### Architecture
 
 **Current Structure:**
+
 ```
 phase4_optimization.py (1,554 lines)
 ├── optimize_context() [handler + 300 lines helpers]
@@ -236,6 +252,7 @@ phase4_optimization.py (1,554 lines)
 ```
 
 **Target Structure:**
+
 ```
 tools/
 ├── phase4_optimization.py (150 lines) - MCP handlers only, delegates to helpers
@@ -251,6 +268,7 @@ tools/
 #### Implementation Strategy
 
 **Step 1: Create Directory Structure**
+
 ```bash
 mkdir -p src/cortex/tools/optimization
 touch src/cortex/tools/optimization/__init__.py
@@ -259,6 +277,7 @@ touch src/cortex/tools/optimization/__init__.py
 **Step 2: Extract Tool Modules**
 
 1. **context_optimizer_tool.py** (350 lines)
+
    ```python
    """Context optimization tool implementation."""
    from typing import Any
@@ -283,6 +302,7 @@ touch src/cortex/tools/optimization/__init__.py
 **Step 3: Refactor MCP Handlers (Thin Orchestrators)**
 
 Update `phase4_optimization.py` to be thin handlers:
+
 ```python
 """Phase 4: Token Optimization MCP Tools."""
 from cortex.tools.optimization.context_optimizer_tool import (
@@ -316,6 +336,7 @@ async def optimize_context(
 **Step 4: Update Tests**
 
 Update test imports:
+
 ```python
 # Before
 from cortex.tools.phase4_optimization import (
@@ -329,11 +350,13 @@ from cortex.tools.optimization.context_optimizer_tool import (
 ```
 
 **Step 5: Verification**
+
 1. Run tool tests: `pytest tests/tools/test_phase4_optimization.py -v`
 2. Check line counts: All files <400 lines
 3. Verify MCP tools still work
 
 #### Success Criteria
+
 - ✅ All optimization files <400 lines
 - ✅ MCP tools still functional
 - ✅ All 21 optimization tests passing
@@ -351,6 +374,7 @@ from cortex.tools.optimization.context_optimizer_tool import (
 #### Current State Analysis
 
 **File:** [src/cortex/refactoring/reorganization_planner.py](../src/cortex/refactoring/reorganization_planner.py)
+
 - **Lines:** 962 (production code)
 - **Violation:** 141% over 400-line limit
 - **Content:** Reorganization planning logic
@@ -371,6 +395,7 @@ refactoring/
 #### Implementation Strategy
 
 **Step 1: Extract Analysis Logic**
+
 ```python
 # reorganization/analyzer.py (350 lines)
 """Reorganization analysis logic."""
@@ -388,6 +413,7 @@ class ReorganizationAnalyzer:
 ```
 
 **Step 2: Extract Strategy Logic**
+
 ```python
 # reorganization/strategies.py (400 lines)
 """Reorganization strategy patterns."""
@@ -404,6 +430,7 @@ class ByComplexity:
 ```
 
 **Step 3: Extract Execution Planning**
+
 ```python
 # reorganization/executor.py (300 lines)
 """Reorganization execution planning."""
@@ -421,6 +448,7 @@ class ExecutionPlanner:
 ```
 
 **Step 4: Refactor Orchestrator**
+
 ```python
 # reorganization_planner.py (250 lines)
 """Reorganization planner orchestrator."""
@@ -444,6 +472,7 @@ class ReorganizationPlanner:
 ```
 
 #### Success Criteria
+
 - ✅ All reorganization files <400 lines
 - ✅ Clear separation of concerns
 - ✅ All refactoring tests passing
@@ -460,6 +489,7 @@ class ReorganizationPlanner:
 #### Current State Analysis
 
 **File:** [src/cortex/structure/structure_lifecycle.py](../src/cortex/structure/structure_lifecycle.py)
+
 - **Lines:** 871 (production code)
 - **Violation:** 118% over 400-line limit
 - **Content:** Structure lifecycle management
@@ -480,6 +510,7 @@ structure/
 #### Implementation Strategy
 
 **Step 1: Extract Setup Operations**
+
 ```python
 # lifecycle/setup.py (350 lines)
 """Structure setup operations."""
@@ -501,6 +532,7 @@ class StructureSetup:
 ```
 
 **Step 2: Extract Validation Operations**
+
 ```python
 # lifecycle/validation.py (300 lines)
 """Structure validation operations."""
@@ -518,6 +550,7 @@ class StructureValidator:
 ```
 
 **Step 3: Extract Migration Operations**
+
 ```python
 # lifecycle/migration.py (350 lines)
 """Structure migration operations."""
@@ -535,6 +568,7 @@ class StructureMigration:
 ```
 
 **Step 4: Refactor Orchestrator**
+
 ```python
 # structure_lifecycle.py (200 lines)
 """Structure lifecycle orchestrator."""
@@ -564,6 +598,7 @@ class StructureLifecycle:
 ```
 
 #### Success Criteria
+
 - ✅ All structure files <400 lines
 - ✅ Clear lifecycle separation
 - ✅ All structure tests passing
@@ -574,11 +609,13 @@ class StructureLifecycle:
 ## Phase Completion Checklist
 
 ### Pre-Implementation
+
 - [ ] Create detailed implementation plans for each file
 - [ ] Identify all import dependencies
 - [ ] Plan backward compatibility strategy
 
 ### Implementation (Per File)
+
 - [ ] Create new directory structure
 - [ ] Extract modules by concern
 - [ ] Create backward-compatible facade
@@ -586,6 +623,7 @@ class StructureLifecycle:
 - [ ] Run tests after each extraction
 
 ### Verification (Per Milestone)
+
 - [ ] All extracted files <400 lines
 - [ ] No breaking changes
 - [ ] All tests passing (100% pass rate)
@@ -593,12 +631,14 @@ class StructureLifecycle:
 - [ ] Pyright passes
 
 ### Code Quality (Per Milestone)
+
 - [ ] Format with Black
 - [ ] Sort imports with isort
 - [ ] Run full test suite
 - [ ] Verify coverage maintained
 
 ### Documentation
+
 - [ ] Update module docstrings
 - [ ] Update API documentation
 - [ ] Create migration guide
@@ -606,6 +646,7 @@ class StructureLifecycle:
 - [ ] Update progress.md
 
 ### Final Validation
+
 - [ ] **Zero file size violations**
 - [ ] All 1920 tests passing
 - [ ] Maintainability score ≥9.5/10
@@ -639,28 +680,33 @@ class StructureLifecycle:
 ## Risk Assessment
 
 ### High Risk
+
 - **Breaking changes during refactor**
   - Mitigation: Maintain backward compatibility via re-exports
   - Testing: Run full test suite after each extraction
 
 ### Medium Risk
+
 - **Import circular dependencies**
   - Mitigation: Use TYPE_CHECKING pattern
   - Validation: Test imports separately
 
 ### Low Risk
+
 - **Test updates required**
   - Mitigation: Update test imports systematically
-  - Fallback: Keep old imports working via __init__.py
+  - Fallback: Keep old imports working via **init**.py
 
 ---
 
 ## Dependencies
 
 ### Blocks
+
 - Phase 10.3 (Remaining Improvements) - Cannot achieve 9.8/10 without file size compliance
 
 ### Blocked By
+
 - Phase 10.1 (Critical Fixes) - Must pass CI before refactoring
 
 ---
@@ -678,6 +724,7 @@ class StructureLifecycle:
 | Verification & Documentation | 1 day | HIGH | No (after all) |
 
 **Parallelization Strategy:**
+
 - Week 1: protocols.py (solo focus)
 - Week 2: phase4_optimization.py + reorganization_planner.py + structure_lifecycle.py (parallel)
 
@@ -686,6 +733,7 @@ class StructureLifecycle:
 ## Next Steps
 
 After Phase 10.2 completion:
+
 1. ✅ Zero file size violations
 2. ✅ Maintainability 9.5/10
 3. ✅ Rules Compliance 9.0/10

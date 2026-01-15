@@ -8,6 +8,7 @@
 ## Overview
 
 This phase achieves **9.8/10 across ALL quality metrics** by addressing remaining gaps after Phases 10.1 and 10.2. Focus areas:
+
 - Performance optimization (6 high-severity + 37 medium-severity issues)
 - Test coverage expansion (85% → 90%+)
 - Documentation completeness (API reference, ADRs)
@@ -51,6 +52,7 @@ All metrics ≥9.8/10 🎯
 **High-Severity (6 issues):**
 
 1. **dependency_graph.py:305** - Nested loop in `to_dict()`
+
    ```python
    # Current (O(n×m))
    for node_id in self._nodes:
@@ -63,21 +65,25 @@ All metrics ≥9.8/10 🎯
    ```
 
 2. **dependency_graph.py:352** - Nested loop in `to_mermaid()`
+
    ```python
    # Fix: Use string builder + single pass
    ```
 
 3. **dependency_graph.py:409, 417** - Nested loops in `build_from_links()`
+
    ```python
    # Fix: Use set operations for link detection
    ```
 
 4. **structure_analyzer.py:273** - Nested loop in `_detect_similar_filenames()`
+
    ```python
    # Already has windowed comparison, verify implementation
    ```
 
 **Medium-Severity (37 issues):**
+
 - List append in loops → List comprehensions
 - String operations in loops → Join operations
 - Repeated lookups → Cache results
@@ -85,17 +91,20 @@ All metrics ≥9.8/10 🎯
 #### Implementation Plan
 
 **Week 1: High-Severity Fixes**
+
 - Days 1-2: Fix dependency_graph.py (4 issues)
 - Day 3: Verify structure_analyzer.py optimization
 - Day 4: Benchmarking and validation
 - Day 5: Documentation and testing
 
 **Week 2 (Optional): Medium-Severity**
+
 - Prioritize high-impact medium-severity issues
 - Focus on hot paths (file I/O, token counting)
 - Measure real-world impact
 
 #### Success Criteria
+
 - ✅ All 6 high-severity issues fixed
 - ✅ 20+ medium-severity issues fixed
 - ✅ Benchmarks show 30%+ improvement
@@ -113,6 +122,7 @@ All metrics ≥9.8/10 🎯
 #### Coverage Gaps Analysis
 
 **Critical Gaps (<80% coverage):**
+
 1. **rules_operations.py: 20%** ⚠️ CRITICAL
    - Missing: Rules loading, merging, context detection tests
    - Action: Create comprehensive integration tests
@@ -128,6 +138,7 @@ All metrics ≥9.8/10 🎯
 **Phase A: Critical Gap - rules_operations.py**
 
 Create `tests/unit/test_rules_operations.py`:
+
 ```python
 """Tests for rules operations module."""
 import pytest
@@ -176,6 +187,7 @@ Estimated: **30-40 tests, 700-800 lines**
 **Phase B: Edge Case Coverage**
 
 Add edge case tests for existing modules:
+
 1. Circular dependency handling
 2. Token budget overflow scenarios
 3. Malformed input validation
@@ -187,6 +199,7 @@ Estimated: **20-25 tests**
 **Phase C: Integration Tests**
 
 Add end-to-end workflow tests:
+
 1. Complete refactoring workflow (suggest → approve → apply → rollback)
 2. Complete optimization workflow (analyze → optimize → load)
 3. Complete validation workflow (schema → duplication → quality)
@@ -194,6 +207,7 @@ Add end-to-end workflow tests:
 Estimated: **10-15 integration tests**
 
 #### Success Criteria
+
 - ✅ Overall coverage: 85% → 90%+
 - ✅ rules_operations.py: 20% → 85%+
 - ✅ All edge cases covered
@@ -211,6 +225,7 @@ Estimated: **10-15 integration tests**
 #### Documentation Gaps
 
 **Missing Documentation:**
+
 1. **API Reference** (CRITICAL)
    - All public APIs need comprehensive reference
    - MCP tools detailed documentation
@@ -234,6 +249,7 @@ Estimated: **10-15 integration tests**
 **Phase A: API Reference Documentation**
 
 Create `docs/api/` structure:
+
 ```
 docs/api/
 ├── core.md (500 lines)
@@ -264,6 +280,7 @@ docs/api/
 **Phase B: Architecture Decision Records**
 
 Create `docs/architecture/decisions/`:
+
 ```
 docs/architecture/decisions/
 ├── 001-protocol-based-architecture.md
@@ -283,6 +300,7 @@ Each ADR: 200-300 lines
 **Phase C: Advanced Guides**
 
 Expand existing guides:
+
 1. **Performance Tuning Guide** (`docs/guides/performance.md`, 800 lines)
    - Benchmarking methodology
    - Cache warming strategies
@@ -304,6 +322,7 @@ Expand existing guides:
 **Total:** ~1,800 lines of guides
 
 #### Success Criteria
+
 - ✅ Complete API reference (2,450 lines)
 - ✅ 8 ADRs documented (2,000 lines)
 - ✅ 3 advanced guides (1,800 lines)
@@ -338,6 +357,7 @@ Expand existing guides:
 #### Implementation Plan
 
 **Task 1: MCP Tool Rate Limiting (Optional)**
+
 ```python
 # src/cortex/security.py
 class ToolRateLimiter:
@@ -362,14 +382,17 @@ class ToolRateLimiter:
 ```
 
 **Task 2: Input Validation Audit**
+
 - Review all public API entry points
 - Ensure path validation, type validation, range validation
 - Add missing validations
 
 **Task 3: Security Documentation**
+
 - See Milestone 10.3.3 Phase C
 
 #### Success Criteria
+
 - ✅ Optional tool rate limiting implemented
 - ✅ All input validation paths audited
 - ✅ Comprehensive security documentation
@@ -386,26 +409,31 @@ class ToolRateLimiter:
 #### Areas for Polish
 
 **1. Architecture (9.5 → 9.8)**
+
 - Review protocol coverage (currently 61%)
 - Add missing protocols if needed
 - Document architectural patterns
 
 **2. Code Style (9.6 → 9.8)**
+
 - Review naming consistency
 - Add missing algorithm comments
 - Ensure all design decisions documented
 
 **3. Error Handling (9.5 → 9.8)**
+
 - Review error message quality
 - Ensure actionable error messages
 - Add error recovery examples
 
 **4. Rules Compliance (9.0 → 9.8)**
+
 - Final verification of all rules
 - Update CI/CD enforcement
 - Document compliance status
 
 **5. Maintainability (9.5 → 9.8)**
+
 - Review function complexity
 - Ensure all functions <30 lines
 - Final code organization review
@@ -413,21 +441,25 @@ class ToolRateLimiter:
 #### Implementation Plan
 
 **Day 1: Architecture & Code Style Review**
+
 - Protocol coverage analysis
 - Naming consistency audit
 - Documentation review
 
 **Day 2: Error Handling & Rules Compliance**
+
 - Error message quality review
 - Rules compliance verification
 - CI/CD enforcement update
 
 **Day 3: Final Validation**
+
 - Run all quality checks
 - Comprehensive testing
 - Generate quality report
 
 #### Success Criteria
+
 - ✅ All metrics ≥9.8/10
 - ✅ Zero compliance violations
 - ✅ Complete documentation
@@ -439,6 +471,7 @@ class ToolRateLimiter:
 ## Phase Completion Checklist
 
 ### Performance (Milestone 10.3.1)
+
 - [ ] Fix 6 high-severity performance issues
 - [ ] Fix 20+ medium-severity issues
 - [ ] Run comprehensive benchmarks
@@ -446,6 +479,7 @@ class ToolRateLimiter:
 - [ ] Performance score ≥9.8/10
 
 ### Test Coverage (Milestone 10.3.2)
+
 - [ ] Create rules_operations tests (30-40 tests)
 - [ ] Add edge case tests (20-25 tests)
 - [ ] Add integration tests (10-15 tests)
@@ -453,6 +487,7 @@ class ToolRateLimiter:
 - [ ] Test Coverage score ≥9.8/10
 
 ### Documentation (Milestone 10.3.3)
+
 - [ ] Complete API reference (2,450 lines)
 - [ ] Write 8 ADRs (2,000 lines)
 - [ ] Create 3 advanced guides (1,800 lines)
@@ -460,12 +495,14 @@ class ToolRateLimiter:
 - [ ] Documentation score ≥9.8/10
 
 ### Security (Milestone 10.3.4)
+
 - [ ] Implement tool rate limiting (optional)
 - [ ] Audit all input validation
 - [ ] Expand security documentation
 - [ ] Security score ≥9.8/10
 
 ### Final Polish (Milestone 10.3.5)
+
 - [ ] Review all quality metrics
 - [ ] Final compliance verification
 - [ ] Comprehensive validation
@@ -473,6 +510,7 @@ class ToolRateLimiter:
 - [ ] Production ready
 
 ### Overall Validation
+
 - [ ] All 1920+ tests passing
 - [ ] Zero compliance violations
 - [ ] All metrics ≥9.8/10
@@ -512,16 +550,19 @@ class ToolRateLimiter:
 ## Risk Assessment
 
 ### High Risk
+
 - **Performance improvements may introduce bugs**
   - Mitigation: Comprehensive benchmarking and testing
   - Fallback: Revert to previous implementation if issues arise
 
 ### Medium Risk
+
 - **Documentation effort underestimated**
   - Mitigation: Prioritize critical documentation first
   - Fallback: Defer non-critical guides to Phase 10.4
 
 ### Low Risk
+
 - **Test coverage expansion straightforward**
   - Mitigation: Follow existing test patterns
   - Success: High confidence in achieving 90%+
@@ -531,9 +572,11 @@ class ToolRateLimiter:
 ## Dependencies
 
 ### Blocks
+
 - Production release - Cannot ship without 9.8/10 quality
 
 ### Blocked By
+
 - Phase 10.2 (File Size Compliance) - Must have clean architecture first
 
 ---
@@ -543,11 +586,13 @@ class ToolRateLimiter:
 **Total Duration:** 2-3 weeks
 
 ### Week 1: Critical Gaps
+
 - **Days 1-5:** Milestone 10.3.1 (Performance Optimization)
   - High-severity fixes: Days 1-3
   - Testing & benchmarking: Days 4-5
 
 ### Week 2: Documentation & Testing
+
 - **Days 1-2:** Milestone 10.3.2 (Test Coverage Expansion)
   - rules_operations tests: Day 1
   - Edge cases & integration: Day 2
@@ -556,6 +601,7 @@ class ToolRateLimiter:
   - ADRs: Day 5
 
 ### Week 3: Documentation & Polish
+
 - **Days 1-2:** Milestone 10.3.3 (Documentation) - Complete
   - Advanced guides: Days 1-2
 - **Day 3:** Milestone 10.3.4 (Security Hardening)
@@ -568,6 +614,7 @@ class ToolRateLimiter:
 ## Next Steps
 
 After Phase 10.3 completion:
+
 1. ✅ All metrics ≥9.8/10
 2. ✅ Production ready
 3. ✅ Comprehensive documentation
@@ -575,6 +622,7 @@ After Phase 10.3 completion:
 5. 🎉 **Project Excellence Achieved!**
 
 Optional future enhancements (Phase 10.4):
+
 - Additional performance optimizations
 - Extended test coverage (>95%)
 - Advanced MCP integrations

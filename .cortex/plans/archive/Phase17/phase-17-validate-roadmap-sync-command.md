@@ -93,4 +93,3 @@ This is a **gap** that undermines the reliability of the Memory Bank as a source
 - ✅ All roadmap references to source files are valid and up‑to‑date.
 - ✅ Commit workflow’s Step 10 is enforced (commits blocked on desync).
 - ✅ CI fails when roadmap synchronization fails.
-

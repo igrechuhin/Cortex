@@ -38,9 +38,11 @@ def __init__(self, project_root: Path)
 ```
 
 **Parameters:**
+
 - `project_root` (Path) - Root directory of project for path validation
 
 **Attributes:**
+
 - `project_root` (Path) - Resolved project root path
 - `memory_bank_dir` (Path) - Path to memory-bank/ directory
 - `lock_timeout` (int) - Seconds to wait for file locks (default: 5)
@@ -75,6 +77,7 @@ def construct_safe_path(self, base_dir: Path, file_name: str) -> Path
 Construct safe file path by validating file name and base directory.
 
 **Raises:**
+
 - `ValueError` - Invalid file name or path
 - `PermissionError` - Path outside project root
 
@@ -89,6 +92,7 @@ Read file with automatic locking and return (content, hash).
 **Rate Limited:** Yes (default: 10 ops/second)
 
 **Raises:**
+
 - `FileNotFoundError` - File doesn't exist
 - `FileLockTimeoutError` - Lock timeout exceeded
 - `MemoryBankError` - Other I/O errors
@@ -114,6 +118,7 @@ Write file with optional conflict detection and automatic versioning.
 **Returns:** New content hash
 
 **Raises:**
+
 - `FileConflictError` - Hash mismatch (concurrent modification detected)
 - `GitConflictError` - Git conflict markers detected in content
 
@@ -195,9 +200,11 @@ def __init__(self, project_root: Path)
 ```
 
 **Parameters:**
+
 - `project_root` (Path) - Root directory of project
 
 **Attributes:**
+
 - `project_root` (Path) - Project root path
 - `index_path` (Path) - Path to .memory-bank-index file
 - `memory_bank_dir` (Path) - Path to memory-bank/ directory
@@ -331,12 +338,14 @@ def __init__(self, model: str = "cl100k_base")
 ```
 
 **Parameters:**
+
 - `model` (str) - Tiktoken model name:
   - `"cl100k_base"` - GPT-4, GPT-3.5-turbo, text-embedding-ada-002
   - `"p50k_base"` - Codex models
   - `"o200k_base"` - GPT-4o models
 
 **Attributes:**
+
 - `model` (str) - Tiktoken model name
 - `encoding_impl` (object | None) - Lazy-loaded encoding
 - `_cache` (dict[str, int]) - Token count cache
@@ -420,6 +429,7 @@ def __init__(self)
 ```
 
 **Attributes:**
+
 - `static_deps` (dict) - Static dependency relationships from templates
 - `dynamic_deps` (dict) - Dynamic dependencies from markdown links
 - `link_types` (dict) - Link type tracking ("reference" vs "transclusion")
@@ -449,6 +459,7 @@ def compute_loading_order(self, files: list[str] | None = None) -> list[str]
 Compute optimal loading order using topological sort.
 
 **Algorithm:**
+
 1. Attempts topological sort if dynamic dependencies exist
 2. Falls back to priority-based sort if topological sort fails
 3. Breaks ties alphabetically for stability
@@ -545,10 +556,12 @@ def __init__(self, project_root: Path, keep_versions: int = 10)
 ```
 
 **Parameters:**
+
 - `project_root` (Path) - Root directory of project
 - `keep_versions` (int) - Number of versions to keep per file (default: 10)
 
 **Attributes:**
+
 - `project_root` (Path) - Project root path
 - `history_dir` (Path) - Path to .memory-bank-history/ directory
 - `keep_versions` (int) - Version retention limit
@@ -575,6 +588,7 @@ async def create_snapshot(
 Create version snapshot.
 
 **Parameters:**
+
 - `change_type` (str) - "created", "modified", or "rollback"
 - `changed_sections` (list | None) - Section headings that changed
 - `change_description` (str | None) - Optional change description
@@ -673,11 +687,13 @@ def __init__(
 ```
 
 **Parameters:**
+
 - `project_root` (Path) - Project root directory
 - `file_system` (FileSystemProtocol) - File system manager
 - `metadata_index` (MetadataIndexProtocol) - Metadata index
 
 **Attributes:**
+
 - `project_root` (Path) - Project root path
 - `memory_bank_dir` (Path) - Memory bank directory path
 - `file_system` (FileSystemProtocol) - File system manager
@@ -695,6 +711,7 @@ async def check_migration_needed(self) -> dict[str, object]
 Check if migration is needed.
 
 **Returns:** Migration status dictionary:
+
 ```python
 {
     "needs_migration": bool,
@@ -714,6 +731,7 @@ async def auto_migrate(self) -> dict[str, object]
 Automatically migrate to current version.
 
 **Returns:** Migration result dictionary:
+
 ```python
 {
     "migrated": bool,
@@ -756,11 +774,13 @@ def __init__(
 ```
 
 **Parameters:**
+
 - `memory_bank_dir` (Path) - Memory bank directory to watch
 - `metadata_index` (MetadataIndexProtocol) - Metadata index
 - `poll_interval` (float) - Seconds between checks (default: 2.0)
 
 **Attributes:**
+
 - `memory_bank_dir` (Path) - Directory being watched
 - `metadata_index` (MetadataIndexProtocol) - Metadata index
 - `poll_interval` (float) - Polling interval
@@ -794,6 +814,7 @@ async def detect_external_changes(self) -> list[dict[str, object]]
 Detect files modified externally (hash mismatch with index).
 
 **Returns:** List of changed files:
+
 ```python
 [
     {
@@ -846,6 +867,7 @@ Parse markdown `[text](target)` links.
 **Returns:** List of link dictionaries with `text`, `target`, `line_number`
 
 **Patterns Matched:**
+
 - Standard: `[text](target)`
 - Reference: `[text][ref]`
 - Inline: `[text](target "title")`
@@ -892,12 +914,14 @@ def __init__(
 ```
 
 **Parameters:**
+
 - `file_system` (FileSystemProtocol) - File system manager
 - `link_parser` (LinkParserProtocol) - Link parser
 - `memory_bank_dir` (Path) - Memory bank directory
 - `max_depth` (int) - Maximum recursion depth (default: 10)
 
 **Attributes:**
+
 - `file_system` (FileSystemProtocol) - File system
 - `link_parser` (LinkParserProtocol) - Link parser
 - `memory_bank_dir` (Path) - Memory bank directory
@@ -920,6 +944,7 @@ Resolve all transclusions in file recursively.
 **Caching:** Caches resolved content for performance.
 
 **Raises:**
+
 - `CircularDependencyError` - Circular transclusion detected
 - `FileNotFoundError` - Target file not found
 - `ValueError` - Max depth exceeded
@@ -965,6 +990,7 @@ def __init__(
 ```
 
 **Parameters:**
+
 - `file_system` (FileSystemProtocol) - File system manager
 - `link_parser` (LinkParserProtocol) - Link parser
 
@@ -981,6 +1007,7 @@ async def validate_file_links(
 Validate all links in file.
 
 **Validates:**
+
 - Internal file links (relative paths)
 - Transclusion targets
 - (Optional: External URLs if enabled)
@@ -1014,6 +1041,7 @@ def __init__(self, schemas: dict[str, dict[str, object]])
 ```
 
 **Parameters:**
+
 - `schemas` (dict) - Schema definitions per file type
 
 **Key Methods:**
@@ -1055,6 +1083,7 @@ def __init__(
 ```
 
 **Parameters:**
+
 - `similarity_threshold` (float) - Similarity threshold (0-1) for duplication
 - `min_block_size` (int) - Minimum block size to consider
 
@@ -1105,6 +1134,7 @@ async def calculate_metrics(
 Calculate quality metrics for file.
 
 **Metrics:**
+
 - Completeness score
 - Consistency score
 - Clarity score
@@ -1136,6 +1166,7 @@ def __init__(
 ```
 
 **Parameters:**
+
 - `token_counter` (TokenCounterProtocol) - Token counter
 - `use_tfidf` (bool) - Use TF-IDF scoring (default: True)
 
@@ -1156,6 +1187,7 @@ async def score_files(
 Score files by relevance using TF-IDF or keyword matching.
 
 **Algorithm:**
+
 1. TF-IDF vectorization of task and files
 2. Cosine similarity calculation
 3. Quality score multiplier (if provided)
@@ -1211,11 +1243,13 @@ async def optimize(
 Optimize context within token budget.
 
 **Strategies:**
+
 - `"relevance"` - By relevance score only
 - `"dependency"` - By dependency order
 - `"hybrid"` - Relevance + dependency (default)
 
 **Algorithm:**
+
 1. Score files by relevance
 2. Include mandatory files first
 3. Add files by strategy until budget exhausted
@@ -1321,6 +1355,7 @@ async def summarize_file(
 Summarize file content.
 
 **Strategies:**
+
 - `"key_sections"` - Extract most important sections
 - `"truncate"` - Simple truncation
 - `"abstract"` - Generate abstract (if AI available)
@@ -1453,6 +1488,7 @@ async def generate_insights(
 Generate insights across multiple categories.
 
 **Categories:**
+
 - Usage patterns
 - Organization issues
 - Quality issues
@@ -1501,6 +1537,7 @@ async def generate_suggestions(
 Generate refactoring suggestions from analysis data.
 
 **Suggestion Types:**
+
 - Consolidation
 - Split
 - Reorganization

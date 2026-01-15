@@ -31,6 +31,7 @@ If an old format is detected, please migrate it to the current format.
 ## What Happens
 
 The assistant will:
+
 1. Check if Memory Bank is already initialized
 2. Create `memory-bank/` directory if needed
 3. Generate all core files from templates
@@ -57,6 +58,7 @@ If an old Memory Bank format is detected (e.g., `.cursor/memory-bank/`), the ass
 ## Next Steps
 
 After initialization:
+
 1. Review and customize the generated files
 2. Fill in project-specific details
 3. Start using Memory Bank tools for validation and optimization

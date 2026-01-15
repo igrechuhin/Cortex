@@ -19,13 +19,15 @@ This directory contains prompt templates for one-time Memory Bank operations. Th
 
 ## When to Use Prompts vs. MCP Tools
 
-### Use Prompts For:
+### Use Prompts For
+
 - ✅ One-time setup operations
 - ✅ Initial project configuration
 - ✅ Migration from old formats
 - ✅ Rare administrative tasks
 
-### Use MCP Tools For:
+### Use MCP Tools For
+
 - ✅ Regular file operations (read, write, metadata)
 - ✅ Content validation and quality checks
 - ✅ Context optimization and loading
@@ -66,12 +68,14 @@ This directory contains prompt templates for one-time Memory Bank operations. Th
 ## Benefits of Prompt-Based Approach
 
 ### For Users
+
 - **Simpler API** - No need to discover rarely-used tools
 - **Clear guidance** - Step-by-step instructions with context
 - **Flexibility** - Easy to customize for specific needs
 - **Better IDE experience** - More room for frequently-used tools
 
 ### For Development
+
 - **Less maintenance** - Fewer tools to test and update
 - **Better documentation** - Rich context in markdown format
 - **Easier updates** - Change prompts without code changes
@@ -80,6 +84,7 @@ This directory contains prompt templates for one-time Memory Bank operations. Th
 ## Tool Count Impact
 
 By converting 7 one-time operations to prompts, we reduce:
+
 - **Total MCP tools**: 52 → 45 (13% reduction)
 - **IDE tool budget**: More room for other MCP servers
 - **User cognitive load**: Fewer tools to learn
@@ -89,6 +94,7 @@ This is part of Phase 7.10 consolidation effort to reduce from 52 → 25 tools (
 ## Contributing
 
 To add new prompt templates:
+
 1. Create a new `.md` file in this directory
 2. Follow the template structure (see existing prompts)
 3. Include: Prerequisites, Prompt, What Happens, Expected Output, Next Steps
@@ -98,6 +104,7 @@ To add new prompt templates:
 ## Support
 
 For issues or questions:
+
 - Check the [main documentation](../../README.md)
 - Report issues at [GitHub Issues](https://github.com/igrechuhin/cortex/issues)
 - Review [CLAUDE.md](../../CLAUDE.md) for development guidelines
