@@ -166,9 +166,7 @@ class TestFixQualityIssues:
     @pytest.mark.asyncio
     async def test_fix_quality_issues_exception_handling(self) -> None:
         """Test exception handling in fix_quality_issues."""
-        with patch(
-            "cortex.tools.pre_commit_tools._get_project_root_str"
-        ) as mock_root:
+        with patch("cortex.tools.pre_commit_tools._get_project_root_str") as mock_root:
             mock_root.side_effect = Exception("Root error")
 
             result_json = await fix_quality_issues()

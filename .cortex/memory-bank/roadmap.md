@@ -139,6 +139,7 @@
 
 ### Planned Phases
 
+- [Phase 21: Health-Check and Optimization Analysis System](../plans/phase-21-health-check-optimization.md) - PLANNING (2026-01-15) - Create comprehensive health-check system that analyzes prompts, rules, and MCP tools for merge/optimization opportunities without losing quality - Integrate into CI/CD pipelines for continuous monitoring - Provides actionable recommendations for consolidation and optimization - Target completion: 2026-01-25
 - [Phase 20: Code Review Fixes](../plans/phase-20-code-review-fixes.md) - PLANNING (2026-01-15) - Address all critical issues from comprehensive code review: Fix test import error, fix 10 file size violations, fix 15 type errors, fix security vulnerabilities - Improve code quality from 8.7/10 to 9.5+/10 - Target completion: 2026-01-20
 - [Phase 19: Fix MCP Server Crash](../plans/phase-19-fix-mcp-server-crash.md) - PLANNING (2026-01-14) - Fix MCP server crash caused by `BrokenResourceError` in `stdio_server` TaskGroup - Server crashes when client disconnects or cancels requests, causing unhandled `ExceptionGroup` - Impact: Server instability, poor user experience - Target completion: 2026-01-16
 - ✅ [Phase 18: Investigate Tiktoken Timeout Warning](../plans/archive/Phase18/phase-18-investigate-tiktoken-timeout-warning.md) - COMPLETE (2026-01-14) - Investigated and resolved the Tiktoken encoding load timeout warning - Target completion: 2026-01-16
