@@ -8,10 +8,14 @@ This guide will help you install and start using Cortex.
 
 - Python 3.13 or later
 - `uv` package manager (recommended) or `pip`
+- Node.js and npm (for markdownlint-cli2, required by `fix_markdown_lint` MCP tool)
 
 ### Install via uv (Recommended)
 
 ```bash
+# Install markdownlint-cli2 (required dependency)
+npm install -g markdownlint-cli2
+
 # Run from git repository
 uvx --from git+https://github.com/igrechuhin/cortex.git cortex
 ```
@@ -22,6 +26,9 @@ uvx --from git+https://github.com/igrechuhin/cortex.git cortex
 # Clone the repository
 git clone https://github.com/igrechuhin/cortex.git
 cd cortex
+
+# Install markdownlint-cli2 (required dependency)
+npm install -g markdownlint-cli2
 
 # Install dependencies
 pip install -r requirements.txt
@@ -36,6 +43,9 @@ python -m cortex.main
 # Clone the repository
 git clone https://github.com/igrechuhin/cortex.git
 cd cortex
+
+# Install markdownlint-cli2 (required dependency)
+npm install -g markdownlint-cli2
 
 # Install with development dependencies
 uv sync --dev

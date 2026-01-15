@@ -1,7 +1,10 @@
 FROM python:3.13-alpine
 
-# Install system dependencies
-RUN apk add --no-cache gcc musl-dev linux-headers
+# Install system dependencies including Node.js and npm for markdownlint-cli2
+RUN apk add --no-cache gcc musl-dev linux-headers nodejs npm
+
+# Install markdownlint-cli2 globally (required for fix_markdown_lint MCP tool)
+RUN npm install -g markdownlint-cli2
 
 # Set working directory
 WORKDIR /app

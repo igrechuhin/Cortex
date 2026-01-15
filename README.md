@@ -20,6 +20,12 @@ Learn how to setup and use Memory Bank directly in Cursor: <http://enlightby.ai/
 - **Shared Rules** - Cross-project rule sharing and management
 - **Project Structure** - Standardized project structure management with templates
 
+## Prerequisites
+
+- **Python 3.13+** - Required for running the MCP server
+- **Node.js and npm** - Required for `markdownlint-cli2` (used by `fix_markdown_lint` MCP tool)
+  - Install markdownlint-cli2: `npm install -g markdownlint-cli2`
+
 ## Running the Server
 
 There are a few options to use this MCP server:
@@ -90,6 +96,10 @@ Add this to your mcp.json config file:
 Clone repository and run the following commands:
 
 ```bash
+# Install Node.js dependencies (required for markdownlint-cli2)
+npm install -g markdownlint-cli2
+
+# Install Python dependencies
 uv sync --dev
 ```
 
