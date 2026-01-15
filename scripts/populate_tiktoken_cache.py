@@ -78,17 +78,20 @@ def download_encoding(encoding_name: str, cache_dir: Path) -> bool:
         try:
             with urllib.request.urlopen(url, context=ssl_context) as response:
                 with open(cache_path, "wb") as f:
-                    f.write(response.read())
+                    _ = f.write(response.read())
         except urllib.error.URLError as ssl_error:
             if "CERTIFICATE" in str(ssl_error).upper():
                 # Fallback: use unverified context (for development only)
                 print("  Warning: SSL verification failed, using unverified context")
-                unverified_context = ssl._create_unverified_context()
+                # Use create_default_context with check_hostname=False instead of private API
+                unverified_context = ssl.create_default_context()
+                unverified_context.check_hostname = False
+                unverified_context.verify_mode = ssl.CERT_NONE
                 with urllib.request.urlopen(
                     url, context=unverified_context
                 ) as response:
                     with open(cache_path, "wb") as f:
-                        f.write(response.read())
+                        _ = f.write(response.read())
             else:
                 raise
 
@@ -138,7 +141,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Populate bundled tiktoken cache with encoding files"
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--encodings",
         nargs="+",
         help="Encoding names to download (default: cl100k_base o200k_base p50k_base)",

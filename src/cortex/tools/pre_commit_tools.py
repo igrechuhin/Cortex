@@ -2,8 +2,9 @@
 
 MCP tools for executing pre-commit checks with language auto-detection.
 
-Total: 1 tool
+Total: 2 tools
 - execute_pre_commit_checks: Execute pre-commit checks (fix errors, format, type check, quality, tests)
+- fix_quality_issues: Automatically fix quality issues on-the-go (fix errors, format, type check, markdown lint)
 """
 
 import json
@@ -15,6 +16,10 @@ from cortex.server import mcp
 from cortex.services.framework_adapters.base import CheckResult, TestResult
 from cortex.services.framework_adapters.python_adapter import PythonAdapter
 from cortex.services.language_detector import LanguageDetector, LanguageInfo
+
+# Import markdown operations for markdown lint fixing
+# No circular import: markdown_operations doesn't import pre_commit_tools
+from cortex.tools.markdown_operations import fix_markdown_lint  # noqa: F401
 
 
 class PreCommitResult(TypedDict):
@@ -415,3 +420,231 @@ def _build_response(
         "success": success,
     }
     return json.dumps(response, indent=2)
+
+
+class FixQualityResult(TypedDict):
+    """Result of fix_quality_issues operation."""
+
+    status: Literal["success", "error"]
+    errors_fixed: int
+    warnings_fixed: int
+    formatting_issues_fixed: int
+    markdown_issues_fixed: int
+    type_errors_fixed: int
+    files_modified: list[str]
+    remaining_issues: list[str]
+    error_message: str | None
+
+
+def _create_quality_error_response(error_message: str) -> str:
+    """Create error response for quality fixes."""
+    return json.dumps(
+        {
+            "status": "error",
+            "errors_fixed": 0,
+            "warnings_fixed": 0,
+            "formatting_issues_fixed": 0,
+            "markdown_issues_fixed": 0,
+            "type_errors_fixed": 0,
+            "files_modified": [],
+            "remaining_issues": [],
+            "error_message": error_message,
+        },
+        indent=2,
+    )
+
+
+async def _run_quality_checks(root_str: str) -> dict[str, object] | str:
+    """Run quality checks and return result or error response."""
+    fix_errors_result_json = await execute_pre_commit_checks(
+        checks=["fix_errors", "format", "type_check"],
+        project_root=root_str,
+        strict_mode=False,
+    )
+    fix_errors_result = json.loads(fix_errors_result_json)
+
+    if fix_errors_result.get("status") == "error":
+        return _create_quality_error_response(
+            fix_errors_result.get("error", "Unknown error")
+        )
+
+    return fix_errors_result
+
+
+async def _fix_markdown_and_update_files(
+    root_str: str, include_untracked_markdown: bool, files_modified: list[str]
+) -> int:
+    """Fix markdown lint errors and update files_modified list."""
+    markdown_result_json = await fix_markdown_lint(
+        project_root=root_str,
+        include_untracked=include_untracked_markdown,
+        dry_run=False,
+    )
+    markdown_result = json.loads(markdown_result_json)
+    return _process_markdown_results(markdown_result, files_modified)
+
+
+def _extract_fix_statistics(fix_errors_result: dict[str, object]) -> tuple[
+    int, int, int, int, list[str]
+]:
+    """Extract statistics from fix_errors result."""
+    results = fix_errors_result.get("results", {})
+    fix_errors_check = results.get("fix_errors", {})
+    format_check = results.get("format", {})
+    type_check_result = results.get("type_check", {})
+
+    errors_fixed = len(fix_errors_check.get("errors", []))
+    warnings_fixed = len(fix_errors_check.get("warnings", []))
+    formatting_issues_fixed = format_check.get("files_formatted", 0)
+    type_errors_fixed = len(type_check_result.get("errors", []))
+    files_modified = list(set(fix_errors_result.get("files_modified", [])))
+
+    return errors_fixed, warnings_fixed, formatting_issues_fixed, type_errors_fixed, files_modified
+
+
+def _process_markdown_results(
+    markdown_result: dict[str, object], files_modified: list[str]
+) -> int:
+    """Process markdown fix results and update files_modified list."""
+    markdown_issues_fixed = 0
+    if markdown_result.get("success"):
+        markdown_issues_fixed = markdown_result.get("files_fixed", 0)
+        markdown_results = markdown_result.get("results", [])
+        for file_result in markdown_results:
+            if file_result.get("fixed"):
+                file_path = file_result.get("file", "")
+                if file_path and file_path not in files_modified:
+                    files_modified.append(file_path)
+    return markdown_issues_fixed
+
+
+def _collect_remaining_issues(fix_errors_result: dict[str, object]) -> list[str]:
+    """Collect remaining issues that couldn't be auto-fixed."""
+    remaining_issues: list[str] = []
+    if fix_errors_result.get("total_errors", 0) > 0:
+        remaining_issues.append(
+            f"{fix_errors_result.get('total_errors', 0)} errors remain after auto-fix"
+        )
+    if fix_errors_result.get("total_warnings", 0) > 0:
+        remaining_issues.append(
+            f"{fix_errors_result.get('total_warnings', 0)} warnings remain after auto-fix"
+        )
+    return remaining_issues
+
+
+def _build_quality_response(
+    errors_fixed: int,
+    warnings_fixed: int,
+    formatting_issues_fixed: int,
+    markdown_issues_fixed: int,
+    type_errors_fixed: int,
+    files_modified: list[str],
+    remaining_issues: list[str],
+) -> FixQualityResult:
+    """Build quality fix response."""
+    return {
+        "status": "success",
+        "errors_fixed": errors_fixed,
+        "warnings_fixed": warnings_fixed,
+        "formatting_issues_fixed": formatting_issues_fixed,
+        "markdown_issues_fixed": markdown_issues_fixed,
+        "type_errors_fixed": type_errors_fixed,
+        "files_modified": files_modified,
+        "remaining_issues": remaining_issues,
+        "error_message": None,
+    }
+
+
+@mcp.tool()
+async def fix_quality_issues(
+    project_root: str | None = None,
+    include_untracked_markdown: bool = True,
+) -> str:
+    """Automatically fix code quality issues on-the-go.
+
+    This tool provides lightweight, automatic quality fixes to prevent error accumulation.
+    It fixes type errors, formatting issues, linting errors, and markdown lint errors,
+    but does NOT run tests (tests are reserved for the commit pipeline).
+
+    The agent should automatically call this tool:
+    - After making code changes
+    - When errors are detected in the IDE
+    - Before starting new work to ensure clean state
+    - As part of regular development workflow
+
+    Args:
+        project_root: Path to project root directory. If None, uses current directory.
+        include_untracked_markdown: Include untracked markdown files in markdown lint fixing.
+            Default: True.
+
+    Returns:
+        JSON string with quality fix results containing:
+        - status: "success" or "error"
+        - errors_fixed: Count of errors fixed
+        - warnings_fixed: Count of warnings fixed
+        - formatting_issues_fixed: Count of formatting issues fixed
+        - markdown_issues_fixed: Count of markdown lint issues fixed
+        - type_errors_fixed: Count of type errors fixed
+        - files_modified: List of files modified during quality fixes
+        - remaining_issues: List of issues that could not be auto-fixed (if any)
+        - error_message: Error message if operation failed
+
+    Examples:
+        Example 1: Fix all quality issues automatically
+        >>> await fix_quality_issues()
+        {
+          "status": "success",
+          "errors_fixed": 5,
+          "warnings_fixed": 2,
+          "formatting_issues_fixed": 3,
+          "markdown_issues_fixed": 2,
+          "type_errors_fixed": 1,
+          "files_modified": ["src/file1.py", "README.md"],
+          "remaining_issues": [],
+          "error_message": null
+        }
+
+        Example 2: Fix quality issues with specific project root
+        >>> await fix_quality_issues(project_root="/path/to/project")
+        {
+          "status": "success",
+          "errors_fixed": 0,
+          "warnings_fixed": 0,
+          "formatting_issues_fixed": 1,
+          "markdown_issues_fixed": 0,
+          "type_errors_fixed": 0,
+          "files_modified": ["src/file2.py"],
+          "remaining_issues": [],
+          "error_message": null
+        }
+    """
+    try:
+        root_str = _get_project_root_str(project_root)
+
+        # Fix errors and extract statistics
+        fix_errors_result = await _run_quality_checks(root_str)
+        if isinstance(fix_errors_result, str):
+            return fix_errors_result
+
+        errors_fixed, warnings_fixed, formatting_issues_fixed, type_errors_fixed, files_modified = _extract_fix_statistics(fix_errors_result)
+
+        # Fix markdown and collect remaining issues
+        markdown_issues_fixed = await _fix_markdown_and_update_files(
+            root_str, include_untracked_markdown, files_modified
+        )
+        remaining_issues = _collect_remaining_issues(fix_errors_result)
+
+        response = _build_quality_response(
+            errors_fixed,
+            warnings_fixed,
+            formatting_issues_fixed,
+            markdown_issues_fixed,
+            type_errors_fixed,
+            files_modified,
+            remaining_issues,
+        )
+
+        return json.dumps(response, indent=2)
+
+    except Exception as e:
+        return _create_quality_error_response(str(e))

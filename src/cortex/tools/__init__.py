@@ -10,6 +10,7 @@ Modules:
 - refactoring_operations: Refactoring suggestions (1 tool) - Split from analysis_operations
 - rules_operations: Rules management (1 tool) - Phase 9.1.1 split
 - configuration_operations: Configuration management (1 tool) - Phase 9.1.1 split
+- markdown_operations: Markdown file operations (1 tool) - Markdown lint fixing
 - phase1_foundation_*: Core Memory Bank operations (4 tools split across modules)
 - phase2_linking: Link management and transclusion (4 tools)
 - phase3_validation: Validation and quality checks (5 tools)
@@ -21,7 +22,7 @@ Modules:
 - phase8_structure: Project structure management (6 tools)
 - prompts: MCP prompt templates for one-time operations (7 prompts)
 
-Total: 53 tools + 7 prompts
+Total: 54 tools + 7 prompts
 """
 
 # Import all tool modules to register their decorators
@@ -30,6 +31,7 @@ from . import (
     configuration_operations,  # noqa: F401
     connection_health,  # noqa: F401
     file_operations,  # noqa: F401
+    markdown_operations,  # noqa: F401
     phase1_foundation_dependency,  # noqa: F401
     phase1_foundation_rollback,  # noqa: F401
     phase1_foundation_stats,  # noqa: F401
@@ -55,6 +57,7 @@ __all__ = [
     "configuration_operations",
     "connection_health",
     "file_operations",
+    "markdown_operations",
     "phase1_foundation_dependency",
     "phase1_foundation_rollback",
     "phase1_foundation_stats",

@@ -8,6 +8,18 @@
 
 ### Recent Findings
 
+- ✅ **Commit Procedure** - COMPLETE (2026-01-15) - Fixed function length violations and added test coverage:
+  - Fixed 5 function length violations by extracting helper functions:
+    - `markdown_operations.py`: `_run_command()`, `_get_modified_markdown_files()`, `_run_markdownlint_fix()`, `fix_markdown_lint()`
+    - `pre_commit_tools.py`: `fix_quality_issues()`
+  - Fixed test import errors in `test_fix_markdown_lint.py` (updated to use `cortex.tools.markdown_operations`)
+  - Added comprehensive tests for `connection_health.py` (3 tests)
+  - Added tests for `fix_markdown_lint` MCP tool and helper functions (10 additional tests)
+  - All linting errors fixed (0 remaining)
+  - All files properly formatted (Black check passed, 286 files unchanged)
+  - Type checking: 0 errors, 0 warnings (pyright src/)
+  - All code quality checks passing (file size, function length)
+  - All tests passing with 90.11% coverage (2,447 passed, 0 failed, 100% pass rate)
 - ✅ **Commit Procedure** - COMPLETE (2026-01-15) - Fixed type errors and function length violations:
   - Fixed 5 type errors in `config_status.py` by adding missing type annotations (Path types)
   - Fixed 1 function length violation in `config_status.py` by extracting `_get_fail_safe_status()` helper
@@ -103,6 +115,7 @@
 
 - ✅ **Phase 15: Investigate MCP Tool Project Root Resolution** - COMPLETE (2026-01-13) - Fixed project root detection to automatically find `.cortex/` directory when `project_root=None` - MCP tools now work reliably without explicit `project_root` parameter
 - ✅ **Phase 16: Validate Memory Bank Timestamps Command** - COMPLETE (2026-01-14) - Implemented timestamp validation as MCP tool `validate(check_type="timestamps")` in `validation_operations.py` - Added timestamp scanning and validation logic, wired into commit workflow Step 9 - Timestamp validation now enforced before commits via structured MCP tool
+- [Phase 20: Code Review Fixes](../plans/phase-20-code-review-fixes.md) - ASAP (PLANNING) - Address all critical issues from comprehensive code review (2026-01-15): Fix test import error blocking test execution, fix 10 file size violations (400-line limit), fix 15 type errors in tests, fix security vulnerabilities (command injection, XSS, ReDoS) - Impact: Improve code quality from 8.7/10 to 9.5+/10, unblock test execution, achieve rules compliance - Target completion: 2026-01-20
 - [Phase 19: Fix MCP Server Crash](../plans/phase-19-fix-mcp-server-crash.md) - ASAP (PLANNING) - Fix MCP server crash caused by `BrokenResourceError` in `stdio_server` TaskGroup - Server crashes when client disconnects or cancels requests, causing unhandled `ExceptionGroup` - Impact: Server instability, poor user experience - Target completion: 2026-01-16
 - ✅ **Phase 17: Validate Roadmap Sync Command** - COMPLETE (2026-01-14) - Implemented `validate-roadmap-sync` command and MCP tool integration - Added `roadmap_sync` check_type to `validate()` MCP tool - Created `.cortex/synapse/prompts/validate-roadmap-sync.md` command file - Added comprehensive unit tests (18 tests, all passing) - Roadmap/codebase synchronization is now enforced in commit workflow Step 10
 
@@ -114,9 +127,11 @@
 
 ### Planned Phases
 
+- [Phase 20: Code Review Fixes](../plans/phase-20-code-review-fixes.md) - PLANNING (2026-01-15) - Address all critical issues from comprehensive code review: Fix test import error, fix 10 file size violations, fix 15 type errors, fix security vulnerabilities - Improve code quality from 8.7/10 to 9.5+/10 - Target completion: 2026-01-20
 - [Phase 19: Fix MCP Server Crash](../plans/phase-19-fix-mcp-server-crash.md) - PLANNING (2026-01-14) - Fix MCP server crash caused by `BrokenResourceError` in `stdio_server` TaskGroup - Server crashes when client disconnects or cancels requests, causing unhandled `ExceptionGroup` - Impact: Server instability, poor user experience - Target completion: 2026-01-16
-- [Phase 18: Investigate Tiktoken Timeout Warning](../plans/phase-18-investigate-tiktoken-timeout-warning.md) - PLANNED (2026-01-14) - Investigate and resolve the Tiktoken encoding load timeout warning that occurs when initializing TokenCounter - Warning indicates `tiktoken.get_encoding('cl100k_base')` times out after 5 seconds, causing fallback to less accurate word-based estimation - Impact: Reduced token counting accuracy, less precise context optimization - Target completion: 2026-01-16
+- ✅ [Phase 18: Investigate Tiktoken Timeout Warning](../plans/archive/Phase18/phase-18-investigate-tiktoken-timeout-warning.md) - COMPLETE (2026-01-14) - Investigated and resolved the Tiktoken encoding load timeout warning - Target completion: 2026-01-16
 - ✅ [Phase 18: Markdown Lint Fix Tool](../plans/archive/Phase18/phase-18-markdown-lint-fix-tool.md) - COMPLETE (2026-01-14) - Created `scripts/fix_markdown_lint.py` tool that automatically scans modified markdown files (git-based), detects markdownlint errors, and fixes them automatically - Supports dry-run mode, JSON output, and includes comprehensive unit tests (16 tests, all passing) - Reduces manual linting error fixes and maintains consistent markdown formatting
+- [Refactor Setup Prompts: Simplify to 3 Prompts](../plans/refactor-setup-prompts.md) - PLANNING (2026-01-15) - Simplify setup prompt system from 4 separate prompts to 3 unified prompts: `initialize` (complete setup for new projects), `migrate` (for legacy projects), and `setup_synapse` (always available) - Better matches user workflows, reduces complexity, includes default synapse_repo_url - Target completion: 2026-01-17
 - [Conditional Prompt Registration](../plans/conditional-prompt-registration.md) - PLANNED - Conditionally register setup/migration prompts only when project is not properly configured - For properly configured projects, only show prompts relevant for active development - Prevents prompt list pollution with one-time setup prompts
 - [Phase 9: Excellence 9.8+](../plans/phase-9-excellence-98.md) - IN PROGRESS (50% complete, 120-150 hours estimated) - Target: 9.8+/10 across all quality metrics
   - Phase 9.1: Rules Compliance Excellence - COMPLETE ✅

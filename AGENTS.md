@@ -15,6 +15,7 @@
 - **No auto-commit**: Never create commits or push without explicit user request; follow documented commit workflow when requested.
 - **MCP tool error handling**: When encountering unexpected results from Cortex MCP tools, immediately create an investigation plan at `.cortex/plans/` and link it as a blocker (ASAP priority) in `.cortex/memory-bank/roadmap.md`. This ensures all tool issues are tracked and addressed systematically.
 - **Execution continuity (CRITICAL)**: Continue execution until one of these valid stopping conditions is met: (1) Question to user that is REQUIRED to proceed, (2) Job is fully done and verified, (3) Out of context and cannot proceed, (4) Unrecoverable error requiring user intervention. Do NOT stop for partial completion, intermediate steps, retryable errors, or uncertainty that can be resolved by exploring the codebase. Premature stopping is a CRITICAL violation.
+- **Automatic quality fixes (MANDATORY)**: Automatically call `fix_quality_issues()` MCP tool when: (1) Errors are detected in the IDE (type errors, linting errors), (2) After making code changes that might introduce quality issues, (3) Before starting new work to ensure clean state. This prevents error accumulation and reduces burden on the commit pipeline. The tool fixes type errors, formatting, linting, and markdown issues automatically without running tests.
 
 ## Expectations for LLM Agents in This Repo
 

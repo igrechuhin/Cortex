@@ -8,6 +8,7 @@ at import time. Used for conditional prompt registration.
 from pathlib import Path
 from typing import TypedDict
 
+from cortex.core.tiktoken_cache import ensure_bundled_cache_available
 from cortex.managers.initialization import get_project_root
 
 
@@ -18,6 +19,7 @@ class ProjectConfigStatus(TypedDict):
     structure_configured: bool
     cursor_integration_configured: bool
     migration_needed: bool
+    tiktoken_cache_available: bool
 
 
 def _check_memory_bank_initialized(memory_bank_dir: Path) -> bool:
@@ -85,6 +87,7 @@ def _get_fail_safe_status() -> ProjectConfigStatus:
         structure_configured=True,
         cursor_integration_configured=True,
         migration_needed=False,
+        tiktoken_cache_available=True,  # Assume available in fail-safe mode
     )
 
 
@@ -93,7 +96,7 @@ def get_project_config_status() -> ProjectConfigStatus:
 
     Returns:
         Dictionary with status flags: memory_bank_initialized, structure_configured,
-        cursor_integration_configured, migration_needed.
+        cursor_integration_configured, migration_needed, tiktoken_cache_available.
     """
     try:
         project_root = get_project_root()
@@ -109,11 +112,13 @@ def get_project_config_status() -> ProjectConfigStatus:
         migration_needed = _check_migration_needed(
             project_root, memory_bank_initialized
         )
+        tiktoken_cache_available = ensure_bundled_cache_available()
         return ProjectConfigStatus(
             memory_bank_initialized=memory_bank_initialized,
             structure_configured=structure_configured,
             cursor_integration_configured=cursor_integration_configured,
             migration_needed=migration_needed,
+            tiktoken_cache_available=tiktoken_cache_available,
         )
     except Exception as e:
         from cortex.core.logging_config import logger

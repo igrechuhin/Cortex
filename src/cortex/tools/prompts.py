@@ -35,6 +35,7 @@ Conditional Registration:
     - check_migration_status: Only if migration needed
     - migrate_memory_bank: Only if migration needed
     - migrate_project_structure: Only if migration needed
+    - populate_tiktoken_cache: Only if tiktoken cache not available
     - setup_synapse: Always available (optional feature)
 """
 
@@ -250,6 +251,52 @@ Expected output format:
   "submodule_url": "{synapse_repo_url}",
   "commit": "<commit_hash>"
 }}"""
+
+
+_POPULATE_TIKTOKEN_CACHE_PROMPT = """Please populate the bundled tiktoken cache with encoding files.
+
+The tiktoken cache is missing or empty, which may cause slower token counting or require network access.
+
+I need you to:
+1. Check if `src/cortex/resources/tiktoken_cache/` directory exists (create if needed)
+2. Run the populate script: `python3 scripts/populate_tiktoken_cache.py`
+   - This downloads common encodings: cl100k_base, o200k_base, p50k_base
+   - Or specify custom encodings: `python3 scripts/populate_tiktoken_cache.py --encodings cl100k_base o200k_base`
+3. Verify cache files were downloaded (tiktoken uses SHA-1 hash of URL as filename)
+4. Test that token counting works with cached files
+
+Expected output format:
+{{
+  "status": "success",
+  "message": "Tiktoken cache populated successfully",
+  "cache_directory": "src/cortex/resources/tiktoken_cache/",
+  "encodings_downloaded": ["cl100k_base", "o200k_base", "p50k_base"],
+  "files_created": 3,
+  "total_size_bytes": <size>
+}}
+
+If download fails:
+- Check network connectivity
+- Verify URLs are accessible
+- Try downloading encodings one at a time
+- Report which encodings failed and why"""
+
+
+# Conditionally register populate_tiktoken_cache only if cache not available
+if not _config_status["tiktoken_cache_available"]:
+
+    @mcp.prompt()
+    def populate_tiktoken_cache() -> str:
+        """Populate bundled tiktoken cache with encoding files for offline operation.
+
+        This prompt appears when the bundled tiktoken cache is missing or empty.
+        Populating the cache enables faster token counting and offline operation
+        without requiring network access to download encoding files.
+
+        Returns:
+            Prompt message guiding the assistant to populate tiktoken cache
+        """
+        return _POPULATE_TIKTOKEN_CACHE_PROMPT
 
 
 @mcp.prompt()
