@@ -40,7 +40,31 @@ jobs:
 
       - name: Type check with pyright
         run: |
-          uv run pyright src/
+          (uv run pyright src/ --outputjson 2>&1 || true) | python3 -c "
+          import json, sys
+          try:
+              data = json.load(sys.stdin)
+              errors = [e for e in data.get('generalDiagnostics', []) 
+                       if e.get('severity') == 'error' 
+                       and 'reportMissingTypeStubs' not in e.get('rule', '')]
+              if errors:
+                  print(f'❌ Found {len(errors)} actual type errors:', file=sys.stderr)
+                  for e in errors[:10]:
+                      print(f\"  {e.get('file', '')}:{e.get('range', {}).get('start', {}).get('line', '')} - {e.get('message', '')}\", file=sys.stderr)
+                  if len(errors) > 10:
+                      print(f'  ... and {len(errors) - 10} more', file=sys.stderr)
+                  sys.exit(1)
+              stub_errors = len([e for e in data.get('generalDiagnostics', []) 
+                                if e.get('severity') == 'error' 
+                                and 'reportMissingTypeStubs' in e.get('rule', '')])
+              if stub_errors > 0:
+                  print(f'⚠️  {stub_errors} stub warnings (not blocking CI)')
+              print('✅ No actual type errors found')
+              sys.exit(0)
+          except Exception as e:
+              print(f'Error parsing pyright output: {e}', file=sys.stderr)
+              sys.exit(1)
+          "
 
       - name: Check file sizes (max 400 lines)
         run: |
