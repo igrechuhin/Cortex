@@ -12,6 +12,8 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import TypeVar
 
+import anyio
+
 from cortex.core.constants import (
     MCP_CONNECTION_RETRY_ATTEMPTS,
     MCP_CONNECTION_RETRY_DELAY_SECONDS,
@@ -112,6 +114,7 @@ def _is_connection_error(e: Exception) -> bool:
         BrokenPipeError,
         OSError,
         RuntimeError,  # FastMCP may raise RuntimeError for connection issues
+        anyio.BrokenResourceError,  # anyio resource errors (e.g., stdio closed)
     )
 
     if isinstance(e, connection_error_types):

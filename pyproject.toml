@@ -96,3 +96,11 @@ exclude_lines = [
 [build-system]
 requires = ["uv_build"]
 build-backend = "uv_build"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+cortex = [
+    "resources/tiktoken_cache/*",
+]

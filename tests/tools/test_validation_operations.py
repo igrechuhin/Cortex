@@ -23,6 +23,8 @@ from cortex.tools.validation_operations import (
     validate_quality_single_file,
     validate_schema_all_files,
     validate_schema_single_file,
+)
+from cortex.validation.timestamp_validator import (
     validate_timestamps_all_files,
     validate_timestamps_single_file,
 )
@@ -1271,15 +1273,15 @@ class TestValidateTimestamps:
     async def test_validate_timestamps_single_file_valid(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:
-        """Test timestamp validation with valid YYYY-MM-DDTHH:MM timestamps."""
+        """Test timestamp validation with valid YYYY-MM-DD date-only timestamps."""
         # Arrange
         memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
         memory_bank_dir.mkdir(parents=True)
         test_file = memory_bank_dir / "activeContext.md"
         content = (
             "# Active Context\n\n"
-            "## Current Focus (2026-01-14T10:00)\n\n"
-            "Some content here with timestamp 2026-01-15T14:30.\n"
+            "## Current Focus (2026-01-14)\n\n"
+            "Some content here with timestamp 2026-01-15.\n"
         )
         test_file.write_text(content)
 
@@ -1416,7 +1418,7 @@ class TestValidateTimestamps:
             "# Active Context\n\n## Current Focus (2026-01-14T10:00)\n"
         )
         (memory_bank_dir / "progress.md").write_text(
-            "# Progress\n\n## 2026-01-14T12:00: Updates\n"
+            "# Progress\n\n## 2026-01-14: Updates\n"
         )
 
         async def mock_list_files(directory: Path) -> list[Path]:
@@ -1428,13 +1430,15 @@ class TestValidateTimestamps:
         mock_fs_manager.list_files = AsyncMock(side_effect=mock_list_files)
         mock_fs_manager.read_file = AsyncMock(
             side_effect=[
-                ("# Active Context\n\n## Current Focus (2026-01-14T10:00)\n", None),
-                ("# Progress\n\n## 2026-01-14T12:00: Updates\n", None),
+                ("# Active Context\n\n## Current Focus (2026-01-14)\n", None),
+                ("# Progress\n\n## 2026-01-14: Updates\n", None),
             ]
         )
 
         # Act
-        result = await validate_timestamps_all_files(mock_fs_manager, tmp_path)
+        result = await validate_timestamps_all_files(
+            mock_fs_manager, tmp_path, read_all_memory_bank_files
+        )
 
         # Assert
         result_data = json.loads(result)
@@ -1475,7 +1479,9 @@ class TestValidateTimestamps:
         )
 
         # Act
-        result = await validate_timestamps_all_files(mock_fs_manager, tmp_path)
+        result = await validate_timestamps_all_files(
+            mock_fs_manager, tmp_path, read_all_memory_bank_files
+        )
 
         # Assert
         result_data = json.loads(result)

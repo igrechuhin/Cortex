@@ -6,6 +6,7 @@ Tests token counting functionality using tiktoken.
 
 from pathlib import Path
 from typing import cast
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -716,3 +717,382 @@ class TestCacheManagement:
         # Assert
         assert size1 == 1
         assert size2 == 2
+
+
+class TestTiktokenTimeoutAndRetry:
+    """Tests for tiktoken loading timeout and retry mechanism."""
+
+    def test_load_tiktoken_with_timeout_success(self):
+        """Test successful tiktoken loading within timeout."""
+        # Arrange
+        counter = TokenCounter()
+        mock_encoding = MagicMock()
+
+        # Patch the import inside the method by patching sys.modules
+        import sys
+
+        mock_tiktoken = MagicMock()
+        mock_tiktoken.get_encoding.return_value = mock_encoding
+        original_tiktoken = sys.modules.get("tiktoken")
+        sys.modules["tiktoken"] = mock_tiktoken
+
+        try:
+            with patch("concurrent.futures.ThreadPoolExecutor") as mock_executor:
+                mock_future = MagicMock()
+                mock_future.result.return_value = mock_encoding
+                mock_executor.return_value.__enter__.return_value.submit.return_value = (
+                    mock_future
+                )
+
+                # Act
+                result = counter._load_tiktoken_with_timeout(
+                    timeout_seconds=30.0, max_retries=2
+                )
+
+                # Assert
+                assert result is mock_encoding
+                assert counter._tiktoken_available is True
+        finally:
+            if original_tiktoken is not None:
+                sys.modules["tiktoken"] = original_tiktoken
+            elif "tiktoken" in sys.modules:
+                del sys.modules["tiktoken"]
+
+    def test_load_tiktoken_with_timeout_retry_success(self):
+        """Test tiktoken loading succeeds after retry."""
+        # Arrange
+        counter = TokenCounter()
+        mock_encoding = MagicMock()
+
+        import sys
+
+        mock_tiktoken = MagicMock()
+        original_tiktoken = sys.modules.get("tiktoken")
+        sys.modules["tiktoken"] = mock_tiktoken
+
+        try:
+            with patch("concurrent.futures.ThreadPoolExecutor") as mock_executor:
+                with patch("time.sleep"):
+                    # First attempt times out, second succeeds
+                    mock_future = MagicMock()
+                    mock_future.result.side_effect = [
+                        TimeoutError("Timeout"),
+                        mock_encoding,
+                    ]
+                    mock_executor.return_value.__enter__.return_value.submit.return_value = (
+                        mock_future
+                    )
+
+                    # Act
+                    result = counter._load_tiktoken_with_timeout(
+                        timeout_seconds=0.1, max_retries=1
+                    )
+
+                    # Assert
+                    assert result is mock_encoding
+                    assert counter._tiktoken_available is True
+        finally:
+            if original_tiktoken is not None:
+                sys.modules["tiktoken"] = original_tiktoken
+            elif "tiktoken" in sys.modules:
+                del sys.modules["tiktoken"]
+
+    def test_load_tiktoken_with_timeout_all_retries_fail(self):
+        """Test tiktoken loading fails after all retries."""
+        # Arrange
+        counter = TokenCounter()
+
+        import sys
+
+        mock_tiktoken = MagicMock()
+        original_tiktoken = sys.modules.get("tiktoken")
+        sys.modules["tiktoken"] = mock_tiktoken
+
+        try:
+            with patch("concurrent.futures.ThreadPoolExecutor") as mock_executor:
+                with patch("time.sleep"):
+                    # All attempts timeout
+                    mock_future = MagicMock()
+                    mock_future.result.side_effect = TimeoutError("Timeout")
+                    mock_executor.return_value.__enter__.return_value.submit.return_value = (
+                        mock_future
+                    )
+
+                    # Act
+                    result = counter._load_tiktoken_with_timeout(
+                        timeout_seconds=0.1, max_retries=2
+                    )
+
+                    # Assert
+                    assert result is None
+                    assert counter._tiktoken_available is False
+        finally:
+            if original_tiktoken is not None:
+                sys.modules["tiktoken"] = original_tiktoken
+            elif "tiktoken" in sys.modules:
+                del sys.modules["tiktoken"]
+
+    def test_load_tiktoken_with_exception_retry_success(self):
+        """Test tiktoken loading succeeds after exception retry."""
+        # Arrange
+        counter = TokenCounter()
+        mock_encoding = MagicMock()
+
+        import sys
+
+        mock_tiktoken = MagicMock()
+        original_tiktoken = sys.modules.get("tiktoken")
+        sys.modules["tiktoken"] = mock_tiktoken
+
+        try:
+            with patch("concurrent.futures.ThreadPoolExecutor") as mock_executor:
+                with patch("time.sleep"):
+                    # First attempt raises exception, second succeeds
+                    mock_future = MagicMock()
+                    mock_future.result.side_effect = [
+                        ValueError("Network error"),
+                        mock_encoding,
+                    ]
+                    mock_executor.return_value.__enter__.return_value.submit.return_value = (
+                        mock_future
+                    )
+
+                    # Act
+                    result = counter._load_tiktoken_with_timeout(
+                        timeout_seconds=30.0, max_retries=1
+                    )
+
+                    # Assert
+                    assert result is mock_encoding
+                    assert counter._tiktoken_available is True
+        finally:
+            if original_tiktoken is not None:
+                sys.modules["tiktoken"] = original_tiktoken
+            elif "tiktoken" in sys.modules:
+                del sys.modules["tiktoken"]
+
+    def test_load_tiktoken_with_exception_all_retries_fail(self):
+        """Test tiktoken loading fails after all exception retries."""
+        # Arrange
+        counter = TokenCounter()
+
+        import sys
+
+        mock_tiktoken = MagicMock()
+        original_tiktoken = sys.modules.get("tiktoken")
+        sys.modules["tiktoken"] = mock_tiktoken
+
+        try:
+            with patch("concurrent.futures.ThreadPoolExecutor") as mock_executor:
+                with patch("time.sleep"):
+                    # All attempts raise exceptions
+                    mock_future = MagicMock()
+                    mock_future.result.side_effect = ValueError("Network error")
+                    mock_executor.return_value.__enter__.return_value.submit.return_value = (
+                        mock_future
+                    )
+
+                    # Act
+                    result = counter._load_tiktoken_with_timeout(
+                        timeout_seconds=30.0, max_retries=2
+                    )
+
+                    # Assert
+                    assert result is None
+                    assert counter._tiktoken_available is False
+        finally:
+            if original_tiktoken is not None:
+                sys.modules["tiktoken"] = original_tiktoken
+            elif "tiktoken" in sys.modules:
+                del sys.modules["tiktoken"]
+
+    def test_load_tiktoken_with_import_error(self):
+        """Test tiktoken loading handles ImportError gracefully."""
+        # Arrange
+        counter = TokenCounter()
+
+        import sys
+
+        original_tiktoken = sys.modules.get("tiktoken")
+        if "tiktoken" in sys.modules:
+            del sys.modules["tiktoken"]
+
+        try:
+            # Create a mock that raises ImportError for tiktoken
+            import builtins
+
+            original_import = builtins.__import__
+
+            def import_side_effect(
+                name, globals=None, locals=None, fromlist=(), level=0
+            ):
+                if name == "tiktoken":
+                    raise ImportError("No module named 'tiktoken'")
+                return original_import(name, globals, locals, fromlist, level)
+
+            builtins.__import__ = import_side_effect
+
+            try:
+                # Act
+                result = counter._load_tiktoken_with_timeout(
+                    timeout_seconds=30.0, max_retries=2
+                )
+
+                # Assert
+                assert result is None
+                assert counter._tiktoken_available is False
+            finally:
+                builtins.__import__ = original_import
+        finally:
+            if original_tiktoken is not None:
+                sys.modules["tiktoken"] = original_tiktoken
+
+    def test_load_tiktoken_exponential_backoff_timing(self):
+        """Test that retry delays use exponential backoff."""
+        # Arrange
+        counter = TokenCounter()
+
+        import sys
+
+        mock_tiktoken = MagicMock()
+        original_tiktoken = sys.modules.get("tiktoken")
+        sys.modules["tiktoken"] = mock_tiktoken
+
+        try:
+            with patch("concurrent.futures.ThreadPoolExecutor") as mock_executor:
+                with patch("time.sleep") as mock_sleep:
+                    with patch("time.time", side_effect=[0.0, 0.1, 2.1, 2.2, 6.2, 6.3]):
+                        # All attempts timeout
+                        mock_future = MagicMock()
+                        mock_future.result.side_effect = TimeoutError("Timeout")
+                        mock_executor.return_value.__enter__.return_value.submit.return_value = (
+                            mock_future
+                        )
+
+                        # Act
+                        _ = counter._load_tiktoken_with_timeout(
+                            timeout_seconds=0.1, max_retries=2
+                        )
+
+                        # Assert
+                        # Should sleep with exponential backoff: 2.0s, 4.0s
+                        assert mock_sleep.call_count == 2
+                        assert (
+                            mock_sleep.call_args_list[0][0][0] == 2.0
+                        )  # First retry: 2s
+                        assert (
+                            mock_sleep.call_args_list[1][0][0] == 4.0
+                        )  # Second retry: 4s
+        finally:
+            if original_tiktoken is not None:
+                sys.modules["tiktoken"] = original_tiktoken
+            elif "tiktoken" in sys.modules:
+                del sys.modules["tiktoken"]
+
+    def test_count_tokens_fallback_to_word_estimation_on_timeout(self):
+        """Test that count_tokens falls back to word estimation when tiktoken times out."""
+        # Arrange
+        counter = TokenCounter()
+        text = "This is a test text with multiple words"
+
+        # Simulate timeout by setting encoding_impl to None and disabling tiktoken
+        counter._tiktoken_available = False  # Disable tiktoken to force fallback
+        counter.encoding_impl = None
+
+        # Act
+        count = counter.count_tokens(text)
+
+        # Assert
+        assert count > 0
+        # Word-based estimation: ~1 token per 4 characters
+        expected_min = len(text) // 4
+        assert count >= expected_min
+        # Verify fallback was used (tiktoken is disabled)
+        assert counter._tiktoken_available is False
+
+    def test_is_network_error_detection(self):
+        """Test network error detection logic."""
+        # Arrange
+        counter = TokenCounter()
+
+        # Act & Assert - Network errors
+        assert counter._is_network_error(TimeoutError("Connection timeout"))
+        assert counter._is_network_error(ConnectionError("Connection refused"))
+        assert counter._is_network_error(Exception("DNS resolution failed"))
+        assert counter._is_network_error(Exception("Network unreachable"))
+        assert counter._is_network_error(Exception("SSL certificate error"))
+
+        # Act & Assert - Non-network errors
+        assert not counter._is_network_error(ValueError("Invalid model name"))
+        assert not counter._is_network_error(KeyError("Missing key"))
+        assert not counter._is_network_error(Exception("Generic error"))
+
+    def test_load_tiktoken_handles_network_unavailable_gracefully(self):
+        """Test that network unavailability is handled gracefully."""
+        # Arrange
+        counter = TokenCounter()
+
+        import sys
+
+        mock_tiktoken = MagicMock()
+        original_tiktoken = sys.modules.get("tiktoken")
+        sys.modules["tiktoken"] = mock_tiktoken
+
+        try:
+            with patch("concurrent.futures.ThreadPoolExecutor") as mock_executor:
+                # Simulate network error (connection refused)
+                mock_future = MagicMock()
+                mock_future.result.side_effect = ConnectionError("Connection refused")
+                mock_executor.return_value.__enter__.return_value.submit.return_value = (
+                    mock_future
+                )
+
+                # Act
+                result = counter._load_tiktoken_with_timeout(
+                    timeout_seconds=30.0, max_retries=1
+                )
+
+                # Assert
+                assert result is None
+                assert counter._tiktoken_available is False
+        finally:
+            if original_tiktoken is not None:
+                sys.modules["tiktoken"] = original_tiktoken
+            elif "tiktoken" in sys.modules:
+                del sys.modules["tiktoken"]
+
+    def test_load_tiktoken_handles_non_network_errors_differently(self):
+        """Test that non-network errors are handled without retries."""
+        # Arrange
+        counter = TokenCounter()
+
+        import sys
+
+        mock_tiktoken = MagicMock()
+        original_tiktoken = sys.modules.get("tiktoken")
+        sys.modules["tiktoken"] = mock_tiktoken
+
+        try:
+            with patch("concurrent.futures.ThreadPoolExecutor") as mock_executor:
+                # Simulate non-network error (invalid model)
+                mock_future = MagicMock()
+                mock_future.result.side_effect = ValueError("Invalid encoding name")
+                mock_executor.return_value.__enter__.return_value.submit.return_value = (
+                    mock_future
+                )
+
+                # Act
+                result = counter._load_tiktoken_with_timeout(
+                    timeout_seconds=30.0, max_retries=2
+                )
+
+                # Assert
+                assert result is None
+                assert counter._tiktoken_available is False
+                # Should not retry non-network errors
+                assert mock_future.result.call_count == 1
+        finally:
+            if original_tiktoken is not None:
+                sys.modules["tiktoken"] = original_tiktoken
+            elif "tiktoken" in sys.modules:
+                del sys.modules["tiktoken"]

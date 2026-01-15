@@ -5,6 +5,8 @@ import logging
 from pathlib import Path
 from typing import TypeAlias, cast
 
+from cortex.core.tiktoken_cache import setup_tiktoken_cache
+
 Encoding: TypeAlias = object  # Placeholder for tiktoken.Encoding when unavailable
 
 logger = logging.getLogger(__name__)
@@ -22,7 +24,7 @@ class TokenCounter:
     _cache: dict[str, int]
     _tiktoken_available: bool
 
-    def __init__(self, model: str = "cl100k_base"):
+    def __init__(self, model: str = "cl100k_base", use_bundled_cache: bool = True):
         """
         Initialize with encoding model.
 
@@ -31,11 +33,21 @@ class TokenCounter:
                 - "cl100k_base": GPT-4, GPT-3.5-turbo, text-embedding-ada-002
                 - "p50k_base": Codex models
                 - "o200k_base": GPT-4o models
+            use_bundled_cache: Whether to use bundled tiktoken cache if available
+                (default: True). This allows offline operation when network is unavailable.
         """
         self.model = model
         self.encoding_impl = None  # Lazy initialization
         self._cache = {}
         self._tiktoken_available = self._check_tiktoken_available()
+
+        # Configure bundled cache if available and requested
+        if self._tiktoken_available and use_bundled_cache:
+            cache_configured = setup_tiktoken_cache(use_bundled=True)
+            if cache_configured:
+                logger.debug(
+                    "Using bundled tiktoken cache for offline operation support"
+                )
 
     def _check_tiktoken_available(self) -> bool:
         """Check if tiktoken is available."""
@@ -53,41 +65,248 @@ class TokenCounter:
             self.encoding_impl = self._load_tiktoken_with_timeout()
         return self.encoding_impl
 
-    def _load_tiktoken_with_timeout(
-        self, timeout_seconds: float = 5.0
+    def _is_network_error(self, error: Exception) -> bool:
+        """Check if error is network-related (timeout, connection, DNS, etc.)."""
+        error_str = str(error).lower()
+        error_type = type(error).__name__.lower()
+
+        # Network-related error patterns
+        network_patterns = [
+            "timeout",
+            "connection",
+            "network",
+            "dns",
+            "unreachable",
+            "refused",
+            "reset",
+            "ssl",
+            "certificate",
+            "http",
+            "urllib",
+            "requests",
+        ]
+
+        return any(
+            pattern in error_str or pattern in error_type
+            for pattern in network_patterns
+        )
+
+    def _try_load_encoding_with_timeout(
+        self, tiktoken: object, timeout_seconds: float
     ) -> object | None:
-        """Load tiktoken encoding with a timeout to prevent network hangs.
+        """Attempt to load encoding with timeout.
 
         Args:
-            timeout_seconds: Maximum time to wait for tiktoken to load
+            tiktoken: Tiktoken module
+            timeout_seconds: Timeout in seconds
+
+        Returns:
+            Encoding object or None if timeout
+        """
+        import concurrent.futures
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(tiktoken.get_encoding, self.model)  # type: ignore
+            try:
+                return future.result(timeout=timeout_seconds)
+            except concurrent.futures.TimeoutError:
+                return None
+
+    def _handle_timeout_retry(
+        self,
+        attempt: int,
+        max_retries: int,
+        load_time: float,
+        timeout_seconds: float,
+    ) -> tuple[bool, float]:
+        """Handle timeout retry logic.
+
+        Args:
+            attempt: Current attempt number
+            max_retries: Maximum retries
+            load_time: Time taken for this attempt
+            timeout_seconds: Timeout in seconds
+
+        Returns:
+            Tuple of (should_retry, retry_delay)
+        """
+        import time
+
+        if attempt < max_retries:
+            retry_delay = 2.0 * (2**attempt)  # Exponential backoff: 2s, 4s
+            logger.info(
+                f"Tiktoken encoding '{self.model}' load timed out after "
+                f"{load_time:.2f}s (attempt {attempt + 1}/{max_retries + 1}). "
+                f"Retrying in {retry_delay:.1f}s..."
+            )
+            time.sleep(retry_delay)
+            return True, retry_delay
+        else:
+            logger.warning(
+                f"Tiktoken encoding '{self.model}' load timed out after "
+                f"{max_retries + 1} attempts (final timeout: {load_time:.2f}s). "
+                "Network may be unavailable. Falling back to word-based estimation."
+            )
+            self._tiktoken_available = False
+            return False, 0.0
+
+    def _handle_network_error_retry(
+        self,
+        e: Exception,
+        attempt: int,
+        max_retries: int,
+        load_time: float,
+    ) -> tuple[bool, float]:
+        """Handle network error retry logic.
+
+        Args:
+            e: Exception that occurred
+            attempt: Current attempt number
+            max_retries: Maximum retries
+            load_time: Time taken for this attempt
+
+        Returns:
+            Tuple of (should_retry, retry_delay)
+        """
+        import time
+
+        if attempt < max_retries:
+            retry_delay = 2.0 * (2**attempt)
+            logger.info(
+                f"Tiktoken encoding '{self.model}' network error after "
+                f"{load_time:.2f}s (attempt {attempt + 1}/{max_retries + 1}): {e}. "
+                f"Retrying in {retry_delay:.1f}s..."
+            )
+            time.sleep(retry_delay)
+            return True, retry_delay
+        else:
+            logger.warning(
+                f"Tiktoken encoding '{self.model}' network unavailable after "
+                f"{max_retries + 1} attempts (final error after {load_time:.2f}s): {e}. "
+                "Cache may be used if available. Falling back to word-based estimation."
+            )
+            self._tiktoken_available = False
+            return False, 0.0
+
+    def _log_encoding_success(self, attempt: int, load_time: float) -> None:
+        """Log successful encoding load.
+
+        Args:
+            attempt: Attempt number (0 for first attempt)
+            load_time: Time taken to load
+        """
+        if attempt > 0:
+            logger.info(
+                f"Tiktoken encoding '{self.model}' loaded successfully "
+                f"after {attempt} retries in {load_time:.2f}s"
+            )
+        else:
+            logger.debug(f"Tiktoken encoding '{self.model}' loaded in {load_time:.2f}s")
+
+    def _handle_non_network_error(self, e: Exception, load_time: float) -> None:
+        """Handle non-network errors during encoding load.
+
+        Args:
+            e: Exception that occurred
+            load_time: Time taken for this attempt
+        """
+        logger.warning(
+            f"Failed to load tiktoken encoding '{self.model}' after "
+            f"{load_time:.2f}s: {e}. Falling back to word-based estimation."
+        )
+        self._tiktoken_available = False
+
+    def _handle_encoding_attempt(
+        self,
+        tiktoken: object,
+        attempt: int,
+        max_retries: int,
+        timeout_seconds: float,
+    ) -> tuple[object | None, bool]:
+        """Handle a single encoding load attempt.
+
+        Args:
+            tiktoken: Tiktoken module
+            attempt: Current attempt number
+            max_retries: Maximum retries
+            timeout_seconds: Timeout in seconds
+
+        Returns:
+            Tuple of (encoding or None, should_continue)
+        """
+        import time
+
+        start_time = time.time()
+        try:
+            encoding = self._try_load_encoding_with_timeout(tiktoken, timeout_seconds)
+            if encoding is not None:
+                load_time = time.time() - start_time
+                self._log_encoding_success(attempt, load_time)
+                return encoding, False
+
+            load_time = time.time() - start_time
+            should_retry, _ = self._handle_timeout_retry(
+                attempt, max_retries, load_time, timeout_seconds
+            )
+            return None, should_retry
+        except Exception as e:
+            load_time = time.time() - start_time
+            is_network_error = self._is_network_error(e)
+
+            if is_network_error:
+                should_retry, _ = self._handle_network_error_retry(
+                    e, attempt, max_retries, load_time
+                )
+                return None, should_retry
+
+            self._handle_non_network_error(e, load_time)
+            return None, False
+
+    def _load_tiktoken_with_timeout(
+        self, timeout_seconds: float = 30.0, max_retries: int = 2
+    ) -> object | None:
+        """Load tiktoken encoding with cache-first strategy and graceful fallback.
+
+        Tiktoken automatically uses cached encoding files if available.
+        This method handles network unavailability gracefully:
+        - Uses cache if available (tiktoken does this automatically)
+        - Retries network requests with exponential backoff
+        - Falls back to word-based estimation if network unavailable and no cache
+
+        Args:
+            timeout_seconds: Maximum time to wait per attempt (default: 30s)
+            max_retries: Maximum number of retry attempts (default: 2)
 
         Returns:
             Tiktoken encoding object or None if loading fails/times out
         """
-        import concurrent.futures
-
         try:
             import tiktoken
-
-            # Use a thread pool to add timeout to the blocking call
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(tiktoken.get_encoding, self.model)
-                try:
-                    return future.result(timeout=timeout_seconds)
-                except concurrent.futures.TimeoutError:
-                    logger.warning(
-                        f"Tiktoken encoding '{self.model}' load timed out after "
-                        + f"{timeout_seconds}s. Falling back to word-based estimation."
-                    )
-                    self._tiktoken_available = False
-                    return None
-        except Exception as e:
+        except ImportError:
             logger.warning(
-                f"Failed to load tiktoken encoding '{self.model}': {e}. "
-                + "Falling back to word-based estimation."
+                "Tiktoken library not available. Falling back to word-based estimation."
             )
             self._tiktoken_available = False
             return None
+
+        last_error: Exception | None = None
+        for attempt in range(max_retries + 1):
+            encoding, should_continue = self._handle_encoding_attempt(
+                tiktoken, attempt, max_retries, timeout_seconds
+            )
+            if encoding is not None:
+                return encoding
+            if not should_continue:
+                self._tiktoken_available = False
+                return None
+
+        if last_error:
+            logger.warning(
+                f"Tiktoken encoding '{self.model}' failed to load: {last_error}. "
+                "Falling back to word-based estimation."
+            )
+        self._tiktoken_available = False
+        return None
 
     def _estimate_tokens_by_words(self, text: str) -> int:
         """
