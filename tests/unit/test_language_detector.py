@@ -14,7 +14,7 @@ class TestLanguageDetector:
         """Test Python detection from pyproject.toml."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
 
             detector = LanguageDetector(str(project_root))
             result = detector.detect_language()
@@ -27,7 +27,7 @@ class TestLanguageDetector:
         """Test Python detection from requirements.txt."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / "requirements.txt").write_text("requests==2.0.0")
+            _ = (project_root / "requirements.txt").write_text("requests==2.0.0")
 
             detector = LanguageDetector(str(project_root))
             result = detector.detect_language()
@@ -39,8 +39,8 @@ class TestLanguageDetector:
         """Test Python detection with pytest.ini."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            (project_root / "pytest.ini").write_text("[pytest]")
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            _ = (project_root / "pytest.ini").write_text("[pytest]")
 
             detector = LanguageDetector(str(project_root))
             result = detector.detect_language()
@@ -53,7 +53,7 @@ class TestLanguageDetector:
         """Test TypeScript detection from tsconfig.json."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / "tsconfig.json").write_text("{}")
+            _ = (project_root / "tsconfig.json").write_text("{}")
 
             detector = LanguageDetector(str(project_root))
             result = detector.detect_language()
@@ -69,7 +69,7 @@ class TestLanguageDetector:
             package_json = {
                 "dependencies": {"typescript": "^5.0.0"},
             }
-            (project_root / "package.json").write_text(json.dumps(package_json))
+            _ = (project_root / "package.json").write_text(json.dumps(package_json))
 
             detector = LanguageDetector(str(project_root))
             result = detector.detect_language()
@@ -84,7 +84,7 @@ class TestLanguageDetector:
             package_json = {
                 "dependencies": {"express": "^4.0.0"},
             }
-            (project_root / "package.json").write_text(json.dumps(package_json))
+            _ = (project_root / "package.json").write_text(json.dumps(package_json))
 
             detector = LanguageDetector(str(project_root))
             result = detector.detect_language()
@@ -96,7 +96,7 @@ class TestLanguageDetector:
         """Test Rust detection from Cargo.toml."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / "Cargo.toml").write_text("[package]\nname = 'test'")
+            _ = (project_root / "Cargo.toml").write_text("[package]\nname = 'test'")
 
             detector = LanguageDetector(str(project_root))
             result = detector.detect_language()
@@ -110,7 +110,7 @@ class TestLanguageDetector:
         """Test Go detection from go.mod."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / "go.mod").write_text("module test")
+            _ = (project_root / "go.mod").write_text("module test")
 
             detector = LanguageDetector(str(project_root))
             result = detector.detect_language()
@@ -134,7 +134,7 @@ class TestLanguageDetector:
             package_json = {
                 "devDependencies": {"jest": "^29.0.0"},
             }
-            (project_root / "package.json").write_text(json.dumps(package_json))
+            _ = (project_root / "package.json").write_text(json.dumps(package_json))
 
             detector = LanguageDetector(str(project_root))
             result = detector.detect_language()
@@ -150,7 +150,7 @@ class TestLanguageDetector:
             package_json = {
                 "devDependencies": {"vitest": "^1.0.0"},
             }
-            (project_root / "package.json").write_text(json.dumps(package_json))
+            _ = (project_root / "package.json").write_text(json.dumps(package_json))
 
             detector = LanguageDetector(str(project_root))
             result = detector.detect_language()

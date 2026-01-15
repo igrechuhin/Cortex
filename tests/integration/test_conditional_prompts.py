@@ -35,7 +35,7 @@ class TestConditionalPromptRegistration:
             "roadmap.md",
         ]
         for core_file in core_files:
-            (memory_bank_dir / core_file).write_text("# Test")
+            _ = (memory_bank_dir / core_file).write_text("# Test")
 
         # Create .cursor/ with symlinks
         cursor_dir = tmp_path / ".cursor"
@@ -100,7 +100,7 @@ class TestConditionalPromptRegistration:
         # Arrange - Create legacy format
         legacy_path = tmp_path / ".cursor" / "memory-bank"
         legacy_path.mkdir(parents=True)
-        (legacy_path / "old.md").write_text("# Test")
+        _ = (legacy_path / "old.md").write_text("# Test")
 
         # Act - Import prompts module with mocked project root
         with patch(
@@ -144,7 +144,7 @@ class TestConditionalPromptRegistration:
             "roadmap.md",
         ]
         for core_file in core_files:
-            (memory_bank_dir / core_file).write_text("# Test")
+            _ = (memory_bank_dir / core_file).write_text("# Test")
 
         # Missing rules, plans, config directories
         # Missing .cursor/ symlinks
@@ -204,7 +204,7 @@ class TestConditionalPromptRegistration:
             "progress.md",
             "roadmap.md",
         ]:
-            (memory_bank_dir / core_file).write_text("# Test")
+            _ = (memory_bank_dir / core_file).write_text("# Test")
 
         cursor_dir = tmp_path / ".cursor"
         cursor_dir.mkdir()

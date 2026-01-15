@@ -102,7 +102,8 @@ class TestRunCommand:
 
             # Assert
             assert result["success"] is False
-            assert "timed out" in result.get("error", "")
+            error_msg = str(result.get("error", ""))
+            assert "timed out" in error_msg
             assert result["returncode"] == -1
 
     @pytest.mark.asyncio
@@ -117,7 +118,8 @@ class TestRunCommand:
 
             # Assert
             assert result["success"] is False
-            assert "Test error" in result.get("error", "")
+            error_msg = str(result.get("error", ""))
+            assert "Test error" in error_msg
             assert result["returncode"] == -1
 
 
@@ -304,7 +306,7 @@ class TestRunMarkdownlintFix:
         # Arrange
         project_root = tmp_path
         file_path = tmp_path / "test.md"
-        file_path.write_text("# Test\n\nContent")
+        _ = file_path.write_text("# Test\n\nContent")
 
         with patch(
             "cortex.tools.markdown_operations._run_command",
@@ -332,7 +334,7 @@ class TestRunMarkdownlintFix:
         # Arrange
         project_root = tmp_path
         file_path = tmp_path / "test.md"
-        file_path.write_text("# Test\n\nContent")
+        _ = file_path.write_text("# Test\n\nContent")
 
         with patch(
             "cortex.tools.markdown_operations._run_command",
@@ -363,7 +365,7 @@ class TestRunMarkdownlintFix:
         # Arrange
         project_root = tmp_path
         file_path = tmp_path / "test.md"
-        file_path.write_text("# Test\n\nContent")
+        _ = file_path.write_text("# Test\n\nContent")
 
         with patch(
             "cortex.tools.markdown_operations._run_command",
@@ -391,7 +393,7 @@ class TestRunMarkdownlintFix:
         # Arrange
         project_root = tmp_path
         file_path = tmp_path / "test.md"
-        file_path.write_text("# Test\n\nContent")
+        _ = file_path.write_text("# Test\n\nContent")
 
         with patch(
             "cortex.tools.markdown_operations._run_command",
@@ -419,7 +421,7 @@ class TestRunMarkdownlintFix:
         # Arrange
         project_root = tmp_path
         file_path = tmp_path / "test.md"
-        file_path.write_text("# Test\n\nContent")
+        _ = file_path.write_text("# Test\n\nContent")
 
         stderr_output = (
             "test.md: 1:1 MD022/blanks-around-headings\n"
@@ -456,7 +458,7 @@ class TestFixMarkdownLintTool:
         from cortex.tools.markdown_operations import fix_markdown_lint
 
         test_file = tmp_path / "test.md"
-        test_file.write_text("# Test\n\nContent")
+        _ = test_file.write_text("# Test\n\nContent")
 
         with (
             patch(

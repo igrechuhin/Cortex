@@ -29,7 +29,7 @@ class TestGetProjectConfigStatus:
             "roadmap.md",
         ]
         for fname in core_files:
-            (memory_bank_dir / fname).write_text("# Test")
+            _ = (memory_bank_dir / fname).write_text("# Test")
 
         with patch(
             "cortex.tools.config_status.get_project_root", return_value=tmp_path
@@ -47,7 +47,7 @@ class TestGetProjectConfigStatus:
         memory_bank_dir = cortex_dir / "memory-bank"
         memory_bank_dir.mkdir(parents=True)
         # Only create some files, not all
-        (memory_bank_dir / "projectBrief.md").write_text("# Test")
+        _ = (memory_bank_dir / "projectBrief.md").write_text("# Test")
 
         with patch(
             "cortex.tools.config_status.get_project_root", return_value=tmp_path
@@ -222,7 +222,7 @@ class TestGetProjectConfigStatus:
             "roadmap.md",
         ]
         for fname in core_files:
-            (memory_bank_dir / fname).write_text("# Test")
+            _ = (memory_bank_dir / fname).write_text("# Test")
 
         # Also create legacy format (should not trigger migration)
         legacy_dir = tmp_path / "memory-bank"
@@ -280,7 +280,7 @@ class TestGetProjectConfigStatus:
             "roadmap.md",
         ]
         for fname in core_files:
-            (memory_bank_dir / fname).write_text("# Test")
+            _ = (memory_bank_dir / fname).write_text("# Test")
 
         # Create valid symlinks
         for symlink_name in ["memory-bank", "synapse", "plans"]:

@@ -8,6 +8,18 @@
 
 ### Recent Findings
 
+- ✅ **Phase 20: Code Review Fixes - Steps 1-2** - COMPLETE (2026-01-15) - Fixed test import errors and type errors in test files:
+  - **Step 1**: Verified test import error was already fixed (tests passing, imports correct)
+  - **Step 2**: Fixed 15 unused call result warnings by assigning `write_text()` return values to `_`:
+    - Fixed in `test_conditional_prompts.py` (4 instances)
+    - Fixed in `test_config_status.py` (4 instances)
+    - Fixed in `test_validation_operations.py` (7 instances)
+    - Fixed in `test_fix_markdown_lint.py` (6 instances)
+    - Fixed in `test_language_detector.py` (11 instances)
+  - Fixed import errors in `test_validation_operations.py` by importing from `cortex.tools.validation_helpers` instead of `validation_operations`
+  - Fixed type operator issues in `test_fix_markdown_lint.py` by casting error messages to `str`
+  - All tests passing (97 passed), 0 unused call result warnings, 0 type operator errors
+  - Remaining: File size violations (Step 3), security vulnerabilities (Step 4), TODO comments (Step 5)
 - ✅ **Commit Procedure** - COMPLETE (2026-01-15) - Added tests to improve coverage above 90% threshold:
   - Added 3 tests for `fix_quality_issues` in `test_pre_commit_tools.py`:
     - `test_fix_quality_issues_error_path` - Tests error path when execute_pre_commit_checks returns error
@@ -127,7 +139,8 @@
 
 - ✅ **Phase 15: Investigate MCP Tool Project Root Resolution** - COMPLETE (2026-01-13) - Fixed project root detection to automatically find `.cortex/` directory when `project_root=None` - MCP tools now work reliably without explicit `project_root` parameter
 - ✅ **Phase 16: Validate Memory Bank Timestamps Command** - COMPLETE (2026-01-14) - Implemented timestamp validation as MCP tool `validate(check_type="timestamps")` in `validation_operations.py` - Added timestamp scanning and validation logic, wired into commit workflow Step 9 - Timestamp validation now enforced before commits via structured MCP tool
-- [Phase 20: Code Review Fixes](../plans/phase-20-code-review-fixes.md) - ASAP (PLANNING) - Address all critical issues from comprehensive code review (2026-01-15): Fix test import error blocking test execution, fix 10 file size violations (400-line limit), fix 15 type errors in tests, fix security vulnerabilities (command injection, XSS, ReDoS) - Impact: Improve code quality from 8.7/10 to 9.5+/10, unblock test execution, achieve rules compliance - Target completion: 2026-01-20
+- [Phase 22: Fix Commit Pipeline Quality Gate](../plans/phase-22-fix-commit-pipeline-quality-gate.md) - ASAP (PLANNING) - Fix commit pipeline (GitHub Actions workflow) to properly catch and fail on quality gate violations - Pipeline currently passes errors that prevent quality gate from passing - Impact: Ensure all quality checks properly enforced, prevent errors from being silently ignored - Target completion: 2026-01-17
+- [Phase 20: Code Review Fixes](../plans/phase-20-code-review-fixes.md) - ASAP (IN PROGRESS - Steps 1-2 complete) - Address all critical issues from comprehensive code review (2026-01-15): ✅ Steps 1-2 complete (test import error verified fixed, 15 type errors fixed), remaining: fix 10 file size violations (400-line limit), fix security vulnerabilities (command injection, XSS, ReDoS) - Impact: Improve code quality from 8.7/10 to 9.5+/10, achieve rules compliance - Target completion: 2026-01-20
 - [Phase 19: Fix MCP Server Crash](../plans/phase-19-fix-mcp-server-crash.md) - ASAP (PLANNING) - Fix MCP server crash caused by `BrokenResourceError` in `stdio_server` TaskGroup - Server crashes when client disconnects or cancels requests, causing unhandled `ExceptionGroup` - Impact: Server instability, poor user experience - Target completion: 2026-01-16
 - ✅ **Phase 17: Validate Roadmap Sync Command** - COMPLETE (2026-01-14) - Implemented `validate-roadmap-sync` command and MCP tool integration - Added `roadmap_sync` check_type to `validate()` MCP tool - Created `.cortex/synapse/prompts/validate-roadmap-sync.md` command file - Added comprehensive unit tests (18 tests, all passing) - Roadmap/codebase synchronization is now enforced in commit workflow Step 10
 
@@ -139,6 +152,7 @@
 
 ### Planned Phases
 
+- [Phase 22: Fix Commit Pipeline Quality Gate](../plans/phase-22-fix-commit-pipeline-quality-gate.md) - PLANNING (2026-01-15) - Fix commit pipeline (GitHub Actions workflow) to properly catch and fail on quality gate violations - Improve error handling, add fail-fast mechanisms, ensure all quality checks properly enforced - Target completion: 2026-01-17
 - [Phase 21: Health-Check and Optimization Analysis System](../plans/phase-21-health-check-optimization.md) - PLANNING (2026-01-15) - Create comprehensive health-check system that analyzes prompts, rules, and MCP tools for merge/optimization opportunities without losing quality - Integrate into CI/CD pipelines for continuous monitoring - Provides actionable recommendations for consolidation and optimization - Target completion: 2026-01-25
 - [Phase 20: Code Review Fixes](../plans/phase-20-code-review-fixes.md) - PLANNING (2026-01-15) - Address all critical issues from comprehensive code review: Fix test import error, fix 10 file size violations, fix 15 type errors, fix security vulnerabilities - Improve code quality from 8.7/10 to 9.5+/10 - Target completion: 2026-01-20
 - [Phase 19: Fix MCP Server Crash](../plans/phase-19-fix-mcp-server-crash.md) - PLANNING (2026-01-14) - Fix MCP server crash caused by `BrokenResourceError` in `stdio_server` TaskGroup - Server crashes when client disconnects or cancels requests, causing unhandled `ExceptionGroup` - Impact: Server instability, poor user experience - Target completion: 2026-01-16

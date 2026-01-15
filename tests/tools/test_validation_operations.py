@@ -7,10 +7,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cortex.tools.validation_operations import (
+from cortex.tools.validation_helpers import (
     create_invalid_check_type_error,
     create_validation_error_response,
     generate_duplication_fixes,
+)
+from cortex.tools.validation_operations import (
     handle_duplications_validation,
     handle_infrastructure_validation,
     handle_quality_validation,
@@ -1283,7 +1285,7 @@ class TestValidateTimestamps:
             "## Current Focus (2026-01-14)\n\n"
             "Some content here with timestamp 2026-01-15.\n"
         )
-        test_file.write_text(content)
+        _ = test_file.write_text(content)
 
         mock_fs_manager.construct_safe_path.return_value = test_file
         mock_fs_manager.read_file = AsyncMock(return_value=(content, None))
@@ -1315,7 +1317,7 @@ class TestValidateTimestamps:
             "- ✅ Feature X - COMPLETE (2026-01-13 12:00)\n"
             "- ✅ Feature Y - COMPLETE (2026-01-13T12:00:00)\n"
         )
-        test_file.write_text(content)
+        _ = test_file.write_text(content)
 
         mock_fs_manager.construct_safe_path.return_value = test_file
         mock_fs_manager.read_file = AsyncMock(return_value=(content, None))
@@ -1347,7 +1349,7 @@ class TestValidateTimestamps:
             "- ✅ Feature A - COMPLETE (2026-01-13T12:00Z)\n"
             "- ✅ Feature B - COMPLETE (2026-01-13T12:00+05:00)\n"
         )
-        test_file.write_text(content)
+        _ = test_file.write_text(content)
 
         mock_fs_manager.construct_safe_path.return_value = test_file
         mock_fs_manager.read_file = AsyncMock(return_value=(content, None))
@@ -1414,10 +1416,10 @@ class TestValidateTimestamps:
         # Arrange
         memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
         memory_bank_dir.mkdir(parents=True)
-        (memory_bank_dir / "activeContext.md").write_text(
+        _ = (memory_bank_dir / "activeContext.md").write_text(
             "# Active Context\n\n## Current Focus (2026-01-14T10:00)\n"
         )
-        (memory_bank_dir / "progress.md").write_text(
+        _ = (memory_bank_dir / "progress.md").write_text(
             "# Progress\n\n## 2026-01-14: Updates\n"
         )
 
@@ -1457,10 +1459,10 @@ class TestValidateTimestamps:
         # Arrange
         memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
         memory_bank_dir.mkdir(parents=True)
-        (memory_bank_dir / "progress.md").write_text(
+        _ = (memory_bank_dir / "progress.md").write_text(
             "# Progress\n\n- ✅ Feature (2026-01-13 12:00)\n"
         )
-        (memory_bank_dir / "roadmap.md").write_text(
+        _ = (memory_bank_dir / "roadmap.md").write_text(
             "# Roadmap\n\n- ✅ Feature (2026-01-13T12:00:00)\n"
         )
 
