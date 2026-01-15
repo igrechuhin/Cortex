@@ -26,9 +26,23 @@ Directory Structure:
     ├── memory-bank -> ../.cortex/memory-bank
     ├── synapse -> ../.cortex/synapse
     └── plans -> ../.cortex/plans
+
+Conditional Registration:
+    Setup and migration prompts are only registered when needed:
+    - initialize_memory_bank: Only if memory bank not initialized
+    - setup_project_structure: Only if structure not configured
+    - setup_cursor_integration: Only if Cursor integration not configured
+    - check_migration_status: Only if migration needed
+    - migrate_memory_bank: Only if migration needed
+    - migrate_project_structure: Only if migration needed
+    - setup_synapse: Always available (optional feature)
 """
 
 from cortex.server import mcp
+from cortex.tools.config_status import get_project_config_status
+
+# Check project configuration status at import time
+_config_status = get_project_config_status()
 
 _INIT_MEMORY_BANK_PROMPT = """Please initialize a Memory Bank in my project.
 
@@ -133,57 +147,66 @@ Expected output format:
 }"""
 
 
-@mcp.prompt()
-def initialize_memory_bank() -> str:
-    """Initialize a new Memory Bank with all core files.
+# Conditionally register initialize_memory_bank only if memory bank not initialized
+if not _config_status["memory_bank_initialized"]:
 
-    Creates the .cortex/memory-bank/ directory structure with 7 core files:
-    - projectBrief.md - Foundation document
-    - productContext.md - Product context and requirements
-    - activeContext.md - Current active development context
-    - systemPatterns.md - System architecture patterns
-    - techContext.md - Technical context and decisions
-    - progress.md - Development progress tracking
-    - roadmap.md - Development roadmap and milestones
+    @mcp.prompt()
+    def initialize_memory_bank() -> str:
+        """Initialize a new Memory Bank with all core files.
 
-    Returns:
-        Prompt message guiding the assistant to initialize Memory Bank
-    """
-    return _INIT_MEMORY_BANK_PROMPT
+        Creates the .cortex/memory-bank/ directory structure with 7 core files:
+        - projectBrief.md - Foundation document
+        - productContext.md - Product context and requirements
+        - activeContext.md - Current active development context
+        - systemPatterns.md - System architecture patterns
+        - techContext.md - Technical context and decisions
+        - progress.md - Development progress tracking
+        - roadmap.md - Development roadmap and milestones
 
-
-@mcp.prompt()
-def setup_project_structure() -> str:
-    """Setup the standardized .cortex/ project structure.
-
-    Creates:
-    - .cortex/memory-bank/ - Core memory bank files
-    - .cortex/synapse/ - Synapse repository (shared rules, prompts, config)
-    - .cortex/plans/ - Development plans
-    - .cortex/config/ - Configuration files
-    - .cursor/ symlinks for IDE compatibility
-
-    Returns:
-        Prompt message guiding the assistant to setup project structure
-    """
-    return _SETUP_PROJECT_STRUCTURE_PROMPT
+        Returns:
+            Prompt message guiding the assistant to initialize Memory Bank
+        """
+        return _INIT_MEMORY_BANK_PROMPT
 
 
-@mcp.prompt()
-def setup_cursor_integration() -> str:
-    """Setup Cursor IDE integration with symlinks and MCP server configuration.
+# Conditionally register setup_project_structure only if structure not configured
+if not _config_status["structure_configured"]:
 
-    Creates symlinks in .cursor/ pointing to .cortex/ subdirectories:
-    - .cursor/memory-bank -> ../.cortex/memory-bank
-    - .cursor/synapse -> ../.cortex/synapse
-    - .cursor/plans -> ../.cortex/plans
+    @mcp.prompt()
+    def setup_project_structure() -> str:
+        """Setup the standardized .cortex/ project structure.
 
-    Also creates MCP server configuration at .cursor/mcp.json
+        Creates:
+        - .cortex/memory-bank/ - Core memory bank files
+        - .cortex/synapse/ - Synapse repository (shared rules, prompts, config)
+        - .cortex/plans/ - Development plans
+        - .cortex/config/ - Configuration files
+        - .cursor/ symlinks for IDE compatibility
 
-    Returns:
-        Prompt message guiding the assistant to setup Cursor integration
-    """
-    return _SETUP_CURSOR_INTEGRATION_PROMPT
+        Returns:
+            Prompt message guiding the assistant to setup project structure
+        """
+        return _SETUP_PROJECT_STRUCTURE_PROMPT
+
+
+# Conditionally register setup_cursor_integration only if Cursor integration not configured
+if not _config_status["cursor_integration_configured"]:
+
+    @mcp.prompt()
+    def setup_cursor_integration() -> str:
+        """Setup Cursor IDE integration with symlinks and MCP server configuration.
+
+        Creates symlinks in .cursor/ pointing to .cortex/ subdirectories:
+        - .cursor/memory-bank -> ../.cortex/memory-bank
+        - .cursor/synapse -> ../.cortex/synapse
+        - .cursor/plans -> ../.cortex/plans
+
+        Also creates MCP server configuration at .cursor/mcp.json
+
+        Returns:
+            Prompt message guiding the assistant to setup Cursor integration
+        """
+        return _SETUP_CURSOR_INTEGRATION_PROMPT
 
 
 _SETUP_SYNAPSE_PROMPT_TEMPLATE = """Please setup Synapse in my project.
@@ -272,17 +295,20 @@ Expected output format (not initialized):
 {"status": "not_initialized", "message": "No Memory Bank found", "suggestion": "Run initialize_memory_bank to create one"}"""
 
 
-@mcp.prompt()
-def check_migration_status() -> str:
-    """Check if project needs migration to the .cortex/ structure.
+# Conditionally register migration prompts only if migration needed
+if _config_status["migration_needed"]:
 
-    Detects legacy formats and checks if migration to .cortex/ is needed.
-    Legacy formats include .cursor/memory-bank/, memory-bank/, .memory-bank/.
+    @mcp.prompt()
+    def check_migration_status() -> str:
+        """Check if project needs migration to the .cortex/ structure.
 
-    Returns:
-        Prompt message guiding the assistant to check migration status
-    """
-    return _CHECK_MIGRATION_STATUS_PROMPT
+        Detects legacy formats and checks if migration to .cortex/ is needed.
+        Legacy formats include .cursor/memory-bank/, memory-bank/, .memory-bank/.
+
+        Returns:
+            Prompt message guiding the assistant to check migration status
+        """
+        return _CHECK_MIGRATION_STATUS_PROMPT
 
 
 _MIGRATE_MEMORY_BANK_PROMPT = """Please migrate my Memory Bank to the .cortex/ structure.
@@ -320,18 +346,21 @@ Expected output format:
 }"""
 
 
-@mcp.prompt()
-def migrate_memory_bank() -> str:
-    """Migrate Memory Bank to the .cortex/ structure.
+# Conditionally register migrate_memory_bank only if migration needed
+if _config_status["migration_needed"]:
 
-    Moves files from legacy locations to .cortex/memory-bank/ while
-    preserving all content and version history. Creates .cursor/ symlinks
-    for IDE compatibility.
+    @mcp.prompt()
+    def migrate_memory_bank() -> str:
+        """Migrate Memory Bank to the .cortex/ structure.
 
-    Returns:
-        Prompt message guiding the assistant to migrate Memory Bank
-    """
-    return _MIGRATE_MEMORY_BANK_PROMPT
+        Moves files from legacy locations to .cortex/memory-bank/ while
+        preserving all content and version history. Creates .cursor/ symlinks
+        for IDE compatibility.
+
+        Returns:
+            Prompt message guiding the assistant to migrate Memory Bank
+        """
+        return _MIGRATE_MEMORY_BANK_PROMPT
 
 
 _MIGRATE_PROJECT_STRUCTURE_PROMPT = """Please migrate my project to the .cortex/ structure.
@@ -381,18 +410,21 @@ Expected output format:
 }"""
 
 
-@mcp.prompt()
-def migrate_project_structure() -> str:
-    """Migrate project to the .cortex/ structure.
+# Conditionally register migrate_project_structure only if migration needed
+if _config_status["migration_needed"]:
 
-    Moves files from legacy locations to .cortex/:
-    - memory-bank -> .cortex/memory-bank/
-    - synapse -> .cortex/synapse/
-    - plans -> .cortex/plans/
+    @mcp.prompt()
+    def migrate_project_structure() -> str:
+        """Migrate project to the .cortex/ structure.
 
-    Creates .cursor/ symlinks for IDE compatibility.
+        Moves files from legacy locations to .cortex/:
+        - memory-bank -> .cortex/memory-bank/
+        - synapse -> .cortex/synapse/
+        - plans -> .cortex/plans/
 
-    Returns:
-        Prompt message guiding the assistant to migrate project structure
-    """
-    return _MIGRATE_PROJECT_STRUCTURE_PROMPT
+        Creates .cursor/ symlinks for IDE compatibility.
+
+        Returns:
+            Prompt message guiding the assistant to migrate project structure
+        """
+        return _MIGRATE_PROJECT_STRUCTURE_PROMPT

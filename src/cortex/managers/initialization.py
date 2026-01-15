@@ -94,8 +94,8 @@ def get_project_root(project_root: str | None = None) -> Path:
     """Get project root directory.
 
     When project_root is None, automatically detects the project root by walking
-    up from the current working directory to find a directory containing .cortex/.
-    Falls back to current working directory if .cortex/ is not found.
+    up from the current working directory or script location to find a directory
+    containing .cortex/. Prefers the .cortex/ closest to the starting point.
 
     Args:
         project_root: Optional project root path. If provided, returns resolved path.
@@ -108,11 +108,35 @@ def get_project_root(project_root: str | None = None) -> Path:
         return Path(project_root).resolve()
 
     # Try to detect project root by finding .cortex/ directory
+    # Prefer script location over CWD to avoid finding wrong .cortex/ in home directory
     current = Path.cwd().resolve()
+
+    # First, try from script location (more reliable for MCP server)
+    # This helps when MCP server runs from a different directory
+    try:
+        import sys
+
+        if sys.argv and sys.argv[0]:
+            script_path = Path(sys.argv[0]).resolve()
+            # Walk up from script location
+            for path in [script_path.parent, *script_path.parent.parents]:
+                cortex_dir = path / ".cortex"
+                if cortex_dir.is_dir():
+                    # Verify this .cortex/ has a memory-bank subdirectory (more specific check)
+                    memory_bank_dir = cortex_dir / "memory-bank"
+                    if memory_bank_dir.is_dir():
+                        return path
+    except Exception:
+        pass  # Fall through to CWD check
+
+    # Also try from current working directory
     for path in [current, *current.parents]:
         cortex_dir = path / ".cortex"
         if cortex_dir.is_dir():
-            return path
+            # Verify this .cortex/ has a memory-bank subdirectory (more specific check)
+            memory_bank_dir = cortex_dir / "memory-bank"
+            if memory_bank_dir.is_dir():
+                return path
 
     # Fallback to current working directory if .cortex/ not found
     return current

@@ -26,7 +26,9 @@ def get_encoding_url(encoding_name: str) -> str:
     Returns:
         URL to encoding file
     """
-    return f"https://openaipublic.blob.core.windows.net/encodings/{encoding_name}.tiktoken"
+    return (
+        f"https://openaipublic.blob.core.windows.net/encodings/{encoding_name}.tiktoken"
+    )
 
 
 def get_cache_filename(url: str) -> str:
@@ -80,9 +82,11 @@ def download_encoding(encoding_name: str, cache_dir: Path) -> bool:
         except urllib.error.URLError as ssl_error:
             if "CERTIFICATE" in str(ssl_error).upper():
                 # Fallback: use unverified context (for development only)
-                print(f"  Warning: SSL verification failed, using unverified context")
+                print("  Warning: SSL verification failed, using unverified context")
                 unverified_context = ssl._create_unverified_context()
-                with urllib.request.urlopen(url, context=unverified_context) as response:
+                with urllib.request.urlopen(
+                    url, context=unverified_context
+                ) as response:
                     with open(cache_path, "wb") as f:
                         f.write(response.read())
             else:

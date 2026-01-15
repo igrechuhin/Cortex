@@ -3,6 +3,7 @@
   "pythonVersion": "3.13",
 
   "include": ["src", "tests"],
+  "extraPaths": ["scripts"],
 
   "exclude": [
     "**/__pycache__",

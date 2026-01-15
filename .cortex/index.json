@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-12T10:42:19.665239",
-  "last_updated": "2026-01-13T19:54:34.224728",
+  "last_updated": "2026-01-15T15:36:01.548764",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
@@ -175,6 +175,69 @@
         }
       ],
       "last_read": "2026-01-13T19:54:34.223097"
+    },
+    "activeContext.md": {
+      "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
+      "exists": true,
+      "read_count": 0,
+      "write_count": 1,
+      "current_version": 2,
+      "version_history": [
+        {
+          "version": 2,
+          "timestamp": "2026-01-15T15:36:01.546192",
+          "content_hash": "sha256:753a600d4c2b2c133341f45773c988d5b97794d8ddc5250c84ed0fc21121f570",
+          "size_bytes": 3279,
+          "token_count": 828,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v2.md",
+          "change_description": "Updated activeContext.md with latest commit procedure results - fixed type errors and function length violations"
+        }
+      ],
+      "size_bytes": 3279,
+      "token_count": 828,
+      "token_model": "cl100k_base",
+      "last_modified": "2026-01-15T15:36:01.546539",
+      "content_hash": "sha256:753a600d4c2b2c133341f45773c988d5b97794d8ddc5250c84ed0fc21121f570",
+      "sections": [
+        {
+          "heading": "## Current Focus (2026-01-15)",
+          "level": 2
+        },
+        {
+          "heading": "### Active Work",
+          "level": 2
+        },
+        {
+          "heading": "### Recently Completed",
+          "level": 2
+        },
+        {
+          "heading": "## Project Health",
+          "level": 2
+        },
+        {
+          "heading": "## Code Quality Standards",
+          "level": 2
+        },
+        {
+          "heading": "## Project Structure",
+          "level": 2
+        },
+        {
+          "heading": "## Context for AI Assistants",
+          "level": 2
+        },
+        {
+          "heading": "### Key Files",
+          "level": 2
+        },
+        {
+          "heading": "### Testing Approach",
+          "level": 2
+        }
+      ],
+      "last_read": "2026-01-15T15:36:01.546539"
     }
   },
   "dependency_graph": {
@@ -191,9 +254,9 @@
     "sessions_count": 0
   },
   "totals": {
-    "total_files": 3,
-    "total_size_bytes": 5751,
-    "total_tokens": 1431,
-    "last_full_scan": "2026-01-13T19:54:34.223112"
+    "total_files": 4,
+    "total_size_bytes": 9030,
+    "total_tokens": 2259,
+    "last_full_scan": "2026-01-15T15:36:01.546554"
   }
 }

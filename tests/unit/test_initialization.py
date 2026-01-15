@@ -36,12 +36,16 @@ class TestGetProjectRoot:
         # Arrange
         project_root = tmp_path / "project"
         cortex_dir = project_root / ".cortex"
-        cortex_dir.mkdir(parents=True)
+        memory_bank_dir = cortex_dir / "memory-bank"
+        memory_bank_dir.mkdir(parents=True)
         subdir = project_root / "subdir" / "nested"
         subdir.mkdir(parents=True)
 
         # Act - call from nested subdirectory
-        with patch("cortex.managers.initialization.Path.cwd", return_value=subdir):
+        with (
+            patch("cortex.managers.initialization.Path.cwd", return_value=subdir),
+            patch("sys.argv", [str(subdir / "script.py")]),
+        ):
             result = get_project_root(None)
 
         # Assert
@@ -57,8 +61,11 @@ class TestGetProjectRoot:
         no_cortex_dir.mkdir()
 
         # Act
-        with patch(
-            "cortex.managers.initialization.Path.cwd", return_value=no_cortex_dir
+        with (
+            patch(
+                "cortex.managers.initialization.Path.cwd", return_value=no_cortex_dir
+            ),
+            patch("sys.argv", [str(no_cortex_dir / "script.py")]),
         ):
             result = get_project_root(None)
 
@@ -71,12 +78,16 @@ class TestGetProjectRoot:
         # Arrange
         project_root = tmp_path / "project"
         cortex_dir = project_root / ".cortex"
-        cortex_dir.mkdir(parents=True)
+        memory_bank_dir = cortex_dir / "memory-bank"
+        memory_bank_dir.mkdir(parents=True)
         subdir = project_root / "src" / "deep" / "nested"
         subdir.mkdir(parents=True)
 
         # Act - call from deep nested subdirectory
-        with patch("cortex.managers.initialization.Path.cwd", return_value=subdir):
+        with (
+            patch("cortex.managers.initialization.Path.cwd", return_value=subdir),
+            patch("sys.argv", [str(subdir / "script.py")]),
+        ):
             result = get_project_root(None)
 
         # Assert
@@ -110,7 +121,10 @@ class TestGetProjectRoot:
         root_path = Path("/")
 
         # Act
-        with patch("cortex.managers.initialization.Path.cwd", return_value=root_path):
+        with (
+            patch("cortex.managers.initialization.Path.cwd", return_value=root_path),
+            patch("sys.argv", ["/script.py"]),
+        ):
             result = get_project_root(None)
 
         # Assert

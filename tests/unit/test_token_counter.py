@@ -924,8 +924,12 @@ class TestTiktokenTimeoutAndRetry:
             original_import = builtins.__import__
 
             def import_side_effect(
-                name, globals=None, locals=None, fromlist=(), level=0
-            ):
+                name: str,
+                globals: dict[str, object] | None = None,
+                locals: dict[str, object] | None = None,
+                fromlist: tuple[str, ...] = (),
+                level: int = 0,
+            ) -> object:
                 if name == "tiktoken":
                     raise ImportError("No module named 'tiktoken'")
                 return original_import(name, globals, locals, fromlist, level)

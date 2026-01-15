@@ -154,10 +154,12 @@ Provide more context to get better results.
 
 ### Rules & Configuration Tools
 
-- **rules** - Manage cursor rules
-- **sync_shared_rules** - Sync shared rules repositories
-- **update_shared_rule** - Update shared rules
-- **get_rules_with_context** - Get context-aware rules
+- **rules** - Manage cursor rules (index and get relevant rules)
+- **sync_synapse** - Sync Synapse repository with remote
+- **update_synapse_rule** - Update a rule in Synapse repository
+- **get_synapse_rules** - Get rules from Synapse repository
+- **get_synapse_prompts** - Get prompts from Synapse repository
+- **update_synapse_prompt** - Update a prompt in Synapse repository
 - **configure** - Configure server settings
 - **get_structure_info** - Get project structure information
 
@@ -172,7 +174,7 @@ Cortex provides MCP prompts for one-time setup and migration operations. Use pro
 | Starting a new project, no Memory Bank exists | `initialize_memory_bank` |
 | Want full project structure with rules and plans | `setup_project_structure` |
 | Setting up Cursor IDE with MCP configuration | `setup_cursor_integration` |
-| Want to share rules across multiple projects | `setup_shared_rules` |
+| Want to share rules across multiple projects | `setup_synapse` |
 | Not sure if your Memory Bank needs updating | `check_migration_status` |
 | Have old `.cursor/memory-bank/` format | `migrate_memory_bank` |
 | Have files scattered in old locations | `migrate_project_structure` |
@@ -187,7 +189,7 @@ Use these when starting fresh or configuring a new project:
 
 - **setup_cursor_integration** - Configure Cursor IDE to work with Cortex MCP server. Creates symlinks in `.cursor/` pointing to `.cortex/` subdirectories and `.cursor/mcp.json` for MCP configuration.
 
-- **setup_shared_rules** - Add a shared rules repository (Synapse) as a Git submodule to `.cortex/synapse/`. Use this when you want to share coding standards, security rules, prompts, or other guidelines across multiple projects.
+- **setup_synapse** - Add a shared rules repository (Synapse) as a Git submodule to `.cortex/synapse/`. Use this when you want to share coding standards, security rules, prompts, or other guidelines across multiple projects. Example: `setup_synapse(synapse_repo_url="https://github.com/igrechuhin/Synapse.git")`
 
 ### Migration Prompts
 

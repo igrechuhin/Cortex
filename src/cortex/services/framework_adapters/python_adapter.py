@@ -306,13 +306,19 @@ class PythonAdapter(FrameworkAdapter):
         """Parse pytest output to extract test results."""
         tests_passed, tests_failed = self._parse_test_counts(output)
         coverage = self._parse_coverage(output)
-        errors = self._build_test_errors(success)
 
+        # Determine actual success based on test results, not just return code
+        # Return code can be non-zero due to coverage threshold, but tests may still pass
         tests_run = tests_passed + tests_failed
+        actual_success = tests_failed == 0 and tests_run > 0
+
+        # Build errors only if tests actually failed
+        errors = self._build_test_errors(not actual_success)
+
         pass_rate = (tests_passed / tests_run * 100.0) if tests_run > 0 else 0.0
 
         return TestResult(
-            success=success and tests_failed == 0,
+            success=actual_success,
             tests_run=tests_run,
             tests_passed=tests_passed,
             tests_failed=tests_failed,
@@ -327,32 +333,49 @@ class PythonAdapter(FrameworkAdapter):
         tests_passed = 0
         tests_failed = 0
 
-        for line in output.split("\n"):
-            if not self._is_test_summary_line(line):
-                continue
-
-            parts = line.split()
-            tests_passed = (
-                self._extract_count_from_line(parts, "passed") or tests_passed
-            )
-            tests_failed = (
-                self._extract_count_from_line(parts, "failed") or tests_failed
-            )
+        lines = output.split("\n")
+        # Search from the end (summary is usually at the end)
+        for line in reversed(lines):
+            line_lower = line.lower()
+            # Check for test summary line - contains "passed" or "failed" with numbers
+            if ("passed" in line_lower or "failed" in line_lower) and any(
+                char.isdigit() for char in line
+            ):
+                parts = line.split()
+                # Try to extract counts
+                passed_count = self._extract_count_from_line(parts, "passed")
+                failed_count = self._extract_count_from_line(parts, "failed")
+                # If we found passed count, use it (failed_count will be None if no failures)
+                if passed_count is not None:
+                    tests_passed = passed_count
+                if failed_count is not None:
+                    tests_failed = failed_count
+                # If we found at least passed count, we're done (failed defaults to 0 if not found)
+                if passed_count is not None:
+                    break
 
         return tests_passed, tests_failed
 
     def _is_test_summary_line(self, line: str) -> bool:
         """Check if line contains test summary with passed/failed counts."""
-        return "passed" in line and "failed" in line
+        line_lower = line.lower()
+        # Check for test summary - contains passed/failed and has numbers
+        return ("passed" in line_lower or "failed" in line_lower) and any(
+            char.isdigit() for char in line
+        )
 
     def _extract_count_from_line(self, parts: list[str], keyword: str) -> int | None:
         """Extract count value for given keyword from line parts."""
         for i, part in enumerate(parts):
-            if part != keyword:
+            # Handle keywords with or without trailing comma/punctuation
+            part_clean = part.rstrip(".,;")
+            if part_clean != keyword:
                 continue
 
             try:
-                return int(parts[i - 1])
+                # Get the number before the keyword
+                count_str = parts[i - 1]
+                return int(count_str)
             except (ValueError, IndexError):
                 pass
 
@@ -360,10 +383,25 @@ class PythonAdapter(FrameworkAdapter):
 
     def _parse_coverage(self, output: str) -> float | None:
         """Parse coverage percentage from output."""
+        # Look for coverage percentage in multiple formats
         for line in output.split("\n"):
+            # Format 1: "TOTAL ... XX.XX%"
             if "TOTAL" in line and "%" in line:
                 try:
-                    coverage_str = line.split()[-1].replace("%", "")
+                    # Find the percentage value (last number with %)
+                    parts = line.split()
+                    for part in reversed(parts):
+                        if "%" in part:
+                            coverage_str = part.replace("%", "")
+                            return float(coverage_str) / 100.0
+                except (ValueError, IndexError):
+                    pass
+            # Format 2: "Required test coverage of XX% reached. Total coverage: YY.YY%"
+            if "Total coverage:" in line and "%" in line:
+                try:
+                    # Extract percentage after "Total coverage:"
+                    coverage_part = line.split("Total coverage:")[-1].strip()
+                    coverage_str = coverage_part.split("%")[0].strip()
                     return float(coverage_str) / 100.0
                 except (ValueError, IndexError):
                     pass
