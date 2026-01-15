@@ -9,7 +9,7 @@ Total: 1 tool
 
 import json
 from collections.abc import Awaitable, Callable
-from typing import Literal, Protocol
+from typing import Literal, Protocol, cast
 
 from cortex.core.responses import error_response
 from cortex.managers.initialization import get_managers, get_project_root
@@ -615,19 +615,25 @@ def create_success_response(
 def _generate_action_required(error: str, extra_fields: dict[str, object]) -> str:
     """Generate action_required message from error and extra_fields."""
     if "Unknown component" in error:
-        valid_components_raw = extra_fields.get("valid_components", [])
-        valid_components = (
-            valid_components_raw if isinstance(valid_components_raw, list) else []
+        valid_components_raw: object = extra_fields.get("valid_components", [])
+        valid_components: list[str] = (
+            [str(c) for c in cast(list[object], valid_components_raw)]
+            if isinstance(valid_components_raw, list)
+            else []
         )
-        valid_components_str = [str(c) for c in valid_components]
+        valid_components_str: list[str] = valid_components
         return (
             f"Use one of the valid components: {', '.join(valid_components_str)}. "
             f"Example: {{'component': '{valid_components_str[0] if valid_components_str else 'validation'}'}}"
         )
     elif "Unknown action" in error:
-        valid_actions_raw = extra_fields.get("valid_actions", [])
-        valid_actions = valid_actions_raw if isinstance(valid_actions_raw, list) else []
-        valid_actions_str = [str(a) for a in valid_actions]
+        valid_actions_raw: object = extra_fields.get("valid_actions", [])
+        if isinstance(valid_actions_raw, list):
+            valid_actions_list: list[object] = cast(list[object], valid_actions_raw)
+            valid_actions: list[str] = [str(item) for item in valid_actions_list]
+        else:
+            valid_actions = []
+        valid_actions_str: list[str] = valid_actions
         return (
             f"Use one of the valid actions: {', '.join(valid_actions_str)}. "
             f"Example: {{'action': '{valid_actions_str[0] if valid_actions_str else 'view'}'}}"
@@ -668,7 +674,7 @@ def create_error_response(error: str, **extra_fields: object) -> str:
         str(action_required) if action_required is not None else None
     )
     context_dict: dict[str, object] | None = (
-        context if isinstance(context, dict) else None
+        cast(dict[str, object], context) if isinstance(context, dict) else None
     )
 
     # Create base error response

@@ -108,7 +108,10 @@ class TokenCounter:
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(tiktoken.get_encoding, self.model)  # type: ignore
             try:
-                return future.result(timeout=timeout_seconds)
+                result: Encoding | None = cast(
+                    Encoding | None, future.result(timeout=timeout_seconds)
+                )
+                return result
             except concurrent.futures.TimeoutError:
                 return None
 
@@ -136,16 +139,16 @@ class TokenCounter:
             retry_delay = 2.0 * (2**attempt)  # Exponential backoff: 2s, 4s
             logger.info(
                 f"Tiktoken encoding '{self.model}' load timed out after "
-                f"{load_time:.2f}s (attempt {attempt + 1}/{max_retries + 1}). "
-                f"Retrying in {retry_delay:.1f}s..."
+                + f"{load_time:.2f}s (attempt {attempt + 1}/{max_retries + 1}). "
+                + f"Retrying in {retry_delay:.1f}s..."
             )
             time.sleep(retry_delay)
             return True, retry_delay
         else:
             logger.warning(
                 f"Tiktoken encoding '{self.model}' load timed out after "
-                f"{max_retries + 1} attempts (final timeout: {load_time:.2f}s). "
-                "Network may be unavailable. Falling back to word-based estimation."
+                + f"{max_retries + 1} attempts (final timeout: {load_time:.2f}s). "
+                + "Network may be unavailable. Falling back to word-based estimation."
             )
             self._tiktoken_available = False
             return False, 0.0
@@ -174,16 +177,16 @@ class TokenCounter:
             retry_delay = 2.0 * (2**attempt)
             logger.info(
                 f"Tiktoken encoding '{self.model}' network error after "
-                f"{load_time:.2f}s (attempt {attempt + 1}/{max_retries + 1}): {e}. "
-                f"Retrying in {retry_delay:.1f}s..."
+                + f"{load_time:.2f}s (attempt {attempt + 1}/{max_retries + 1}): {e}. "
+                + f"Retrying in {retry_delay:.1f}s..."
             )
             time.sleep(retry_delay)
             return True, retry_delay
         else:
             logger.warning(
                 f"Tiktoken encoding '{self.model}' network unavailable after "
-                f"{max_retries + 1} attempts (final error after {load_time:.2f}s): {e}. "
-                "Cache may be used if available. Falling back to word-based estimation."
+                + f"{max_retries + 1} attempts (final error after {load_time:.2f}s): {e}. "
+                + "Cache may be used if available. Falling back to word-based estimation."
             )
             self._tiktoken_available = False
             return False, 0.0
@@ -198,7 +201,7 @@ class TokenCounter:
         if attempt > 0:
             logger.info(
                 f"Tiktoken encoding '{self.model}' loaded successfully "
-                f"after {attempt} retries in {load_time:.2f}s"
+                + f"after {attempt} retries in {load_time:.2f}s"
             )
         else:
             logger.debug(f"Tiktoken encoding '{self.model}' loaded in {load_time:.2f}s")
@@ -212,7 +215,7 @@ class TokenCounter:
         """
         logger.warning(
             f"Failed to load tiktoken encoding '{self.model}' after "
-            f"{load_time:.2f}s: {e}. Falling back to word-based estimation."
+            + f"{load_time:.2f}s: {e}. Falling back to word-based estimation."
         )
         self._tiktoken_available = False
 
@@ -303,7 +306,7 @@ class TokenCounter:
         if last_error:
             logger.warning(
                 f"Tiktoken encoding '{self.model}' failed to load: {last_error}. "
-                "Falling back to word-based estimation."
+                + "Falling back to word-based estimation."
             )
         self._tiktoken_available = False
         return None

@@ -185,8 +185,10 @@ def _create_missing_param_error(param_name: str, action: str) -> str:
     """
     return error_response(
         ValueError(f"{param_name} is required for {action} action"),
-        action_required=f"Provide the {param_name} parameter when calling the {action} action. "
-        f"Example: {{'{param_name}': 'your-value', 'action': '{action}'}}",
+        action_required=(
+            f"Provide the {param_name} parameter when calling the {action} action. "
+            f"Example: {{'{param_name}': 'your-value', 'action': '{action}'}}"
+        ),
         context={"missing_parameter": param_name, "action": action},
     )
 
@@ -204,9 +206,11 @@ def _create_invalid_action_error(action: str) -> str:
         ValueError(
             f"Invalid action '{action}'. Must be 'approve', 'apply', or 'rollback'"
         ),
-        action_required="Set the 'action' parameter to one of: 'approve', 'apply', or 'rollback'. "
-        f"Received: '{action}'. "
-        "Example: {'action': 'approve', 'suggestion_id': 'suggestion-123'}",
+        action_required=(
+            "Set the 'action' parameter to one of: 'approve', 'apply', or 'rollback'. "
+            f"Received: '{action}'. "
+            "Example: {'action': 'approve', 'suggestion_id': 'suggestion-123'}"
+        ),
         context={
             "invalid_action": action,
             "valid_actions": ["approve", "apply", "rollback"],

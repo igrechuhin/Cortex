@@ -11,7 +11,7 @@ Validates project infrastructure consistency, including:
 import re
 from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import TypedDict
+from typing import TypedDict, cast
 
 try:
     import yaml  # type: ignore[reportMissingModuleSource]
@@ -279,19 +279,21 @@ class InfrastructureValidator:
         if "steps" not in job_config:
             return
 
-        steps = job_config["steps"]
-        if not isinstance(steps, list):
+        steps_raw: object = job_config["steps"]
+        if not isinstance(steps_raw, list):
             return
 
-        for step in steps:
-            if not isinstance(step, dict):
+        steps: list[object] = cast(list[object], steps_raw)
+        for step_item in steps:
+            if not isinstance(step_item, dict):
                 continue
 
+            step: dict[str, object] = cast(dict[str, object], step_item)
             if "name" not in step:
                 continue
 
-            step_name = str(step["name"])
-            step_run = str(step.get("run", ""))
+            step_name: str = str(step["name"])
+            step_run: str = str(step.get("run", ""))
 
             check_name = self._normalize_check_name(step_name)
             checks.append(

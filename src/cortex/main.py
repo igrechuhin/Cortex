@@ -31,8 +31,8 @@ def _handle_broken_resource_in_group(eg: BaseExceptionGroup) -> bool:
     for exc in eg.exceptions:
         if isinstance(exc, anyio.BrokenResourceError):
             logger.warning(
-                f"MCP stdio connection broken during TaskGroup cleanup "
-                f"(client disconnected): {exc}"
+                "MCP stdio connection broken during TaskGroup cleanup "
+                + f"(client disconnected): {exc}"
             )
             return True
     return False
