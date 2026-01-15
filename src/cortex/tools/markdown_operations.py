@@ -86,22 +86,20 @@ async def _run_command(
 
 def _parse_git_output(stdout: str, project_root: Path, files: list[Path]) -> None:
     """Parse git command output and add markdown files to list."""
-    if isinstance(stdout, str):
-        for line in stdout.strip().split("\n"):
-            if line.strip():
-                file_path = project_root / line.strip()
-                if file_path.suffix in (".md", ".mdc") and file_path not in files:
-                    files.append(file_path)
+    for line in stdout.strip().split("\n"):
+        if line.strip():
+            file_path = project_root / line.strip()
+            if file_path.suffix in (".md", ".mdc") and file_path not in files:
+                files.append(file_path)
 
 
 def _parse_untracked_files(stdout: str, project_root: Path, files: list[Path]) -> None:
     """Parse untracked files from git status output."""
-    if isinstance(stdout, str):
-        for line in stdout.strip().split("\n"):
-            if line.startswith("??"):
-                file_path = project_root / line[3:].strip()
-                if file_path.suffix in (".md", ".mdc") and file_path not in files:
-                    files.append(file_path)
+    for line in stdout.strip().split("\n"):
+        if line.startswith("??"):
+            file_path = project_root / line[3:].strip()
+            if file_path.suffix in (".md", ".mdc") and file_path not in files:
+                files.append(file_path)
 
 
 async def _get_modified_markdown_files(
@@ -157,20 +155,18 @@ async def _check_markdownlint_available() -> bool:
 def _parse_markdownlint_errors(stderr: str) -> list[str]:
     """Parse markdownlint errors from stderr."""
     errors: list[str] = []
-    if isinstance(stderr, str):
-        for line in stderr.strip().split("\n"):
-            if line.strip() and not line.startswith("markdownlint-cli2"):
-                errors.append(line.strip())
+    for line in stderr.strip().split("\n"):
+        if line.strip() and not line.startswith("markdownlint-cli2"):
+            errors.append(line.strip())
     return errors
 
 
 def _parse_markdownlint_output(stdout: str) -> list[str]:
     """Parse markdownlint output from stdout."""
     errors: list[str] = []
-    if isinstance(stdout, str):
-        for line in stdout.strip().split("\n"):
-            if line.strip():
-                errors.append(line.strip())
+    for line in stdout.strip().split("\n"):
+        if line.strip():
+            errors.append(line.strip())
     return errors
 
 
@@ -220,9 +216,13 @@ async def _run_markdownlint_fix(
     result = await _run_command(cmd, cwd=project_root, timeout=60)
 
     if not result["success"]:
-        error_msg = result.get("error")
+        error_msg_obj = result.get("error")
+        error_msg = str(error_msg_obj) if error_msg_obj is not None else None
         stderr = str(result.get("stderr", ""))
-        return_code = int(result.get("returncode", -1))
+        returncode_obj = result.get("returncode", -1)
+        return_code = (
+            int(returncode_obj) if isinstance(returncode_obj, (int, str)) else -1
+        )
         errors = _parse_markdownlint_errors(stderr)
         return _build_error_result(str(relative_path), errors, return_code, error_msg)
 
@@ -280,7 +280,7 @@ async def _validate_markdown_prerequisites(root_path: Path) -> str | None:
     if not await _check_markdownlint_available():
         return _create_error_response(
             "markdownlint-cli2 not found. "
-            "Install it with: npm install -g markdownlint-cli2"
+            + "Install it with: npm install -g markdownlint-cli2"
         )
 
     return None

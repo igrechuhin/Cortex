@@ -9,7 +9,7 @@ Total: 2 tools
 
 import json
 from collections.abc import Sequence
-from typing import Literal, TypedDict
+from typing import Literal, TypedDict, cast
 
 from cortex.managers.initialization import get_project_root
 from cortex.server import mcp
@@ -484,22 +484,57 @@ async def _fix_markdown_and_update_files(
     return _process_markdown_results(markdown_result, files_modified)
 
 
-def _extract_fix_statistics(fix_errors_result: dict[str, object]) -> tuple[
-    int, int, int, int, list[str]
-]:
+def _extract_dict_from_object(obj: object, default: dict[str, object]) -> dict[str, object]:
+    """Extract dict from object with type checking."""
+    return cast(dict[str, object], obj) if isinstance(obj, dict) else default
+
+
+def _extract_list_from_object(obj: object, default: list[object]) -> list[object]:
+    """Extract list from object with type checking."""
+    return cast(list[object], obj) if isinstance(obj, list) else default
+
+
+def _extract_int_from_object(obj: object, default: int) -> int:
+    """Extract int from object with type checking."""
+    return int(obj) if isinstance(obj, (int, str)) else default
+
+
+def _extract_check_results(results: dict[str, object]) -> tuple[dict[str, object], dict[str, object], dict[str, object]]:
+    """Extract check result dicts from results."""
+    fix_errors_check_obj = results.get("fix_errors", {})
+    fix_errors_check = _extract_dict_from_object(fix_errors_check_obj, {})
+    format_check_obj = results.get("format", {})
+    format_check = _extract_dict_from_object(format_check_obj, {})
+    type_check_result_obj = results.get("type_check", {})
+    type_check_result = _extract_dict_from_object(type_check_result_obj, {})
+    return fix_errors_check, format_check, type_check_result
+
+
+def _extract_fix_statistics(
+    fix_errors_result: dict[str, object],
+) -> tuple[int, int, int, int, list[str]]:
     """Extract statistics from fix_errors result."""
-    results = fix_errors_result.get("results", {})
-    fix_errors_check = results.get("fix_errors", {})
-    format_check = results.get("format", {})
-    type_check_result = results.get("type_check", {})
+    results_obj = fix_errors_result.get("results", {})
+    results = _extract_dict_from_object(results_obj, {})
+    fix_errors_check, format_check, type_check_result = _extract_check_results(results)
 
-    errors_fixed = len(fix_errors_check.get("errors", []))
-    warnings_fixed = len(fix_errors_check.get("warnings", []))
-    formatting_issues_fixed = format_check.get("files_formatted", 0)
-    type_errors_fixed = len(type_check_result.get("errors", []))
-    files_modified = list(set(fix_errors_result.get("files_modified", [])))
+    errors = _extract_list_from_object(fix_errors_check.get("errors", []), [])
+    warnings = _extract_list_from_object(fix_errors_check.get("warnings", []), [])
+    errors_fixed = len(errors)
+    warnings_fixed = len(warnings)
+    formatting_issues_fixed = _extract_int_from_object(format_check.get("files_formatted", 0), 0)
+    type_errors = _extract_list_from_object(type_check_result.get("errors", []), [])
+    type_errors_fixed = len(type_errors)
+    files_modified_list = _extract_list_from_object(fix_errors_result.get("files_modified", []), [])
+    files_modified = list(set(cast(list[str], files_modified_list)))
 
-    return errors_fixed, warnings_fixed, formatting_issues_fixed, type_errors_fixed, files_modified
+    return (
+        errors_fixed,
+        warnings_fixed,
+        formatting_issues_fixed,
+        type_errors_fixed,
+        files_modified,
+    )
 
 
 def _process_markdown_results(
@@ -507,28 +542,42 @@ def _process_markdown_results(
 ) -> int:
     """Process markdown fix results and update files_modified list."""
     markdown_issues_fixed = 0
-    if markdown_result.get("success"):
-        markdown_issues_fixed = markdown_result.get("files_fixed", 0)
-        markdown_results = markdown_result.get("results", [])
-        for file_result in markdown_results:
-            if file_result.get("fixed"):
-                file_path = file_result.get("file", "")
-                if file_path and file_path not in files_modified:
-                    files_modified.append(file_path)
+    success_obj = markdown_result.get("success")
+    if success_obj:
+        files_fixed_obj = markdown_result.get("files_fixed", 0)
+        markdown_issues_fixed = (
+            int(files_fixed_obj) if isinstance(files_fixed_obj, (int, str)) else 0
+        )
+        results_obj = markdown_result.get("results", [])
+        if isinstance(results_obj, list):
+            results_list = cast(list[object], results_obj)
+            for item in results_list:
+                if isinstance(item, dict):
+                    file_result = cast(dict[str, object], item)
+                    fixed_obj = file_result.get("fixed")
+                    if fixed_obj:
+                        file_path_obj = file_result.get("file", "")
+                        file_path = str(file_path_obj) if file_path_obj else ""
+                        if file_path and file_path not in files_modified:
+                            files_modified.append(file_path)
     return markdown_issues_fixed
 
 
 def _collect_remaining_issues(fix_errors_result: dict[str, object]) -> list[str]:
     """Collect remaining issues that couldn't be auto-fixed."""
     remaining_issues: list[str] = []
-    if fix_errors_result.get("total_errors", 0) > 0:
-        remaining_issues.append(
-            f"{fix_errors_result.get('total_errors', 0)} errors remain after auto-fix"
-        )
-    if fix_errors_result.get("total_warnings", 0) > 0:
-        remaining_issues.append(
-            f"{fix_errors_result.get('total_warnings', 0)} warnings remain after auto-fix"
-        )
+    total_errors_obj = fix_errors_result.get("total_errors", 0)
+    total_errors = (
+        int(total_errors_obj) if isinstance(total_errors_obj, (int, str)) else 0
+    )
+    if total_errors > 0:
+        remaining_issues.append(f"{total_errors} errors remain after auto-fix")
+    total_warnings_obj = fix_errors_result.get("total_warnings", 0)
+    total_warnings = (
+        int(total_warnings_obj) if isinstance(total_warnings_obj, (int, str)) else 0
+    )
+    if total_warnings > 0:
+        remaining_issues.append(f"{total_warnings} warnings remain after auto-fix")
     return remaining_issues
 
 
@@ -553,6 +602,28 @@ def _build_quality_response(
         "remaining_issues": remaining_issues,
         "error_message": None,
     }
+
+
+def _build_quality_response_json(
+    errors_fixed: int,
+    warnings_fixed: int,
+    formatting_issues_fixed: int,
+    markdown_issues_fixed: int,
+    type_errors_fixed: int,
+    files_modified: list[str],
+    remaining_issues: list[str],
+) -> str:
+    """Build quality fix response as JSON string."""
+    response = _build_quality_response(
+        errors_fixed,
+        warnings_fixed,
+        formatting_issues_fixed,
+        markdown_issues_fixed,
+        type_errors_fixed,
+        files_modified,
+        remaining_issues,
+    )
+    return json.dumps(response, indent=2)
 
 
 @mcp.tool()
@@ -626,15 +697,20 @@ async def fix_quality_issues(
         if isinstance(fix_errors_result, str):
             return fix_errors_result
 
-        errors_fixed, warnings_fixed, formatting_issues_fixed, type_errors_fixed, files_modified = _extract_fix_statistics(fix_errors_result)
+        (
+            errors_fixed,
+            warnings_fixed,
+            formatting_issues_fixed,
+            type_errors_fixed,
+            files_modified,
+        ) = _extract_fix_statistics(fix_errors_result)
 
         # Fix markdown and collect remaining issues
         markdown_issues_fixed = await _fix_markdown_and_update_files(
             root_str, include_untracked_markdown, files_modified
         )
         remaining_issues = _collect_remaining_issues(fix_errors_result)
-
-        response = _build_quality_response(
+        return _build_quality_response_json(
             errors_fixed,
             warnings_fixed,
             formatting_issues_fixed,
@@ -643,8 +719,6 @@ async def fix_quality_issues(
             files_modified,
             remaining_issues,
         )
-
-        return json.dumps(response, indent=2)
 
     except Exception as e:
         return _create_quality_error_response(str(e))

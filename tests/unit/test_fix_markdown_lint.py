@@ -44,7 +44,10 @@ class TestRunCommand:
             "cortex.tools.markdown_operations.asyncio.create_subprocess_exec",
             side_effect=mock_create_subprocess,
         ):
-            with patch("cortex.tools.markdown_operations.asyncio.wait_for", side_effect=mock_wait_for):
+            with patch(
+                "cortex.tools.markdown_operations.asyncio.wait_for",
+                side_effect=mock_wait_for,
+            ):
                 # Act
                 result = await _run_command(["test", "command"])
 
@@ -76,7 +79,10 @@ class TestRunCommand:
             "cortex.tools.markdown_operations.asyncio.create_subprocess_exec",
             side_effect=mock_create_subprocess,
         ):
-            with patch("cortex.tools.markdown_operations.asyncio.wait_for", side_effect=mock_wait_for):
+            with patch(
+                "cortex.tools.markdown_operations.asyncio.wait_for",
+                side_effect=mock_wait_for,
+            ):
                 # Act
                 result = await _run_command(["test", "command"])
 
@@ -471,7 +477,12 @@ class TestFixMarkdownLintTool:
                 {"success": True, "stdout": "", "stderr": ""},  # git check
                 {"success": True, "stdout": "test.md", "stderr": ""},  # git diff
                 {"success": True, "stdout": "", "stderr": ""},  # git diff cached
-                {"success": True, "stdout": "Fixed", "stderr": "", "returncode": 0},  # markdownlint
+                {
+                    "success": True,
+                    "stdout": "Fixed",
+                    "stderr": "",
+                    "returncode": 0,
+                },  # markdownlint
             ]
 
             # Act
@@ -647,7 +658,7 @@ class TestHelperFunctions:
 
     def test_calculate_statistics(self):
         """Test _calculate_statistics helper."""
-        from cortex.tools.markdown_operations import _calculate_statistics, FileResult
+        from cortex.tools.markdown_operations import FileResult, _calculate_statistics
 
         results: list[FileResult] = [
             {"file": "file1.md", "fixed": True, "errors": [], "error_message": None},
