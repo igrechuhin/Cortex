@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 from cortex.tools.markdown_operations import (
-    _check_markdownlint_available,
+    _find_markdownlint_command,
     _get_modified_markdown_files,
     _run_command,
     _run_markdownlint_fix,
@@ -253,11 +253,11 @@ class TestGetModifiedMarkdownFiles:
 
 
 class TestCheckMarkdownlintAvailable:
-    """Test _check_markdownlint_available function."""
+    """Test _find_markdownlint_command function."""
 
     @pytest.mark.asyncio
     async def test_markdownlint_available(self):
-        """Test when markdownlint is available."""
+        """Test when markdownlint is available via PATH."""
         # Arrange
         with patch(
             "cortex.tools.markdown_operations._run_command",
@@ -270,11 +270,40 @@ class TestCheckMarkdownlintAvailable:
             }
 
             # Act
-            result = await _check_markdownlint_available()
+            result = await _find_markdownlint_command()
 
             # Assert
-            assert result is True
+            assert result == ["markdownlint-cli2"]
             mock_run.assert_called_once_with(["markdownlint-cli2", "--version"])
+
+    @pytest.mark.asyncio
+    async def test_markdownlint_available_via_npx(self):
+        """Test when markdownlint is available via npx."""
+        # Arrange
+        with patch(
+            "cortex.tools.markdown_operations._run_command",
+            new_callable=AsyncMock,
+        ) as mock_run:
+            # First call fails (not in PATH), second succeeds (npx)
+            mock_run.side_effect = [
+                {
+                    "success": False,
+                    "stdout": "",
+                    "stderr": "command not found",
+                },
+                {
+                    "success": True,
+                    "stdout": "markdownlint-cli2 version 1.0.0",
+                    "stderr": "",
+                },
+            ]
+
+            # Act
+            result = await _find_markdownlint_command()
+
+            # Assert
+            assert result == ["npx", "--yes", "markdownlint-cli2"]
+            assert mock_run.call_count == 2
 
     @pytest.mark.asyncio
     async def test_markdownlint_not_available(self):
@@ -284,6 +313,7 @@ class TestCheckMarkdownlintAvailable:
             "cortex.tools.markdown_operations._run_command",
             new_callable=AsyncMock,
         ) as mock_run:
+            # Both calls fail
             mock_run.return_value = {
                 "success": False,
                 "stdout": "",
@@ -291,10 +321,11 @@ class TestCheckMarkdownlintAvailable:
             }
 
             # Act
-            result = await _check_markdownlint_available()
+            result = await _find_markdownlint_command()
 
             # Assert
-            assert result is False
+            assert result is None
+            assert mock_run.call_count == 2  # Should try both markdownlint-cli2 and npx
 
 
 class TestRunMarkdownlintFix:
@@ -320,7 +351,9 @@ class TestRunMarkdownlintFix:
             }
 
             # Act
-            result = await _run_markdownlint_fix(file_path, project_root, dry_run=False)
+            result = await _run_markdownlint_fix(
+                file_path, project_root, ["markdownlint-cli2"], dry_run=False
+            )
 
             # Assert
             assert result["fixed"] is True
@@ -348,7 +381,9 @@ class TestRunMarkdownlintFix:
             }
 
             # Act
-            result = await _run_markdownlint_fix(file_path, project_root, dry_run=True)
+            result = await _run_markdownlint_fix(
+                file_path, project_root, ["markdownlint-cli2"], dry_run=True
+            )
 
             # Assert
             assert result["fixed"] is False  # Dry run doesn't fix
@@ -379,7 +414,9 @@ class TestRunMarkdownlintFix:
             }
 
             # Act
-            result = await _run_markdownlint_fix(file_path, project_root, dry_run=False)
+            result = await _run_markdownlint_fix(
+                file_path, project_root, ["markdownlint-cli2"], dry_run=False
+            )
 
             # Assert
             assert result["fixed"] is False
@@ -408,7 +445,9 @@ class TestRunMarkdownlintFix:
             }
 
             # Act
-            result = await _run_markdownlint_fix(file_path, project_root, dry_run=False)
+            result = await _run_markdownlint_fix(
+                file_path, project_root, ["markdownlint-cli2"], dry_run=False
+            )
 
             # Assert
             assert result["fixed"] is False
@@ -440,7 +479,9 @@ class TestRunMarkdownlintFix:
             }
 
             # Act
-            result = await _run_markdownlint_fix(file_path, project_root, dry_run=False)
+            result = await _run_markdownlint_fix(
+                file_path, project_root, ["markdownlint-cli2"], dry_run=False
+            )
 
             # Assert
             assert len(result["errors"]) == 2
@@ -470,9 +511,9 @@ class TestFixMarkdownLintTool:
                 new_callable=AsyncMock,
             ) as mock_run,
             patch(
-                "cortex.tools.markdown_operations._check_markdownlint_available",
+                "cortex.tools.markdown_operations._find_markdownlint_command",
                 new_callable=AsyncMock,
-                return_value=True,
+                return_value=["markdownlint-cli2"],
             ),
         ):
             mock_run.side_effect = [
@@ -537,9 +578,9 @@ class TestFixMarkdownLintTool:
                 new_callable=AsyncMock,
             ) as mock_run,
             patch(
-                "cortex.tools.markdown_operations._check_markdownlint_available",
+                "cortex.tools.markdown_operations._find_markdownlint_command",
                 new_callable=AsyncMock,
-                return_value=False,
+                return_value=None,
             ),
         ):
             mock_run.side_effect = [
@@ -570,9 +611,9 @@ class TestFixMarkdownLintTool:
                 new_callable=AsyncMock,
             ) as mock_run,
             patch(
-                "cortex.tools.markdown_operations._check_markdownlint_available",
+                "cortex.tools.markdown_operations._find_markdownlint_command",
                 new_callable=AsyncMock,
-                return_value=True,
+                return_value=["markdownlint-cli2"],
             ),
             patch(
                 "cortex.tools.markdown_operations._get_modified_markdown_files",

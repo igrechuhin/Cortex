@@ -174,15 +174,26 @@ async def _get_modified_markdown_files(
     return sorted(set(files))
 
 
-async def _check_markdownlint_available() -> bool:
-    """Check if markdownlint-cli2 is available in PATH.
+async def _find_markdownlint_command() -> list[str] | None:
+    """Find available markdownlint-cli2 command.
+
+    Checks for markdownlint-cli2 in PATH first, then tries npx as fallback.
 
     Returns:
-        True if markdownlint-cli2 is available, False otherwise
+        Command list to use (e.g., ["markdownlint-cli2"] or ["npx", "markdownlint-cli2"]),
+        or None if not available
     """
+    # Try direct command first
     result = await _run_command(["markdownlint-cli2", "--version"])
-    success = result.get("success", False)
-    return bool(success)
+    if result.get("success", False):
+        return ["markdownlint-cli2"]
+
+    # Try npx as fallback (doesn't require global installation)
+    result = await _run_command(["npx", "--yes", "markdownlint-cli2", "--version"])
+    if result.get("success", False):
+        return ["npx", "--yes", "markdownlint-cli2"]
+
+    return None
 
 
 def _parse_markdownlint_errors(stderr: str) -> list[str]:
@@ -228,20 +239,24 @@ def _build_error_result(
 
 
 async def _run_markdownlint_fix(
-    file_path: Path, project_root: Path, dry_run: bool = False
+    file_path: Path,
+    project_root: Path,
+    markdownlint_cmd: list[str],
+    dry_run: bool = False,
 ) -> FileResult:
     """Run markdownlint --fix on a file.
 
     Args:
         file_path: Path to the markdown file
         project_root: Root directory of the project
+        markdownlint_cmd: Command to use (e.g., ["markdownlint-cli2"] or ["npx", "--yes", "markdownlint-cli2"])
         dry_run: If True, only check without fixing (default: False)
 
     Returns:
         FileResult with processing status
     """
     relative_path = file_path.relative_to(project_root)
-    cmd = ["markdownlint-cli2"]
+    cmd = markdownlint_cmd.copy()
     if not dry_run:
         cmd.append("--fix")
     cmd.append(str(relative_path))
@@ -304,30 +319,51 @@ def _create_empty_success_response() -> str:
     )
 
 
-async def _validate_markdown_prerequisites(root_path: Path) -> str | None:
-    """Validate git repository and markdownlint availability."""
+async def _validate_markdown_prerequisites(
+    root_path: Path,
+) -> tuple[str | None, list[str] | None]:
+    """Validate git repository and markdownlint availability.
+
+    Returns:
+        Tuple of (error_response_string_or_none, markdownlint_command_or_none)
+        If error_response is not None, markdownlint_command will be None.
+    """
     git_check = await _run_command(["git", "rev-parse", "--git-dir"], cwd=root_path)
     if not git_check["success"]:
-        return _create_error_response("Not in a git repository")
+        return _create_error_response("Not in a git repository"), None
 
-    if not await _check_markdownlint_available():
-        return _create_error_response(
-            "markdownlint-cli2 not found. "
-            + "Install it with: npm install -g markdownlint-cli2"
+    markdownlint_cmd = await _find_markdownlint_command()
+    if markdownlint_cmd is None:
+        return (
+            _create_error_response(
+                "markdownlint-cli2 not found. "
+                + "Install it with: npm install -g markdownlint-cli2 "
+                + "or ensure npx is available (npx will auto-install it)"
+            ),
+            None,
         )
 
-    return None
+    return None, markdownlint_cmd
 
 
 async def _process_markdown_files(
-    files: list[Path], root_path: Path, dry_run: bool
+    files: list[Path], root_path: Path, markdownlint_cmd: list[str], dry_run: bool
 ) -> list[FileResult]:
-    """Process list of markdown files."""
+    """Process list of markdown files.
+
+    Args:
+        files: List of markdown file paths to process
+        root_path: Root directory of the project
+        markdownlint_cmd: Command to use for markdownlint
+        dry_run: If True, only check without fixing
+    """
     results: list[FileResult] = []
     for file_path in files:
         if not file_path.exists():
             continue
-        result = await _run_markdownlint_fix(file_path, root_path, dry_run)
+        result = await _run_markdownlint_fix(
+            file_path, root_path, markdownlint_cmd, dry_run
+        )
         results.append(result)
     return results
 
@@ -338,6 +374,21 @@ def _calculate_statistics(results: list[FileResult]) -> tuple[int, int, int]:
     files_with_errors = sum(1 for r in results if r["error_message"] is not None)
     files_unchanged = len(results) - files_fixed - files_with_errors
     return files_fixed, files_with_errors, files_unchanged
+
+
+def _build_fix_response(results: list[FileResult]) -> str:
+    """Build JSON response from file results."""
+    files_fixed, files_with_errors, files_unchanged = _calculate_statistics(results)
+    script_result: FixMarkdownLintResult = {
+        "success": files_with_errors == 0,
+        "files_processed": len(results),
+        "files_fixed": files_fixed,
+        "files_unchanged": files_unchanged,
+        "files_with_errors": files_with_errors,
+        "results": results,
+        "error_message": None,
+    }
+    return json.dumps(script_result, indent=2)
 
 
 @mcp.tool()
@@ -414,20 +465,25 @@ async def fix_markdown_lint(
         }
 
     Note:
-        - Requires markdownlint-cli2 to be installed: npm install -g markdownlint-cli2
+        - Automatically detects markdownlint-cli2: checks PATH first, then tries npx as fallback
+        - If not found, install with: npm install -g markdownlint-cli2
+        - npx fallback works without global installation (auto-installs on first use)
         - When check_all_files=False: Only processes files tracked by git (staged, unstaged, optionally untracked)
         - When check_all_files=True: Processes all .md and .mdc files in the project (excludes .git, node_modules, venv, etc.)
         - Only processes .md and .mdc files
         - Returns error if not in a git repository (when check_all_files=False)
-        - Returns error if markdownlint-cli2 is not available
+        - Returns error if markdownlint-cli2 is not available via PATH or npx
     """
     try:
         root_path = Path(get_project_root(project_root))
 
-        # Validate prerequisites
-        validation_error = await _validate_markdown_prerequisites(root_path)
+        # Validate prerequisites and get markdownlint command
+        validation_error, markdownlint_cmd = await _validate_markdown_prerequisites(
+            root_path
+        )
         if validation_error:
             return validation_error
+        assert markdownlint_cmd is not None  # Type narrowing
 
         # Get and process files
         if check_all_files:
@@ -437,19 +493,10 @@ async def fix_markdown_lint(
         if not files:
             return _create_empty_success_response()
 
-        results = await _process_markdown_files(files, root_path, dry_run)
-        files_fixed, files_with_errors, files_unchanged = _calculate_statistics(results)
-        script_result: FixMarkdownLintResult = {
-            "success": files_with_errors == 0,
-            "files_processed": len(results),
-            "files_fixed": files_fixed,
-            "files_unchanged": files_unchanged,
-            "files_with_errors": files_with_errors,
-            "results": results,
-            "error_message": None,
-        }
-
-        return json.dumps(script_result, indent=2)
+        results = await _process_markdown_files(
+            files, root_path, markdownlint_cmd, dry_run
+        )
+        return _build_fix_response(results)
 
     except Exception as e:
         return _create_error_response(str(e))
