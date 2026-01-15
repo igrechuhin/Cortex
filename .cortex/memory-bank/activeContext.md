@@ -18,7 +18,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
   - Type checking: 0 actual type errors (excluding stub warnings)
   - All code quality checks passing (file size, function length)
   - All tests passing with 90.41% coverage (2,434 passed, 0 failed, 100% pass rate)
-- ✅ [Phase 18: Markdown Lint Fix Tool](../plans/phase-18-markdown-lint-fix-tool.md) - COMPLETE (2026-01-14) - Created `scripts/fix_markdown_lint.py` tool that automatically scans modified markdown files (git-based), detects markdownlint errors, and fixes them automatically - Supports dry-run mode, JSON output, includes untracked files option, and comprehensive unit tests (16 tests, all passing)
+- ✅ [Phase 18: Markdown Lint Fix Tool](../plans/archive/Phase18/phase-18-markdown-lint-fix-tool.md) - COMPLETE (2026-01-14) - Created `scripts/fix_markdown_lint.py` tool that automatically scans modified markdown files (git-based), detects markdownlint errors, and fixes them automatically - Supports dry-run mode, JSON output, includes untracked files option, and comprehensive unit tests (16 tests, all passing)
 - ✅ **Commit Procedure** (2026-01-15) - Fixed linting errors, type errors, and test failures:
   - Fixed 8 linting errors using ruff check --fix
   - Fixed 1 type error in `timestamp_validator.py` by casting issue to str
