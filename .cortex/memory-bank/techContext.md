@@ -125,7 +125,7 @@ uv run cortex
 
 ## Project Structure
 
-```
+```text
 Cortex/
 ├── src/cortex/          # Main source code
 │   ├── core/            # Core functionality (Phase 1)

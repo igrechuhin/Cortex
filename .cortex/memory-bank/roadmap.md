@@ -49,7 +49,15 @@
     - Updated `phase2_linking.py` to re-export MCP tools for backward compatibility (26 lines)
     - Updated all test imports to use correct modules
     - All tests passing (24 tests)
-    - Remaining: 8 more files to split (Step 3.3-3.10), security vulnerabilities (Step 4), TODO comments (Step 5)
+  - **Step 3.3**: Split `pattern_analyzer.py` (973 → 354 lines, 64% reduction):
+    - Extracted pattern detection logic → `pattern_detection.py` (235 lines)
+    - Extracted pattern analysis logic → `pattern_analysis.py` (360 lines)
+    - Extracted normalization logic → `pattern_normalization.py` (168 lines)
+    - Created shared types → `pattern_types.py` (77 lines)
+    - Updated `pattern_analyzer.py` to use extracted modules (354 lines, under 400 limit)
+    - Updated all imports across codebase to use new module structure
+    - All tests passing (35 tests)
+    - Remaining: 7 more files to split (Step 3.4-3.10), security vulnerabilities (Step 4), TODO comments (Step 5)
 - ✅ **Commit Procedure** - COMPLETE (20260115Added tests to improve coverage above 90threshold:
   - Added 3tests for `fix_quality_issues` in `test_pre_commit_tools.py`:
     - `test_fix_quality_issues_error_path` - Tests error path when execute_pre_commit_checks returns error
@@ -158,6 +166,7 @@
 - ✅ **Phase15Investigate MCP Tool Project Root Resolution** - COMPLETE (202601 - Fixed project root detection to automatically find `.cortex/` directory when `project_root=None` - MCP tools now work reliably without explicit `project_root` parameter
 - ✅ **Phase 16 Validate Memory Bank Timestamps Command** - COMPLETE (2026-01- Implemented timestamp validation as MCP tool `validate(check_type="timestamps")` in `validation_operations.py` - Added timestamp scanning and validation logic, wired into commit workflow Step 9 - Timestamp validation now enforced before commits via structured MCP tool
 - [Phase 24: Fix Roadmap Text Corruption](../plans/phase-24-fix-roadmap-text-corruption.md) - ASAP (PLANNING) - Investigate and fix text corruption in roadmap.md where spaces and characters are missing (21+ instances: "89.89to", "0ctual", "202601-15ixed", etc.) - Impact: Restore roadmap readability and accuracy, prevent future corruption - Target completion: 2026-01-16
+- [Phase 25: Fix CI Failure - Commit 302c5e2](../plans/phase-25-fix-ci-failure-commit-302c5e2.md) - ASAP (PLANNING) - Investigate and fix GitHub Actions CI failure from commit `302c5e2` ("Fix type errors, test failures, and code quality issues #90") - Quality check failed with exit code 1, preventing commit from passing CI - Local checks all passed, indicating environment differences or missing changes - Impact: Unblock CI pipeline, ensure fixes don't break CI - Target completion: 2026-01-16
 - [Phase23 Fix CI Failure After Validation Refactor](../plans/phase-23i-failure-validation-refactor.md) - ASAP (PLANNING) - Investigate and fix GitHub Actions CI failure from commit `612e` (validation refactor) - Quality check failed with exit code 1, preventing commit from passing CI - Impact: Unblock CI pipeline, ensure validation refactor doesn't break CI - Target completion:226-1
 - [Phase 22: Fix Commit Pipeline Quality Gate](../plans/phase-22ommit-pipeline-quality-gate.md) - ASAP (PLANNING) - Fix commit pipeline (GitHub Actions workflow) to properly catch and fail on quality gate violations - Pipeline currently passes errors that prevent quality gate from passing - Impact: Ensure all quality checks properly enforced, prevent errors from being silently ignored - Target completion: 2026
 - [Phase 20: Code Review Fixes](../plans/phase-20-code-review-fixes.md) - ASAP (IN PROGRESS - Steps 1-3.1omplete) - Address all critical issues from comprehensive code review (2026-01-15 Steps 1mplete (test import error verified fixed, 15 type errors fixed), ✅ Step 3.1complete (validation_operations.py split: 1063es, 60% reduction), remaining: fix 9 more file size violations (Step3.20.1), fix security vulnerabilities (command injection, XSS, ReDoS) - Impact: Improve code quality from 8.7/10 to 90.5+/10, achieve rules compliance - Target completion:2261-20ase 19: Fix MCP Server Crash](../plans/phase-19-mcp-server-crash.md) - ASAP (PLANNING) - Fix MCP server crash caused by `BrokenResourceError` in `stdio_server` TaskGroup - Server crashes when client disconnects or cancels requests, causing unhandled `ExceptionGroup` - Impact: Server instability, poor user experience - Target completion: 2026-1-16 ✅ **Phase17ate Roadmap Sync Command** - COMPLETE (22614ented `validate-roadmap-sync` command and MCP tool integration - Added `roadmap_sync` check_type to `validate()` MCP tool - Created `.cortex/synapse/prompts/validate-roadmap-sync.md` command file - Added comprehensive unit tests (18 tests, all passing) - Roadmap/codebase synchronization is now enforced in commit workflow Step 10
