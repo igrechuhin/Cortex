@@ -377,11 +377,11 @@ class TestValidate:
         }
 
         with patch(
-            "cortex.tools.validation_operations.get_managers",
+            "cortex.managers.initialization.get_managers",
             return_value=mock_managers_dict,
         ):
             with patch(
-                "cortex.tools.validation_operations.get_project_root",
+                "cortex.managers.initialization.get_project_root",
                 return_value=temp_memory_bank.parent.parent,
             ):
                 # Execute
@@ -404,7 +404,10 @@ class TestValidate:
         """Test duplication detection with duplicates found."""
         # Setup
         # Setup - create actual files for glob to find
-        memory_bank_dir = temp_memory_bank.parent
+        # Use .cortex/memory-bank/ as that's what get_cortex_path returns
+        project_root = temp_memory_bank.parent.parent
+        memory_bank_dir = project_root / ".cortex" / "memory-bank"
+        memory_bank_dir.mkdir(parents=True, exist_ok=True)
         test_file1 = memory_bank_dir / "file1.md"
         test_file2 = memory_bank_dir / "file2.md"
         _ = test_file1.write_text("# Content")
@@ -444,7 +447,7 @@ class TestValidate:
         }
 
         with patch(
-            "cortex.tools.validation_operations.get_managers",
+            "cortex.managers.initialization.get_managers",
             return_value=mock_managers_dict,
         ):
 
@@ -454,11 +457,11 @@ class TestValidate:
                 return mgrs.get(key)
 
             with patch(
-                "cortex.tools.validation_operations.get_manager",
+                "cortex.managers.manager_utils.get_manager",
                 side_effect=mock_get_manager,
             ):
                 with patch(
-                    "cortex.tools.validation_operations.get_project_root",
+                    "cortex.managers.initialization.get_project_root",
                     return_value=temp_memory_bank.parent.parent,
                 ):
                     # Execute
@@ -521,11 +524,11 @@ class TestValidate:
         }
 
         with patch(
-            "cortex.tools.validation_operations.get_managers",
+            "cortex.managers.initialization.get_managers",
             return_value=mock_managers_dict,
         ):
             with patch(
-                "cortex.tools.validation_operations.get_project_root",
+                "cortex.managers.initialization.get_project_root",
                 return_value=temp_memory_bank.parent.parent,
             ):
                 # Execute
@@ -565,11 +568,11 @@ class TestValidate:
         }
 
         with patch(
-            "cortex.tools.validation_operations.get_managers",
+            "cortex.managers.initialization.get_managers",
             return_value=mock_managers_dict,
         ):
             with patch(
-                "cortex.tools.validation_operations.get_project_root",
+                "cortex.managers.initialization.get_project_root",
                 return_value=temp_memory_bank.parent.parent,
             ):
                 # Execute

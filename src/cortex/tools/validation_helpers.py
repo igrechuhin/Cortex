@@ -1,95 +1,128 @@
-"""Validation helper functions for error responses and utilities."""
+"""Shared validation helper functions."""
 
-from cortex.core.responses import error_response
+import json
+from pathlib import Path
+from typing import Literal, cast
+
+from cortex.core.file_system import FileSystemManager
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
+CheckType = Literal[
+    "schema",
+    "duplications",
+    "quality",
+    "infrastructure",
+    "timestamps",
+    "roadmap_sync",
+]
+
+
+async def read_all_memory_bank_files(
+    fs_manager: FileSystemManager, root: Path
+) -> dict[str, str]:
+    """Read all markdown files in memory-bank directory."""
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+    files_content: dict[str, str] = {}
+    for md_file in memory_bank_dir.glob("*.md"):
+        if md_file.is_file():
+            content, _ = await fs_manager.read_file(md_file)
+            files_content[md_file.name] = content
+    return files_content
 
 
 def create_invalid_check_type_error(check_type: str) -> str:
     """Create error response for invalid check type.
 
     Args:
-        check_type: The invalid check type
+        check_type: Invalid check type that was provided
 
     Returns:
         JSON string with error response
     """
-    valid_types = ["schema", "duplications", "quality", "infrastructure"]
-    return error_response(
-        ValueError(f"Invalid check_type: {check_type}"),
-        action_required=(
-            f"Use one of the valid check types: {', '.join(valid_types)}. "
-            f"Received: '{check_type}'. "
-            f"Example: {{'check_type': '{valid_types[0]}'}}"
-        ),
-        context={"invalid_check_type": check_type, "valid_check_types": valid_types},
+    valid_types: list[CheckType] = [
+        "schema",
+        "duplications",
+        "quality",
+        "infrastructure",
+        "timestamps",
+        "roadmap_sync",
+    ]
+    return json.dumps(
+        {
+            "status": "error",
+            "error": f"Invalid check_type: {check_type}",
+            "valid_check_types": valid_types,
+        },
+        indent=2,
     )
 
 
 def create_validation_error_response(error: Exception) -> str:
-    """Create error response for validation exceptions.
+    """Create error response for validation errors.
 
     Args:
-        error: The exception that occurred
+        error: Exception that occurred during validation
 
     Returns:
         JSON string with error response
     """
-    error_type = type(error).__name__
-    if "ValidationError" in error_type or "validation" in str(error).lower():
-        action_required = (
-            "Review the validation error and correct the memory bank files. "
-            "Run 'validate_memory_bank()' to get detailed validation results. "
-            "Check file schemas, fix duplications, or improve quality metrics as needed."
-        )
-    elif "FileNotFoundError" in error_type:
-        action_required = (
-            "Ensure the memory bank is properly initialized. "
-            "Run 'initialize_memory_bank()' if needed. "
-            "Verify that all referenced files exist."
-        )
-    else:
-        action_required = (
-            "Review the error details and retry the validation operation. "
-            "Check system logs for additional context. "
-            "Ensure the memory bank directory is accessible and properly configured."
-        )
-
-    return error_response(
-        error,
-        action_required=action_required,
-        context={"error_type": error_type},
+    return json.dumps(
+        {
+            "status": "error",
+            "error": str(error),
+            "error_type": type(error).__name__,
+        },
+        indent=2,
     )
 
 
 def generate_duplication_fixes(
     duplications_dict: dict[str, object],
 ) -> list[dict[str, object]]:
-    """Generate fix suggestions for duplications.
+    """Generate fix suggestions for duplicate content.
 
     Args:
-        duplications_dict: Dictionary containing duplication results
+        duplications_dict: Dictionary with exact_duplicates and similar_content
 
     Returns:
         List of fix suggestion dictionaries
     """
-    from typing import cast
-
     fixes: list[dict[str, object]] = []
-    exact_dups = cast(
+
+    exact_duplicates = cast(
         list[dict[str, object]], duplications_dict.get("exact_duplicates", [])
     )
-    similar = cast(
+    for duplicate in exact_duplicates:
+        files = cast(list[str], duplicate.get("files", []))
+        if len(files) >= 2:
+            fixes.append(
+                {
+                    "files": files,
+                    "suggestion": "Consider using transclusion: {{include:shared-content.md}}",
+                    "steps": [
+                        "1. Create a new file for shared content",
+                        "2. Move duplicate content to the new file",
+                        "3. Replace duplicates with transclusion syntax",
+                    ],
+                }
+            )
+
+    similar_content = cast(
         list[dict[str, object]], duplications_dict.get("similar_content", [])
     )
+    for similar in similar_content:
+        files = cast(list[str], similar.get("files", []))
+        if len(files) >= 2:
+            fixes.append(
+                {
+                    "files": files,
+                    "suggestion": "Consider using transclusion: {{include:shared-content.md}}",
+                    "steps": [
+                        "1. Create a new file for shared content",
+                        "2. Move duplicate content to the new file",
+                        "3. Replace duplicates with transclusion syntax",
+                    ],
+                }
+            )
 
-    for dup in exact_dups + similar:
-        fix: dict[str, object] = {
-            "files": dup.get("files", []),
-            "suggestion": "Consider using transclusion: {{include:shared-content.md}}",
-            "steps": [
-                "1. Create a new file for shared content",
-                "2. Move duplicate content to the new file",
-                "3. Replace duplicates with transclusion syntax",
-            ],
-        }
-        fixes.append(fix)
     return fixes
