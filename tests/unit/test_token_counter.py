@@ -719,6 +719,7 @@ class TestCacheManagement:
         assert size2 == 2
 
 
+# pyright: reportPrivateUsage=false
 class TestTiktokenTimeoutAndRetry:
     """Tests for tiktoken loading timeout and retry mechanism."""
 

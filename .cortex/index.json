@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-12T10:42:19.665239",
-  "last_updated": "2026-01-15T20:27:40.260564",
+  "last_updated": "2026-01-16T08:09:43.762823",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
@@ -593,6 +593,65 @@
         }
       ],
       "last_read": "2026-01-15T20:27:40.259602"
+    },
+    "roadmap.md": {
+      "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
+      "exists": true,
+      "read_count": 0,
+      "write_count": 1,
+      "current_version": 1,
+      "version_history": [
+        {
+          "version": 1,
+          "timestamp": "2026-01-16T08:09:43.760013",
+          "content_hash": "sha256:cceef569e13dfba7a210a976e2c104a57e3fe1fe762d2393f072299a9f80052e",
+          "size_bytes": 22117,
+          "token_count": 5338,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v1.md",
+          "change_description": "Added Phase 23I Failure After Validation Refactor to roadmap as ASAP blocker and planned phase"
+        }
+      ],
+      "size_bytes": 22117,
+      "token_count": 5338,
+      "token_model": "cl100k_base",
+      "last_modified": "2026-01-16T08:09:43.760414",
+      "content_hash": "sha256:cceef569e13dfba7a210a976e2c104a57e3fe1fe762d2393f072299a9f80052e",
+      "sections": [
+        {
+          "heading": "## Current Status (202601",
+          "level": 2
+        },
+        {
+          "heading": "### Active Work",
+          "level": 2
+        },
+        {
+          "heading": "### Recent Findings",
+          "level": 2
+        },
+        {
+          "heading": "## Completed Milestones",
+          "level": 2
+        },
+        {
+          "heading": "## Blockers (ASAP Priority)",
+          "level": 2
+        },
+        {
+          "heading": "## Upcoming Milestones",
+          "level": 2
+        },
+        {
+          "heading": "### Future Enhancements",
+          "level": 2
+        },
+        {
+          "heading": "### Planned Phases",
+          "level": 2
+        }
+      ],
+      "last_read": "2026-01-16T08:09:43.760414"
     }
   },
   "dependency_graph": {
@@ -609,9 +668,9 @@
     "sessions_count": 0
   },
   "totals": {
-    "total_files": 5,
-    "total_size_bytes": 36308,
-    "total_tokens": 8725,
-    "last_full_scan": "2026-01-15T20:27:40.259616"
+    "total_files": 6,
+    "total_size_bytes": 58425,
+    "total_tokens": 14063,
+    "last_full_scan": "2026-01-16T08:09:43.760438"
   }
 }

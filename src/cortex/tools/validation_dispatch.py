@@ -278,7 +278,7 @@ async def setup_validation_managers(
     }
 
 
-async def _prepare_validation_managers(
+async def prepare_validation_managers(
     project_root: str | None,
 ) -> tuple[Path, dict[str, object]]:
     """Prepare validation managers and root path.
@@ -294,7 +294,7 @@ async def _prepare_validation_managers(
     return root, cast(dict[str, object], validation_managers)
 
 
-async def _call_dispatch_validation(
+async def call_dispatch_validation(
     check_type: CheckType,
     managers: dict[str, object],
     root: Path,

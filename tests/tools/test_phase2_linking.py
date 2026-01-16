@@ -155,15 +155,15 @@ class TestParseFileLinks:
 
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.link_parser_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.link_parser_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_manager",
+                "cortex.tools.link_parser_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -189,11 +189,11 @@ class TestParseFileLinks:
 
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.link_parser_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.link_parser_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -215,11 +215,11 @@ class TestParseFileLinks:
 
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.link_parser_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.link_parser_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -235,7 +235,7 @@ class TestParseFileLinks:
         """Test exception handling in parse_file_links."""
         # Arrange
         with patch(
-            "cortex.tools.phase2_linking.get_project_root",
+            "cortex.tools.link_parser_operations.get_project_root",
             side_effect=RuntimeError("Test error"),
         ):
             # Act
@@ -267,15 +267,15 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.transclusion_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_manager",
+                "cortex.tools.transclusion_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -303,15 +303,15 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.transclusion_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_manager",
+                "cortex.tools.transclusion_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -340,15 +340,15 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.transclusion_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_manager",
+                "cortex.tools.transclusion_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -375,15 +375,15 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.transclusion_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_manager",
+                "cortex.tools.transclusion_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -407,15 +407,15 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.transclusion_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_manager",
+                "cortex.tools.transclusion_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -437,11 +437,11 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.transclusion_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -463,11 +463,11 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.transclusion_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.transclusion_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -499,15 +499,15 @@ class TestValidateLinks:
 
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.link_validation_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.link_validation_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_manager",
+                "cortex.tools.link_validation_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -528,15 +528,15 @@ class TestValidateLinks:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.link_validation_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.link_validation_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_manager",
+                "cortex.tools.link_validation_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -560,11 +560,11 @@ class TestValidateLinks:
 
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.link_validation_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.link_validation_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -586,11 +586,11 @@ class TestValidateLinks:
 
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.link_validation_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.link_validation_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -606,7 +606,7 @@ class TestValidateLinks:
         """Test exception handling in validate_links."""
         # Arrange
         with patch(
-            "cortex.tools.phase2_linking.get_project_root",
+            "cortex.tools.link_validation_operations.get_project_root",
             side_effect=RuntimeError("Validation failed"),
         ):
             # Act
@@ -633,11 +633,11 @@ class TestGetLinkGraph:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.link_graph_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.link_graph_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -661,11 +661,11 @@ class TestGetLinkGraph:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.link_graph_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.link_graph_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -687,11 +687,11 @@ class TestGetLinkGraph:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.link_graph_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.link_graph_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -715,11 +715,11 @@ class TestGetLinkGraph:
 
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.link_graph_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.link_graph_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -740,11 +740,11 @@ class TestGetLinkGraph:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.link_graph_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.link_graph_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):
@@ -766,7 +766,7 @@ class TestGetLinkGraph:
         """Test exception handling in get_link_graph."""
         # Arrange
         with patch(
-            "cortex.tools.phase2_linking.get_project_root",
+            "cortex.tools.link_graph_operations.get_project_root",
             side_effect=RuntimeError("Graph build failed"),
         ):
             # Act
@@ -796,16 +796,48 @@ class TestIntegration:
 
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.link_parser_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.link_parser_operations.get_managers",
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_manager",
+                "cortex.tools.link_parser_operations.get_manager",
                 side_effect=_get_manager_helper,
+            ),
+            patch(
+                "cortex.tools.transclusion_operations.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.transclusion_operations.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.transclusion_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+            patch(
+                "cortex.tools.link_validation_operations.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.link_validation_operations.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.link_validation_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+            patch(
+                "cortex.tools.link_graph_operations.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.link_graph_operations.get_managers",
+                return_value=mock_managers,
             ),
         ):
             # Act 1: Parse links
@@ -849,11 +881,27 @@ class TestIntegration:
 
         with (
             patch(
-                "cortex.tools.phase2_linking.get_project_root",
+                "cortex.tools.link_parser_operations.get_project_root",
                 return_value=mock_project_root,
             ),
             patch(
-                "cortex.tools.phase2_linking.get_managers",
+                "cortex.tools.link_parser_operations.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.transclusion_operations.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.transclusion_operations.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.link_validation_operations.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.link_validation_operations.get_managers",
                 return_value=mock_managers,
             ),
         ):

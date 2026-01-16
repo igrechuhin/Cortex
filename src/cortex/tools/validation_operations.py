@@ -10,8 +10,8 @@ Total: 1 tool
 from cortex.server import mcp
 from cortex.tools.validation_dispatch import (
     CheckType,
-    _call_dispatch_validation,
-    _prepare_validation_managers,
+    call_dispatch_validation,
+    prepare_validation_managers,
 )
 from cortex.tools.validation_helpers import create_validation_error_response
 
@@ -410,8 +410,8 @@ async def _execute_validation_with_error_handling(
 ) -> str:
     """Execute validation with error handling."""
     try:
-        root, managers = await _prepare_validation_managers(project_root)
-        return await _call_dispatch_validation(
+        root, managers = await prepare_validation_managers(project_root)
+        return await call_dispatch_validation(
             check_type,
             managers,
             root,

@@ -40,7 +40,7 @@ class SyncValidationResult(TypedDict):
 # Production directories to scan for TODOs
 _PRODUCTION_DIRS = ["src", "scripts"]
 
-# TODO marker patterns (language-agnostic)
+# Marker patterns for detecting TODO comments (language-agnostic)
 _TODO_PATTERNS = [
     re.compile(r"#\s*TODO[:\s]", re.IGNORECASE),
     re.compile(r"//\s*TODO[:\s]", re.IGNORECASE),

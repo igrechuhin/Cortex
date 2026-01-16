@@ -23,9 +23,9 @@ class TestScanCodebaseTodos:
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             src_dir = project_root / "src"
-            src_dir.mkdir()
+            _ = src_dir.mkdir()
             prod_file = src_dir / "module.py"
-            prod_file.write_text("# TODO: Implement feature\nprint('hello')\n")
+            _ = prod_file.write_text("# TODO: Implement feature\nprint('hello')\n")
 
             # Act
             todos = scan_codebase_todos(project_root)
@@ -43,9 +43,9 @@ class TestScanCodebaseTodos:
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             src_dir = project_root / "src"
-            src_dir.mkdir()
+            _ = src_dir.mkdir()
             prod_file = src_dir / "module.js"
-            prod_file.write_text("// TODO: Fix bug\nconsole.log('hello');\n")
+            _ = prod_file.write_text("// TODO: Fix bug\nconsole.log('hello');\n")
 
             # Act
             todos = scan_codebase_todos(project_root)
@@ -60,11 +60,11 @@ class TestScanCodebaseTodos:
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             src_dir = project_root / "src"
-            src_dir.mkdir()
+            _ = src_dir.mkdir()
             test_file = src_dir / "test_file.py"
-            test_file.write_text("# TODO: This should be excluded\n")
+            _ = test_file.write_text("# TODO: This should be excluded\n")
             prod_file = src_dir / "production.py"
-            prod_file.write_text("# TODO: This should be included\n")
+            _ = prod_file.write_text("# TODO: This should be included\n")
 
             # Act
             todos = scan_codebase_todos(project_root)
@@ -79,9 +79,9 @@ class TestScanCodebaseTodos:
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             src_dir = project_root / "src"
-            src_dir.mkdir()
+            _ = src_dir.mkdir()
             example_file = src_dir / "example.py"
-            example_file.write_text("# TODO: This should be excluded\n")
+            _ = example_file.write_text("# TODO: This should be excluded\n")
 
             # Act
             todos = scan_codebase_todos(project_root)
@@ -95,10 +95,10 @@ class TestScanCodebaseTodos:
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             src_dir = project_root / "src"
-            src_dir.mkdir()
+            _ = src_dir.mkdir()
             prod_file = src_dir / "module.py"
-            prod_file.write_text(
-                "# TODO: First todo\n" "print('hello')\n" "# TODO: Second todo\n"
+            _ = prod_file.write_text(
+                "# TODO: First todo\n" + "print('hello')\n" + "# TODO: Second todo\n"
             )
 
             # Act
@@ -113,9 +113,9 @@ class TestScanCodebaseTodos:
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             scripts_dir = project_root / "scripts"
-            scripts_dir.mkdir()
+            _ = scripts_dir.mkdir()
             script_file = scripts_dir / "script.py"
-            script_file.write_text("# TODO: Script todo\n")
+            _ = script_file.write_text("# TODO: Script todo\n")
 
             # Act
             todos = scan_codebase_todos(project_root)
@@ -209,12 +209,12 @@ class TestValidateRoadmapSync:
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             src_dir = project_root / "src"
-            src_dir.mkdir()
+            _ = src_dir.mkdir()
             prod_file = src_dir / "module.py"
-            prod_file.write_text("# TODO: Implement feature\n")
+            _ = prod_file.write_text("# TODO: Implement feature\n")
 
             roadmap_content = (
-                "## Phase 1\n" "See `src/module.py` for TODO implementation.\n"
+                "## Phase 1\n" + "See `src/module.py` for TODO implementation.\n"
             )
 
             # Act
@@ -231,9 +231,9 @@ class TestValidateRoadmapSync:
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             src_dir = project_root / "src"
-            src_dir.mkdir()
+            _ = src_dir.mkdir()
             prod_file = src_dir / "module.py"
-            prod_file.write_text("# TODO: Untracked todo\n")
+            _ = prod_file.write_text("# TODO: Untracked todo\n")
 
             roadmap_content = "## Phase 1\nNo reference to module.py\n"
 
@@ -251,7 +251,7 @@ class TestValidateRoadmapSync:
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             src_dir = project_root / "src"
-            src_dir.mkdir()
+            _ = src_dir.mkdir()
 
             roadmap_content = "See `src/missing.py` for details.\n"
 
@@ -271,7 +271,7 @@ class TestValidateRoadmapSync:
             src_dir = project_root / "src"
             src_dir.mkdir()
             prod_file = src_dir / "module.py"
-            prod_file.write_text("line1\nline2\n")  # 2 lines
+            _ = prod_file.write_text("line1\nline2\n")  # 2 lines
 
             roadmap_content = "See `src/module.py:100` for details.\n"
 
@@ -291,7 +291,7 @@ class TestValidateRoadmapSync:
             src_dir = project_root / "src"
             src_dir.mkdir()
             prod_file = src_dir / "module.py"
-            prod_file.write_text("line1\nline2\nline3\n")  # 3 lines
+            _ = prod_file.write_text("line1\nline2\nline3\n")  # 3 lines
 
             roadmap_content = "See `src/module.py:2` for details.\n"
 
@@ -308,17 +308,17 @@ class TestValidateRoadmapSync:
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             src_dir = project_root / "src"
-            src_dir.mkdir()
+            _ = src_dir.mkdir()
             prod_file = src_dir / "untracked.py"
-            prod_file.write_text("# TODO: Untracked todo\n")
+            _ = prod_file.write_text("# TODO: Untracked todo\n")
             other_file = src_dir / "other.py"
-            other_file.write_text(
+            _ = other_file.write_text(
                 "line1\n"
             )  # Only 1 line, but roadmap references line 100
 
             roadmap_content = (
                 "See `src/missing.py` for details.\n"
-                "See `src/other.py:100` for details.\n"
+                + "See `src/other.py:100` for details.\n"
             )
 
             # Act
@@ -336,9 +336,9 @@ class TestValidateRoadmapSync:
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             src_dir = project_root / "src"
-            src_dir.mkdir()
+            _ = src_dir.mkdir()
             prod_file = src_dir / "Module.py"
-            prod_file.write_text("# TODO: Implement feature\n")
+            _ = prod_file.write_text("# TODO: Implement feature\n")
 
             roadmap_content = "See `src/module.py` for details.\n"
 

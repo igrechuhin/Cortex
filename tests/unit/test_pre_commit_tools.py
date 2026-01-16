@@ -43,7 +43,7 @@ class TestExecutePreCommitChecks:
         """Test success with Python project."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
             (project_root / ".venv").mkdir()
 
             with patch(
@@ -52,7 +52,7 @@ class TestExecutePreCommitChecks:
                 mock_adapter = MagicMock()
                 mock_adapter_class.return_value = mock_adapter
 
-                mock_fix_result = {
+                mock_fix_result: dict[str, str | bool | list[str]] = {
                     "check_type": "fix_errors",
                     "success": True,
                     "output": "Fixed errors",
@@ -78,7 +78,7 @@ class TestExecutePreCommitChecks:
         """Test that all checks are executed when checks parameter is None."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
             (project_root / ".venv").mkdir()
 
             with patch(
@@ -87,7 +87,7 @@ class TestExecutePreCommitChecks:
                 mock_adapter = MagicMock()
                 mock_adapter_class.return_value = mock_adapter
 
-                mock_result = {
+                mock_result: dict[str, str | bool | list[str]] = {
                     "check_type": "test",
                     "success": True,
                     "output": "Success",
@@ -145,7 +145,7 @@ class TestFixQualityIssues:
         """Test error path when execute_pre_commit_checks returns error."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
             (project_root / ".venv").mkdir()
 
             with patch(
@@ -181,7 +181,7 @@ class TestFixQualityIssues:
         """Test success path in fix_quality_issues."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
             (project_root / ".venv").mkdir()
 
             with (

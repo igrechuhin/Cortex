@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
+# pyright: reportPrivateUsage=false
 from cortex.tools.markdown_operations import (
     _find_markdownlint_command,
     _get_modified_markdown_files,
@@ -655,7 +656,9 @@ class TestHelperFunctions:
 
     def test_parse_git_output(self, tmp_path: Path):
         """Test _parse_git_output helper."""
-        from cortex.tools.markdown_operations import _parse_git_output
+        from cortex.tools.markdown_operations import (
+            _parse_git_output,  # type: ignore[reportPrivateUsage]
+        )
 
         files: list[Path] = []
         stdout = "file1.md\nfile2.md\nfile3.txt"
@@ -667,7 +670,9 @@ class TestHelperFunctions:
 
     def test_parse_untracked_files(self, tmp_path: Path):
         """Test _parse_untracked_files helper."""
-        from cortex.tools.markdown_operations import _parse_untracked_files
+        from cortex.tools.markdown_operations import (
+            _parse_untracked_files,  # type: ignore[reportPrivateUsage]
+        )
 
         files: list[Path] = []
         stdout = "?? file1.md\n?? file2.mdc\n?? file3.txt"
@@ -679,7 +684,9 @@ class TestHelperFunctions:
 
     def test_parse_markdownlint_errors(self):
         """Test _parse_markdownlint_errors helper."""
-        from cortex.tools.markdown_operations import _parse_markdownlint_errors
+        from cortex.tools.markdown_operations import (
+            _parse_markdownlint_errors,  # type: ignore[reportPrivateUsage]
+        )
 
         stderr = "file.md: 1:1 MD022\nmarkdownlint-cli2 version\nfile.md: 2:1 MD032"
         errors = _parse_markdownlint_errors(stderr)
@@ -690,7 +697,9 @@ class TestHelperFunctions:
 
     def test_parse_markdownlint_output(self):
         """Test _parse_markdownlint_output helper."""
-        from cortex.tools.markdown_operations import _parse_markdownlint_output
+        from cortex.tools.markdown_operations import (
+            _parse_markdownlint_output,  # type: ignore[reportPrivateUsage]
+        )
 
         stdout = "Fixed: file.md\nFixed: file2.md"
         errors = _parse_markdownlint_output(stdout)
@@ -701,7 +710,10 @@ class TestHelperFunctions:
 
     def test_calculate_statistics(self):
         """Test _calculate_statistics helper."""
-        from cortex.tools.markdown_operations import FileResult, _calculate_statistics
+        from cortex.tools.markdown_operations import (  # type: ignore[reportPrivateUsage]
+            FileResult,
+            _calculate_statistics,
+        )
 
         results: list[FileResult] = [
             {"file": "file1.md", "fixed": True, "errors": [], "error_message": None},
