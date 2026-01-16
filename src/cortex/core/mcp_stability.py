@@ -238,18 +238,21 @@ def mcp_tool_wrapper(
     Returns:
         Decorator function
     """
+    import functools
+    import inspect
 
     def decorator(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
         """Apply stability wrapper to function."""
 
+        @functools.wraps(func)
         async def wrapper(*args: object, **kwargs: object) -> T:
             """Wrapped function with stability protections."""
             return await with_mcp_stability(func, *args, timeout=timeout, **kwargs)
 
-        # Preserve function metadata
-        wrapper.__name__ = func.__name__
-        wrapper.__doc__ = func.__doc__
-        wrapper.__annotations__ = func.__annotations__
+        # Explicitly preserve signature for FastMCP
+        # FastMCP uses inspect.signature() which needs the original signature
+        original_sig = inspect.signature(func)
+        wrapper.__signature__ = original_sig  # type: ignore[attr-defined]
 
         return wrapper
 

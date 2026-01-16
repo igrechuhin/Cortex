@@ -477,7 +477,7 @@ async def _fix_markdown_and_update_files(
     """Fix markdown lint errors and update files_modified list."""
     markdown_result_json = await fix_markdown_lint(
         project_root=root_str,
-        include_untracked=include_untracked_markdown,
+        include_untracked_markdown=include_untracked_markdown,
         dry_run=False,
     )
     markdown_result = json.loads(markdown_result_json)

@@ -25,11 +25,13 @@ from cortex.tools.validation_quality import (
     validate_quality_all_files,
     validate_quality_single_file,
 )
+from cortex.tools.validation_roadmap_sync import handle_roadmap_sync_validation
 from cortex.tools.validation_schema import (
     handle_schema_validation,
     validate_schema_all_files,
     validate_schema_single_file,
 )
+from cortex.tools.validation_timestamps import handle_timestamps_validation
 from cortex.validation.timestamp_validator import (
     validate_timestamps_all_files,
     validate_timestamps_single_file,
@@ -1533,3 +1535,111 @@ class TestValidateTimestamps:
         assert result_data["total_invalid_format"] > 0
         assert "progress.md" in result_data["results"]
         assert "roadmap.md" in result_data["results"]
+
+
+class TestHandleTimestampsValidation:
+    """Test handle_timestamps_validation MCP tool handler."""
+
+    @pytest.mark.asyncio
+    async def test_handle_timestamps_validation_single_file(
+        self, tmp_path: Path, mock_fs_manager: MagicMock
+    ) -> None:
+        """Test handle_timestamps_validation with file_name parameter."""
+        # Arrange
+        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir.mkdir(parents=True)
+        test_file = memory_bank_dir / "activeContext.md"
+        content = "# Active Context\n\n## Current Focus (2026-01-14)\n"
+        _ = test_file.write_text(content)
+
+        mock_fs_manager.construct_safe_path.return_value = test_file
+        mock_fs_manager.read_file = AsyncMock(return_value=(content, None))
+
+        # Act
+        result = await handle_timestamps_validation(
+            mock_fs_manager, tmp_path, "activeContext.md"
+        )
+
+        # Assert
+        result_data = json.loads(result)
+        assert result_data["status"] == "success"
+        assert result_data["check_type"] == "timestamps"
+        assert result_data["file_name"] == "activeContext.md"
+
+    @pytest.mark.asyncio
+    async def test_handle_timestamps_validation_all_files(
+        self, tmp_path: Path, mock_fs_manager: MagicMock
+    ) -> None:
+        """Test handle_timestamps_validation without file_name parameter."""
+        # Arrange
+        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir.mkdir(parents=True)
+        _ = (memory_bank_dir / "activeContext.md").write_text(
+            "# Active Context\n\n## Current Focus (2026-01-14)\n"
+        )
+
+        async def mock_list_files(directory: Path) -> list[Path]:
+            return [memory_bank_dir / "activeContext.md"]
+
+        mock_fs_manager.list_files = AsyncMock(side_effect=mock_list_files)
+        mock_fs_manager.read_file = AsyncMock(
+            return_value=("# Active Context\n\n## Current Focus (2026-01-14)\n", None)
+        )
+
+        # Act
+        result = await handle_timestamps_validation(mock_fs_manager, tmp_path, None)
+
+        # Assert
+        result_data = json.loads(result)
+        assert result_data["status"] == "success"
+        assert result_data["check_type"] == "timestamps"
+
+
+class TestHandleRoadmapSyncValidation:
+    """Test handle_roadmap_sync_validation MCP tool handler."""
+
+    @pytest.mark.asyncio
+    async def test_handle_roadmap_sync_validation_roadmap_not_found(
+        self, tmp_path: Path, mock_fs_manager: MagicMock
+    ) -> None:
+        """Test handle_roadmap_sync_validation when roadmap.md doesn't exist."""
+        # Arrange
+        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir.mkdir(parents=True)
+        # Don't create roadmap.md
+
+        # Act
+        result = await handle_roadmap_sync_validation(mock_fs_manager, tmp_path, None)
+
+        # Assert
+        result_data = json.loads(result)
+        assert result_data["status"] == "error"
+        assert "roadmap.md does not exist" in result_data["error"]
+
+    @pytest.mark.asyncio
+    async def test_handle_roadmap_sync_validation_success(
+        self, tmp_path: Path, mock_fs_manager: MagicMock
+    ) -> None:
+        """Test handle_roadmap_sync_validation with valid roadmap."""
+        # Arrange
+        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir.mkdir(parents=True)
+        roadmap_path = memory_bank_dir / "roadmap.md"
+        roadmap_content = "# Roadmap\n\n## Phase 1\nSee `src/module.py` for details.\n"
+        _ = roadmap_path.write_text(roadmap_content)
+
+        src_dir = tmp_path / "src"
+        _ = src_dir.mkdir()
+        _ = (src_dir / "module.py").write_text("# Module\n")
+
+        mock_fs_manager.read_file = AsyncMock(return_value=(roadmap_content, None))
+
+        # Act
+        result = await handle_roadmap_sync_validation(mock_fs_manager, tmp_path, None)
+
+        # Assert
+        result_data = json.loads(result)
+        assert result_data["status"] == "success"
+        assert result_data["check_type"] == "roadmap_sync"
+        assert "valid" in result_data
+        assert "summary" in result_data
