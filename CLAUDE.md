@@ -369,7 +369,7 @@ This project targets Python 3.13+ and MUST use modern built-ins instead of `typi
 - Phase 1 (Foundation): `initialize_memory_bank`, `check_migration_status`, `get_memory_bank_stats`, `validate_memory_bank`, `get_file_metadata`, `get_file_dependencies`, `get_file_version_history`, `create_snapshot`, `rollback_to_snapshot`, `detect_external_changes`
 - Phase 2 (DRY Linking): `parse_links`, `validate_links`, `resolve_transclusion`, `get_transclusion_tree`
 - Phase 3 (Validation): `validate_schema`, `detect_duplications`, `calculate_quality_metrics`, `get_validation_report`, `configure_validation`
-- Phase 4 (Optimization): `optimize_context`, `score_relevance`, `load_progressively`, `summarize_content`, `get_optimization_config`
+- Phase 4 (Optimization): `load_context`, `score_relevance`, `load_progressively`, `summarize_content`, `get_optimization_config`
 - Phase 5.1 (Pattern Analysis): `analyze_patterns`, `analyze_structure`, `get_insights`
 - Phase 5.2 (Refactoring): `get_refactoring_suggestions`, `analyze_consolidation`, `analyze_splits`, `plan_reorganization`
 - Phase 5.3-5.4 (Execution & Learning): `execute_refactoring`, `get_refactoring_status`, `rollback_refactoring`, `approve_refactoring`, `submit_feedback`, `get_learning_stats`

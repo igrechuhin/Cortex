@@ -91,9 +91,11 @@ class ValidationConfig:
             with open(self.config_path) as f:
                 user_config_raw = cast(object, json.load(f))
         except Exception as e:
+            from cortex.core.logging_config import logger
+
             error_detail = str(e)
             error_type = type(e).__name__
-            print(
+            logger.warning(
                 f"Failed to load validation config from {self.config_path}: {error_type}: {error_detail}. "
                 + "Cause: Invalid JSON format or file read error. "
                 + "Try: Fix JSON syntax errors, check file permissions, "

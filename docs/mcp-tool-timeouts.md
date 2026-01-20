@@ -87,7 +87,7 @@ MCP_TOOL_TIMEOUT_EXTERNAL = 120     # External operations (30-120s)
 
 **Tools using this category**:
 
-- `optimize_context`
+- `load_context`
 - `load_progressive_context`
 - `resolve_transclusions`
 - `validate`
@@ -206,7 +206,7 @@ When an operation exceeds its timeout:
 
 Timeout errors follow this format:
 
-```
+```text
 MCP tool <tool_name> exceeded timeout of <timeout>s
 ```
 

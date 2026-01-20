@@ -2,7 +2,7 @@
 Comprehensive tests for Phase 4: Token Optimization Tools
 
 This test suite provides comprehensive coverage for:
-- optimize_context()
+- load_context()
 - load_progressive_context()
 - summarize_content()
 - get_relevance_scores()
@@ -18,8 +18,8 @@ import pytest
 
 from cortex.tools.phase4_optimization import (
     get_relevance_scores,
+    load_context,
     load_progressive_context,
-    optimize_context,
     summarize_content,
 )
 
@@ -149,17 +149,17 @@ def mock_managers(
 
 
 # ============================================================================
-# Test optimize_context()
+# Test load_context()
 # ============================================================================
 
 
-class TestOptimizeContext:
-    """Tests for optimize_context() tool."""
+class TestLoadContext:
+    """Tests for load_context() tool."""
 
-    async def test_optimize_context_success(
+    async def test_load_context_success(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:
-        """Test successful context optimization."""
+        """Test successful context loading."""
         # Arrange
         with (
             patch(
@@ -176,7 +176,7 @@ class TestOptimizeContext:
             ),
         ):
             # Act
-            result_str = await optimize_context(
+            result_str = await load_context(
                 task_description="Test task", token_budget=10000, strategy="priority"
             )
             result = json.loads(result_str)
@@ -189,10 +189,10 @@ class TestOptimizeContext:
             assert "selected_files" in result
             assert "total_tokens" in result
 
-    async def test_optimize_context_default_budget(
+    async def test_load_context_default_budget(
         self, mock_project_root: Path, mock_managers: dict[str, object]
     ) -> None:
-        """Test optimization with default budget from config."""
+        """Test context loading with default budget from config."""
         # Arrange
         with (
             patch(
@@ -209,17 +209,17 @@ class TestOptimizeContext:
             ),
         ):
             # Act
-            result_str = await optimize_context(task_description="Test task")
+            result_str = await load_context(task_description="Test task")
             result = json.loads(result_str)
 
             # Assert
             assert result["status"] == "success"
             assert result["token_budget"] == 10000  # From mock config
 
-    async def test_optimize_context_dependency_aware_strategy(
+    async def test_load_context_dependency_aware_strategy(
         self, mock_project_root: Path, mock_managers: dict[str, object]
     ) -> None:
-        """Test optimization with dependency_aware strategy."""
+        """Test context loading with dependency_aware strategy."""
         # Arrange
         with (
             patch(
@@ -236,7 +236,7 @@ class TestOptimizeContext:
             ),
         ):
             # Act
-            result_str = await optimize_context(
+            result_str = await load_context(
                 task_description="Test task", strategy="dependency_aware"
             )
             result = json.loads(result_str)
@@ -245,17 +245,17 @@ class TestOptimizeContext:
             assert result["status"] == "success"
             assert result["strategy"] == "dependency_aware"
 
-    async def test_optimize_context_exception_handling(
+    async def test_load_context_exception_handling(
         self, mock_project_root: Path
     ) -> None:
-        """Test exception handling in optimize_context."""
+        """Test exception handling in load_context."""
         # Arrange
         with patch(
             "cortex.tools.phase4_optimization.get_project_root",
             side_effect=RuntimeError("Test error"),
         ):
             # Act
-            result_str = await optimize_context(task_description="Test task")
+            result_str = await load_context(task_description="Test task")
             result = json.loads(result_str)
 
             # Assert
@@ -676,10 +676,10 @@ class TestGetRelevanceScores:
 class TestIntegration:
     """Integration tests for Phase 4 optimization workflows."""
 
-    async def test_full_optimization_workflow(
+    async def test_full_context_loading_workflow(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:
-        """Test complete workflow: optimize -> score -> summarize."""
+        """Test complete workflow: load context -> score -> summarize."""
         with (
             patch(
                 "cortex.tools.phase4_optimization.get_project_root",
@@ -694,8 +694,8 @@ class TestIntegration:
                 side_effect=_get_manager_helper,
             ),
         ):
-            # Act 1: Optimize context
-            opt_result = await optimize_context(task_description="Test task")
+            # Act 1: Load context
+            opt_result = await load_context(task_description="Test task")
             opt_data = json.loads(opt_result)
 
             # Assert 1

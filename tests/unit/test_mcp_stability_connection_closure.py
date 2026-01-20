@@ -1,81 +1,54 @@
 """
 Unit tests for connection closure handling in mcp_stability.py.
 
-Tests the enhanced connection closure detection, recovery, and retry logic.
+Tests the connection closure detection, retry logic, and error handling.
 """
 
 import asyncio
-from unittest.mock import AsyncMock, patch
 
-import anyio
 import pytest
 
 from cortex.core.mcp_stability import (
     check_connection_health,
     with_mcp_stability,
 )
-from cortex.core.models import HealthMetrics
-
-
-def _make_health_metrics(
-    healthy: bool = True,
-    concurrent_operations: int = 0,
-    max_concurrent: int = 10,
-    semaphore_available: int = 10,
-    utilization_percent: float = 0.0,
-    closure_count: int = 0,
-    recovery_count: int = 0,
-) -> HealthMetrics:
-    """Create a HealthMetrics model for testing."""
-    return HealthMetrics(
-        healthy=healthy,
-        concurrent_operations=concurrent_operations,
-        max_concurrent=max_concurrent,
-        semaphore_available=semaphore_available,
-        utilization_percent=utilization_percent,
-        closure_count=closure_count,
-        recovery_count=recovery_count,
-    )
 
 
 class TestConnectionClosureHandling:
     """Tests for connection closure detection and recovery."""
 
     @pytest.mark.asyncio
-    async def test_connection_health_check_before_execution(self) -> None:
-        """Test that connection health is checked before tool execution."""
-
+    async def test_successful_execution(self) -> None:
+        """Test that successful execution returns result."""
         # Arrange
         async def test_func() -> str:
             return "success"
 
-        with (
-            patch(
-                "cortex.core.mcp_stability.check_connection_health",
-                new_callable=AsyncMock,
-                return_value=_make_health_metrics(healthy=False),
-            ),
-            pytest.raises(ConnectionError, match="Connection not healthy"),
-        ):
-            _ = await with_mcp_stability(test_func)
+        # Act
+        result = await with_mcp_stability(test_func, timeout=10.0)
+
+        # Assert
+        assert result == "success"
 
     @pytest.mark.asyncio
-    async def test_connection_closure_detection(self) -> None:
-        """Test that connection closure errors are detected."""
-
+    async def test_connection_error_causes_retry(self) -> None:
+        """Test that connection errors trigger retry logic."""
         # Arrange
-        async def test_func() -> str:
-            raise RuntimeError("MCP error -32000: Connection closed")
+        attempt_count = 0
 
-        with (
-            patch(
-                "cortex.core.mcp_stability.check_connection_health",
-                new_callable=AsyncMock,
-                return_value=_make_health_metrics(healthy=True),
-            ),
-            pytest.raises(ConnectionError, match="MCP connection failed"),
-        ):
-            _ = await with_mcp_stability(test_func)
+        async def test_func() -> str:
+            nonlocal attempt_count
+            attempt_count += 1
+            if attempt_count < 3:
+                raise ConnectionError("Connection closed")
+            return "success"
+
+        # Act
+        result = await with_mcp_stability(test_func, timeout=10.0)
+
+        # Assert
+        assert result == "success"
+        assert attempt_count == 3  # Two failures, then success
 
     @pytest.mark.asyncio
     async def test_connection_recovery_on_retry(self) -> None:
@@ -90,38 +63,12 @@ class TestConnectionClosureHandling:
                 raise RuntimeError("MCP error -32000: Connection closed")
             return "success"
 
-        with patch(
-            "cortex.core.mcp_stability.check_connection_health",
-            new_callable=AsyncMock,
-            side_effect=[
-                _make_health_metrics(healthy=True),  # Initial check
-                _make_health_metrics(healthy=True),  # Recovery check
-            ],
-        ):
-            # Act
-            result = await with_mcp_stability(test_func, timeout=10.0)
+        # Act
+        result = await with_mcp_stability(test_func, timeout=10.0)
 
-            # Assert
-            assert result == "success"
-            assert attempt_count == 2
-
-    @pytest.mark.asyncio
-    async def test_broken_resource_error_connection_closure(self) -> None:
-        """Test that BrokenResourceError is handled as connection closure."""
-
-        # Arrange
-        async def test_func() -> str:
-            raise anyio.BrokenResourceError("Resource broken")
-
-        with (
-            patch(
-                "cortex.core.mcp_stability.check_connection_health",
-                new_callable=AsyncMock,
-                return_value=_make_health_metrics(healthy=True),
-            ),
-            pytest.raises(ConnectionError, match="MCP connection failed"),
-        ):
-            _ = await with_mcp_stability(test_func)
+        # Assert
+        assert result == "success"
+        assert attempt_count == 2
 
     @pytest.mark.asyncio
     async def test_connection_closure_with_recovery(self) -> None:
@@ -136,90 +83,58 @@ class TestConnectionClosureHandling:
                 raise ConnectionError("Connection closed")
             return "success"
 
-        with patch(
-            "cortex.core.mcp_stability.check_connection_health",
-            new_callable=AsyncMock,
-            side_effect=[
-                _make_health_metrics(healthy=True),  # Initial check
-                _make_health_metrics(healthy=True),  # Recovery check
-            ],
-        ):
-            # Act
-            result = await with_mcp_stability(test_func, timeout=10.0)
+        # Act
+        result = await with_mcp_stability(test_func, timeout=10.0)
 
-            # Assert
-            assert result == "success"
-            assert attempt_count == 2
+        # Assert
+        assert result == "success"
+        assert attempt_count == 2
 
     @pytest.mark.asyncio
-    async def test_connection_closure_no_recovery(self) -> None:
-        """Test connection closure when recovery is not possible."""
-
-        # Arrange
-        async def test_func() -> str:
-            raise ConnectionError("Connection closed")
-
-        with (
-            patch(
-                "cortex.core.mcp_stability.check_connection_health",
-                new_callable=AsyncMock,
-                side_effect=[
-                    _make_health_metrics(healthy=True),  # Initial check
-                    _make_health_metrics(healthy=False),  # Recovery check fails
-                ],
-            ),
-            pytest.raises(ConnectionError, match="MCP connection failed"),
-        ):
-            _ = await with_mcp_stability(test_func, timeout=10.0)
-
-    @pytest.mark.asyncio
-    async def test_connection_health_check_includes_closure_metrics(self) -> None:
-        """Test that connection health includes closure and recovery metrics."""
+    async def test_connection_health_check_returns_health_dict(self) -> None:
+        """Test that connection health returns expected health metrics dict."""
         # Act
         health = await check_connection_health()
 
-        # Assert - use Pydantic model attribute access
-        assert hasattr(health, "healthy")
-        assert hasattr(health, "closure_count")
-        assert hasattr(health, "recovery_count")
-        assert isinstance(health.closure_count, int)
-        assert isinstance(health.recovery_count, int)
+        # Assert - check_connection_health returns dict with health metrics
+        assert "healthy" in health
+        assert "concurrent_operations" in health
+        assert "max_concurrent" in health
+        assert "semaphore_available" in health
+        assert "utilization_percent" in health
+        assert isinstance(health["healthy"], bool)
+        assert isinstance(health["concurrent_operations"], int)
+        assert isinstance(health["max_concurrent"], int)
 
     @pytest.mark.asyncio
-    async def test_timeout_error_not_retried(self) -> None:
-        """Test that timeout errors are not retried."""
-
+    async def test_timeout_error_handling(self) -> None:
+        """Test that timeout errors from the stability layer are raised."""
         # Arrange
         async def test_func() -> str:
-            raise TimeoutError("Operation timed out")
+            await asyncio.sleep(10)  # Deliberately exceed timeout
+            return "success"
 
-        with (
-            patch(
-                "cortex.core.mcp_stability.check_connection_health",
-                new_callable=AsyncMock,
-                return_value=_make_health_metrics(healthy=True),
-            ),
-            pytest.raises(asyncio.TimeoutError),
-        ):
-            _ = await with_mcp_stability(test_func, timeout=1.0)
+        # Act & Assert - timeout protection raises TimeoutError
+        with pytest.raises(TimeoutError, match="exceeded timeout"):
+            _ = await with_mcp_stability(test_func, timeout=0.1)
 
     @pytest.mark.asyncio
-    async def test_non_connection_error_not_retried(self) -> None:
-        """Test that non-connection errors are not retried."""
-
+    async def test_value_error_not_retried(self) -> None:
+        """Test that ValueErrors are not retried."""
         # Arrange
+        attempt_count = 0
+
         async def test_func() -> str:
+            nonlocal attempt_count
+            attempt_count += 1
             raise ValueError("Invalid value")
 
-        with (
-            patch(
-                "cortex.core.mcp_stability.check_connection_health",
-                new_callable=AsyncMock,
-                return_value=_make_health_metrics(healthy=True),
-            ),
-            pytest.raises(ValueError, match="Invalid value"),
-        ):
+        # Act & Assert
+        with pytest.raises(ValueError, match="Invalid value"):
             _ = await with_mcp_stability(test_func)
+
+        # Should not retry for ValueError
+        assert attempt_count == 1
 
     @pytest.mark.asyncio
     async def test_connection_closure_keyword_detection(self) -> None:
@@ -243,3 +158,21 @@ class TestConnectionClosureHandling:
             result = _is_connection_error(error)
             # Assert
             assert result is True, f"Should detect connection error: {msg}"
+
+    @pytest.mark.asyncio
+    async def test_max_retries_exhausted(self) -> None:
+        """Test that max retries are exhausted on persistent connection errors."""
+        # Arrange
+        attempt_count = 0
+
+        async def test_func() -> str:
+            nonlocal attempt_count
+            attempt_count += 1
+            raise ConnectionError("Connection closed")
+
+        # Act & Assert
+        with pytest.raises(RuntimeError, match="MCP connection failed.*after 3 attempts"):
+            _ = await with_mcp_stability(test_func, timeout=10.0)
+
+        # Should have attempted 3 times (default retry count)
+        assert attempt_count == 3

@@ -328,7 +328,7 @@ content length for the duplication detector to identify it.
 class TestPhase3Phase4Integration:
     """Test integration between Phase 3 (validation) and Phase 4 (optimization)."""
 
-    async def test_optimize_context_after_validation(
+    async def test_load_context_after_validation(
         self, temp_project_root: Path, sample_memory_bank_files: dict[str, Path]
     ):
         """Test context optimization uses validation results."""

@@ -856,12 +856,12 @@ SuggestRefactoringResult = (
 
 
 # ============================================================================
-# Context Optimization Models (optimize_context)
+# Context Loading Models (load_context)
 # ============================================================================
 
 
-class OptimizeContextResult(ToolResultBase):
-    """Result of optimize_context operation."""
+class LoadContextResult(ToolResultBase):
+    """Result of load_context operation."""
 
     status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
     task_description: str
@@ -875,16 +875,16 @@ class OptimizeContextResult(ToolResultBase):
     relevance_scores: dict[str, float] = Field(default_factory=dict)
 
 
-class OptimizeContextErrorResult(ErrorResultBase):
-    """Error result for optimize_context operations."""
+class LoadContextErrorResult(ErrorResultBase):
+    """Error result for load_context operations."""
 
     task_description: str | None = None
     token_budget: int | None = None
     strategy: str | None = None
 
 
-# Union type for optimize_context return
-OptimizeContextResultUnion = OptimizeContextResult | OptimizeContextErrorResult
+# Union type for load_context return
+LoadContextResultUnion = LoadContextResult | LoadContextErrorResult
 
 
 # ============================================================================

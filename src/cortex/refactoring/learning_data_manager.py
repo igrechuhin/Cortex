@@ -187,7 +187,9 @@ class LearningDataManager:
 
     def _handle_load_error(self, error: Exception) -> None:
         """Handle error during data loading by resetting to fresh state."""
-        print(f"Warning: Failed to load learning data: {error}. Starting fresh.")
+        from cortex.core.logging_config import logger
+
+        logger.warning(f"Failed to load learning data: {error}. Starting fresh.")
         self.feedback_records = {}
         self.learned_patterns = {}
         self.user_preferences = {}

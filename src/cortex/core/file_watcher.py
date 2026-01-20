@@ -164,7 +164,9 @@ class MemoryBankWatcher(FileSystemEventHandler):
             pass
         except Exception as e:
             # Log error but don't crash
-            print(f"Error processing file change {file_path}: {e}")
+            from cortex.core.logging_config import logger
+
+            logger.warning(f"Error processing file change {file_path}: {e}")
 
 
 class FileWatcherManager:

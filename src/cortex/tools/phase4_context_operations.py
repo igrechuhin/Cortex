@@ -1,7 +1,7 @@
 """
-Phase 4: Context Optimization Operations
+Phase 4: Context Loading Operations
 
-This module contains the implementation logic for the optimize_context tool.
+This module contains the implementation logic for the load_context tool.
 """
 
 import json
@@ -15,22 +15,22 @@ from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.optimization_strategies import OptimizationResult
 
 
-async def optimize_context_impl(
+async def load_context_impl(
     mgrs: dict[str, object],
     task_description: str,
     token_budget: int | None,
     strategy: str,
 ) -> str:
-    """Implementation logic for optimize_context tool.
+    """Implementation logic for load_context tool.
 
     Args:
         mgrs: Dictionary of managers
         task_description: Task description
         token_budget: Token budget (None for default)
-        strategy: Optimization strategy
+        strategy: Loading strategy
 
     Returns:
-        JSON string with optimization results
+        JSON string with loaded context results
     """
     (
         optimization_config,
@@ -42,7 +42,7 @@ async def optimize_context_impl(
     if token_budget is None:
         token_budget = optimization_config.get_token_budget()
 
-    files_content, files_metadata = await _read_all_files_for_optimization(
+    files_content, files_metadata = await _read_all_files_for_context_loading(
         metadata_index, fs_manager
     )
 
@@ -54,7 +54,7 @@ async def optimize_context_impl(
         strategy=strategy,
     )
 
-    return _format_optimization_result(task_description, token_budget, strategy, result)
+    return _format_load_context_result(task_description, token_budget, strategy, result)
 
 
 async def _setup_optimization_managers(
@@ -77,11 +77,11 @@ async def _setup_optimization_managers(
     return optimization_config, context_optimizer, metadata_index, fs_manager
 
 
-async def _read_all_files_for_optimization(
+async def _read_all_files_for_context_loading(
     metadata_index: MetadataIndex,
     fs_manager: FileSystemManager,
 ) -> tuple[dict[str, str], dict[str, dict[str, object]]]:
-    """Read all files and their metadata for optimization.
+    """Read all files and their metadata for context loading.
 
     Args:
         metadata_index: Metadata index manager
@@ -109,22 +109,22 @@ async def _read_all_files_for_optimization(
     return files_content, files_metadata
 
 
-def _format_optimization_result(
+def _format_load_context_result(
     task_description: str,
     token_budget: int,
     strategy: str,
     result: OptimizationResult,
 ) -> str:
-    """Format optimization result as JSON.
+    """Format load context result as JSON.
 
     Args:
         task_description: Task description
         token_budget: Token budget used
         strategy: Strategy used
-        result: Optimization result
+        result: Context loading result
 
     Returns:
-        JSON string with optimization results
+        JSON string with loaded context results
     """
     return json.dumps(
         {

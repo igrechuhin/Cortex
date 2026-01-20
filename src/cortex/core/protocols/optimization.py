@@ -125,7 +125,7 @@ class ContextOptimizerProtocol(Protocol):
 
     Used by:
         - ContextOptimizer: Multi-strategy context optimizer with token budgeting
-        - MCP Tools: For optimize_context operations
+        - MCP Tools: For load_context operations
         - ProgressiveLoader: For budget-aware context loading
         - Client Applications: For intelligent context management
 

@@ -152,7 +152,7 @@ Provide more context to get better results.
 
 ### Optimization Tools
 
-- **optimize_context** - Optimize context within token budget
+- **load_context** - Load relevant context for a task within token budget
 - **load_progressive_context** - Load context incrementally
 - **summarize_content** - Summarize content
 - **get_relevance_scores** - Score files by relevance

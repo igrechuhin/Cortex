@@ -1,6 +1,7 @@
 """Metadata index management with JSON storage and corruption recovery."""
 
 import json
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import cast
@@ -8,6 +9,9 @@ from typing import cast
 from .async_file_utils import open_async_text_file
 from .exceptions import IndexCorruptedError
 from .retry import retry_async
+
+# Type alias for section metadata - accepts various dict types with str/int/object values
+SectionType = Mapping[str, str | int | object]
 
 
 class MetadataIndex:
@@ -196,7 +200,7 @@ class MetadataIndex:
         size_bytes: int,
         token_count: int,
         content_hash: str,
-        sections: list[dict[str, object]],
+        sections: Sequence[SectionType],
         change_source: str = "internal",
     ):
         """
@@ -330,7 +334,7 @@ class MetadataIndex:
         size_bytes: int,
         token_count: int,
         content_hash: str,
-        sections: list[dict[str, object]],
+        sections: Sequence[SectionType],
         now: str,
     ):
         """Update basic metadata fields.
@@ -653,6 +657,70 @@ class MetadataIndex:
             self._data["files"] = files
             await self.recalculate_totals()
             await self.save()
+
+    async def validate_index_consistency(self) -> list[str]:
+        """Validate index consistency with filesystem.
+
+        Checks all files in index against actual filesystem and
+        identifies stale entries (in index but not on disk).
+
+        Returns:
+            List of stale file names (in index but not on disk)
+        """
+        if self._data is None:
+            _ = await self.load()
+
+        if self._data is None:
+            return []
+
+        stale_files: list[str] = []
+        files_raw = self._data.get("files", {})
+        if not isinstance(files_raw, dict):
+            return []
+
+        files_dict = cast(dict[str, object], files_raw)
+
+        for file_name in files_dict.keys():
+            file_path = self.memory_bank_dir / file_name
+            if not file_path.exists():
+                stale_files.append(file_name)
+
+        return stale_files
+
+    async def cleanup_stale_entries(self, dry_run: bool = False) -> int:
+        """Remove stale entries from index.
+
+        Args:
+            dry_run: If True, only report what would be cleaned
+
+        Returns:
+            Number of entries cleaned
+        """
+        stale_files = await self.validate_index_consistency()
+
+        if not stale_files:
+            return 0
+
+        if dry_run:
+            return len(stale_files)
+
+        # Remove stale entries
+        if self._data is None:
+            return 0
+
+        files_raw = self._data.get("files", {})
+        if not isinstance(files_raw, dict):
+            return 0
+
+        files_dict = cast(dict[str, object], files_raw)
+        for file_name in stale_files:
+            if file_name in files_dict:
+                del files_dict[file_name]
+
+        self._data["files"] = files_dict
+        await self.recalculate_totals()
+        await self.save()
+        return len(stale_files)
 
     def get_data(self) -> dict[str, object] | None:
         """Get raw index data (for testing/debugging)."""

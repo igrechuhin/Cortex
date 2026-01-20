@@ -1,11 +1,11 @@
 """
 Phase 4: Token Optimization Tools
 
-This module contains tools for context optimization, progressive loading,
+This module contains tools for context loading, progressive loading,
 content summarization, and relevance scoring.
 
 Total: 4 tools (rules tools moved to consolidated.py)
-- optimize_context
+- load_context
 - load_progressive_context
 - summarize_content
 - get_relevance_scores
@@ -21,13 +21,13 @@ from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
 from cortex.tools.phase4_optimization_handlers import (
     get_relevance_scores,
+    load_context,
     load_progressive_context,
-    optimize_context,
     summarize_content,
 )
 
 __all__ = [
-    "optimize_context",
+    "load_context",
     "load_progressive_context",
     "summarize_content",
     "get_relevance_scores",

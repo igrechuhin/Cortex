@@ -1,7 +1,7 @@
 """Timestamp validation utilities for Memory Bank files.
 
 This module provides functions to validate timestamp formats in Memory Bank files.
-All timestamps must use YYYY-MM-DD date-only format (no time components).
+Valid timestamps use YYYY-MM-DDTHH:MM format (ISO 8601 date-time without seconds/timezone).
 """
 
 import json
@@ -14,20 +14,49 @@ from typing import cast
 from cortex.core.file_system import FileSystemManager
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
+# Valid format: YYYY-MM-DDTHH:MM (ISO 8601 without seconds/timezone)
+VALID_DATETIME_PATTERN = r"\b(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})\b"
+# Also valid: YYYY-MM-DD (date-only for historical entries)
+VALID_DATE_PATTERN = r"\b(\d{4}-\d{2}-\d{2})\b"
 
-def _check_valid_date_patterns(
-    line: str, line_num: int, date_pattern: str
+
+def _check_valid_datetime_patterns(
+    line: str, line_num: int
 ) -> tuple[int, list[dict[str, object]]]:
-    """Check for valid YYYY-MM-DD date-only format timestamps.
+    """Check for valid YYYY-MM-DDTHH:MM format timestamps.
 
     Returns:
         Tuple of (valid_count, violations)
     """
     valid_count = 0
     violations: list[dict[str, object]] = []
-    date_matches = re.finditer(date_pattern, line)
+    datetime_matches = re.finditer(VALID_DATETIME_PATTERN, line)
+    for match in datetime_matches:
+        timestamp_str = match.group(1)
+        try:
+            _ = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M")
+            valid_count += 1
+        except ValueError:
+            pass
+    return valid_count, violations
+
+
+def _check_valid_date_patterns(
+    line: str, line_num: int
+) -> tuple[int, list[dict[str, object]]]:
+    """Check for valid YYYY-MM-DD date-only format timestamps.
+
+    Date-only format is also valid for historical entries or when time is not needed.
+
+    Returns:
+        Tuple of (valid_count, violations)
+    """
+    valid_count = 0
+    violations: list[dict[str, object]] = []
+    date_matches = re.finditer(VALID_DATE_PATTERN, line)
     for match in date_matches:
         date_str = match.group(1)
+        # Skip if this is part of a datetime (YYYY-MM-DDTHH:MM)
         if re.search(rf"{re.escape(date_str)}T\d", line):
             continue
         try:
@@ -38,39 +67,13 @@ def _check_valid_date_patterns(
     return valid_count, violations
 
 
-def _check_invalid_datetime_patterns(
-    line: str, line_num: int, datetime_pattern: str
-) -> tuple[int, list[dict[str, object]]]:
-    """Check for datetime patterns with time component (YYYY-MM-DDTHH:MM).
-
-    These are invalid as timestamps must be date-only (YYYY-MM-DD).
-
-    Returns:
-        Tuple of (invalid_count, violations)
-    """
-    invalid_format_count = 0
-    violations: list[dict[str, object]] = []
-    datetime_matches = re.finditer(datetime_pattern, line)
-    for match in datetime_matches:
-        timestamp_str = match.group(0)
-        try:
-            _ = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M")
-            invalid_format_count += 1
-            violations.append(
-                {
-                    "line": line_num,
-                    "content": line.strip()[:80],
-                    "timestamp": timestamp_str,
-                    "issue": "Contains time component (should be YYYY-MM-DD date-only)",
-                }
-            )
-        except ValueError:
-            pass
-    return invalid_format_count, violations
-
-
 def _get_invalid_datetime_patterns() -> list[tuple[str, str]]:
-    """Get patterns for invalid datetime formats with time components.
+    """Get patterns for invalid datetime formats.
+
+    Invalid formats include:
+    - Timestamps with seconds (YYYY-MM-DDTHH:MM:SS)
+    - Timestamps with timezone (YYYY-MM-DDTHH:MMZ or YYYY-MM-DDTHH:MM+00:00)
+    - Space-separated date-time (YYYY-MM-DD HH:MM)
 
     Returns:
         List of (pattern, issue_message) tuples
@@ -78,23 +81,15 @@ def _get_invalid_datetime_patterns() -> list[tuple[str, str]]:
     return [
         (
             r"\b\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}\b",
-            "Contains time component (should be YYYY-MM-DD date-only)",
+            "Invalid format: space-separated (should be YYYY-MM-DDTHH:MM)",
         ),
         (
             r"\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\b",
-            "Contains time component (should be YYYY-MM-DD date-only)",
+            "Invalid format: contains seconds (should be YYYY-MM-DDTHH:MM)",
         ),
         (
-            r"\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}[Z+-]\d{2}:\d{2}\b",
-            "Contains time component (should be YYYY-MM-DD date-only)",
-        ),
-        (
-            r"\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z\b",
-            "Contains time component (should be YYYY-MM-DD date-only)",
-        ),
-        (
-            r"\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}\b",
-            "Contains time component (should be YYYY-MM-DD date-only)",
+            r"\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}[Z+-]",
+            "Invalid format: contains timezone (should be YYYY-MM-DDTHH:MM)",
         ),
     ]
 
@@ -143,20 +138,21 @@ def _check_invalid_datetime_formats(
 
 
 def _check_other_date_formats(
-    line: str, line_num: int, other_date_pattern: str
+    line: str, line_num: int
 ) -> tuple[int, list[dict[str, object]]]:
-    """Check for other non-standard date formats (not YYYY-MM-DD).
+    """Check for other non-standard date formats.
 
     Returns:
         Tuple of (invalid_count, violations)
     """
     invalid_format_count = 0
     violations: list[dict[str, object]] = []
-    other_matches = re.finditer(other_date_pattern, line)
+    # Match formats like MM/DD/YYYY, DD-MM-YYYY, etc.
+    other_pattern = r"\b((?:\d{1,2}|\d{3})[/-]\d{1,2}[/-]\d{2,4})\b"
+    other_matches = re.finditer(other_pattern, line)
     for match in other_matches:
         date_str = match.group(1)
-        if re.search(rf"{re.escape(date_str)}T\d", line):
-            continue
+        # Skip if it matches valid YYYY-MM-DD format
         if re.match(r"\d{4}-\d{2}-\d{2}$", date_str):
             continue
         invalid_format_count += 1
@@ -165,14 +161,14 @@ def _check_other_date_formats(
                 "line": line_num,
                 "content": line.strip()[:80],
                 "timestamp": date_str,
-                "issue": "Non-standard date format (should be YYYY-MM-DD date-only)",
+                "issue": "Non-standard date format (use YYYY-MM-DD or YYYY-MM-DDTHH:MM)",
             }
         )
     return invalid_format_count, violations
 
 
 def _process_line_timestamps(
-    line: str, line_num: int, patterns: dict[str, str]
+    line: str, line_num: int
 ) -> tuple[int, int, list[dict[str, object]]]:
     """Process a single line for timestamp validation.
 
@@ -182,22 +178,20 @@ def _process_line_timestamps(
     valid_count = invalid_format_count = 0
     violations: list[dict[str, object]] = []
 
-    v_count, _ = _check_valid_date_patterns(line, line_num, patterns["date"])
+    # Check for valid YYYY-MM-DDTHH:MM format (preferred)
+    v_count, _ = _check_valid_datetime_patterns(line, line_num)
     valid_count += v_count
 
-    inv_count, dt_violations = _check_invalid_datetime_patterns(
-        line, line_num, patterns["datetime"]
-    )
-    invalid_format_count += inv_count
-    violations.extend(dt_violations)
+    # Check for valid YYYY-MM-DD format (also acceptable)
+    v_count, _ = _check_valid_date_patterns(line, line_num)
+    valid_count += v_count
 
-    inv_count, dt_format_violations = _check_invalid_datetime_formats(line, line_num)
+    # Check for invalid formats
+    inv_count, inv_violations = _check_invalid_datetime_formats(line, line_num)
     invalid_format_count += inv_count
-    violations.extend(dt_format_violations)
+    violations.extend(inv_violations)
 
-    inv_count, o_violations = _check_other_date_formats(
-        line, line_num, patterns["other"]
-    )
+    inv_count, o_violations = _check_other_date_formats(line, line_num)
     invalid_format_count += inv_count
     violations.extend(o_violations)
 
@@ -212,35 +206,23 @@ def scan_timestamps(content: str) -> dict[str, object]:
 
     Returns:
         Dictionary with validation results:
-        - valid_count: Number of valid YYYY-MM-DD date-only timestamps
-        - invalid_format_count: Number of invalid timestamp formats (with time components or non-standard formats)
-        - invalid_with_time_count: Number of timestamps with time components (must be 0)
+        - valid_count: Number of valid timestamps (YYYY-MM-DDTHH:MM or YYYY-MM-DD)
+        - invalid_format_count: Number of invalid timestamp formats
         - violations: List of violation details
     """
-    patterns = {
-        "datetime": r"\b(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})\b",
-        "date": r"\b(\d{4}-\d{2}-\d{2})\b",
-        "other": r"\b((?:\d{1,2}|\d{3})[/-]\d{1,2}[/-]\d{2,4}|\d{2,3}[/-]\d{1,2}[/-]\d{1,2})\b",
-    }
-    valid_count = invalid_format_count = invalid_with_time_count = 0
+    valid_count = invalid_format_count = 0
     violations: list[dict[str, object]] = []
 
     for line_num, line in enumerate(content.split("\n"), start=1):
-        v_count, inv_count, line_violations = _process_line_timestamps(
-            line, line_num, patterns
-        )
+        v_count, inv_count, line_violations = _process_line_timestamps(line, line_num)
         valid_count += v_count
         invalid_format_count += inv_count
-        for violation in line_violations:
-            issue = str(violation.get("issue", ""))
-            if "time component" in issue:
-                invalid_with_time_count += 1
         violations.extend(line_violations)
 
     return {
         "valid_count": valid_count,
         "invalid_format_count": invalid_format_count,
-        "invalid_with_time_count": invalid_with_time_count,
+        "invalid_with_time_count": 0,  # Deprecated: time component is now valid
         "violations": violations[:20],
     }
 
@@ -273,8 +255,7 @@ async def validate_timestamps_single_file(
     scan_result = scan_timestamps(content)
 
     invalid_format_count = cast(int, scan_result["invalid_format_count"])
-    invalid_with_time_count = cast(int, scan_result["invalid_with_time_count"])
-    has_blocking_violations = invalid_format_count > 0 or invalid_with_time_count > 0
+    has_blocking_violations = invalid_format_count > 0
 
     result: dict[str, object] = {
         "status": "success",
@@ -282,7 +263,7 @@ async def validate_timestamps_single_file(
         "file_name": file_name,
         "valid_count": scan_result["valid_count"],
         "invalid_format_count": scan_result["invalid_format_count"],
-        "invalid_with_time_count": scan_result["invalid_with_time_count"],
+        "invalid_with_time_count": 0,  # Deprecated
         "violations": scan_result["violations"],
         "valid": not has_blocking_violations,
     }
@@ -301,19 +282,18 @@ def process_file_timestamps(
     scan_result = scan_timestamps(content)
     valid_count = cast(int, scan_result["valid_count"])
     invalid_format_count = cast(int, scan_result["invalid_format_count"])
-    invalid_with_time_count = cast(int, scan_result["invalid_with_time_count"])
 
-    has_blocking_violations = invalid_format_count > 0 or invalid_with_time_count > 0
+    has_blocking_violations = invalid_format_count > 0
 
     file_result = {
         "valid_count": scan_result["valid_count"],
         "invalid_format_count": scan_result["invalid_format_count"],
-        "invalid_with_time_count": scan_result["invalid_with_time_count"],
+        "invalid_with_time_count": 0,  # Deprecated
         "violations": scan_result["violations"],
         "valid": not has_blocking_violations,
     }
 
-    return file_result, valid_count, invalid_format_count, invalid_with_time_count
+    return file_result, valid_count, invalid_format_count, 0
 
 
 async def validate_timestamps_all_files(
@@ -348,18 +328,14 @@ def _process_all_files_timestamps(
     """
     total_valid = 0
     total_invalid_format = 0
-    total_invalid_with_time = 0
 
     for file_name, content in files_content.items():
-        file_result, v_count, inv_fmt, inv_time = process_file_timestamps(
-            file_name, content
-        )
+        file_result, v_count, inv_fmt, _ = process_file_timestamps(file_name, content)
         results[file_name] = file_result
         total_valid += v_count
         total_invalid_format += inv_fmt
-        total_invalid_with_time += inv_time
 
-    return total_valid, total_invalid_format, total_invalid_with_time
+    return total_valid, total_invalid_format, 0
 
 
 def _build_timestamps_result(
@@ -374,17 +350,15 @@ def _build_timestamps_result(
     Returns:
         Result dictionary
     """
-    total_valid, total_invalid_format, total_invalid_with_time = totals
-    has_any_blocking_violations = (
-        total_invalid_format > 0 or total_invalid_with_time > 0
-    )
+    total_valid, total_invalid_format, _ = totals
+    has_any_blocking_violations = total_invalid_format > 0
 
     return {
         "status": "success",
         "check_type": "timestamps",
         "total_valid": total_valid,
         "total_invalid_format": total_invalid_format,
-        "total_invalid_with_time": total_invalid_with_time,
+        "total_invalid_with_time": 0,  # Deprecated
         "files_valid": all(r["valid"] for r in results.values()),
         "results": results,
         "valid": not has_any_blocking_violations,

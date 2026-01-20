@@ -1106,7 +1106,7 @@ Protocol for optimizing context selection within token budgets.
 **Used By:**
 
 - ContextOptimizer - Multi-strategy optimizer
-- MCP Tools - optimize_context operations
+- MCP Tools - load_context operations
 - ProgressiveLoader - Budget-aware loading
 - Client Applications - Context management
 

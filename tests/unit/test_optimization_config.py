@@ -68,20 +68,22 @@ class TestConfigFileOperations:
     """Tests for config file loading and saving."""
 
     def test_load_config_handles_invalid_json(
-        self, temp_project_root: Path, capsys: pytest.CaptureFixture[str]
+        self, temp_project_root: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
         """Test load handles invalid JSON gracefully."""
+        import logging
+
         # Arrange
         config_path = temp_project_root / ".cortex/optimization.json"
         _ = config_path.write_text("{invalid json")
 
         # Act
-        config = OptimizationConfig(temp_project_root)
+        with caplog.at_level(logging.WARNING):
+            config = OptimizationConfig(temp_project_root)
 
         # Assert
         assert config.config == DEFAULT_OPTIMIZATION_CONFIG
-        captured = capsys.readouterr()
-        assert "Warning: Failed to load optimization config" in captured.out
+        assert "Failed to load optimization config" in caplog.text
 
     @pytest.mark.asyncio
     async def test_save_config_creates_file(self, temp_project_root: Path) -> None:
@@ -103,21 +105,24 @@ class TestConfigFileOperations:
     async def test_save_config_returns_false_on_error(
         self,
         temp_project_root: Path,
-        capsys: pytest.CaptureFixture[str],
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Test save_config returns False on IO error."""
+        import logging
         from unittest.mock import patch
 
         # Arrange
         config = OptimizationConfig(temp_project_root)
-        with patch("aiofiles.open", side_effect=OSError("Permission denied")):
+        with (
+            patch("aiofiles.open", side_effect=OSError("Permission denied")),
+            caplog.at_level(logging.ERROR),
+        ):
             # Act
             result = await config.save_config()
 
             # Assert
             assert result is False
-            captured = capsys.readouterr()
-            assert "Error: Failed to save optimization config" in captured.out
+            assert "Failed to save optimization config" in caplog.text
 
 
 class TestConfigMerging:

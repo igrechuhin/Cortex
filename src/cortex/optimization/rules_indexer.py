@@ -405,7 +405,9 @@ class RulesIndexer:
                 break
             except Exception as e:
                 # Log error but continue
-                print(f"Error in auto-reindex: {e}")
+                from cortex.core.logging_config import logger
+
+                logger.warning(f"Error in auto-reindex: {e}")
                 await asyncio.sleep(60)  # Wait 1 minute on error
 
     def get_index(self) -> dict[str, dict[str, object]]:

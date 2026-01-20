@@ -80,7 +80,7 @@ From analyzing typical memory bank workflows:
    - `resolve_transclusion` - needs linking managers only
 
 2. **Occasional tools** (~15% of calls):
-   - `optimize_context` - needs optimization managers
+   - `load_context` - needs optimization managers
    - `analyze_patterns` - needs analysis managers
    - `get_refactoring_suggestions` - needs refactoring managers
 
@@ -93,7 +93,7 @@ From analyzing typical memory bank workflows:
 
 Some managers depend on others:
 
-```
+```text
 FileSystemManager (base)
     ↓
 MetadataIndex
@@ -107,7 +107,7 @@ LinkParser → TransclusionEngine
 
 Others are independent:
 
-```
+```text
 TokenCounter (independent)
 PatternAnalyzer (independent)
 LearningEngine (independent)
@@ -115,25 +115,25 @@ LearningEngine (independent)
 
 ### Use Case Analysis
 
-**Use Case 1: Quick Validation**
+#### Use Case 1: Quick Validation
 
-```
+```text
 User: Validate memory bank
 Tools needed: FileSystemManager, MetadataIndex, SchemaValidator, LinkValidator
 Tools NOT needed: RefactoringEngine, LearningEngine, StructureManager
 ```
 
-**Use Case 2: Refactoring**
+#### Use Case 2: Refactoring
 
-```
+```text
 User: Get refactoring suggestions
 Tools needed: FileSystemManager, MetadataIndex, PatternAnalyzer, RefactoringEngine
 Tools NOT needed: LearningEngine (until feedback), StructureManager
 ```
 
-**Use Case 3: Context Optimization**
+#### Use Case 3: Context Optimization
 
-```
+```text
 User: Optimize context
 Tools needed: FileSystemManager, MetadataIndex, TokenCounter, RelevanceScorer, ContextOptimizer
 Tools NOT needed: RefactoringEngine, LearningEngine, StructureManager
@@ -297,7 +297,7 @@ async def validate_memory_bank() -> dict[str, object]:
 
 ### Dependency Graph
 
-```
+```text
 Tier 1 (Core)
     FileSystemManager
         ↓
@@ -371,8 +371,8 @@ Additional managers are initialized on-demand in tool handlers:
 
 ```python
 @mcp.tool()
-async def optimize_context(...) -> dict[str, object]:
-    """Optimize context - initializes optimization managers."""
+async def load_context(...) -> dict[str, object]:
+    """Load context - initializes optimization managers."""
     managers = await get_managers()
 
     if "token_counter" not in managers:

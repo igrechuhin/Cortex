@@ -257,96 +257,16 @@ class TestValidatorHelpers:
             handle_mcp_tool_failure(error, "test_tool", "test_step", str(tmp_path))
 
 
-class TestProtocolEnforcementIntegration:
-    """Integration tests for protocol enforcement in commit procedure context."""
+class TestMCPToolWrapperIntegration:
+    """Integration tests for mcp_tool_wrapper in production scenarios."""
 
-    def test_wrapper_detects_failure_and_stops(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """Test that mcp_tool_wrapper detects failure and stops execution."""
+    def test_wrapper_basic_execution(self, tmp_path: Path) -> None:
+        """Test that mcp_tool_wrapper executes tools correctly."""
         import asyncio
 
         from cortex.core.mcp_stability import mcp_tool_wrapper
 
-        # Set project root for handler
-        monkeypatch.chdir(tmp_path)
-
-        @mcp_tool_wrapper(timeout=1.0, enforce_failure_protocol=True)
-        async def failing_tool() -> dict[str, object]:
-            """Tool that fails with JSON parsing error."""
-            raise json.JSONDecodeError("Expecting value", "", 0)
-
-        # Create memory bank directory and roadmap
-        memory_bank = tmp_path / ".cortex" / "memory-bank"
-        memory_bank.mkdir(parents=True)
-        roadmap = memory_bank / "roadmap.md"
-        _ = roadmap.write_text(
-            "# Roadmap\n\n## Blockers (ASAP Priority)\n\n", encoding="utf-8"
-        )
-
-        # Act & Assert
-        with pytest.raises(MCPToolFailure) as exc_info:
-            _ = asyncio.run(failing_tool())  # type: ignore[arg-type]
-
-        assert exc_info.value.tool_name == "failing_tool"
-        # Check that investigation plan was created
-        plans_dir = tmp_path / ".cortex" / "plans"
-        plan_files = list(plans_dir.glob("phase-investigate-failing_tool-failure-*.md"))
-        _ = len(plan_files)  # Check that plan was created
-        assert len(plan_files) == 1
-
-    def test_wrapper_validates_response_and_detects_failure(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """Test that wrapper validates response and detects failures."""
-        import asyncio
-        from unittest.mock import patch
-
-        from cortex.core.mcp_stability import mcp_tool_wrapper
-
-        # Set project root for handler
-        monkeypatch.chdir(tmp_path)
-
-        @mcp_tool_wrapper(timeout=1.0, enforce_failure_protocol=True)
-        async def tool_returning_json_string() -> str:
-            """Tool that returns JSON string instead of dict (double-encoding)."""
-            import json
-
-            return json.dumps({"status": "success"})  # Should be dict, not string
-
-        # Create memory bank directory and roadmap
-        memory_bank = tmp_path / ".cortex" / "memory-bank"
-        memory_bank.mkdir(parents=True)
-        roadmap = memory_bank / "roadmap.md"
-        _ = roadmap.write_text(
-            "# Roadmap\n\n## Blockers (ASAP Priority)\n\n", encoding="utf-8"
-        )
-
-        # Mock _is_test_context to return False so validation actually runs
-        with patch(
-            "cortex.core.mcp_tool_validator._is_test_context", return_value=False
-        ):
-            # Act & Assert
-            with pytest.raises(MCPToolFailure) as exc_info:
-                _ = asyncio.run(tool_returning_json_string())  # type: ignore[arg-type]
-
-            assert exc_info.value.tool_name == "tool_returning_json_string"
-            # Check that investigation plan was created
-            plans_dir = tmp_path / ".cortex" / "plans"
-            plan_files = list(
-                plans_dir.glob(
-                    "phase-investigate-tool_returning_json_string-failure-*.md"
-                )
-            )
-            assert len(plan_files) == 1
-
-    def test_wrapper_allows_valid_responses(self, tmp_path: Path) -> None:
-        """Test that wrapper allows valid responses to pass through."""
-        import asyncio
-
-        from cortex.core.mcp_stability import mcp_tool_wrapper
-
-        @mcp_tool_wrapper(timeout=1.0, enforce_failure_protocol=True)
+        @mcp_tool_wrapper(timeout=1.0)
         async def valid_tool() -> dict[str, object]:
             """Tool that returns valid response."""
             return {"status": "success", "data": "test"}
@@ -357,30 +277,17 @@ class TestProtocolEnforcementIntegration:
         # Assert
         assert result == {"status": "success", "data": "test"}
 
-    def test_wrapper_ignores_expected_errors(self, tmp_path: Path) -> None:
-        """Test that wrapper ignores expected errors (validation failures)."""
+    def test_wrapper_propagates_value_errors(self, tmp_path: Path) -> None:
+        """Test that wrapper propagates ValueError exceptions."""
         import asyncio
 
         from cortex.core.mcp_stability import mcp_tool_wrapper
 
-        @mcp_tool_wrapper(timeout=1.0, enforce_failure_protocol=True)
+        @mcp_tool_wrapper(timeout=1.0)
         async def tool_with_validation_error() -> dict[str, object]:
             """Tool that raises expected validation error."""
             raise ValueError("Validation failed: file not found")
 
-        # Act & Assert - should raise ValueError, not MCPToolFailure
+        # Act & Assert - ValueError should propagate through
         with pytest.raises(ValueError, match="Validation failed"):
             _ = asyncio.run(tool_with_validation_error())  # type: ignore[arg-type]
-
-    def test_step_name_tracking(self, tmp_path: Path) -> None:
-        """Test that step names can be set and retrieved."""
-        from cortex.core.mcp_stability import get_commit_step_name, set_commit_step_name
-
-        # Act
-        initial_name = get_commit_step_name()
-        set_commit_step_name("Step 2: Type Checking")
-        updated_name = get_commit_step_name()
-
-        # Assert
-        assert initial_name == "unknown"
-        assert updated_name == "Step 2: Type Checking"

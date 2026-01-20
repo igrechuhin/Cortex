@@ -7,10 +7,10 @@ Handle file restoration and rollback execution operations.
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 from pathlib import Path
+from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import VersionMetadata
 from cortex.core.version_manager import VersionManager
 from cortex.refactoring.version_snapshots import (
     find_snapshot_version,
@@ -189,7 +189,7 @@ async def restore_single_file(
 
 async def _rollback_file_to_version(
     file_path: str,
-    version_history: list[VersionMetadata],
+    version_history: list[dict[str, object]],
     version: int,
     version_manager: VersionManager,
 ) -> bool:
@@ -197,7 +197,7 @@ async def _rollback_file_to_version(
 
     Args:
         file_path: Path to file
-        version_history: Version history list (VersionMetadata models)
+        version_history: Version history list (dicts)
         version: Version number to rollback to
         version_manager: Version manager
 
@@ -243,7 +243,10 @@ async def backup_current_version(
         file_meta = await metadata_index.get_file_metadata(file_path)
         version_count = 0
         if file_meta:
-            version_count = len(file_meta.version_history)
+            version_history_raw: object = file_meta.get("version_history", [])
+            if isinstance(version_history_raw, list):
+                vh_list: list[object] = cast(list[object], version_history_raw)
+                version_count = len(vh_list)
 
         _ = await version_manager.create_snapshot(
             full_path,

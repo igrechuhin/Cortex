@@ -148,7 +148,9 @@ class OptimizationConfig:
             with open(self.config_path) as f:
                 user_config_raw = cast(object, json.load(f))
         except (OSError, json.JSONDecodeError) as e:
-            print(f"Warning: Failed to load optimization config: {e}")
+            from cortex.core.logging_config import logger
+
+            logger.warning(f"Failed to load optimization config: {e}")
             return cast(dict[str, object], deepcopy(DEFAULT_OPTIMIZATION_CONFIG))
 
         # Validate config type
@@ -206,7 +208,9 @@ class OptimizationConfig:
             return True
 
         except OSError as e:
-            print(f"Error: Failed to save optimization config: {e}")
+            from cortex.core.logging_config import logger
+
+            logger.error(f"Failed to save optimization config: {e}")
             return False
 
     def get(self, key_path: str, default: object = None) -> object:

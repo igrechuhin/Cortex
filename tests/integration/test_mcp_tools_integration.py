@@ -19,7 +19,7 @@ from cortex.tools.phase1_foundation_dependency import get_dependency_graph
 from cortex.tools.phase1_foundation_stats import get_memory_bank_stats
 from cortex.tools.phase1_foundation_version import get_version_history
 from cortex.tools.phase2_linking import parse_file_links, validate_links
-from cortex.tools.phase4_optimization import optimize_context
+from cortex.tools.phase4_optimization import load_context
 from cortex.tools.validation_operations import validate
 
 
@@ -191,8 +191,8 @@ class TestMCPToolWorkflows:
         # Initialize
         _ = await _initialize_memory_bank_helper(project_root_str)
 
-        # Act: Optimize context - use task_description parameter
-        result = await optimize_context(
+        # Act: Load context - use task_description parameter
+        result = await load_context(
             task_description="project",
             token_budget=10000,
             project_root=project_root_str,

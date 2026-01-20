@@ -797,15 +797,21 @@ Update configuration:
 
 Tools for smart context loading, relevance scoring, summarization, and custom rules integration.
 
-### optimize_context
+### load_context
 
-Select optimal context for a task within token budget.
+Load relevant context for a task within token budget.
+
+This tool should be called at the START of any task to:
+
+- Load memory bank files relevant to the task
+- Load applicable rules and patterns
+- Provide project context before making changes
 
 **Parameters:**
 
 - `task_description` (str) - Description of the task or work to be done
 - `token_budget` (int | None) - Maximum tokens allowed (defaults to config value)
-- `strategy` (str) - Optimization strategy (default: "dependency_aware")
+- `strategy` (str) - Loading strategy (default: "dependency_aware")
   - `"priority"` - Greedy selection by predefined priority
   - `"dependency_aware"` - Includes dependency trees
   - `"section_level"` - Partial file inclusion
@@ -814,7 +820,7 @@ Select optimal context for a task within token budget.
 
 **Description:**
 
-Uses relevance scoring and optimization strategies to select the best subset of Memory Bank files that fit within a token budget.
+Uses relevance scoring and loading strategies to select the best subset of Memory Bank files that fit within a token budget.
 
 **Returns:**
 

@@ -1,5 +1,6 @@
 """Helper utilities for lazy manager initialization."""
 
+from collections.abc import Mapping
 from typing import TypeVar, cast
 
 from cortex.managers.lazy_manager import LazyManager
@@ -7,7 +8,7 @@ from cortex.managers.lazy_manager import LazyManager
 T = TypeVar("T")
 
 
-async def get_manager(managers: dict[str, object], name: str, type_: type[T]) -> T:
+async def get_manager(managers: Mapping[str, object], name: str, type_: type[T]) -> T:
     """Get manager from dict, unwrapping LazyManager if needed.
 
     Args:

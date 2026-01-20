@@ -48,7 +48,7 @@ Cortex started with a highly granular tool design where nearly every operation h
 
 **Phase 4: Optimization (10 tools)**:
 
-- `optimize_context`
+- `load_context`
 - `score_relevance`
 - `score_file_relevance`
 - `load_progressively`
@@ -155,28 +155,28 @@ Analyzed Claude Desktop conversation logs with Cortex:
 
 ### Design Space Analysis
 
-**Dimension 1: Scope (Full vs Single File)**
+#### Dimension 1: Scope (Full vs Single File)
 
 Two approaches for operations that can target single files or all files:
 
 **A. Separate tools**:
 
-```
+```text
 validate_schema()          # All files
 validate_schema_file()     # Single file
 ```
 
 **B. Single tool with optional parameter**:
 
-```
+```text
 validate_schema(file_path: str | None = None)  # Both cases
 ```
 
-**Dimension 2: Granularity (Atomic vs Composite)**
+#### Dimension 2: Granularity (Atomic vs Composite)
 
 **A. Atomic tools** (fine-grained):
 
-```
+```text
 parse_links()
 validate_links()
 resolve_transclusion()
@@ -184,22 +184,22 @@ resolve_transclusion()
 
 **B. Composite tools** (coarse-grained):
 
-```
+```text
 analyze_links()  # Parse + validate + resolve
 ```
 
-**Dimension 3: Return Format**
+#### Dimension 3: Return Format
 
 **A. Separate results**:
 
-```
+```text
 get_validation_report()    # Get report
 validate_schema()          # Perform validation
 ```
 
 **B. Combined**:
 
-```
+```text
 validate_schema()  # Validates AND returns report
 ```
 
@@ -225,7 +225,7 @@ validate_schema()  # Validates AND returns report
 
 **4. Consistent Naming**:
 
-- Verb-noun structure: `validate_schema`, `optimize_context`
+- Verb-noun structure: `validate_schema`, `load_context`
 - Clear scope: `memory_bank` suffix for full-scope operations
 - No redundant variants
 
@@ -283,16 +283,16 @@ We will consolidate from **52 tools to 25 tools** by:
 
 **Phase 4: Optimization (10 tools → 4 tools)**:
 
-- `optimize_context` ✓ (unchanged)
+- `load_context` ✓ (renamed from `optimize_context`)
 - `score_relevance` ✓ (optional file_path parameter)
 - `load_progressively` ✓ (unchanged)
 - `summarize_content` ✓ (optional file_path parameter)
 - ~~`score_file_relevance`~~ → merged into `score_relevance`
 - ~~`load_context_chunk`~~ → merged into `load_progressively`
 - ~~`summarize_file`~~ → merged into `summarize_content`
-- ~~`get_optimization_config`~~ → merged into `optimize_context`
-- ~~`update_optimization_config`~~ → merged into `optimize_context`
-- ~~`estimate_tokens`~~ → merged into `optimize_context`
+- ~~`get_optimization_config`~~ → merged into `load_context`
+- ~~`update_optimization_config`~~ → merged into `load_context`
+- ~~`estimate_tokens`~~ → merged into `load_context`
 
 **Phase 5: Refactoring (12 tools → 6 tools)**:
 
@@ -317,7 +317,7 @@ We will consolidate from **52 tools to 25 tools** by:
 
 ### Consolidation Examples
 
-**Example 1: Schema Validation**
+#### Example 1: Schema Validation
 
 Before (2 tools):
 
@@ -361,7 +361,7 @@ async def validate_schema(
         return await schema_validator.validate_all()
 ```
 
-**Example 2: Memory Bank Stats**
+#### Example 2: Memory Bank Stats
 
 Before (4 tools):
 
@@ -436,7 +436,7 @@ async def get_memory_bank_stats(
         )
 ```
 
-**Example 3: Refactoring Suggestions**
+#### Example 3: Refactoring Suggestions
 
 Before (4 tools):
 
@@ -812,21 +812,21 @@ async def validate_schema(): ...
 
 ### Migration Strategy
 
-**Phase 1: Add New Consolidated Tools**
+#### Phase 1: Add New Consolidated Tools
 
 - Implement 25 new tools
 - Keep old 52 tools working
 - Both APIs functional
 - Duration: 1 release
 
-**Phase 2: Deprecation Warnings**
+#### Phase 2: Deprecation Warnings
 
 - Add deprecation notices to old tools
 - Update documentation
 - Provide migration guide
 - Duration: 3 releases
 
-**Phase 3: Remove Old Tools**
+#### Phase 3: Remove Old Tools
 
 - Remove deprecated tools
 - Update tests

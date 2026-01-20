@@ -284,7 +284,9 @@ class MigrationManager:
             try:
                 await self.rollback(backup_dir)
             except Exception as rollback_error:
-                print(f"Warning: Rollback failed: {rollback_error}")
+                from cortex.core.logging_config import logger
+
+                logger.warning(f"Rollback failed: {rollback_error}")
 
         raise MigrationFailedError(
             str(error), str(backup_dir) if backup_dir else None

@@ -164,9 +164,9 @@ This checks:
 - Links are valid
 - Quality score
 
-### 5. Optimize Context
+### 5. Load Context
 
-Use the `optimize_context` tool to select relevant files for a task:
+Use the `load_context` tool to load relevant files for a task:
 
 ```json
 {
@@ -268,7 +268,7 @@ This sets up:
 3. **Validate Often**: Run `validate_memory_bank` after changes
 4. **Monitor Quality**: Track quality scores with `get_quality_score`
 5. **Use Transclusion**: Avoid duplication with `{{include:}}` syntax
-6. **Leverage Context Optimization**: Use `optimize_context` for large projects
+6. **Leverage Context Loading**: Use `load_context` for large projects
 
 ## Common Commands
 
