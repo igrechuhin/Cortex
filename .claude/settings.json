@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/bin/pip show:*)",
+      "Bash(.venv/bin/pip:*)",
+      "Bash(uv pip show:*)",
+      "Bash(uv pip index:*)",
+      "Bash(pip index:*)",
+      "Bash(uv pip install:*)",
+      "Bash(pyright:*)",
+      "Bash(.venv/bin/pytest tests/unit/test_migration.py -v)",
+      "Bash(.venv/bin/black:*)",
+      "Bash(.venv/bin/pytest:*)",
+      "Bash(.venv/bin/pytest tests/unit/test_metadata_index.py -v)",
+      "Bash(.venv/bin/pytest tests/unit/test_metadata_index.py::TestDependencyGraph::test_update_dependency_graph_stores_graph -v)",
+      "Bash(.venv/bin/pytest tests/unit/test_metadata_index.py::TestDependencyGraph::test_get_dependency_graph_returns_graph -v)",
+      "Bash(.venv/bin/pytest tests/unit/ -q --tb=line)"
+    ],
+    "additionalDirectories": [
+      "s/sections[0][level]/sections[0].level"
+    ]
+  }
+}

@@ -80,6 +80,13 @@ MCP_CONNECTION_RETRY_ATTEMPTS = 3  # Maximum retry attempts for transient failur
 MCP_CONNECTION_RETRY_DELAY_SECONDS = 1.0  # Delay between retry attempts
 MCP_HEALTH_CHECK_INTERVAL_SECONDS = 60  # Interval for connection health checks
 
+# MCP Tool Timeout Categories (in seconds)
+MCP_TOOL_TIMEOUT_FAST = 60.0  # Fast operations: health checks, simple queries
+MCP_TOOL_TIMEOUT_MEDIUM = 120.0  # Medium operations: file reads, single validations
+MCP_TOOL_TIMEOUT_COMPLEX = 300.0  # Complex operations: analysis, multi-file ops
+MCP_TOOL_TIMEOUT_VERY_COMPLEX = 600.0  # Very complex: full tests, large refactors
+MCP_TOOL_TIMEOUT_EXTERNAL = 120.0  # External operations: network, git sync
+
 # =============================================================================
 # Performance Thresholds
 # =============================================================================
