@@ -10,7 +10,16 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
-- ✅ **Test Coverage Fixed to 90%** (2026-01-20T23:30) - Achieved mandatory coverage threshold:
+- ✅ **Enhanced pre_commit_tools.py with Quality Checks** (2026-01-21) - Added file size and function length validation:
+  - **Enhancement**: Added `_check_file_sizes()` and `_check_function_lengths()` quality check helpers
+  - **New Features**:
+    - File size validation (max 400 lines for production code)
+    - Function length validation (max 30 logical lines)
+    - AST-based function analysis with docstring exclusion
+  - **Tests**: Added 16 new tests for quality check helpers in `test_pre_commit_tools.py`
+  - **Coverage**: Maintained 90.01% coverage (2583 tests passing, 2 skipped)
+
+- ✅ **Test Coverage Fixed to 90%** (2026-01-20) - Achieved mandatory coverage threshold:
   - **Problem**: Coverage was at 72.56%, far below the mandatory 90% threshold
   - **Solution**:
     - Added 60 new unit tests for previously untested modules
@@ -58,7 +67,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Project Health
 
-- **Test Coverage**: 90.05% (2567 tests passing, 2 skipped) ✅
+- **Test Coverage**: 90.01% (2583 tests passing, 2 skipped) ✅
 - **Type Errors**: 0 (pyright src/ tests/) ✅
 - **Type Warnings**: 0 (pyright src/ tests/) ✅
 - **Linting Errors**: 0 (ruff check src/ tests/) ✅

@@ -7,8 +7,10 @@ Total: 2 tools
 - fix_quality_issues: Automatically fix quality issues on-the-go (fix errors, format, type check, markdown lint)
 """
 
+import ast
 import json
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Literal, TypedDict, cast
 
 from cortex.managers.initialization import get_project_root
@@ -21,6 +23,43 @@ from cortex.services.language_detector import LanguageDetector, LanguageInfo
 # No circular import: markdown_operations doesn't import pre_commit_tools
 from cortex.tools.markdown_operations import fix_markdown_lint  # noqa: F401
 
+# Constants for quality checks
+MAX_FILE_LINES = 400
+MAX_FUNCTION_LINES = 30
+
+
+class FileSizeViolation(TypedDict):
+    """File size violation details."""
+
+    file: str
+    lines: int
+    max_lines: int
+    excess: int
+
+
+class FunctionLengthViolation(TypedDict):
+    """Function length violation details."""
+
+    file: str
+    function: str
+    line: int
+    lines: int
+    max_lines: int
+    excess: int
+
+
+class QualityCheckResult(TypedDict):
+    """Result of quality check including file size and function length."""
+
+    check_type: str
+    success: bool
+    output: str
+    errors: list[str]
+    warnings: list[str]
+    files_modified: list[str]
+    file_size_violations: list[FileSizeViolation]
+    function_length_violations: list[FunctionLengthViolation]
+
 
 class PreCommitResult(TypedDict):
     """Result of pre-commit checks execution."""
@@ -28,7 +67,7 @@ class PreCommitResult(TypedDict):
     status: Literal["success", "error"]
     language: str | None
     checks_performed: list[str]
-    results: dict[str, CheckResult | TestResult]
+    results: dict[str, CheckResult | TestResult | QualityCheckResult]
     total_errors: int
     total_warnings: int
     files_modified: list[str]
@@ -124,9 +163,11 @@ async def execute_pre_commit_checks(
               "message": "Type checking passed"
             },
             "quality": {
-              "status": "passed",
-              "score": 9.5,
-              "message": "Code quality excellent"
+              "success": true,
+              "file_size_violations": [],
+              "function_length_violations": [],
+              "errors": [],
+              "message": "All quality checks passed"
             },
             "tests": {
               "status": "passed",
@@ -263,9 +304,9 @@ def _execute_all_checks(
     strict_mode: bool,
     timeout: int | None,
     coverage_threshold: float,
-) -> tuple[dict[str, CheckResult | TestResult], CheckStats]:
+) -> tuple[dict[str, CheckResult | TestResult | QualityCheckResult], CheckStats]:
     """Execute all requested checks."""
-    results: dict[str, CheckResult | TestResult] = {}
+    results: dict[str, CheckResult | TestResult | QualityCheckResult] = {}
     stats: CheckStats = {
         "total_errors": 0,
         "total_warnings": 0,
@@ -288,7 +329,7 @@ def _process_fix_errors_check(
     adapter: PythonAdapter,
     checks_to_perform: list[str],
     strict_mode: bool,
-    results: dict[str, CheckResult | TestResult],
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
 ) -> None:
     """Process fix_errors check if requested."""
@@ -304,7 +345,7 @@ def _process_fix_errors_check(
 def _process_format_check(
     adapter: PythonAdapter,
     checks_to_perform: list[str],
-    results: dict[str, CheckResult | TestResult],
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
 ) -> None:
     """Process format check if requested."""
@@ -319,7 +360,7 @@ def _process_format_check(
 def _process_type_check(
     adapter: PythonAdapter,
     checks_to_perform: list[str],
-    results: dict[str, CheckResult | TestResult],
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
 ) -> None:
     """Process type_check check if requested."""
@@ -333,15 +374,15 @@ def _process_type_check(
 def _process_quality_check(
     adapter: PythonAdapter,
     checks_to_perform: list[str],
-    results: dict[str, CheckResult | TestResult],
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
 ) -> None:
     """Process quality check if requested."""
     if "quality" in checks_to_perform:
-        lint_result = _execute_quality(adapter)
-        results["quality"] = lint_result
+        quality_result = _execute_quality(adapter)
+        results["quality"] = quality_result
         stats["checks_performed"].append("quality")
-        stats["total_errors"] += len(lint_result["errors"])
+        stats["total_errors"] += len(quality_result["errors"])
 
 
 def _process_tests_check(
@@ -349,7 +390,7 @@ def _process_tests_check(
     checks_to_perform: list[str],
     timeout: int | None,
     coverage_threshold: float,
-    results: dict[str, CheckResult | TestResult],
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
 ) -> None:
     """Process tests check if requested."""
@@ -383,9 +424,228 @@ def _execute_type_check(adapter: PythonAdapter) -> CheckResult:
     return adapter.type_check()
 
 
-def _execute_quality(adapter: PythonAdapter) -> CheckResult:
-    """Execute quality check."""
-    return adapter.lint_code()
+def _count_file_lines(path: Path) -> int:
+    """Count non-blank, non-comment, non-docstring lines in a file."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            lines = f.readlines()
+    except Exception:
+        return 0
+
+    count = 0
+    in_docstring = False
+
+    for line in lines:
+        stripped = line.strip()
+        if '"""' in stripped or "'''" in stripped:
+            in_docstring = not in_docstring
+            continue
+        if in_docstring:
+            continue
+        if not stripped or stripped.startswith("#"):
+            continue
+        count += 1
+
+    return count
+
+
+def _check_file_sizes(project_root: Path) -> list[FileSizeViolation]:
+    """Check all Python files for size violations."""
+    violations: list[FileSizeViolation] = []
+    src_dir = project_root / "src"
+
+    if not src_dir.exists():
+        return violations
+
+    for py_file in src_dir.glob("**/*.py"):
+        if "__pycache__" in str(py_file) or py_file.name.startswith("test_"):
+            continue
+        lines = _count_file_lines(py_file)
+        if lines > MAX_FILE_LINES:
+            try:
+                relative_path = str(py_file.relative_to(project_root))
+            except ValueError:
+                relative_path = str(py_file)
+            violations.append(
+                FileSizeViolation(
+                    file=relative_path,
+                    lines=lines,
+                    max_lines=MAX_FILE_LINES,
+                    excess=lines - MAX_FILE_LINES,
+                )
+            )
+
+    return violations
+
+
+class _FunctionVisitor(ast.NodeVisitor):
+    """AST visitor to find and check function lengths."""
+
+    def __init__(self, source_lines: list[str]) -> None:
+        self.source_lines = source_lines
+        self.violations: list[tuple[str, int, int]] = []
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._check_function(node)
+        self.generic_visit(node)
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._check_function(node)
+        self.generic_visit(node)
+
+    def _check_function(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        start_line = node.lineno
+        end_line = node.end_lineno
+        if end_line is None:
+            return
+
+        logical_lines = 0
+        docstring_end = start_line
+
+        if (
+            node.body
+            and isinstance(node.body[0], ast.Expr)
+            and isinstance(node.body[0].value, ast.Constant)
+            and isinstance(node.body[0].value.value, str)
+        ):
+            docstring_end = node.body[0].end_lineno or start_line
+
+        for line_num in range(start_line, end_line + 1):
+            if line_num <= 0 or line_num > len(self.source_lines):
+                continue
+            line = self.source_lines[line_num - 1].strip()
+            if line_num == start_line:
+                continue
+            if line_num <= docstring_end:
+                continue
+            if not line or line.startswith("#"):
+                continue
+            logical_lines += 1
+
+        if logical_lines > MAX_FUNCTION_LINES:
+            self.violations.append((node.name, logical_lines, start_line))
+
+
+def _check_function_lengths_in_file(
+    path: Path,
+) -> list[tuple[str, int, int]]:
+    """Check all functions in file for length violations."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            source = f.read()
+            source_lines = source.split("\n")
+    except Exception:
+        return []
+
+    try:
+        tree = ast.parse(source, filename=str(path))
+    except SyntaxError:
+        return []
+
+    visitor = _FunctionVisitor(source_lines)
+    visitor.visit(tree)
+    return visitor.violations
+
+
+def _check_function_lengths(project_root: Path) -> list[FunctionLengthViolation]:
+    """Check all Python files for function length violations."""
+    violations: list[FunctionLengthViolation] = []
+    src_dir = project_root / "src"
+
+    if not src_dir.exists():
+        return violations
+
+    for py_file in src_dir.glob("**/*.py"):
+        if "__pycache__" in str(py_file) or py_file.name.startswith("test_"):
+            continue
+        file_violations = _check_function_lengths_in_file(py_file)
+        for func_name, logical_lines, start_line in file_violations:
+            try:
+                relative_path = str(py_file.relative_to(project_root))
+            except ValueError:
+                relative_path = str(py_file)
+            violations.append(
+                FunctionLengthViolation(
+                    file=relative_path,
+                    function=func_name,
+                    line=start_line,
+                    lines=logical_lines,
+                    max_lines=MAX_FUNCTION_LINES,
+                    excess=logical_lines - MAX_FUNCTION_LINES,
+                )
+            )
+
+    return violations
+
+
+def _build_quality_errors(
+    lint_errors: list[str],
+    file_violations: list[FileSizeViolation],
+    func_violations: list[FunctionLengthViolation],
+) -> list[str]:
+    """Build error messages for quality check."""
+    errors = list(lint_errors)
+    for v in file_violations:
+        msg = f"File size violation: {v['file']} has {v['lines']} lines "
+        msg += f"(max: {v['max_lines']}, excess: {v['excess']})"
+        errors.append(msg)
+    for v in func_violations:
+        msg = f"Function length violation: {v['file']}:{v['function']}() at line "
+        msg += f"{v['line']} has {v['lines']} lines "
+        msg += f"(max: {v['max_lines']}, excess: {v['excess']})"
+        errors.append(msg)
+    return errors
+
+
+def _build_quality_output(
+    lint_output: str,
+    file_violations: list[FileSizeViolation],
+    func_violations: list[FunctionLengthViolation],
+) -> str:
+    """Build output message for quality check."""
+    parts = [lint_output]
+    if file_violations:
+        parts.append(
+            f"\nFile size violations: {len(file_violations)} file(s) "
+            + f"exceed {MAX_FILE_LINES} lines"
+        )
+    if func_violations:
+        parts.append(
+            f"\nFunction length violations: {len(func_violations)} "
+            + f"function(s) exceed {MAX_FUNCTION_LINES} lines"
+        )
+    return "\n".join(parts)
+
+
+def _execute_quality(adapter: PythonAdapter) -> QualityCheckResult:
+    """Execute quality check including linting, file sizes, and function lengths."""
+    lint_result = adapter.lint_code()
+    project_root = adapter.project_root
+    file_violations = _check_file_sizes(project_root)
+    func_violations = _check_function_lengths(project_root)
+
+    errors = _build_quality_errors(
+        lint_result["errors"], file_violations, func_violations
+    )
+    output = _build_quality_output(
+        lint_result["output"], file_violations, func_violations
+    )
+    success = (
+        lint_result["success"]
+        and len(file_violations) == 0
+        and len(func_violations) == 0
+    )
+
+    return QualityCheckResult(
+        check_type="quality",
+        success=success,
+        output=output,
+        errors=errors,
+        warnings=list(lint_result["warnings"]),
+        files_modified=list(lint_result["files_modified"]),
+        file_size_violations=file_violations,
+        function_length_violations=func_violations,
+    )
 
 
 def _execute_tests(
@@ -402,7 +662,7 @@ def _execute_tests(
 
 
 def _build_response(
-    results: dict[str, CheckResult | TestResult],
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
     detected_language: str,
 ) -> str:

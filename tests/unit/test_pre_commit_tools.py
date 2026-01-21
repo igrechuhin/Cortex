@@ -7,7 +7,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cortex.tools.pre_commit_tools import execute_pre_commit_checks, fix_quality_issues
+from cortex.tools.pre_commit_tools import (
+    MAX_FILE_LINES,
+    MAX_FUNCTION_LINES,
+    _check_file_sizes,
+    _check_function_lengths,
+    _check_function_lengths_in_file,
+    _count_file_lines,
+    execute_pre_commit_checks,
+    fix_quality_issues,
+)
 
 
 class TestExecutePreCommitChecks:
@@ -216,3 +225,266 @@ class TestFixQualityIssues:
                 assert result["status"] == "success"
                 assert result["errors_fixed"] >= 0
                 assert len(result["files_modified"]) >= 0
+
+
+class TestCountFileLines:
+    """Test _count_file_lines helper function."""
+
+    def test_count_lines_simple_file(self) -> None:
+        """Test counting lines in a simple Python file."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write("x = 1\n")
+            f.write("y = 2\n")
+            f.write("z = 3\n")
+            f.flush()
+            path = Path(f.name)
+
+        try:
+            count = _count_file_lines(path)
+            assert count == 3
+        finally:
+            path.unlink()
+
+    def test_count_lines_with_comments_and_blanks(self) -> None:
+        """Test counting lines excludes comments and blanks."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write("# This is a comment\n")
+            f.write("\n")
+            f.write("x = 1\n")
+            f.write("  # Indented comment\n")
+            f.write("\n")
+            f.write("y = 2\n")
+            f.flush()
+            path = Path(f.name)
+
+        try:
+            count = _count_file_lines(path)
+            assert count == 2  # Only x = 1 and y = 2
+        finally:
+            path.unlink()
+
+    def test_count_lines_with_docstring(self) -> None:
+        """Test counting lines handles docstrings."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            # Simple docstring on one line toggles in_docstring twice (becomes false)
+            # so the line after it counts normally
+            f.write("x = 1\n")
+            f.write("y = 2\n")
+            f.flush()
+            path = Path(f.name)
+
+        try:
+            count = _count_file_lines(path)
+            # Both lines should be counted
+            assert count == 2
+        finally:
+            path.unlink()
+
+    def test_count_lines_nonexistent_file(self) -> None:
+        """Test counting lines returns 0 for nonexistent file."""
+        count = _count_file_lines(Path("/nonexistent/file.py"))
+        assert count == 0
+
+
+class TestCheckFileSizes:
+    """Test _check_file_sizes helper function."""
+
+    def test_no_violations_when_no_src(self) -> None:
+        """Test no violations when src directory doesn't exist."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            violations = _check_file_sizes(Path(tmpdir))
+            assert violations == []
+
+    def test_no_violations_when_files_within_limit(self) -> None:
+        """Test no violations when all files are within limit."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            src_dir = project_root / "src"
+            src_dir.mkdir()
+
+            # Create a small file
+            (src_dir / "small.py").write_text("x = 1\ny = 2\n")
+
+            violations = _check_file_sizes(project_root)
+            assert violations == []
+
+    def test_detects_file_size_violation(self) -> None:
+        """Test detection of file exceeding max lines."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            src_dir = project_root / "src"
+            src_dir.mkdir()
+
+            # Create a large file exceeding MAX_FILE_LINES
+            large_content = "\n".join(
+                [f"x{i} = {i}" for i in range(MAX_FILE_LINES + 50)]
+            )
+            (src_dir / "large.py").write_text(large_content)
+
+            violations = _check_file_sizes(project_root)
+            assert len(violations) == 1
+            assert violations[0]["file"] == "src/large.py"
+            assert violations[0]["lines"] > MAX_FILE_LINES
+            assert violations[0]["excess"] > 0
+
+    def test_skips_test_files(self) -> None:
+        """Test that test files are skipped."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            src_dir = project_root / "src"
+            src_dir.mkdir()
+
+            # Create a large test file
+            large_content = "\n".join(
+                [f"x{i} = {i}" for i in range(MAX_FILE_LINES + 50)]
+            )
+            (src_dir / "test_large.py").write_text(large_content)
+
+            violations = _check_file_sizes(project_root)
+            assert violations == []  # test files are skipped
+
+
+class TestCheckFunctionLengths:
+    """Test _check_function_lengths and _check_function_lengths_in_file."""
+
+    def test_no_violations_when_no_src(self) -> None:
+        """Test no violations when src directory doesn't exist."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            violations = _check_function_lengths(Path(tmpdir))
+            assert violations == []
+
+    def test_no_violations_for_short_function(self) -> None:
+        """Test no violations for short functions."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            src_dir = project_root / "src"
+            src_dir.mkdir()
+
+            content = '''
+def short_func():
+    """Short function."""
+    x = 1
+    y = 2
+    return x + y
+'''
+            (src_dir / "short.py").write_text(content)
+
+            violations = _check_function_lengths(project_root)
+            assert violations == []
+
+    def test_detects_long_function(self) -> None:
+        """Test detection of function exceeding max lines."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            src_dir = project_root / "src"
+            src_dir.mkdir()
+
+            # Create a file with a long function
+            lines = [f"    x{i} = {i}" for i in range(MAX_FUNCTION_LINES + 10)]
+            content = "def long_func():\n" + "\n".join(lines) + "\n    return x0\n"
+            (src_dir / "long.py").write_text(content)
+
+            violations = _check_function_lengths(project_root)
+            assert len(violations) == 1
+            assert violations[0]["function"] == "long_func"
+            assert violations[0]["lines"] > MAX_FUNCTION_LINES
+
+    def test_check_function_lengths_in_file_syntax_error(self) -> None:
+        """Test handling of syntax errors in file."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write("def broken(\n")  # Invalid syntax
+            f.flush()
+            path = Path(f.name)
+
+        try:
+            violations = _check_function_lengths_in_file(path)
+            assert violations == []  # Should return empty on syntax error
+        finally:
+            path.unlink()
+
+    def test_check_function_lengths_in_file_read_error(self) -> None:
+        """Test handling of file read errors."""
+        violations = _check_function_lengths_in_file(Path("/nonexistent/file.py"))
+        assert violations == []
+
+    def test_skips_test_files(self) -> None:
+        """Test that test files are skipped."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            src_dir = project_root / "src"
+            src_dir.mkdir()
+
+            # Create a test file with a long function
+            lines = [f"    x{i} = {i}" for i in range(MAX_FUNCTION_LINES + 10)]
+            content = "def long_func():\n" + "\n".join(lines) + "\n    return x0\n"
+            (src_dir / "test_long.py").write_text(content)
+
+            violations = _check_function_lengths(project_root)
+            assert violations == []  # test files are skipped
+
+    def test_detects_async_function_length(self) -> None:
+        """Test detection of async function exceeding max lines."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            src_dir = project_root / "src"
+            src_dir.mkdir()
+
+            # Create a file with a long async function
+            lines = [f"    x{i} = {i}" for i in range(MAX_FUNCTION_LINES + 10)]
+            content = (
+                "async def long_async_func():\n"
+                + "\n".join(lines)
+                + "\n    return x0\n"
+            )
+            (src_dir / "async_long.py").write_text(content)
+
+            violations = _check_function_lengths(project_root)
+            assert len(violations) == 1
+            assert violations[0]["function"] == "long_async_func"
+
+
+class TestQualityCheckIntegration:
+    """Integration tests for quality check through execute_pre_commit_checks."""
+
+    @pytest.mark.asyncio
+    async def test_quality_check_includes_file_size_check(self) -> None:
+        """Test that quality check includes file size violations."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            (project_root / ".venv").mkdir()
+            src_dir = project_root / "src"
+            src_dir.mkdir()
+
+            # Create a small valid file
+            (src_dir / "module.py").write_text("x = 1\n")
+
+            with patch(
+                "cortex.tools.pre_commit_tools.PythonAdapter"
+            ) as mock_adapter_class:
+                mock_adapter = MagicMock()
+                mock_adapter_class.return_value = mock_adapter
+                mock_adapter.project_root = project_root
+
+                mock_lint_result: dict[str, str | bool | list[str]] = {
+                    "check_type": "lint",
+                    "success": True,
+                    "output": "All good",
+                    "errors": [],
+                    "warnings": [],
+                    "files_modified": [],
+                }
+                mock_adapter.lint_code.return_value = mock_lint_result
+
+                result_json = await execute_pre_commit_checks(
+                    checks=["quality"],
+                    project_root=str(project_root),
+                )
+                result = json.loads(result_json)
+
+                assert result["status"] == "success"
+                assert "quality" in result["checks_performed"]
+                # Quality result should include file_size_violations and function_length_violations
+                quality_result = result["results"]["quality"]
+                assert "file_size_violations" in quality_result
+                assert "function_length_violations" in quality_result
