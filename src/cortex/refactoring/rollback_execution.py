@@ -218,15 +218,7 @@ async def backup_current_version(
     version_manager: VersionManager | None,
     metadata_index: MetadataIndex | None,
 ):
-    """Backup current version before rollback.
-
-    Args:
-        file_path: Path to file
-        memory_bank_dir: Memory bank directory
-        fs_manager: File system manager
-        version_manager: Version manager (optional)
-        metadata_index: Metadata index (optional)
-    """
+    """Backup current version before rollback."""
     if version_manager is None or metadata_index is None:
         return
 
@@ -235,31 +227,46 @@ async def backup_current_version(
         return
 
     try:
-        content, _ = await fs_manager.read_file(full_path)
-        content_hash = fs_manager.compute_hash(content)
-        size_bytes = len(content.encode("utf-8"))
-
-        # Get current version count
-        file_meta = await metadata_index.get_file_metadata(file_path)
-        version_count = 0
-        if file_meta:
-            version_history_raw: object = file_meta.get("version_history", [])
-            if isinstance(version_history_raw, list):
-                vh_list: list[object] = cast(list[object], version_history_raw)
-                version_count = len(vh_list)
-
-        _ = await version_manager.create_snapshot(
-            full_path,
-            version=version_count + 1,
-            content=content,
-            size_bytes=size_bytes,
-            token_count=0,  # Will be calculated if needed
-            content_hash=content_hash,
-            change_type="manual_backup",
-            change_description=f"Pre-rollback backup: {datetime.now().isoformat()}",
+        await _create_backup_snapshot(
+            file_path, full_path, fs_manager, version_manager, metadata_index
         )
     except Exception as e:
-        # Ignore backup errors - don't block rollback
         from cortex.core.logging_config import logger
 
         logger.debug(f"Failed to create pre-rollback backup for {file_path}: {e}")
+
+
+async def _create_backup_snapshot(
+    file_path: str,
+    full_path: Path,
+    fs_manager: FileSystemManager,
+    version_manager: VersionManager,
+    metadata_index: MetadataIndex,
+) -> None:
+    """Create backup snapshot for file."""
+    content, _ = await fs_manager.read_file(full_path)
+    content_hash = fs_manager.compute_hash(content)
+    size_bytes = len(content.encode("utf-8"))
+    version_count = await _get_version_count(metadata_index, file_path)
+
+    _ = await version_manager.create_snapshot(
+        full_path,
+        version=version_count + 1,
+        content=content,
+        size_bytes=size_bytes,
+        token_count=0,
+        content_hash=content_hash,
+        change_type="manual_backup",
+        change_description=f"Pre-rollback backup: {datetime.now().isoformat()}",
+    )
+
+
+async def _get_version_count(metadata_index: MetadataIndex, file_path: str) -> int:
+    """Get current version count from metadata."""
+    file_meta = await metadata_index.get_file_metadata(file_path)
+    if not file_meta:
+        return 0
+    version_history_raw: object = file_meta.get("version_history", [])
+    if isinstance(version_history_raw, list):
+        return len(cast(list[object], version_history_raw))
+    return 0

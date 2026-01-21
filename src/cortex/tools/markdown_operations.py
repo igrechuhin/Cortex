@@ -356,24 +356,30 @@ async def _process_markdown_files(
     max_concurrent: int = 5,
     batch_size: int = 50,
 ) -> list[FileResult]:
-    """Process list of markdown files with batching and concurrency.
-
-    Args:
-        files: List of markdown file paths to process
-        root_path: Root directory of the project
-        markdownlint_cmd: Command to use for markdownlint
-        dry_run: If True, only check without fixing
-        max_concurrent: Maximum concurrent file processing (default: 5)
-        batch_size: Number of files to process per batch (default: 50)
-
-    Returns:
-        List of FileResult objects
-    """
+    """Process list of markdown files with batching and concurrency."""
     results: list[FileResult] = []
     semaphore = asyncio.Semaphore(max_concurrent)
 
-    async def process_single_file(file_path: Path) -> FileResult | None:
-        """Process a single file with semaphore control."""
+    for i in range(0, len(files), batch_size):
+        batch = files[i : i + batch_size]
+        batch_results = await _process_batch(
+            batch, root_path, markdownlint_cmd, dry_run, semaphore
+        )
+        results.extend(batch_results)
+
+    return results
+
+
+async def _process_batch(
+    batch: list[Path],
+    root_path: Path,
+    markdownlint_cmd: list[str],
+    dry_run: bool,
+    semaphore: asyncio.Semaphore,
+) -> list[FileResult]:
+    """Process a batch of files concurrently."""
+
+    async def process_single(file_path: Path) -> FileResult | None:
         if not file_path.exists():
             return None
         async with semaphore:
@@ -381,30 +387,30 @@ async def _process_markdown_files(
                 file_path, root_path, markdownlint_cmd, dry_run
             )
 
-    # Process files in batches to avoid timeout
-    for i in range(0, len(files), batch_size):
-        batch = files[i : i + batch_size]
-        batch_results: list[FileResult | None | BaseException] = await asyncio.gather(
-            *[process_single_file(f) for f in batch], return_exceptions=True
-        )
+    raw_results = await asyncio.gather(
+        *[process_single(f) for f in batch], return_exceptions=True
+    )
+    return _filter_batch_results(raw_results)
 
-        # Filter out None results and exceptions
-        for result in batch_results:
-            if result is None:
-                continue
-            if isinstance(result, BaseException):
-                # Create error result for exceptions
-                error_result: FileResult = {
-                    "file": "unknown",
-                    "fixed": False,
-                    "errors": [str(result)],
-                    "error_message": str(result),
-                }
-                results.append(error_result)
-            else:
-                # Type narrowing: result is FileResult | None, but we already checked for None
-                results.append(result)
 
+def _filter_batch_results(
+    raw_results: list[FileResult | None | BaseException],
+) -> list[FileResult]:
+    """Filter batch results and convert exceptions to error results."""
+    results: list[FileResult] = []
+    for result in raw_results:
+        if result is None:
+            continue
+        if isinstance(result, BaseException):
+            error_result: FileResult = {
+                "file": "unknown",
+                "fixed": False,
+                "errors": [str(result)],
+                "error_message": str(result),
+            }
+            results.append(error_result)
+        else:
+            results.append(result)
     return results
 
 

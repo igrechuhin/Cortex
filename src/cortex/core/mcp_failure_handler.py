@@ -15,6 +15,57 @@ from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 logger = logging.getLogger(__name__)
 
+_PLAN_TEMPLATE = """# Phase: Investigate {tool_name} MCP Tool Failure
+
+**Status**: PLANNING
+**Priority**: ASAP (Blocker)
+**Created**: {today}
+**Target Completion**: {today}
+
+## Goal
+
+Investigate and fix MCP tool failure that occurred during commit procedure execution.
+
+## Context
+
+**Problem**: The `{tool_name}` MCP tool failed during step: **{step_name}**
+
+**Error Details**:
+- **Error Type**: `{error_type}`
+- **Error Message**: `{error_message}`{cause}
+
+**Impact**: Commit procedure blocked at step: {step_name}. This is a blocker.
+
+## Requirements
+
+1. **Investigate**: Analyze error, check tool implementation, verify MCP protocol compliance
+2. **Fix**: Resolve root cause, ensure tool works via MCP protocol
+3. **Verify**: Test tool, verify commit procedure proceeds, ensure no regressions
+
+## Implementation Steps
+
+1. Analyze error type and message, check tool implementation
+2. Fix root cause, add error handling/validation
+3. Add tests for failure scenarios, verify fix works
+
+## Success Criteria
+
+- Root cause identified and fixed
+- Tool works correctly via MCP protocol
+- Commit procedure can proceed, no regressions
+
+## Notes
+
+Auto-generated on MCP tool failure. Tool: {tool_name}, Error: {error_type}: {error_message}
+"""
+
+
+def _format_error_cause(error: Exception) -> str:
+    """Format error cause string for plan template."""
+    if error.__cause__:
+        return f"\n\n**Caused by**: {type(error.__cause__).__name__}: {error.__cause__}"
+    return ""
+
 
 class MCPToolFailure(MemoryBankError):
     """Raised when an MCP tool fails (JSON parsing, connection, unexpected behavior)."""
@@ -209,54 +260,15 @@ class MCPToolFailureHandler:
         error_type = type(error).__name__
         error_message = str(error)
         today = datetime.now().strftime("%Y-%m-%d")
-        cause = (
-            f"\n\n**Caused by**: {type(error.__cause__).__name__}: {error.__cause__}"
-            if error.__cause__
-            else ""
+        cause = _format_error_cause(error)
+        return _PLAN_TEMPLATE.format(
+            tool_name=tool_name,
+            step_name=step_name,
+            today=today,
+            error_type=error_type,
+            error_message=error_message,
+            cause=cause,
         )
-        return f"""# Phase: Investigate {tool_name} MCP Tool Failure
-
-**Status**: PLANNING
-**Priority**: ASAP (Blocker)
-**Created**: {today}
-**Target Completion**: {today}
-
-## Goal
-
-Investigate and fix MCP tool failure that occurred during commit procedure execution.
-
-## Context
-
-**Problem**: The `{tool_name}` MCP tool failed during step: **{step_name}**
-
-**Error Details**:
-- **Error Type**: `{error_type}`
-- **Error Message**: `{error_message}`{cause}
-
-**Impact**: Commit procedure blocked at step: {step_name}. This is a blocker.
-
-## Requirements
-
-1. **Investigate**: Analyze error, check tool implementation, verify MCP protocol compliance
-2. **Fix**: Resolve root cause, ensure tool works via MCP protocol
-3. **Verify**: Test tool, verify commit procedure proceeds, ensure no regressions
-
-## Implementation Steps
-
-1. Analyze error type and message, check tool implementation
-2. Fix root cause, add error handling/validation
-3. Add tests for failure scenarios, verify fix works
-
-## Success Criteria
-
-- Root cause identified and fixed
-- Tool works correctly via MCP protocol
-- Commit procedure can proceed, no regressions
-
-## Notes
-
-Auto-generated on MCP tool failure. Tool: {tool_name}, Error: {error_type}: {error_message}
-"""
 
     def create_investigation_plan(
         self, tool_name: str, error: Exception, step_name: str

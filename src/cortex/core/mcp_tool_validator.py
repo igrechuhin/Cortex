@@ -30,12 +30,8 @@ def validate_mcp_tool_response(
 ) -> None:
     """Validate MCP tool response and enforce failure protocol.
 
-    This function should be called after each MCP tool call in commit procedure
-    to ensure the response is valid and detect tool failures.
-
-    NOTE: A response with status="error" is NOT a tool failure - it means the tool
-    worked correctly and found errors (e.g., type errors, lint errors). Tool failures
-    are things like JSON parsing errors, connection errors, or malformed responses.
+    NOTE: status="error" is NOT a tool failure - it means the tool worked and found
+    errors. Tool failures are JSON parsing errors, connection errors, etc.
 
     Args:
         response: Response from MCP tool call
@@ -44,58 +40,58 @@ def validate_mcp_tool_response(
         project_root: Project root directory (auto-detected if None)
 
     Raises:
-        MCPToolFailure: If tool response indicates a tool failure (not error status)
-        ProtocolViolation: If response validation fails
+        MCPToolFailure: If tool response indicates a tool failure
     """
     project_root_path = Path(project_root) if project_root else None
-    failure_handler = MCPToolFailureHandler(project_root_path)
+    handler = MCPToolFailureHandler(project_root_path)
 
-    # Check for None response - this is always a tool failure
-    # This check should run even in test contexts
-    if response is None:
-        error = ValueError(f"MCP tool {tool_name} returned None response")
-        # Always handle as failure - None response is never valid
-        failure_handler.handle_failure(tool_name, error, step_name)
+    _validate_none_response(response, tool_name, step_name, handler)
+    _validate_string_response(response, tool_name, step_name, handler)
 
-    # Check for JSON string (should be dict, not string)
-    # This check should run even in test contexts to detect double-encoding
-    if isinstance(response, str):
-        try:
-            # Try to parse as JSON
-            json.loads(response)
-            # If it parses, it might be a double-encoded response (tool failure)
-            error_msg = (
-                f"MCP tool {tool_name} returned JSON string instead of dict "
-                f"(possible double-encoding): {response[:100]}"
-            )
-            error = ValueError(error_msg)
-            if failure_handler.detect_failure(error, tool_name, step_name):
-                failure_handler.handle_failure(tool_name, error, step_name)
-        except json.JSONDecodeError:
-            # Not JSON, might be valid string response
-            pass
-
-    # Skip other validation in test contexts to avoid false positives
-    # Tests may call tools directly without MCP protocol, and some validations
-    # (like missing status field) are acceptable for testing
     if _is_test_context():
         return
 
-    # Check for dict response structure
-    if isinstance(response, dict):
-        # NOTE: A response with status="error" is a VALID response, not a tool failure!
-        # The tool worked correctly and is reporting that it found errors in the code.
-        # We do NOT raise MCPToolFailure for this case.
+    _validate_dict_response(response, tool_name)
 
-        # Check for malformed response structure (missing required fields)
-        # Most MCP tools return dict with "status" field
-        response_dict = cast(dict[str, object], response)
-        if "status" not in response_dict:
-            # Might be valid for some tools, but log warning
-            response_preview = str(response_dict)[:200]
-            logger.warning(
-                f"MCP tool {tool_name} response missing 'status' field: {response_preview}"
-            )
+
+def _validate_none_response(
+    response: object, tool_name: str, step_name: str, handler: MCPToolFailureHandler
+) -> None:
+    """Validate response is not None."""
+    if response is None:
+        error = ValueError(f"MCP tool {tool_name} returned None response")
+        handler.handle_failure(tool_name, error, step_name)
+
+
+def _validate_string_response(
+    response: object, tool_name: str, step_name: str, handler: MCPToolFailureHandler
+) -> None:
+    """Validate response is not a JSON string (double-encoding)."""
+    if not isinstance(response, str):
+        return
+    try:
+        json.loads(response)
+        error_msg = (
+            f"MCP tool {tool_name} returned JSON string instead of dict: "
+            f"{response[:100]}"
+        )
+        error = ValueError(error_msg)
+        if handler.detect_failure(error, tool_name, step_name):
+            handler.handle_failure(tool_name, error, step_name)
+    except json.JSONDecodeError:
+        pass  # Not JSON, might be valid string response
+
+
+def _validate_dict_response(response: object, tool_name: str) -> None:
+    """Validate dict response has expected structure."""
+    if not isinstance(response, dict):
+        return
+    response_dict = cast(dict[str, object], response)
+    if "status" not in response_dict:
+        response_preview = str(response_dict)[:200]
+        logger.warning(
+            f"MCP tool {tool_name} response missing 'status': {response_preview}"
+        )
 
 
 def check_mcp_tool_failure(

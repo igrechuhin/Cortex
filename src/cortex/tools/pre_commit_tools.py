@@ -482,6 +482,23 @@ def _check_file_sizes(project_root: Path) -> list[FileSizeViolation]:
     return violations
 
 
+def _get_docstring_range(
+    node: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> tuple[int, int] | None:
+    """Get docstring line range if function has a docstring."""
+    if (
+        node.body
+        and isinstance(node.body[0], ast.Expr)
+        and isinstance(node.body[0].value, ast.Constant)
+        and isinstance(node.body[0].value.value, str)
+    ):
+        start = node.body[0].lineno
+        end = node.body[0].end_lineno
+        if end is not None:
+            return (start, end)
+    return None
+
+
 class _FunctionVisitor(ast.NodeVisitor):
     """AST visitor to find and check function lengths."""
 
@@ -503,31 +520,43 @@ class _FunctionVisitor(ast.NodeVisitor):
         if end_line is None:
             return
 
-        logical_lines = 0
-        docstring_end = start_line
-
-        if (
-            node.body
-            and isinstance(node.body[0], ast.Expr)
-            and isinstance(node.body[0].value, ast.Constant)
-            and isinstance(node.body[0].value.value, str)
-        ):
-            docstring_end = node.body[0].end_lineno or start_line
-
-        for line_num in range(start_line, end_line + 1):
-            if line_num <= 0 or line_num > len(self.source_lines):
-                continue
-            line = self.source_lines[line_num - 1].strip()
-            if line_num == start_line:
-                continue
-            if line_num <= docstring_end:
-                continue
-            if not line or line.startswith("#"):
-                continue
-            logical_lines += 1
+        docstring_range = _get_docstring_range(node)
+        logical_lines = self._count_logical_lines(start_line, end_line, docstring_range)
 
         if logical_lines > MAX_FUNCTION_LINES:
             self.violations.append((node.name, logical_lines, start_line))
+
+    def _count_logical_lines(
+        self,
+        start_line: int,
+        end_line: int,
+        docstring_range: tuple[int, int] | None,
+    ) -> int:
+        """Count logical lines in function body."""
+        logical_lines = 0
+        for line_num in range(start_line, end_line + 1):
+            if self._should_skip_line(line_num, start_line, docstring_range):
+                continue
+            logical_lines += 1
+        return logical_lines
+
+    def _should_skip_line(
+        self,
+        line_num: int,
+        start_line: int,
+        docstring_range: tuple[int, int] | None,
+    ) -> bool:
+        """Check if line should be skipped when counting."""
+        if line_num <= 0 or line_num > len(self.source_lines):
+            return True
+        line = self.source_lines[line_num - 1].strip()
+        if line_num == start_line:
+            return True
+        if docstring_range and docstring_range[0] <= line_num <= docstring_range[1]:
+            return True
+        if not line or line.startswith("#"):
+            return True
+        return False
 
 
 def _check_function_lengths_in_file(

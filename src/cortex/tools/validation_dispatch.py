@@ -2,7 +2,7 @@
 
 from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import Literal, TypeAlias, cast
+from typing import Literal, TypeAlias, TypedDict, cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
@@ -38,6 +38,15 @@ CheckType: TypeAlias = Literal[
     "timestamps",
     "roadmap_sync",
 ]
+
+
+class InfrastructureOptions(TypedDict):
+    """Options for infrastructure validation."""
+
+    commit_ci: bool
+    code_quality: bool
+    documentation: bool
+    config: bool
 
 
 async def handle_schema_validation_wrapper(
@@ -131,39 +140,32 @@ async def handle_roadmap_sync_validation_wrapper(
 
 
 def _create_validation_handlers(
-    typed_managers: ValidationManagers,
+    managers: ValidationManagers,
     root: Path,
     file_name: str | None,
-    similarity_threshold: float | None,
+    sim_threshold: float | None,
     suggest_fixes: bool,
-    check_commit_ci_alignment: bool,
-    check_code_quality_consistency: bool,
-    check_documentation_consistency: bool,
-    check_config_consistency: bool,
+    infra_opts: InfrastructureOptions,
 ) -> dict[str, Callable[[], Awaitable[str]]]:
     """Create validation handler functions."""
     return {
-        "schema": lambda: handle_schema_validation_wrapper(
-            typed_managers, root, file_name
-        ),
+        "schema": lambda: handle_schema_validation_wrapper(managers, root, file_name),
         "duplications": lambda: handle_duplications_validation_wrapper(
-            typed_managers, root, similarity_threshold, suggest_fixes
+            managers, root, sim_threshold, suggest_fixes
         ),
-        "quality": lambda: handle_quality_validation_wrapper(
-            typed_managers, root, file_name
-        ),
+        "quality": lambda: handle_quality_validation_wrapper(managers, root, file_name),
         "infrastructure": lambda: handle_infrastructure_validation_wrapper(
             root,
-            check_commit_ci_alignment,
-            check_code_quality_consistency,
-            check_documentation_consistency,
-            check_config_consistency,
+            infra_opts["commit_ci"],
+            infra_opts["code_quality"],
+            infra_opts["documentation"],
+            infra_opts["config"],
         ),
         "timestamps": lambda: handle_timestamps_validation_wrapper(
-            typed_managers, root, file_name
+            managers, root, file_name
         ),
         "roadmap_sync": lambda: handle_roadmap_sync_validation_wrapper(
-            typed_managers, root, file_name
+            managers, root, file_name
         ),
     }
 
@@ -182,16 +184,14 @@ async def _dispatch_validation(
 ) -> str:
     """Dispatch validation to appropriate handler."""
     typed_managers = _get_typed_validation_managers(validation_managers)
+    infra_opts: InfrastructureOptions = {
+        "commit_ci": check_commit_ci_alignment,
+        "code_quality": check_code_quality_consistency,
+        "documentation": check_documentation_consistency,
+        "config": check_config_consistency,
+    }
     handlers = _create_validation_handlers(
-        typed_managers,
-        root,
-        file_name,
-        similarity_threshold,
-        suggest_fixes,
-        check_commit_ci_alignment,
-        check_code_quality_consistency,
-        check_documentation_consistency,
-        check_config_consistency,
+        typed_managers, root, file_name, similarity_threshold, suggest_fixes, infra_opts
     )
     return await _execute_validation_handler(handlers, check_type)
 
