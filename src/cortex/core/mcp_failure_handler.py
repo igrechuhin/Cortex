@@ -137,8 +137,14 @@ class MCPToolFailureHandler:
         if not isinstance(error, (TypeError, AttributeError, KeyError)):
             return False
         unexpected_keywords = [
-            "unexpected", "missing", "invalid", "wrong type",
-            "not found", "cannot access", "has no attribute", "keyerror",
+            "unexpected",
+            "missing",
+            "invalid",
+            "wrong type",
+            "not found",
+            "cannot access",
+            "has no attribute",
+            "keyerror",
         ]
         if any(kw in error_str for kw in unexpected_keywords):
             logger.error(
@@ -154,8 +160,13 @@ class MCPToolFailureHandler:
         if not isinstance(error, RuntimeError):
             return False
         tool_keywords = [
-            "mcp", "tool", "protocol", "serialization",
-            "deserialization", "double-encoding", "json string instead of dict",
+            "mcp",
+            "tool",
+            "protocol",
+            "serialization",
+            "deserialization",
+            "double-encoding",
+            "json string instead of dict",
         ]
         if any(kw in error_str for kw in tool_keywords):
             logger.error(
