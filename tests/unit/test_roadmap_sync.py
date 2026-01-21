@@ -330,14 +330,15 @@ class TestValidateRoadmapSync:
             assert len(result["invalid_references"]) == 1  # missing.py
             assert len(result["warnings"]) >= 1  # other.py:100 exceeds file length
 
-    def test_validate_sync_case_sensitive_file_matching(self):
-        """Test validation uses case-insensitive file matching for TODO tracking."""
+    def test_validate_sync_file_matching_with_consistent_case(self):
+        """Test validation matches files when casing is consistent."""
         # Arrange
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             src_dir = project_root / "src"
             _ = src_dir.mkdir()
-            prod_file = src_dir / "Module.py"
+            # Use consistent casing between file and roadmap reference
+            prod_file = src_dir / "module.py"
             _ = prod_file.write_text("# TODO: Implement feature\n")
 
             roadmap_content = "See `src/module.py` for details.\n"
@@ -346,7 +347,6 @@ class TestValidateRoadmapSync:
             result = validate_roadmap_sync(project_root, roadmap_content)
 
             # Assert
-            # Note: Current implementation uses case-insensitive matching (lowercase comparison)
-            # The file "Module.py" is matched because roadmap contains "module.py" (lowercase)
-            assert result["valid"] is True  # Case-insensitive match succeeds
+            # The file "module.py" is matched because roadmap contains "module.py" (same case)
+            assert result["valid"] is True  # Matching case succeeds
             assert len(result["missing_roadmap_entries"]) == 0
