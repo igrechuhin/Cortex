@@ -20,6 +20,7 @@ class TestConnectionClosureHandling:
     @pytest.mark.asyncio
     async def test_successful_execution(self) -> None:
         """Test that successful execution returns result."""
+
         # Arrange
         async def test_func() -> str:
             return "success"
@@ -109,6 +110,7 @@ class TestConnectionClosureHandling:
     @pytest.mark.asyncio
     async def test_timeout_error_handling(self) -> None:
         """Test that timeout errors from the stability layer are raised."""
+
         # Arrange
         async def test_func() -> str:
             await asyncio.sleep(10)  # Deliberately exceed timeout
@@ -171,7 +173,9 @@ class TestConnectionClosureHandling:
             raise ConnectionError("Connection closed")
 
         # Act & Assert
-        with pytest.raises(RuntimeError, match="MCP connection failed.*after 3 attempts"):
+        with pytest.raises(
+            RuntimeError, match="MCP connection failed.*after 3 attempts"
+        ):
             _ = await with_mcp_stability(test_func, timeout=10.0)
 
         # Should have attempted 3 times (default retry count)

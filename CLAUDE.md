@@ -173,6 +173,30 @@ The server initializes services in this order:
 - **JSON modeling**: Model known JSON shapes with `TypedDict` hierarchies and dataclasses; reserve `dict[str, object]` for true protocol edges where structure is unknown.
 - **Refactor focus**: Prefer refactoring pure helpers (not handlers) when using automated refactor tools to avoid breaking protocol contracts or async behavior.
 
+## Synapse Architecture (CRITICAL)
+
+Synapse (`.cortex/synapse/`) is a git submodule providing shared resources with strict separation:
+
+```text
+.cortex/synapse/
+├── prompts/           # Language-AGNOSTIC workflow definitions
+├── rules/             # Coding standards (general + language-specific)
+└── scripts/           # Language-SPECIFIC implementations
+    └── {language}/    # e.g., python/, typescript/
+```
+
+**Prompts are Language-AGNOSTIC (MANDATORY)**:
+
+- **DO NOT** hardcode language-specific commands (`ruff`, `black`, `prettier`, `eslint`) in prompts
+- **DO** use script references: `.venv/bin/python .cortex/synapse/scripts/{language}/check_*.py`
+- Scripts auto-detect project root, source directories, and appropriate tools
+
+**Scripts are Language-SPECIFIC**:
+
+- Each language has its own directory (`scripts/python/`, `scripts/typescript/`)
+- Available Python scripts: `check_formatting.py`, `fix_formatting.py`, `check_linting.py`, `check_types.py`, `check_file_sizes.py`, `check_function_lengths.py`, `run_tests.py`
+- To add a new language: Create `scripts/{language}/` with required scripts
+
 ## Configuration Essentials
 
 All Cortex data is stored in `.cortex/` directory. For IDE compatibility, `.cursor/` contains symlinks:
@@ -184,6 +208,10 @@ All Cortex data is stored in `.cortex/` directory. For IDE compatibility, `.curs
 ├── memory-bank/           # Core memory bank files
 ├── rules/                 # Project rules
 ├── plans/                 # Development plans
+├── synapse/               # Shared resources (git submodule)
+│   ├── prompts/          # Language-agnostic workflows
+│   ├── rules/            # Coding standards
+│   └── scripts/          # Language-specific scripts
 ├── config/                # Configuration files
 ├── history/               # Version history
 └── index.json             # Metadata index

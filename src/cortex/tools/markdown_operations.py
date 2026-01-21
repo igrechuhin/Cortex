@@ -66,23 +66,21 @@ async def _run_command(
         Dict with success status, stdout, stderr, returncode
     """
     try:
-        process = await asyncio.wait_for(
-            asyncio.create_subprocess_exec(
+        async with asyncio.timeout(timeout):
+            process = await asyncio.create_subprocess_exec(
                 *cmd,
                 cwd=str(cwd) if cwd else None,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-            ),
-            timeout=timeout,
-        )
-        stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout)
-        return {
-            "success": process.returncode == 0,
-            "stdout": stdout.decode("utf-8", errors="replace"),
-            "stderr": stderr.decode("utf-8", errors="replace"),
-            "returncode": process.returncode,
-        }
-    except asyncio.TimeoutError:
+            )
+            stdout, stderr = await process.communicate()
+            return {
+                "success": process.returncode == 0,
+                "stdout": stdout.decode("utf-8", errors="replace"),
+                "stderr": stderr.decode("utf-8", errors="replace"),
+                "returncode": process.returncode,
+            }
+    except TimeoutError:
         return _create_error_result(f"Command timed out after {timeout}s")
     except Exception as e:
         return _create_error_result(str(e))

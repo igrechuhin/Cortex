@@ -40,3 +40,11 @@
 - **Thin handlers, pure helpers**: Keep `@mcp.tool` handlers as thin async orchestrators that delegate to small, pure helper functions for business logic.
 - **JSON modeling**: Model request/response shapes with `TypedDict` hierarchies where keys are known; only use `dict[str, object]` at true protocol edges.
 - **Refactor strategy**: Prefer refactoring pure helpers (not handlers) when using automated tools, to preserve async behavior and protocol contracts.
+
+## Synapse Architecture (CRITICAL)
+
+- **Prompts are language-AGNOSTIC**: All prompts in `.cortex/synapse/prompts/` MUST NOT contain language-specific commands. Use script references with `{language}` placeholder instead.
+- **Scripts are language-SPECIFIC**: All language-specific implementations go in `.cortex/synapse/scripts/{language}/` (e.g., `scripts/python/`).
+- **Never hardcode tool commands in prompts**: Use `.venv/bin/python .cortex/synapse/scripts/{language}/check_*.py` instead of `ruff`, `black`, `prettier`, etc.
+- **Scripts auto-detect**: Scripts handle project root, source directories, and tool discovery automatically.
+- **Add new languages**: Create `scripts/{language}/` directory with required scripts (check_formatting.py, check_linting.py, check_types.py, etc.).

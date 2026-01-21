@@ -2,7 +2,6 @@
 Unit tests for cortex.tools.markdown_operations.py script.
 """
 
-import asyncio
 import json
 
 # Import the MCP tool functions (private functions are tested)
@@ -35,28 +34,18 @@ class TestRunCommand:
             """Mock create_subprocess_exec."""
             return mock_process
 
-        async def mock_wait_for(coro: object, timeout: float | None = None) -> object:
-            """Mock wait_for that awaits coroutines."""
-            if asyncio.iscoroutine(coro):
-                return await coro
-            return coro
-
         with patch(
             "cortex.tools.markdown_operations.asyncio.create_subprocess_exec",
             side_effect=mock_create_subprocess,
         ):
-            with patch(
-                "cortex.tools.markdown_operations.asyncio.wait_for",
-                side_effect=mock_wait_for,
-            ):
-                # Act
-                result = await _run_command(["test", "command"])
+            # Act
+            result = await _run_command(["test", "command"])
 
-                # Assert
-                assert result["success"] is True
-                assert result["stdout"] == "output"
-                assert result["stderr"] == ""
-                assert result["returncode"] == 0
+            # Assert
+            assert result["success"] is True
+            assert result["stdout"] == "output"
+            assert result["stderr"] == ""
+            assert result["returncode"] == 0
 
     @pytest.mark.asyncio
     async def test_run_command_failure(self):
@@ -70,34 +59,32 @@ class TestRunCommand:
             """Mock create_subprocess_exec."""
             return mock_process
 
-        async def mock_wait_for(coro: object, timeout: float | None = None) -> object:
-            """Mock wait_for that awaits coroutines."""
-            if asyncio.iscoroutine(coro):
-                return await coro
-            return coro
-
         with patch(
             "cortex.tools.markdown_operations.asyncio.create_subprocess_exec",
             side_effect=mock_create_subprocess,
         ):
-            with patch(
-                "cortex.tools.markdown_operations.asyncio.wait_for",
-                side_effect=mock_wait_for,
-            ):
-                # Act
-                result = await _run_command(["test", "command"])
+            # Act
+            result = await _run_command(["test", "command"])
 
-                # Assert
-                assert result["success"] is False
-                assert result["stdout"] == ""
-                assert result["stderr"] == "error message"
-                assert result["returncode"] == 1
+            # Assert
+            assert result["success"] is False
+            assert result["stdout"] == ""
+            assert result["stderr"] == "error message"
+            assert result["returncode"] == 1
 
     @pytest.mark.asyncio
     async def test_run_command_timeout(self):
         """Test command timeout handling."""
-        # Arrange
-        with patch("asyncio.wait_for", side_effect=asyncio.TimeoutError()):
+
+        # Arrange - Create mock that raises TimeoutError (Python 3.13+ asyncio.timeout raises TimeoutError)
+        async def slow_subprocess(*args: object, **kwargs: object) -> Mock:
+            """Mock that simulates a long-running process."""
+            raise TimeoutError("Operation timed out")
+
+        with patch(
+            "cortex.tools.markdown_operations.asyncio.create_subprocess_exec",
+            side_effect=slow_subprocess,
+        ):
             # Act
             result = await _run_command(["test", "command"], timeout=5)
 

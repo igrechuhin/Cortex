@@ -29,30 +29,64 @@ Cortex is structured as an MCP (Model Context Protocol) server with a modular, l
 - **Observer Pattern** - File watching for external change detection
 - **Language-Agnostic Script Pattern** - All procedures use scripts from `.cortex/synapse/scripts/{language}/` instead of hardcoded commands
 
-## Language-Agnostic Pattern (CRITICAL)
+## Synapse Architecture (CRITICAL)
 
-**MANDATORY**: All procedures, prompts, and tool implementations MUST follow language-agnostic patterns:
+Synapse (`.cortex/synapse/`) is a git submodule providing shared resources with a strict separation of concerns:
 
-1. **Script-Based Operations**: Use scripts from `.cortex/synapse/scripts/{language}/` directory
-   - Scripts auto-detect language, directories, and appropriate tools
-   - Scripts handle environment differences (.venv, uv, system tools)
-   - Scripts match CI workflow behavior automatically
+### Directory Structure
 
-2. **Pattern References**: Use `{language}` placeholder in documentation
-   - Example: `.cortex/synapse/scripts/{language}/check_linting.py`
-   - Never hardcode language-specific paths or commands
+```text
+.cortex/synapse/
+├── prompts/           # Language-AGNOSTIC workflow definitions
+├── rules/             # Coding standards (general + language-specific)
+└── scripts/           # Language-SPECIFIC implementations
+    └── {language}/    # e.g., python/, typescript/
+```
 
-3. **No Hardcoded Commands**: Never reference specific tools directly
-   - ❌ Wrong: "Run `ruff check src/`"
-   - ✅ Correct: "Run `.cortex/synapse/scripts/{language}/check_linting.py`"
+### Prompts: Language-AGNOSTIC (MANDATORY)
 
-4. **Auto-Detection**: Scripts handle language detection internally
-   - Scripts find appropriate tools for detected language
-   - Scripts adapt to project structure automatically
+All prompts in `prompts/` MUST be language-agnostic:
 
-**Violation Examples to Avoid**:
+- **DO NOT** hardcode language-specific commands (`ruff`, `black`, `prettier`, `eslint`)
+- **DO NOT** reference language-specific paths directly
+- **DO** use script references with `{language}` placeholder
 
-- Hardcoding `black`, `ruff`, `pyright`, `prettier`, `eslint` commands
+**Correct Pattern**:
+
+```markdown
+Run: `.venv/bin/python .cortex/synapse/scripts/{language}/check_formatting.py`
+```
+
+**Wrong Pattern**:
+
+```markdown
+Run: `.venv/bin/black --check src/ tests/`
+```
+
+### Scripts: Language-SPECIFIC
+
+Scripts in `scripts/{language}/` contain language-specific implementations:
+
+- Each language has its own directory (`scripts/python/`, `scripts/typescript/`)
+- Scripts auto-detect project structure and appropriate tools
+- Scripts handle environment differences (.venv, uv, npm, etc.)
+- Scripts return proper exit codes and clear output
+
+### Available Python Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `check_formatting.py` | Verify formatting (black --check) |
+| `fix_formatting.py` | Auto-fix formatting (black) |
+| `check_linting.py` | Lint checking (ruff check) |
+| `check_types.py` | Type checking (pyright) |
+| `check_file_sizes.py` | Verify files ≤ 400 lines |
+| `check_function_lengths.py` | Verify functions ≤ 30 lines |
+| `run_tests.py` | Run tests with coverage |
+
+### Violation Examples to Avoid
+
+- Hardcoding `black`, `ruff`, `pyright`, `prettier`, `eslint` commands in prompts
 - Using language-specific paths like `src/`, `tests/` without script abstraction
 - Writing procedures that assume Python/TypeScript/etc.
 - Including language-specific examples in general procedures
