@@ -84,31 +84,15 @@ class MCPToolFailureHandler:
             self.project_root, CortexResourceType.PLANS
         )
 
-    def detect_failure(self, error: Exception, tool_name: str, step_name: str) -> bool:
-        """Detect if error is an MCP tool failure.
-
-        This method distinguishes between actual tool failures (JSON parsing,
-        connection errors, unexpected behavior) and expected errors (validation
-        failures, business logic errors).
-
-        Args:
-            error: Exception that occurred
-            tool_name: Name of the tool that failed
-            step_name: Commit procedure step where failure occurred
-
-        Returns:
-            True if error is an MCP tool failure (not an expected error)
-        """
-        error_str = str(error).lower()
-
-        # JSON parsing errors - always tool failures
+    def _check_json_error(
+        self, error: Exception, error_str: str, tool_name: str, step_name: str
+    ) -> bool:
+        """Check for JSON parsing errors."""
         if isinstance(error, json.JSONDecodeError):
             logger.error(
                 f"Detected JSON parsing error in {tool_name} during {step_name}: {error}"
             )
             return True
-
-        # ValueError that indicates JSON/parsing issues
         if isinstance(error, ValueError):
             json_keywords = [
                 "json",
@@ -118,106 +102,113 @@ class MCPToolFailureHandler:
                 "invalid",
                 "encoding",
             ]
-            if any(keyword in error_str for keyword in json_keywords):
+            if any(kw in error_str for kw in json_keywords):
                 logger.error(
                     f"Detected JSON-related ValueError in {tool_name} during {step_name}: {error}"
                 )
                 return True
+        return False
 
-        # Connection errors (already handled by mcp_stability, but check for unexpected ones)
+    def _check_connection_error(
+        self, error: Exception, error_str: str, tool_name: str, step_name: str
+    ) -> bool:
+        """Check for connection-related errors."""
         if isinstance(error, (ConnectionError, BrokenPipeError, OSError)):
-            # Distinguish between expected connection errors (handled by retry) and failures
             connection_keywords = [
                 "connection closed",
                 "connection reset",
                 "broken pipe",
-                "-32000",  # MCP protocol error code
+                "-32000",
                 "stdio",
                 "resource",
                 "broken resource",
             ]
-            if any(keyword in error_str for keyword in connection_keywords):
-                # If connection error occurred after retries exhausted, it's a failure
+            if any(kw in error_str for kw in connection_keywords):
                 logger.error(
                     f"Detected connection error in {tool_name} during {step_name}: {error}"
                 )
                 return True
+        return False
 
-        # Unexpected behavior (wrong return type, missing fields, etc.)
-        if isinstance(error, (TypeError, AttributeError, KeyError)):
-            unexpected_keywords = [
-                "unexpected",
-                "missing",
-                "invalid",
-                "wrong type",
-                "not found",
-                "cannot access",
-                "has no attribute",
-                "keyerror",
-            ]
-            if any(keyword in error_str for keyword in unexpected_keywords):
-                logger.error(
-                    f"Detected unexpected behavior in {tool_name} during {step_name}: {error}"
-                )
-                return True
+    def _check_type_attribute_key_error(
+        self, error: Exception, error_str: str, tool_name: str, step_name: str
+    ) -> bool:
+        """Check for TypeError, AttributeError, or KeyError with unexpected behavior."""
+        if not isinstance(error, (TypeError, AttributeError, KeyError)):
+            return False
+        unexpected_keywords = [
+            "unexpected", "missing", "invalid", "wrong type",
+            "not found", "cannot access", "has no attribute", "keyerror",
+        ]
+        if any(kw in error_str for kw in unexpected_keywords):
+            logger.error(
+                f"Detected unexpected behavior in {tool_name} during {step_name}: {error}"
+            )
+            return True
+        return False
 
-        # Runtime errors that indicate tool failure (not business logic errors)
-        if isinstance(error, RuntimeError):
-            tool_failure_keywords = [
-                "mcp",
-                "tool",
-                "protocol",
-                "serialization",
-                "deserialization",
-                "double-encoding",
-                "json string instead of dict",
-            ]
-            if any(keyword in error_str for keyword in tool_failure_keywords):
-                logger.error(
-                    f"Detected runtime error in {tool_name} during {step_name}: {error}"
-                )
-                return True
+    def _check_runtime_error(
+        self, error: Exception, error_str: str, tool_name: str, step_name: str
+    ) -> bool:
+        """Check for RuntimeError with tool-related keywords."""
+        if not isinstance(error, RuntimeError):
+            return False
+        tool_keywords = [
+            "mcp", "tool", "protocol", "serialization",
+            "deserialization", "double-encoding", "json string instead of dict",
+        ]
+        if any(kw in error_str for kw in tool_keywords):
+            logger.error(
+                f"Detected runtime error in {tool_name} during {step_name}: {error}"
+            )
+            return True
+        return False
 
-        # Check for FastMCP-specific errors
+    def _check_unexpected_behavior(
+        self, error: Exception, error_str: str, tool_name: str, step_name: str
+    ) -> bool:
+        """Check for unexpected behavior errors."""
+        if self._check_type_attribute_key_error(error, error_str, tool_name, step_name):
+            return True
+        return self._check_runtime_error(error, error_str, tool_name, step_name)
+
+    def detect_failure(self, error: Exception, tool_name: str, step_name: str) -> bool:
+        """Detect if error is an MCP tool failure.
+
+        Distinguishes between actual tool failures and expected errors.
+        """
+        error_str = str(error).lower()
+        if self._check_json_error(error, error_str, tool_name, step_name):
+            return True
+        if self._check_connection_error(error, error_str, tool_name, step_name):
+            return True
+        if self._check_unexpected_behavior(error, error_str, tool_name, step_name):
+            return True
         if "fastmcp" in error_str or "mcp error" in error_str:
             logger.error(
                 f"Detected MCP protocol error in {tool_name} during {step_name}: {error}"
             )
             return True
-
-        # Not a tool failure - likely an expected error (validation failure, etc.)
         return False
 
-    def create_investigation_plan(
+    def _generate_plan_content(
         self, tool_name: str, error: Exception, step_name: str
-    ) -> Path:
-        """Create investigation plan for tool failure.
-
-        Args:
-            tool_name: Name of the tool that failed
-            error: Exception that occurred
-            step_name: Commit procedure step where failure occurred
-
-        Returns:
-            Path to created investigation plan file
-        """
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        plan_filename = f"phase-investigate-{tool_name}-failure-{timestamp}.md"
-        plan_path = self.plans_dir / plan_filename
-
-        # Generate plan content
+    ) -> str:
+        """Generate investigation plan content."""
         error_type = type(error).__name__
         error_message = str(error)
-        error_traceback = ""
-        if error.__cause__:
-            error_traceback = f"\n\n**Caused by**: {type(error.__cause__).__name__}: {error.__cause__}"
-
-        plan_content = f"""# Phase: Investigate {tool_name} MCP Tool Failure
+        today = datetime.now().strftime("%Y-%m-%d")
+        cause = (
+            f"\n\n**Caused by**: {type(error.__cause__).__name__}: {error.__cause__}"
+            if error.__cause__
+            else ""
+        )
+        return f"""# Phase: Investigate {tool_name} MCP Tool Failure
 
 **Status**: PLANNING
 **Priority**: ASAP (Blocker)
-**Created**: {datetime.now().strftime("%Y-%m-%d")}
-**Target Completion**: {datetime.now().strftime("%Y-%m-%d")}
+**Created**: {today}
+**Target Completion**: {today}
 
 ## Goal
 
@@ -225,130 +216,47 @@ Investigate and fix MCP tool failure that occurred during commit procedure execu
 
 ## Context
 
-**Problem**: The `{tool_name}` MCP tool failed during commit procedure step: **{step_name}**
+**Problem**: The `{tool_name}` MCP tool failed during step: **{step_name}**
 
 **Error Details**:
 - **Error Type**: `{error_type}`
-- **Error Message**: `{error_message}`{error_traceback}
+- **Error Message**: `{error_message}`{cause}
 
-**Failure Type**: MCP Tool Failure (JSON parsing, connection error, or unexpected behavior)
-
-**Impact**:
-- Commit procedure was blocked at step: {step_name}
-- Tool must be fixed before commit can proceed
-- This is a blocker that prevents all commits
+**Impact**: Commit procedure blocked at step: {step_name}. This is a blocker.
 
 ## Requirements
 
-### Functional Requirements
-
-1. **Investigate Root Cause**:
-   - Analyze error type and message
-   - Check tool implementation for issues
-   - Verify MCP protocol compliance
-   - Check for connection issues
-
-2. **Fix Tool Failure**:
-   - Resolve root cause
-   - Ensure tool works correctly via MCP protocol
-   - Add error handling if needed
-   - Add validation if needed
-
-3. **Verify Fix**:
-   - Test tool via MCP protocol
-   - Verify commit procedure can proceed
-   - Ensure no regressions
-
-### Technical Requirements
-
-1. **Error Analysis**:
-   - Determine if error is JSON parsing, connection, or unexpected behavior
-   - Check tool return type matches MCP protocol expectations
-   - Verify error handling is correct
-
-2. **Tool Fix**:
-   - Fix root cause of failure
-   - Ensure proper error handling
-   - Add validation if needed
-
-3. **Testing**:
-   - Add tests for failure scenarios
-   - Verify tool works in commit procedure
-   - Ensure no regressions
-
-## Approach
-
-1. **Investigate**:
-   - Analyze error details
-   - Check tool implementation
-   - Review MCP protocol requirements
-   - Check related tools for similar issues
-
-2. **Fix**:
-   - Implement fix for root cause
-   - Add error handling
-   - Add validation
-   - Update tests
-
-3. **Verify**:
-   - Test tool via MCP protocol
-   - Test in commit procedure
-   - Verify no regressions
+1. **Investigate**: Analyze error, check tool implementation, verify MCP protocol compliance
+2. **Fix**: Resolve root cause, ensure tool works via MCP protocol
+3. **Verify**: Test tool, verify commit procedure proceeds, ensure no regressions
 
 ## Implementation Steps
 
-1. **Analyze Error**:
-   - Review error type and message
-   - Check tool implementation
-   - Identify root cause
-
-2. **Implement Fix**:
-   - Fix root cause
-   - Add error handling
-   - Add validation
-
-3. **Add Tests**:
-   - Test failure scenarios
-   - Test fix
-   - Verify no regressions
-
-4. **Verify**:
-   - Test tool via MCP protocol
-   - Test in commit procedure
-   - Verify fix works
+1. Analyze error type and message, check tool implementation
+2. Fix root cause, add error handling/validation
+3. Add tests for failure scenarios, verify fix works
 
 ## Success Criteria
 
-- ✅ Root cause identified and documented
-- ✅ Tool failure fixed
-- ✅ Tool works correctly via MCP protocol
-- ✅ Commit procedure can proceed
-- ✅ Tests added for failure scenarios
-- ✅ No regressions introduced
-
-## Dependencies
-
-- None (this is a blocker that must be fixed first)
-
-## Risks & Mitigation
-
-- **Risk**: Fix might not address root cause
-  - **Mitigation**: Thorough investigation and testing
-- **Risk**: Fix might introduce regressions
-  - **Mitigation**: Comprehensive testing before and after fix
+- Root cause identified and fixed
+- Tool works correctly via MCP protocol
+- Commit procedure can proceed, no regressions
 
 ## Notes
 
-- This investigation plan was automatically generated when MCP tool failure was detected
-- Tool failure occurred during commit procedure step: {step_name}
-- Tool name: {tool_name}
-- Error: {error_type}: {error_message}
+Auto-generated on MCP tool failure. Tool: {tool_name}, Error: {error_type}: {error_message}
 """
 
-        # Write plan file (use standard file tools as fallback for plan creation)
+    def create_investigation_plan(
+        self, tool_name: str, error: Exception, step_name: str
+    ) -> Path:
+        """Create investigation plan for tool failure."""
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        plan_filename = f"phase-investigate-{tool_name}-failure-{timestamp}.md"
+        plan_path = self.plans_dir / plan_filename
+        plan_content = self._generate_plan_content(tool_name, error, step_name)
         plan_path.parent.mkdir(parents=True, exist_ok=True)
         _ = plan_path.write_text(plan_content, encoding="utf-8")
-
         logger.info(f"Created investigation plan: {plan_path}")
         return plan_path
 

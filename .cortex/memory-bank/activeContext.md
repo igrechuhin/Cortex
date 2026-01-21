@@ -6,9 +6,18 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
-- Code quality maintenance: Linter and type errors fixed, tests passing
+- Code quality maintenance: Function length violations fixed, all tests passing
 
 ### Recently Completed
+
+- ✅ **Commit Procedure - Function Length Fixes** (2026-01-21) - Fixed function length violations and test alignment:
+  - **Fixed 3 function length violations**:
+    - `markdown_operations.py`: Extracted `_detect_pattern1()` and `_detect_pattern6_and_7()` from `_detect_completion_date_primary()`
+    - `markdown_operations.py`: Extracted `_detect_pattern3_implemented()` and `_detect_pattern8_and_9()` from `_detect_misc_patterns()`
+    - `mcp_failure_handler.py`: Extracted `_check_type_attribute_key_error()` and `_check_runtime_error()` from `_check_unexpected_behavior()`
+  - **Fixed 1 test failure**:
+    - Updated `test_investigation_plan_structure` to match actual plan template (removed `## Approach`, added `## Notes`)
+  - **Result**: All 2583 tests passing, 90.10% coverage, 0 type errors, 0 function length violations
 
 - ✅ **Enhanced pre_commit_tools.py with Quality Checks** (2026-01-21) - Added file size and function length validation:
   - **Enhancement**: Added `_check_file_sizes()` and `_check_function_lengths()` quality check helpers
@@ -27,12 +36,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
   - **Result**: Coverage now at 90.05% (2567 tests passing, 2 skipped)
   - **Rule Enforcement**: Coverage threshold is MANDATORY - no exceptions, no "pre-existing condition" excuses
 
-- ✅ **Commit Procedure** (2026-01-20T22:00) - Fixed test files and code quality:
-  - Fixed 6 test failures by aligning tests with actual implementation
-  - Fixed markdown lint errors manually (MD040, MD036)
-  - All tests passing: 2507 passed, 2 skipped
-
-- ✅ **Phase 50: Rename optimize_context to load_context** (2026-01-20T21:30) - Renamed misleading tool name:
+- ✅ **Phase 50: Rename optimize_context to load_context** (2026-01-20) - Renamed misleading tool name:
   - **Problem**: `optimize_context` sounded optional and performance-focused, causing agents to skip it
   - **Solution**: Renamed to `load_context` - action-oriented, signals "do this first"
   - **Files Updated**:
@@ -44,33 +48,14 @@ See [roadmap.md](roadmap.md) for current status and milestones.
     - Synapse: prompts and rules updated
   - All tests pass (70+ tests), type checking passes, linting passes
 
-- ✅ **Commit Procedure Improvement** (2026-01-20T21:30) - Added Final Validation Gate to prevent CI failures:
-  - **Root Cause Analysis**: Previous commit passed 39 type errors because agent made code changes AFTER initial type check (Step 2) without re-checking
-  - **Fix**: Added mandatory Step 12 "Final Validation Gate" to `.cortex/synapse/prompts/commit.md`:
-    - Re-runs pyright on `src/` immediately before commit
-    - Re-runs ruff check on `src/ tests/` immediately before commit
-    - Requires parsing actual command output (not assuming success)
-    - BLOCKS commit if any errors or warnings are found
-  - **Prevention**: ANY code change after Step 4 now REQUIRES re-verification before commit
-  - **Documentation**: Added new error pattern "Errors Introduced After Initial Checks" to Common Errors section
-
-- ✅ **Type Error Fix** (2026-01-20T20:00) - Fixed 39 type errors that passed through CI:
-  - Fixed `manager_utils.py`: Changed `get_manager()` to accept `Mapping[str, object]`
-  - Fixed `metadata_index.py`: Added missing `validate_index_consistency()` and `cleanup_stale_entries()` methods
-  - Fixed `rollback_conflicts.py`, `rollback_execution.py`, `version_snapshots.py`: Changed attribute access to dict-style `.get()`
-  - All production code now passes: `0 errors, 0 warnings, 0 informations`
-
-- ✅ **Commit Procedure** (2026-01-20T19:08) - Major code quality fixes:
-  - Fixed 105 linter errors (ruff check now passes with 0 errors)
-  - Fixed 15 type errors (pyright now reports 0 errors)
-  - Added missing timeout constants in constants.py
-
 ## Project Health
 
-- **Test Coverage**: 90.01% (2583 tests passing, 2 skipped) ✅
+- **Test Coverage**: 90.10% (2583 tests passing, 2 skipped) ✅
 - **Type Errors**: 0 (pyright src/ tests/) ✅
 - **Type Warnings**: 0 (pyright src/ tests/) ✅
 - **Linting Errors**: 0 (ruff check src/ tests/) ✅
+- **Function Length Violations**: 0 ✅
+- **File Size Violations**: 0 ✅
 - **Performance Score**: 9.0/10
 
 ## Code Quality Standards

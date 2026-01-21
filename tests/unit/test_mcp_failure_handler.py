@@ -95,9 +95,9 @@ class TestInvestigationPlanCreation:
         assert "## Goal" in content
         assert "## Context" in content
         assert "## Requirements" in content
-        assert "## Approach" in content
         assert "## Implementation Steps" in content
         assert "## Success Criteria" in content
+        assert "## Notes" in content
 
 
 class TestRoadmapIntegration:

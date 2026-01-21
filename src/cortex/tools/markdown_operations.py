@@ -566,221 +566,216 @@ class FixRoadmapCorruptionResult(TypedDict):
     error_message: str | None
 
 
-def _detect_roadmap_corruption(content: str) -> list[CorruptionMatch]:
-    """Detect all corruption patterns in roadmap content.
-
-    Args:
-        content: Content of the roadmap file
-
-    Returns:
-        List of detected corruption matches with line numbers and fixes
-    """
-    matches: list[CorruptionMatch] = []
-    lines = content.split("\n")
-
-    # Pattern 1: "Target completion:YYYY-MM-DD" followed by text without space/newline
-    # e.g., "Target completion:2026-01-20ase 19" -> "Target completion: 2026-01-20\n- [Phase 19"
-    pattern1 = re.compile(r"(Target completion:)(\d{4}-\d{2}-\d{2})([A-Za-z])")
+def _detect_pattern1(lines: list[str], matches: list[CorruptionMatch]) -> None:
+    """Detect pattern 1: missing space/newline after completion date followed by capital."""
+    pattern = re.compile(r"(Target completion:)(\d{4}-\d{2}-\d{2})([A-Za-z])")
     for i, line in enumerate(lines, 1):
-        for match in pattern1.finditer(line):
-            date = match.group(2)
-            next_char = match.group(3)
-            original = match.group(0)
-            # Check if it's likely a phase name starting
-            if next_char.isupper():
-                # Missing space and newline before phase
-                fixed = f"{match.group(1)} {date}\n- [Phase"
+        for m in pattern.finditer(line):
+            if m.group(3).isupper():
                 matches.append(
                     CorruptionMatch(
                         line_num=i,
-                        original=original,
-                        fixed=fixed,
+                        original=m.group(0),
+                        fixed=f"{m.group(1)} {m.group(2)}\n- [Phase",
                         pattern="missing_space_newline_after_completion_date",
                     )
                 )
 
+
+def _detect_pattern6_and_7(lines: list[str], matches: list[CorruptionMatch]) -> None:
+    """Detect patterns 6 and 7: missing newline before phase links."""
+    p6 = re.compile(r"(Target completion:)(\d{4}-\d{2}-\d{2})( - \[Phase)")
+    for i, line in enumerate(lines, 1):
+        for m in p6.finditer(line):
+            matches.append(
+                CorruptionMatch(
+                    line_num=i,
+                    original=m.group(0),
+                    fixed=f"{m.group(1)} {m.group(2)}\n{m.group(3)}",
+                    pattern="missing_newline_before_phase_link",
+                )
+            )
+    p7 = re.compile(r"(Target completion:)(\d{4}-\d{2}-\d{2})(Phase)")
+    for i, line in enumerate(lines, 1):
+        for m in p7.finditer(line):
+            matches.append(
+                CorruptionMatch(
+                    line_num=i,
+                    original=m.group(0),
+                    fixed=f"{m.group(1)} {m.group(2)}\n- [{m.group(3)}",
+                    pattern="missing_space_newline_before_phase",
+                )
+            )
+
+
+def _detect_completion_date_primary(
+    lines: list[str], matches: list[CorruptionMatch]
+) -> None:
+    """Detect primary completion date patterns (1, 6, 7)."""
+    _detect_pattern1(lines, matches)
+    _detect_pattern6_and_7(lines, matches)
+
+
+def _detect_completion_date_secondary(
+    lines: list[str], matches: list[CorruptionMatch]
+) -> None:
+    """Detect secondary completion date patterns (10, 11)."""
+    p10 = re.compile(r"(Target completion: \d{4}-\d{2}-\d{2}) (\[Conditional)")
+    for i, line in enumerate(lines, 1):
+        for m in p10.finditer(line):
+            matches.append(
+                CorruptionMatch(
+                    line_num=i,
+                    original=m.group(0),
+                    fixed=f"{m.group(1)}\n- {m.group(2)}",
+                    pattern="missing_newline_before_conditional",
+                )
+            )
+    p11 = re.compile(r"(Target completion:)(\d{4}-\d{2}-\d{2})([^ -])")
+    for i, line in enumerate(lines, 1):
+        for m in p11.finditer(line):
+            if not any(
+                e["line_num"] == i and m.group(0) in e["original"] for e in matches
+            ):
+                matches.append(
+                    CorruptionMatch(
+                        line_num=i,
+                        original=m.group(0),
+                        fixed=f"{m.group(1)} {m.group(2)}{m.group(3)}",
+                        pattern="missing_space_after_completion_colon",
+                    )
+                )
+
+
+def _detect_completion_date_patterns(
+    lines: list[str], matches: list[CorruptionMatch]
+) -> None:
+    """Detect all 'Target completion:' date corruption patterns."""
+    _detect_completion_date_primary(lines, matches)
+    _detect_completion_date_secondary(lines, matches)
+
+
+def _detect_phase_patterns(lines: list[str], matches: list[CorruptionMatch]) -> None:
+    """Detect corruption patterns related to Phase references."""
     # Pattern 2: "Phase X% rate" -> "Phase X: Validate"
     pattern2 = re.compile(r"Phase (\d+)% rate")
     for i, line in enumerate(lines, 1):
         for match in pattern2.finditer(line):
-            phase_num = match.group(1)
-            original = match.group(0)
-            fixed = f"Phase {phase_num}: Validate"
             matches.append(
                 CorruptionMatch(
                     line_num=i,
-                    original=original,
-                    fixed=fixed,
+                    original=match.group(0),
+                    fixed=f"Phase {match.group(1)}: Validate",
                     pattern="corrupted_phase_number",
                 )
             )
-
-    # Pattern 3: "ented" -> "Implemented"
-    pattern3 = re.compile(r"\bented\b")
-    for i, line in enumerate(lines, 1):
-        for match in pattern3.finditer(line):
-            original = match.group(0)
-            fixed = "Implemented"
-            matches.append(
-                CorruptionMatch(
-                    line_num=i,
-                    original=original,
-                    fixed=fixed,
-                    pattern="corrupted_implemented",
-                )
-            )
-
-    # Pattern 4: Missing space/newline before "-Phase" or "- [Phase"
-    # e.g., "-Phase 9" -> "- [Phase 9"
+    # Pattern 4: Missing newline before "-Phase"
     pattern4 = re.compile(r"([^\n])-Phase (\d+)")
     for i, line in enumerate(lines, 1):
         for match in pattern4.finditer(line):
             before = match.group(1)
             phase_num = match.group(2)
-            original = match.group(0)
-            # Check if before is end of previous item
-            if before.strip().endswith(")"):
-                fixed = f"{before}\n- [Phase {phase_num}"
-            else:
-                fixed = f"{before} - [Phase {phase_num}"
+            fixed = (
+                f"{before}\n- [Phase {phase_num}"
+                if before.strip().endswith(")")
+                else f"{before} - [Phase {phase_num}"
+            )
             matches.append(
                 CorruptionMatch(
                     line_num=i,
-                    original=original,
+                    original=match.group(0),
                     fixed=fixed,
                     pattern="missing_newline_before_phase",
                 )
             )
 
+
+def _detect_score_patterns(lines: list[str], matches: list[CorruptionMatch]) -> None:
+    """Detect corruption patterns related to score formats."""
     # Pattern 5: "X.710 to Y.Z+" -> "X.7/10 to Y.Z+/10"
-    # e.g., "8.710 to 9.5+" -> "8.7/10 to 9.5+/10"
     pattern5 = re.compile(r"(\d+)\.(\d)(\d+) to (\d+)\.(\d+)\+")
     for i, line in enumerate(lines, 1):
         for match in pattern5.finditer(line):
-            original = match.group(0)
-            # Check if third group is "10" (corrupted "/10")
             if match.group(3) == "10":
-                fixed = f"{match.group(1)}.{match.group(2)}/10 to {match.group(4)}.{match.group(5)}+/10"
                 matches.append(
                     CorruptionMatch(
                         line_num=i,
-                        original=original,
-                        fixed=fixed,
+                        original=match.group(0),
+                        fixed=f"{match.group(1)}.{match.group(2)}/10 to {match.group(4)}.{match.group(5)}+/10",
                         pattern="corrupted_score_format",
                     )
                 )
-
-    # Pattern 6: Missing space after date in "Target completion:YYYY-MM-DD[Phase"
-    # e.g., "Target completion:2026-01-13 - [Phase 22" -> needs newline
-    pattern6 = re.compile(r"(Target completion:)(\d{4}-\d{2}-\d{2})( - \[Phase)")
-    for i, line in enumerate(lines, 1):
-        for match in pattern6.finditer(line):
-            original = match.group(0)
-            fixed = f"{match.group(1)} {match.group(2)}\n{match.group(3)}"
-            matches.append(
-                CorruptionMatch(
-                    line_num=i,
-                    original=original,
-                    fixed=fixed,
-                    pattern="missing_newline_before_phase_link",
-                )
-            )
-
-    # Pattern 7: "Target completion:YYYY-MM-DDPhase" -> "Target completion: YYYY-MM-DD\n- [Phase"
-    pattern7 = re.compile(r"(Target completion:)(\d{4}-\d{2}-\d{2})(Phase)")
-    for i, line in enumerate(lines, 1):
-        for match in pattern7.finditer(line):
-            original = match.group(0)
-            fixed = f"{match.group(1)} {match.group(2)}\n- [{match.group(3)}"
-            matches.append(
-                CorruptionMatch(
-                    line_num=i,
-                    original=original,
-                    fixed=fixed,
-                    pattern="missing_space_newline_before_phase",
-                )
-            )
-
-    # Pattern 8: "YYYY-MM-DDFix" -> "YYYY-MM-DD) - Fix"
-    pattern8 = re.compile(r"(\d{4}-\d{2}-\d{2})(Fix)")
-    for i, line in enumerate(lines, 1):
-        for match in pattern8.finditer(line):
-            original = match.group(0)
-            fixed = f"{match.group(1)}) - {match.group(2)}"
-            matches.append(
-                CorruptionMatch(
-                    line_num=i,
-                    original=original,
-                    fixed=fixed,
-                    pattern="missing_paren_space_before_fix",
-                )
-            )
-
-    # Pattern 9: "archive/Phase Xphase-X" -> "archive/Phase X/phase-X"
-    pattern9 = re.compile(r"(archive/Phase \d+)(phase-\d+)")
-    for i, line in enumerate(lines, 1):
-        for match in pattern9.finditer(line):
-            original = match.group(0)
-            fixed = f"{match.group(1)}/{match.group(2)}"
-            matches.append(
-                CorruptionMatch(
-                    line_num=i,
-                    original=original,
-                    fixed=fixed,
-                    pattern="missing_slash_in_archive_path",
-                )
-            )
-
-    # Pattern 10: "Target completion: YYYY-MM-DD [Conditional" -> needs newline
-    pattern10 = re.compile(r"(Target completion: \d{4}-\d{2}-\d{2}) (\[Conditional)")
-    for i, line in enumerate(lines, 1):
-        for match in pattern10.finditer(line):
-            original = match.group(0)
-            fixed = f"{match.group(1)}\n- {match.group(2)}"
-            matches.append(
-                CorruptionMatch(
-                    line_num=i,
-                    original=original,
-                    fixed=fixed,
-                    pattern="missing_newline_before_conditional",
-                )
-            )
-
-    # Pattern 11: "Target completion:YYYY-MM-DD" (missing space)
-    pattern11 = re.compile(r"(Target completion:)(\d{4}-\d{2}-\d{2})([^ -])")
-    for i, line in enumerate(lines, 1):
-        for match in pattern11.finditer(line):
-            # Skip if already handled by other patterns
-            if any(
-                m["line_num"] == i and match.group(0) in m["original"] for m in matches
-            ):
-                continue
-            original = match.group(0)
-            fixed = f"{match.group(1)} {match.group(2)}{match.group(3)}"
-            matches.append(
-                CorruptionMatch(
-                    line_num=i,
-                    original=original,
-                    fixed=fixed,
-                    pattern="missing_space_after_completion_colon",
-                )
-            )
-
-    # Pattern 12: "8.710" -> "8.7/10" (standalone corrupted score)
+    # Pattern 12: "8.710" -> "8.7/10" standalone
     pattern12 = re.compile(r"(\d+)\.(\d)(10)(\s|$)")
     for i, line in enumerate(lines, 1):
         for match in pattern12.finditer(line):
-            original = match.group(0)
-            fixed = f"{match.group(1)}.{match.group(2)}/10{match.group(4)}"
             matches.append(
                 CorruptionMatch(
                     line_num=i,
-                    original=original,
-                    fixed=fixed,
+                    original=match.group(0),
+                    fixed=f"{match.group(1)}.{match.group(2)}/10{match.group(4)}",
                     pattern="corrupted_standalone_score",
                 )
             )
 
+
+def _detect_pattern3_implemented(
+    lines: list[str], matches: list[CorruptionMatch]
+) -> None:
+    """Detect pattern 3: corrupted 'Implemented' text."""
+    pattern = re.compile(r"\bented\b")
+    for i, line in enumerate(lines, 1):
+        for match in pattern.finditer(line):
+            matches.append(
+                CorruptionMatch(
+                    line_num=i,
+                    original=match.group(0),
+                    fixed="Implemented",
+                    pattern="corrupted_implemented",
+                )
+            )
+
+
+def _detect_pattern8_and_9(lines: list[str], matches: list[CorruptionMatch]) -> None:
+    """Detect patterns 8 and 9: date-fix and archive path issues."""
+    p8 = re.compile(r"(\d{4}-\d{2}-\d{2})(Fix)")
+    for i, line in enumerate(lines, 1):
+        for m in p8.finditer(line):
+            matches.append(
+                CorruptionMatch(
+                    line_num=i,
+                    original=m.group(0),
+                    fixed=f"{m.group(1)}) - {m.group(2)}",
+                    pattern="missing_paren_space_before_fix",
+                )
+            )
+    p9 = re.compile(r"(archive/Phase \d+)(phase-\d+)")
+    for i, line in enumerate(lines, 1):
+        for m in p9.finditer(line):
+            matches.append(
+                CorruptionMatch(
+                    line_num=i,
+                    original=m.group(0),
+                    fixed=f"{m.group(1)}/{m.group(2)}",
+                    pattern="missing_slash_in_archive_path",
+                )
+            )
+
+
+def _detect_misc_patterns(lines: list[str], matches: list[CorruptionMatch]) -> None:
+    """Detect miscellaneous corruption patterns."""
+    _detect_pattern3_implemented(lines, matches)
+    _detect_pattern8_and_9(lines, matches)
+
+
+def _detect_roadmap_corruption(content: str) -> list[CorruptionMatch]:
+    """Detect all corruption patterns in roadmap content."""
+    matches: list[CorruptionMatch] = []
+    lines = content.split("\n")
+    _detect_completion_date_patterns(lines, matches)
+    _detect_phase_patterns(lines, matches)
+    _detect_score_patterns(lines, matches)
+    _detect_misc_patterns(lines, matches)
     return matches
 
 
@@ -822,112 +817,53 @@ def _apply_roadmap_fixes(content: str, matches: list[CorruptionMatch]) -> str:
     return "\n".join(lines)
 
 
+def _create_roadmap_error_response(error_msg: str) -> str:
+    """Create error response for roadmap corruption."""
+    return json.dumps(
+        {
+            "success": False,
+            "file_name": "roadmap.md",
+            "corruption_count": 0,
+            "fixes_applied": [],
+            "error_message": error_msg,
+        },
+        indent=2,
+    )
+
+
+def _create_roadmap_success_response(matches: list[CorruptionMatch]) -> str:
+    """Create success response for roadmap corruption."""
+    result: FixRoadmapCorruptionResult = {
+        "success": True,
+        "file_name": "roadmap.md",
+        "corruption_count": len(matches),
+        "fixes_applied": matches,
+        "error_message": None,
+    }
+    return json.dumps(result, indent=2)
+
+
 @mcp.tool()
 async def fix_roadmap_corruption(
-    project_root: str | None = None,
-    dry_run: bool = False,
+    project_root: str | None = None, dry_run: bool = False
 ) -> str:
     """Fix text corruption in roadmap.md file.
 
-    Detects and fixes common corruption patterns in roadmap.md:
-    - Missing spaces: "89.89to" -> "89.89% to"
-    - Missing newlines: "2026-01-20ase 19" -> "2026-01-20\n- [Phase 19"
-    - Corrupted text: "ented" -> "Implemented", "17% rate" -> "17: Validate"
-    - Malformed dates: "2026-01-14Fix" -> "2026-01-14) - Fix"
-    - Corrupted scores: "8.710" -> "8.7/10"
-
-    Args:
-        project_root: Path to project root directory. If None, uses current directory.
-        dry_run: If True, only detect corruption without fixing (default: False)
-
-    Returns:
-        JSON string with fix results containing:
-        - success: Whether operation succeeded
-        - file_name: Name of the file processed
-        - corruption_count: Number of corruption instances found
-        - fixes_applied: List of CorruptionMatch objects with details
-        - error_message: Error message if operation failed
-
-    Examples:
-        Example 1: Fix corruption in roadmap.md
-        >>> await fix_roadmap_corruption()
-        {
-          "success": true,
-          "file_name": "roadmap.md",
-          "corruption_count": 15,
-          "fixes_applied": [
-            {
-              "line_num": 184,
-              "original": "Target completion:2026-01-20ase",
-              "fixed": "Target completion: 2026-01-20\n- [Phase",
-              "pattern": "missing_space_newline_after_completion_date"
-            }
-          ],
-          "error_message": null
-        }
-
-        Example 2: Check for corruption without fixing
-        >>> await fix_roadmap_corruption(dry_run=True)
-        {
-          "success": true,
-          "file_name": "roadmap.md",
-          "corruption_count": 15,
-          "fixes_applied": [...],
-          "error_message": null
-        }
-
-    Note:
-        - Only processes roadmap.md file in .cortex/memory-bank/ directory
-        - Detects multiple corruption patterns automatically
-        - Preserves all markdown formatting and structure
-        - Returns error if roadmap.md file not found
+    Detects and fixes corruption patterns: missing spaces/newlines, corrupted
+    text like 'ented'->'Implemented', malformed dates, corrupted scores.
     """
     try:
         root_path = Path(get_project_root(project_root))
         roadmap_path = root_path / ".cortex" / "memory-bank" / "roadmap.md"
-
         if not roadmap_path.exists():
-            return json.dumps(
-                {
-                    "success": False,
-                    "file_name": "roadmap.md",
-                    "corruption_count": 0,
-                    "fixes_applied": [],
-                    "error_message": f"roadmap.md not found at {roadmap_path}",
-                },
-                indent=2,
+            return _create_roadmap_error_response(
+                f"roadmap.md not found at {roadmap_path}"
             )
-
-        # Read content
         content = roadmap_path.read_text(encoding="utf-8")
-
-        # Detect corruption
         matches = _detect_roadmap_corruption(content)
-
-        # Apply fixes if not dry run
         if not dry_run and matches:
             fixed_content = _apply_roadmap_fixes(content, matches)
             _ = roadmap_path.write_text(fixed_content, encoding="utf-8")
-
-        # Build response
-        result: FixRoadmapCorruptionResult = {
-            "success": True,
-            "file_name": "roadmap.md",
-            "corruption_count": len(matches),
-            "fixes_applied": matches,
-            "error_message": None,
-        }
-
-        return json.dumps(result, indent=2)
-
+        return _create_roadmap_success_response(matches)
     except Exception as e:
-        return json.dumps(
-            {
-                "success": False,
-                "file_name": "roadmap.md",
-                "corruption_count": 0,
-                "fixes_applied": [],
-                "error_message": str(e),
-            },
-            indent=2,
-        )
+        return _create_roadmap_error_response(str(e))

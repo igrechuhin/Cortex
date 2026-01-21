@@ -76,53 +76,36 @@ def create_validation_error_response(error: Exception) -> str:
     )
 
 
+def _create_transclusion_fix(files: list[str]) -> dict[str, object]:
+    """Create a transclusion fix suggestion for duplicated files."""
+    return {
+        "files": files,
+        "suggestion": "Consider using transclusion: {{include:shared-content.md}}",
+        "steps": [
+            "1. Create a new file for shared content",
+            "2. Move duplicate content to the new file",
+            "3. Replace duplicates with transclusion syntax",
+        ],
+    }
+
+
 def generate_duplication_fixes(
     duplications_dict: dict[str, object],
 ) -> list[dict[str, object]]:
-    """Generate fix suggestions for duplicate content.
-
-    Args:
-        duplications_dict: Dictionary with exact_duplicates and similar_content
-
-    Returns:
-        List of fix suggestion dictionaries
-    """
+    """Generate fix suggestions for duplicate content."""
     fixes: list[dict[str, object]] = []
-
     exact_duplicates = cast(
         list[dict[str, object]], duplications_dict.get("exact_duplicates", [])
     )
     for duplicate in exact_duplicates:
         files = cast(list[str], duplicate.get("files", []))
         if len(files) >= 2:
-            fixes.append(
-                {
-                    "files": files,
-                    "suggestion": "Consider using transclusion: {{include:shared-content.md}}",
-                    "steps": [
-                        "1. Create a new file for shared content",
-                        "2. Move duplicate content to the new file",
-                        "3. Replace duplicates with transclusion syntax",
-                    ],
-                }
-            )
-
+            fixes.append(_create_transclusion_fix(files))
     similar_content = cast(
         list[dict[str, object]], duplications_dict.get("similar_content", [])
     )
     for similar in similar_content:
         files = cast(list[str], similar.get("files", []))
         if len(files) >= 2:
-            fixes.append(
-                {
-                    "files": files,
-                    "suggestion": "Consider using transclusion: {{include:shared-content.md}}",
-                    "steps": [
-                        "1. Create a new file for shared content",
-                        "2. Move duplicate content to the new file",
-                        "3. Replace duplicates with transclusion syntax",
-                    ],
-                }
-            )
-
+            fixes.append(_create_transclusion_fix(files))
     return fixes

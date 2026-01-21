@@ -10,10 +10,10 @@ import pytest
 from cortex.tools.pre_commit_tools import (
     MAX_FILE_LINES,
     MAX_FUNCTION_LINES,
-    _check_file_sizes,
-    _check_function_lengths,
-    _check_function_lengths_in_file,
-    _count_file_lines,
+    _check_file_sizes,  # pyright: ignore[reportPrivateUsage]
+    _check_function_lengths,  # pyright: ignore[reportPrivateUsage]
+    _check_function_lengths_in_file,  # pyright: ignore[reportPrivateUsage]
+    _count_file_lines,  # pyright: ignore[reportPrivateUsage]
     execute_pre_commit_checks,
     fix_quality_issues,
 )
@@ -233,9 +233,9 @@ class TestCountFileLines:
     def test_count_lines_simple_file(self) -> None:
         """Test counting lines in a simple Python file."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write("x = 1\n")
-            f.write("y = 2\n")
-            f.write("z = 3\n")
+            _ = f.write("x = 1\n")
+            _ = f.write("y = 2\n")
+            _ = f.write("z = 3\n")
             f.flush()
             path = Path(f.name)
 
@@ -248,12 +248,12 @@ class TestCountFileLines:
     def test_count_lines_with_comments_and_blanks(self) -> None:
         """Test counting lines excludes comments and blanks."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write("# This is a comment\n")
-            f.write("\n")
-            f.write("x = 1\n")
-            f.write("  # Indented comment\n")
-            f.write("\n")
-            f.write("y = 2\n")
+            _ = f.write("# This is a comment\n")
+            _ = f.write("\n")
+            _ = f.write("x = 1\n")
+            _ = f.write("  # Indented comment\n")
+            _ = f.write("\n")
+            _ = f.write("y = 2\n")
             f.flush()
             path = Path(f.name)
 
@@ -268,8 +268,8 @@ class TestCountFileLines:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             # Simple docstring on one line toggles in_docstring twice (becomes false)
             # so the line after it counts normally
-            f.write("x = 1\n")
-            f.write("y = 2\n")
+            _ = f.write("x = 1\n")
+            _ = f.write("y = 2\n")
             f.flush()
             path = Path(f.name)
 
@@ -303,7 +303,7 @@ class TestCheckFileSizes:
             src_dir.mkdir()
 
             # Create a small file
-            (src_dir / "small.py").write_text("x = 1\ny = 2\n")
+            _ = (src_dir / "small.py").write_text("x = 1\ny = 2\n")
 
             violations = _check_file_sizes(project_root)
             assert violations == []
@@ -319,7 +319,7 @@ class TestCheckFileSizes:
             large_content = "\n".join(
                 [f"x{i} = {i}" for i in range(MAX_FILE_LINES + 50)]
             )
-            (src_dir / "large.py").write_text(large_content)
+            _ = (src_dir / "large.py").write_text(large_content)
 
             violations = _check_file_sizes(project_root)
             assert len(violations) == 1
@@ -338,7 +338,7 @@ class TestCheckFileSizes:
             large_content = "\n".join(
                 [f"x{i} = {i}" for i in range(MAX_FILE_LINES + 50)]
             )
-            (src_dir / "test_large.py").write_text(large_content)
+            _ = (src_dir / "test_large.py").write_text(large_content)
 
             violations = _check_file_sizes(project_root)
             assert violations == []  # test files are skipped
@@ -367,7 +367,7 @@ def short_func():
     y = 2
     return x + y
 '''
-            (src_dir / "short.py").write_text(content)
+            _ = (src_dir / "short.py").write_text(content)
 
             violations = _check_function_lengths(project_root)
             assert violations == []
@@ -382,7 +382,7 @@ def short_func():
             # Create a file with a long function
             lines = [f"    x{i} = {i}" for i in range(MAX_FUNCTION_LINES + 10)]
             content = "def long_func():\n" + "\n".join(lines) + "\n    return x0\n"
-            (src_dir / "long.py").write_text(content)
+            _ = (src_dir / "long.py").write_text(content)
 
             violations = _check_function_lengths(project_root)
             assert len(violations) == 1
@@ -392,7 +392,7 @@ def short_func():
     def test_check_function_lengths_in_file_syntax_error(self) -> None:
         """Test handling of syntax errors in file."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write("def broken(\n")  # Invalid syntax
+            _ = f.write("def broken(\n")  # Invalid syntax
             f.flush()
             path = Path(f.name)
 
@@ -417,7 +417,7 @@ def short_func():
             # Create a test file with a long function
             lines = [f"    x{i} = {i}" for i in range(MAX_FUNCTION_LINES + 10)]
             content = "def long_func():\n" + "\n".join(lines) + "\n    return x0\n"
-            (src_dir / "test_long.py").write_text(content)
+            _ = (src_dir / "test_long.py").write_text(content)
 
             violations = _check_function_lengths(project_root)
             assert violations == []  # test files are skipped
@@ -436,7 +436,7 @@ def short_func():
                 + "\n".join(lines)
                 + "\n    return x0\n"
             )
-            (src_dir / "async_long.py").write_text(content)
+            _ = (src_dir / "async_long.py").write_text(content)
 
             violations = _check_function_lengths(project_root)
             assert len(violations) == 1
@@ -457,7 +457,7 @@ class TestQualityCheckIntegration:
             src_dir.mkdir()
 
             # Create a small valid file
-            (src_dir / "module.py").write_text("x = 1\n")
+            _ = (src_dir / "module.py").write_text("x = 1\n")
 
             with patch(
                 "cortex.tools.pre_commit_tools.PythonAdapter"

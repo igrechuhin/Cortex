@@ -19,71 +19,40 @@ from cortex.tools.models import (
 )
 
 
+async def _process_stale_entries(
+    metadata_index: MetadataIndex, stale_files: list[str], dry_run: bool
+) -> CleanupMetadataIndexResult:
+    """Process stale entries and return cleanup result."""
+    entries_cleaned = await metadata_index.cleanup_stale_entries(dry_run=dry_run)
+    message = (
+        f"Would clean {len(stale_files)} stale entries"
+        if dry_run
+        else f"Cleaned {entries_cleaned} stale entries"
+    )
+    return CleanupMetadataIndexResult(
+        dry_run=dry_run,
+        stale_files_found=len(stale_files),
+        stale_files=stale_files,
+        entries_cleaned=entries_cleaned,
+        message=message,
+    )
+
+
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def cleanup_metadata_index(
-    project_root: str | None = None,
-    dry_run: bool = False,
+    project_root: str | None = None, dry_run: bool = False
 ) -> CleanupMetadataIndexResultUnion:
     """Clean up stale entries from metadata index.
 
-    Validates index consistency with filesystem and removes entries
-    for files that no longer exist on disk. Supports dry-run mode to
-    preview what would be cleaned without making changes.
-
-    Args:
-        project_root: Optional path to project root directory.
-            Defaults to current working directory if not specified.
-            Example: "/Users/username/projects/my-app"
-        dry_run: If True, only report what would be cleaned without
-            making changes. If False, actually remove stale entries.
-            Default: False
-
-    Returns:
-        Pydantic model containing cleanup results with:
-        - status: "success" or "error"
-        - dry_run: Whether this was a dry run
-        - stale_files_found: Number of stale files found
-        - stale_files: List of stale file names
-        - entries_cleaned: Number of entries actually cleaned (0 if dry_run=True)
-        - message: Summary message
-
-    Example (Dry run):
-        CleanupMetadataIndexResult(
-            status="success",
-            dry_run=True,
-            stale_files_found=2,
-            stale_files=["test_verification.md", "test_links.md"],
-            entries_cleaned=0,
-            message="Would clean 2 stale entries"
-        )
-
-    Example (Actual cleanup):
-        CleanupMetadataIndexResult(
-            status="success",
-            dry_run=False,
-            stale_files_found=2,
-            stale_files=["test_verification.md", "test_links.md"],
-            entries_cleaned=2,
-            message="Cleaned 2 stale entries"
-        )
-
-    Note:
-        - Stale entries are files that exist in the metadata index
-          but no longer exist on the filesystem
-        - Use dry_run=True to preview changes before cleaning
-        - Cleanup automatically recalculates index totals after removal
-        - This tool helps maintain index consistency and prevents
-          retry errors when reading non-existent files
+    Validates index consistency with filesystem and removes entries for files
+    that no longer exist on disk. Supports dry-run mode.
     """
     try:
         root = get_project_root(project_root)
         mgrs = await get_managers(root)
         metadata_index = cast(MetadataIndex, mgrs["index"])
-
-        # Validate index consistency to find stale entries
         stale_files = await metadata_index.validate_index_consistency()
-
         if not stale_files:
             return CleanupMetadataIndexResult(
                 dry_run=dry_run,
@@ -92,25 +61,8 @@ async def cleanup_metadata_index(
                 entries_cleaned=0,
                 message="No stale entries found",
             )
-
-        # Clean up stale entries
-        entries_cleaned = await metadata_index.cleanup_stale_entries(dry_run=dry_run)
-
-        message = (
-            f"Would clean {len(stale_files)} stale entries"
-            if dry_run
-            else f"Cleaned {entries_cleaned} stale entries"
-        )
-
-        return CleanupMetadataIndexResult(
-            dry_run=dry_run,
-            stale_files_found=len(stale_files),
-            stale_files=stale_files,
-            entries_cleaned=entries_cleaned,
-            message=message,
-        )
+        return await _process_stale_entries(metadata_index, stale_files, dry_run)
     except Exception as e:
         return CleanupMetadataIndexErrorResult(
-            error=str(e),
-            error_type=type(e).__name__,
+            error=str(e), error_type=type(e).__name__
         )

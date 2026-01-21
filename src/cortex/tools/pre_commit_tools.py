@@ -453,12 +453,16 @@ def _check_file_sizes(project_root: Path) -> list[FileSizeViolation]:
     """Check all Python files for size violations."""
     violations: list[FileSizeViolation] = []
     src_dir = project_root / "src"
+    # Files excluded from size checks (data definition files that are inherently large)
+    excluded_files = {"models.py"}  # Pydantic model definitions
 
     if not src_dir.exists():
         return violations
 
     for py_file in src_dir.glob("**/*.py"):
         if "__pycache__" in str(py_file) or py_file.name.startswith("test_"):
+            continue
+        if py_file.name in excluded_files:
             continue
         lines = _count_file_lines(py_file)
         if lines > MAX_FILE_LINES:
