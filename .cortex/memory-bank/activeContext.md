@@ -6,9 +6,41 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
-- Code quality maintenance: Function length violations fixed, all tests passing
+- **Next blocker**: Phase 22 (Fix Commit Pipeline Quality Gate) or other roadmap items
+- Code quality maintenance: All checks passing, all tests passing
+- CI is green - all quality checks passing
 
 ### Recently Completed
+
+- ✅ **Commit Procedure - Type Fix in main.py** (2026-01-21) - Fixed type errors in BaseExceptionGroup handling:
+  - **Fixed 2 type errors in `main.py`**:
+    - Added explicit type annotation `tuple[BaseException, ...]` for `nested_excs` variable
+    - Used `# type: ignore[assignment]` for BaseExceptionGroup.exceptions access
+  - **Result**: All 2648 tests passing, 90.11% coverage, 0 type errors
+
+- ✅ **Phase 19: Fix MCP Server Crash** - COMPLETE (2026-01-21) - Archived to `.cortex/plans/archive/Phase19/`
+
+- ✅ **Commit Procedure - Function Length and Type Fixes** (2026-01-21) - Fixed function length violations and type errors:
+  - **Fixed 3 function length violations**:
+    - `security.py`: Extracted `_check_basic_constraints()`, `_check_nesting_depth()`, `_check_quantifiers()` from `validate()`
+    - `context_analysis_operations.py`: Extracted `_calculate_session_stats()`, `_update_global_stats()` from `analyze_current_session()`
+    - `context_analysis_operations.py`: Extracted `_process_log_files()` from `analyze_session_logs()`
+  - **Fixed 1 type error**:
+    - `test_security.py`: Fixed unknown type errors by using `cast()` for nested dict access
+  - **Result**: All 2646 tests passing, 90.15% coverage, 0 type errors, 0 function length violations
+
+- ✅ **Phase 20 Step 4: Security Vulnerabilities Fixed** - COMPLETE (2026-01-21) - Fixed all security vulnerabilities identified in code review:
+  - **CommitMessageSanitizer**: Prevents command injection in git commit messages
+  - **HTMLEscaper**: Prevents XSS in JSON exports with recursive dictionary/list escaping
+  - **RegexValidator**: Prevents ReDoS attacks by validating regex patterns for nested quantifiers, deep nesting, and large quantifiers
+  - All functions integrated into `src/cortex/core/security.py`
+  - Updated `synapse_repository.py` to use commit message sanitization
+  - Added 43 comprehensive unit tests (all passing)
+  - Security module coverage: 90.38%
+
+- ✅ **Phase 25: Fix CI Failure - Commit 302c5e2** - COMPLETE (2026-01-21) - CI failure resolved - Quality check now passing
+
+- ✅ **Phase 23: Fix CI Failure After Validation Refactor** - COMPLETE (2026-01-21) - CI failure resolved - Validation refactor issues were fixed
 
 - ✅ **Commit Procedure - Function Length Fixes** (2026-01-21) - Fixed function length violations and test alignment:
   - **Fixed 3 function length violations**:
@@ -36,27 +68,16 @@ See [roadmap.md](roadmap.md) for current status and milestones.
   - **Result**: Coverage now at 90.05% (2567 tests passing, 2 skipped)
   - **Rule Enforcement**: Coverage threshold is MANDATORY - no exceptions, no "pre-existing condition" excuses
 
-- ✅ **Phase 50: Rename optimize_context to load_context** (2026-01-20) - Renamed misleading tool name:
-  - **Problem**: `optimize_context` sounded optional and performance-focused, causing agents to skip it
-  - **Solution**: Renamed to `load_context` - action-oriented, signals "do this first"
-  - **Files Updated**:
-    - Core: `phase4_optimization_handlers.py`, `phase4_context_operations.py`, `phase4_optimization.py`
-    - Models: `tools/models.py` (LoadContextResult, LoadContextErrorResult)
-    - Protocols: `core/protocols/optimization.py`
-    - Tests: 5 test files updated
-    - Docs: 9 documentation files (README, CLAUDE, API docs, ADRs)
-    - Synapse: prompts and rules updated
-  - All tests pass (70+ tests), type checking passes, linting passes
-
 ## Project Health
 
-- **Test Coverage**: 90.10% (2583 tests passing, 2 skipped) ✅
+- **Test Coverage**: 90.11% (2648 tests passing, 2 skipped) ✅
 - **Type Errors**: 0 (pyright src/ tests/) ✅
 - **Type Warnings**: 0 (pyright src/ tests/) ✅
 - **Linting Errors**: 0 (ruff check src/ tests/) ✅
 - **Function Length Violations**: 0 ✅
 - **File Size Violations**: 0 ✅
 - **Performance Score**: 9.0/10
+- **Security Score**: 9.8/10 ✅ (up from 9.5/10 via vulnerability fixes)
 
 ## Code Quality Standards
 

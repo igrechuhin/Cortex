@@ -5,10 +5,12 @@ This module contains the implementation logic for the load_context tool.
 """
 
 import json
+from pathlib import Path
 from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.session_logger import log_load_context_call
 from cortex.managers.manager_utils import get_manager
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.optimization_config import OptimizationConfig
@@ -20,6 +22,7 @@ async def load_context_impl(
     task_description: str,
     token_budget: int | None,
     strategy: str,
+    project_root: Path | None = None,
 ) -> str:
     """Implementation logic for load_context tool.
 
@@ -28,6 +31,7 @@ async def load_context_impl(
         task_description: Task description
         token_budget: Token budget (None for default)
         strategy: Loading strategy
+        project_root: Project root path for session logging
 
     Returns:
         JSON string with loaded context results
@@ -53,6 +57,12 @@ async def load_context_impl(
         token_budget=token_budget,
         strategy=strategy,
     )
+
+    # Log the call for effectiveness analysis
+    if project_root is not None:
+        _log_context_call(
+            project_root, task_description, token_budget, strategy, result
+        )
 
     return _format_load_context_result(task_description, token_budget, strategy, result)
 
@@ -107,6 +117,45 @@ async def _read_all_files_for_context_loading(
             continue
 
     return files_content, files_metadata
+
+
+def _log_context_call(
+    project_root: Path,
+    task_description: str,
+    token_budget: int,
+    strategy: str,
+    result: OptimizationResult,
+) -> None:
+    """Log load_context call for effectiveness analysis.
+
+    Args:
+        project_root: Project root path
+        task_description: Task description
+        token_budget: Token budget used
+        strategy: Strategy used
+        result: Context loading result
+    """
+    raw_scores: object = result.metadata.get("relevance_scores", {})
+    # Ensure relevance_scores is dict[str, float]
+    scores: dict[str, float] = {}
+    if isinstance(raw_scores, dict):
+        typed_scores = cast(dict[str, object], raw_scores)
+        for file_name, score_value in typed_scores.items():
+            if isinstance(score_value, (int, float)):
+                scores[file_name] = float(score_value)
+
+    log_load_context_call(
+        project_root=project_root,
+        task_description=task_description,
+        token_budget=token_budget,
+        strategy=strategy,
+        selected_files=result.selected_files,
+        selected_sections=result.selected_sections,
+        total_tokens=result.total_tokens,
+        utilization=result.utilization,
+        excluded_files=result.excluded_files,
+        relevance_scores=scores,
+    )
 
 
 def _format_load_context_result(

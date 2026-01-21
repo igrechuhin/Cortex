@@ -1,0 +1,30 @@
+{
+  "session_id": "f9b367db3e5a",
+  "session_start": "2026-01-21T18:40",
+  "load_context_calls": [
+    {
+      "timestamp": "2026-01-21T18:40",
+      "task_description": "Fix MCP server crash caused by BrokenResourceError in stdio_server TaskGroup - need to update main.py error handling to catch BaseExceptionGroup and anyio.BrokenResourceError",
+      "token_budget": 50000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "systemPatterns.md",
+        "roadmap.md",
+        "techContext.md",
+        "activeContext.md",
+        "progress.md",
+        "projectBrief.md",
+        "productContext.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 23320,
+      "utilization": 0.4664,
+      "excluded_files": [],
+      "relevance_scores": {
+        "activeContext.md": 0.821,
+        "progress.md": 0.622,
+        "roadmap.md": 0.625
+      }
+    }
+  ]
+}

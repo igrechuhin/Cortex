@@ -49,6 +49,34 @@ pyenv install 3.13.0
 pyenv global 3.13.0
 ```
 
+#### Issue: MCP server crashes with BrokenResourceError
+
+**Symptoms**:
+
+```text
+ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  anyio.BrokenResourceError
+```
+
+**Causes**:
+
+- Client disconnected while server was processing
+- Request was cancelled by client
+- Client process terminated unexpectedly
+
+**Solution**:
+
+This is **not an error** - the server handles client disconnections gracefully. When you see this in logs:
+
+1. **Normal behavior**: Server exits cleanly with exit code 0
+2. **No action needed**: Reconnect the client to restart the server
+3. **If persistent**: Check client configuration or network stability
+
+The server distinguishes between:
+
+- **Graceful disconnection** (exit code 0): Client closed connection
+- **Actual errors** (exit code 1): Server-side failures
+
 #### Issue: MCP server not found by client
 
 **Symptoms**:

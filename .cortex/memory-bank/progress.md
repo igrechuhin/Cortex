@@ -2,6 +2,84 @@
 
 ## 2026-01-21
 
+- ✅ **Commit Procedure - Type Fix in main.py** (2026-01-21) - Fixed type errors in BaseExceptionGroup handling:
+  - **Fixed 2 type errors in `main.py`**:
+    - Added explicit type annotation `tuple[BaseException, ...]` for `nested_excs` variable
+    - Used `# type: ignore[assignment]` for BaseExceptionGroup.exceptions access (pyright has issues with BaseExceptionGroup generic type parameter)
+  - **Archived Phase 19 plan** to `.cortex/plans/archive/Phase19/`
+  - **Pre-commit validation results**:
+    - Fix Errors: ✅ PASS - 0 errors, 0 warnings
+    - Formatting: ✅ PASS - All files unchanged
+    - Markdown Linting: ✅ PASS - 5 files processed, 0 errors
+    - Type Checking: ✅ PASS - 0 errors, 0 warnings
+    - Code Quality: ✅ PASS - 0 file size violations, 0 function length violations
+    - Test Execution: ✅ PASS - 2648 passed, 2 skipped, 90.11% coverage
+
+- ✅ **Phase 19: Fix MCP Server Crash** - COMPLETE (2026-01-21) - Fixed MCP server crash caused by `BrokenResourceError` in `stdio_server` TaskGroup:
+  - **Problem**: Server crashed when client disconnected or cancelled requests, causing unhandled `ExceptionGroup`
+  - **Solution**: Updated error handling in `main.py` to handle `BaseExceptionGroup` and `anyio.BrokenResourceError`
+  - **Implementation Details**:
+    - Added `BaseExceptionGroup` handler to extract nested exceptions from TaskGroup
+    - Added recursive `_is_connection_error()` check for nested exception groups
+    - Added `_handle_broken_resource_in_group()` for TaskGroup exception extraction
+    - Updated `_handle_connection_error()` to handle `anyio.BrokenResourceError`
+    - Server now handles client disconnections gracefully (exit code 0)
+  - **Testing**:
+    - All 19 error handling tests pass
+    - Tests cover: `BaseExceptionGroup`, `BrokenResourceError`, nested groups, mixed exceptions
+    - Tests verify graceful exit (code 0) for connection errors and error exit (code 1) for actual failures
+  - **Documentation**:
+    - Updated `docs/guides/troubleshooting.md` with BrokenResourceError section
+  - **Success Criteria Met**:
+    - ✅ Server handles client disconnections gracefully (exit code 0)
+    - ✅ `BrokenResourceError` in TaskGroup is caught and handled
+    - ✅ No server crashes on request cancellation
+    - ✅ Appropriate logging (warning for disconnections, error for actual errors)
+    - ✅ Tests pass for all error handling paths (19 tests)
+    - ✅ Documentation updated with error handling patterns
+
+- ✅ **Phase 20 Step 4: Security Vulnerabilities Fixed** - COMPLETE (2026-01-21) - Fixed all security vulnerabilities identified in code review:
+  - **Issue 4.1 - Command Injection in Git Commit Messages**:
+    - Added `CommitMessageSanitizer` class to `src/cortex/core/security.py`
+    - Sanitizes commit messages by removing control characters, shell metacharacters
+    - Validates message length and content before use
+    - Updated `synapse_repository.py` `_git_commit_file()` to use sanitizer
+  - **Issue 4.2 - XSS in Exported JSON Content**:
+    - Added `HTMLEscaper` class to `src/cortex/core/security.py`
+    - Escapes HTML special characters (`<`, `>`, `&`, `"`, `'`)
+    - Recursive escaping for nested dictionaries and lists
+    - Type-safe implementation with proper casting
+  - **Issue 4.3 - ReDoS in User-Provided Regex Patterns**:
+    - Added `RegexValidator` class to `src/cortex/core/security.py`
+    - Validates patterns for: length limits, null bytes, nesting depth, nested quantifiers, large quantifiers
+    - `compile_safe()` method for safe regex compilation with validation
+  - **Testing**:
+    - Added 43 comprehensive unit tests in `tests/unit/test_security.py`
+    - Tests cover: valid inputs, edge cases, malicious inputs
+    - All 43 tests passing (70 tests in total for security module)
+    - Security module coverage: 90.38%
+  - **Verification**:
+    - Black formatting: ✅ PASS
+    - Ruff linting: ✅ PASS (All checks passed)
+    - Pyright type checking: ✅ PASS (0 errors)
+    - Tests: ✅ PASS (2610 passed, 2 skipped)
+
+- ✅ **Phase 25: Fix CI Failure - Commit 302c5e2** - COMPLETE (2026-01-21) - CI failure resolved:
+  - CI is now passing at <https://github.com/igrechuhin/Cortex/actions/runs/21213116917>
+  - All quality checks pass locally:
+    - Black formatting: ✅ PASS (347 files unchanged)
+    - Ruff linting: ✅ PASS (All checks passed)
+    - Pyright type checking: ✅ PASS (0 errors, 0 warnings)
+    - File sizes: ✅ PASS (All files ≤400 lines)
+    - Function lengths: ✅ PASS (All functions ≤30 lines)
+    - Tests: ✅ PASS (2583 passed, 2 skipped, 90.09% coverage)
+  - The CI failure from commit 302c5e2 was resolved in subsequent commits
+
+- ✅ **Phase 23: Fix CI Failure After Validation Refactor** - COMPLETE (2026-01-21) - CI failure resolved:
+  - The validation refactor issues from commit 612af0e were fixed in subsequent commits
+  - CI is now green - all quality checks passing
+  - No further action needed
+
 - ✅ **Commit Procedure** (2026-01-21) - Fixed type errors in new test files and completed pre-commit validation:
   - Fixed 24 type errors in new test files (`test_core_utilities.py`, `test_execution_operations.py`, `test_rollback_modules.py`):
     - Added pyright directives to suppress legitimate private usage warnings in tests

@@ -19,17 +19,41 @@ from cortex.server import mcp
 logger = logging.getLogger(__name__)
 
 
+def _is_connection_error(exc: BaseException) -> bool:
+    """Check if exception is a connection-related error."""
+    if isinstance(
+        exc, (anyio.BrokenResourceError, BrokenPipeError, ConnectionResetError)
+    ):
+        return True
+    if isinstance(exc, OSError) and (
+        "Broken pipe" in str(exc) or "Connection reset" in str(exc)
+    ):
+        return True
+    # Handle nested exception groups recursively
+    if isinstance(exc, BaseExceptionGroup):
+        # pyright has issues with BaseExceptionGroup generic type parameter
+        # BaseExceptionGroup.exceptions is tuple[BaseException, ...] at runtime
+        nested_excs: tuple[BaseException, ...] = exc.exceptions  # type: ignore[assignment]
+        for nested in nested_excs:
+            if _is_connection_error(nested):
+                return True
+    return False
+
+
 def _handle_broken_resource_in_group(eg: BaseExceptionGroup) -> bool:
-    """Check if BaseExceptionGroup contains BrokenResourceError.
+    """Check if BaseExceptionGroup contains connection-related errors.
+
+    Handles BrokenResourceError, BrokenPipeError, ConnectionResetError,
+    and nested exception groups that may contain these errors.
 
     Args:
         eg: BaseExceptionGroup to check
 
     Returns:
-        True if BrokenResourceError found, False otherwise
+        True if connection error found (graceful shutdown), False otherwise
     """
     for exc in eg.exceptions:
-        if isinstance(exc, anyio.BrokenResourceError):
+        if _is_connection_error(exc):
             logger.warning(
                 "MCP stdio connection broken during TaskGroup cleanup "
                 + f"(client disconnected): {exc}"

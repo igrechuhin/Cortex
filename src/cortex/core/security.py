@@ -2,6 +2,7 @@
 
 import asyncio
 import hashlib
+import html
 import json
 import re
 import time
@@ -13,6 +14,302 @@ from cortex.core.constants import RATE_LIMIT_OPS_PER_SECOND
 
 from .async_file_utils import open_async_text_file
 from .exceptions import IndexCorruptedError
+
+
+class CommitMessageSanitizer:
+    """Sanitize commit messages to prevent command injection.
+
+    This class provides security functions to sanitize commit messages
+    before passing them to git operations, preventing shell injection attacks.
+    """
+
+    # Control characters that should be removed (except newline, tab)
+    _CONTROL_CHARS = set(chr(i) for i in range(32) if i not in (9, 10))  # Keep \t, \n
+
+    # Shell metacharacters that could enable command injection
+    _SHELL_METACHARACTERS = set("`$(){}[]|;&<>\\")
+
+    # Maximum commit message length (git allows up to 100KB, we limit to 10KB)
+    MAX_MESSAGE_LENGTH = 10000
+
+    @staticmethod
+    def sanitize(message: str, max_length: int | None = None) -> str:
+        """Sanitize a commit message for safe use in git operations.
+
+        Removes control characters, escapes shell metacharacters, and validates
+        length to prevent command injection attacks.
+
+        Args:
+            message: The commit message to sanitize
+            max_length: Maximum allowed length (default: MAX_MESSAGE_LENGTH)
+
+        Returns:
+            Sanitized commit message safe for git operations
+
+        Raises:
+            ValueError: If message is empty after sanitization
+        """
+        if max_length is None:
+            max_length = CommitMessageSanitizer.MAX_MESSAGE_LENGTH
+
+        # Remove null bytes first (most critical)
+        message = message.replace("\0", "")
+
+        # Remove control characters (keep newlines and tabs)
+        message = "".join(
+            c for c in message if c not in CommitMessageSanitizer._CONTROL_CHARS
+        )
+
+        # Escape shell metacharacters by removing them
+        # Git commit -m already handles quoting, but we remove dangerous chars
+        message = "".join(
+            c if c not in CommitMessageSanitizer._SHELL_METACHARACTERS else ""
+            for c in message
+        )
+
+        # Normalize whitespace (collapse multiple spaces, trim)
+        message = " ".join(message.split())
+
+        # Validate length
+        if len(message) > max_length:
+            message = message[:max_length]
+
+        # Validate non-empty after sanitization
+        if not message.strip():
+            raise ValueError("Commit message cannot be empty after sanitization")
+
+        return message
+
+    @staticmethod
+    def validate(message: str) -> tuple[bool, str | None]:
+        """Validate a commit message without modifying it.
+
+        Args:
+            message: The commit message to validate
+
+        Returns:
+            Tuple of (is_valid, error_message)
+        """
+        if not message:
+            return False, "Commit message cannot be empty"
+
+        if "\0" in message:
+            return False, "Commit message contains null bytes"
+
+        for char in CommitMessageSanitizer._CONTROL_CHARS:
+            if char in message:
+                return False, f"Commit message contains control character: {repr(char)}"
+
+        for char in CommitMessageSanitizer._SHELL_METACHARACTERS:
+            if char in message:
+                return (
+                    False,
+                    f"Commit message contains shell metacharacter: {repr(char)}",
+                )
+
+        if len(message) > CommitMessageSanitizer.MAX_MESSAGE_LENGTH:
+            msg = (
+                f"Commit message too long: {len(message)} > "
+                f"{CommitMessageSanitizer.MAX_MESSAGE_LENGTH}"
+            )
+            return False, msg
+
+        return True, None
+
+
+class HTMLEscaper:
+    """Escape HTML content to prevent XSS attacks in exported content.
+
+    Provides HTML escaping for content that may be rendered in web contexts,
+    preventing cross-site scripting (XSS) vulnerabilities.
+    """
+
+    @staticmethod
+    def escape(content: str) -> str:
+        """Escape HTML special characters in content.
+
+        Escapes: < > & " '
+
+        Args:
+            content: The content to escape
+
+        Returns:
+            HTML-escaped content safe for web display
+        """
+        # Use standard library html.escape for reliable escaping
+        # quote=True escapes both " and '
+        return html.escape(content, quote=True)
+
+    @staticmethod
+    def escape_dict(data: dict[str, object]) -> dict[str, object]:
+        """Recursively escape all string values in a dictionary.
+
+        Args:
+            data: Dictionary with potentially unsafe string values
+
+        Returns:
+            New dictionary with all string values HTML-escaped
+        """
+        result = HTMLEscaper._escape_dict_recursive(data)
+        return result
+
+    @staticmethod
+    def _escape_dict_recursive(data: dict[str, object]) -> dict[str, object]:
+        """Recursively escape string values in a dictionary."""
+        result: dict[str, object] = {}
+        for key, value in data.items():
+            if isinstance(value, str):
+                result[key] = HTMLEscaper.escape(value)
+            elif isinstance(value, dict):
+                # Type narrow: we know it's a dict, cast to dict[str, object]
+                nested_dict = cast(dict[str, object], value)
+                result[key] = HTMLEscaper._escape_dict_recursive(nested_dict)
+            elif isinstance(value, list):
+                nested_list = cast(list[object], value)
+                result[key] = HTMLEscaper._escape_list_recursive(nested_list)
+            else:
+                # int, float, bool, None - pass through unchanged
+                result[key] = value
+        return result
+
+    @staticmethod
+    def _escape_list_recursive(data: list[object]) -> list[object]:
+        """Recursively escape string values in a list."""
+        result: list[object] = []
+        for item in data:
+            if isinstance(item, str):
+                result.append(HTMLEscaper.escape(item))
+            elif isinstance(item, dict):
+                nested_dict = cast(dict[str, object], item)
+                result.append(HTMLEscaper._escape_dict_recursive(nested_dict))
+            elif isinstance(item, list):
+                nested_list = cast(list[object], item)
+                result.append(HTMLEscaper._escape_list_recursive(nested_list))
+            else:
+                result.append(item)
+        return result
+
+
+class RegexValidator:
+    """Validate regex patterns to prevent ReDoS (Regular Expression DoS) attacks.
+
+    Checks regex patterns for potentially dangerous constructs that could
+    cause catastrophic backtracking and denial of service.
+    """
+
+    # Maximum allowed pattern length
+    MAX_PATTERN_LENGTH = 1000
+
+    # Maximum allowed nesting depth for groups
+    MAX_NESTING_DEPTH = 5
+
+    # Maximum allowed quantifier repetitions
+    MAX_QUANTIFIER_LIMIT = 100
+
+    # Patterns that indicate potential ReDoS vulnerabilities
+    # Nested quantifiers like (a+)+ or (a*)*
+    # Pattern parts: (x+)+ or (x*)* | (x+)? | [x+]+ character class quantifiers
+    _NESTED_QUANTIFIER_PATTERN = re.compile(
+        r"(?:\([^)]*[+*][^)]*\)[+*?]|\([^)]*\)[+*]\?|\[[^\]]*[+*][^\]]*\][+*])"
+    )
+
+    # Overlapping alternations like (a|a|a) or (ab|ab)
+    _OVERLAPPING_ALTERNATION_PATTERN = re.compile(
+        r"\(([^|)]+)\|(\1)\)"  # Same pattern repeated in alternation
+    )
+
+    @staticmethod
+    def _check_basic_constraints(pattern: str) -> tuple[bool, str | None]:
+        """Check basic pattern constraints (length, null bytes, nesting)."""
+        if len(pattern) > RegexValidator.MAX_PATTERN_LENGTH:
+            msg = f"Pattern too long: {len(pattern)} > {RegexValidator.MAX_PATTERN_LENGTH}"
+            return False, msg
+        if "\0" in pattern:
+            return False, "Pattern contains null bytes"
+        return RegexValidator._check_nesting_depth(pattern)
+
+    @staticmethod
+    def _check_nesting_depth(pattern: str) -> tuple[bool, str | None]:
+        """Check pattern nesting depth."""
+        depth = 0
+        max_depth = 0
+        for char in pattern:
+            if char == "(":
+                depth += 1
+                max_depth = max(max_depth, depth)
+            elif char == ")":
+                depth -= 1
+        if max_depth > RegexValidator.MAX_NESTING_DEPTH:
+            msg = f"Pattern nesting too deep: {max_depth} > {RegexValidator.MAX_NESTING_DEPTH}"
+            return False, msg
+        return True, None
+
+    @staticmethod
+    def _check_quantifiers(pattern: str) -> tuple[bool, str | None]:
+        """Check for nested or large quantifiers."""
+        if RegexValidator._NESTED_QUANTIFIER_PATTERN.search(pattern):
+            return False, "Pattern contains nested quantifiers (potential ReDoS)"
+        quantifier_pattern = re.compile(r"\{(\d+)(?:,(\d*))?\}")
+        for match in quantifier_pattern.finditer(pattern):
+            min_val = int(match.group(1))
+            max_val = match.group(2)
+            if min_val > RegexValidator.MAX_QUANTIFIER_LIMIT:
+                msg = f"Quantifier minimum too large: {min_val} > {RegexValidator.MAX_QUANTIFIER_LIMIT}"
+                return False, msg
+            if (
+                max_val
+                and max_val.isdigit()
+                and int(max_val) > RegexValidator.MAX_QUANTIFIER_LIMIT
+            ):
+                msg = f"Quantifier maximum too large: {max_val} > {RegexValidator.MAX_QUANTIFIER_LIMIT}"
+                return False, msg
+        return True, None
+
+    @staticmethod
+    def validate(pattern: str) -> tuple[bool, str | None]:
+        """Validate a regex pattern for potential ReDoS vulnerabilities.
+
+        Args:
+            pattern: The regex pattern to validate
+
+        Returns:
+            Tuple of (is_safe, error_message)
+        """
+        is_valid, error = RegexValidator._check_basic_constraints(pattern)
+        if not is_valid:
+            return is_valid, error
+        is_valid, error = RegexValidator._check_quantifiers(pattern)
+        if not is_valid:
+            return is_valid, error
+        try:
+            _ = re.compile(pattern)
+        except re.error as e:
+            return False, f"Invalid regex pattern: {e}"
+        return True, None
+
+    @staticmethod
+    def compile_safe(
+        pattern: str, flags: int = 0, timeout_hint: bool = True
+    ) -> re.Pattern[str]:
+        """Compile a regex pattern after validating it for safety.
+
+        Args:
+            pattern: The regex pattern to compile
+            flags: Optional regex flags
+            timeout_hint: If True, includes a hint about using timeout
+
+        Returns:
+            Compiled regex pattern
+
+        Raises:
+            ValueError: If pattern fails validation
+            re.error: If pattern has syntax errors
+        """
+        is_safe, error = RegexValidator.validate(pattern)
+        if not is_safe:
+            raise ValueError(f"Unsafe regex pattern: {error}")
+
+        return re.compile(pattern, flags)
 
 
 class InputValidator:

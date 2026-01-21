@@ -50,7 +50,9 @@ async def load_context(
     try:
         root = phase4_opt.get_project_root(project_root)
         mgrs = await phase4_opt.get_managers(root)
-        return await load_context_impl(mgrs, task_description, token_budget, strategy)
+        return await load_context_impl(
+            mgrs, task_description, token_budget, strategy, project_root=root
+        )
     except Exception as e:
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},

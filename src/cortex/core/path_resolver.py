@@ -19,6 +19,7 @@ class CortexResourceType(Enum):
     CONFIG = "config"
     ARCHIVED = "archived"
     REVIEWS = "reviews"
+    SESSION = ".session"
     INDEX = "index.json"
 
 

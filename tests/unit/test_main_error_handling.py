@@ -124,6 +124,43 @@ class TestMainErrorHandling:
         mock_mcp.run.assert_called_once_with(transport="stdio")
 
     @patch("cortex.main.mcp")
+    def test_base_exception_group_with_connection_reset_error(
+        self, mock_mcp: MagicMock
+    ) -> None:
+        """Test that BaseExceptionGroup containing ConnectionResetError is handled gracefully."""
+        # Arrange
+        connection_reset_error = ConnectionResetError("Connection reset by peer")
+        exception_group = BaseExceptionGroup(
+            "unhandled errors in a TaskGroup", [connection_reset_error]
+        )
+        mock_mcp.run.side_effect = exception_group
+
+        # Act
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+
+        # Assert
+        assert exc_info.value.code == 0
+        mock_mcp.run.assert_called_once_with(transport="stdio")
+
+    @patch("cortex.main.mcp")
+    def test_base_exception_group_with_nested_group(self, mock_mcp: MagicMock) -> None:
+        """Test that nested BaseExceptionGroup with connection error is handled gracefully."""
+        # Arrange
+        broken_resource_error = anyio.BrokenResourceError("Resource broken")
+        inner_group = BaseExceptionGroup("inner", [broken_resource_error])
+        outer_group = BaseExceptionGroup("outer", [inner_group])
+        mock_mcp.run.side_effect = outer_group
+
+        # Act
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+
+        # Assert
+        assert exc_info.value.code == 0
+        mock_mcp.run.assert_called_once_with(transport="stdio")
+
+    @patch("cortex.main.mcp")
     def test_connection_error_handling(self, mock_mcp: MagicMock) -> None:
         """Test that ConnectionError exits with code 1."""
         # Arrange

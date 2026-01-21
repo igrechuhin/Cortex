@@ -11,6 +11,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import cast
 
+from cortex.core.security import CommitMessageSanitizer
+
 
 class SynapseRepository:
     """
@@ -391,7 +393,13 @@ class SynapseRepository:
         return None
 
     async def _git_commit_file(self, commit_message: str) -> tuple[bool, str | None]:
-        """Commit staged changes, return (success, commit_hash)."""
+        """Commit staged changes, return (success, commit_hash).
+
+        The commit message is sanitized to prevent command injection attacks.
+        """
+        # Sanitize commit message to prevent command injection
+        sanitized_message = CommitMessageSanitizer.sanitize(commit_message)
+
         commit_result = await self.run_git_command(
             [
                 "git",
@@ -399,7 +407,7 @@ class SynapseRepository:
                 str(self.synapse_path),
                 "commit",
                 "-m",
-                commit_message,
+                sanitized_message,
             ]
         )
         committed = cast(bool, commit_result["success"])

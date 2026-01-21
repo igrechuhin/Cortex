@@ -2,10 +2,10 @@
 
 ## Status
 
-- **Status**: PLANNING
+- **Status**: COMPLETE
 - **Priority**: High (Stability/Crash Issue)
 - **Start Date**: 2026-01-14
-- **Target Completion Date**: 2026-01-16
+- **Completion Date**: 2026-01-21
 
 ## Goal
 
@@ -15,7 +15,7 @@ Investigate and fix the MCP server crash caused by `BrokenResourceError` in the 
 
 **Observed Error:**
 
-```
+```text
 2026-01-14 17:41:08.914 [error] Unexpected error in MCP server: unhandled errors in a TaskGroup (1 sub-exception)
   + Exception Group Traceback (most recent call last):
   |   File "/Users/i.grechukhin/Repo/Cortex/src/cortex/main.py", line 27, in main

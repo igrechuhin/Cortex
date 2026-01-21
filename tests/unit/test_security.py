@@ -2,13 +2,22 @@
 
 import asyncio
 import json
+import re
 import tempfile
 from pathlib import Path
+from typing import cast
 
 import pytest
 
 from cortex.core.exceptions import IndexCorruptedError
-from cortex.core.security import InputValidator, JSONIntegrity, RateLimiter
+from cortex.core.security import (
+    CommitMessageSanitizer,
+    HTMLEscaper,
+    InputValidator,
+    JSONIntegrity,
+    RateLimiter,
+    RegexValidator,
+)
 
 
 class TestInputValidator:
@@ -311,3 +320,562 @@ class TestRateLimiter:
         """Test that IPv6 loopback address is blocked."""
         with pytest.raises(ValueError, match="cannot reference localhost"):
             _ = InputValidator.validate_git_url("https://[::1]/repo.git")
+
+
+class TestCommitMessageSanitizer:
+    """Test commit message sanitization for command injection prevention."""
+
+    def test_sanitize_valid_message(self):
+        """Test sanitization of a valid commit message."""
+        # Arrange
+        message = "Add new feature for user authentication"
+
+        # Act
+        result = CommitMessageSanitizer.sanitize(message)
+
+        # Assert
+        assert result == "Add new feature for user authentication"
+
+    def test_sanitize_removes_null_bytes(self):
+        """Test that null bytes are removed from commit messages."""
+        # Arrange
+        message = "Fix bug\0 with injection"
+
+        # Act
+        result = CommitMessageSanitizer.sanitize(message)
+
+        # Assert
+        assert "\0" not in result
+        assert result == "Fix bug with injection"
+
+    def test_sanitize_removes_control_characters(self):
+        """Test that control characters (except newline/tab) are removed."""
+        # Arrange - includes bell character (0x07) and form feed (0x0C)
+        message = "Fix\x07bug\x0cwith control chars"
+
+        # Act
+        result = CommitMessageSanitizer.sanitize(message)
+
+        # Assert
+        assert "\x07" not in result
+        assert "\x0c" not in result
+
+    def test_sanitize_removes_shell_metacharacters(self):
+        """Test that shell metacharacters are removed."""
+        # Arrange
+        message = "Fix bug; rm -rf /; echo $(whoami)"
+
+        # Act
+        result = CommitMessageSanitizer.sanitize(message)
+
+        # Assert
+        assert ";" not in result
+        assert "$" not in result
+        assert "(" not in result
+        assert ")" not in result
+        # Should contain sanitized content
+        assert "Fix bug" in result
+
+    def test_sanitize_removes_backticks(self):
+        """Test that backticks for command substitution are removed."""
+        # Arrange
+        message = "Fix `id` injection"
+
+        # Act
+        result = CommitMessageSanitizer.sanitize(message)
+
+        # Assert
+        assert "`" not in result
+
+    def test_sanitize_removes_pipes_and_redirects(self):
+        """Test that pipes and redirects are removed."""
+        # Arrange
+        message = "Fix bug | cat /etc/passwd > /tmp/out"
+
+        # Act
+        result = CommitMessageSanitizer.sanitize(message)
+
+        # Assert
+        assert "|" not in result
+        assert ">" not in result
+        assert "<" not in result
+
+    def test_sanitize_truncates_long_messages(self):
+        """Test that long messages are truncated."""
+        # Arrange
+        long_message = "A" * 20000
+
+        # Act
+        result = CommitMessageSanitizer.sanitize(long_message)
+
+        # Assert
+        assert len(result) <= CommitMessageSanitizer.MAX_MESSAGE_LENGTH
+
+    def test_sanitize_custom_max_length(self):
+        """Test truncation with custom max length."""
+        # Arrange
+        message = "A" * 200
+
+        # Act
+        result = CommitMessageSanitizer.sanitize(message, max_length=100)
+
+        # Assert
+        assert len(result) == 100
+
+    def test_sanitize_normalizes_whitespace(self):
+        """Test that multiple spaces are collapsed."""
+        # Arrange
+        message = "Fix   multiple    spaces"
+
+        # Act
+        result = CommitMessageSanitizer.sanitize(message)
+
+        # Assert
+        assert result == "Fix multiple spaces"
+
+    def test_sanitize_empty_after_sanitization_raises(self):
+        """Test that empty message after sanitization raises ValueError."""
+        # Arrange - message with only control characters
+        message = "; | < > $ () {} []"
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="cannot be empty after sanitization"):
+            _ = CommitMessageSanitizer.sanitize(message)
+
+    def test_validate_valid_message(self):
+        """Test validation returns True for valid messages."""
+        # Arrange
+        message = "Add new feature"
+
+        # Act
+        is_valid, error = CommitMessageSanitizer.validate(message)
+
+        # Assert
+        assert is_valid is True
+        assert error is None
+
+    def test_validate_empty_message(self):
+        """Test validation returns error for empty messages."""
+        # Arrange
+        message = ""
+
+        # Act
+        is_valid, error = CommitMessageSanitizer.validate(message)
+
+        # Assert
+        assert is_valid is False
+        assert error is not None
+        assert "empty" in error.lower()
+
+    def test_validate_null_bytes(self):
+        """Test validation returns error for null bytes."""
+        # Arrange
+        message = "Message\0with null"
+
+        # Act
+        is_valid, error = CommitMessageSanitizer.validate(message)
+
+        # Assert
+        assert is_valid is False
+        assert error is not None
+        assert "null" in error.lower()
+
+    def test_validate_control_characters(self):
+        """Test validation returns error for control characters."""
+        # Arrange
+        message = "Message\x07with bell"
+
+        # Act
+        is_valid, error = CommitMessageSanitizer.validate(message)
+
+        # Assert
+        assert is_valid is False
+        assert error is not None
+        assert "control character" in error.lower()
+
+    def test_validate_shell_metacharacters(self):
+        """Test validation returns error for shell metacharacters."""
+        # Arrange
+        message = "Message with $(command)"
+
+        # Act
+        is_valid, error = CommitMessageSanitizer.validate(message)
+
+        # Assert
+        assert is_valid is False
+        assert error is not None
+        assert "metacharacter" in error.lower()
+
+    def test_validate_too_long_message(self):
+        """Test validation returns error for overly long messages."""
+        # Arrange
+        message = "A" * 20000
+
+        # Act
+        is_valid, error = CommitMessageSanitizer.validate(message)
+
+        # Assert
+        assert is_valid is False
+        assert error is not None
+        assert "too long" in error.lower()
+
+
+class TestHTMLEscaper:
+    """Test HTML escaping for XSS prevention."""
+
+    def test_escape_basic_html_chars(self):
+        """Test escaping of basic HTML special characters."""
+        # Arrange
+        content = "<script>alert('XSS')</script>"
+
+        # Act
+        result = HTMLEscaper.escape(content)
+
+        # Assert
+        assert "<" not in result
+        assert ">" not in result
+        assert "&lt;" in result
+        assert "&gt;" in result
+
+    def test_escape_ampersand(self):
+        """Test escaping of ampersand character."""
+        # Arrange
+        content = "Tom & Jerry"
+
+        # Act
+        result = HTMLEscaper.escape(content)
+
+        # Assert
+        assert "&amp;" in result
+        assert result == "Tom &amp; Jerry"
+
+    def test_escape_quotes(self):
+        """Test escaping of quote characters."""
+        # Arrange
+        content = "onclick=\"alert(1)\" data-value='test'"
+
+        # Act
+        result = HTMLEscaper.escape(content)
+
+        # Assert
+        assert '"' not in result
+        assert "'" not in result
+        assert "&quot;" in result
+        assert "&#x27;" in result
+
+    def test_escape_preserves_safe_content(self):
+        """Test that safe content is preserved."""
+        # Arrange
+        content = "Hello, World! 123"
+
+        # Act
+        result = HTMLEscaper.escape(content)
+
+        # Assert
+        assert result == content
+
+    def test_escape_empty_string(self):
+        """Test escaping of empty string."""
+        # Arrange
+        content = ""
+
+        # Act
+        result = HTMLEscaper.escape(content)
+
+        # Assert
+        assert result == ""
+
+    def test_escape_unicode(self):
+        """Test that unicode characters are preserved."""
+        # Arrange
+        content = "Hello 世界 🌍"
+
+        # Act
+        result = HTMLEscaper.escape(content)
+
+        # Assert
+        assert "世界" in result
+        assert "🌍" in result
+
+    def test_escape_dict_simple(self):
+        """Test recursive escaping of dictionary values."""
+        # Arrange
+        data: dict[str, object] = {
+            "title": "<script>alert('XSS')</script>",
+            "count": 42,
+        }
+
+        # Act
+        result = HTMLEscaper.escape_dict(data)
+
+        # Assert
+        title = result.get("title")
+        assert isinstance(title, str)
+        assert "<" not in title
+        assert result["count"] == 42
+
+    def test_escape_dict_nested(self):
+        """Test recursive escaping of nested dictionaries."""
+        # Arrange
+        data: dict[str, object] = {
+            "user": {
+                "name": "<b>John</b>",
+                "email": "john@example.com",
+            },
+        }
+
+        # Act
+        result = HTMLEscaper.escape_dict(data)
+
+        # Assert
+        user_raw = result.get("user")
+        assert isinstance(user_raw, dict)
+        user = cast(dict[str, object], user_raw)
+        name = str(user.get("name", ""))
+        assert isinstance(name, str)
+        assert "<" not in name
+        assert "&lt;b&gt;" in name
+
+    def test_escape_dict_with_list(self):
+        """Test recursive escaping of lists in dictionaries."""
+        # Arrange
+        data: dict[str, object] = {
+            "items": ["<script>", "safe", "<img onerror='alert(1)'>"],
+        }
+
+        # Act
+        result = HTMLEscaper.escape_dict(data)
+
+        # Assert
+        items = result.get("items")
+        assert isinstance(items, list)
+        assert "<" not in items[0]
+        assert items[1] == "safe"
+
+    def test_escape_dict_preserves_types(self):
+        """Test that non-string types are preserved."""
+        # Arrange
+        data: dict[str, object] = {
+            "string": "<tag>",
+            "number": 123,
+            "float": 3.14,
+            "boolean": True,
+            "none": None,
+        }
+
+        # Act
+        result = HTMLEscaper.escape_dict(data)
+
+        # Assert
+        assert result["number"] == 123
+        assert result["float"] == 3.14
+        assert result["boolean"] is True
+        assert result["none"] is None
+
+
+class TestRegexValidator:
+    """Test regex pattern validation for ReDoS prevention."""
+
+    def test_validate_simple_pattern(self):
+        """Test validation of simple, safe regex patterns."""
+        # Arrange
+        pattern = r"^[a-z]+$"
+
+        # Act
+        is_safe, error = RegexValidator.validate(pattern)
+
+        # Assert
+        assert is_safe is True
+        assert error is None
+
+    def test_validate_complex_safe_pattern(self):
+        """Test validation of complex but safe patterns."""
+        # Arrange
+        pattern = r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}"
+
+        # Act
+        is_safe, error = RegexValidator.validate(pattern)
+
+        # Assert
+        assert is_safe is True
+        assert error is None
+
+    def test_validate_too_long_pattern(self):
+        """Test rejection of overly long patterns."""
+        # Arrange
+        pattern = "a" * 1500
+
+        # Act
+        is_safe, error = RegexValidator.validate(pattern)
+
+        # Assert
+        assert is_safe is False
+        assert error is not None
+        assert "too long" in error.lower()
+
+    def test_validate_null_bytes(self):
+        """Test rejection of patterns with actual null bytes (not escaped \\0)."""
+        # Arrange - actual null byte character, not the escaped string "\0"
+        pattern = "test\x00pattern"
+
+        # Act
+        is_safe, error = RegexValidator.validate(pattern)
+
+        # Assert
+        assert is_safe is False
+        assert error is not None
+        assert "null" in error.lower()
+
+    def test_validate_deep_nesting(self):
+        """Test rejection of deeply nested patterns."""
+        # Arrange - 7 levels of nesting (exceeds MAX_NESTING_DEPTH of 5)
+        pattern = r"(((((((.)))))))"
+
+        # Act
+        is_safe, error = RegexValidator.validate(pattern)
+
+        # Assert
+        assert is_safe is False
+        assert error is not None
+        assert "nesting" in error.lower()
+
+    def test_validate_nested_quantifiers(self):
+        """Test rejection of nested quantifiers (ReDoS indicator)."""
+        # Arrange - classic ReDoS pattern
+        pattern = r"(a+)+"
+
+        # Act
+        is_safe, error = RegexValidator.validate(pattern)
+
+        # Assert
+        assert is_safe is False
+        assert error is not None
+        assert "nested quantifiers" in error.lower() or "ReDoS" in error
+
+    def test_validate_nested_star_quantifiers(self):
+        """Test rejection of nested star quantifiers."""
+        # Arrange
+        pattern = r"(a*)*"
+
+        # Act
+        is_safe, error = RegexValidator.validate(pattern)
+
+        # Assert
+        assert is_safe is False
+        assert error is not None
+
+    def test_validate_large_quantifier(self):
+        """Test rejection of large quantifier values."""
+        # Arrange - quantifier exceeds MAX_QUANTIFIER_LIMIT
+        pattern = r"a{500}"
+
+        # Act
+        is_safe, error = RegexValidator.validate(pattern)
+
+        # Assert
+        assert is_safe is False
+        assert error is not None
+        assert "too large" in error.lower()
+
+    def test_validate_large_quantifier_range(self):
+        """Test rejection of large quantifier range."""
+        # Arrange
+        pattern = r"a{1,500}"
+
+        # Act
+        is_safe, error = RegexValidator.validate(pattern)
+
+        # Assert
+        assert is_safe is False
+        assert error is not None
+        assert "too large" in error.lower()
+
+    def test_validate_invalid_regex_syntax(self):
+        """Test rejection of invalid regex syntax."""
+        # Arrange
+        pattern = r"[unclosed"
+
+        # Act
+        is_safe, error = RegexValidator.validate(pattern)
+
+        # Assert
+        assert is_safe is False
+        assert error is not None
+        assert "Invalid regex" in error
+
+    def test_validate_safe_quantifiers_within_limit(self):
+        """Test acceptance of quantifiers within limit."""
+        # Arrange
+        pattern = r"a{1,50}"
+
+        # Act
+        is_safe, error = RegexValidator.validate(pattern)
+
+        # Assert
+        assert is_safe is True
+        assert error is None
+
+    def test_compile_safe_valid_pattern(self):
+        """Test compile_safe with valid pattern."""
+        # Arrange
+        pattern = r"^[a-z]+$"
+
+        # Act
+        compiled = RegexValidator.compile_safe(pattern)
+
+        # Assert
+        assert isinstance(compiled, re.Pattern)
+        assert compiled.match("hello") is not None
+
+    def test_compile_safe_with_flags(self):
+        """Test compile_safe with regex flags."""
+        # Arrange
+        pattern = r"hello"
+
+        # Act
+        compiled = RegexValidator.compile_safe(pattern, flags=re.IGNORECASE)
+
+        # Assert
+        assert compiled.match("HELLO") is not None
+
+    def test_compile_safe_unsafe_pattern_raises(self):
+        """Test compile_safe raises ValueError for unsafe patterns."""
+        # Arrange
+        pattern = r"(a+)+"
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="Unsafe regex"):
+            _ = RegexValidator.compile_safe(pattern)
+
+    def test_compile_safe_invalid_syntax_raises(self):
+        """Test compile_safe raises error for invalid syntax."""
+        # Arrange
+        pattern = r"[unclosed"
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="Unsafe regex"):
+            _ = RegexValidator.compile_safe(pattern)
+
+    def test_validate_acceptable_nesting(self):
+        """Test that acceptable nesting depth is allowed."""
+        # Arrange - 4 levels of nesting (within MAX_NESTING_DEPTH of 5)
+        pattern = r"((((test))))"
+
+        # Act
+        is_safe, error = RegexValidator.validate(pattern)
+
+        # Assert
+        assert is_safe is True
+        assert error is None
+
+    def test_validate_empty_pattern(self):
+        """Test validation of empty pattern."""
+        # Arrange
+        pattern = ""
+
+        # Act
+        is_safe, error = RegexValidator.validate(pattern)
+
+        # Assert - empty pattern is valid regex
+        assert is_safe is True
+        assert error is None
