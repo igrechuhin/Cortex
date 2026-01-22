@@ -8,6 +8,28 @@
 
 ### Recent Findings
 
+- ✅ **Phase 51: Enhance Context Analysis with Actionable Insights** - COMPLETE (2026-01-21) - Enhanced context analysis to store actionable insights alongside raw statistics:
+  - Added `TaskTypeInsight`, `FileEffectiveness`, `ContextInsights` TypedDicts
+  - Added task-type recommendations (recommended budget, essential files, notes)
+  - Added file effectiveness tracking (times selected, avg relevance, recommendation)
+  - Added learned patterns generation (human-readable insights from data)
+  - Added budget recommendations per task type
+  - Insights are automatically generated and stored in statistics file
+  - Added 14 new tests for insight generation functions
+  - All 23 context analysis tests passing
+
+- ✅ **Phase 22: Fix Commit Pipeline Quality Gate** - COMPLETE (2026-01-21) - Enhanced GitHub Actions workflow to properly catch and fail on quality gate violations:
+  - Added explicit step IDs for all quality checks for better tracking
+  - Added `::group::` and `::endgroup::` for better log organization
+  - Added `::error::` annotations for better error visibility in GitHub UI
+  - Added explicit error handling with `if !` statements for each check
+  - Added pyright output parsing to properly detect errors and warnings
+  - Added markdown linting step (with `continue-on-error: true` since it's non-blocking)
+  - Added environment info and tool version display for diagnostics
+  - Added quality check summary step that runs `if: always()` to provide overview
+  - Added 30-minute timeout to prevent hung workflows
+  - All local quality checks pass (2648 tests, 90.14% coverage)
+
 - ✅ **Phase 19: Fix MCP Server Crash** - COMPLETE (2026-01-21) - Fixed MCP server crash caused by `BrokenResourceError` in `stdio_server` TaskGroup:
   - Added `BaseExceptionGroup` handler to extract nested exceptions from TaskGroup
   - Added recursive `_is_connection_error()` check for nested exception groups
@@ -169,6 +191,8 @@
 
 ## Completed Milestones
 
+- ✅ [Phase 51: Enhance Context Analysis with Actionable Insights](../plans/archive/Phase51/phase-51-enhance-context-analysis-insights.md) - COMPLETE (2026-01-21) - Enhanced context analysis to store actionable insights alongside raw statistics - Added task-type recommendations, file effectiveness tracking, learned patterns, and budget recommendations
+- ✅ [Phase 22: Fix Commit Pipeline Quality Gate](../plans/archive/Phase22/phase-22-fix-commit-pipeline-quality-gate.md) - COMPLETE (2026-01-21) - Enhanced GitHub Actions workflow with explicit error handling, step IDs, error annotations, markdown linting, diagnostic info, and quality check summary
 - ✅ [Phase 19: Fix MCP Server Crash](../plans/archive/Phase19/phase-19-fix-mcp-server-crash.md) - COMPLETE (2026-01-21) - Fixed MCP server crash caused by `BrokenResourceError` in `stdio_server` TaskGroup - Server now handles client disconnections gracefully (exit code 0) - All 19 error handling tests pass - Documentation updated
 - ✅ [Phase 25: Fix CI Failure - Commit 302c5e2](../plans/phase-25-fix-ci-failure-commit-302c5e2.md) - COMPLETE (2026-01-21) - CI failure resolved in subsequent commits - Quality check now passing - All quality checks pass locally (2583 tests, 90.09% coverage)
 - ✅ [Phase 23: Fix CI Failure After Validation Refactor](../plans/phase-23-fix-ci-failure-validation-refactor.md) - COMPLETE (2026-01-21) - CI failure resolved in subsequent commits - Quality check now passing
@@ -203,7 +227,7 @@
 - ✅ **Phase 24: Fix Roadmap Text Corruption** - COMPLETE (2026-01-16) - Fixed all text corruption in roadmap.md by adding `fix_roadmap_corruption` MCP tool to `markdown_operations.py` - Detected and fixed 12+ corruption patterns (missing spaces, malformed dates, corrupted text) - Improved tooling by integrating corruption detection into existing markdown operations module instead of separate script - All corruption instances fixed, roadmap readability restored
 - ✅ **Phase 25: Fix CI Failure - Commit 302c5e2** - COMPLETE (2026-01-21) - CI failure resolved in subsequent commits - Quality check now passing at <https://github.com/igrechuhin/Cortex/actions/runs/21213116917> - All quality checks pass: Black formatting, Ruff linting, Pyright type checking, file sizes, function lengths, tests (2583 passed, 90.09% coverage)
 - ✅ **Phase 23: Fix CI Failure After Validation Refactor** - COMPLETE (2026-01-21) - CI failure resolved in subsequent commits - Quality check now passing - The validation refactor issues were fixed and CI is green
-- [Phase 22: Fix Commit Pipeline Quality Gate](../plans/phase-22-commit-pipeline-quality-gate.md) - ASAP (PLANNING) - Fix commit pipeline (GitHub Actions workflow) to properly catch and fail on quality gate violations - Pipeline currently passes errors that prevent quality gate from passing - Impact: Ensure all quality checks properly enforced, prevent errors from being silently ignored - Target completion: 2026-01-17
+- ✅ **Phase 22: Fix Commit Pipeline Quality Gate** - COMPLETE (2026-01-21) - Enhanced GitHub Actions workflow to properly catch and fail on quality gate violations - Added explicit error handling, step IDs, error annotations, diagnostic info, markdown linting, and quality check summary - All quality checks now properly enforced with clear error messages
 - ✅ **Phase 20: Code Review Fixes** - COMPLETE (2026-01-21) - Address all critical issues from comprehensive code review (2026-01-15) - ✅ Steps 1-3 COMPLETE (test import error fixed, type errors fixed, ALL file size violations fixed - all files now ≤400 lines) - ✅ Step 4 COMPLETE (Security vulnerabilities fixed - CommitMessageSanitizer for command injection, HTMLEscaper for XSS, RegexValidator for ReDoS) - All security functions added to `src/cortex/core/security.py` with 43 unit tests - Code quality improved from 8.7/10 to 9.5+/10
 - ✅ **Phase 19: Fix MCP Server Crash** - COMPLETE (2026-01-21) - Fixed MCP server crash caused by `BrokenResourceError` in `stdio_server` TaskGroup - Added `BaseExceptionGroup` handler to extract nested exceptions, recursive `_is_connection_error()` check for nested groups - Server now handles client disconnections gracefully (exit code 0) - All 19 error handling tests pass - Documentation updated with troubleshooting section
 - ✅ **Phase 17: Validate Roadmap Sync Command** - COMPLETE (2026-01-14) - Implemented `validate-roadmap-sync` command and MCP tool integration - Added `roadmap_sync` check_type to `validate()` MCP tool - Created `.cortex/synapse/prompts/validate-roadmap-sync.md` command file - Added comprehensive unit tests (18 tests, all passing) - Roadmap/codebase synchronization is now enforced in commit workflow Step 10
@@ -221,7 +245,7 @@
 - [Phase 27: Script Generation Prevention and Tooling Improvement](../plans/phase-27-script-generation-prevention.md) - PLANNING (2026-01-16) - Improve Cortex and Synapse tooling to prevent agents from needing to generate temporary scripts during sessions - Create mechanisms to detect, capture, and convert session-generated scripts into permanent MCP tools or Synapse scripts - Reduces redundant script generation and improves agent efficiency - Target completion: 2026-01-30
 - [Phase 26: Unify Cache Directory Structure](../plans/phase-26-unify-cache-directory.md) - PLANNING (2026-01-16) - Refactor Cortex MCP tools to use unified cache directory (`.cortex/.cache`) instead of task-specific cache (`.cortex/summaries`) - Provides centralized location for all caching needs, making it easier to manage, clean, and extend - Updates `SummarizationEngine`, path resolver, tests, and documentation - Target completion: 2026-01-17
 - ✅ [Phase 23: Fix CI Failure After Validation Refactor](../plans/phase-23-fix-ci-failure-validation-refactor.md) - COMPLETE (2026-01-21) - CI failure resolved in subsequent commits - Quality check now passing
-- [Phase 22: Fix Commit Pipeline Quality Gate](../plans/phase-22-fix-commit-pipeline-quality-gate.md) - PLANNING (2026-01-17) - Fix commit pipeline (GitHub Actions workflow) to properly catch and fail on quality gate violations - Improve error handling, add fail-fast mechanisms, ensure all quality checks properly enforced - Target completion: 2026-01-17
+- ✅ [Phase 22: Fix Commit Pipeline Quality Gate](../plans/archive/Phase22/phase-22-fix-commit-pipeline-quality-gate.md) - COMPLETE (2026-01-21) - Enhanced GitHub Actions workflow with explicit error handling, step IDs, error annotations, markdown linting, diagnostic info, and quality check summary
 - [Phase 21: Health-Check and Optimization Analysis System](../plans/phase-21-health-check-optimization.md) - PLANNING (2026-01-16) - Create comprehensive health-check system that analyzes prompts, rules, and MCP tools for merge/optimization opportunities without losing quality - Integrate into CI/CD pipelines for continuous monitoring - Provides actionable recommendations for consolidation and optimization - Target completion: 2026-01-30
 - [Phase 20: Code Review Fixes](../plans/phase-20-review-fixes.md) - PLANNING (2026-01-16) - Address all critical issues from comprehensive code review: Fix test import error, fix 10 file size violations, fix 15 type errors, fix security vulnerabilities - Improve code quality from 8.7/10 to 9.5+/10 - Target completion: 2026-01-20
 - ✅ [Phase 19: Fix MCP Server Crash](../plans/archive/Phase19/phase-19-fix-mcp-server-crash.md) - COMPLETE (2026-01-21) - Fixed MCP server crash caused by `BrokenResourceError` in `stdio_server` TaskGroup - Server now handles client disconnections gracefully (exit code 0) - All 19 error handling tests pass

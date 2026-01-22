@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "description": "Cortex MCP project-specific prompts (NOT part of Synapse)",
+  "categories": {
+    "cortex": {
+      "description": "Prompts specific to the Cortex MCP project that use Cortex MCP tools",
+      "prompts": [
+        {
+          "file": "analyze-context-effectiveness.md",
+          "name": "Analyze Context",
+          "description": "End-of-session analysis to evaluate load_context effectiveness and provide feedback for improvement",
+          "keywords": ["context", "optimization", "feedback", "analysis", "metrics", "learning"],
+          "requires": ["cortex-mcp"]
+        },
+        {
+          "file": "validate-roadmap-sync.md",
+          "name": "Validate Roadmap Sync",
+          "description": "Validate that roadmap.md is synchronized with the codebase TODOs",
+          "keywords": ["roadmap", "validation", "sync", "todos"],
+          "requires": ["cortex-mcp"]
+        },
+        {
+          "file": "populate-tiktoken-cache.md",
+          "name": "Populate Tiktoken Cache",
+          "description": "Populate bundled tiktoken cache for offline token counting",
+          "keywords": ["tiktoken", "cache", "tokens"],
+          "requires": ["cortex-mcp"]
+        }
+      ]
+    }
+  }
+}

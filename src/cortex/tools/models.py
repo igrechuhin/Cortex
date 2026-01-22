@@ -22,6 +22,8 @@ Design principles:
 - Documentation: All fields have descriptions for schema generation
 """
 
+from __future__ import annotations
+
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -2318,3 +2320,133 @@ class PreCommitResultModel(StrictBaseModel):
     success: bool = Field(default=True, description="Whether checks succeeded")
     error: str | None = Field(None, description="Error message if status is error")
     error_type: str | None = Field(None, description="Error type if status is error")
+
+
+# ============================================================================
+# Context Analysis Models
+# ============================================================================
+
+
+class ContextUsageEntry(StrictBaseModel):
+    """Structure for a single context usage analysis entry."""
+
+    session_id: str = Field(..., description="Session identifier")
+    timestamp: str = Field(..., description="Timestamp of the load_context call")
+    task_description: str = Field(..., description="Task description")
+    token_budget: int = Field(..., ge=0, description="Token budget allocated")
+    total_tokens: int = Field(..., ge=0, description="Total tokens used")
+    utilization: float = Field(
+        ..., ge=0.0, le=1.0, description="Token utilization ratio"
+    )
+    files_selected: int = Field(..., ge=0, description="Number of files selected")
+    files_excluded: int = Field(..., ge=0, description="Number of files excluded")
+    avg_relevance_score: float = Field(
+        ..., ge=0.0, le=1.0, description="Average relevance score"
+    )
+    files_with_high_relevance: int = Field(
+        ..., ge=0, description="Number of files with relevance score > 0.7"
+    )
+    files_with_low_relevance: int = Field(
+        ..., ge=0, description="Number of files with relevance score < 0.3"
+    )
+    selected_file_names: list[str] | None = Field(
+        None, description="List of selected file names for tracking"
+    )
+    relevance_by_file: dict[str, float] | None = Field(
+        None, description="Relevance scores by file name"
+    )
+
+
+class TaskTypeInsight(StrictBaseModel):
+    """Insights for a specific task type."""
+
+    calls_count: int = Field(
+        ..., ge=0, description="Number of calls for this task type"
+    )
+    recommended_budget: int = Field(..., ge=0, description="Recommended token budget")
+    essential_files: list[str] = Field(
+        default_factory=list, description="Essential files for this task type"
+    )
+    avg_utilization: float = Field(
+        ..., ge=0.0, le=1.0, description="Average utilization"
+    )
+    avg_relevance: float = Field(
+        ..., ge=0.0, le=1.0, description="Average relevance score"
+    )
+    notes: str = Field(..., description="Notes and recommendations")
+
+
+class FileEffectiveness(StrictBaseModel):
+    """Effectiveness tracking for a specific file."""
+
+    times_selected: int = Field(
+        ..., ge=0, description="Number of times file was selected"
+    )
+    avg_relevance: float = Field(
+        ..., ge=0.0, le=1.0, description="Average relevance score"
+    )
+    task_types_used: list[str] = Field(
+        default_factory=list, description="Task types that used this file"
+    )
+    recommendation: str = Field(..., description="Recommendation for this file")
+
+
+class ContextInsights(StrictBaseModel):
+    """Actionable insights derived from statistics."""
+
+    task_type_recommendations: dict[str, TaskTypeInsight] = Field(
+        default_factory=dict, description="Recommendations by task type"
+    )
+    file_effectiveness: dict[str, FileEffectiveness] = Field(
+        default_factory=dict, description="Effectiveness by file"
+    )
+    learned_patterns: list[str] = Field(
+        default_factory=list, description="Learned usage patterns"
+    )
+    budget_recommendations: dict[str, int] = Field(
+        default_factory=dict, description="Budget recommendations by task type"
+    )
+
+
+class ContextUsageStatistics(StrictBaseModel):
+    """Structure for aggregated context usage statistics."""
+
+    last_updated: str = Field(..., description="Last update timestamp")
+    total_sessions_analyzed: int = Field(
+        ..., ge=0, description="Total sessions analyzed"
+    )
+    total_load_context_calls: int = Field(
+        ..., ge=0, description="Total load_context calls"
+    )
+    avg_token_utilization: float = Field(
+        ..., ge=0.0, le=1.0, description="Average token utilization"
+    )
+    avg_files_selected: float = Field(..., ge=0.0, description="Average files selected")
+    avg_relevance_score: float = Field(
+        ..., ge=0.0, le=1.0, description="Average relevance score"
+    )
+    common_task_patterns: dict[str, int] = Field(
+        default_factory=dict, description="Common task patterns and their counts"
+    )
+    insights: ContextInsights | None = Field(
+        None, description="Actionable insights derived from statistics"
+    )
+    entries: list[ContextUsageEntry] = Field(  # type: ignore[reportUnknownVariableType]
+        default_factory=list, description="Individual context usage entries"
+    )
+
+
+class SessionStats(StrictBaseModel):
+    """Statistics for a single session's context usage."""
+
+    calls_count: int = Field(..., ge=0, description="Number of load_context calls")
+    avg_token_utilization: float = Field(
+        ..., ge=0.0, le=1.0, description="Average token utilization"
+    )
+    avg_files_selected: float = Field(..., ge=0.0, description="Average files selected")
+    avg_relevance_score: float = Field(
+        ..., ge=0.0, le=1.0, description="Average relevance score"
+    )
+    task_patterns: dict[str, int] = Field(
+        default_factory=dict, description="Task patterns and their counts"
+    )

@@ -1,8 +1,9 @@
 """
-Dynamic Synapse Prompts Registration
+Dynamic Prompts Registration
 
-This module loads prompts from .cortex/synapse/prompts/ and registers them
-as MCP prompts so they appear in Cursor chat interface.
+This module loads prompts from two locations and registers them as MCP prompts:
+1. .cortex/synapse/prompts/ - Shared prompts from Synapse (language-agnostic)
+2. .cortex/prompts/ - Project-specific prompts (e.g., Cortex MCP tools)
 
 Prompts are loaded synchronously at import time to enable decorator registration.
 """
@@ -16,21 +17,29 @@ from cortex.server import (
 )
 
 
-def get_synapse_prompts_path() -> Path | None:
-    """Get path to Synapse prompts directory.
+def get_prompts_paths() -> list[Path]:
+    """Get paths to all prompts directories.
 
     Walks up the directory tree from current working directory to find
-    .cortex/synapse/prompts directory. This works when MCP server is run
-    from project root or any subdirectory.
+    prompts directories. Returns paths for both:
+    - .cortex/synapse/prompts/ (shared Synapse prompts)
+    - .cortex/prompts/ (project-specific prompts)
 
-    Also tries to find it relative to the module file location as fallback.
+    Also tries to find them relative to the module file location as fallback.
     """
+    found_paths: list[Path] = []
+
+    # Directories to check (relative to .cortex/)
+    prompt_dirs = ["synapse/prompts", "prompts"]
+
     # Try current working directory first (works when server runs from project root)
     current = Path.cwd()
     for path in [current, *current.parents]:
-        prompts_path = path / ".cortex" / "synapse" / "prompts"
-        if prompts_path.exists() and prompts_path.is_dir():
-            return prompts_path
+        for prompt_dir in prompt_dirs:
+            prompts_path = path / ".cortex" / prompt_dir
+            if prompts_path.exists() and prompts_path.is_dir():
+                if prompts_path not in found_paths:
+                    found_paths.append(prompts_path)
 
     # Fallback: try relative to this module's location
     # This helps when CWD is not the project root
@@ -40,11 +49,22 @@ def get_synapse_prompts_path() -> Path | None:
         module_file.parent.parent.parent.parent,
         *module_file.parent.parent.parent.parent.parents,
     ]:
-        prompts_path = path / ".cortex" / "synapse" / "prompts"
-        if prompts_path.exists() and prompts_path.is_dir():
-            return prompts_path
+        for prompt_dir in prompt_dirs:
+            prompts_path = path / ".cortex" / prompt_dir
+            if prompts_path.exists() and prompts_path.is_dir():
+                if prompts_path not in found_paths:
+                    found_paths.append(prompts_path)
 
-    return None
+    return found_paths
+
+
+def get_synapse_prompts_path() -> Path | None:
+    """Get path to Synapse prompts directory (for backwards compatibility)."""
+    paths = get_prompts_paths()
+    for path in paths:
+        if "synapse" in str(path):
+            return path
+    return paths[0] if paths else None
 
 
 def load_prompts_manifest(prompts_path: Path) -> dict[str, object] | None:
@@ -151,19 +171,19 @@ def log_registration_summary(registered_count: int) -> None:
         logger.debug(f"Registered prompt functions in namespace: {registered_names}")
 
 
-def register_synapse_prompts() -> None:
-    """Load and register all Synapse prompts as MCP prompts."""
-    prompts_path = get_synapse_prompts_path()
-    if not prompts_path:
-        return
+def register_prompts_from_path(prompts_path: Path) -> int:
+    """Load and register prompts from a single path.
 
+    Returns:
+        Number of prompts registered from this path.
+    """
     manifest = load_prompts_manifest(prompts_path)
     if not manifest:
-        return
+        return 0
 
     categories = manifest.get("categories")
     if not isinstance(categories, dict):
-        return
+        return 0
 
     registered_count = 0
     for category_name, category_info in cast(dict[str, object], categories).items():
@@ -182,7 +202,21 @@ def register_synapse_prompts() -> None:
                     prompt_info, prompts_path, category_name
                 )
 
-    log_registration_summary(registered_count)
+    return registered_count
+
+
+def register_synapse_prompts() -> None:
+    """Load and register all prompts from Synapse and project-specific directories."""
+    prompts_paths = get_prompts_paths()
+    if not prompts_paths:
+        return
+
+    total_registered = 0
+    for prompts_path in prompts_paths:
+        registered = register_prompts_from_path(prompts_path)
+        total_registered += registered
+
+    log_registration_summary(total_registered)
 
 
 # Register prompts at import time

@@ -6,71 +6,57 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
-- **Next blocker**: Phase 22 (Fix Commit Pipeline Quality Gate) or other roadmap items
 - Code quality maintenance: All checks passing, all tests passing
 - CI is green - all quality checks passing
+- **Next milestone**: Phase 21 (Health-Check and Optimization Analysis System) or Phase 26-29
 
 ### Recently Completed
 
-- ✅ **Commit Procedure - Type Fix in main.py** (2026-01-21) - Fixed type errors in BaseExceptionGroup handling:
-  - **Fixed 2 type errors in `main.py`**:
-    - Added explicit type annotation `tuple[BaseException, ...]` for `nested_excs` variable
-    - Used `# type: ignore[assignment]` for BaseExceptionGroup.exceptions access
-  - **Result**: All 2648 tests passing, 90.11% coverage, 0 type errors
+- ✅ **Commit Procedure - Function Length Fixes** (2026-01-21) - Fixed 4 function length violations in context_analysis_operations.py:
+  - **Fixed `_compute_task_insight()`**: Extracted `_compute_recommended_budget()` and `_find_essential_files()` helpers
+  - **Fixed `_generate_learned_patterns()`**: Extracted `_get_budget_efficiency_pattern()`, `_get_file_frequency_pattern()`, `_get_task_type_pattern()` helpers
+  - **Fixed `analyze_current_session()`**: Extracted `_build_current_session_result()` helper
+  - **Fixed `analyze_session_logs()`**: Extracted `_build_session_logs_result()` helper
+  - **Fixed 8 type errors**: Added `# type: ignore[reportPrivateUsage]` comments to test file imports
+  - **Result**: All 2662 tests passing, 90.15% coverage, 0 type errors, 0 function length violations
+
+- ✅ **Phase 52: Move Cortex-specific prompts out of Synapse** - COMPLETE (2026-01-21):
+  - Moved `analyze-context-effectiveness.md` to `.cortex/prompts/` (uses Cortex MCP tools)
+  - Moved `validate-roadmap-sync.md` to `.cortex/prompts/` (uses Cortex MCP tools)
+  - Moved `populate-tiktoken-cache.md` to `.cortex/prompts/` (Cortex-specific paths)
+  - Updated `commit.md` reference to new path
+  - Created `.cortex/prompts/prompts-manifest.json` for Cortex-specific prompts
+  - Synapse now only contains generic, language-agnostic prompts
+
+- ✅ **Phase 51: Enhance Context Analysis with Actionable Insights** - COMPLETE (2026-01-21):
+  - Added task-type recommendations (recommended budget, essential files)
+  - Added file effectiveness tracking (relevance scores, recommendations)
+  - Added learned patterns and budget recommendations
+  - All 23 context analysis tests passing
+
+- ✅ **Phase 22: Fix Commit Pipeline Quality Gate** - COMPLETE (2026-01-21) - Enhanced GitHub Actions workflow:
+  - Added explicit step IDs for all quality checks
+  - Added `::group::` and `::endgroup::` for log organization
+  - Added `::error::` annotations for GitHub UI visibility
+  - Added explicit error handling with `if !` statements
+  - Added pyright output parsing to detect errors/warnings
+  - Added markdown linting step (non-blocking)
+  - Added environment info and tool version display
+  - Added quality check summary step (runs always)
+  - Added 30-minute timeout to prevent hung workflows
+  - All local checks pass: 2662 tests, 90.15% coverage
 
 - ✅ **Phase 19: Fix MCP Server Crash** - COMPLETE (2026-01-21) - Archived to `.cortex/plans/archive/Phase19/`
 
-- ✅ **Commit Procedure - Function Length and Type Fixes** (2026-01-21) - Fixed function length violations and type errors:
-  - **Fixed 3 function length violations**:
-    - `security.py`: Extracted `_check_basic_constraints()`, `_check_nesting_depth()`, `_check_quantifiers()` from `validate()`
-    - `context_analysis_operations.py`: Extracted `_calculate_session_stats()`, `_update_global_stats()` from `analyze_current_session()`
-    - `context_analysis_operations.py`: Extracted `_process_log_files()` from `analyze_session_logs()`
-  - **Fixed 1 type error**:
-    - `test_security.py`: Fixed unknown type errors by using `cast()` for nested dict access
-  - **Result**: All 2646 tests passing, 90.15% coverage, 0 type errors, 0 function length violations
+- ✅ **Phase 20 Step 4: Security Vulnerabilities Fixed** - COMPLETE (2026-01-21)
 
-- ✅ **Phase 20 Step 4: Security Vulnerabilities Fixed** - COMPLETE (2026-01-21) - Fixed all security vulnerabilities identified in code review:
-  - **CommitMessageSanitizer**: Prevents command injection in git commit messages
-  - **HTMLEscaper**: Prevents XSS in JSON exports with recursive dictionary/list escaping
-  - **RegexValidator**: Prevents ReDoS attacks by validating regex patterns for nested quantifiers, deep nesting, and large quantifiers
-  - All functions integrated into `src/cortex/core/security.py`
-  - Updated `synapse_repository.py` to use commit message sanitization
-  - Added 43 comprehensive unit tests (all passing)
-  - Security module coverage: 90.38%
+- ✅ **Phase 25: Fix CI Failure - Commit 302c5e2** - COMPLETE (2026-01-21)
 
-- ✅ **Phase 25: Fix CI Failure - Commit 302c5e2** - COMPLETE (2026-01-21) - CI failure resolved - Quality check now passing
-
-- ✅ **Phase 23: Fix CI Failure After Validation Refactor** - COMPLETE (2026-01-21) - CI failure resolved - Validation refactor issues were fixed
-
-- ✅ **Commit Procedure - Function Length Fixes** (2026-01-21) - Fixed function length violations and test alignment:
-  - **Fixed 3 function length violations**:
-    - `markdown_operations.py`: Extracted `_detect_pattern1()` and `_detect_pattern6_and_7()` from `_detect_completion_date_primary()`
-    - `markdown_operations.py`: Extracted `_detect_pattern3_implemented()` and `_detect_pattern8_and_9()` from `_detect_misc_patterns()`
-    - `mcp_failure_handler.py`: Extracted `_check_type_attribute_key_error()` and `_check_runtime_error()` from `_check_unexpected_behavior()`
-  - **Fixed 1 test failure**:
-    - Updated `test_investigation_plan_structure` to match actual plan template (removed `## Approach`, added `## Notes`)
-  - **Result**: All 2583 tests passing, 90.10% coverage, 0 type errors, 0 function length violations
-
-- ✅ **Enhanced pre_commit_tools.py with Quality Checks** (2026-01-21) - Added file size and function length validation:
-  - **Enhancement**: Added `_check_file_sizes()` and `_check_function_lengths()` quality check helpers
-  - **New Features**:
-    - File size validation (max 400 lines for production code)
-    - Function length validation (max 30 logical lines)
-    - AST-based function analysis with docstring exclusion
-  - **Tests**: Added 16 new tests for quality check helpers in `test_pre_commit_tools.py`
-  - **Coverage**: Maintained 90.01% coverage (2583 tests passing, 2 skipped)
-
-- ✅ **Test Coverage Fixed to 90%** (2026-01-20) - Achieved mandatory coverage threshold:
-  - **Problem**: Coverage was at 72.56%, far below the mandatory 90% threshold
-  - **Solution**:
-    - Added 60 new unit tests for previously untested modules
-    - Configured coverage exclusions in `pyproject.toml` for infrastructure/type-only modules
-  - **Result**: Coverage now at 90.05% (2567 tests passing, 2 skipped)
-  - **Rule Enforcement**: Coverage threshold is MANDATORY - no exceptions, no "pre-existing condition" excuses
+- ✅ **Phase 23: Fix CI Failure After Validation Refactor** - COMPLETE (2026-01-21)
 
 ## Project Health
 
-- **Test Coverage**: 90.11% (2648 tests passing, 2 skipped) ✅
+- **Test Coverage**: 90.15% (2662 tests passing, 2 skipped) ✅
 - **Type Errors**: 0 (pyright src/ tests/) ✅
 - **Type Warnings**: 0 (pyright src/ tests/) ✅
 - **Linting Errors**: 0 (ruff check src/ tests/) ✅
@@ -93,7 +79,8 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 .cortex/                    # Primary Cortex data directory
 ├── memory-bank/           # Core memory bank files
 ├── plans/                 # Development plans
-├── synapse/               # Shared rules (Git submodule)
+├── prompts/               # Cortex-specific prompts (NOT part of Synapse)
+├── synapse/               # Shared rules (Git submodule) - language-agnostic only
 ├── history/               # Version history
 └── index.json             # Metadata index
 

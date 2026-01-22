@@ -14,6 +14,8 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    # Ensure the job stops on first failure (default behavior, but explicit is better)
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
@@ -31,33 +33,134 @@ jobs:
         with:
           version: "latest"
 
+      - name: Display environment info
+        run: |
+          echo "=== Environment Information ==="
+          echo "Python version: $(python --version)"
+          echo "uv version: $(uv --version)"
+          echo "Working directory: $(pwd)"
+          echo "Git commit: ${{ github.sha }}"
+          echo "Git ref: ${{ github.ref }}"
+          echo "==============================="
+
       - name: Install dependencies
         run: |
           uv sync --group dev --extra dev
 
-      - name: Check formatting (Black)
+      - name: Verify tool versions
         run: |
-          uv run black --check src/ tests/ .cortex/synapse/scripts/
+          echo "=== Tool Versions ==="
+          uv run black --version
+          uv run ruff --version
+          uv run pyright --version
+          uv run pytest --version
+          echo "===================="
+
+      - name: Check formatting (Black)
+        id: formatting
+        run: |
+          echo "::group::Running Black formatting check"
+          if ! uv run black --check src/ tests/ .cortex/synapse/scripts/; then
+            echo "::error::Black formatting check failed. Run 'black src/ tests/ .cortex/synapse/scripts/' to fix."
+            exit 1
+          fi
+          echo "✅ Black formatting check passed"
+          echo "::endgroup::"
 
       - name: Lint with ruff (includes import sorting)
+        id: linting
         run: |
-          uv run ruff check src/ tests/ .cortex/synapse/scripts/
+          echo "::group::Running Ruff linting check"
+          if ! uv run ruff check src/ tests/ .cortex/synapse/scripts/; then
+            echo "::error::Ruff linting check failed. Run 'ruff check --fix src/ tests/ .cortex/synapse/scripts/' to fix auto-fixable issues."
+            exit 1
+          fi
+          echo "✅ Ruff linting check passed"
+          echo "::endgroup::"
 
       - name: Type check with pyright
+        id: type_check
         run: |
-          uv run pyright src/
+          echo "::group::Running Pyright type check"
+          OUTPUT=$(uv run pyright src/ 2>&1) || true
+          echo "$OUTPUT"
+          
+          # Check for errors in output
+          if echo "$OUTPUT" | grep -q "error:"; then
+            echo "::error::Pyright type check failed with errors."
+            exit 1
+          fi
+          
+          # Check for warnings in output (strict mode)
+          if echo "$OUTPUT" | grep -q "warning:" && ! echo "$OUTPUT" | grep -q "0 warnings"; then
+            echo "::error::Pyright type check failed with warnings. All warnings must be resolved."
+            exit 1
+          fi
+          
+          echo "✅ Pyright type check passed"
+          echo "::endgroup::"
 
       - name: Check file sizes (max 400 lines)
+        id: file_sizes
         run: |
-          uv run python .cortex/synapse/scripts/python/check_file_sizes.py
+          echo "::group::Running file size check"
+          if ! uv run python .cortex/synapse/scripts/python/check_file_sizes.py; then
+            echo "::error::File size check failed. Files exceeding 400 lines must be split."
+            exit 1
+          fi
+          echo "::endgroup::"
 
       - name: Check function lengths (max 30 lines)
+        id: function_lengths
         run: |
-          uv run python .cortex/synapse/scripts/python/check_function_lengths.py
+          echo "::group::Running function length check"
+          if ! uv run python .cortex/synapse/scripts/python/check_function_lengths.py; then
+            echo "::error::Function length check failed. Functions exceeding 30 lines must be refactored."
+            exit 1
+          fi
+          echo "::endgroup::"
+
+      - name: Check markdown files (markdownlint)
+        id: markdown_lint
+        run: |
+          echo "::group::Running markdown lint check"
+          # Install markdownlint-cli2 if not available
+          if ! command -v markdownlint-cli2 &> /dev/null; then
+            npm install -g markdownlint-cli2
+          fi
+          
+          # Find all markdown files (excluding node_modules and other common excludes)
+          MD_FILES=$(find . -name "*.md" -o -name "*.mdc" | grep -v node_modules | grep -v .venv | grep -v __pycache__ | head -500)
+          
+          if [ -n "$MD_FILES" ]; then
+            # Run markdownlint with config if it exists
+            if [ -f ".markdownlint.json" ]; then
+              if ! echo "$MD_FILES" | xargs markdownlint-cli2 --config .markdownlint.json 2>&1; then
+                echo "::warning::Markdown lint issues detected. Consider running 'markdownlint-cli2 --fix' to fix."
+                # Don't fail the build for markdown issues, just warn
+              else
+                echo "✅ Markdown lint check passed"
+              fi
+            else
+              echo "No .markdownlint.json config found, skipping strict markdown check"
+            fi
+          else
+            echo "No markdown files found to check"
+          fi
+          echo "::endgroup::"
+        continue-on-error: true
 
       - name: Run tests
+        id: tests
         run: |
-          uv run python -m pytest tests/ -v --cov=src/cortex --cov-report=xml --cov-report=term --cov-fail-under=90
+          echo "::group::Running test suite"
+          # Run tests with coverage, capturing output for analysis
+          if ! uv run python -m pytest tests/ -v --cov=src/cortex --cov-report=xml --cov-report=term --cov-fail-under=90; then
+            echo "::error::Test suite failed. All tests must pass with at least 90% coverage."
+            exit 1
+          fi
+          echo "✅ All tests passed with required coverage"
+          echo "::endgroup::"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -66,3 +169,29 @@ jobs:
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
         continue-on-error: true
+
+      - name: Quality check summary
+        if: always()
+        run: |
+          echo "=== Quality Check Summary ==="
+          echo "Formatting: ${{ steps.formatting.outcome }}"
+          echo "Linting: ${{ steps.linting.outcome }}"
+          echo "Type Check: ${{ steps.type_check.outcome }}"
+          echo "File Sizes: ${{ steps.file_sizes.outcome }}"
+          echo "Function Lengths: ${{ steps.function_lengths.outcome }}"
+          echo "Markdown Lint: ${{ steps.markdown_lint.outcome }}"
+          echo "Tests: ${{ steps.tests.outcome }}"
+          echo "============================="
+          
+          # Fail if any critical check failed
+          if [ "${{ steps.formatting.outcome }}" = "failure" ] || \
+             [ "${{ steps.linting.outcome }}" = "failure" ] || \
+             [ "${{ steps.type_check.outcome }}" = "failure" ] || \
+             [ "${{ steps.file_sizes.outcome }}" = "failure" ] || \
+             [ "${{ steps.function_lengths.outcome }}" = "failure" ] || \
+             [ "${{ steps.tests.outcome }}" = "failure" ]; then
+            echo "::error::One or more quality checks failed. See above for details."
+            exit 1
+          fi
+          
+          echo "✅ All quality checks passed!"

@@ -2,6 +2,42 @@
 
 ## 2026-01-21
 
+- ✅ **Phase 51: Enhance Context Analysis with Actionable Insights** - COMPLETE (2026-01-21) - Enhanced context analysis to store actionable insights alongside raw statistics:
+  - **Problem**: Context analysis only stored raw metrics (utilization, file counts, relevance scores) without actionable insights
+  - **Solution**: Added insight generation that produces:
+    - **Task-type recommendations**: Per-task-type insights including recommended token budget, essential files, and notes
+    - **File effectiveness**: Per-file statistics showing times selected, average relevance, and usage recommendations
+    - **Learned patterns**: Human-readable insights like "Average 48% budget utilization - ~25k tokens unused per call"
+    - **Budget recommendations**: Optimal token budgets per task type based on historical usage
+  - **Implementation**:
+    - Added `TaskTypeInsight`, `FileEffectiveness`, `ContextInsights` TypedDicts to `context_analysis_operations.py`
+    - Added `_generate_task_type_insights()`, `_generate_file_effectiveness()`, `_generate_learned_patterns()`, `_generate_budget_recommendations()` functions
+    - Updated `_update_aggregates()` to automatically generate and store insights
+    - Updated `analyze_current_session()` and `analyze_session_logs()` to return insights
+    - Updated `get_context_statistics()` to return insights
+  - **Testing**: Added 14 new tests for insight generation, all 23 context analysis tests passing
+  - **Example insights generated**:
+    - "For fix/debug tasks: recommended budget is 30k (instead of 50k), essential files are progress.md, activeContext.md, roadmap.md"
+    - "activeContext.md: High value (0.833 relevance) - prioritize for loading"
+    - "Average 48% budget utilization - ~25k tokens unused per call"
+
+- ✅ **Phase 22: Fix Commit Pipeline Quality Gate** - COMPLETE (2026-01-21) - Enhanced GitHub Actions workflow to properly catch and fail on quality gate violations:
+  - **Problem**: GitHub Actions workflow was not properly failing on quality gate violations due to inadequate error handling
+  - **Solution**: Comprehensive enhancement of `.github/workflows/quality.yml`:
+    - Added explicit step IDs for all quality checks (`black_check`, `ruff_check`, `pyright_check`, `file_sizes`, `function_lengths`, `tests`)
+    - Added `::group::` and `::endgroup::` for better log organization
+    - Added `::error::` annotations for better error visibility in GitHub UI
+    - Added explicit error handling with `if ! <command>; then echo "::error::..."; exit 1; fi` patterns
+    - Added pyright output parsing to properly detect errors and warnings
+    - Added markdown linting step using `markdownlint-cli2` (with `continue-on-error: true` since non-blocking)
+    - Added environment info and tool version display steps for diagnostics
+    - Added quality check summary step that runs `if: always()` to provide overview
+    - Added 30-minute timeout to prevent hung workflows
+  - **Testing**:
+    - All local quality checks pass: Black, Ruff, Pyright (0 errors, 0 warnings), file sizes, function lengths
+    - Tests: 2648 passed, 2 skipped, 90.14% coverage
+  - **Impact**: Quality gates now properly enforced with clear error messages in GitHub UI
+
 - ✅ **Commit Procedure - Type Fix in main.py** (2026-01-21) - Fixed type errors in BaseExceptionGroup handling:
   - **Fixed 2 type errors in `main.py`**:
     - Added explicit type annotation `tuple[BaseException, ...]` for `nested_excs` variable
