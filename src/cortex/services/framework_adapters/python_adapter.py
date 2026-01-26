@@ -275,19 +275,35 @@ class PythonAdapter(FrameworkAdapter):
         return self._run_ruff_fix()
 
     def _run_ruff_fix(self) -> CheckResult:
-        """Run ruff with auto-fix.
+        """Run ruff with auto-fix, then verify no errors remain.
 
         Matches CI workflow: ruff check --select F,E,W --fix src/ tests/
+        Then verifies: ruff check --select F,E,W src/ tests/ (matches CI check)
         """
         try:
-            output = self._execute_ruff_command()
-            errors = self._parse_lint_errors(output)
-            return self._create_lint_result(output, errors)
+            # Step 1: Auto-fix errors
+            fix_output = self._execute_ruff_fix_command()
+
+            # Step 2: Verify no errors remain (matches CI workflow exactly)
+            verify_output = self._execute_ruff_verify_command()
+            verify_errors = self._parse_lint_errors(verify_output)
+
+            # Combine outputs
+            combined_output = (
+                f"{fix_output}\n\n--- Verification (matches CI) ---\n{verify_output}"
+            )
+
+            # If verification found errors, those are the real errors
+            if verify_errors:
+                return self._create_lint_result(combined_output, verify_errors)
+
+            # If fix step had errors but verification passed, that's OK (errors were fixed)
+            return self._create_lint_result(combined_output, [])
         except Exception as e:
             return self._create_lint_error_result(str(e))
 
-    def _execute_ruff_command(self) -> str:
-        """Execute ruff check command and return output."""
+    def _execute_ruff_fix_command(self) -> str:
+        """Execute ruff check with --fix to auto-fix errors."""
         result = subprocess.run(
             [
                 self._get_command("ruff"),
@@ -302,6 +318,34 @@ class PythonAdapter(FrameworkAdapter):
             capture_output=True,
             text=True,
         )
+        return result.stdout + result.stderr
+
+    def _execute_ruff_verify_command(self) -> str:
+        """Execute ruff check without --fix to verify no errors remain.
+
+        Matches CI workflow exactly: ruff check --select F,E,W src/ tests/
+        """
+        result = subprocess.run(
+            [
+                self._get_command("ruff"),
+                "check",
+                "--select",
+                "F,E,W",
+                "src/",
+                "tests/",
+            ],
+            cwd=self.project_root,
+            capture_output=True,
+            text=True,
+        )
+        # Check return code - non-zero means errors remain
+        if result.returncode != 0:
+            # Add explicit error message if return code indicates failure
+            error_msg = (
+                f"Ruff verification failed (exit code {result.returncode}). "
+                "Unfixable errors remain after auto-fix."
+            )
+            return f"{result.stdout}{result.stderr}\n{error_msg}"
         return result.stdout + result.stderr
 
     def _create_lint_result(self, output: str, errors: list[str]) -> CheckResult:

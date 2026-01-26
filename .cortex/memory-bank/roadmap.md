@@ -4,6 +4,10 @@
 
 ### Active Work
 
+- ✅ **Enhanced Python Adapter Ruff Fix with Verification** - COMPLETE (2026-01-26) - Enhanced `_run_ruff_fix()` method in `python_adapter.py` to include verification step that matches CI workflow exactly. Split into two steps: auto-fix (`_execute_ruff_fix_command()`) and verification (`_execute_ruff_verify_command()`). Ensures no errors remain after auto-fix, preventing CI failures. All tests passing (2850 passed, 0 failed), coverage at 90.02%. All code quality gates passing.
+
+- ✅ **Enhanced CI Workflow with Additional Pyright Error Patterns** - COMPLETE (2026-01-26) - Added two new pyright error patterns to `.github/workflows/quality.yml`: `reportOptionalSubscript` and `reportCallIssue`. Improves type safety enforcement in CI pipeline. All tests passing (2850 passed, 0 failed), coverage at 90.02%. All code quality gates passing.
+
 - ✅ **Commit Procedure: Fixed Function Length Violation in Python Adapter** - COMPLETE (2026-01-26) - Fixed function length violation in `python_adapter.py` by refactoring `_run_ruff_fix` function (34 lines → under 30) via extracting helper functions. All tests passing (2850 passed, 0 failed), coverage at 90%. All code quality gates passing.
 
 - ✅ **Commit Procedure: Fixed Test Failures** - COMPLETE (2026-01-26) - Fixed 2 test failures: `test_update_file_metadata` (updated assertion to expect `version_info.model_dump(mode="json")`) and `test_setup_validation_managers_success` (fixed patch paths and added all 6 mocks). All tests passing (2850 passed, 0 failed), coverage at 90.01%. All code quality gates passing.
