@@ -67,26 +67,51 @@ jobs:
           echo "✅ Black formatting check passed"
           echo "::endgroup::"
 
-      - name: Lint with ruff (includes import sorting)
+      - name: Lint with ruff (includes import sorting and unused imports)
         id: linting
         run: |
           echo "::group::Running Ruff linting check"
-          if ! uv run ruff check src/ tests/ .cortex/synapse/scripts/; then
+          # Ruff F401 catches unused imports, F841 catches unused variables
+          # Run with strict checking to catch all issues
+          if ! uv run ruff check --select F,E,W src/ tests/ .cortex/synapse/scripts/; then
             echo "::error::Ruff linting check failed. Run 'ruff check --fix src/ tests/ .cortex/synapse/scripts/' to fix auto-fixable issues."
             exit 1
           fi
           echo "✅ Ruff linting check passed"
           echo "::endgroup::"
 
-      - name: Type check with pyright
-        id: type_check
+      - name: Type check with pyright (source)
+        id: type_check_src
         run: |
-          echo "::group::Running Pyright type check"
+          echo "::group::Running Pyright type check (source)"
           OUTPUT=$(uv run pyright src/ 2>&1) || true
           echo "$OUTPUT"
           
-          # Check for errors in output
-          if echo "$OUTPUT" | grep -q "error:"; then
+          # Check for errors in output - multiple patterns to catch all error types
+          ERROR_PATTERNS=(
+            "error:"
+            "reportArgumentType"
+            "reportUnknownVariableType"
+            "reportUnknownMemberType"
+            "reportAttributeAccessIssue"
+            "reportAssignmentType"
+            "reportIndexIssue"
+            "reportOperatorIssue"
+            "reportGeneralTypeIssues"
+          )
+          
+          HAS_ERROR=false
+          for pattern in "${ERROR_PATTERNS[@]}"; do
+            if echo "$OUTPUT" | grep -qi "$pattern"; then
+              HAS_ERROR=true
+              break
+            fi
+          done
+          
+          # Check error count in summary
+          ERROR_COUNT=$(echo "$OUTPUT" | grep -oE "[0-9]+\s+error" | grep -oE "[0-9]+" | head -1 || echo "0")
+          
+          if [ "$HAS_ERROR" = true ] || [ "$ERROR_COUNT" -gt 0 ]; then
             echo "::error::Pyright type check failed with errors."
             exit 1
           fi
@@ -97,7 +122,19 @@ jobs:
             exit 1
           fi
           
-          echo "✅ Pyright type check passed"
+          echo "✅ Pyright type check passed (source)"
+          echo "::endgroup::"
+
+      - name: Type check with pyright (tests and scripts)
+        id: type_check_tests
+        run: |
+          echo "::group::Running Pyright type check (tests and scripts)"
+          # Use the check_types script which handles tests and scripts properly
+          if ! uv run python .cortex/synapse/scripts/python/check_types.py; then
+            echo "::error::Type check failed for tests or scripts. Fix type errors before committing."
+            exit 1
+          fi
+          echo "✅ Pyright type check passed (tests and scripts)"
           echo "::endgroup::"
 
       - name: Check file sizes (max 400 lines)
@@ -119,6 +156,24 @@ jobs:
             exit 1
           fi
           echo "::endgroup::"
+
+      - name: Check spelling (cSpell)
+        id: spelling
+        run: |
+          echo "::group::Running spelling check"
+          # Install cspell if not available
+          if ! command -v cspell &> /dev/null; then
+            npm install -g cspell
+          fi
+          
+          # Run spelling check using the script
+          if ! uv run python .cortex/synapse/scripts/python/check_spelling.py; then
+            echo "::error::Spelling check failed. Fix spelling errors or add words to .cspell.json dictionary."
+            exit 1
+          fi
+          echo "✅ Spelling check passed"
+          echo "::endgroup::"
+        continue-on-error: false
 
       - name: Check markdown files (markdownlint)
         id: markdown_lint
@@ -176,9 +231,11 @@ jobs:
           echo "=== Quality Check Summary ==="
           echo "Formatting: ${{ steps.formatting.outcome }}"
           echo "Linting: ${{ steps.linting.outcome }}"
-          echo "Type Check: ${{ steps.type_check.outcome }}"
+          echo "Type Check (Source): ${{ steps.type_check_src.outcome }}"
+          echo "Type Check (Tests/Scripts): ${{ steps.type_check_tests.outcome }}"
           echo "File Sizes: ${{ steps.file_sizes.outcome }}"
           echo "Function Lengths: ${{ steps.function_lengths.outcome }}"
+          echo "Spelling: ${{ steps.spelling.outcome }}"
           echo "Markdown Lint: ${{ steps.markdown_lint.outcome }}"
           echo "Tests: ${{ steps.tests.outcome }}"
           echo "============================="
@@ -186,9 +243,11 @@ jobs:
           # Fail if any critical check failed
           if [ "${{ steps.formatting.outcome }}" = "failure" ] || \
              [ "${{ steps.linting.outcome }}" = "failure" ] || \
-             [ "${{ steps.type_check.outcome }}" = "failure" ] || \
+             [ "${{ steps.type_check_src.outcome }}" = "failure" ] || \
+             [ "${{ steps.type_check_tests.outcome }}" = "failure" ] || \
              [ "${{ steps.file_sizes.outcome }}" = "failure" ] || \
              [ "${{ steps.function_lengths.outcome }}" = "failure" ] || \
+             [ "${{ steps.spelling.outcome }}" = "failure" ] || \
              [ "${{ steps.tests.outcome }}" = "failure" ]; then
             echo "::error::One or more quality checks failed. See above for details."
             exit 1

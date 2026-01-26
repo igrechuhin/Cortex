@@ -206,7 +206,7 @@ class TestReadAllMemoryBankFiles:
     """Test reading all memory bank files."""
 
     @pytest.mark.asyncio
-    async def testread_all_memory_bank_files_success(
+    async def test_read_all_memory_bank_files_success(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:
         """Test successful reading of all memory bank files."""
@@ -233,7 +233,7 @@ class TestReadAllMemoryBankFiles:
         assert result["file2.md"] == "Content 2"
 
     @pytest.mark.asyncio
-    async def testread_all_memory_bank_files_empty_dir(
+    async def test_read_all_memory_bank_files_empty_dir(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:
         """Test reading from empty memory bank directory."""
@@ -251,7 +251,7 @@ class TestReadAllMemoryBankFiles:
 class TestGenerateDuplicationFixes:
     """Test duplication fix suggestion generation."""
 
-    def testgenerate_duplication_fixes_exact_duplicates(self) -> None:
+    def test_generate_duplication_fixes_exact_duplicates(self) -> None:
         """Test fix generation for exact duplicates."""
         # Arrange
         duplications_dict = {
@@ -278,7 +278,7 @@ class TestGenerateDuplicationFixes:
         assert "transclusion" in cast(str, fix_dict["suggestion"])
         assert len(cast(list[object], fix_dict["steps"])) == 3
 
-    def testgenerate_duplication_fixes_similar_content(self) -> None:
+    def test_generate_duplication_fixes_similar_content(self) -> None:
         """Test fix generation for similar content."""
         # Arrange
         duplications_dict = {
@@ -301,7 +301,7 @@ class TestGenerateDuplicationFixes:
         assert cast(list[object], fix_dict["files"]) == ["file1.md", "file2.md"]
         assert "transclusion" in cast(str, fix_dict["suggestion"])
 
-    def testgenerate_duplication_fixes_combined(self) -> None:
+    def test_generate_duplication_fixes_combined(self) -> None:
         """Test fix generation for both exact and similar duplicates."""
         # Arrange
         duplications_dict = {
@@ -319,7 +319,7 @@ class TestGenerateDuplicationFixes:
         # Assert
         assert len(fixes) == 2
 
-    def testgenerate_duplication_fixes_empty(self) -> None:
+    def test_generate_duplication_fixes_empty(self) -> None:
         """Test fix generation with no duplicates."""
         # Arrange
         duplications_dict: dict[str, object] = {
@@ -838,7 +838,7 @@ class TestValidationHandlers:
 class TestErrorHelpers:
     """Test error response helper functions."""
 
-    def testcreate_invalid_check_type_error(self) -> None:
+    def test_create_invalid_check_type_error(self) -> None:
         """Test creation of invalid check type error response."""
         # Act
         result = create_invalid_check_type_error("invalid_type")
@@ -852,7 +852,7 @@ class TestErrorHelpers:
         assert "duplications" in result_data["valid_check_types"]
         assert "quality" in result_data["valid_check_types"]
 
-    def testcreate_validation_error_response(self) -> None:
+    def test_create_validation_error_response(self) -> None:
         """Test creation of validation error response."""
         # Arrange
         error = ValueError("Test error message")
@@ -866,7 +866,7 @@ class TestErrorHelpers:
         assert result_data["error"] == "Test error message"
         assert result_data["error_type"] == "ValueError"
 
-    def testcreate_invalid_check_type_error_includes_infrastructure(self) -> None:
+    def test_create_invalid_check_type_error_includes_infrastructure(self) -> None:
         """Test that invalid check type error includes infrastructure."""
         # Act
         result = create_invalid_check_type_error("invalid_type")
@@ -1140,7 +1140,7 @@ class TestSetupValidationManagers:
     """Test setup validation managers helper."""
 
     @pytest.mark.asyncio
-    async def testsetup_validation_managers_success(self, tmp_path: Path) -> None:
+    async def test_setup_validation_managers_success(self, tmp_path: Path) -> None:
         """Test successful setup of validation managers."""
         # Arrange
         mock_fs = MagicMock()
@@ -1152,19 +1152,21 @@ class TestSetupValidationManagers:
 
         with (
             patch(
-                "cortex.tools.validation_operations.get_managers"
+                "cortex.tools.validation_dispatch.initialization.get_managers"
             ) as mock_get_managers,
-            patch("cortex.tools.validation_operations.get_manager") as mock_get_manager,
+            patch("cortex.tools.validation_dispatch.get_manager") as mock_get_manager,
         ):
             mock_get_managers.return_value = {
                 "fs": mock_fs,
                 "index": mock_index,
             }
             mock_get_manager.side_effect = [
-                mock_schema,
-                mock_detector,
-                mock_metrics,
-                mock_config,
+                mock_fs,  # fs_manager
+                mock_index,  # metadata_index
+                mock_schema,  # schema_validator
+                mock_detector,  # duplication_detector
+                mock_metrics,  # quality_metrics
+                mock_config,  # validation_config
             ]
 
             # Act

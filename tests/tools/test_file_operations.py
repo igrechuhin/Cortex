@@ -477,7 +477,7 @@ Final section
         assert sections[0]["heading"] == "## Section 1"
         assert sections[1]["heading"] == "##Section 3"
 
-    def testcompute_file_metrics(self):
+    def test_compute_file_metrics(self):
         """Test file metrics computation."""
         # Arrange
         content = "Test content for metrics"
@@ -497,7 +497,7 @@ Final section
         mock_fs.compute_hash.assert_called_once_with(content)
         mock_tokens.count_tokens.assert_called_once_with(content)
 
-    async def testcreate_version_snapshot(self):
+    async def test_create_version_snapshot(self):
         """Test version snapshot creation."""
         # Arrange
         file_path = Path("/tmp/test/memory-bank/test.md")
@@ -528,7 +528,7 @@ Final section
         mock_version_manager.get_version_count.assert_called_once_with("test.md")
         mock_version_manager.create_snapshot.assert_called_once()
 
-    async def testupdate_file_metadata(self):
+    async def test_update_file_metadata(self):
         """Test file metadata update."""
         # Arrange
         file_name = "test.md"
@@ -560,7 +560,7 @@ Final section
         # Assert
         mock_metadata_index.update_file_metadata.assert_called_once()
         mock_metadata_index.add_version_to_history.assert_called_once_with(
-            file_name, version_info
+            file_name, version_info.model_dump(mode="json")
         )
 
     def test_build_write_response(self):

@@ -77,5 +77,11 @@
   "reportOptionalIterable": "error",
   "reportOptionalContextManager": "error",
   "reportOptionalOperand": "error",
-  "reportTypedDictNotRequiredAccess": "error"
+  "reportTypedDictNotRequiredAccess": "error",
+
+  "reportArgumentType": "error",
+  "reportAttributeAccessIssue": "error",
+  "reportAssignmentType": "error",
+  "reportIndexIssue": "error",
+  "reportOperatorIssue": "error"
 }

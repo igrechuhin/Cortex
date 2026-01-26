@@ -342,7 +342,7 @@ class TestSplitPointGeneration:
     """Test split point generation"""
 
     @pytest.mark.asyncio
-    async def testgenerate_split_points_by_topics(
+    async def test_generate_split_points_by_topics(
         self, split_recommender: SplitRecommender, sample_content_topics: str
     ):
         """Test generating split points by topics"""
@@ -364,7 +364,7 @@ class TestSplitPointGeneration:
             assert sp.suggested_filename
 
     @pytest.mark.asyncio
-    async def testgenerate_split_points_by_sections(
+    async def test_generate_split_points_by_sections(
         self, split_recommender: SplitRecommender, sample_content_topics: str
     ):
         """Test generating split points by sections"""
@@ -384,7 +384,7 @@ class TestSplitPointGeneration:
             assert sp.independence_score >= split_recommender.min_section_independence
 
     @pytest.mark.asyncio
-    async def testgenerate_split_points_by_size(
+    async def test_generate_split_points_by_size(
         self, split_recommender: SplitRecommender, sample_content_large: str
     ):
         """Test generating split points by size"""

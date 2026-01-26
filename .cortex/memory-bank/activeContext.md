@@ -6,6 +6,14 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
+- ✅ **Commit Procedure: Fixed Test Failures** - COMPLETE (2026-01-26)
+  - Fixed 2 test failures blocking commit:
+    - `test_update_file_metadata`: Updated assertion to expect `version_info.model_dump(mode="json")` instead of `version_info` (matches actual implementation)
+    - `test_setup_validation_managers_success`: Fixed patch paths from `cortex.tools.validation_operations` to `cortex.tools.validation_dispatch` and added all 6 mocks for `get_manager` calls (fs_manager, metadata_index, schema_validator, duplication_detector, quality_metrics, validation_config)
+  - All tests passing: 2850 passed, 0 failed, 100% pass rate, 90.01% coverage
+  - All code quality checks passing: 0 violations
+  - All type checks passing: 0 errors, 0 warnings
+
 - ✅ **Commit Procedure: Fixed Type Error and Increased Test Coverage** - COMPLETE (2026-01-26)
   - Fixed type error in `python_adapter.py`:
     - Fixed implicit string concatenation error at line 433 by adding explicit parentheses around f-string concatenation
@@ -144,7 +152,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Project Health
 
-- **Test Coverage**: 90.01% (2834 tests passing, 0 failed) ✅
+- **Test Coverage**: 90.01% (2850 tests passing, 0 failed) ✅
 - **Type Errors**: 0 (pyright src/ tests/) ✅
 - **Type Warnings**: 0 (pyright src/ tests/) ✅
 - **Linting Errors**: 0 (ruff check src/ tests/) ✅
