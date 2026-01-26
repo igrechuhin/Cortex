@@ -9,6 +9,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.tiktoken_cache import ensure_bundled_cache_available
 from cortex.managers.initialization import get_project_root
 
@@ -111,8 +112,8 @@ def get_project_config_status() -> ProjectConfigStatus:
     """
     try:
         project_root = get_project_root()
-        cortex_dir = project_root / ".cortex"
-        memory_bank_dir = cortex_dir / "memory-bank"
+        cortex_dir = get_cortex_path(project_root, CortexResourceType.CORTEX_DIR)
+        memory_bank_dir = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
         cursor_dir = project_root / ".cursor"
 
         memory_bank_initialized = _check_memory_bank_initialized(memory_bank_dir)

@@ -2,6 +2,49 @@
 
 ## 2026-01-26
 
+- ✅ **Commit Procedure: Routine commit with markdown lint fixes** - COMPLETE (2026-01-26)
+  - Fixed markdown lint errors in `.cortex/plans/phase-54-clarify-mcp-tool-error-handling.md`:
+    - Converted bold text to proper headings (MD036/no-emphasis-as-heading violations)
+    - Changed `**Phase 1: Rules Enhancement (Primary Focus)**` → `#### Phase 1: Rules Enhancement (Primary Focus)`
+    - Changed `**Phase 2: Tool Enhancement (Optional, Lower Priority)**` → `#### Phase 2: Tool Enhancement (Optional, Lower Priority)`
+  - All pre-commit checks passed:
+    - Fix errors: ✅ 0 errors, 0 warnings
+    - Quality preflight: ✅ 0 file size violations, 0 function length violations
+    - Formatting: ✅ All checks passed
+    - Markdown linting: ✅ 6 files processed, 0 errors remaining
+    - Type checking: ✅ 0 errors, 0 warnings
+    - Code quality: ✅ 0 violations
+    - Tests: ✅ 2748 passed, 0 failed, 100% pass rate, 90.02% coverage
+  - **Impact**: All quality gates met, markdown files properly formatted
+
+- ✅ **Phase 28: Enforce MCP Tools for All .cortex Operations** - COMPLETE (2026-01-26)
+  - **Problem**: Review reports and other files were written directly to `.cortex/` directory using hardcoded paths instead of Cortex MCP tools, leading to duplicate files and inconsistent path usage
+  - **Solution**: Enforced MCP tool usage for all `.cortex/` file operations and integrated `reviews` directory into structure configuration
+  - **Implementation**:
+    - **Step 1: Added Reviews to Structure Config**:
+      - Added `"reviews": "reviews"` to `DEFAULT_STRUCTURE` layout in `structure_config.py`
+      - Added `reviews` field to `LayoutConfig` and `StructurePaths` models in `models.py`
+      - Updated `get_structure_info()` in `structure_lifecycle.py` to include reviews path
+      - Updated `_get_required_directory_list()` in `setup.py` to create reviews directory
+      - Updated tests to verify reviews path is included (all 69 structure tests passing)
+    - **Step 2: Audited All Prompts for MCP Tool Usage**:
+      - Updated `review.md` to use `get_structure_info()` and extract `structure_info.paths.reviews` instead of hardcoded paths
+      - Updated `analyze-session-optimization.md` to use `get_structure_info()` for reviews path resolution
+      - All prompts now use MCP tools for `.cortex/` path resolution
+    - **Step 3: Code Cleanup**:
+      - Updated `config_status.py` to use `get_cortex_path()` instead of hardcoded path construction
+      - Core infrastructure files intentionally use direct path construction (they're the path resolvers themselves)
+    - **Step 4: Documentation**:
+      - Added section to `AGENTS.md` about MCP tool requirements for `.cortex/` operations
+      - Documented that all `.cortex/` file operations must use `get_structure_info()` for path resolution
+  - **Results**:
+    - All structure tests passing (69 tests)
+    - All config_status tests passing (14 tests)
+    - All prompts updated to use MCP tools for path resolution
+    - Documentation updated with MCP tool requirements
+    - Plan file updated to COMPLETE status
+  - **Impact**: Consistent path resolution across all `.cortex/` operations, prevents file location errors, enforces architectural principle that all `.cortex/` operations use MCP tools
+
 - ✅ **Commit Procedure: Routine commit with synapse submodule update** - COMPLETE (2026-01-26)
   - Updated `.cortex/synapse` submodule reference to latest commit (954e10b: "Update commit workflow, agent rules, and Python standards")
   - All pre-commit checks passed:

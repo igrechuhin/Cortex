@@ -158,6 +158,7 @@ class StructureLifecycleManager:
                 rules=str(self.get_path("rules")),
                 plans=str(self.get_path("plans")),
                 config=str(self.get_path("config")),
+                reviews=str(self.get_path("reviews")),
             ),
             configuration=configuration,
             exists=self.get_path("root").exists(),

@@ -23,6 +23,7 @@ DEFAULT_STRUCTURE: ModelDict = {
         "plans": "plans",
         "config": "config",
         "archived": "archived",
+        "reviews": "reviews",
     },
     "cursor_integration": {
         "enabled": True,

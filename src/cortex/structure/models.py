@@ -40,6 +40,7 @@ class LayoutConfig(StructureBaseModel):
     plans: str = Field(default="plans", description="Plans directory")
     config: str = Field(default="config", description="Config directory")
     archived: str = Field(default="archived", description="Archived directory")
+    reviews: str = Field(default="reviews", description="Reviews directory")
 
 
 class SymlinksConfig(StructureBaseModel):
@@ -249,6 +250,7 @@ class StructurePaths(StructureBaseModel):
     rules: str = Field(..., description="Rules directory path")
     plans: str = Field(..., description="Plans directory path")
     config: str = Field(..., description="Config directory path")
+    reviews: str = Field(..., description="Reviews directory path")
 
 
 class StructureInfoResult(StructureBaseModel):

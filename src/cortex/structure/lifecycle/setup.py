@@ -68,6 +68,7 @@ class StructureSetup:
             self.config.get_path("plans") / "archived",
             self.config.get_path("config"),
             self.config.get_path("archived"),
+            self.config.get_path("reviews"),
         ]
 
     def _process_directory_creation(

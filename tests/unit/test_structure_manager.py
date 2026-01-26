@@ -636,6 +636,7 @@ class TestStructureInfo:
         assert "root" in paths
         assert "memory_bank" in paths
         assert "rules" in paths
+        assert "reviews" in paths
 
     def test_get_structure_info_includes_existence_status(self, tmp_path: Path):
         """Test structure info includes directory existence status."""
