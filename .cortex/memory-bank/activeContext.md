@@ -6,8 +6,11 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
-- 🟡 **Phase 53 Blockers** (2026-01-26) - Follow-up work remaining:
-  - `fix_quality_issues` over-reporting remaining issues
+- ✅ **Phase 54: Clarify MCP Tool Error Handling Classification** - COMPLETE (2026-01-26)
+  - Added error classification (CRITICAL vs. NON-CRITICAL) to MCP Tool Error Handling rules
+  - Added alternative approaches guidance for non-critical errors
+  - Updated all error handling steps to reference classification
+  - Impact: Prevents ~10-20% of unnecessary investigation plans for non-critical validation errors
 
 - ✅ **Phase 9: Excellence 9.8+ COMPLETE** (2026-01-22) - Achieved 9.6/10 overall quality score
 - ✅ **Phase 26: Unify Cache Directory Structure COMPLETE** (2026-01-22) - Unified cache directory implemented

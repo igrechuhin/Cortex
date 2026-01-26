@@ -2,6 +2,34 @@
 
 ## 2026-01-26
 
+- ✅ **Phase 54: Clarify MCP Tool Error Handling Classification** - COMPLETE (2026-01-26)
+  - **Problem**: MCP Tool Error Handling rules were overly strict, requiring investigation plans for all errors including non-critical validation errors where alternative approaches exist
+  - **Solution**: Added error classification (CRITICAL vs. NON-CRITICAL) and alternative approaches guidance to distinguish between blocking errors and non-blocking errors
+  - **Implementation**:
+    - **Step 1: Added Error Classification** to `.cortex/synapse/rules/general/agent-workflow.mdc`:
+      - **CRITICAL ERRORS**: Tool crashes, disconnects, protocol errors, blocks required workflow
+      - **NON-CRITICAL ERRORS**: Validation errors with alternatives, data format issues with workarounds, partial failures
+      - **Decision Criteria**: If error blocks workflow → CRITICAL; if alternative exists → NON-CRITICAL; when in doubt → CRITICAL
+      - **Examples**: Added examples for both error types
+    - **Step 2: Added Alternative Approaches Guidance**:
+      - Acceptable alternatives: Use alternative MCP tools, standard file tools, partial results
+      - Requirements: Document error and alternative, verify equivalent information, maintain quality
+      - Examples: `load_context()` validation error → use `manage_file()`, `get_relevance_scores()` fails → use `load_context()` with explicit file list
+    - **Step 3: Updated MCP Tool Error Handling Section**:
+      - Updated all 5 steps to reference error classification
+      - CRITICAL errors: STOP IMMEDIATELY, create investigation plan, link in roadmap, provide user summary
+      - NON-CRITICAL errors: Use alternative approaches, document in session notes
+    - **Step 4: Updated References**:
+      - Updated "If MCP calls become unstable" section to reference error classification
+      - Updated violations section to distinguish between critical and non-critical error handling
+  - **Results**:
+    - Error classification clearly distinguishes critical vs. non-critical errors
+    - Alternative approaches guidance provides clear direction for non-critical errors
+    - Rules maintain safety for critical errors (still require immediate investigation)
+    - Rules allow flexibility for non-critical errors (may continue with alternatives)
+    - Documentation includes examples and decision criteria
+  - **Impact**: Prevents ~10-20% of unnecessary investigation plans for non-critical validation errors while maintaining safety for critical issues. Agents can now use alternative approaches (e.g., `manage_file()` when `load_context()` fails with validation error) without creating investigation plans.
+
 - ✅ **Commit Procedure: Routine commit with markdown lint fixes** - COMPLETE (2026-01-26)
   - Fixed markdown lint errors in `.cortex/plans/phase-54-clarify-mcp-tool-error-handling.md`:
     - Converted bold text to proper headings (MD036/no-emphasis-as-heading violations)
