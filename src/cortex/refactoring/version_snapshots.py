@@ -80,7 +80,7 @@ async def _file_has_snapshot(
         True if file has matching snapshot
     """
     file_meta = await metadata_index.get_file_metadata(rel_path)
-    version_history = _extract_version_history(file_meta)
+    version_history = _extract_version_history(cast(JsonValue, file_meta))
     if version_history is None:
         return False
 
@@ -108,7 +108,7 @@ async def get_version_history(
     if file_meta is None:
         return None
 
-    return _extract_version_history(file_meta)
+    return _extract_version_history(cast(JsonValue, file_meta))
 
 
 def find_snapshot_version(

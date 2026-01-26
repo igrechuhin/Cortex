@@ -149,7 +149,7 @@ async def parse_file_links(file_name: str, project_root: str | None = None) -> s
 
 async def _parse_and_count_links(
     link_parser: LinkParser, content: str
-) -> tuple[ModelDict, dict[str, int]]:
+) -> tuple[ModelDict, ModelDict]:
     """Parse links and count them.
 
     Args:
@@ -178,7 +178,7 @@ async def _parse_and_count_links(
             if isinstance(target, str) and target:
                 unique_files.add(target)
 
-    summary = {
+    summary: ModelDict = {
         "markdown_links": len(markdown_links),
         "transclusions": len(transclusions),
         "total": len(markdown_links) + len(transclusions),
@@ -195,7 +195,8 @@ async def _parse_file_content(
     link_parser = await get_manager(mgrs, "link_parser", LinkParser)
     fs_manager = await get_manager(mgrs, "fs", FileSystemManager)
     content, _ = await fs_manager.read_file(file_path)
-    return await _parse_and_count_links(link_parser, content)
+    parsed, summary = await _parse_and_count_links(link_parser, content)
+    return parsed, summary
 
 
 async def _get_validated_file_path(

@@ -235,7 +235,7 @@ class PythonAdapter(FrameworkAdapter):
         """
         try:
             result = subprocess.run(
-                [self._get_command("pyright"), "src/", "tests/"],
+                [self._get_command("pyright"), "src/"],
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,

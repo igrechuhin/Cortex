@@ -398,7 +398,7 @@ class StructureAnalyzer:
     def _build_complexity_metrics(
         self,
         max_depth: int,
-        cyclomatic_complexity: float,
+        cyclomatic_complexity: int,
         avg_dependencies: float,
         max_fan_in: int,
         max_fan_out: int,
@@ -410,7 +410,7 @@ class StructureAnalyzer:
         """Build ComplexityMetrics from calculated values."""
         return ComplexityMetrics(
             max_dependency_depth=max_depth,
-            cyclomatic_complexity=cyclomatic_complexity,
+            cyclomatic_complexity=int(cyclomatic_complexity),
             avg_dependencies_per_file=round(avg_dependencies, 2),
             max_fan_in=max_fan_in,
             max_fan_out=max_fan_out,

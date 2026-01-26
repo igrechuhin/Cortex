@@ -476,7 +476,7 @@ class RollbackManager:
         """Check if file has snapshot with matching ID."""
         file_meta = await self.metadata_index.get_file_metadata(rel_path)
 
-        version_history = _extract_version_history(file_meta)
+        version_history = _extract_version_history(cast(JsonValue, file_meta))
         if version_history is None:
             return False
 
@@ -517,7 +517,7 @@ class RollbackManager:
             # Get metadata to check for external modifications
             metadata = await self.metadata_index.get_file_metadata(file_path)
             if metadata:
-                stored_hash = _extract_content_hash(metadata)
+                stored_hash = _extract_content_hash(cast(JsonValue, metadata))
                 if stored_hash and stored_hash != current_hash:
                     conflicts.append(f"{file_path} - File has been manually edited")
 
@@ -630,7 +630,7 @@ class RollbackManager:
             Version history list (Pydantic models) or None if not found
         """
         file_meta = await self.metadata_index.get_file_metadata(file_path)
-        return _extract_version_history(file_meta)
+        return _extract_version_history(cast(JsonValue, file_meta))
 
     def _find_snapshot_version(
         self, version_history: list[VersionMetadata], snapshot_id: str
@@ -692,7 +692,7 @@ class RollbackManager:
             # Get current version count
             file_meta = await self.metadata_index.get_file_metadata(file_path)
             version_count = 0
-            version_history = _extract_version_history(file_meta)
+            version_history = _extract_version_history(cast(JsonValue, file_meta))
             if version_history is not None:
                 version_count = len(version_history)
 
@@ -772,8 +772,10 @@ class RollbackManager:
                 "error": f"No snapshot found for execution {execution_id}",
             }
 
-        affected_files = await self.get_affected_files(execution_id, snapshot_id)
-        conflicts = await self.detect_conflicts(affected_files, snapshot_id)
+        affected_files_list = await self.get_affected_files(execution_id, snapshot_id)
+        conflicts_list = await self.detect_conflicts(affected_files_list, snapshot_id)
+        affected_files = [cast(ModelDict, {"file": f}) for f in affected_files_list]
+        conflicts = [cast(ModelDict, {"file": f}) for f in conflicts_list]
         return self._build_rollback_impact_result(
             execution_id, affected_files, conflicts
         )

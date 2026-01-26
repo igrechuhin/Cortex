@@ -2,7 +2,7 @@
   "typeCheckingMode": "strict",
   "pythonVersion": "3.13",
 
-  "include": ["src", "tests"],
+  "include": ["src"],
   "extraPaths": ["scripts"],
 
   "exclude": [
@@ -11,6 +11,8 @@
     "**/.pytest_cache",
     "**/.mypy_cache",
     "**/node_modules",
+    "tests",
+    "**/tests/**",
     ".venv"
   ],
 

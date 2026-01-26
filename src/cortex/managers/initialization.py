@@ -855,7 +855,7 @@ async def _handle_modified_file(
     """Handle created or modified file event."""
     content, content_hash = await fs_manager.read_file(file_path)
     sections_raw = fs_manager.parse_sections(content)
-    sections = sections_raw
+    sections = [section.model_dump(mode="json") for section in sections_raw]
     token_count = token_counter.count_tokens(content)
 
     await metadata_index.update_file_metadata(

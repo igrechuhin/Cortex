@@ -4,7 +4,9 @@
 
 ### Active Work
 
-- ✅ [Phase 53: Type Safety Cleanup](../plans/phase-53-type-safety-cleanup.md) - COMPLETE (2026-01-25) - Final sweep complete for `src/` (no remaining `: dict[str, object]`, `list[object]`, or `Any`). Typecheck is clean (`pyright src`: 0 errors). Full test suite passing (**2741 passed, 2 skipped**), coverage gate met (**90.02%**).
+- ✅ **Commit Procedure: Fixed Function Length Violations and Test Failures** - COMPLETE (2026-01-26) - Fixed 2 function length violations in `metadata_index.py` and resolved 27 test failures. All tests now passing (2743 passed, 2 skipped), coverage at 90.06%. All code quality gates passing.
+
+- ✅ [Phase 53: Type Safety Cleanup](../plans/archive/Phase53/phase-53-type-safety-cleanup.md) - COMPLETE (2026-01-25) - Final sweep complete for `src/` (no remaining `: dict[str, object]`, `list[object]`, or `Any`). Typecheck is clean (`pyright src`: 0 errors). Full test suite passing (**2743 passed, 2 skipped**), coverage gate met (**90.06%**).
 
 - ✅ [Phase 9: Excellence 9.8+](../plans/phase-9-excellence-98d) - COMPLETE (2026-01-22) - Achieved 9.6/10 overall quality score across all metrics
 
@@ -206,7 +208,7 @@
 
 - 🟡 **Phase 53 Blocker: `fix_quality_issues` over-reporting remaining issues** - IN PROGRESS (2026-01-25) - `fix_quality_issues()` reports large `"remaining_issues"` counts (e.g., “4175 errors remain”) even when `pyright src` is clean and tests/coverage pass. Plan: [phase-53-investigate-fix-quality-issues-overreporting.md](../plans/phase-53-investigate-fix-quality-issues-overreporting.md)
 
-- ✅ **Phase 53 Blocker: `fix_quality_issues` runtime failure** - COMPLETE (2026-01-25) - Previously failed with `"'CheckResult' object is not subscriptable"`. No longer reproduces in local `.venv` run; keep regression coverage in `tests/unit/test_pre_commit_tools.py`. Plan: [phase-53-investigate-fix-quality-issues-checkresult-subscriptable.md](../plans/phase-53-investigate-fix-quality-issues-checkresult-subscriptable.md)
+- ✅ **Phase 53 Blocker: `fix_quality_issues` runtime failure** - COMPLETE (2026-01-25) - Previously failed with `"'CheckResult' object is not subscriptable"`. No longer reproduces in local `.venv` run; keep regression coverage in `tests/unit/test_pre_commit_tools.py`. Plan: [phase-53-investigate-fix-quality-issues-checkresult-subscriptable.md](../plans/archive/Phase53/phase-53-investigate-fix-quality-issues-checkresult-subscriptable.md)
 
 - ✅ **Phase 15: Investigate MCP Tool Project Root Resolution** - COMPLETE (2026-01-13) - Fixed project root detection to automatically find `.cortex/` directory when `project_root=None` - MCP tools now work reliably without explicit `project_root` parameter
 - ✅ **Phase 16: Validate Memory Bank Timestamps Command** - COMPLETE (2026-01-13) - Implemented timestamp validation as MCP tool `validate(check_type="timestamps")` in `validation_operations.py` - Added timestamp scanning and validation logic, wired into commit workflow Step 9 - Timestamp validation now enforced before commits via structured MCP tool
@@ -223,6 +225,8 @@
 ### Future Enhancements
 
 - **Multi-Language Pre-Commit Support** - PLANNED - Add support for additional language adapters beyond Python in `pre_commit_tools.py` - Currently only Python adapter is implemented (`PythonAdapter`) - Location: `src/cortex/tools/pre_commit_tools.py:100` - TODO: Add other language adapters as needed (e.g., JavaScript/TypeScript, Rust, Go, Java, etc.) - This would enable pre-commit checks for multi-language projects
+
+- **Multi-Language Validation Support** - PLANNED - Add support for additional language adapters in validation operations - Currently validation operations may need language-specific adapters - Location: `src/cortex/tools/validation_operations.py:351` - TODO: Add other language adapters as needed (e.g., JavaScript/TypeScript, Rust, Go, Java, etc.) - This would enable validation checks for multi-language projects
 
 ### Planned Phases
 

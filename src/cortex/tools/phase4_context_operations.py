@@ -114,7 +114,7 @@ async def _read_all_files_for_context_loading(
 
             metadata_raw = await metadata_index.get_file_metadata(file_name)
             if metadata_raw:
-                files_metadata[file_name] = metadata_raw
+                files_metadata[file_name] = cast(ModelDict, metadata_raw)
         except FileNotFoundError:
             continue
 

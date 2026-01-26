@@ -143,12 +143,13 @@ async def _collect_base_stats(
     version_manager = await get_manager(mgrs, "versions", VersionManager)
 
     index_stats = await metadata_index.get_stats()
-    files_metadata = await metadata_index.get_all_files_metadata()
+    files_metadata_raw = await metadata_index.get_all_files_metadata()
+    files_metadata = {k: cast(ModelDict, v) for k, v in files_metadata_raw.items()}
     history_size = await _get_history_size(root, version_manager)
 
     totals = calculate_totals(files_metadata)
     result_dict = _build_base_stats_result(
-        root, files_metadata, totals, history_size, index_stats
+        root, files_metadata, totals, history_size, cast(ModelDict, index_stats)
     )
     return result_dict, totals[0]
 

@@ -221,7 +221,9 @@ class MigrationManager:
             version_manager, md_file, content, size_bytes, token_count, content_hash
         )
 
-        await metadata_index.add_version_to_history(md_file.name, version_meta)
+        await metadata_index.add_version_to_history(
+            md_file.name, version_meta.model_dump(mode="json")
+        )
 
     async def _update_file_metadata_for_migration(
         self,
@@ -233,6 +235,7 @@ class MigrationManager:
         sections: list[SectionMetadata],
     ) -> None:
         """Update file metadata for migration."""
+        sections_dict = [section.model_dump(mode="json") for section in sections]
         await metadata_index.update_file_metadata(
             file_name=md_file.name,
             path=md_file,
@@ -240,7 +243,7 @@ class MigrationManager:
             size_bytes=size_bytes,
             token_count=token_count,
             content_hash=content_hash,
-            sections=sections,
+            sections=sections_dict,
             change_source="migration",
         )
 
@@ -277,7 +280,14 @@ class MigrationManager:
         """
         dep_graph = cast(DependencyGraph, managers["graph"])
         metadata_index = cast(MetadataIndex, managers["index"])
-        graph_dict = dep_graph.to_dict()
+        graph_export = dep_graph.to_dict()
+        # Handle both Pydantic models and dicts (for tests with mocks)
+        if hasattr(graph_export, "model_dump"):
+            graph_dict = graph_export.model_dump(mode="json")
+        elif isinstance(graph_export, dict):
+            graph_dict = cast(dict[str, object], graph_export)
+        else:
+            graph_dict = {}
         await metadata_index.update_dependency_graph(graph_dict)
 
     async def _handle_migration_error(

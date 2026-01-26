@@ -186,7 +186,7 @@ class ProgressiveLoader:
         new_cumulative = cumulative_tokens + tokens
         metadata_obj = await self.metadata_index.get_file_metadata(file_name)
         metadata = _build_file_content_metadata(
-            metadata_obj,
+            cast(ModelDict | None, metadata_obj),
             tokens=tokens,
             priority=depth,
         )
@@ -350,7 +350,10 @@ class ProgressiveLoader:
                 return None
 
             metadata = _build_file_content_metadata(
-                await self.metadata_index.get_file_metadata(file_name),
+                cast(
+                    ModelDict | None,
+                    await self.metadata_index.get_file_metadata(file_name),
+                ),
                 tokens=tokens,
                 priority=None,
             )
@@ -445,7 +448,10 @@ class ProgressiveLoader:
                 return None
 
             metadata = _build_file_content_metadata(
-                await self.metadata_index.get_file_metadata(file_name),
+                cast(
+                    ModelDict | None,
+                    await self.metadata_index.get_file_metadata(file_name),
+                ),
                 tokens=tokens,
                 priority=None,
             )
@@ -707,7 +713,9 @@ async def _build_priority_loaded_content(
     cumulative_tokens += tokens
     more_available = priority < len(priority_order) - 1
     metadata = _build_file_content_metadata(
-        await loader.metadata_index.get_file_metadata(file_name),
+        cast(
+            ModelDict | None, await loader.metadata_index.get_file_metadata(file_name)
+        ),
         tokens=tokens,
         priority=priority,
     )

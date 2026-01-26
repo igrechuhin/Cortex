@@ -14,6 +14,50 @@ from .retry import retry_async
 SectionType = Mapping[str, str | int | object]
 
 
+def _normalize_sections(
+    sections: Sequence[SectionType | object],
+) -> list[SectionType]:
+    """Normalize sections to SectionType (dict-like) format.
+
+    Converts SectionMetadata objects to dicts if needed.
+    """
+    from cortex.core.models import SectionMetadata
+
+    normalized: list[SectionType] = []
+    for section in sections:
+        if isinstance(section, SectionMetadata):
+            normalized.append(section.model_dump(mode="json"))
+        elif isinstance(section, Mapping):
+            normalized.append(cast(SectionType, section))
+        else:
+            normalized.append(_extract_section_mapping(section))
+    return normalized
+
+
+def _extract_section_mapping(section: object) -> SectionType:
+    """Best-effort conversion of a section to a mapping."""
+    try:
+        raw = vars(section)
+    except TypeError:
+        return cast(SectionType, {})
+    return cast(SectionType, raw)
+
+
+def _try_model_dump(value: object) -> dict[str, object] | None:
+    """Best-effort call to Pydantic-style model_dump()."""
+    model_dump_raw: object = getattr(value, "model_dump", None)
+    if not callable(model_dump_raw):
+        return None
+
+    try:
+        dumped = model_dump_raw(mode="json")
+    except TypeError:
+        return None
+    if isinstance(dumped, dict):
+        return cast(dict[str, object], dumped)
+    return None
+
+
 class MetadataIndex:
     """
     Manages the .cortex/index.json file with:
@@ -192,6 +236,35 @@ class MetadataIndex:
         await self.save()
         return self._data
 
+    def _prepare_file_metadata_update(
+        self,
+        files_dict: dict[str, object],
+        file_name: str,
+        path: Path,
+        exists: bool,
+        change_source: str,
+        sections: Sequence[SectionType],
+    ) -> tuple[dict[str, object], str, list[SectionType]]:
+        """Prepare file metadata for update.
+
+        Args:
+            files_dict: Files dictionary from index
+            file_name: Name of file
+            path: Absolute path to file
+            exists: Whether file exists
+            change_source: "internal" or "external"
+            sections: List of section metadata dicts
+
+        Returns:
+            Tuple of (file_meta dict, current timestamp ISO string, normalized sections)
+        """
+        file_meta = self._get_or_create_file_metadata(
+            files_dict, file_name, path, exists, change_source
+        )
+        now = datetime.now().isoformat()
+        normalized_sections = _normalize_sections(sections)
+        return file_meta, now, normalized_sections
+
     async def update_file_metadata(
         self,
         file_name: str,
@@ -220,15 +293,41 @@ class MetadataIndex:
             _ = await self.load()
 
         files_dict = self._get_files_dict()
-        file_meta = self._get_or_create_file_metadata(
-            files_dict, file_name, path, exists, change_source
+        file_meta, now, normalized_sections = self._prepare_file_metadata_update(
+            files_dict, file_name, path, exists, change_source, sections
         )
 
-        now = datetime.now().isoformat()
         self._update_file_metadata_fields(
-            file_meta, exists, size_bytes, token_count, content_hash, sections, now
+            file_meta,
+            exists,
+            size_bytes,
+            token_count,
+            content_hash,
+            normalized_sections,
+            now,
         )
 
+        await self._finalize_file_metadata_update(
+            files_dict, file_name, file_meta, change_source, now
+        )
+
+    async def _finalize_file_metadata_update(
+        self,
+        files_dict: dict[str, object],
+        file_name: str,
+        file_meta: dict[str, object],
+        change_source: str,
+        now: str,
+    ):
+        """Finalize file metadata update and save.
+
+        Args:
+            files_dict: Files dictionary from index
+            file_name: Name of file
+            file_meta: File metadata dictionary
+            change_source: "internal" or "external"
+            now: Current timestamp ISO string
+        """
         if change_source == "internal":
             file_meta["last_read"] = now
 
@@ -360,46 +459,86 @@ class MetadataIndex:
             }
         )
 
+    def _convert_version_meta_to_dict(
+        self, version_meta: dict[str, object] | object
+    ) -> dict[str, object] | None:
+        """Convert version metadata to dict format.
+
+        Args:
+            version_meta: Version metadata dict or VersionMetadata object
+
+        Returns:
+            Version metadata dict or None if conversion fails
+        """
+        from cortex.core.models import VersionMetadata
+
+        if isinstance(version_meta, VersionMetadata):
+            return version_meta.model_dump(mode="json")
+        version_meta_dict = _try_model_dump(version_meta)
+        if version_meta_dict is None and isinstance(version_meta, dict):
+            return cast(dict[str, object], version_meta)
+        return version_meta_dict
+
+    def _get_file_meta_for_version_update(
+        self, file_name: str
+    ) -> dict[str, object] | None:
+        """Get file metadata for version update.
+
+        Args:
+            file_name: Name of file
+
+        Returns:
+            File metadata dict or None if not found
+        """
+        if self._data is None:
+            return None
+
+        files = self._data.get("files", {})
+        if not isinstance(files, dict) or file_name not in files:
+            return None
+
+        files_typed = cast(dict[str, object], files)
+        file_meta_raw: object = files_typed[file_name]
+        if not isinstance(file_meta_raw, dict):
+            return None
+
+        return cast(dict[str, object], file_meta_raw)
+
     async def add_version_to_history(
-        self, file_name: str, version_meta: dict[str, object]
+        self, file_name: str, version_meta: dict[str, object] | object
     ):
         """
         Add a version entry to file's history.
 
         Args:
             file_name: Name of file
-            version_meta: Version metadata dict
+            version_meta: Version metadata dict or VersionMetadata object
         """
+        version_meta_dict = self._convert_version_meta_to_dict(version_meta)
+        if version_meta_dict is None:
+            return
+
         if self._data is None:
             _ = await self.load()
 
         if self._data is None:
             return
 
-        files = self._data.get("files", {})
-        if not isinstance(files, dict) or file_name not in files:
+        file_meta = self._get_file_meta_for_version_update(file_name)
+        if file_meta is None:
             return
 
-        files_typed = cast(dict[str, object], files)
-        file_meta_raw: object = files_typed[file_name]
-        if not isinstance(file_meta_raw, dict):
-            return
+        file_meta["current_version"] = version_meta_dict["version"]
 
-        file_meta: dict[str, object] = cast(dict[str, object], file_meta_raw)
-
-        # Increment version number
-        file_meta["current_version"] = version_meta["version"]
-
-        # Add to history
         if "version_history" not in file_meta:
             file_meta["version_history"] = []
 
         version_history_raw = file_meta.get("version_history")
         if isinstance(version_history_raw, list):
             version_history = cast(list[dict[str, object]], version_history_raw)
-            version_history.append(version_meta)
+            version_history.append(version_meta_dict)
         else:
-            file_meta["version_history"] = [version_meta]
+            file_meta["version_history"] = [version_meta_dict]
 
         await self.save()
 

@@ -24,15 +24,6 @@ from cortex.managers.manager_utils import get_manager
 from cortex.optimization.rules_manager import RulesManager
 from cortex.rules.synapse_manager import SynapseManager
 from cortex.server import mcp
-from cortex.tools.synapse_tools_helpers import (
-    extract_and_format_rules,
-    extract_rules_list,
-    format_language_rules_list,
-    format_rules_list,
-    format_rules_response,
-    parse_project_files,
-    validate_rules_manager,
-)
 
 
 class _ModelDumpable(Protocol):
@@ -378,9 +369,9 @@ async def get_synapse_rules(
         }
     """
     try:
-        from cortex.tools.synapse_tools_helpers import _execute_rules_with_context
+        from cortex.tools.synapse_tools_helpers import execute_rules_with_context
 
-        result = await _execute_rules_with_context(
+        result = await execute_rules_with_context(
             task_description,
             max_tokens,
             min_relevance_score,

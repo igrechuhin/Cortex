@@ -18,7 +18,7 @@ from cortex.core.exceptions import (
 )
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import ModelDict, SectionMetadata, VersionMetadata
+from cortex.core.models import JsonValue, ModelDict, SectionMetadata, VersionMetadata
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
@@ -327,7 +327,7 @@ async def _handle_read_operation(
     if include_metadata:
         metadata = await metadata_index.get_file_metadata(file_name)
         if isinstance(metadata, dict):
-            response["metadata"] = metadata
+            response["metadata"] = cast(JsonValue, metadata)
     return json.dumps(response, indent=2)
 
 
@@ -446,7 +446,8 @@ async def update_file_metadata(
     version_info: VersionMetadata,
 ) -> None:
     """Update file metadata and version history."""
-    sections = extract_sections(content)
+    sections_raw = extract_sections(content)
+    sections = [section.model_dump(mode="json") for section in sections_raw]
     await metadata_index.update_file_metadata(
         file_name,
         path=file_path,
@@ -457,7 +458,9 @@ async def update_file_metadata(
         sections=sections,
         change_source="internal",
     )
-    await metadata_index.add_version_to_history(file_name, version_info)
+    await metadata_index.add_version_to_history(
+        file_name, version_info.model_dump(mode="json")
+    )
 
 
 def extract_sections(content: str) -> list[SectionMetadata]:

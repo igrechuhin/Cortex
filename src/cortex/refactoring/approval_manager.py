@@ -529,6 +529,27 @@ class ApprovalManager:
             approvals=sorted_approvals,
         )
 
+    def _calculate_approval_statistics(
+        self, approvals: list[ApprovalModel]
+    ) -> dict[str, int]:
+        """Calculate approval statistics from list of approvals."""
+        total = len(approvals)
+        approved = len(
+            [a for a in approvals if a.status == ApprovalStatusEnum.APPROVED]
+        )
+        rejected = len(
+            [a for a in approvals if a.status == ApprovalStatusEnum.REJECTED]
+        )
+        pending = len([a for a in approvals if a.status == ApprovalStatusEnum.PENDING])
+        applied = len([a for a in approvals if a.status == ApprovalStatusEnum.APPLIED])
+        return {
+            "total": total,
+            "approved": approved,
+            "rejected": rejected,
+            "pending": pending,
+            "applied": applied,
+        }
+
     async def cleanup_expired_approvals(
         self, expiry_days: int = 30
     ) -> CleanupExpiredApprovalsResult:

@@ -14,7 +14,6 @@ from cortex.core.models import (
     ReorganizationActionPreview,
     ReorganizationPreview,
     StructureComparison,
-    StructureMetrics,
 )
 from cortex.refactoring.models import (
     DependencyGraphInput,
@@ -133,7 +132,7 @@ class ReorganizationPlanner:
             structure_data
             if isinstance(structure_data, MemoryBankStructureData)
             else MemoryBankStructureData.model_validate(
-                self._normalize_structure_data_input(structure_data)
+                self._normalize_structure_data_input(cast(ModelDict, structure_data))
             )
         )
         graph_model = (
@@ -185,6 +184,58 @@ class ReorganizationPlanner:
             actions=actions,
             structure_comparison=structure_comparison,
         )
+
+    def _build_action_previews(
+        self, plan: ReorganizationPlanModel
+    ) -> list[ReorganizationActionPreview]:
+        """Build action previews from plan."""
+        actions: list[ReorganizationActionPreview] = []
+        for action in plan.actions:
+            actions.append(
+                ReorganizationActionPreview(
+                    type=action.action_type,
+                    description=f"{action.action_type}: {action.source} -> {action.target}",
+                    reason=action.reason,
+                )
+            )
+        return actions
+
+    def _build_structure_comparison(
+        self, plan: ReorganizationPlanModel
+    ) -> StructureComparison:
+        """Build structure comparison from plan."""
+        from cortex.core.models import StructureMetrics
+
+        current_metrics = StructureMetrics(
+            total_files=plan.current_structure.total_files,
+            max_depth=plan.current_structure.dependency_depth,
+            files_by_category={
+                k: len(v) for k, v in plan.current_structure.categories.items()
+            },
+            organization=plan.current_structure.organization,
+        )
+        proposed_metrics = StructureMetrics(
+            total_files=plan.proposed_structure.total_files,
+            max_depth=plan.proposed_structure.dependency_depth,
+            files_by_category={
+                k: len(v) for k, v in plan.proposed_structure.categories.items()
+            },
+            organization=plan.proposed_structure.organization,
+        )
+        return StructureComparison(
+            current=current_metrics,
+            proposed=proposed_metrics,
+        )
+
+    def _build_preview_details(
+        self, plan: ReorganizationPlanModel, show_details: bool
+    ) -> tuple[list[ReorganizationActionPreview], StructureComparison | None]:
+        """Build preview details from reorganization plan."""
+        actions = self._build_action_previews(plan) if show_details else []
+        structure_comparison = (
+            self._build_structure_comparison(plan) if show_details else None
+        )
+        return actions, structure_comparison
 
     def _validate_reorganization_inputs(
         self,

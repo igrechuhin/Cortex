@@ -11,43 +11,31 @@ import json
 from typing import Literal
 
 from cortex.managers.initialization import get_managers, get_project_root
-from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.refactoring.approval_manager import ApprovalManager
 from cortex.refactoring.learning_engine import LearningEngine
 from cortex.refactoring.models import (
-    ApprovalModel,
-    ApproveResult,
-    ExecutionResult,
     FeedbackRecordResult,
     RefactoringSuggestionModel,
-    RollbackRefactoringResult,
-)
-from cortex.refactoring.models import (
-    ApprovalStatus as ApprovalStatusEnum,
 )
 from cortex.refactoring.refactoring_engine import (
     RefactoringEngine,
 )
-from cortex.refactoring.refactoring_executor import RefactoringExecutor
-from cortex.refactoring.rollback_manager import RollbackManager
 from cortex.server import mcp
 from cortex.tools.phase5_execution_errors import (
     create_execution_error_response,
     create_invalid_action_error,
     create_missing_param_error,
 )
-from cortex.tools.phase5_execution_helpers import (
-    _check_approval_status,
-    _extract_feedback_managers,
-    _record_feedback_and_build_result,
-)
 from cortex.tools.phase5_execution_handlers import (
-    _apply_approved_refactoring,
-    _get_suggestion,
-    _handle_approve_action,
-    _handle_apply_action,
-    _handle_rollback_action,
+    handle_apply_action,
+    handle_approve_action,
+    handle_rollback_action,
+)
+from cortex.tools.phase5_execution_helpers import (
+    check_approval_status,
+    extract_feedback_managers,
+    record_feedback_and_build_result,
 )
 
 
@@ -407,15 +395,15 @@ async def _dispatch_refactoring_action(
 ) -> str:
     """Dispatch refactoring action to appropriate handler."""
     if action == "approve":
-        return await _handle_approve_action(
+        return await handle_approve_action(
             mgrs, suggestion_id, user_comment, auto_apply
         )
     if action == "apply":
-        return await _handle_apply_action(
+        return await handle_apply_action(
             mgrs, suggestion_id, approval_id, dry_run, validate_first
         )
     if action == "rollback":
-        return await _handle_rollback_action(
+        return await handle_rollback_action(
             mgrs, execution_id, restore_snapshot, preserve_manual_changes, dry_run
         )
     return create_invalid_action_error(action)
@@ -434,15 +422,6 @@ def _validate_apply_refactoring_params(
     if action not in {"approve", "apply", "rollback"}:
         return create_invalid_action_error(action)
     return None
-
-
-def _create_suggestion_not_found_error(suggestion_id: str) -> ExecutionResult:
-    """Create error response for suggestion not found."""
-    return ExecutionResult(
-        status="validation_failed",
-        execution_id="",
-        error=f"Suggestion '{suggestion_id}' not found",
-    )
 
 
 @mcp.tool()
@@ -568,7 +547,7 @@ async def provide_feedback(
     try:
         root = get_project_root(project_root)
         mgrs = await get_managers(root)
-        managers = await _extract_feedback_managers(mgrs)
+        managers = await extract_feedback_managers(mgrs)
         suggestion = await _get_suggestion_for_feedback(managers[1], suggestion_id)
         if isinstance(suggestion, str):
             return suggestion
@@ -626,9 +605,9 @@ async def _process_feedback(
         Feedback record result model
     """
     approvals = await approval_manager.get_approvals_for_suggestion(suggestion_id)
-    was_approved, was_applied = _check_approval_status(approvals)
+    was_approved, was_applied = check_approval_status(approvals)
 
-    result = await _record_feedback_and_build_result(
+    result = await record_feedback_and_build_result(
         learning_engine,
         suggestion,
         suggestion_id,

@@ -490,8 +490,9 @@ class TestMigrate:
             patch("cortex.core.migration.DependencyGraph"),
         ):
             # Setup async mocks for manager instances
-            mock_fs = AsyncMock()
+            mock_fs = MagicMock()
             mock_fs.read_file = AsyncMock(return_value=("# Test", "hash123"))
+            mock_fs.parse_sections = MagicMock(return_value=[])
             mock_fs_class.return_value = mock_fs
 
             mock_metadata = AsyncMock()

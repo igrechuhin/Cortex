@@ -347,6 +347,8 @@ async def _update_rollback_metadata(
     Returns:
         New version number
     """
+    sections_raw = rollback_data.sections
+    sections = [section.model_dump(mode="json") for section in sections_raw]
     await metadata_index.update_file_metadata(
         file_name=file_name,
         path=file_path,
@@ -354,7 +356,7 @@ async def _update_rollback_metadata(
         size_bytes=rollback_data.size_bytes,
         token_count=rollback_data.token_count,
         content_hash=rollback_data.content_hash,
-        sections=rollback_data.sections,
+        sections=sections,
         change_source="rollback",
     )
 
@@ -399,7 +401,9 @@ async def _finalize_rollback(
         change_description=f"Rolled back to version {rolled_back_from_version}",
     )
 
-    await metadata_index.add_version_to_history(file_name, version_meta)
+    await metadata_index.add_version_to_history(
+        file_name, version_meta.model_dump(mode="json")
+    )
     await metadata_index.save()
 
 

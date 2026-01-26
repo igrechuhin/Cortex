@@ -34,7 +34,7 @@ async def validate_quality_single_file(
         )
     content, _ = await fs_manager.read_file(file_path)
     file_metadata = await metadata_index.get_file_metadata(file_name)
-    metadata = file_metadata or {}
+    metadata = cast(ModelDict, file_metadata or {})
     score = await quality_metrics.calculate_file_score(file_name, content, metadata)
     return json.dumps(
         {
@@ -47,15 +47,14 @@ async def validate_quality_single_file(
     )
 
 
-async def validate_quality_all_files(
+async def _collect_files_data(
     fs_manager: FileSystemManager,
     metadata_index: MetadataIndex,
-    quality_metrics: QualityMetrics,
-    duplication_detector: DuplicationDetector,
-    root: Path,
-) -> str:
-    """Calculate overall quality score for all files."""
-    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+    memory_bank_dir: Path,
+) -> tuple[
+    dict[str, str], dict[str, DetailedFileMetadata | FileMetadataForQuality | ModelDict]
+]:
+    """Collect file content and metadata."""
     all_files_content: dict[str, str] = {}
     files_metadata: dict[
         str, DetailedFileMetadata | FileMetadataForQuality | ModelDict
@@ -66,7 +65,24 @@ async def validate_quality_all_files(
             all_files_content[md_file.name] = content
             file_meta = await metadata_index.get_file_metadata(md_file.name)
             if isinstance(file_meta, dict):
-                files_metadata[md_file.name] = file_meta
+                files_metadata[md_file.name] = cast(
+                    DetailedFileMetadata | FileMetadataForQuality | ModelDict, file_meta
+                )
+    return all_files_content, files_metadata
+
+
+async def validate_quality_all_files(
+    fs_manager: FileSystemManager,
+    metadata_index: MetadataIndex,
+    quality_metrics: QualityMetrics,
+    duplication_detector: DuplicationDetector,
+    root: Path,
+) -> str:
+    """Calculate overall quality score for all files."""
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+    all_files_content, files_metadata = await _collect_files_data(
+        fs_manager, metadata_index, memory_bank_dir
+    )
     duplication_scan = await duplication_detector.scan_all_files(all_files_content)
     duplication_data = cast(ModelDict, duplication_scan.model_dump(mode="json"))
     overall_score = await quality_metrics.calculate_overall_score(

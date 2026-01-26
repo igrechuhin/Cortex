@@ -450,6 +450,66 @@ def _extract_single_reorganization_operation(
     return None
 
 
+def _create_category_operation_from_action(
+    action: RefactoringActionModel, suggestion_id: str
+) -> RefactoringOperationModel | None:
+    """Create a category operation from RefactoringActionModel."""
+    if not action.target_file:
+        return None
+
+    return RefactoringOperationModel(
+        operation_id=f"{suggestion_id}-create-{action.target_file}",
+        operation_type="create",
+        target_file=action.target_file,
+        parameters=OperationParameters(
+            destination_file=action.target_file,
+            is_directory=True,
+        ),
+        status=RefactoringStatus.PENDING,
+        created_at=datetime.now().isoformat(),
+    )
+
+
+def _create_move_operation_from_action(
+    action: RefactoringActionModel, suggestion_id: str
+) -> RefactoringOperationModel | None:
+    """Create a move operation from RefactoringActionModel."""
+    if not action.target_file or not action.details.destination_file:
+        return None
+
+    return RefactoringOperationModel(
+        operation_id=f"{suggestion_id}-move-{action.target_file}",
+        operation_type="move",
+        target_file=action.target_file,
+        parameters=OperationParameters(
+            source_file=action.target_file,
+            destination_file=action.details.destination_file,
+        ),
+        status=RefactoringStatus.PENDING,
+        created_at=datetime.now().isoformat(),
+    )
+
+
+def _create_rename_operation_from_action(
+    action: RefactoringActionModel, suggestion_id: str
+) -> RefactoringOperationModel | None:
+    """Create a rename operation from RefactoringActionModel."""
+    if not action.target_file or not action.details.destination_file:
+        return None
+
+    return RefactoringOperationModel(
+        operation_id=f"{suggestion_id}-rename-{action.target_file}",
+        operation_type="rename",
+        target_file=action.target_file,
+        parameters=OperationParameters(
+            source_file=action.target_file,
+            new_name=action.details.destination_file,
+        ),
+        status=RefactoringStatus.PENDING,
+        created_at=datetime.now().isoformat(),
+    )
+
+
 def _extract_consolidation_operations(
     suggestion: RefactoringSuggestionModel, suggestion_id: str
 ) -> list[RefactoringOperationModel]:
@@ -527,9 +587,9 @@ def _extract_reorganization_operations(
     """Extract reorganization operations from suggestion."""
     operations: list[RefactoringOperationModel] = []
     action_handlers = {
-        "move": _create_move_operation,
-        "rename": _create_rename_operation,
-        "create_category": _create_category_operation,
+        "move": _create_move_operation_from_action,
+        "rename": _create_rename_operation_from_action,
+        "create_category": _create_category_operation_from_action,
     }
 
     for action in suggestion.actions:
@@ -541,60 +601,3 @@ def _extract_reorganization_operations(
             operations.append(operation)
 
     return operations
-
-
-def _create_move_operation(
-    action: RefactoringActionModel, suggestion_id: str
-) -> RefactoringOperationModel | None:
-    if not action.target_file:
-        return None
-
-    return RefactoringOperationModel(
-        operation_id=f"{suggestion_id}-move-{action.target_file}",
-        operation_type="move",
-        target_file=action.target_file,
-        parameters=OperationParameters(
-            source_file=action.target_file,
-            destination_file=action.details.destination_file,
-        ),
-        status=RefactoringStatus.PENDING,
-        created_at=datetime.now().isoformat(),
-    )
-
-
-def _create_rename_operation(
-    action: RefactoringActionModel, suggestion_id: str
-) -> RefactoringOperationModel | None:
-    if not action.target_file:
-        return None
-
-    return RefactoringOperationModel(
-        operation_id=f"{suggestion_id}-rename-{action.target_file}",
-        operation_type="rename",
-        target_file=action.target_file,
-        parameters=OperationParameters(
-            source_file=action.target_file,
-            new_name=action.details.destination_file,
-        ),
-        status=RefactoringStatus.PENDING,
-        created_at=datetime.now().isoformat(),
-    )
-
-
-def _create_category_operation(
-    action: RefactoringActionModel, suggestion_id: str
-) -> RefactoringOperationModel | None:
-    if not action.target_file:
-        return None
-
-    return RefactoringOperationModel(
-        operation_id=f"{suggestion_id}-create-{action.target_file}",
-        operation_type="create",
-        target_file=action.target_file,
-        parameters=OperationParameters(
-            destination_file=action.target_file,
-            is_directory=True,
-        ),
-        status=RefactoringStatus.PENDING,
-        created_at=datetime.now().isoformat(),
-    )

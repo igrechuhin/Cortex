@@ -56,7 +56,7 @@ def _create_error_result(error_message: str) -> RulesExecutionResult:
     )
 
 
-async def _execute_rules_with_context(
+async def execute_rules_with_context(
     task_description: str,
     max_tokens: int,
     min_relevance_score: float,

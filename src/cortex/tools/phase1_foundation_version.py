@@ -108,7 +108,8 @@ async def _get_file_metadata_for_history(
     root = initialization.get_project_root(project_root)
     mgrs = await initialization.get_managers(root)
     metadata_index = await get_manager(mgrs, "index", MetadataIndex)
-    return await metadata_index.get_file_metadata(file_name)
+    file_meta = await metadata_index.get_file_metadata(file_name)
+    return cast(ModelDict | None, file_meta)
 
 
 def extract_version_history(file_meta: ModelDict) -> list[ModelDict]:

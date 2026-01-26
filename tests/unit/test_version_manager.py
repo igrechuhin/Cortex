@@ -682,6 +682,7 @@ class TestExportVersionHistory:
                 "size_bytes": 100,
                 "token_count": 50,
                 "content_hash": "abc123def456ghi789",
+                "snapshot_path": ".cortex/history/test.md.v1.snapshot",
             },
             {
                 "version": 2,
@@ -690,6 +691,7 @@ class TestExportVersionHistory:
                 "size_bytes": 120,
                 "token_count": 60,
                 "content_hash": "xyz789uvw456rst123",
+                "snapshot_path": ".cortex/history/test.md.v2.snapshot",
             },
         ]
 
@@ -714,6 +716,7 @@ class TestExportVersionHistory:
                 "size_bytes": 100,
                 "token_count": 50,
                 "content_hash": "abc123",
+                "snapshot_path": ".cortex/history/test.md.v1.snapshot",
             },
             {
                 "version": 3,
@@ -722,6 +725,7 @@ class TestExportVersionHistory:
                 "size_bytes": 120,
                 "token_count": 60,
                 "content_hash": "xyz789",
+                "snapshot_path": ".cortex/history/test.md.v3.snapshot",
             },
             {
                 "version": 2,
@@ -730,6 +734,7 @@ class TestExportVersionHistory:
                 "size_bytes": 110,
                 "token_count": 55,
                 "content_hash": "def456",
+                "snapshot_path": ".cortex/history/test.md.v2.snapshot",
             },
         ]
 
@@ -753,6 +758,7 @@ class TestExportVersionHistory:
                 "size_bytes": 100,
                 "token_count": 50,
                 "content_hash": f"hash{i}",
+                "snapshot_path": f".cortex/history/test.md.v{i}.snapshot",
             }
             for i in range(1, 6)
         ]
@@ -779,6 +785,7 @@ class TestExportVersionHistory:
                 "size_bytes": 100,
                 "token_count": 50,
                 "content_hash": "abc123",
+                "snapshot_path": ".cortex/history/test.md.v1.snapshot",
                 "changed_sections": ["Overview", "Features"],
                 "change_description": "Updated features section",
             }
@@ -805,6 +812,7 @@ class TestExportVersionHistory:
                 "size_bytes": 100,
                 "token_count": 50,
                 "content_hash": "abcdefghijklmnopqrstuvwxyz123456",
+                "snapshot_path": ".cortex/history/test.md.v1.snapshot",
             }
         ]
 

@@ -234,7 +234,7 @@ class RefactoringEngine:
             categories = ["consolidation", "split", "reorganization"]
 
         suggestion_models = self._build_suggestions_from_insights(insights, categories)
-        suggestions = self._merge_and_sort_suggestions(
+        suggestions = await self._merge_and_sort_suggestions(
             suggestion_models, structure_data
         )
 

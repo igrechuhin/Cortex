@@ -43,7 +43,9 @@ class LinkValidator:
         """
         content, _ = await self.fs.read_file(file_path)
         parsed = await self.parser.parse_file(content)
-        return parsed["markdown_links"] + parsed["transclusions"]
+        markdown_links = cast(list[dict[str, object]], parsed.get("markdown_links", []))
+        transclusions = cast(list[dict[str, object]], parsed.get("transclusions", []))
+        return markdown_links + transclusions
 
     async def _validate_link_file(
         self, link: dict[str, object]

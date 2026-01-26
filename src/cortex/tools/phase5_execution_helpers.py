@@ -18,7 +18,7 @@ from cortex.refactoring.models import (
 from cortex.refactoring.refactoring_engine import RefactoringEngine
 
 
-async def _extract_feedback_managers(
+async def extract_feedback_managers(
     mgrs: ManagersDict,
 ) -> tuple[LearningEngine, RefactoringEngine, ApprovalManager]:
     """Extract managers needed for feedback operations."""
@@ -30,7 +30,7 @@ async def _extract_feedback_managers(
     return learning_engine, refactoring_engine, approval_manager
 
 
-def _check_approval_status(approvals: list[ApprovalModel]) -> tuple[bool, bool]:
+def check_approval_status(approvals: list[ApprovalModel]) -> tuple[bool, bool]:
     """Check if suggestion was approved or applied."""
     was_approved = False
     was_applied = False
@@ -43,7 +43,7 @@ def _check_approval_status(approvals: list[ApprovalModel]) -> tuple[bool, bool]:
     return was_approved, was_applied
 
 
-async def _record_feedback_and_build_result(
+async def record_feedback_and_build_result(
     learning_engine: LearningEngine,
     suggestion: RefactoringSuggestionModel,
     suggestion_id: str,
