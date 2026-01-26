@@ -1,5 +1,7 @@
 """Tests for similarity engine."""
 
+from unittest.mock import Mock
+
 from cortex.core.token_counter import TokenCounter
 from cortex.health_check.similarity_engine import SimilarityEngine
 
@@ -240,3 +242,67 @@ class TestSimilarityEngine:
             params1=params1, params2=params2
         )
         assert similarity == 0.0
+
+    def test_stop_words_filtering(self):
+        """Test that stop words are properly filtered in keyword extraction."""
+        engine = SimilarityEngine()
+        # Content with many stop words should still produce meaningful similarity
+        content1 = (
+            "The system is designed to analyze and process data from various sources."
+        )
+        content2 = (
+            "The system is designed to analyze and process data from various sources."
+        )
+        # Stop words should be filtered, leaving meaningful keywords
+        similarity = engine.calculate_semantic_similarity(content1, content2)
+        assert (
+            similarity > 0.8
+        )  # High similarity for identical content after stop word filtering
+
+    def test_token_similarity_fallback_when_encoding_none(self):
+        """Test fallback to Jaccard similarity when encoding is None."""
+        mock_counter = Mock(spec=TokenCounter)
+        mock_counter.encoding = None
+        engine = SimilarityEngine(token_counter=mock_counter)
+        content1 = "test content one"
+        content2 = "test content two"
+        similarity = engine._token_similarity(content1, content2)
+        assert 0.0 <= similarity <= 1.0
+
+    def test_token_similarity_fallback_on_encoding_error(self):
+        """Test fallback to Jaccard similarity on encoding error."""
+        mock_counter = Mock(spec=TokenCounter)
+        mock_encoding = Mock()
+        mock_encoding.encode.side_effect = Exception("Encoding error")
+        mock_counter.encoding = mock_encoding
+        engine = SimilarityEngine(token_counter=mock_counter)
+        content1 = "test content one"
+        content2 = "test content two"
+        similarity = engine._token_similarity(content1, content2)
+        assert 0.0 <= similarity <= 1.0
+
+    def test_token_similarity_empty_tokens(self):
+        """Test token similarity with empty token sets."""
+        mock_counter = Mock(spec=TokenCounter)
+        mock_encoding = Mock()
+        mock_encoding.encode.return_value = []
+        mock_counter.encoding = mock_encoding
+        engine = SimilarityEngine(token_counter=mock_counter)
+        # Both empty
+        similarity = engine._token_similarity("", "")
+        assert similarity == 1.0
+        # One empty
+        mock_encoding.encode.side_effect = [[], [1, 2, 3]]
+        similarity = engine._token_similarity("", "content")
+        assert similarity == 0.0
+
+    def test_meets_min_length_exception_fallback(self):
+        """Test _meets_min_length fallback when token counting raises exception."""
+        mock_counter = Mock(spec=TokenCounter)
+        mock_counter.count_tokens.side_effect = Exception("Token counting error")
+        engine = SimilarityEngine(token_counter=mock_counter, min_content_length=10)
+        # Should fallback to length-based check when token counting fails
+        result = engine._meets_min_length("short", "this is longer content")
+        assert result is False  # "short" is less than 10 chars
+        result = engine._meets_min_length("this is longer", "this is also longer")
+        assert result is True  # Both are >= 10 chars

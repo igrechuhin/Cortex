@@ -48,7 +48,7 @@ class PythonAdapter(FrameworkAdapter):
             TestResult with test execution details.
         """
         cmd = self._build_test_command(coverage_threshold, max_failures)
-        return self._execute_test_command(cmd, timeout)
+        return self._execute_test_command(cmd, timeout, coverage_threshold)
 
     def _build_test_command(
         self, coverage_threshold: float, max_failures: int | None
@@ -65,7 +65,9 @@ class PythonAdapter(FrameworkAdapter):
             cmd.extend(["--maxfail", str(max_failures)])
         return cmd
 
-    def _execute_test_command(self, cmd: list[str], timeout: int | None) -> TestResult:
+    def _execute_test_command(
+        self, cmd: list[str], timeout: int | None, coverage_threshold: float = 0.90
+    ) -> TestResult:
         """Execute test command and handle results."""
         try:
             result = subprocess.run(
@@ -76,7 +78,9 @@ class PythonAdapter(FrameworkAdapter):
                 timeout=timeout,
             )
             output = result.stdout + result.stderr
-            return self._parse_test_output(output, result.returncode == 0)
+            return self._parse_test_output(
+                output, result.returncode == 0, coverage_threshold
+            )
         except subprocess.TimeoutExpired:
             return self._create_timeout_result()
         except Exception as e:
@@ -297,18 +301,28 @@ class PythonAdapter(FrameworkAdapter):
                 files_modified=[],
             )
 
-    def _parse_test_output(self, output: str, success: bool) -> TestResult:
+    def _parse_test_output(
+        self, output: str, success: bool, coverage_threshold: float = 0.90
+    ) -> TestResult:
         """Parse pytest output to extract test results."""
         tests_passed, tests_failed = self._parse_test_counts(output)
         coverage = self._parse_coverage(output)
 
-        # Determine actual success based on test results, not just return code
+        # Determine actual success based on test results AND coverage threshold
         # Return code can be non-zero due to coverage threshold, but tests may still pass
         tests_run = tests_passed + tests_failed
-        actual_success = tests_failed == 0 and tests_run > 0
+        tests_passed_check = tests_failed == 0 and tests_run > 0
 
-        # Build errors only if tests actually failed
-        errors = self._build_test_errors(not actual_success)
+        # CRITICAL: Coverage must meet threshold (matches CI behavior)
+        coverage_met = coverage is not None and coverage >= coverage_threshold
+
+        # Success requires BOTH: tests passed AND coverage threshold met
+        actual_success = tests_passed_check and coverage_met
+
+        # Build errors if tests failed OR coverage threshold not met
+        errors = self._build_test_errors(
+            not actual_success, coverage, coverage_threshold
+        )
 
         # `TestResult.pass_rate` is a ratio in [0, 1] (not a percentage).
         pass_rate = (tests_passed / tests_run) if tests_run > 0 else 0.0
@@ -403,11 +417,24 @@ class PythonAdapter(FrameworkAdapter):
                     pass
         return None
 
-    def _build_test_errors(self, success: bool) -> list[str]:
+    def _build_test_errors(
+        self,
+        success: bool,
+        coverage: float | None = None,
+        coverage_threshold: float = 0.90,
+    ) -> list[str]:
         """Build error list for test results."""
         errors: list[str] = []
         if not success:
-            errors.append("Test execution failed")
+            if coverage is not None and coverage < coverage_threshold:
+                errors.append(
+                    
+                        f"Test coverage {coverage * 100:.2f}% is below required threshold "
+                        f"{coverage_threshold * 100:.0f}%"
+                    
+                )
+            else:
+                errors.append("Test execution failed")
         return errors
 
     def _parse_type_errors(self, output: str) -> list[str]:
