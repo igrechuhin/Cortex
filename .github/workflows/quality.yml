@@ -60,8 +60,8 @@ jobs:
         id: formatting
         run: |
           echo "::group::Running Black formatting check"
-          if ! uv run black --check src/ tests/ .cortex/synapse/scripts/; then
-            echo "::error::Black formatting check failed. Run 'black src/ tests/ .cortex/synapse/scripts/' to fix."
+          if ! uv run black --check src/ tests/; then
+            echo "::error::Black formatting check failed. Run 'black src/ tests/' to fix."
             exit 1
           fi
           echo "✅ Black formatting check passed"
@@ -73,8 +73,9 @@ jobs:
           echo "::group::Running Ruff linting check"
           # Ruff F401 catches unused imports, F841 catches unused variables
           # Run with strict checking to catch all issues
-          if ! uv run ruff check --select F,E,W src/ tests/ .cortex/synapse/scripts/; then
-            echo "::error::Ruff linting check failed. Run 'ruff check --fix src/ tests/ .cortex/synapse/scripts/' to fix auto-fixable issues."
+          # Note: .cortex/synapse/scripts/ is checked by the synapse scripts themselves
+          if ! uv run ruff check --select F,E,W src/ tests/; then
+            echo "::error::Ruff linting check failed. Run 'ruff check --fix src/ tests/' to fix auto-fixable issues."
             exit 1
           fi
           echo "✅ Ruff linting check passed"
@@ -84,45 +85,86 @@ jobs:
         id: type_check_src
         run: |
           echo "::group::Running Pyright type check (source)"
-          OUTPUT=$(uv run pyright src/ 2>&1) || true
-          echo "$OUTPUT"
+          # Try JSON output first for reliable parsing
+          JSON_OUTPUT=$(uv run pyright --outputjson src/ 2>&1) || true
+          TEXT_OUTPUT=$(uv run pyright src/ 2>&1) || true
           
-          # Check for errors in output - multiple patterns to catch all error types
-          ERROR_PATTERNS=(
-            "error:"
-            "reportArgumentType"
-            "reportUnknownVariableType"
-            "reportUnknownMemberType"
-            "reportAttributeAccessIssue"
-            "reportAssignmentType"
-            "reportIndexIssue"
-            "reportOperatorIssue"
-            "reportGeneralTypeIssues"
-          )
+          # Display text output for readability
+          echo "$TEXT_OUTPUT"
           
+          # Parse JSON output if available
           HAS_ERROR=false
-          for pattern in "${ERROR_PATTERNS[@]}"; do
-            if echo "$OUTPUT" | grep -qi "$pattern"; then
+          ERROR_COUNT=0
+          WARNING_COUNT=0
+          
+          if echo "$JSON_OUTPUT" | python3 -m json.tool > /dev/null 2>&1; then
+            # Parse JSON output
+            ERROR_COUNT=$(echo "$JSON_OUTPUT" | python3 -c "import sys, json; data = json.load(sys.stdin); print(data.get('summary', {}).get('errorCount', 0))" 2>/dev/null || echo "0")
+            WARNING_COUNT=$(echo "$JSON_OUTPUT" | python3 -c "import sys, json; data = json.load(sys.stdin); print(data.get('summary', {}).get('warningCount', 0))" 2>/dev/null || echo "0")
+            
+            # Check for specific error rules in diagnostics
+            ERROR_RULES=$(echo "$JSON_OUTPUT" | python3 -c "import sys, json; data = json.load(sys.stdin); diags = data.get('generalDiagnostics', []); rules = [d.get('rule', '') for d in diags if d.get('severity', '').lower() == 'error']; print(' '.join(set(rules)))" 2>/dev/null || echo "")
+            
+            if [ "$ERROR_COUNT" -gt 0 ] || [ "$WARNING_COUNT" -gt 0 ] || [ -n "$ERROR_RULES" ]; then
               HAS_ERROR=true
-              break
             fi
-          done
-          
-          # Check error count in summary
-          ERROR_COUNT=$(echo "$OUTPUT" | grep -oE "[0-9]+\s+error" | grep -oE "[0-9]+" | head -1 || echo "0")
-          
-          if [ "$HAS_ERROR" = true ] || [ "$ERROR_COUNT" -gt 0 ]; then
-            echo "::error::Pyright type check failed with errors."
-            exit 1
+          else
+            # Fallback to text parsing
+            ERROR_PATTERNS=(
+              "error:"
+              "reportArgumentType"
+              "reportUnknownVariableType"
+              "reportUnknownMemberType"
+              "reportAttributeAccessIssue"
+              "reportAssignmentType"
+              "reportIndexIssue"
+              "reportOperatorIssue"
+              "reportGeneralTypeIssues"
+              "reportUnknownArgumentType"
+            )
+            
+            for pattern in "${ERROR_PATTERNS[@]}"; do
+              if echo "$TEXT_OUTPUT" | grep -qi "$pattern"; then
+                HAS_ERROR=true
+                break
+              fi
+            done
+            
+            # Check error count in summary
+            ERROR_COUNT=$(echo "$TEXT_OUTPUT" | grep -oE "[0-9]+\s+error" | grep -oE "[0-9]+" | head -1 || echo "0")
+            WARNING_COUNT=$(echo "$TEXT_OUTPUT" | grep -oE "[0-9]+\s+warning" | grep -oE "[0-9]+" | head -1 || echo "0")
           fi
           
-          # Check for warnings in output (strict mode)
-          if echo "$OUTPUT" | grep -q "warning:" && ! echo "$OUTPUT" | grep -q "0 warnings"; then
-            echo "::error::Pyright type check failed with warnings. All warnings must be resolved."
+          if [ "$HAS_ERROR" = true ] || [ "$ERROR_COUNT" -gt 0 ] || [ "$WARNING_COUNT" -gt 0 ]; then
+            echo "::error::Pyright type check failed with $ERROR_COUNT error(s) and $WARNING_COUNT warning(s)."
             exit 1
           fi
           
           echo "✅ Pyright type check passed (source)"
+          echo "::endgroup::"
+
+      - name: Check formatting (synapse scripts)
+        id: formatting_synapse
+        run: |
+          echo "::group::Running Black formatting check (synapse scripts)"
+          # Use synapse script which checks synapse scripts themselves
+          if ! uv run python .cortex/synapse/scripts/python/check_formatting.py; then
+            echo "::error::Formatting check failed for synapse scripts. Fix formatting errors before committing."
+            exit 1
+          fi
+          echo "✅ Black formatting check passed (synapse scripts)"
+          echo "::endgroup::"
+
+      - name: Lint with ruff (synapse scripts)
+        id: linting_synapse
+        run: |
+          echo "::group::Running Ruff linting check (synapse scripts)"
+          # Use synapse script which checks synapse scripts themselves
+          if ! uv run python .cortex/synapse/scripts/python/check_linting.py; then
+            echo "::error::Linting check failed for synapse scripts. Fix linting errors before committing."
+            exit 1
+          fi
+          echo "✅ Ruff linting check passed (synapse scripts)"
           echo "::endgroup::"
 
       - name: Type check with pyright (tests and scripts)
@@ -230,7 +272,9 @@ jobs:
         run: |
           echo "=== Quality Check Summary ==="
           echo "Formatting: ${{ steps.formatting.outcome }}"
+          echo "Formatting (Synapse): ${{ steps.formatting_synapse.outcome }}"
           echo "Linting: ${{ steps.linting.outcome }}"
+          echo "Linting (Synapse): ${{ steps.linting_synapse.outcome }}"
           echo "Type Check (Source): ${{ steps.type_check_src.outcome }}"
           echo "Type Check (Tests/Scripts): ${{ steps.type_check_tests.outcome }}"
           echo "File Sizes: ${{ steps.file_sizes.outcome }}"
@@ -242,7 +286,9 @@ jobs:
           
           # Fail if any critical check failed
           if [ "${{ steps.formatting.outcome }}" = "failure" ] || \
+             [ "${{ steps.formatting_synapse.outcome }}" = "failure" ] || \
              [ "${{ steps.linting.outcome }}" = "failure" ] || \
+             [ "${{ steps.linting_synapse.outcome }}" = "failure" ] || \
              [ "${{ steps.type_check_src.outcome }}" = "failure" ] || \
              [ "${{ steps.type_check_tests.outcome }}" = "failure" ] || \
              [ "${{ steps.file_sizes.outcome }}" = "failure" ] || \
