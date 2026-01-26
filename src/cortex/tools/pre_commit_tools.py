@@ -25,6 +25,13 @@ from cortex.services.language_detector import LanguageDetector, LanguageInfo
 # Import markdown operations for markdown lint fixing
 # No circular import: markdown_operations doesn't import pre_commit_tools
 from cortex.tools.markdown_operations import fix_markdown_lint  # noqa: F401
+from cortex.tools.pre_commit_helpers import (
+    collect_remaining_issues,
+    extract_check_results,
+    extract_dict_from_object,
+    extract_int_from_object,
+    extract_list_from_object,
+)
 
 # Constants for quality checks
 MAX_FILE_LINES = 400
@@ -829,60 +836,24 @@ async def _fix_markdown_and_update_files(
     return _process_markdown_results(markdown_result, files_modified)
 
 
-def _extract_dict_from_object(
-    obj: JsonValue, default: dict[str, JsonValue]
-) -> dict[str, JsonValue]:
-    """Extract dict from object with type checking."""
-    return cast(dict[str, JsonValue], obj) if isinstance(obj, dict) else default
-
-
-def _extract_list_from_object(obj: JsonValue, default: list[str]) -> list[str]:
-    """Extract list from object with type checking.
-
-    Returns list of strings, filtering out non-string items.
-    """
-    if isinstance(obj, list):
-        obj_list = cast(list[JsonValue], obj)
-        return [str(item) for item in obj_list if isinstance(item, (str, int, float))]
-    return default
-
-
-def _extract_int_from_object(obj: JsonValue, default: int) -> int:
-    """Extract int from object with type checking."""
-    return int(obj) if isinstance(obj, (int, str)) else default
-
-
-def _extract_check_results(
-    results: dict[str, JsonValue],
-) -> tuple[dict[str, JsonValue], dict[str, JsonValue], dict[str, JsonValue]]:
-    """Extract check result dicts from results."""
-    fix_errors_check_obj = results.get("fix_errors", {})
-    fix_errors_check = _extract_dict_from_object(fix_errors_check_obj, {})
-    format_check_obj = results.get("format", {})
-    format_check = _extract_dict_from_object(format_check_obj, {})
-    type_check_result_obj = results.get("type_check", {})
-    type_check_result = _extract_dict_from_object(type_check_result_obj, {})
-    return fix_errors_check, format_check, type_check_result
-
-
 def _extract_fix_statistics(
     fix_errors_result: dict[str, JsonValue],
 ) -> tuple[int, int, int, int, list[str]]:
     """Extract statistics from fix_errors result."""
     results_obj = fix_errors_result.get("results", {})
-    results = _extract_dict_from_object(results_obj, {})
-    fix_errors_check, format_check, type_check_result = _extract_check_results(results)
+    results = extract_dict_from_object(results_obj, {})
+    fix_errors_check, format_check, type_check_result = extract_check_results(results)
 
-    errors = _extract_list_from_object(fix_errors_check.get("errors", []), [])
-    warnings = _extract_list_from_object(fix_errors_check.get("warnings", []), [])
+    errors = extract_list_from_object(fix_errors_check.get("errors", []), [])
+    warnings = extract_list_from_object(fix_errors_check.get("warnings", []), [])
     errors_fixed = len(errors)
     warnings_fixed = len(warnings)
-    formatting_issues_fixed = _extract_int_from_object(
+    formatting_issues_fixed = extract_int_from_object(
         format_check.get("files_formatted", 0), 0
     )
-    type_errors = _extract_list_from_object(type_check_result.get("errors", []), [])
+    type_errors = extract_list_from_object(type_check_result.get("errors", []), [])
     type_errors_fixed = len(type_errors)
-    files_modified_list = _extract_list_from_object(
+    files_modified_list = extract_list_from_object(
         fix_errors_result.get("files_modified", []), []
     )
     files_modified = list(set(files_modified_list))
@@ -919,24 +890,6 @@ def _process_markdown_results(
                         if file_path and file_path not in files_modified:
                             files_modified.append(file_path)
     return markdown_issues_fixed
-
-
-def _collect_remaining_issues(fix_errors_result: ModelDict) -> list[str]:
-    """Collect remaining issues that couldn't be auto-fixed."""
-    remaining_issues: list[str] = []
-    total_errors_obj = fix_errors_result.get("total_errors", 0)
-    total_errors = (
-        int(total_errors_obj) if isinstance(total_errors_obj, (int, str)) else 0
-    )
-    if total_errors > 0:
-        remaining_issues.append(f"{total_errors} errors remain after auto-fix")
-    total_warnings_obj = fix_errors_result.get("total_warnings", 0)
-    total_warnings = (
-        int(total_warnings_obj) if isinstance(total_warnings_obj, (int, str)) else 0
-    )
-    if total_warnings > 0:
-        remaining_issues.append(f"{total_warnings} warnings remain after auto-fix")
-    return remaining_issues
 
 
 def _build_quality_response(
@@ -1067,7 +1020,7 @@ async def fix_quality_issues(
         markdown_issues_fixed = await _fix_markdown_and_update_files(
             root_str, include_untracked_markdown, files_modified
         )
-        remaining_issues = _collect_remaining_issues(fix_errors_result)
+        remaining_issues = collect_remaining_issues(fix_errors_result)
         return _build_quality_response_json(
             errors_fixed,
             warnings_fixed,

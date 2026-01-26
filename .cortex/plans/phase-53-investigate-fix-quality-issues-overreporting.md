@@ -1,7 +1,7 @@
 # Phase 53 Blocker: Investigate `fix_quality_issues` over-reporting remaining issues
 
 **Date:** 2026-01-25  
-**Status:** 🟡 IN PROGRESS  
+**Status:** ✅ COMPLETE (2026-01-26)  
 **Priority:** ASAP (can mislead / block mandatory agent workflow)
 
 ---
@@ -73,3 +73,27 @@ Repo agent rules require automatically invoking `fix_quality_issues()` as part o
 - On a clean repo (pyright clean, tests pass), `fix_quality_issues()` returns `status="success"` with `remaining_issues=[]`.
 - On a broken repo, `remaining_issues` reflects real remaining problems (or returns `status="error"` if tool execution failed).
 - Unit tests cover the regression.
+
+## Solution Implemented (2026-01-26)
+
+**Root Cause**: The `_collect_remaining_issues()` function was using aggregate `total_errors`/`total_warnings` counters from `execute_pre_commit_checks()`, which count ALL errors/warnings from ALL checks, not just the ones that remain after auto-fix. These counters can be non-zero even when all checks succeeded (success=True) because they aggregate counts from all checks.
+
+**Fix**: Modified `_collect_remaining_issues()` to check actual check results instead of aggregate counters:
+
+- Check each check result's `success` field and `errors` list
+- Only report remaining issues if `success=False` OR if `success` is missing but errors exist
+- Use specific error messages for each check type (linting/formatting, formatting, type errors)
+- This ensures that `remaining_issues` only contains actual remaining problems, not aggregate counts
+
+**Changes**:
+
+- Updated `_collect_remaining_issues()` in `src/cortex/tools/pre_commit_tools.py` to check individual check results
+- Added unit test `test_fix_quality_issues_clean_repo_no_remaining_issues` to verify fix works on clean repo
+- Updated existing test to match new, more specific error messages
+- All tests passing (5 tests in TestFixQualityIssues class)
+
+**Verification**:
+
+- ✅ On clean repo with all checks succeeded (success=True), `remaining_issues=[]` even if `total_errors` is large
+- ✅ On broken repo with actual errors, `remaining_issues` correctly reports remaining problems
+- ✅ Unit tests cover the regression

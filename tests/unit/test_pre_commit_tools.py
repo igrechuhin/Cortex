@@ -217,7 +217,12 @@ class TestFixQualityIssues:
                 assert result["status"] == "success"
                 assert result["error_message"] is None
                 assert result["errors_fixed"] == 1
-                assert "1 errors remain after auto-fix" in result["remaining_issues"]
+                # Check that remaining issues are reported (with more specific message)
+                assert len(result["remaining_issues"]) > 0
+                assert any(
+                    "1 linting/formatting errors remain" in issue
+                    for issue in result["remaining_issues"]
+                )
 
     @pytest.mark.asyncio
     async def test_fix_quality_issues_exception_handling(self) -> None:
@@ -272,6 +277,71 @@ class TestFixQualityIssues:
                 assert result["status"] == "success"
                 assert result["errors_fixed"] >= 0
                 assert len(result["files_modified"]) >= 0
+
+    @pytest.mark.asyncio
+    async def test_fix_quality_issues_clean_repo_no_remaining_issues(self) -> None:
+        """Test that fix_quality_issues returns empty remaining_issues on clean repo.
+
+        This test verifies the fix for over-reporting remaining issues. Even if
+        total_errors/total_warnings are non-zero, if all checks succeeded (success=True),
+        remaining_issues should be empty.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            (project_root / ".venv").mkdir()
+
+            with (
+                patch(
+                    "cortex.tools.pre_commit_tools.execute_pre_commit_checks"
+                ) as mock_execute,
+                patch(
+                    "cortex.tools.pre_commit_tools.fix_markdown_lint"
+                ) as mock_markdown,
+            ):
+                # Simulate a clean repo where all checks succeeded but
+                # total_errors/total_warnings might be non-zero (e.g., from previous runs)
+                mock_execute.return_value = json.dumps(
+                    {
+                        "status": "success",
+                        "checks_performed": ["fix_errors", "format", "type_check"],
+                        "files_modified": [],
+                        "total_errors": 4175,  # Large number that should NOT appear in remaining_issues
+                        "total_warnings": 100,  # Large number that should NOT appear in remaining_issues
+                        "success": True,
+                        "results": {
+                            "fix_errors": {
+                                "check_type": "fix_errors",
+                                "success": True,  # All checks succeeded
+                                "errors": [],
+                                "warnings": [],
+                                "files_modified": [],
+                            },
+                            "format": {
+                                "check_type": "format",
+                                "success": True,  # Format succeeded
+                                "errors": [],
+                                "files_modified": [],
+                            },
+                            "type_check": {
+                                "check_type": "type_check",
+                                "success": True,  # Type check succeeded
+                                "errors": [],
+                            },
+                        },
+                    }
+                )
+                mock_markdown.return_value = json.dumps(
+                    {"success": True, "files_fixed": 0, "files_processed": 0}
+                )
+
+                result_json = await fix_quality_issues(project_root=str(project_root))
+                result = json.loads(result_json)
+
+                assert result["status"] == "success"
+                # Even though total_errors=4175, remaining_issues should be empty
+                # because all checks succeeded (success=True)
+                assert result["remaining_issues"] == []
 
 
 class TestCountFileLines:
