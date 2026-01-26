@@ -8,6 +8,8 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from cortex.core.models import JsonValue, ModelDict
+
 
 @dataclass
 class BenchmarkResult:
@@ -23,14 +25,16 @@ class BenchmarkResult:
     std_dev: float
     p95_time: float
     p99_time: float
-    metadata: dict[str, object] = field(default_factory=lambda: {})
+    metadata: dict[str, JsonValue] = field(
+        default_factory=lambda: dict[str, JsonValue]()
+    )
 
     @property
     def ops_per_second(self) -> float:
         """Calculate operations per second."""
         return self.iterations / self.total_time if self.total_time > 0 else 0.0
 
-    def to_dict(self) -> dict[str, object]:
+    def to_dict(self) -> ModelDict:
         """Convert result to dictionary."""
         return {
             "name": self.name,

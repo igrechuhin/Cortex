@@ -25,6 +25,7 @@ from cortex.tools.configuration_operations import (
     handle_validation_reset,
     handle_validation_update,
 )
+from tests.helpers.managers import make_test_managers
 
 
 class TestConfigureMainHandler:
@@ -38,12 +39,14 @@ class TestConfigureMainHandler:
             "cortex.tools.configuration_operations.get_managers"
         ) as mock_get_managers:
             mock_validation_config = MagicMock()
-            mock_validation_config.to_dict.return_value = {
+            mock_validation_config.config = MagicMock()
+            mock_validation_config.config.model_dump.return_value = {
                 "enabled": True,
                 "strict_mode": False,
             }
-            mock_managers = {"validation_config": mock_validation_config}
-            mock_get_managers.return_value = mock_managers
+            mock_get_managers.return_value = make_test_managers(
+                validation_config=mock_validation_config
+            )
 
             # Act
             result = await configure(
@@ -71,8 +74,9 @@ class TestConfigureMainHandler:
                 "enabled": True,
                 "token_budget": {"default_budget": 100000},
             }
-            mock_managers = {"optimization_config": mock_optimization_config}
-            mock_get_managers.return_value = mock_managers
+            mock_get_managers.return_value = make_test_managers(
+                optimization_config=mock_optimization_config
+            )
 
             # Act
             result = await configure(
@@ -100,11 +104,10 @@ class TestConfigureMainHandler:
             mock_optimization_config = MagicMock()
             mock_optimization_config.config = {"learning": {"enabled": True}}
 
-            mock_managers = {
-                "learning_engine": mock_learning_engine,
-                "optimization_config": mock_optimization_config,
-            }
-            mock_get_managers.return_value = mock_managers
+            mock_get_managers.return_value = make_test_managers(
+                learning_engine=mock_learning_engine,
+                optimization_config=mock_optimization_config,
+            )
 
             # Act
             result = await configure(
@@ -173,16 +176,15 @@ class TestValidationConfiguration:
         """Test validation view action."""
         # Arrange
         mock_validation_config = MagicMock()
-        mock_validation_config.to_dict.return_value = {
+        mock_validation_config.config = MagicMock()
+        mock_validation_config.config.model_dump.return_value = {
             "enabled": True,
             "strict_mode": False,
         }
-        mock_managers = {"validation_config": mock_validation_config}
+        mgrs = make_test_managers(validation_config=mock_validation_config)
 
         # Act
-        result = await configure_validation(
-            cast(dict[str, object], mock_managers), "view", None, None, None
-        )
+        result = await configure_validation(mgrs, "view", None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -195,18 +197,19 @@ class TestValidationConfiguration:
         """Test validation update with settings dict."""
         # Arrange
         mock_validation_config = MagicMock()
-        mock_validation_config.to_dict.return_value = {
+        mock_validation_config.config = MagicMock()
+        mock_validation_config.config.model_dump.return_value = {
             "enabled": True,
             "strict_mode": True,
         }
         mock_validation_config.save = AsyncMock()
-        mock_managers = {"validation_config": mock_validation_config}
+        mgrs = make_test_managers(validation_config=mock_validation_config)
 
         settings = {"strict_mode": True, "enabled": True}
 
         # Act
         result = await configure_validation(
-            cast(dict[str, object], mock_managers),
+            mgrs,
             "update",
             cast(dict[str, object], settings),
             None,
@@ -224,17 +227,16 @@ class TestValidationConfiguration:
         """Test validation update with key and value."""
         # Arrange
         mock_validation_config = MagicMock()
-        mock_validation_config.to_dict.return_value = {
+        mock_validation_config.config = MagicMock()
+        mock_validation_config.config.model_dump.return_value = {
             "enabled": True,
             "strict_mode": True,
         }
         mock_validation_config.save = AsyncMock()
-        mock_managers = {"validation_config": mock_validation_config}
+        mgrs = make_test_managers(validation_config=mock_validation_config)
 
         # Act
-        result = await configure_validation(
-            cast(dict[str, object], mock_managers), "update", None, "strict_mode", True
-        )
+        result = await configure_validation(mgrs, "update", None, "strict_mode", True)
 
         # Assert
         result_data = json.loads(result)
@@ -247,15 +249,14 @@ class TestValidationConfiguration:
         """Test validation reset action."""
         # Arrange
         mock_validation_config = MagicMock()
-        mock_validation_config.to_dict.return_value = {"enabled": True}
+        mock_validation_config.config = MagicMock()
+        mock_validation_config.config.model_dump.return_value = {"enabled": True}
         mock_validation_config.reset_to_defaults = MagicMock()
         mock_validation_config.save = AsyncMock()
-        mock_managers = {"validation_config": mock_validation_config}
+        mgrs = make_test_managers(validation_config=mock_validation_config)
 
         # Act
-        result = await configure_validation(
-            cast(dict[str, object], mock_managers), "reset", None, None, None
-        )
+        result = await configure_validation(mgrs, "reset", None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -269,12 +270,10 @@ class TestValidationConfiguration:
         """Test validation with unknown action returns error."""
         # Arrange
         mock_validation_config = MagicMock()
-        mock_managers = {"validation_config": mock_validation_config}
+        mgrs = make_test_managers(validation_config=mock_validation_config)
 
         # Act
-        result = await configure_validation(
-            cast(dict[str, object], mock_managers), "unknown", None, None, None
-        )
+        result = await configure_validation(mgrs, "unknown", None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -287,7 +286,8 @@ class TestValidationConfiguration:
         """Test _handle_validation_update helper."""
         # Arrange
         mock_validation_config = MagicMock()
-        mock_validation_config.to_dict.return_value = {"enabled": True}
+        mock_validation_config.config = MagicMock()
+        mock_validation_config.config.model_dump.return_value = {"enabled": True}
         mock_validation_config.save = AsyncMock()
 
         # Act
@@ -305,7 +305,8 @@ class TestValidationConfiguration:
         """Test _handle_validation_reset helper."""
         # Arrange
         mock_validation_config = MagicMock()
-        mock_validation_config.to_dict.return_value = {"enabled": True}
+        mock_validation_config.config = MagicMock()
+        mock_validation_config.config.model_dump.return_value = {"enabled": True}
         mock_validation_config.reset_to_defaults = MagicMock()
         mock_validation_config.save = AsyncMock()
 
@@ -785,9 +786,8 @@ class TestHelperFunctions:
         result = get_learned_patterns(mock_learning_engine)
 
         # Assert
-        result_dict = result
-        assert "test" in result_dict
-        test_pattern = cast(dict[str, object], result_dict["test"])
+        assert "test" in result.patterns
+        test_pattern = result.patterns["test"].model_dump(mode="json")
         assert test_pattern["pattern_id"] == "test"
         assert test_pattern["confidence"] == 0.8
 
@@ -801,7 +801,7 @@ class TestHelperFunctions:
         result = get_learned_patterns(mock_learning_engine)
 
         # Assert
-        assert result == {}
+        assert result.patterns == {}
 
     def test_export_learned_patterns(self) -> None:
         """Test exporting learned patterns."""
@@ -836,12 +836,10 @@ class TestEdgeCases:
         """Test validation update handles errors from apply_config_updates."""
         # Arrange
         mock_validation_config = MagicMock()
-        mock_managers = {"validation_config": mock_validation_config}
+        mgrs = make_test_managers(validation_config=mock_validation_config)
 
         # Act - no settings or key/value provided
-        result = await configure_validation(
-            cast(dict[str, object], mock_managers), "update", None, None, None
-        )
+        result = await configure_validation(mgrs, "update", None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -853,12 +851,10 @@ class TestEdgeCases:
         """Test optimization update handles errors from apply_config_updates."""
         # Arrange
         mock_optimization_config = MagicMock()
-        mock_managers = {"optimization_config": mock_optimization_config}
+        mgrs = make_test_managers(optimization_config=mock_optimization_config)
 
         # Act - no settings or key/value provided
-        result = await configure_optimization(
-            cast(dict[str, object], mock_managers), "update", None, None, None
-        )
+        result = await configure_optimization(mgrs, "update", None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -872,16 +868,13 @@ class TestEdgeCases:
         mock_learning_engine = MagicMock()
         mock_optimization_config = MagicMock()
         mock_optimization_config.config = {"learning": {"enabled": True}}
-
-        mock_managers = {
-            "learning_engine": mock_learning_engine,
-            "optimization_config": mock_optimization_config,
-        }
+        mgrs = make_test_managers(
+            learning_engine=mock_learning_engine,
+            optimization_config=mock_optimization_config,
+        )
 
         # Act - no settings or key/value provided
-        result = await configure_learning(
-            cast(dict[str, object], mock_managers), "update", None, None, None
-        )
+        result = await configure_learning(mgrs, "update", None, None, None)
 
         # Assert
         result_data = json.loads(result)

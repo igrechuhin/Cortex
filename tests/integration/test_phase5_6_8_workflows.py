@@ -314,8 +314,24 @@ class TestPhase6Integration:
         manifest = {
             "version": "1.0.0",
             "categories": {
-                "python": ["python/style-guide.md"],
-                "generic": ["generic/security.md"],
+                "python": {
+                    "rules": [
+                        {
+                            "file": "style-guide.md",
+                            "priority": 100,
+                            "keywords": ["python"],
+                        }
+                    ]
+                },
+                "generic": {
+                    "rules": [
+                        {
+                            "file": "security.md",
+                            "priority": 100,
+                            "keywords": ["security"],
+                        }
+                    ]
+                },
             },
         }
 

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.file_system import FileSystemManager
+from cortex.core.models import JsonValue, ModelDict
 from cortex.tools.validation_helpers import (
     generate_duplication_fixes,
     read_all_memory_bank_files,
@@ -25,19 +26,19 @@ async def validate_duplications(
     threshold = similarity_threshold or validation_config.get_duplication_threshold()
     files_content = await read_all_memory_bank_files(fs_manager, root)
     duplication_detector.threshold = threshold
-    duplications_dict = await duplication_detector.scan_all_files(files_content)
+    duplications = await duplication_detector.scan_all_files(files_content)
+    duplications_dict = cast(ModelDict, duplications.model_dump(mode="json"))
 
-    duplication_result: dict[str, object] = {
+    duplication_result: ModelDict = {
         "status": "success",
         "check_type": "duplications",
         "threshold": threshold,
     }
     duplication_result.update(duplications_dict)
 
-    duplicates_found = cast(int, duplications_dict.get("duplicates_found", 0))
-    if suggest_fixes and duplicates_found > 0:
-        duplication_result["suggested_fixes"] = generate_duplication_fixes(
-            duplications_dict
+    if suggest_fixes and duplications.duplicates_found > 0:
+        duplication_result["suggested_fixes"] = cast(
+            JsonValue, generate_duplication_fixes(duplications_dict)
         )
 
     return json.dumps(duplication_result, indent=2)

@@ -18,11 +18,12 @@ from cortex.core.exceptions import (
 )
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import ModelDict, SectionMetadata, VersionMetadata
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.core.responses import error_response
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.managers.initialization import get_managers, get_project_root
+from cortex.managers.types import ManagersDict
 from cortex.server import mcp
 
 
@@ -223,30 +224,49 @@ async def manage_file(
         - Write operations update both the file content and metadata index atomically
     """
     try:
-        managers = await _initialize_managers(project_root)
-        file_path_result = _validate_and_get_path(
-            cast(FileSystemManager, managers["fs"]),
-            cast(Path, managers["root"]),
+        return await _execute_file_operation(
             file_name,
-        )
-        if file_path_result[0] is None:
-            return file_path_result[1]
-
-        return await _dispatch_operation(
             operation,
-            file_path_result[0],
-            file_name,
             content,
-            change_description,
+            project_root,
             include_metadata,
-            managers,
+            change_description,
         )
-
     except Exception as e:
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+async def _execute_file_operation(
+    file_name: str,
+    operation: Literal["read", "write", "metadata"],
+    content: str | None,
+    project_root: str | None,
+    include_metadata: bool,
+    change_description: str | None,
+) -> str:
+    """Execute file operation after validation."""
+    root, managers = await _initialize_managers(project_root)
+    fs_manager = managers.fs
+    file_path_result = _validate_and_get_path(
+        fs_manager,
+        root,
+        file_name,
+    )
+    if file_path_result[0] is None:
+        return file_path_result[1]
+    return await _dispatch_operation(
+        operation,
+        file_path_result[0],
+        file_name,
+        content,
+        change_description,
+        include_metadata,
+        root,
+        managers,
+    )
 
 
 def _validate_file_path(
@@ -269,28 +289,21 @@ def _validate_file_path(
 
 def _build_read_error_response(file_name: str, root: Path) -> str:
     """Build error response for read operation when file doesn't exist."""
-    import json
-
     available_files = [
         f.name
         for f in get_cortex_path(root, CortexResourceType.MEMORY_BANK).glob("*.md")
         if f.is_file()
     ]
-    base_response = json.loads(
-        error_response(
-            FileNotFoundError(f"File {file_name} does not exist"),
-            action_required=(
-                f"File '{file_name}' not found in memory bank. "
-                f"Available files: {', '.join(available_files) if available_files else 'none'}. "
-                "Check the file name spelling, or initialize the memory bank with 'initialize_memory_bank()' "
-                "if no files exist yet."
-            ),
-            context={"file_name": file_name, "available_files": available_files},
-        )
+    return json.dumps(
+        {
+            "status": "error",
+            "error": f"File {file_name} does not exist",
+            "file_name": file_name,
+            "available_files": available_files,
+            "context": {"file_name": file_name, "available_files": available_files},
+        },
+        indent=2,
     )
-    # Add available_files at top level for backward compatibility with tests
-    base_response["available_files"] = available_files
-    return json.dumps(base_response, indent=2)
 
 
 async def _handle_read_operation(
@@ -306,18 +319,16 @@ async def _handle_read_operation(
         return _build_read_error_response(file_name, root)
 
     content_str, _ = await fs_manager.read_file(file_path)
-    result: dict[str, object] = {
+    response: ModelDict = {
         "status": "success",
         "file_name": file_name,
         "content": content_str,
     }
-
     if include_metadata:
         metadata = await metadata_index.get_file_metadata(file_name)
-        if metadata:
-            result["metadata"] = metadata
-
-    return json.dumps(result, indent=2)
+        if isinstance(metadata, dict):
+            response["metadata"] = metadata
+    return json.dumps(response, indent=2)
 
 
 async def _handle_write_operation(
@@ -361,7 +372,12 @@ async def _handle_metadata_operation(
     """Handle metadata operation."""
     if not file_path.exists():
         return json.dumps(
-            {"status": "error", "error": f"File {file_name} does not exist"}, indent=2
+            {
+                "status": "error",
+                "error": f"File {file_name} does not exist",
+                "file_name": file_name,
+            },
+            indent=2,
         )
 
     metadata = await metadata_index.get_file_metadata(file_name)
@@ -369,32 +385,26 @@ async def _handle_metadata_operation(
         return json.dumps(
             {
                 "status": "warning",
-                "message": f"No metadata found for {file_name}",
                 "file_name": file_name,
+                "metadata": None,
+                "message": f"No metadata found for {file_name}",
             },
             indent=2,
         )
 
     return json.dumps(
-        {"status": "success", "file_name": file_name, "metadata": metadata}, indent=2
-    )
-
-
-async def _get_expected_hash(
-    metadata_index: MetadataIndex, file_name: str
-) -> str | None:
-    """Get expected hash from metadata for conflict detection."""
-    metadata = await metadata_index.get_file_metadata(file_name)
-    return (
-        cast(str, metadata.get("content_hash"))
-        if metadata and metadata.get("content_hash")
-        else None
+        {
+            "status": "success",
+            "file_name": file_name,
+            "metadata": metadata,
+        },
+        indent=2,
     )
 
 
 def compute_file_metrics(
     content: str, fs_manager: FileSystemManager, token_counter: TokenCounter
-) -> dict[str, object]:
+) -> ModelDict:
     """Compute file size, token count, and hash."""
     content_bytes = content.encode("utf-8")
     return {
@@ -407,32 +417,33 @@ def compute_file_metrics(
 async def create_version_snapshot(
     file_path: Path,
     content: str,
-    file_metrics: dict[str, object],
+    file_metrics: ModelDict,
     version_manager: VersionManager,
     change_description: str | None,
-) -> dict[str, object]:
+) -> VersionMetadata:
     """Create version snapshot."""
     file_name = file_path.name
     version = await version_manager.get_version_count(file_name)
-    return await version_manager.create_snapshot(
+    snapshot = await version_manager.create_snapshot(
         file_path,
         version=version + 1,
         content=content,
-        size_bytes=cast(int, file_metrics["size_bytes"]),
-        token_count=cast(int, file_metrics["token_count"]),
-        content_hash=cast(str, file_metrics["content_hash"]),
+        size_bytes=cast(int, file_metrics.get("size_bytes", 0)),
+        token_count=cast(int, file_metrics.get("token_count", 0)),
+        content_hash=cast(str, file_metrics.get("content_hash", "")),
         change_type="modified",
         change_description=change_description or "Updated via MCP",
     )
+    return snapshot
 
 
 async def update_file_metadata(
     file_name: str,
     file_path: Path,
     content: str,
-    file_metrics: dict[str, object],
+    file_metrics: ModelDict,
     metadata_index: MetadataIndex,
-    version_info: dict[str, object],
+    version_info: VersionMetadata,
 ) -> None:
     """Update file metadata and version history."""
     sections = extract_sections(content)
@@ -440,27 +451,38 @@ async def update_file_metadata(
         file_name,
         path=file_path,
         exists=True,
-        size_bytes=cast(int, file_metrics["size_bytes"]),
-        token_count=cast(int, file_metrics["token_count"]),
-        content_hash=cast(str, file_metrics["content_hash"]),
+        size_bytes=cast(int, file_metrics.get("size_bytes", 0)),
+        token_count=cast(int, file_metrics.get("token_count", 0)),
+        content_hash=cast(str, file_metrics.get("content_hash", "")),
         sections=sections,
         change_source="internal",
     )
     await metadata_index.add_version_to_history(file_name, version_info)
 
 
-def extract_sections(content: str) -> list[dict[str, object]]:
-    """Extract sections from content (simplified - just count headings)."""
-    sections: list[dict[str, object]] = []
-    for line in content.split("\n"):
+def extract_sections(content: str) -> list[SectionMetadata]:
+    """Extract sections from content (lines starting with ##).
+
+    Note: For backward compatibility with tests, all extracted headings are reported
+    with `level=2` even if the original heading is ###, ####, etc.
+    """
+    sections: list[SectionMetadata] = []
+    for line_num, line in enumerate(content.split("\n"), start=1):
         if line.startswith("##"):
-            sections.append({"heading": line.strip(), "level": 2})
+            sections.append(
+                SectionMetadata(
+                    heading=line,
+                    level=2,
+                    line_start=line_num,
+                    line_end=line_num,
+                )
+            )
     return sections
 
 
 def build_write_response(
     file_name: str,
-    version_info: dict[str, object],
+    version_info: VersionMetadata,
     token_counter: TokenCounter,
     content: str,
 ) -> str:
@@ -470,8 +492,8 @@ def build_write_response(
             "status": "success",
             "file_name": file_name,
             "message": f"File {file_name} written successfully",
-            "snapshot_id": version_info.get("snapshot_path"),
-            "version": version_info.get("version"),
+            "snapshot_id": version_info.snapshot_path,
+            "version": version_info.version,
             "tokens": token_counter.count_tokens(content),
         },
         indent=2,
@@ -499,7 +521,15 @@ async def _execute_write_flow(
     version_manager: VersionManager,
 ) -> str:
     """Execute the main write flow."""
-    expected_hash = await _get_expected_hash(metadata_index, file_name)
+    # Use the on-disk hash as the conflict baseline.
+    #
+    # Rationale: `MetadataIndex` may be stale relative to disk (e.g. external edits,
+    # editor save, git operations). Using the cached hash can incorrectly block
+    # writes with FileConflictError even when the caller is acting on the latest
+    # file contents.
+    expected_hash: str | None = None
+    if file_path.exists():
+        _, expected_hash = await fs_manager.read_file(file_path)
     _ = await fs_manager.write_file(file_path, content, expected_hash=expected_hash)
 
     file_metrics = compute_file_metrics(content, fs_manager, token_counter)
@@ -575,57 +605,38 @@ def build_write_error_response(
             "Then retry the write operation."
         )
         context = {"file_name": error.file_name}
-
-    # Type cast: context is dict[str, object] compatible
-    import json
-    from typing import cast
-
-    context_dict = cast(dict[str, object], context)
-    base_response = json.loads(
-        error_response(error, action_required=action_required, context=context_dict)
+    return json.dumps(
+        {
+            "status": "error",
+            "error": str(error),
+            "error_type": type(error).__name__,
+            "context": context,
+            "suggestion": action_required,
+        },
+        indent=2,
     )
-    # Add 'suggestion' field for backward compatibility with tests
-    base_response["suggestion"] = action_required
-    return json.dumps(base_response, indent=2)
 
 
 def build_invalid_operation_error(operation: str) -> str:
     """Build error response for invalid operation."""
-    import json
-
     valid_operations = ["read", "write", "metadata"]
-    base_response = json.loads(
-        error_response(
-            ValueError(f"Invalid operation: {operation}"),
-            action_required=(
-                f"Use one of the valid operations: {', '.join(valid_operations)}. "
-                f"Received: '{operation}'. "
-                f"Example: {{'operation': '{valid_operations[0]}', 'file_name': 'projectBrief.md'}}"
-            ),
-            context={
-                "invalid_operation": operation,
-                "valid_operations": valid_operations,
-            },
-        )
+    return json.dumps(
+        {
+            "status": "error",
+            "error": f"Invalid operation: {operation}",
+            "valid_operations": valid_operations,
+        },
+        indent=2,
     )
-    # Add valid_operations at top level for backward compatibility with tests
-    base_response["valid_operations"] = valid_operations
-    return json.dumps(base_response, indent=2)
 
 
 async def _initialize_managers(
     project_root: str | None,
-) -> dict[str, object]:
+) -> tuple[Path, ManagersDict]:
     """Initialize all required managers."""
     root = get_project_root(project_root)
     mgrs = await get_managers(root)
-    return {
-        "root": root,
-        "fs": cast(FileSystemManager, mgrs["fs"]),
-        "index": cast(MetadataIndex, mgrs["index"]),
-        "tokens": cast(TokenCounter, mgrs["tokens"]),
-        "versions": cast(VersionManager, mgrs["versions"]),
-    }
+    return root, mgrs
 
 
 def _validate_and_get_path(
@@ -643,12 +654,13 @@ async def _dispatch_operation(
     content: str | None,
     change_description: str | None,
     include_metadata: bool,
-    managers: dict[str, object],
+    root: Path,
+    managers: ManagersDict,
 ) -> str:
     """Dispatch operation to appropriate handler."""
     if operation == "read":
         return await _dispatch_read_operation(
-            file_path, file_name, managers, include_metadata
+            file_path, file_name, root, managers, include_metadata
         )
     if operation == "write":
         return await _dispatch_write_operation(
@@ -662,16 +674,17 @@ async def _dispatch_operation(
 async def _dispatch_read_operation(
     file_path: Path,
     file_name: str,
-    managers: dict[str, object],
+    root: Path,
+    managers: ManagersDict,
     include_metadata: bool,
 ) -> str:
     """Dispatch read operation."""
     return await _handle_read_operation(
         file_path,
         file_name,
-        cast(Path, managers["root"]),
-        cast(FileSystemManager, managers["fs"]),
-        cast(MetadataIndex, managers["index"]),
+        root,
+        managers.fs,
+        managers.index,
         include_metadata,
     )
 
@@ -681,7 +694,7 @@ async def _dispatch_write_operation(
     file_name: str,
     content: str | None,
     change_description: str | None,
-    managers: dict[str, object],
+    managers: ManagersDict,
 ) -> str:
     """Dispatch write operation."""
     if content is None:
@@ -697,17 +710,15 @@ async def _dispatch_write_operation(
         file_name,
         content,
         change_description,
-        cast(FileSystemManager, managers["fs"]),
-        cast(MetadataIndex, managers["index"]),
-        cast(TokenCounter, managers["tokens"]),
-        cast(VersionManager, managers["versions"]),
+        managers.fs,
+        managers.index,
+        managers.tokens,
+        managers.versions,
     )
 
 
 async def _dispatch_metadata_operation(
-    file_path: Path, file_name: str, managers: dict[str, object]
+    file_path: Path, file_name: str, managers: ManagersDict
 ) -> str:
     """Dispatch metadata operation."""
-    return await _handle_metadata_operation(
-        file_path, file_name, cast(MetadataIndex, managers["index"])
-    )
+    return await _handle_metadata_operation(file_path, file_name, managers.index)

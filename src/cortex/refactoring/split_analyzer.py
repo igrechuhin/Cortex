@@ -8,6 +8,8 @@ and determination of whether and how files should be split.
 import re
 from typing import cast
 
+from cortex.core.models import ModelDict
+
 
 class SplitAnalyzer:
     """
@@ -35,7 +37,7 @@ class SplitAnalyzer:
         self.max_sections: int = max_sections
         self.min_section_independence: float = min_section_independence
 
-    def parse_file_structure(self, content: str) -> list[dict[str, object]]:
+    def parse_file_structure(self, content: str) -> list[ModelDict]:
         """
         Parse file into structured sections.
 
@@ -47,9 +49,9 @@ class SplitAnalyzer:
         Returns:
             List of section dictionaries with heading, level, lines, and content
         """
-        sections: list[dict[str, object]] = []
+        sections: list[ModelDict] = []
         lines = content.split("\n")
-        current_section = None
+        current_section: ModelDict | None = None
 
         for i, line in enumerate(lines, start=1):
             heading_match = re.match(r"^(#{1,6})\s+(.+)$", line)
@@ -69,24 +71,24 @@ class SplitAnalyzer:
 
     def _close_parsed_section(
         self,
-        current_section: dict[str, object],
+        current_section: ModelDict,
         end_line: int,
-        sections: list[dict[str, object]],
+        sections: list[ModelDict],
         lines: list[str],
-    ) -> dict[str, object] | None:
+    ) -> None:
         """Close current section and add to sections list."""
         start_line_val = current_section.get("start_line")
         if not isinstance(start_line_val, int):
-            return None
+            return
 
         current_section["end_line"] = end_line - 1
         current_section["content"] = "\n".join(lines[start_line_val - 1 : end_line - 1])
         sections.append(current_section)
-        return None
+        return
 
     def _start_new_section(
         self, heading_match: re.Match[str], line_num: int
-    ) -> dict[str, object]:
+    ) -> ModelDict:
         """Start a new section from heading match."""
         level = len(heading_match.group(1))
         heading = heading_match.group(2).strip()
@@ -101,10 +103,10 @@ class SplitAnalyzer:
 
     def _close_final_section(
         self,
-        current_section: dict[str, object],
-        sections: list[dict[str, object]],
+        current_section: ModelDict,
+        sections: list[ModelDict],
         lines: list[str],
-    ) -> list[dict[str, object]]:
+    ) -> list[ModelDict]:
         """Close the final section."""
         start_line_val = current_section.get("start_line")
         if isinstance(start_line_val, int):
@@ -119,7 +121,7 @@ class SplitAnalyzer:
         file_path: str,  # noqa: ARG002
         content: str,  # noqa: ARG002
         token_count: int,
-        sections: list[dict[str, object]],
+        sections: list[ModelDict],
     ) -> tuple[bool, list[str]]:
         """
         Determine if a file should be split.
@@ -163,7 +165,7 @@ class SplitAnalyzer:
         return should_split, reasons
 
     def determine_split_strategy(
-        self, token_count: int, section_count: int, sections: list[dict[str, object]]
+        self, token_count: int, section_count: int, sections: list[ModelDict]
     ) -> str:
         """
         Determine the best split strategy.
@@ -197,8 +199,8 @@ class SplitAnalyzer:
 
     def calculate_section_independence(
         self,
-        section: dict[str, object],
-        all_sections: list[dict[str, object]],
+        section: ModelDict,
+        all_sections: list[ModelDict],
         full_content: str,
     ) -> float:
         """
@@ -242,8 +244,8 @@ class SplitAnalyzer:
 
     def calculate_group_independence(
         self,
-        group_sections: list[dict[str, object]],
-        all_sections: list[dict[str, object]],
+        group_sections: list[ModelDict],
+        all_sections: list[ModelDict],
         full_content: str,
     ) -> float:
         """
@@ -269,8 +271,8 @@ class SplitAnalyzer:
         return sum(scores) / len(scores)
 
     def group_related_sections(
-        self, sections: list[dict[str, object]]
-    ) -> dict[str, list[dict[str, object]]]:
+        self, sections: list[ModelDict]
+    ) -> dict[str, list[ModelDict]]:
         """
         Group related sections together.
 
@@ -283,7 +285,7 @@ class SplitAnalyzer:
         Returns:
             Dictionary mapping group names to section lists
         """
-        groups: dict[str, list[dict[str, object]]] = {}
+        groups: dict[str, list[ModelDict]] = {}
 
         for section in sections:
             # Use top-level heading as group name
@@ -292,7 +294,7 @@ class SplitAnalyzer:
                 groups[group_name] = [section]
             elif section["level"] == 2 and groups:
                 # Add to last group
-                last_group: list[dict[str, object]] = list(groups.values())[-1]
+                last_group: list[ModelDict] = list(groups.values())[-1]
                 last_group.append(section)
 
         return groups

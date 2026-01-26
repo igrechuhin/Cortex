@@ -13,6 +13,8 @@ import subprocess
 from pathlib import Path
 from typing import cast
 
+from cortex.core.models import JsonValue, ModelDict
+from cortex.structure.models import SymlinkEntry, SymlinkReport
 from cortex.structure.structure_config import StructureConfig
 
 
@@ -27,7 +29,7 @@ class CursorSymlinkManager:
         """
         self.config = config
 
-    def setup_cursor_integration(self) -> dict[str, object]:
+    def setup_cursor_integration(self) -> SymlinkReport:
         """Setup Cursor IDE integration via symlinks.
 
         Returns:
@@ -37,75 +39,73 @@ class CursorSymlinkManager:
             self.config.structure_config.get("cursor_integration")
         )
         if not validation_result["valid"]:
-            return cast(dict[str, object], validation_result.get("error_response", {}))
+            return self._build_validation_error_report(validation_result)
 
         symlink_location = cast(str, validation_result["symlink_location"])
-        symlink_config = cast(dict[str, object], validation_result["symlink_config"])
+        symlink_config = cast(ModelDict, validation_result["symlink_config"])
 
         cursor_dir = self.config.project_root / symlink_location
         cursor_dir.mkdir(parents=True, exist_ok=True)
 
-        report: dict[str, object] = {
-            "success": True,
-            "symlinks_created": [],
-            "errors": [],
-            "platform": platform.system(),
-        }
+        symlinks_created: list[SymlinkEntry] = []
+        errors: list[str] = []
 
-        self._create_all_symlinks(symlink_config, cursor_dir, report)
+        self._create_all_symlinks(symlink_config, cursor_dir, symlinks_created, errors)
 
-        return report
+        return SymlinkReport(
+            success=True,
+            symlinks_created=symlinks_created,
+            errors=errors,
+            platform=platform.system(),
+        )
+
+    def _build_validation_error_report(
+        self, validation_result: ModelDict
+    ) -> SymlinkReport:
+        """Build error report from validation result."""
+        error_response = validation_result.get("error_response")
+        if isinstance(error_response, dict):
+            error_val = error_response.get("error")
+            error_msg = error_val if isinstance(error_val, str) else "Unknown error"
+            return SymlinkReport(
+                success=False,
+                symlinks_created=[],
+                errors=[error_msg],
+                platform=platform.system(),
+            )
+        return SymlinkReport(
+            success=False,
+            symlinks_created=[],
+            errors=["Invalid cursor integration configuration"],
+            platform=platform.system(),
+        )
 
     def create_symlink(
-        self, target: Path, link: Path, report: dict[str, object]
+        self,
+        target: Path,
+        link: Path,
+        symlinks_created: list[SymlinkEntry],
+        errors: list[str],
     ) -> None:
         """Create a symlink with cross-platform compatibility.
 
         Args:
             target: Target path (what the symlink points to)
             link: Symlink path (the symlink itself)
-            report: Report dictionary to update
+            symlinks_created: List to append created symlinks to
+            errors: List to append errors to
         """
-        errors_list, symlinks_list = self._extract_symlink_report_lists(report)
-
-        if not self._remove_existing_symlink(link, errors_list, report):
+        if not self._remove_existing_symlink(link, errors):
             return
 
-        self._create_symlink_by_platform(target, link, errors_list, symlinks_list)
-        self._update_symlink_report(report, errors_list, symlinks_list)
+        self._create_symlink_by_platform(target, link, symlinks_created, errors)
 
-    def _extract_symlink_report_lists(
-        self, report: dict[str, object]
-    ) -> tuple[list[str], list[dict[str, object]]]:
-        """Extract typed lists from symlink report.
-
-        Args:
-            report: Report dictionary
-
-        Returns:
-            Tuple of (errors_list, symlinks_list)
-        """
-        errors_val = report.get("errors", [])
-        errors_list: list[str] = (
-            cast(list[str], errors_val) if isinstance(errors_val, list) else []
-        )
-        symlinks_created_val = report.get("symlinks_created", [])
-        symlinks_list: list[dict[str, object]] = (
-            cast(list[dict[str, object]], symlinks_created_val)
-            if isinstance(symlinks_created_val, list)
-            else []
-        )
-        return errors_list, symlinks_list
-
-    def _remove_existing_symlink(
-        self, link: Path, errors_list: list[str], report: dict[str, object]
-    ) -> bool:
+    def _remove_existing_symlink(self, link: Path, errors: list[str]) -> bool:
         """Remove existing symlink or file if it exists.
 
         Args:
             link: Symlink path
-            errors_list: List of error messages
-            report: Report dictionary to update
+            errors: List of error messages to update
 
         Returns:
             True if successful or no removal needed, False if error occurred
@@ -113,13 +113,11 @@ class CursorSymlinkManager:
         if link.exists() or link.is_symlink():
             try:
                 if link.is_dir() and not link.is_symlink():
-                    errors_list.append(f"Cannot replace directory with symlink: {link}")
-                    report["errors"] = errors_list
+                    errors.append(f"Cannot replace directory with symlink: {link}")
                     return False
                 link.unlink()
             except Exception as e:
-                errors_list.append(f"Failed to remove existing link {link}: {e}")
-                report["errors"] = errors_list
+                errors.append(f"Failed to remove existing link {link}: {e}")
                 return False
         return True
 
@@ -127,16 +125,16 @@ class CursorSymlinkManager:
         self,
         target: Path,
         link: Path,
-        errors_list: list[str],
-        symlinks_list: list[dict[str, object]],
+        symlinks_created: list[SymlinkEntry],
+        errors: list[str],
     ) -> None:
         """Create symlink with platform-specific handling.
 
         Args:
             target: Target path
             link: Symlink path
-            errors_list: List of error messages
-            symlinks_list: List of created symlinks
+            symlinks_created: List to append created symlinks to
+            errors: List to append errors to
         """
         try:
             rel_target = os.path.relpath(target, link.parent)
@@ -146,11 +144,15 @@ class CursorSymlinkManager:
             else:
                 self._create_unix_symlink(rel_target, link, target)
 
-            symlinks_list.append(
-                {"link": str(link), "target": str(target), "relative_path": rel_target}
+            symlinks_created.append(
+                SymlinkEntry(
+                    link=str(link),
+                    target=str(target),
+                    relative_path=rel_target,
+                )
             )
         except Exception as e:
-            errors_list.append(f"Failed to create symlink {link} -> {target}: {e}")
+            errors.append(f"Failed to create symlink {link} -> {target}: {e}")
 
     def _create_windows_symlink(self, target: Path, link: Path) -> None:
         """Create symlink on Windows platform.
@@ -182,31 +184,15 @@ class CursorSymlinkManager:
         """
         os.symlink(rel_target, link, target_is_directory=target.is_dir())
 
-    def _update_symlink_report(
-        self,
-        report: dict[str, object],
-        errors_list: list[str],
-        symlinks_list: list[dict[str, object]],
-    ) -> None:
-        """Update report with symlink creation results.
-
-        Args:
-            report: Report dictionary to update
-            errors_list: List of error messages
-            symlinks_list: List of created symlinks
-        """
-        report["symlinks_created"] = symlinks_list
-        report["errors"] = errors_list
-
     def _validate_cursor_integration_config(
         self,
-        cursor_integration_val: object,
-    ) -> dict[str, object]:
+        cursor_integration_val: JsonValue,
+    ) -> ModelDict:
         """Validate cursor integration configuration."""
         if not isinstance(cursor_integration_val, dict):
             return _build_validation_error("Invalid cursor_integration config")
 
-        cursor_integration = cast(dict[str, object], cursor_integration_val)
+        cursor_integration = cast(ModelDict, cursor_integration_val)
 
         enabled_error = _validate_enabled_flag(cursor_integration)
         if enabled_error:
@@ -222,47 +208,70 @@ class CursorSymlinkManager:
         if symlinks_error:
             return symlinks_error
 
-        return {
-            "valid": True,
-            "cursor_integration": cursor_integration,
-            "symlink_location": symlink_location,
-            "symlink_config": symlink_config,
-        }
+        return cast(
+            ModelDict,
+            {
+                "valid": True,
+                "cursor_integration": cursor_integration,
+                "symlink_location": symlink_location,
+                "symlink_config": symlink_config,
+            },
+        )
 
     def _create_all_symlinks(
         self,
-        symlink_config: dict[str, object],
+        symlink_config: ModelDict,
         cursor_dir: Path,
-        report: dict[str, object],
+        symlinks_created: list[SymlinkEntry],
+        errors: list[str],
     ) -> None:
-        """Create all symlinks for cursor integration."""
-        if symlink_config.get("memory_bank"):
+        """Create all symlinks for cursor integration.
+
+        Args:
+            symlink_config: Symlink configuration
+            cursor_dir: Cursor directory for symlinks
+            symlinks_created: List to append created symlinks to
+            errors: List to append errors to
+        """
+        if bool(symlink_config.get("memory_bank")):
             self.create_symlink(
-                self.config.get_path("memory_bank"), cursor_dir / "memory-bank", report
+                self.config.get_path("memory_bank"),
+                cursor_dir / "memory-bank",
+                symlinks_created,
+                errors,
             )
 
-        if symlink_config.get("rules"):
+        if bool(symlink_config.get("rules")):
             self.create_symlink(
-                self.config.get_path("rules"), cursor_dir / "rules", report
+                self.config.get_path("rules"),
+                cursor_dir / "rules",
+                symlinks_created,
+                errors,
             )
 
-        if symlink_config.get("plans"):
+        if bool(symlink_config.get("plans")):
             self.create_symlink(
-                self.config.get_path("plans"), cursor_dir / "plans", report
+                self.config.get_path("plans"),
+                cursor_dir / "plans",
+                symlinks_created,
+                errors,
             )
 
 
-def _build_validation_error(error_message: str) -> dict[str, object]:
+def _build_validation_error(error_message: str) -> ModelDict:
     """Build validation error response."""
-    return {
-        "valid": False,
-        "error_response": {"success": False, "error": error_message},
-    }
+    return cast(
+        ModelDict,
+        {
+            "valid": False,
+            "error_response": {"success": False, "error": error_message},
+        },
+    )
 
 
 def _validate_enabled_flag(
-    cursor_integration: dict[str, object],
-) -> dict[str, object] | None:
+    cursor_integration: ModelDict,
+) -> ModelDict | None:
     """Validate enabled flag."""
     enabled_val = cursor_integration.get("enabled")
     if not isinstance(enabled_val, bool) or not enabled_val:
@@ -271,8 +280,8 @@ def _validate_enabled_flag(
 
 
 def _validate_symlink_location(
-    cursor_integration: dict[str, object],
-) -> tuple[dict[str, object] | None, str]:
+    cursor_integration: ModelDict,
+) -> tuple[ModelDict | None, str]:
     """Validate symlink location."""
     symlink_location_val = cursor_integration.get("symlink_location")
     if not isinstance(symlink_location_val, str):
@@ -284,13 +293,10 @@ def _validate_symlink_location(
 
 
 def _validate_symlinks(
-    cursor_integration: dict[str, object],
-) -> tuple[dict[str, object] | None, dict[str, object]]:
+    cursor_integration: ModelDict,
+) -> tuple[ModelDict | None, ModelDict]:
     """Validate symlinks config."""
     symlinks_val = cursor_integration.get("symlinks")
     if not isinstance(symlinks_val, dict):
-        return (
-            _build_validation_error("Invalid symlinks config"),
-            {},
-        )
-    return None, cast(dict[str, object], symlinks_val)
+        return _build_validation_error("Invalid symlinks config"), {}
+    return None, cast(ModelDict, symlinks_val)

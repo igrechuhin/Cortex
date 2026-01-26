@@ -6,10 +6,11 @@ detects unused content, and analyzes task-based access patterns.
 """
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import cast
 
+from cortex.analysis.models import CoAccessPattern
+from cortex.analysis.pattern_analysis import AccessFrequencyResult
 from cortex.analysis.pattern_analysis import (
     get_access_frequency as analyze_access_frequency,
 )
@@ -44,8 +45,9 @@ from cortex.analysis.pattern_types import (
 )
 from cortex.core.async_file_utils import open_async_text_file
 from cortex.core.exceptions import MemoryBankError
+from cortex.core.models import JsonValue
 
-# Re-export types for backward compatibility
+# Re-export types for convenience
 __all__ = [
     "PatternAnalyzer",
     "AccessRecord",
@@ -96,7 +98,7 @@ class PatternAnalyzer:
 
         try:
             with open(self.access_log_path, encoding="utf-8") as f:
-                data_raw: object = json.load(f)
+                data_raw: JsonValue = json.load(f)
                 return normalize_access_log(data_raw)
         except (OSError, json.JSONDecodeError):
             # If corrupted, start fresh but keep backup
@@ -114,45 +116,33 @@ class PatternAnalyzer:
             async with open_async_text_file(
                 self.access_log_path, "w", "utf-8"
             ) as file_handle:
-                _ = await file_handle.write(json.dumps(self.access_data, indent=2))
+                _ = await file_handle.write(
+                    json.dumps(self.access_data.model_dump(mode="json"), indent=2)
+                )
         except OSError as e:
             raise MemoryBankError(f"Failed to save access log: {e}") from e
 
     def _update_file_stats(self, file_path: str, timestamp: str, task_id: str | None):
         """Update file statistics for an access event."""
-        file_stats = self.access_data["file_stats"]
-        if file_path not in file_stats:
-            file_stats[file_path] = {
-                "total_accesses": 0,
-                "first_access": timestamp,
-                "last_access": timestamp,
-                "tasks": [],
-            }
-
-        stats = file_stats[file_path]
-        total_accesses_raw: object = stats.get("total_accesses", 0)
-        total_accesses = (
-            int(total_accesses_raw)
-            if isinstance(total_accesses_raw, (int, float))
-            else 0
-        )
-        stats["total_accesses"] = total_accesses + 1
-        stats["last_access"] = timestamp
-
-        if task_id:
-            tasks_raw: object = stats.get("tasks", [])
-            tasks_list: list[object] = (
-                cast(list[object], tasks_raw) if isinstance(tasks_raw, list) else []
+        stats = self.access_data.file_stats.get(file_path)
+        if stats is None:
+            stats = FileStatsEntry(
+                total_accesses=0,
+                first_access=timestamp,
+                last_access=timestamp,
+                tasks=[],
             )
-            tasks: list[str] = [str(t) for t in tasks_list if t is not None]
-            if task_id not in tasks:
-                tasks.append(task_id)
-                stats["tasks"] = tasks
+            self.access_data.file_stats[file_path] = stats
+
+        stats.total_accesses += 1
+        stats.last_access = timestamp
+        if task_id and task_id not in stats.tasks:
+            stats.tasks.append(task_id)
 
     def _update_co_access_patterns(self, file_path: str, context_files: list[str]):
         """Update co-access patterns for files accessed together."""
         update_co_access_patterns(
-            self.access_data["co_access_patterns"], file_path, context_files
+            self.access_data.co_access_patterns, file_path, context_files
         )
 
     def _update_task_patterns(
@@ -163,9 +153,12 @@ class PatternAnalyzer:
         timestamp: str,
     ):
         """Update task patterns with file access information."""
-        task_patterns = self.access_data.get("task_patterns", {})
         update_task_patterns(
-            task_patterns, file_path, task_id, task_description, timestamp
+            self.access_data.task_patterns,
+            file_path,
+            task_id,
+            task_description,
+            timestamp,
         )
 
     def _create_access_record(
@@ -177,13 +170,13 @@ class PatternAnalyzer:
         context_files: list[str] | None,
     ) -> AccessRecord:
         """Create an access record from parameters."""
-        return {
-            "timestamp": timestamp,
-            "file": file_path,
-            "task_id": task_id,
-            "task_description": task_description,
-            "context_files": context_files or [],
-        }
+        return AccessRecord(
+            timestamp=timestamp,
+            file=file_path,
+            task_id=task_id,
+            task_description=task_description,
+            context_files=context_files or [],
+        )
 
     async def record_access(
         self,
@@ -201,11 +194,11 @@ class PatternAnalyzer:
             task_description: Optional task description
             context_files: Optional list of files accessed in same context
         """
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
         access_record = self._create_access_record(
             file_path, timestamp, task_id, task_description, context_files
         )
-        self.access_data["accesses"].append(access_record)
+        self.access_data.accesses.append(access_record)
         self._update_file_stats(file_path, timestamp, task_id)
         if context_files:
             self._update_co_access_patterns(file_path, context_files)
@@ -216,7 +209,7 @@ class PatternAnalyzer:
 
     async def get_access_frequency(
         self, time_range_days: int = 30, min_access_count: int = 1
-    ) -> dict[str, dict[str, object]]:
+    ) -> AccessFrequencyResult:
         """Get file access frequency within a time range.
 
         Performance optimization: Only processes the most recent ACCESS_LOG_MAX_ENTRIES
@@ -230,12 +223,12 @@ class PatternAnalyzer:
             Dictionary mapping file paths to access statistics
         """
         return analyze_access_frequency(
-            self.access_data["accesses"], time_range_days, min_access_count
+            self.access_data.accesses, time_range_days, min_access_count
         )
 
     async def get_co_access_patterns(
         self, min_co_access_count: int = 3, time_range_days: int | None = None
-    ) -> list[dict[str, object]]:
+    ) -> list[CoAccessPattern]:
         """
         Get frequently co-accessed file pairs.
 
@@ -247,8 +240,8 @@ class PatternAnalyzer:
             List of co-access patterns sorted by frequency
         """
         return detect_co_access_patterns(
-            self.access_data["co_access_patterns"],
-            self.access_data["accesses"],
+            self.access_data.co_access_patterns,
+            self.access_data.accesses,
             min_co_access_count,
             time_range_days,
         )
@@ -265,7 +258,7 @@ class PatternAnalyzer:
         Returns:
             List of unused files with last access information
         """
-        return analyze_unused_files(self.access_data["file_stats"], time_range_days)
+        return analyze_unused_files(self.access_data.file_stats, time_range_days)
 
     async def get_task_patterns(
         self, time_range_days: int | None = None
@@ -287,7 +280,7 @@ class PatternAnalyzer:
             else ""
         )
         return detect_task_patterns(
-            self.access_data["task_patterns"], time_range_days, cutoff_str
+            self.access_data.task_patterns, time_range_days, cutoff_str
         )
 
     async def get_temporal_patterns(
@@ -302,24 +295,13 @@ class PatternAnalyzer:
         Returns:
             Dictionary with temporal pattern statistics
         """
-        return analyze_temporal_patterns(self.access_data["accesses"], time_range_days)
+        return analyze_temporal_patterns(self.access_data.accesses, time_range_days)
 
     def _filter_accesses_by_cutoff(
         self, accesses_list: list[AccessRecord], cutoff_str: str
     ) -> list[AccessRecord]:
         """Filter accesses by cutoff timestamp."""
-        return [
-            access
-            for access in accesses_list
-            if (
-                access_timestamp_str := (
-                    str(access_timestamp_raw)
-                    if (access_timestamp_raw := access.get("timestamp", ""))
-                    else ""
-                )
-            )
-            and access_timestamp_str >= cutoff_str
-        ]
+        return [access for access in accesses_list if access.timestamp >= cutoff_str]
 
     def _filter_task_patterns_by_cutoff(
         self, task_patterns: dict[str, TaskPatternEntry], cutoff_str: str
@@ -327,11 +309,7 @@ class PatternAnalyzer:
         """Filter task patterns by cutoff timestamp."""
         filtered: dict[str, TaskPatternEntry] = {}
         for task_id, pattern in task_patterns.items():
-            pattern_timestamp_raw: object = pattern.get("timestamp", "")
-            pattern_timestamp_str = (
-                str(pattern_timestamp_raw) if pattern_timestamp_raw else ""
-            )
-            if pattern_timestamp_str >= cutoff_str:
+            if pattern.timestamp >= cutoff_str:
                 filtered[task_id] = pattern
         return filtered
 
@@ -342,20 +320,20 @@ class PatternAnalyzer:
         Args:
             keep_days: Number of days of data to keep
         """
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=keep_days)
+        cutoff_date = datetime.now(UTC) - timedelta(days=keep_days)
         cutoff_str = cutoff_date.isoformat()
 
-        accesses_list = self.access_data.get("accesses", [])
-        original_count = len(accesses_list)
-        filtered_accesses = self._filter_accesses_by_cutoff(accesses_list, cutoff_str)
-        self.access_data["accesses"] = filtered_accesses
+        original_count = len(self.access_data.accesses)
+        filtered_accesses = self._filter_accesses_by_cutoff(
+            self.access_data.accesses, cutoff_str
+        )
+        self.access_data.accesses = filtered_accesses
         removed_count = original_count - len(filtered_accesses)
 
-        task_patterns = self.access_data.get("task_patterns", {})
         filtered_task_patterns = self._filter_task_patterns_by_cutoff(
-            task_patterns, cutoff_str
+            self.access_data.task_patterns, cutoff_str
         )
-        self.access_data["task_patterns"] = filtered_task_patterns
+        self.access_data.task_patterns = filtered_task_patterns
 
         await self._save_access_log()
 

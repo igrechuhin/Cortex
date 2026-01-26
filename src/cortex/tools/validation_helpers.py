@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Literal, cast
 
 from cortex.core.file_system import FileSystemManager
+from cortex.core.models import JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 CheckType = Literal[
@@ -76,36 +77,41 @@ def create_validation_error_response(error: Exception) -> str:
     )
 
 
-def _create_transclusion_fix(files: list[str]) -> dict[str, object]:
+def _create_transclusion_fix(files: list[str]) -> ModelDict:
     """Create a transclusion fix suggestion for duplicated files."""
+    files_json: list[JsonValue] = [cast(JsonValue, f) for f in files]
+    steps: list[JsonValue] = [
+        cast(JsonValue, "1. Create a new file for shared content"),
+        cast(JsonValue, "2. Move duplicate content to the new file"),
+        cast(JsonValue, "3. Replace duplicates with transclusion syntax"),
+    ]
     return {
-        "files": files,
+        "files": files_json,
         "suggestion": "Consider using transclusion: {{include:shared-content.md}}",
-        "steps": [
-            "1. Create a new file for shared content",
-            "2. Move duplicate content to the new file",
-            "3. Replace duplicates with transclusion syntax",
-        ],
+        "steps": steps,
     }
 
 
 def generate_duplication_fixes(
-    duplications_dict: dict[str, object],
-) -> list[dict[str, object]]:
+    duplications_data: ModelDict,
+) -> list[ModelDict]:
     """Generate fix suggestions for duplicate content."""
-    fixes: list[dict[str, object]] = []
-    exact_duplicates = cast(
-        list[dict[str, object]], duplications_dict.get("exact_duplicates", [])
-    )
-    for duplicate in exact_duplicates:
-        files = cast(list[str], duplicate.get("files", []))
-        if len(files) >= 2:
-            fixes.append(_create_transclusion_fix(files))
-    similar_content = cast(
-        list[dict[str, object]], duplications_dict.get("similar_content", [])
-    )
-    for similar in similar_content:
-        files = cast(list[str], similar.get("files", []))
-        if len(files) >= 2:
-            fixes.append(_create_transclusion_fix(files))
+    fixes: list[ModelDict] = []
+
+    exact_duplicates = duplications_data.get("exact_duplicates")
+    if isinstance(exact_duplicates, list):
+        for dup in exact_duplicates:
+            if isinstance(dup, dict):
+                files = dup.get("files")
+                if isinstance(files, list) and len(files) >= 2:
+                    fixes.append(_create_transclusion_fix([str(f) for f in files]))
+
+    similar_content = duplications_data.get("similar_content")
+    if isinstance(similar_content, list):
+        for sim in similar_content:
+            if isinstance(sim, dict):
+                files = sim.get("files")
+                if isinstance(files, list) and len(files) >= 2:
+                    fixes.append(_create_transclusion_fix([str(f) for f in files]))
+
     return fixes

@@ -8,29 +8,16 @@ contain required sections and follow proper structure.
 import json
 import re
 from pathlib import Path
-from typing import TypedDict, cast
+from typing import cast
 
-
-class ValidationError(TypedDict, total=False):
-    """Validation error structure."""
-
-    type: str
-    severity: str
-    message: str
-    suggestion: str | None
-
-
-class ValidationResult(TypedDict):
-    """Result of file validation."""
-
-    valid: bool
-    errors: list[ValidationError]
-    warnings: list[ValidationError]
-    score: int
-
+from cortex.core.models import JsonValue
+from cortex.validation.models import FileSchemaModel, ValidationError, ValidationResult
 
 # Default schemas for Memory Bank files
-DEFAULT_SCHEMAS = {
+SchemaDict = dict[str, list[str] | int]
+
+
+DEFAULT_SCHEMAS: dict[str, SchemaDict] = {
     "memorybankinstructions.md": {
         "required_sections": ["Purpose", "Guidelines", "Structure"],
         "recommended_sections": ["Best Practices", "Examples"],
@@ -95,15 +82,14 @@ class SchemaValidator:
         Args:
             config_path: Optional path to custom schema config
         """
-        self.schemas = DEFAULT_SCHEMAS.copy()
+        self.schemas: dict[str, FileSchemaModel] = {
+            file_name: FileSchemaModel.model_validate(schema)
+            for file_name, schema in DEFAULT_SCHEMAS.items()
+        }
         if config_path and config_path.exists():
             custom_schemas = self.load_custom_schemas(config_path)
             if custom_schemas:
-                # Cast to proper type since we validate structure in load_custom_schemas
-                typed_schemas = cast(
-                    dict[str, dict[str, list[str] | int]], custom_schemas
-                )
-                self.schemas.update(typed_schemas)
+                self.schemas.update(custom_schemas)
 
     async def validate_file(
         self, file_name: str, content: str, file_type: str | None = None
@@ -131,14 +117,12 @@ class SchemaValidator:
             return _handle_no_schema(file_name)
 
         sections = self.extract_sections(content)
-        errors, warnings = _run_all_validations(
-            self, sections, content, cast(dict[str, object], schema)
-        )
-        score = self.calculate_score(errors, warnings, cast(dict[str, object], schema))
+        errors, warnings = _run_all_validations(self, sections, content, schema)
+        score = self.calculate_score(errors, warnings, schema)
 
         return _build_validation_result(errors, warnings, score)
 
-    def get_schema(self, file_name: str) -> dict[str, object] | None:
+    def get_schema(self, file_name: str) -> FileSchemaModel | None:
         """
         Get schema definition for file.
 
@@ -146,12 +130,11 @@ class SchemaValidator:
             file_name: Name of file
 
         Returns:
-            Schema dictionary or None if no schema defined
+            FileSchemaModel or None if no schema defined
         """
-        result = self.schemas.get(file_name)
-        return cast(dict[str, object] | None, result) if result else None
+        return self.schemas.get(file_name)
 
-    def load_custom_schemas(self, config_path: Path) -> dict[str, object]:
+    def load_custom_schemas(self, config_path: Path) -> dict[str, FileSchemaModel]:
         """
         Load user-defined schemas.
 
@@ -159,7 +142,7 @@ class SchemaValidator:
             config_path: Path to custom schema config
 
         Returns:
-            Dictionary of custom schemas
+            Dictionary of custom schemas as FileSchemaModel instances
 
         Note:
             This method uses synchronous I/O during initialization for simplicity.
@@ -167,7 +150,7 @@ class SchemaValidator:
         """
         try:
             with open(config_path) as f:
-                config_raw = cast(object, json.load(f))
+                config_raw = cast(JsonValue, json.load(f))
         except Exception as e:
             from cortex.core.logging_config import logger
 
@@ -178,12 +161,20 @@ class SchemaValidator:
         if not isinstance(config_raw, dict):
             return {}
 
-        config: dict[str, object] = cast(dict[str, object], config_raw)
-        custom_schemas_raw: object = config.get("custom_schemas", {})
+        config = cast(dict[str, JsonValue], config_raw)
+        custom_schemas_raw: JsonValue = config.get("custom_schemas", {})
         if not isinstance(custom_schemas_raw, dict):
             return {}
 
-        return cast(dict[str, object], custom_schemas_raw)
+        custom_schemas_dict = cast(dict[str, JsonValue], custom_schemas_raw)
+        result: dict[str, FileSchemaModel] = {}
+        for file_name, schema_data in custom_schemas_dict.items():
+            if isinstance(schema_data, dict):
+                result[file_name] = FileSchemaModel.model_validate(schema_data)
+            elif isinstance(schema_data, FileSchemaModel):
+                result[file_name] = schema_data
+
+        return result
 
     def extract_sections(self, content: str) -> list[str]:
         """
@@ -226,12 +217,12 @@ class SchemaValidator:
         for req_section in required:
             if req_section not in sections:
                 errors.append(
-                    {
-                        "type": "missing_section",
-                        "severity": "error",
-                        "message": f"Required section '{req_section}' not found",
-                        "suggestion": f"Add '## {req_section}' section to the file",
-                    }
+                    ValidationError(
+                        type="missing_section",
+                        severity="error",
+                        message=f"Required section '{req_section}' not found",
+                        suggestion=f"Add '## {req_section}' section to the file",
+                    )
                 )
 
         return errors
@@ -254,12 +245,12 @@ class SchemaValidator:
         for rec_section in recommended:
             if rec_section not in sections:
                 warnings.append(
-                    {
-                        "type": "missing_recommended_section",
-                        "severity": "warning",
-                        "message": f"Recommended section '{rec_section}' not found",
-                        "suggestion": f"Consider adding '## {rec_section}' section",
-                    }
+                    ValidationError(
+                        type="missing_recommended_section",
+                        severity="warning",
+                        message=f"Recommended section '{rec_section}' not found",
+                        suggestion=f"Consider adding '## {rec_section}' section",
+                    )
                 )
 
         return warnings
@@ -306,12 +297,12 @@ class SchemaValidator:
         """Check if heading level skips."""
         if prev_level > 0 and level > prev_level + 1:
             errors.append(
-                {
-                    "type": "heading_level_skip",
-                    "severity": "error",
-                    "message": f"Line {line_num}: Heading level skip detected (level {prev_level} -> {level})",
-                    "suggestion": f"Use incremental heading levels. After {'#' * prev_level}, use {'#' * (prev_level + 1)}",
-                }
+                ValidationError(
+                    type="heading_level_skip",
+                    severity="error",
+                    message=f"Line {line_num}: Heading level skip detected (level {prev_level} -> {level})",
+                    suggestion=f"Use incremental heading levels. After {'#' * prev_level}, use {'#' * (prev_level + 1)}",
+                )
             )
 
     def _check_heading_too_deep(
@@ -325,19 +316,19 @@ class SchemaValidator:
         """Check if heading is too deeply nested."""
         if level > max_nesting + 1:  # +1 because we start counting from #
             errors.append(
-                {
-                    "type": "heading_too_deep",
-                    "severity": "warning",
-                    "message": f"Line {line_num}: Heading '{heading_text}' is too deeply nested (level {level})",
-                    "suggestion": f"Consider restructuring to use at most {max_nesting + 1} levels",
-                }
+                ValidationError(
+                    type="heading_too_deep",
+                    severity="warning",
+                    message=f"Line {line_num}: Heading '{heading_text}' is too deeply nested (level {level})",
+                    suggestion=f"Consider restructuring to use at most {max_nesting + 1} levels",
+                )
             )
 
     def calculate_score(
         self,
         errors: list[ValidationError],
         warnings: list[ValidationError],
-        schema: dict[str, object],  # noqa: ARG002
+        schema: FileSchemaModel,  # noqa: ARG002
     ) -> int:
         """
         Calculate validation score (0-100).
@@ -374,26 +365,26 @@ def _handle_no_schema(file_name: str) -> ValidationResult:
     Returns:
         Validation result with info warning
     """
-    return {
-        "valid": True,
-        "errors": [],
-        "warnings": [
-            {
-                "type": "no_schema",
-                "severity": "info",
-                "message": f"No validation schema defined for '{file_name}'",
-                "suggestion": None,
-            }
+    return ValidationResult(
+        valid=True,
+        errors=[],
+        warnings=[
+            ValidationError(
+                type="no_schema",
+                severity="info",
+                message=f"No validation schema defined for '{file_name}'",
+                suggestion=None,
+            )
         ],
-        "score": 100,
-    }
+        score=100,
+    )
 
 
 def _run_all_validations(
     validator: SchemaValidator,
     sections: list[str],
     content: str,
-    schema: dict[str, object],
+    schema: FileSchemaModel,
 ) -> tuple[list[ValidationError], list[ValidationError]]:
     """Run all validation checks on file.
 
@@ -409,26 +400,15 @@ def _run_all_validations(
     errors: list[ValidationError] = []
     warnings: list[ValidationError] = []
 
-    required_sections = schema.get("required_sections", [])
-    if isinstance(required_sections, list):
-        errors.extend(
-            validator.check_required_sections(
-                sections, cast(list[str], required_sections)
-            )
+    errors.extend(validator.check_required_sections(sections, schema.required_sections))
+    warnings.extend(
+        validator.check_recommended_sections(sections, schema.recommended_sections)
+    )
+    errors.extend(
+        validator.check_heading_levels(
+            content, schema.heading_level, schema.max_nesting
         )
-    recommended_sections = schema.get("recommended_sections", [])
-    if isinstance(recommended_sections, list):
-        warnings.extend(
-            validator.check_recommended_sections(
-                sections, cast(list[str], recommended_sections)
-            )
-        )
-    heading_level = schema.get("heading_level", 2)
-    max_nesting = schema.get("max_nesting", 3)
-    if isinstance(heading_level, int) and isinstance(max_nesting, int):
-        errors.extend(
-            validator.check_heading_levels(content, heading_level, max_nesting)
-        )
+    )
 
     return errors, warnings
 
@@ -448,9 +428,9 @@ def _build_validation_result(
     Returns:
         Complete validation result
     """
-    return {
-        "valid": len(errors) == 0,
-        "errors": errors,
-        "warnings": warnings,
-        "score": score,
-    }
+    return ValidationResult(
+        valid=len(errors) == 0,
+        errors=errors,
+        warnings=warnings,
+        score=score,
+    )

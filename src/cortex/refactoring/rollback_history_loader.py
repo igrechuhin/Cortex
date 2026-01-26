@@ -13,6 +13,7 @@ from pydantic import ValidationError
 
 from cortex.core.async_file_utils import open_async_text_file
 from cortex.core.exceptions import FileOperationError
+from cortex.core.models import JsonValue, ModelDict
 from cortex.refactoring.models import RollbackRecordModel
 
 # Type alias for rollback record data at JSON boundary
@@ -49,15 +50,15 @@ def _read_rollback_file(rollback_file: Path) -> dict[str, RollbackRecordData]:
         Dictionary of rollback data
     """
     with open(rollback_file) as f:
-        data_raw: object = json.load(f)
+        data_raw: JsonValue = json.load(f)
         if not isinstance(data_raw, dict):
             return {}
-        data_dict = cast(dict[str, object], data_raw)
-        rollbacks_raw: object = data_dict.get("rollbacks", {})
+        data_dict = cast(ModelDict, data_raw)
+        rollbacks_raw: JsonValue = data_dict.get("rollbacks", {})
         if not isinstance(rollbacks_raw, dict):
             return {}
         # Return typed dict - JSON structure is known
-        rollbacks_dict = cast(dict[str, object], rollbacks_raw)
+        rollbacks_dict = cast(ModelDict, rollbacks_raw)
         result: dict[str, RollbackRecordData] = {}
         for key, value in rollbacks_dict.items():
             if isinstance(value, dict):
@@ -120,7 +121,7 @@ async def save_rollbacks(
         data = {
             "last_updated": datetime.now().isoformat(),
             "rollbacks": {
-                rollback_id: rollback.model_dump()
+                rollback_id: rollback.model_dump(mode="json")
                 for rollback_id, rollback in rollbacks.items()
             },
         }

@@ -9,12 +9,14 @@ abstraction and reduced circular dependencies.
 from pathlib import Path
 from typing import Protocol
 
+from cortex.core.models import DetailedFileMetadata, IndexData
+
 
 class FileSystemProtocol(Protocol):
     """Protocol for file system operations using structural subtyping (PEP 544).
 
     This protocol defines the interface for safe file I/O operations with
-    conflict detection, content hashing, and markdown parsing. Any class that
+    conflict detection, content hashing, and markdown parsing. A class that
     implements these methods automatically satisfies this protocol without
     explicit inheritance.
 
@@ -161,7 +163,7 @@ class MetadataIndexProtocol(Protocol):
 
     This protocol defines the interface for managing file metadata including
     token counts, hashes, sections, links, and access statistics. The metadata
-    index provides fast lookups and persistence with corruption recovery. Any
+    index provides fast lookups and persistence with corruption recovery. A
     class implementing these methods automatically satisfies this protocol.
 
     Used by:
@@ -172,11 +174,13 @@ class MetadataIndexProtocol(Protocol):
 
     Example implementation:
         ```python
+        from cortex.core.models import IndexData
+
         class InMemoryMetadataIndex:
             def __init__(self):
-                self.data = {"files": {}, "version": "1.0"}
+                self.data = IndexData(...)
 
-            async def load(self) -> dict[str, object]:
+            async def load(self) -> IndexData:
                 return self.data
 
             async def save(self):
@@ -206,11 +210,11 @@ class MetadataIndexProtocol(Protocol):
                     "transclusions": transclusions or [],
                 }
 
-            async def get_file_metadata(self, file_name: str) -> dict[str, object] | None:
-                return self.data["files"].get(file_name)
+            async def get_file_metadata(self, file_name: str) -> DetailedFileMetadata | None:
+                return self.data.files.get(file_name)
 
-            async def get_all_files_metadata(self) -> dict[str, dict[str, object]]:
-                return self.data["files"]
+            async def get_all_files_metadata(self) -> dict[str, DetailedFileMetadata]:
+                return self.data.files
 
             async def list_all_files(self) -> list[str]:
                 return list(self.data["files"].keys())
@@ -228,11 +232,11 @@ class MetadataIndexProtocol(Protocol):
         - Includes corruption recovery for reliability
     """
 
-    async def load(self) -> dict[str, object]:
+    async def load(self) -> IndexData:
         """Load metadata index from disk.
 
         Returns:
-            Index data dictionary
+            Index data as IndexData model
 
         Raises:
             MemoryBankError: If load fails and recovery is not possible
@@ -274,22 +278,22 @@ class MetadataIndexProtocol(Protocol):
         """
         ...
 
-    async def get_file_metadata(self, file_name: str) -> dict[str, object] | None:
+    async def get_file_metadata(self, file_name: str) -> DetailedFileMetadata | None:
         """Get metadata for a specific file.
 
         Args:
             file_name: Name of file
 
         Returns:
-            Metadata dictionary or None if not found
+            Metadata model or None if not found
         """
         ...
 
-    async def get_all_files_metadata(self) -> dict[str, dict[str, object]]:
+    async def get_all_files_metadata(self) -> dict[str, DetailedFileMetadata]:
         """Get metadata for all files.
 
         Returns:
-            Dictionary mapping file names to metadata
+            Dictionary mapping file names to metadata models
         """
         ...
 

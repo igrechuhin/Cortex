@@ -8,7 +8,9 @@ and store statistics for optimization.
 import json
 from datetime import datetime
 from pathlib import Path
+from typing import cast
 
+from cortex.core.models import JsonDict, JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.session_logger import (
     LoadContextLogEntry,
@@ -19,9 +21,12 @@ from cortex.core.session_logger import (
 )
 from cortex.tools.models import (
     ContextInsights,
+    ContextStatisticsResult,
     ContextUsageEntry,
     ContextUsageStatistics,
+    CurrentSessionAnalysisResult,
     FileEffectiveness,
+    SessionLogsAnalysisResult,
     SessionStats,
     TaskTypeInsight,
 )
@@ -105,22 +110,22 @@ def _analyze_log_entry(
     session_id: str, entry: LoadContextLogEntry
 ) -> ContextUsageEntry:
     """Analyze a single log entry and create usage entry."""
-    relevance_scores = list(entry["relevance_scores"].values())
+    relevance_scores = list(entry.relevance_scores.values())
     avg_score = sum(relevance_scores) / len(relevance_scores) if relevance_scores else 0
 
     # Store file names and relevances for insight generation
-    selected_files = entry["selected_files"]
-    relevance_by_file = entry["relevance_scores"]
+    selected_files = entry.selected_files
+    relevance_by_file = entry.relevance_scores
 
     return ContextUsageEntry(
         session_id=session_id,
-        timestamp=entry["timestamp"],
-        task_description=entry["task_description"],
-        token_budget=entry["token_budget"],
-        total_tokens=entry["total_tokens"],
-        utilization=entry["utilization"],
+        timestamp=entry.timestamp,
+        task_description=entry.task_description,
+        token_budget=entry.token_budget,
+        total_tokens=entry.total_tokens,
+        utilization=entry.utilization,
         files_selected=len(selected_files),
-        files_excluded=len(entry["excluded_files"]),
+        files_excluded=len(entry.excluded_files),
         avg_relevance_score=round(avg_score, 3),
         files_with_high_relevance=sum(1 for s in relevance_scores if s > 0.7),
         files_with_low_relevance=sum(1 for s in relevance_scores if s < 0.3),
@@ -443,40 +448,51 @@ def _build_current_session_result(
     session_stats: SessionStats,
     stats: ContextUsageStatistics,
     new_entries_added: int,
-) -> dict[str, object]:
-    """Build result dictionary for current session analysis."""
+) -> CurrentSessionAnalysisResult:
+    """Build result model for current session analysis."""
+    from cortex.core.models import JsonDict
+
     insights = stats.insights or _create_empty_insights()
-    return {
-        "status": "success",
-        "session_id": session_id,
-        "current_session": {
-            "calls_analyzed": len(current_entries),
-            "statistics": session_stats.model_dump(mode="json"),
-            "entries": [e.model_dump(mode="json") for e in current_entries],
-        },
-        "global_statistics_updated": new_entries_added > 0,
-        "new_entries_added": new_entries_added,
-        "total_sessions": stats.total_sessions_analyzed,
-        "total_entries": len(stats.entries),
-        "insights": insights.model_dump(mode="json"),
-    }
+    return CurrentSessionAnalysisResult(
+        status="success",
+        session_id=session_id,
+        current_session=JsonDict.from_dict(
+            {
+                "calls_analyzed": len(current_entries),
+                "statistics": session_stats.model_dump(mode="json"),
+                "entries": [e.model_dump(mode="json") for e in current_entries],
+            }
+        ),
+        global_statistics_updated=new_entries_added > 0,
+        new_entries_added=new_entries_added,
+        total_sessions=stats.total_sessions_analyzed,
+        total_entries=len(stats.entries),
+        insights=JsonDict.from_dict(insights.model_dump(mode="json")),
+        message=None,
+    )
 
 
-def analyze_current_session(project_root: Path) -> dict[str, object]:
+def analyze_current_session(project_root: Path) -> CurrentSessionAnalysisResult:
     """Analyze the current session's load_context calls and update statistics."""
     session_id = get_session_id()
     log_path = get_session_log_path(project_root)
     session_log = read_session_log(log_path)
-    if session_log is None or not session_log["load_context_calls"]:
-        return {
-            "status": "no_data",
-            "session_id": session_id,
-            "message": "No load_context calls in current session.",
-        }
+    if session_log is None or not session_log.load_context_calls:
+        return CurrentSessionAnalysisResult(
+            status="no_data",
+            session_id=session_id,
+            current_session=None,
+            global_statistics_updated=None,
+            new_entries_added=None,
+            total_sessions=None,
+            total_entries=None,
+            insights=None,
+            message="No load_context calls in current session.",
+        )
 
     current_entries = [
         _analyze_log_entry(session_id, entry)
-        for entry in session_log["load_context_calls"]
+        for entry in session_log.load_context_calls
     ]
     session_stats = _calculate_session_stats(current_entries)
     stats, new_entries_added = _update_global_stats(
@@ -495,11 +511,11 @@ def _process_log_files(
     sessions_analyzed = 0
     for log_file in log_files:
         session_log = read_session_log(log_file)
-        if session_log is None or session_log["session_id"] in existing_sessions:
+        if session_log is None or session_log.session_id in existing_sessions:
             continue
         sessions_analyzed += 1
-        for entry in session_log["load_context_calls"]:
-            new_entries.append(_analyze_log_entry(session_log["session_id"], entry))
+        for entry in session_log.load_context_calls:
+            new_entries.append(_analyze_log_entry(session_log.session_id, entry))
     return new_entries, sessions_analyzed
 
 
@@ -507,33 +523,47 @@ def _build_session_logs_result(
     sessions_analyzed: int,
     new_entries: list[ContextUsageEntry],
     stats: ContextUsageStatistics,
-) -> dict[str, object]:
-    """Build result dictionary for session logs analysis."""
+) -> SessionLogsAnalysisResult:
+    """Build result model for session logs analysis."""
+    from cortex.core.models import JsonDict, JsonValue
+
     insights = stats.insights or _create_empty_insights()
-    return {
-        "status": "success",
-        "new_sessions_analyzed": sessions_analyzed,
-        "new_entries_added": len(new_entries),
-        "total_sessions": stats.total_sessions_analyzed,
-        "total_entries": len(stats.entries),
-        "statistics": {
-            "avg_token_utilization": stats.avg_token_utilization,
-            "avg_files_selected": stats.avg_files_selected,
-            "avg_relevance_score": stats.avg_relevance_score,
-            "common_task_patterns": stats.common_task_patterns,
-        },
-        "insights": insights.model_dump(mode="json"),
+    common_task_patterns_json: dict[str, JsonValue] = {
+        key: cast(JsonValue, value) for key, value in stats.common_task_patterns.items()
     }
+    return SessionLogsAnalysisResult(
+        status="success",
+        new_sessions_analyzed=sessions_analyzed,
+        new_entries_added=len(new_entries),
+        total_sessions=stats.total_sessions_analyzed,
+        total_entries=len(stats.entries),
+        statistics=JsonDict.from_dict(
+            {
+                "avg_token_utilization": stats.avg_token_utilization,
+                "avg_files_selected": stats.avg_files_selected,
+                "avg_relevance_score": stats.avg_relevance_score,
+                "common_task_patterns": cast(JsonValue, common_task_patterns_json),
+            }
+        ),
+        insights=JsonDict.from_dict(insights.model_dump(mode="json")),
+        message=None,
+    )
 
 
-def analyze_session_logs(project_root: Path) -> dict[str, object]:
+def analyze_session_logs(project_root: Path) -> SessionLogsAnalysisResult:
     """Analyze all session logs and update statistics."""
     log_files = list_session_logs(project_root)
     if not log_files:
-        return {
-            "status": "no_data",
-            "message": "No session logs found. Use load_context to generate data.",
-        }
+        return SessionLogsAnalysisResult(
+            status="no_data",
+            new_sessions_analyzed=None,
+            new_entries_added=None,
+            total_sessions=None,
+            total_entries=None,
+            statistics=None,
+            insights=None,
+            message="No session logs found. Use load_context to generate data.",
+        )
 
     stats_path = _get_statistics_path(project_root)
     stats = _load_statistics(stats_path)
@@ -550,7 +580,40 @@ def analyze_session_logs(project_root: Path) -> dict[str, object]:
     return _build_session_logs_result(sessions_analyzed, new_entries, stats)
 
 
-def get_context_statistics(project_root: Path) -> dict[str, object]:
+def _build_statistics_dict(
+    stats: ContextUsageStatistics, common_task_patterns_json: dict[str, JsonValue]
+) -> ModelDict:
+    """Build statistics dictionary."""
+    return {
+        "avg_token_utilization": stats.avg_token_utilization,
+        "avg_files_selected": stats.avg_files_selected,
+        "avg_relevance_score": stats.avg_relevance_score,
+        "common_task_patterns": cast(JsonValue, common_task_patterns_json),
+    }
+
+
+def _build_success_statistics_result(
+    stats: ContextUsageStatistics, common_task_patterns_json: dict[str, JsonValue]
+) -> ContextStatisticsResult:
+    """Build success statistics result."""
+    insights = stats.insights or _create_empty_insights()
+    return ContextStatisticsResult(
+        status="success",
+        last_updated=stats.last_updated,
+        total_sessions=stats.total_sessions_analyzed,
+        total_calls=stats.total_load_context_calls,
+        statistics=JsonDict.from_dict(
+            _build_statistics_dict(stats, common_task_patterns_json)
+        ),
+        insights=JsonDict.from_dict(insights.model_dump(mode="json")),
+        recent_entries=[
+            JsonDict.from_dict(e.model_dump(mode="json")) for e in stats.entries[-10:]
+        ],
+        message=None,
+    )
+
+
+def get_context_statistics(project_root: Path) -> ContextStatisticsResult:
     """Get current context usage statistics.
 
     Args:
@@ -561,26 +624,19 @@ def get_context_statistics(project_root: Path) -> dict[str, object]:
     """
     stats_path = _get_statistics_path(project_root)
     if not stats_path.exists():
-        return {
-            "status": "no_data",
-            "message": "No statistics found. Run analyze_context_effectiveness first.",
-        }
+        return ContextStatisticsResult(
+            status="no_data",
+            last_updated=None,
+            total_sessions=None,
+            total_calls=None,
+            statistics=None,
+            insights=None,
+            recent_entries=None,
+            message="No statistics found. Run analyze_context_effectiveness first.",
+        )
 
     stats = _load_statistics(stats_path)
-    insights = stats.insights or _create_empty_insights()
-    return {
-        "status": "success",
-        "last_updated": stats.last_updated,
-        "total_sessions": stats.total_sessions_analyzed,
-        "total_calls": stats.total_load_context_calls,
-        "statistics": {
-            "avg_token_utilization": stats.avg_token_utilization,
-            "avg_files_selected": stats.avg_files_selected,
-            "avg_relevance_score": stats.avg_relevance_score,
-            "common_task_patterns": stats.common_task_patterns,
-        },
-        "insights": insights.model_dump(mode="json"),
-        "recent_entries": [
-            e.model_dump(mode="json") for e in stats.entries[-10:]
-        ],  # Last 10 entries
+    common_task_patterns_json: dict[str, JsonValue] = {
+        key: cast(JsonValue, value) for key, value in stats.common_task_patterns.items()
     }
+    return _build_success_statistics_result(stats, common_task_patterns_json)

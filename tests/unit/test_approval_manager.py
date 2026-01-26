@@ -7,69 +7,20 @@ from typing import cast
 
 import pytest
 
-from cortex.refactoring.approval_manager import (
-    Approval,
-    ApprovalManager,
-    ApprovalPreference,
-    ApprovalStatus,
-)
+from cortex.refactoring.approval_manager import ApprovalManager
+from cortex.refactoring.models import ApprovalModel
+from cortex.refactoring.models import ApprovalStatus as ApprovalStatusEnum
 
 
-class TestApprovalStatus:
-    """Test ApprovalStatus enum."""
+class TestApprovalStatusEnum:
+    """Test ApprovalStatus enum values."""
 
     def test_status_values(self):
-        """Test approval status enum values."""
-        # Assert
-        assert ApprovalStatus.PENDING.value == "pending"
-        assert ApprovalStatus.APPROVED.value == "approved"
-        assert ApprovalStatus.REJECTED.value == "rejected"
-        assert ApprovalStatus.EXPIRED.value == "expired"
-        assert ApprovalStatus.APPLIED.value == "applied"
-
-
-class TestApprovalDataclass:
-    """Test Approval dataclass."""
-
-    def test_approval_to_dict(self):
-        """Test converting approval to dictionary."""
-        # Arrange
-        approval = Approval(
-            approval_id="apr-1",
-            suggestion_id="sug-1",
-            suggestion_type="consolidation",
-            status="approved",
-            created_at="2025-01-01T12:00:00",
-        )
-
-        # Act
-        result = approval.to_dict()
-
-        # Assert
-        assert result["approval_id"] == "apr-1"
-        assert result["suggestion_id"] == "sug-1"
-        assert result["status"] == "approved"
-
-
-class TestApprovalPreferenceDataclass:
-    """Test ApprovalPreference dataclass."""
-
-    def test_preference_to_dict(self):
-        """Test converting preference to dictionary."""
-        # Arrange
-        preference = ApprovalPreference(
-            pattern_type="consolidation",
-            conditions={"min_confidence": 0.8},
-            auto_approve=True,
-            created_at="2025-01-01T12:00:00",
-        )
-
-        # Act
-        result = preference.to_dict()
-
-        # Assert
-        assert result["pattern_type"] == "consolidation"
-        assert result["auto_approve"] is True
+        assert ApprovalStatusEnum.PENDING.value == "pending"
+        assert ApprovalStatusEnum.APPROVED.value == "approved"
+        assert ApprovalStatusEnum.REJECTED.value == "rejected"
+        assert ApprovalStatusEnum.EXPIRED.value == "expired"
+        assert ApprovalStatusEnum.APPLIED.value == "applied"
 
 
 class TestApprovalManagerInitialization:
@@ -92,6 +43,7 @@ class TestApprovalManagerInitialization:
         # Arrange
         approval_file = memory_bank_dir.parent / "approvals.json"
         approval_data: dict[str, object] = {
+            "last_updated": "2025-01-01T12:00:00",
             "approvals": {
                 "apr-1": {
                     "approval_id": "apr-1",
@@ -300,7 +252,7 @@ class TestMarkAsApplied:
         approval_result = await manager.request_approval(
             suggestion_id="sug-1", suggestion_type="consolidation"
         )
-        approval_id = cast(str, approval_result["approval_id"])
+        approval_id = approval_result.approval_id
 
         # Act
         result = await manager.mark_as_applied(
@@ -308,10 +260,10 @@ class TestMarkAsApplied:
         )
 
         # Assert
-        assert result["status"] == "applied"
-        assert result["execution_id"] == "exec-1"
+        assert result.status == "applied"
+        assert result.execution_id == "exec-1"
         approval = manager.approvals[approval_id]
-        assert approval.status == ApprovalStatus.APPLIED.value
+        assert approval.status == ApprovalStatusEnum.APPLIED
         assert approval.execution_id == "exec-1"
 
     @pytest.mark.asyncio
@@ -326,7 +278,7 @@ class TestMarkAsApplied:
         )
 
         # Assert
-        assert result["status"] == "error"
+        assert result.status == "error"
 
 
 class TestPreferenceManagement:
@@ -503,11 +455,11 @@ class TestApprovalHistory:
 
         # Create old approval manually
         old_date = (datetime.now() - timedelta(days=100)).isoformat()
-        old_approval = Approval(
+        old_approval = ApprovalModel(
             approval_id="old",
             suggestion_id="sug-old",
             suggestion_type="consolidation",
-            status="approved",
+            status=ApprovalStatusEnum.APPROVED,
             created_at=old_date,
         )
         manager.approvals["old"] = old_approval
@@ -521,7 +473,7 @@ class TestApprovalHistory:
         result = await manager.get_approval_history(time_range_days=90)
 
         # Assert
-        assert result["total_approvals"] == 1
+        assert result.total_approvals == 1
 
     @pytest.mark.asyncio
     async def test_get_approval_history_calculates_statistics(
@@ -544,10 +496,10 @@ class TestApprovalHistory:
         result = await manager.get_approval_history()
 
         # Assert
-        assert result["total_approvals"] == 2
-        assert result["approved"] == 1
-        assert result["rejected"] == 1
-        assert result["approval_rate"] == 0.5
+        assert result.total_approvals == 2
+        assert result.approved == 1
+        assert result.rejected == 1
+        assert result.approval_rate == 0.5
 
 
 class TestCleanupExpiredApprovals:
@@ -561,11 +513,11 @@ class TestCleanupExpiredApprovals:
 
         # Create old pending approval
         old_date = (datetime.now() - timedelta(days=40)).isoformat()
-        old_approval = Approval(
+        old_approval = ApprovalModel(
             approval_id="old",
             suggestion_id="sug-old",
             suggestion_type="consolidation",
-            status="pending",
+            status=ApprovalStatusEnum.PENDING,
             created_at=old_date,
         )
         manager.approvals["old"] = old_approval
@@ -574,8 +526,8 @@ class TestCleanupExpiredApprovals:
         result = await manager.cleanup_expired_approvals(expiry_days=30)
 
         # Assert
-        assert result["expired_count"] == 1
-        assert manager.approvals["old"].status == ApprovalStatus.EXPIRED.value
+        assert result.expired_count == 1
+        assert manager.approvals["old"].status == ApprovalStatusEnum.EXPIRED
 
     @pytest.mark.asyncio
     async def test_cleanup_does_not_expire_approved_approvals(
@@ -587,11 +539,11 @@ class TestCleanupExpiredApprovals:
 
         # Create old approved approval
         old_date = (datetime.now() - timedelta(days=40)).isoformat()
-        old_approval = Approval(
+        old_approval = ApprovalModel(
             approval_id="old",
             suggestion_id="sug-old",
             suggestion_type="consolidation",
-            status="approved",
+            status=ApprovalStatusEnum.APPROVED,
             created_at=old_date,
         )
         manager.approvals["old"] = old_approval
@@ -600,5 +552,5 @@ class TestCleanupExpiredApprovals:
         result = await manager.cleanup_expired_approvals(expiry_days=30)
 
         # Assert
-        assert result["expired_count"] == 0
-        assert manager.approvals["old"].status == "approved"
+        assert result.expired_count == 0
+        assert manager.approvals["old"].status == ApprovalStatusEnum.APPROVED

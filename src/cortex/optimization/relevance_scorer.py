@@ -12,6 +12,7 @@ from datetime import datetime
 
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.metadata_index import MetadataIndex
+from cortex.optimization.models import FileMetadataForScoring, SectionScoreModel
 
 
 class RelevanceScorer:
@@ -51,7 +52,7 @@ class RelevanceScorer:
         self,
         task_description: str,
         files_content: dict[str, str],
-        files_metadata: dict[str, dict[str, object]],
+        files_metadata: dict[str, FileMetadataForScoring],
         quality_scores: dict[str, float] | None = None,
     ) -> dict[str, dict[str, float | str]]:
         """
@@ -97,7 +98,7 @@ class RelevanceScorer:
 
     async def score_sections(
         self, task_description: str, file_name: str, content: str
-    ) -> list[dict[str, object]]:
+    ) -> list[SectionScoreModel]:
         """
         Score sections within a file.
 
@@ -122,7 +123,7 @@ class RelevanceScorer:
         # Parse sections
         sections: dict[str, str] = self.parse_sections(content)
 
-        results: list[dict[str, object]] = []
+        results: list[SectionScoreModel] = []
         for section_name, section_content in sections.items():
             # Calculate keyword score for section
             score = self.calculate_keyword_score(task_keywords, section_content)
@@ -140,19 +141,16 @@ class RelevanceScorer:
             )
 
             results.append(
-                {
-                    "section": section_name,
-                    "score": round(score, 3),
-                    "reason": reason,
-                }
+                SectionScoreModel(
+                    section=section_name,
+                    title=section_name,
+                    score=round(score, 3),
+                    reason=reason,
+                )
             )
 
         # Sort by score descending
-        def _sort_key(x: dict[str, object]) -> float:
-            score = x.get("score", 0.0)
-            return float(score) if isinstance(score, (int, float)) else 0.0
-
-        results.sort(key=_sort_key, reverse=True)
+        results.sort(key=lambda x: x.score, reverse=True)
 
         return results
 
@@ -191,7 +189,7 @@ class RelevanceScorer:
         return keyword_scores
 
     def _calculate_recency_scores_for_files(
-        self, files_metadata: dict[str, dict[str, object]]
+        self, files_metadata: dict[str, FileMetadataForScoring]
     ) -> dict[str, float]:
         """Calculate recency scores for all files.
 
@@ -521,7 +519,7 @@ class RelevanceScorer:
 
         return dependency_scores
 
-    def calculate_recency_score(self, metadata: dict[str, object]) -> float:
+    def calculate_recency_score(self, metadata: FileMetadataForScoring) -> float:
         """
         Score based on how recently the file was modified.
 
@@ -531,7 +529,7 @@ class RelevanceScorer:
         Returns:
             Score between 0.0 and 1.0
         """
-        last_modified = metadata.get("last_modified")
+        last_modified = metadata.last_modified
         if not last_modified:
             return 0.5  # Default to neutral
 

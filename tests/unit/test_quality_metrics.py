@@ -10,7 +10,6 @@ Tests quality score calculation including:
 """
 
 from datetime import datetime, timedelta
-from typing import cast
 
 import pytest
 
@@ -191,21 +190,17 @@ class TestOverallScoreCalculation:
             },
         }
 
-        result: dict[str, object] = await quality_metrics.calculate_overall_score(
+        result = await quality_metrics.calculate_overall_score(
             files_content=perfect_files_content,
             files_metadata=metadata_with_optimal_tokens,
             duplication_data=no_duplications,
         )
 
-        assert "overall_score" in result
-        assert isinstance(result["overall_score"], (int, float))
-        assert int(result["overall_score"]) >= 90  # Should be high
-        assert result["grade"] == "A"
-        assert result["status"] == "healthy"
-        assert "breakdown" in result
-        issues = result["issues"]
-        assert isinstance(issues, list)
-        issues_list = cast(list[str], issues)
+        assert isinstance(result.overall_score, (int, float))
+        assert int(result.overall_score) >= 90  # Should be high
+        assert result.grade == "A"
+        assert result.status == "healthy"
+        issues_list = result.issues
         assert len(issues_list) == 0  # No issues with optimal tokens
 
     @pytest.mark.asyncio
@@ -217,19 +212,17 @@ class TestOverallScoreCalculation:
         with_duplications: dict[str, object],
     ) -> None:
         """Test overall score calculation with poor inputs."""
-        result: dict[str, object] = await quality_metrics.calculate_overall_score(
+        result = await quality_metrics.calculate_overall_score(
             files_content=incomplete_files_content,
             files_metadata=stale_metadata,
             duplication_data=with_duplications,
         )
 
-        assert isinstance(result["overall_score"], (int, float))
-        assert int(result["overall_score"]) < 70  # Should be low (relaxed from 60)
-        assert result["grade"] in ["C", "D", "F"]
-        assert result["status"] in ["warning", "critical"]
-        issues = result["issues"]
-        assert isinstance(issues, list)
-        issues_list = cast(list[str], issues)
+        assert isinstance(result.overall_score, (int, float))
+        assert int(result.overall_score) < 70  # Should be low (relaxed from 60)
+        assert result.grade in ["C", "D", "F"]
+        assert result.status in ["warning", "critical"]
+        issues_list = result.issues
         assert len(issues_list) > 0
 
     @pytest.mark.asyncio
@@ -241,25 +234,23 @@ class TestOverallScoreCalculation:
         no_duplications: dict[str, object],
     ) -> None:
         """Test breakdown contains all expected categories."""
-        result: dict[str, object] = await quality_metrics.calculate_overall_score(
+        result = await quality_metrics.calculate_overall_score(
             files_content=perfect_files_content,
             files_metadata=recent_metadata,
             duplication_data=no_duplications,
         )
 
-        breakdown_raw = result["breakdown"]
-        assert isinstance(breakdown_raw, dict)
-        breakdown = cast(dict[str, object], breakdown_raw)
-        assert "completeness" in breakdown
-        assert "consistency" in breakdown
-        assert "freshness" in breakdown
-        assert "structure" in breakdown
-        assert "token_efficiency" in breakdown
-
-        # All should be integers 0-100
-        for score in breakdown.values():
-            assert isinstance(score, int)
-            assert 0 <= score <= 100
+        breakdown = result.breakdown
+        assert isinstance(breakdown.completeness, int)
+        assert isinstance(breakdown.consistency, int)
+        assert isinstance(breakdown.freshness, int)
+        assert isinstance(breakdown.structure, int)
+        assert isinstance(breakdown.token_efficiency, int)
+        assert 0 <= breakdown.completeness <= 100
+        assert 0 <= breakdown.consistency <= 100
+        assert 0 <= breakdown.freshness <= 100
+        assert 0 <= breakdown.structure <= 100
+        assert 0 <= breakdown.token_efficiency <= 100
 
     @pytest.mark.asyncio
     async def test_with_link_validation(
@@ -274,7 +265,7 @@ class TestOverallScoreCalculation:
             "broken_links": [{"source": "file1.md", "target": "missing.md"}]
         }
 
-        result: dict[str, object] = await quality_metrics.calculate_overall_score(
+        result = await quality_metrics.calculate_overall_score(
             files_content=perfect_files_content,
             files_metadata=recent_metadata,
             duplication_data=no_duplications,
@@ -282,12 +273,8 @@ class TestOverallScoreCalculation:
         )
 
         # Consistency score should be lower due to broken links
-        breakdown_raw = result["breakdown"]
-        assert isinstance(breakdown_raw, dict)
-        breakdown = cast(dict[str, object], breakdown_raw)
-        consistency_score = breakdown["consistency"]
-        assert isinstance(consistency_score, (int, float))
-        assert int(consistency_score) < 100
+        assert isinstance(result.breakdown.consistency, int)
+        assert result.breakdown.consistency < 100
 
     @pytest.mark.asyncio
     async def test_recommendations_generated(
@@ -298,16 +285,13 @@ class TestOverallScoreCalculation:
         with_duplications: dict[str, object],
     ) -> None:
         """Test recommendations are generated for issues."""
-        result: dict[str, object] = await quality_metrics.calculate_overall_score(
+        result = await quality_metrics.calculate_overall_score(
             files_content=incomplete_files_content,
             files_metadata=stale_metadata,
             duplication_data=with_duplications,
         )
 
-        assert "recommendations" in result
-        recommendations_raw = result["recommendations"]
-        assert isinstance(recommendations_raw, list)
-        recommendations_list = cast(list[str], recommendations_raw)
+        recommendations_list = result.recommendations
         assert len(recommendations_list) > 0
         assert all(isinstance(rec, str) for rec in recommendations_list)
 
@@ -333,19 +317,17 @@ class TestFileScoreCalculation:
         )
         metadata: dict[str, object] = recent_metadata["memorybankinstructions.md"]
 
-        result: dict[str, object] = await quality_metrics.calculate_file_score(
+        result = await quality_metrics.calculate_file_score(
             file_name="memorybankinstructions.md", content=content, metadata=metadata
         )
 
-        assert result["file_name"] == "memorybankinstructions.md"
-        assert "score" in result
-        score_obj: object = result["score"]
-        assert isinstance(score_obj, (int, float))
-        assert int(score_obj) >= 80
-        assert result["grade"] in ["A", "B"]
-        assert "validation" in result
-        assert "freshness" in result
-        assert "structure" in result
+        assert result.file_name == "memorybankinstructions.md"
+        assert isinstance(result.score, (int, float))
+        assert int(result.score) >= 80
+        assert result.grade in ["A", "B"]
+        assert result.validation is not None
+        assert isinstance(result.freshness, int)
+        assert isinstance(result.structure, int)
 
     @pytest.mark.asyncio
     async def test_poor_file_score(
@@ -357,13 +339,13 @@ class TestFileScoreCalculation:
         content = "# File\n\nMinimal content."
         metadata: dict[str, object] = stale_metadata["memorybankinstructions.md"]
 
-        result: dict[str, object] = await quality_metrics.calculate_file_score(
+        result = await quality_metrics.calculate_file_score(
             file_name="memorybankinstructions.md", content=content, metadata=metadata
         )
 
-        assert isinstance(result["score"], (int, float))
-        assert int(result["score"]) < 60
-        assert result["grade"] in ["D", "F"]
+        assert isinstance(result.score, (int, float))
+        assert int(result.score) < 60
+        assert result.grade in ["D", "F"]
 
 
 class TestCompletenessCalculation:

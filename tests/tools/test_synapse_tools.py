@@ -17,6 +17,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.managers.types import ManagersDict
+from cortex.rules.models import SynapseSyncResult, SyncChanges
 from cortex.tools.synapse_tools import (
     extract_and_format_rules,
     extract_rules_list,
@@ -29,15 +31,16 @@ from cortex.tools.synapse_tools import (
     update_synapse_rule,
     validate_rules_manager,
 )
+from tests.helpers.managers import make_test_managers
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
 
 
-def _get_manager_helper(mgrs: dict[str, Any], key: str, _: object) -> Any:
-    """Helper function to get manager from dictionary."""
-    return mgrs[key]
+def _get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object:
+    """Helper function to get manager by field name."""
+    return getattr(mgrs, key)
 
 
 # ============================================================================
@@ -56,11 +59,16 @@ def mock_synapse_manager():
     """Create mock SynapseManager."""
     manager = MagicMock()
     manager.sync_synapse = AsyncMock(
-        return_value={
-            "status": "success",
-            "changes": "2 files updated",
-            "reindex_triggered": True,
-        }
+        return_value=SynapseSyncResult(
+            status="success",
+            pulled=True,
+            pushed=False,
+            changes=SyncChanges(
+                added=[], modified=["rules/python-style.md"], deleted=[]
+            ),
+            reindex_triggered=True,
+            last_sync="2026-01-04T10:30:00Z",
+        )
     )
     manager.update_synapse_rule = AsyncMock(
         return_value={"status": "success", "commit_sha": "abc123"}
@@ -115,17 +123,19 @@ def mock_rules_manager() -> MagicMock:
 @pytest.fixture
 def mock_managers_with_synapse(
     mock_synapse_manager: MagicMock, mock_rules_manager: MagicMock
-) -> dict[str, Any]:
-    """Create managers dict with shared rules manager."""
-    return {"synapse": mock_synapse_manager, "rules_manager": mock_rules_manager}
+) -> ManagersDict:
+    """Create typed managers container with Synapse + rules manager."""
+    return make_test_managers(
+        synapse=mock_synapse_manager, rules_manager=mock_rules_manager
+    )
 
 
 @pytest.fixture
 def mock_managers_without_synapse(
     mock_rules_manager: MagicMock,
-) -> dict[str, MagicMock]:
-    """Create managers dict without shared rules manager."""
-    return {"rules_manager": mock_rules_manager}
+) -> ManagersDict:
+    """Create typed managers container without Synapse manager."""
+    return make_test_managers(rules_manager=mock_rules_manager)
 
 
 # ============================================================================
@@ -164,9 +174,10 @@ class TestSyncSharedRules:
             # Assert
             assert result["status"] == "success"
             assert "changes" in result
-            synapse = mock_managers_with_synapse.get("synapse")
-            if synapse is not None and hasattr(synapse, "sync_synapse"):
-                synapse.sync_synapse.assert_called_once_with(pull=True, push=False)
+            assert mock_managers_with_synapse.synapse is not None
+            mock_managers_with_synapse.synapse.sync_synapse.assert_called_once_with(
+                pull=True, push=False
+            )
 
     async def test_sync_synapse_with_reindex(
         self,
@@ -195,14 +206,14 @@ class TestSyncSharedRules:
 
             # Assert
             assert result["status"] == "success"
-            mock_managers_with_synapse[
-                "rules_manager"
-            ].index_rules.assert_called_once_with(force=True)
+            mock_managers_with_synapse.rules_manager.index_rules.assert_called_once_with(
+                force=True
+            )
 
     async def test_sync_synapse_not_initialized(self, mock_project_root: Path) -> None:
         """Test sync fails when shared rules not initialized."""
         # Arrange
-        managers = {}  # Empty managers dict
+        managers = make_test_managers()  # Synapse not configured by default
         with (
             patch(
                 "cortex.tools.synapse_tools.get_project_root",
@@ -248,7 +259,8 @@ class TestSyncSharedRules:
 
             # Assert
             assert result["status"] == "success"
-            mock_managers_with_synapse["synapse"].sync_synapse.assert_called_once_with(
+            assert mock_managers_with_synapse.synapse is not None
+            mock_managers_with_synapse.synapse.sync_synapse.assert_called_once_with(
                 pull=False, push=True
             )
 
@@ -318,16 +330,15 @@ class TestUpdateSharedRule:
             # Assert
             assert result["status"] == "success"
             assert "commit_sha" in result
-            mock_managers_with_synapse[
-                "synapse"
-            ].update_synapse_rule.assert_called_once()
+            assert mock_managers_with_synapse.synapse is not None
+            mock_managers_with_synapse.synapse.update_synapse_rule.assert_called_once()
 
     async def test_update_synapse_rule_not_initialized(
         self, mock_project_root: Path
     ) -> None:
         """Test update fails when shared rules not initialized."""
         # Arrange
-        managers = {}  # Empty managers dict
+        managers = make_test_managers()  # Synapse not configured by default
         with (
             patch(
                 "cortex.tools.synapse_tools.get_project_root",
@@ -456,9 +467,7 @@ class TestGetRulesWithContext:
 
             # Assert
             assert result["status"] == "success"
-            mock_managers_with_synapse[
-                "rules_manager"
-            ].get_relevant_rules.assert_called_once()
+            mock_managers_with_synapse.rules_manager.get_relevant_rules.assert_called_once()
 
     async def test_get_synapse_rules_custom_parameters(
         self,
@@ -582,7 +591,7 @@ class TestHelperFunctions:
     def test_validate_rules_manager_with_manager(self):
         """Test _validate_rules_manager when manager exists."""
         # Arrange
-        managers: dict[str, object] = {"rules_manager": MagicMock()}
+        managers = make_test_managers(rules_manager=MagicMock())
 
         # Act
         result = validate_rules_manager(managers)
@@ -593,7 +602,7 @@ class TestHelperFunctions:
     def test_validate_rules_manager_without_manager(self):
         """Test _validate_rules_manager when manager missing."""
         # Arrange
-        managers: dict[str, object] = {}
+        managers = make_test_managers()
 
         # Act
         result = validate_rules_manager(managers)

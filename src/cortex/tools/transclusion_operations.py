@@ -10,6 +10,7 @@ from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.mcp_stability import execute_tool_with_stability
+from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.linking.link_parser import LinkParser
 from cortex.linking.transclusion_engine import (
@@ -19,7 +20,13 @@ from cortex.linking.transclusion_engine import (
 )
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
+from cortex.managers.types import ManagersDict
 from cortex.server import mcp
+from cortex.tools.models import (
+    CacheStats,
+    ResolveTransclusionsErrorResult,
+    ResolveTransclusionsResult,
+)
 
 
 @mcp.tool()
@@ -117,18 +124,24 @@ async def resolve_transclusions(
         result = await execute_tool_with_stability(
             _execute_transclusion_resolution, file_name, project_root, max_depth
         )
-        return json.dumps(result, indent=2)
+        return json.dumps(result.model_dump(), indent=2)
     except CircularDependencyError as e:
-        return json.dumps(_build_circular_dependency_error(str(e)), indent=2)
+        return json.dumps(
+            _build_circular_dependency_error(str(e)).model_dump(), indent=2
+        )
     except MaxDepthExceededError as e:
-        return json.dumps(_build_max_depth_error(str(e), max_depth), indent=2)
+        return json.dumps(
+            _build_max_depth_error(str(e), max_depth).model_dump(), indent=2
+        )
     except Exception as e:
-        return json.dumps(_build_transclusion_error(str(e), type(e).__name__), indent=2)
+        return json.dumps(
+            _build_transclusion_error(str(e), type(e).__name__).model_dump(), indent=2
+        )
 
 
 async def _execute_transclusion_resolution(
     file_name: str, project_root: str | None, max_depth: int
-) -> dict[str, object]:
+) -> ResolveTransclusionsResult | ResolveTransclusionsErrorResult:
     """Execute transclusion resolution workflow.
 
     Args:
@@ -143,10 +156,10 @@ async def _execute_transclusion_resolution(
     mgrs = await get_managers(root)
 
     file_path = await _validate_transclusion_file(mgrs, root, file_name)
-    if isinstance(file_path, dict):
-        return cast(dict[str, object], file_path)
+    if isinstance(file_path, ResolveTransclusionsErrorResult):
+        return file_path
 
-    fs_manager = cast(FileSystemManager, mgrs["fs"])
+    fs_manager = await get_manager(mgrs, "fs", FileSystemManager)
     link_parser = await get_manager(mgrs, "link_parser", LinkParser)
     transclusion_engine = await get_manager(mgrs, "transclusion", TransclusionEngine)
 
@@ -168,13 +181,13 @@ async def _execute_transclusion_resolution(
         file_name,
         original_content,
         resolved_content,
-        cast(dict[str, object], cache_stats),
+        cast(ModelDict, cache_stats),
     )
 
 
 async def _validate_transclusion_file(
-    mgrs: dict[str, object], root: Path, file_name: str
-) -> Path | dict[str, str]:
+    mgrs: ManagersDict, root: Path, file_name: str
+) -> Path | ResolveTransclusionsErrorResult:
     """Validate file for transclusion resolution.
 
     Args:
@@ -183,24 +196,30 @@ async def _validate_transclusion_file(
         file_name: Name of file
 
     Returns:
-        File path or error dict
+        File path or error model
     """
-    fs_manager = cast(FileSystemManager, mgrs["fs"])
+    fs_manager = await get_manager(mgrs, "fs", FileSystemManager)
     memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     try:
         file_path = fs_manager.construct_safe_path(memory_bank_dir, file_name)
     except (ValueError, PermissionError) as e:
-        return {"status": "error", "error": f"Invalid file name: {e}"}
+        return ResolveTransclusionsErrorResult(
+            error=f"Invalid file name: {e}",
+            file=file_name,
+        )
 
     if not file_path.exists():
-        return {"status": "error", "error": f"File not found: {file_name}"}
+        return ResolveTransclusionsErrorResult(
+            error=f"File not found: {file_name}",
+            file=file_name,
+        )
 
     return file_path
 
 
 def _check_no_transclusions(
     link_parser: LinkParser, file_name: str, content: str
-) -> dict[str, object] | None:
+) -> ResolveTransclusionsResult | None:
     """Check if file has transclusions, return early response if not.
 
     Args:
@@ -209,18 +228,17 @@ def _check_no_transclusions(
         content: File content
 
     Returns:
-        Early response dict if no transclusions, None otherwise
+        Early response model if no transclusions, None otherwise
     """
     has_transclusions = link_parser.has_transclusions(content)
     if not has_transclusions:
-        return {
-            "status": "success",
-            "file": file_name,
-            "original_content": content,
-            "resolved_content": content,
-            "has_transclusions": False,
-            "message": "No transclusions found in file",
-        }
+        return ResolveTransclusionsResult(
+            file=file_name,
+            original_content=content,
+            resolved_content=content,
+            has_transclusions=False,
+            message="No transclusions found in file",
+        )
     return None
 
 
@@ -228,47 +246,56 @@ def _build_transclusion_success_response(
     file_name: str,
     original_content: str,
     resolved_content: str,
-    cache_stats: dict[str, object],
-) -> dict[str, object]:
+    cache_stats: ModelDict,
+) -> ResolveTransclusionsResult:
     """Build success response for transclusion resolution.
 
     Args:
         file_name: Name of file
         original_content: Original file content
         resolved_content: Resolved content with transclusions
-        cache_stats: Cache statistics
+        cache_stats: Cache statistics dict
 
     Returns:
-        Success response dict
+        Success response model
     """
-    return {
-        "status": "success",
-        "file": file_name,
-        "original_content": original_content,
-        "resolved_content": resolved_content,
-        "has_transclusions": True,
-        "cache_stats": cache_stats,
-    }
+    cache_stats_model: CacheStats | None = None
+    if cache_stats:
+        cache_stats_model = CacheStats(
+            hits=cast(int, cache_stats.get("hits", 0)),
+            misses=cast(int, cache_stats.get("misses", 0)),
+            size=cast(int, cache_stats.get("size", 0)),
+        )
+    return ResolveTransclusionsResult(
+        file=file_name,
+        original_content=original_content,
+        resolved_content=resolved_content,
+        has_transclusions=True,
+        cache_stats=cache_stats_model,
+    )
 
 
-def _build_circular_dependency_error(error_message: str) -> dict[str, object]:
+def _build_circular_dependency_error(
+    error_message: str,
+) -> ResolveTransclusionsErrorResult:
     """Build error response for circular dependency.
 
     Args:
         error_message: Error message
 
     Returns:
-        Error response dict
+        Error response model
     """
-    return {
-        "status": "error",
-        "error": error_message,
-        "error_type": "CircularDependencyError",
-        "message": "Circular transclusion detected. Fix the circular reference and try again.",
-    }
+    return ResolveTransclusionsErrorResult(
+        error=error_message,
+        error_type="CircularDependencyError",
+        message="Circular transclusion detected. Fix the circular reference and try again.",
+    )
 
 
-def _build_max_depth_error(error_message: str, max_depth: int) -> dict[str, object]:
+def _build_max_depth_error(
+    error_message: str, max_depth: int
+) -> ResolveTransclusionsErrorResult:
     """Build error response for max depth exceeded.
 
     Args:
@@ -276,17 +303,18 @@ def _build_max_depth_error(error_message: str, max_depth: int) -> dict[str, obje
         max_depth: Maximum depth that was exceeded
 
     Returns:
-        Error response dict
+        Error response model
     """
-    return {
-        "status": "error",
-        "error": error_message,
-        "error_type": "MaxDepthExceededError",
-        "message": f"Maximum transclusion depth ({max_depth}) exceeded",
-    }
+    return ResolveTransclusionsErrorResult(
+        error=error_message,
+        error_type="MaxDepthExceededError",
+        message=f"Maximum transclusion depth ({max_depth}) exceeded",
+    )
 
 
-def _build_transclusion_error(error_message: str, error_type: str) -> dict[str, object]:
+def _build_transclusion_error(
+    error_message: str, error_type: str
+) -> ResolveTransclusionsErrorResult:
     """Build error response for general transclusion errors.
 
     Args:
@@ -294,6 +322,9 @@ def _build_transclusion_error(error_message: str, error_type: str) -> dict[str, 
         error_type: Error type name
 
     Returns:
-        Error response dict
+        Error response model
     """
-    return {"status": "error", "error": error_message, "error_type": error_type}
+    return ResolveTransclusionsErrorResult(
+        error=error_message,
+        error_type=error_type,
+    )

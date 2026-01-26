@@ -4,14 +4,14 @@ This module combines pattern and structure analysis to generate human-readable
 insights with specific recommendations for improvement.
 """
 
-from datetime import datetime, timezone
-from typing import cast
+from datetime import UTC, datetime
 
 from .insight_dep_quality import DependencyQualityInsights
 from .insight_formatter import InsightFormatter
 from .insight_summary import InsightSummaryGenerator
 from .insight_types import InsightDict, InsightsResultDict, SummaryDict
 from .insight_usage_org import UsageOrganizationInsights
+from .models import InsightModel, InsightStatistics
 from .pattern_analyzer import PatternAnalyzer
 from .structure_analyzer import StructureAnalyzer
 
@@ -144,42 +144,38 @@ class InsightEngine:
         Returns:
             Filtered and sorted list of insights
         """
-        filtered = [
-            i for i in insights if i.get("impact_score", 0.0) >= min_impact_score
-        ]
-        filtered.sort(key=lambda x: x.get("impact_score", 0.0), reverse=True)
+        filtered = [i for i in insights if i.impact_score >= min_impact_score]
+        filtered.sort(key=lambda x: x.impact_score, reverse=True)
         return filtered
 
     def _calculate_insight_statistics(
         self, insights: list[InsightDict]
-    ) -> dict[str, object]:
+    ) -> InsightStatistics:
         """Calculate summary statistics for insights.
 
         Args:
             insights: List of filtered insights
 
         Returns:
-            Dictionary with statistics
+            Insight statistics model
         """
-        total_potential_savings = sum(
-            i.get("estimated_token_savings", 0) for i in insights
-        )
+        total_potential_savings = sum(i.estimated_token_savings for i in insights)
 
         high_impact, medium_impact, low_impact = (
             self.summary_generator.calculate_impact_counts(insights)
         )
 
-        return {
-            "total_potential_savings": total_potential_savings,
-            "high_impact": high_impact,
-            "medium_impact": medium_impact,
-            "low_impact": low_impact,
-        }
+        return InsightStatistics(
+            total_potential_savings=total_potential_savings,
+            high_impact=high_impact,
+            medium_impact=medium_impact,
+            low_impact=low_impact,
+        )
 
     def _build_insights_result(
         self,
         insights: list[InsightDict],
-        statistics: dict[str, object],
+        statistics: InsightStatistics,
     ) -> InsightsResultDict:
         """Build final insights result dictionary.
 
@@ -190,34 +186,16 @@ class InsightEngine:
         Returns:
             Complete insights result dictionary
         """
-        high_impact_val = statistics.get("high_impact", 0)
-        medium_impact_val = statistics.get("medium_impact", 0)
-        low_impact_val = statistics.get("low_impact", 0)
-        total_savings_val = statistics.get("total_potential_savings", 0)
-
-        high_impact_count = (
-            int(high_impact_val) if isinstance(high_impact_val, (int, float)) else 0
+        return InsightsResultDict(
+            generated_at=datetime.now(UTC).isoformat(),
+            total_insights=len(insights),
+            high_impact_count=statistics.high_impact,
+            medium_impact_count=statistics.medium_impact,
+            low_impact_count=statistics.low_impact,
+            estimated_total_token_savings=statistics.total_potential_savings,
+            insights=insights,
+            summary=self.generate_summary(insights),
         )
-        medium_impact_count = (
-            int(medium_impact_val) if isinstance(medium_impact_val, (int, float)) else 0
-        )
-        low_impact_count = (
-            int(low_impact_val) if isinstance(low_impact_val, (int, float)) else 0
-        )
-        estimated_total_token_savings = (
-            int(total_savings_val) if isinstance(total_savings_val, (int, float)) else 0
-        )
-
-        return {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-            "total_insights": len(insights),
-            "high_impact_count": high_impact_count,
-            "medium_impact_count": medium_impact_count,
-            "low_impact_count": low_impact_count,
-            "estimated_total_token_savings": estimated_total_token_savings,
-            "insights": insights,
-            "summary": self.generate_summary(insights),
-        }
 
     async def generate_usage_insights(self) -> list[InsightDict]:
         """Generate insights from usage patterns."""
@@ -239,7 +217,7 @@ class InsightEngine:
         """
         return self.summary_generator.generate_summary(insights)
 
-    async def get_insight_details(self, insight_id: str) -> dict[str, object] | None:
+    async def get_insight_details(self, insight_id: str) -> InsightModel | None:
         """
         Get detailed information about a specific insight.
 
@@ -247,21 +225,18 @@ class InsightEngine:
             insight_id: ID of the insight
 
         Returns:
-            Detailed insight information or None if not found
+            Detailed insight model or None if not found
         """
         insights_result = await self.generate_insights(min_impact_score=0.0)
 
-        insights_list: list[InsightDict] = insights_result.get("insights", [])
-
-        for insight in insights_list:
-            insight_id_str = insight.get("id")
-            if isinstance(insight_id_str, str) and insight_id_str == insight_id:
-                return cast(dict[str, object], insight)
+        for insight in insights_result.insights:
+            if insight.id == insight_id:
+                return InsightModel.model_validate(insight.model_dump(mode="json"))
 
         return None
 
     async def export_insights(
-        self, insights: dict[str, object], format: str = "json"
+        self, insights: InsightsResultDict, format: str = "json"
     ) -> str:
         """
         Export insights in various formats.

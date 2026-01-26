@@ -20,11 +20,16 @@ perform_cleanup=True parameter.
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import cast
 
+from cortex.core.models import JsonDict, ModelDict
 from cortex.managers.initialization import get_project_root
 from cortex.server import mcp
+from cortex.structure.models import (
+    HealthCheckResult,
+    HealthResult,
+)
 from cortex.structure.structure_manager import StructureManager
+from cortex.tools.models import CleanupActionResult, CleanupReport
 
 
 @mcp.tool()
@@ -300,14 +305,15 @@ async def check_structure_health(
 
         health = structure_mgr.check_structure_health()
         result = build_health_result(health)
+        result_dict = result.model_dump()
 
         if perform_cleanup:
             cleanup_report = perform_cleanup_actions(
                 structure_mgr, cleanup_actions, stale_days, dry_run
             )
-            result["cleanup"] = cleanup_report
+            result_dict["cleanup"] = cleanup_report.model_dump()
 
-        return json.dumps(result, indent=2)
+        return json.dumps(result_dict, indent=2)
 
     except Exception as e:
         return json.dumps(
@@ -344,7 +350,7 @@ def check_structure_initialized(
     return None
 
 
-def build_health_result(health: dict[str, object]) -> dict[str, object]:
+def build_health_result(health: HealthCheckResult | ModelDict) -> HealthResult:
     """Build health result dictionary.
 
     Args:
@@ -353,16 +359,29 @@ def build_health_result(health: dict[str, object]) -> dict[str, object]:
     Returns:
         Result dictionary with health information
     """
-    status = cast(str, health.get("status", "unknown"))
-    grade = cast(str, health.get("grade", "F"))
-    score = health.get("score", 0)
+    if isinstance(health, dict):
+        score_raw = health.get("score", 0)
+        score = score_raw if isinstance(score_raw, int) else 0
+        grade = str(health.get("grade", "F"))
+        status = str(health.get("status", "unknown"))
+        return HealthResult(
+            success=True,
+            health=JsonDict.from_dict(health),
+            summary=(
+                f"Structure health: {status.upper()} (Grade: {grade}, Score: {score}/100)"
+            ),
+            action_required=status in ["warning", "critical"],
+        )
 
-    return {
-        "success": True,
-        "health": health,
-        "summary": f"Structure health: {status.upper()} (Grade: {grade}, Score: {score}/100)",
-        "action_required": status in ["warning", "critical"],
-    }
+    return HealthResult(
+        success=True,
+        health=JsonDict.model_validate(health.model_dump()),
+        summary=(
+            f"Structure health: {health.status.upper()} "
+            f"(Grade: {health.grade}, Score: {health.score}/100)"
+        ),
+        action_required=health.status in ["warning", "critical"],
+    )
 
 
 def perform_cleanup_actions(
@@ -370,7 +389,7 @@ def perform_cleanup_actions(
     cleanup_actions: list[str] | None,
     stale_days: int,
     dry_run: bool,
-) -> dict[str, object]:
+) -> CleanupReport:
     """Perform cleanup actions and return report.
 
     Args:
@@ -380,7 +399,7 @@ def perform_cleanup_actions(
         dry_run: Preview cleanup actions without making changes
 
     Returns:
-        Cleanup report dictionary
+        Cleanup report model
     """
     cleanup_actions = cleanup_actions or [
         "archive_stale",
@@ -389,12 +408,13 @@ def perform_cleanup_actions(
         "remove_empty",
     ]
 
-    cleanup_report: dict[str, object] = {
-        "dry_run": dry_run,
-        "actions_performed": [],
-        "files_modified": [],
-        "recommendations": [],
-    }
+    cleanup_report = CleanupReport(
+        dry_run=dry_run,
+        actions_performed=[],
+        files_modified=[],
+        recommendations=[],
+        post_cleanup_health=JsonDict.from_dict({}),
+    )
 
     if "archive_stale" in cleanup_actions:
         perform_archive_stale(structure_mgr, stale_days, dry_run, cleanup_report)
@@ -406,7 +426,7 @@ def perform_cleanup_actions(
         perform_remove_empty(structure_mgr, cleanup_report)
 
     post_cleanup_health = structure_mgr.check_structure_health()
-    cleanup_report["post_cleanup_health"] = post_cleanup_health
+    cleanup_report.post_cleanup_health = JsonDict.from_dict(post_cleanup_health)
 
     return cleanup_report
 
@@ -706,10 +726,11 @@ async def get_structure_info(project_root: str | None = None) -> str:
         # Get structure info
         info = structure_mgr.get_structure_info()
 
+        info_payload: ModelDict = info
         return json.dumps(
             {
                 "success": True,
-                "structure_info": info,
+                "structure_info": info_payload,
                 "message": "Structure information retrieved successfully",
             },
             indent=2,
@@ -731,7 +752,7 @@ def perform_archive_stale(
     structure_mgr: StructureManager,
     stale_days: int,
     dry_run: bool,
-    report: dict[str, object],
+    report: CleanupReport,
 ) -> None:
     """Archive stale plans older than stale_days."""
     from datetime import datetime, timedelta
@@ -762,44 +783,52 @@ def find_stale_plans(plans_active: Path, stale_threshold: datetime) -> list[Path
     return stale_plans
 
 
-def record_archive_action(report: dict[str, object], stale_plans: list[Path]) -> None:
+def record_archive_action(report: CleanupReport, stale_plans: list[Path]) -> None:
     """Record archive action in report."""
-    actions_performed = cast(list[dict[str, object]], report["actions_performed"])
-    actions_performed.append(
-        {
-            "action": "archive_stale",
-            "stale_plans_found": len(stale_plans),
-            "files": [p.name for p in stale_plans],
-        }
+    report.actions_performed.append(
+        CleanupActionResult(
+            action="archive_stale",
+            stale_plans_found=len(stale_plans),
+            files=[p.name for p in stale_plans],
+            symlinks_fixed=None,
+        )
     )
 
 
 def move_stale_plans(
-    plans_archived: Path, stale_plans: list[Path], report: dict[str, object]
+    plans_archived: Path, stale_plans: list[Path], report: CleanupReport
 ) -> None:
     """Move stale plans to archived directory."""
     plans_archived.mkdir(parents=True, exist_ok=True)
-    files_modified = cast(list[str], report["files_modified"])
     for plan in stale_plans:
         dest = plans_archived / plan.name
         _ = plan.rename(dest)
-        files_modified.append(f"Moved {plan.name} to archived/")
+        report.files_modified.append(f"Moved {plan.name} to archived/")
 
 
 def perform_fix_symlinks(
-    structure_mgr: StructureManager, report: dict[str, object]
+    structure_mgr: StructureManager, report: CleanupReport
 ) -> None:
     """Fix broken Cursor symlinks."""
     cursor_report = structure_mgr.setup_cursor_integration()
-    actions_performed = cast(list[dict[str, object]], report["actions_performed"])
-    symlinks_created = cast(list[object], cursor_report.get("symlinks_created", []))
-    actions_performed.append(
-        {"action": "fix_symlinks", "symlinks_fixed": len(symlinks_created)}
+    symlinks_created_raw = cursor_report.get("symlinks_created", [])
+    symlinks_created: list[str] = (
+        [str(x) for x in symlinks_created_raw]
+        if isinstance(symlinks_created_raw, list)
+        else []
+    )
+    report.actions_performed.append(
+        CleanupActionResult(
+            action="fix_symlinks",
+            stale_plans_found=None,
+            files=[],
+            symlinks_fixed=len(symlinks_created),
+        )
     )
 
 
 def perform_remove_empty(
-    structure_mgr: StructureManager, report: dict[str, object]
+    structure_mgr: StructureManager, report: CleanupReport
 ) -> None:
     """Remove empty plan directories."""
     empty_dirs: list[Path] = []
@@ -812,10 +841,11 @@ def perform_remove_empty(
             empty_dirs.append(directory)
 
     if empty_dirs:
-        actions_performed = cast(list[dict[str, object]], report["actions_performed"])
-        actions_performed.append(
-            {
-                "action": "remove_empty",
-                "empty_directories": [str(d) for d in empty_dirs],
-            }
+        report.actions_performed.append(
+            CleanupActionResult(
+                action="remove_empty",
+                files=[str(d) for d in empty_dirs],
+                stale_plans_found=None,
+                symlinks_fixed=None,
+            )
         )

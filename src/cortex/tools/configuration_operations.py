@@ -9,15 +9,18 @@ Total: 1 tool
 
 import json
 from collections.abc import Awaitable, Callable
-from typing import Literal, Protocol, cast
+from pathlib import Path
+from typing import Protocol, cast
 
+from cortex.core.models import JsonValue, ModelDict
 from cortex.core.responses import error_response
-from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
+from cortex.managers.types import ManagersDict
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.refactoring.adaptation_config import AdaptationConfig
 from cortex.refactoring.learning_engine import LearningEngine
 from cortex.server import mcp
+from cortex.tools.models import LearnedPatternsResult
 from cortex.validation.validation_config import ValidationConfig
 
 
@@ -28,7 +31,7 @@ class ConfigProtocol(Protocol):
     and OptimizationConfig (set(key_path, value) -> bool) patterns.
     """
 
-    def set(self, __key_or_path: str, __value: object) -> None | bool:
+    def set(self, __key_or_path: str, __value: JsonValue) -> None | bool:
         """Set configuration value.
 
         Args:
@@ -43,14 +46,31 @@ class ConfigProtocol(Protocol):
 
 ComponentHandler = Callable[
     [
-        dict[str, object],
+        ManagersDict,
         str,
-        dict[str, object] | None,
+        dict[str, JsonValue] | None,
         str | None,
-        object | None,
+        JsonValue | None,
     ],
     Awaitable[str],
 ]
+
+
+async def get_managers(root: Path) -> ManagersDict:
+    """Runtime indirection for test patching.
+
+    Consolidated-tool tests patch `cortex.tools.file_operations.get_managers`.
+    """
+    from cortex.tools import file_operations
+
+    return await file_operations.get_managers(root)
+
+
+def get_project_root(project_root: str | None) -> Path:
+    """Runtime indirection for test patching (see `get_managers`)."""
+    from cortex.tools import file_operations
+
+    return file_operations.get_project_root(project_root)
 
 
 def _get_component_handler(component: str) -> ComponentHandler | None:
@@ -72,11 +92,11 @@ def _get_component_handler(component: str) -> ComponentHandler | None:
 
 @mcp.tool()
 async def configure(
-    component: Literal["validation", "optimization", "learning"],
-    action: Literal["view", "update", "reset"] = "view",
-    settings: dict[str, object] | None = None,
+    component: str,
+    action: str = "view",
+    settings: dict[str, JsonValue] | None = None,
     key: str | None = None,
-    value: object | None = None,
+    value: JsonValue | None = None,
     project_root: str | None = None,
 ) -> str:
     """Configure Memory Bank validation, optimization, and learning settings.
@@ -173,43 +193,7 @@ async def configure(
     Examples:
         Example 1: View validation configuration
         >>> configure(component="validation", action="view")
-        {
-          "status": "success",
-          "component": "validation",
-          "configuration": {
-            "enabled": true,
-            "auto_validate_on_write": true,
-            "strict_mode": false,
-            "token_budget": {
-              "max_total_tokens": 100000,
-              "warn_at_percentage": 80,
-              "per_file_max": 15000,
-              "per_file_warn": 12000
-            },
-            "duplication": {
-              "enabled": true,
-              "threshold": 0.85,
-              "min_length": 100,
-              "suggest_transclusion": true
-            },
-            "schemas": {
-              "enforce_required_sections": true,
-              "enforce_section_order": false,
-              "custom_schemas": {}
-            },
-            "quality": {
-              "minimum_score": 70,
-              "fail_below": 50,
-              "weights": {
-                "completeness": 0.3,
-                "consistency": 0.25,
-                "freshness": 0.15,
-                "structure": 0.15,
-                "token_efficiency": 0.15
-              }
-            }
-          }
-        }
+        {"status": "success", "component": "validation", "configuration": {"...": "..."}}
 
         Example 2: Update optimization settings with bulk changes
         >>> configure(
@@ -221,36 +205,7 @@ async def configure(
         ...         "relevance.keyword_weight": 0.5
         ...     }
         ... )
-        {
-          "status": "success",
-          "component": "optimization",
-          "message": "Configuration updated",
-          "configuration": {
-            "enabled": true,
-            "token_budget": {
-              "default_budget": 90000,
-              "max_budget": 100000,
-              "reserve_for_response": 10000
-            },
-            "loading_strategy": {
-              "default": "dependency_aware",
-              "mandatory_files": ["memorybankinstructions.md"],
-              "priority_order": ["memorybankinstructions.md", "projectBrief.md", "activeContext.md"]
-            },
-            "summarization": {
-              "enabled": true,
-              "auto_summarize_old_files": false,
-              "age_threshold_days": 90,
-              "target_reduction": 0.5
-            },
-            "relevance": {
-              "keyword_weight": 0.5,
-              "dependency_weight": 0.3,
-              "recency_weight": 0.15,
-              "quality_weight": 0.05
-            }
-          }
-        }
+        {"status": "success", "component": "optimization", "message": "Configuration updated", "...": "..."}
 
         Example 3: Update single learning setting
         >>> configure(
@@ -259,46 +214,11 @@ async def configure(
         ...     key="self_evolution.learning.learning_rate",
         ...     value="moderate"
         ... )
-        {
-          "status": "success",
-          "component": "learning",
-          "message": "Configuration updated",
-          "configuration": {
-            "learning": {
-              "enabled": true,
-              "learning_rate": "moderate",
-              "remember_rejections": true,
-              "adapt_suggestions": true,
-              "min_feedback_count": 5,
-              "confidence_adjustment_limit": 0.2
-            },
-            "feedback": {
-              "collect_feedback": true,
-              "prompt_for_feedback": false,
-              "feedback_types": ["helpful", "not_helpful", "incorrect"],
-              "allow_comments": true
-            },
-            "pattern_recognition": {
-              "enabled": true,
-              "min_pattern_occurrences": 3,
-              "pattern_confidence_threshold": 0.7,
-              "forget_old_patterns_days": 90
-            }
-          }
-        }
+        {"status": "success", "component": "learning", "message": "Configuration updated", "...": "..."}
 
     Note:
-        - Configuration changes persist to JSON files in project root and take effect immediately
-        - Validation component controls quality thresholds, token limits, and duplication detection
-        - Optimization component affects context loading, caching, and summarization behavior
-        - Learning component manages adaptive behavior based on user feedback and usage patterns
         - Use dot notation (e.g., "token_budget.max_total_tokens") for nested settings
-        - Settings parameter allows bulk updates; key/value allows single setting updates
-        - Reset action restores factory defaults and clears any custom configuration
-        - Learning component includes learned_patterns in view output showing adaptation history
-        - Export patterns by setting key="export_patterns" in learning component updates
-        - Configuration validation occurs automatically; invalid values return error status
-        - Component-specific configuration files: .cortex/validation.json, .cortex/optimization.json
+        - Changes persist to `.cortex/{validation,optimization,learning}.json` and take effect immediately.
     """
     try:
         root = get_project_root(project_root)
@@ -346,19 +266,20 @@ def _create_configuration_exception_error(
 
 
 async def configure_validation(
-    mgrs: dict[str, object],
+    mgrs: ManagersDict,
     action: str,
-    settings: dict[str, object] | None,
+    settings: dict[str, JsonValue] | None,
     key: str | None,
-    value: object | None,
+    value: JsonValue | None,
 ) -> str:
     """Configure validation settings."""
     validation_config = await get_manager(mgrs, "validation_config", ValidationConfig)
 
     if action == "view":
-        return create_success_response(
-            "validation", validation_config.to_dict(), message=None
+        validation_dict = cast(
+            ModelDict, validation_config.config.model_dump(mode="json")
         )
+        return create_success_response("validation", validation_dict, message=None)
     elif action == "update":
         return await handle_validation_update(validation_config, settings, key, value)
     elif action == "reset":
@@ -381,17 +302,18 @@ async def configure_validation(
 
 async def handle_validation_update(
     validation_config: ValidationConfig,
-    settings: dict[str, object] | None,
+    settings: dict[str, JsonValue] | None,
     key: str | None,
-    value: object | None,
+    value: JsonValue | None,
 ) -> str:
     """Handle validation configuration update."""
     error = apply_config_updates(validation_config, settings, key, value)
     if error:
         return error
     await validation_config.save()
+    validation_dict = cast(ModelDict, validation_config.config.model_dump(mode="json"))
     return create_success_response(
-        "validation", validation_config.to_dict(), "Configuration updated"
+        "validation", validation_dict, "Configuration updated"
     )
 
 
@@ -399,8 +321,9 @@ async def handle_validation_reset(validation_config: ValidationConfig) -> str:
     """Handle validation configuration reset."""
     validation_config.reset_to_defaults()
     await validation_config.save()
+    validation_dict = cast(ModelDict, validation_config.config.model_dump(mode="json"))
     return create_success_response(
-        "validation", validation_config.to_dict(), "Configuration reset to defaults"
+        "validation", validation_dict, "Configuration reset to defaults"
     )
 
 
@@ -422,11 +345,11 @@ def _create_invalid_action_error(action: str) -> str:
 
 
 async def configure_optimization(
-    mgrs: dict[str, object],
+    mgrs: ManagersDict,
     action: str,
-    settings: dict[str, object] | None,
+    settings: dict[str, JsonValue] | None,
     key: str | None,
-    value: object | None,
+    value: JsonValue | None,
 ) -> str:
     """Configure optimization settings."""
     optimization_config = await get_manager(
@@ -449,9 +372,9 @@ async def configure_optimization(
 
 async def handle_optimization_update(
     optimization_config: OptimizationConfig,
-    settings: dict[str, object] | None,
+    settings: dict[str, JsonValue] | None,
     key: str | None,
-    value: object | None,
+    value: JsonValue | None,
 ) -> str:
     """Handle optimization configuration update."""
     error = apply_config_updates(optimization_config, settings, key, value)
@@ -476,7 +399,7 @@ async def handle_optimization_reset(
 
 
 async def _initialize_learning_components(
-    mgrs: dict[str, object],
+    mgrs: ManagersDict,
 ) -> tuple[LearningEngine, OptimizationConfig, AdaptationConfig]:
     """Initialize learning-related components."""
     learning_engine = await get_manager(mgrs, "learning_engine", LearningEngine)
@@ -488,11 +411,11 @@ async def _initialize_learning_components(
 
 
 async def configure_learning(
-    mgrs: dict[str, object],
+    mgrs: ManagersDict,
     action: str,
-    settings: dict[str, object] | None,
+    settings: dict[str, JsonValue] | None,
     key: str | None,
-    value: object | None,
+    value: JsonValue | None,
 ) -> str:
     """Configure learning settings."""
     learning_engine, optimization_config, adaptation_config = (
@@ -528,7 +451,10 @@ def handle_learning_view(
             "status": "success",
             "component": "learning",
             "configuration": adaptation_config.to_dict(),
-            "learned_patterns": patterns,
+            "learned_patterns": {
+                k: v.model_dump(mode="json") if hasattr(v, "model_dump") else v
+                for k, v in patterns.patterns.items()
+            },
         },
         indent=2,
     )
@@ -538,9 +464,9 @@ async def handle_learning_update(
     learning_engine: LearningEngine,
     optimization_config: OptimizationConfig,
     adaptation_config: AdaptationConfig,
-    settings: dict[str, object] | None,
+    settings: dict[str, JsonValue] | None,
     key: str | None,
-    value: object | None,
+    value: JsonValue | None,
 ) -> str:
     """Handle learning configuration update."""
     if key == "export_patterns":
@@ -576,9 +502,9 @@ async def handle_learning_reset(
 
 def apply_config_updates(
     config: ConfigProtocol,
-    settings: dict[str, object] | None,
+    settings: dict[str, JsonValue] | None,
     key: str | None,
-    value: object | None,
+    value: JsonValue | None,
 ) -> str | None:
     """Apply configuration updates. Returns error message if invalid, None on success."""
     if settings:
@@ -599,10 +525,10 @@ def apply_config_updates(
 
 
 def create_success_response(
-    component: str, configuration: dict[str, object], message: str | None
+    component: str, configuration: ModelDict, message: str | None
 ) -> str:
     """Create a success response with configuration."""
-    response: dict[str, object] = {
+    response: ModelDict = {
         "status": "success",
         "component": component,
         "configuration": configuration,
@@ -612,32 +538,44 @@ def create_success_response(
     return json.dumps(response, indent=2)
 
 
-def _generate_action_required(error: str, extra_fields: dict[str, object]) -> str:
+def _format_component_error(valid_components: list[str]) -> str:
+    """Format component error message."""
+    return (
+        f"Use one of the valid components: {', '.join(valid_components)}. "
+        f"Example: {{'component': '{valid_components[0] if valid_components else 'validation'}'}}"
+    )
+
+
+def _format_action_error(valid_actions: list[str]) -> str:
+    """Format action error message."""
+    return (
+        f"Use one of the valid actions: {', '.join(valid_actions)}. "
+        f"Example: {{'action': '{valid_actions[0] if valid_actions else 'view'}'}}"
+    )
+
+
+def _generate_action_required(error: str, extra_fields: dict[str, JsonValue]) -> str:
     """Generate action_required message from error and extra_fields."""
     if "Unknown component" in error:
-        valid_components_raw: object = extra_fields.get("valid_components", [])
+        valid_components_raw: JsonValue = extra_fields.get("valid_components", [])
         valid_components: list[str] = (
-            [str(c) for c in cast(list[object], valid_components_raw)]
+            [str(c) for c in valid_components_raw]
             if isinstance(valid_components_raw, list)
             else []
         )
-        valid_components_str: list[str] = valid_components
-        return (
-            f"Use one of the valid components: {', '.join(valid_components_str)}. "
-            f"Example: {{'component': '{valid_components_str[0] if valid_components_str else 'validation'}'}}"
-        )
+        return _format_component_error(valid_components)
     elif "Unknown action" in error:
-        valid_actions_raw: object = extra_fields.get("valid_actions", [])
-        if isinstance(valid_actions_raw, list):
-            valid_actions_list: list[object] = cast(list[object], valid_actions_raw)
-            valid_actions: list[str] = [str(item) for item in valid_actions_list]
-        else:
-            valid_actions = []
-        valid_actions_str: list[str] = valid_actions
-        return (
-            f"Use one of the valid actions: {', '.join(valid_actions_str)}. "
-            f"Example: {{'action': '{valid_actions_str[0] if valid_actions_str else 'view'}'}}"
+        valid_actions_raw: JsonValue = extra_fields.get("valid_actions", [])
+        valid_actions: list[str] = (
+            [
+                str(item)
+                for item in valid_actions_raw
+                if isinstance(item, (str, int, float, bool))
+            ]
+            if isinstance(valid_actions_raw, list)
+            else []
         )
+        return _format_action_error(valid_actions)
     else:
         return (
             "Review the error message and correct the configuration parameters. "
@@ -645,7 +583,7 @@ def _generate_action_required(error: str, extra_fields: dict[str, object]) -> st
         )
 
 
-def create_error_response(error: str, **extra_fields: object) -> str:
+def create_error_response(error: str, **extra_fields: JsonValue) -> str:
     """Create an error response with optional extra fields and recovery suggestions.
 
     Args:
@@ -670,11 +608,9 @@ def create_error_response(error: str, **extra_fields: object) -> str:
         context = extra_fields
 
     # Type assertions for error_response
-    action_required_str: str | None = (
-        str(action_required) if action_required is not None else None
-    )
-    context_dict: dict[str, object] | None = (
-        cast(dict[str, object], context) if isinstance(context, dict) else None
+    action_required_str = str(action_required)
+    context_dict: ModelDict | None = (
+        cast(ModelDict, context) if isinstance(context, dict) else None
     )
 
     # Create base error response
@@ -696,12 +632,17 @@ def create_error_response(error: str, **extra_fields: object) -> str:
     return json.dumps(base_response, indent=2)
 
 
-def get_learned_patterns(learning_engine: LearningEngine) -> dict[str, object]:
-    """Get all learned patterns as dict."""
+def get_learned_patterns(learning_engine: LearningEngine) -> LearnedPatternsResult:
+    """Get all learned patterns as model."""
+    from cortex.core.models import JsonDict
+
     patterns_dict = learning_engine.data_manager.get_all_patterns()
-    return {
-        pattern_id: pattern.to_dict() for pattern_id, pattern in patterns_dict.items()
-    }
+    return LearnedPatternsResult(
+        patterns={
+            pattern_id: JsonDict.from_dict(pattern.to_dict())
+            for pattern_id, pattern in patterns_dict.items()
+        }
+    )
 
 
 def export_learned_patterns(learning_engine: LearningEngine) -> str:
@@ -712,7 +653,10 @@ def export_learned_patterns(learning_engine: LearningEngine) -> str:
             "status": "success",
             "component": "learning",
             "action": "export_patterns",
-            "patterns": patterns,
+            "patterns": {
+                k: v.model_dump(mode="json") if hasattr(v, "model_dump") else v
+                for k, v in patterns.patterns.items()
+            },
         },
         indent=2,
     )

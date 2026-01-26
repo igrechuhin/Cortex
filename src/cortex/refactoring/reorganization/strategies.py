@@ -10,6 +10,8 @@ This module contains different optimization strategies for Memory Bank reorganiz
 from pathlib import Path
 from typing import cast
 
+from cortex.core.models import JsonValue, ModelDict
+
 
 class ReorganizationStrategies:
     """
@@ -32,10 +34,10 @@ class ReorganizationStrategies:
 
     async def generate_proposed_structure(
         self,
-        current_structure: dict[str, object],
+        current_structure: ModelDict,
         optimize_for: str,
-        dependency_graph: dict[str, object],
-    ) -> dict[str, object]:
+        dependency_graph: ModelDict,
+    ) -> ModelDict:
         """
         Generate proposed new structure based on optimization goal.
 
@@ -47,36 +49,39 @@ class ReorganizationStrategies:
         Returns:
             Proposed structure dictionary
         """
-        proposed: dict[str, object] = {
+        proposed: ModelDict = {
             "organization": current_structure.get("organization"),
-            "categories": {},
-            "dependency_order": [],
-            "naming_conventions": {},
+            "categories": cast(dict[str, JsonValue], {}),
+            "dependency_order": cast(list[JsonValue], []),
+            "naming_conventions": cast(dict[str, JsonValue], {}),
         }
 
         if optimize_for == "dependency_depth":
             # Propose flatter dependency structure
             proposed["organization"] = "dependency_optimized"
-            proposed["dependency_order"] = self.optimize_dependency_order(
-                current_structure, dependency_graph
-            )
-
+            order = self.optimize_dependency_order(current_structure, dependency_graph)
+            proposed["dependency_order"] = cast(list[JsonValue], order)
         elif optimize_for == "category_based":
             # Propose category-based organization
             proposed["organization"] = "category_based"
-            proposed["categories"] = self.propose_category_structure(current_structure)
-
+            categories = self.propose_category_structure(current_structure)
+            proposed["categories"] = {
+                category: cast(JsonValue, cast(list[JsonValue], file_list))
+                for category, file_list in categories.items()
+            }
         elif optimize_for == "complexity":
             # Propose simplified structure
             proposed["organization"] = "simplified"
-            proposed["categories"] = self.propose_simplified_structure(
-                current_structure
-            )
+            categories = self.propose_simplified_structure(current_structure)
+            proposed["categories"] = {
+                category: cast(JsonValue, cast(list[JsonValue], file_list))
+                for category, file_list in categories.items()
+            }
 
         return proposed
 
     def optimize_dependency_order(
-        self, current_structure: dict[str, object], dependency_graph: dict[str, object]
+        self, current_structure: ModelDict, dependency_graph: ModelDict
     ) -> list[str]:
         """
         Optimize file order to minimize dependency depth.
@@ -91,7 +96,15 @@ class ReorganizationStrategies:
             List of files in optimized order
         """
         files_raw = current_structure.get("files", [])
-        files = cast(list[str], files_raw) if isinstance(files_raw, list) else []
+        files = (
+            [
+                str(item)
+                for item in cast(list[JsonValue], files_raw)
+                if isinstance(item, str)
+            ]
+            if isinstance(files_raw, list)
+            else []
+        )
 
         if not dependency_graph:
             return files
@@ -101,7 +114,7 @@ class ReorganizationStrategies:
         return _topological_sort(graph, in_degree, files)
 
     def propose_category_structure(
-        self, current_structure: dict[str, object]
+        self, current_structure: ModelDict
     ) -> dict[str, list[str]]:
         """
         Propose category-based organization.
@@ -116,7 +129,7 @@ class ReorganizationStrategies:
         """
         current_categories_raw = current_structure.get("categories", {})
         current_categories = (
-            cast(dict[str, object], current_categories_raw)
+            cast(ModelDict, current_categories_raw)
             if isinstance(current_categories_raw, dict)
             else {}
         )
@@ -135,7 +148,7 @@ class ReorganizationStrategies:
 
         return proposed_categories
 
-    def _normalize_files_list(self, files: object) -> list[str]:
+    def _normalize_files_list(self, files: JsonValue) -> list[str]:
         """Normalize files input to list of strings.
 
         Args:
@@ -145,9 +158,7 @@ class ReorganizationStrategies:
             List of file name strings
         """
         if isinstance(files, list):
-            return [str(f) for f in cast(list[object], files)]
-        if isinstance(files, tuple):
-            return [str(f) for f in cast(tuple[object, ...], files)]
+            return [str(f) for f in files]
         return []
 
     def _assign_uncategorized_files(
@@ -168,7 +179,7 @@ class ReorganizationStrategies:
             proposed_categories["context"].append(file)
 
     def propose_simplified_structure(
-        self, current_structure: dict[str, object]
+        self, current_structure: ModelDict
     ) -> dict[str, list[str]]:
         """
         Propose simplified structure with fewer categories.
@@ -210,8 +221,8 @@ class ReorganizationStrategies:
 
 
 def _extract_dependencies_from_graph(
-    dependency_graph: dict[str, object],
-) -> dict[str, object]:
+    dependency_graph: ModelDict,
+) -> ModelDict:
     """
     Extract dependencies dictionary from dependency graph.
 
@@ -223,14 +234,12 @@ def _extract_dependencies_from_graph(
     """
     dependencies_raw = dependency_graph.get("dependencies", {})
     return (
-        cast(dict[str, object], dependencies_raw)
-        if isinstance(dependencies_raw, dict)
-        else {}
+        cast(ModelDict, dependencies_raw) if isinstance(dependencies_raw, dict) else {}
     )
 
 
 def _build_dependency_graph(
-    files: list[str], dependencies: dict[str, object]
+    files: list[str], dependencies: ModelDict
 ) -> tuple[dict[str, list[str]], dict[str, int]]:
     """
     Build adjacency list and in-degree map from dependencies.
@@ -245,12 +254,17 @@ def _build_dependency_graph(
     graph: dict[str, list[str]] = {f: [] for f in files}
     in_degree: dict[str, int] = {f: 0 for f in files}
 
-    for file, deps in dependencies.items():
-        file_str = str(file)
+    for file_path, deps in dependencies.items():
+        file_str = str(file_path)
         if file_str not in graph:
             continue
-        deps_dict = cast(dict[str, object], deps) if isinstance(deps, dict) else {}
-        deps_list = cast(list[str], deps_dict.get("dependencies", []))
+        deps_dict = cast(ModelDict, deps) if isinstance(deps, dict) else {}
+        deps_list_raw = deps_dict.get("depends_on", [])
+        deps_list = (
+            [str(dep) for dep in deps_list_raw]
+            if isinstance(deps_list_raw, list)
+            else []
+        )
         for dep in deps_list:
             if dep in graph:
                 graph[dep].append(file_str)

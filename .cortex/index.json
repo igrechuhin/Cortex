@@ -1,657 +1,399 @@
 {
   "schema_version": "1.0.0",
-  "created_at": "2026-01-12T10:42:19.665239",
-  "last_updated": "2026-01-16T08:09:43.762823",
+  "created_at": "2026-01-25T21:38:36.940164",
+  "last_updated": "2026-01-26T09:14:15.344122",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
-    "test_verification.md": {
-      "path": "/Users/i.grechukhin/Repo/Cortex/memory-bank/test_verification.md",
+    "roadmap.md": {
+      "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "read_count": 1,
-      "write_count": 3,
-      "current_version": 3,
-      "version_history": [
+      "size_bytes": 30211,
+      "token_count": 7536,
+      "token_model": "cl100k_base",
+      "last_modified": "2026-01-26T08:23:30.603464",
+      "content_hash": "sha256:2262c6f1a82942198575eb1c0e182508df892327fd3f90826eeac3b26bcbc4d5",
+      "sections": [
         {
-          "version": 1,
-          "timestamp": "2026-01-12T10:45:37.104903",
-          "content_hash": "sha256:981a7ea0756a9031341c2cb8d9312fe11411cf8e0c09762edb366a6db18db966",
-          "size_bytes": 195,
-          "token_count": 48,
-          "change_type": "modified",
-          "snapshot_path": ".cortex/history/test_verification_v1.md",
-          "change_description": "Test file for foundation tools verification"
+          "title": "## Current Status (2026-01-26)",
+          "level": 2,
+          "line_start": 3,
+          "line_end": 3,
+          "content_hash": null
         },
         {
+          "title": "### Active Work",
+          "level": 2,
+          "line_start": 5,
+          "line_end": 5,
+          "content_hash": null
+        },
+        {
+          "title": "### Recent Phase Completions",
+          "level": 2,
+          "line_start": 11,
+          "line_end": 11,
+          "content_hash": null
+        },
+        {
+          "title": "## Recent Findings",
+          "level": 2,
+          "line_start": 24,
+          "line_end": 24,
+          "content_hash": null
+        },
+        {
+          "title": "## Completed Milestones",
+          "level": 2,
+          "line_start": 167,
+          "line_end": 167,
+          "content_hash": null
+        },
+        {
+          "title": "## Blockers (ASAP Priority)",
+          "level": 2,
+          "line_start": 199,
+          "line_end": 199,
+          "content_hash": null
+        },
+        {
+          "title": "## Upcoming Milestones",
+          "level": 2,
+          "line_start": 221,
+          "line_end": 221,
+          "content_hash": null
+        },
+        {
+          "title": "### Future Enhancements",
+          "level": 2,
+          "line_start": 223,
+          "line_end": 223,
+          "content_hash": null
+        },
+        {
+          "title": "### Planned Phases",
+          "level": 2,
+          "line_start": 227,
+          "line_end": 227,
+          "content_hash": null
+        }
+      ],
+      "read_count": 2,
+      "write_count": 5,
+      "last_read": "2026-01-26T08:19:39.222133",
+      "last_write": "2026-01-26T08:23:30.603464",
+      "current_version": 8,
+      "version_history": [
+        {
           "version": 2,
-          "timestamp": "2026-01-12T10:48:37.520629",
-          "content_hash": "sha256:9ee1fa227b86a2a819eebd2a2dbe230e674e27e9a7b237eefa2429f7e58eafb2",
-          "size_bytes": 166,
-          "token_count": 41,
+          "timestamp": "2026-01-25T21:40:13.056020",
+          "content_hash": "sha256:bcab1ff2916b7e77e5d98e796ba4859dda1523fd037148538cd5aaf51d8c9eb3",
+          "size_bytes": 31079,
+          "token_count": 7731,
           "change_type": "modified",
-          "snapshot_path": ".cortex/history/test_verification_v2.md",
-          "change_description": "Updated via MCP"
+          "snapshot_path": ".cortex/history/roadmap_v2.md",
+          "changed_sections": [],
+          "change_description": "Mark Phase 53 user-cortex MCP server blocker as completed"
         },
         {
           "version": 3,
-          "timestamp": "2026-01-12T10:51:43.282218",
-          "content_hash": "sha256:0f50014557df73c89bec10efa3ee6456dcda25df5d9bb8b92eb69f0505cd9e7e",
-          "size_bytes": 202,
-          "token_count": 50,
+          "timestamp": "2026-01-26T08:17:33.925948",
+          "content_hash": "sha256:fc763fbc09f9580167cea3b49c7f4c0ae3ffa6bbed367752a19968f54c703251",
+          "size_bytes": 14897,
+          "token_count": 3751,
           "change_type": "modified",
-          "snapshot_path": ".cortex/history/test_verification_v3.md",
-          "change_description": "Updated via MCP"
-        }
-      ],
-      "size_bytes": 195,
-      "token_count": 48,
-      "token_model": "cl100k_base",
-      "last_modified": "2026-01-12T10:54:55.087226",
-      "content_hash": "sha256:981a7ea0756a9031341c2cb8d9312fe11411cf8e0c09762edb366a6db18db966",
-      "sections": [
-        {
-          "heading": "# Test Verification File",
-          "level": 1,
-          "line_start": 1,
-          "line_end": 4,
-          "content_hash": "sha256:07add74483d5d244c58579dda4fec3efb4bc19088c725b76837de921aada53e0"
+          "snapshot_path": ".cortex/history/roadmap_v3.md",
+          "changed_sections": [],
+          "change_description": "Complete Phase 53 commit pipeline ergonomics + scoping blocker"
         },
         {
-          "heading": "## Test Details",
-          "level": 2,
-          "line_start": 5,
-          "line_end": 8,
-          "content_hash": "sha256:20a55eeac66717a2150a13b6954d314eb4d910e5907d5ecd1e00d7619de398cd"
-        }
-      ],
-      "last_read": "2026-01-12T10:51:43.282709"
-    },
-    "test_links.md": {
-      "path": "/Users/i.grechukhin/Repo/Cortex/memory-bank/test_links.md",
-      "exists": true,
-      "read_count": 0,
-      "write_count": 1,
-      "current_version": 1,
-      "version_history": [
+          "version": 4,
+          "timestamp": "2026-01-26T08:18:06.532159",
+          "content_hash": "sha256:bcab1ff2916b7e77e5d98e796ba4859dda1523fd037148538cd5aaf51d8c9eb3",
+          "size_bytes": 31079,
+          "token_count": 7731,
+          "change_type": "rollback",
+          "snapshot_path": ".cortex/history/roadmap_v4.md",
+          "changed_sections": [],
+          "change_description": "Rolled back to version 2"
+        },
         {
-          "version": 1,
-          "timestamp": "2026-01-12T11:17:49.067852",
-          "content_hash": "sha256:d5d3909c3ea35327740abf4c666ab66996bc19161f7ea79be7d88f3c6842755e",
-          "size_bytes": 407,
-          "token_count": 101,
+          "version": 5,
+          "timestamp": "2026-01-26T08:19:30.579654",
+          "content_hash": "sha256:327659faefdd75fb662279903d2225acce19c8293d8c8b38dc125dc84f218e02",
+          "size_bytes": 26990,
+          "token_count": 6760,
           "change_type": "modified",
-          "snapshot_path": ".cortex/history/test_links_v1.md",
-          "change_description": "Updated via MCP"
-        }
-      ],
-      "size_bytes": 407,
-      "token_count": 101,
-      "token_model": "cl100k_base",
-      "last_modified": "2026-01-12T11:17:49.068115",
-      "content_hash": "sha256:d5d3909c3ea35327740abf4c666ab66996bc19161f7ea79be7d88f3c6842755e",
-      "sections": [
-        {
-          "heading": "## Markdown Links",
-          "level": 2
+          "snapshot_path": ".cortex/history/roadmap_v5.md",
+          "changed_sections": [],
+          "change_description": "Mark Phase 53 commit pipeline ergonomics + scoping blocker complete"
         },
         {
-          "heading": "## Transclusions",
-          "level": 2
+          "version": 6,
+          "timestamp": "2026-01-26T08:19:39.224440",
+          "content_hash": "sha256:bcab1ff2916b7e77e5d98e796ba4859dda1523fd037148538cd5aaf51d8c9eb3",
+          "size_bytes": 31079,
+          "token_count": 7731,
+          "change_type": "rollback",
+          "snapshot_path": ".cortex/history/roadmap_v6.md",
+          "changed_sections": [],
+          "change_description": "Rolled back to version 4"
         },
         {
-          "heading": "## Mixed Content",
-          "level": 2
-        }
-      ],
-      "last_read": "2026-01-12T11:17:49.068115"
-    },
-    "tool-verification-summary-2026-01-13.md": {
-      "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/tool-verification-summary-2026-01-13.md",
-      "exists": true,
-      "read_count": 0,
-      "write_count": 1,
-      "current_version": 1,
-      "version_history": [
-        {
-          "version": 1,
-          "timestamp": "2026-01-13T19:54:34.222092",
-          "content_hash": "sha256:a317ed43e2955f6f211977c0f87ab86954ef16ac3003221a659d1e1137946f5d",
-          "size_bytes": 5149,
-          "token_count": 1282,
+          "version": 7,
+          "timestamp": "2026-01-26T08:21:03.269133",
+          "content_hash": "sha256:aab13386a7e4e0f120f3595b76b0d2beb618453799cc9aa862cbf8e4d70849cb",
+          "size_bytes": 31153,
+          "token_count": 7745,
           "change_type": "modified",
-          "snapshot_path": ".cortex/history/tool-verification-summary-2026-01-13_v1.md",
-          "change_description": "Updated via MCP"
-        }
-      ],
-      "size_bytes": 5149,
-      "token_count": 1282,
-      "token_model": "cl100k_base",
-      "last_modified": "2026-01-13T19:54:34.223097",
-      "content_hash": "sha256:a317ed43e2955f6f211977c0f87ab86954ef16ac3003221a659d1e1137946f5d",
-      "sections": [
-        {
-          "heading": "## Tools Verified Today",
-          "level": 2
+          "snapshot_path": ".cortex/history/roadmap_v7.md",
+          "changed_sections": [],
+          "change_description": "Update roadmap status date and complete commit pipeline ergonomics + scoping blocker"
         },
         {
-          "heading": "### Phase 2k Management (4/4ls - 100 complete)",
-          "level": 2
-        },
-        {
-          "heading": "### Phase 3: Validation & Quality (2/2 tools - 100% complete)",
-          "level": 2
-        },
-        {
-          "heading": "### Phase4n Optimization (Partial verification)",
-          "level": 2
-        },
-        {
-          "heading": "### Phase 51 Pattern Analysis (1/1 tool - 10ete)",
-          "level": 2
-        },
-        {
-          "heading": "### Phase52: Refactoring Suggestions (1/1 tool - 100% complete)",
-          "level": 2
-        },
-        {
-          "heading": "### Phase 8: Project Structure Management (2/2 tools -100% complete)",
-          "level": 2
-        },
-        {
-          "heading": "## Summary Statistics",
-          "level": 2
-        },
-        {
-          "heading": "## Key Findings",
-          "level": 2
-        },
-        {
-          "heading": "## Next Steps",
-          "level": 2
-        },
-        {
-          "heading": "## Notes",
-          "level": 2
-        }
-      ],
-      "last_read": "2026-01-13T19:54:34.223097"
-    },
-    "activeContext.md": {
-      "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
-      "exists": true,
-      "read_count": 0,
-      "write_count": 1,
-      "current_version": 2,
-      "version_history": [
-        {
-          "version": 2,
-          "timestamp": "2026-01-15T15:36:01.546192",
-          "content_hash": "sha256:753a600d4c2b2c133341f45773c988d5b97794d8ddc5250c84ed0fc21121f570",
-          "size_bytes": 3279,
-          "token_count": 828,
+          "version": 8,
+          "timestamp": "2026-01-26T08:23:30.603108",
+          "content_hash": "sha256:2262c6f1a82942198575eb1c0e182508df892327fd3f90826eeac3b26bcbc4d5",
+          "size_bytes": 30211,
+          "token_count": 7536,
           "change_type": "modified",
-          "snapshot_path": ".cortex/history/activeContext_v2.md",
-          "change_description": "Updated activeContext.md with latest commit procedure results - fixed type errors and function length violations"
+          "snapshot_path": ".cortex/history/roadmap_v8.md",
+          "changed_sections": [],
+          "change_description": "Fix broken roadmap links (archived plans + corrected filenames)"
         }
-      ],
-      "size_bytes": 3279,
-      "token_count": 828,
-      "token_model": "cl100k_base",
-      "last_modified": "2026-01-15T15:36:01.546539",
-      "content_hash": "sha256:753a600d4c2b2c133341f45773c988d5b97794d8ddc5250c84ed0fc21121f570",
-      "sections": [
-        {
-          "heading": "## Current Focus (2026-01-15)",
-          "level": 2
-        },
-        {
-          "heading": "### Active Work",
-          "level": 2
-        },
-        {
-          "heading": "### Recently Completed",
-          "level": 2
-        },
-        {
-          "heading": "## Project Health",
-          "level": 2
-        },
-        {
-          "heading": "## Code Quality Standards",
-          "level": 2
-        },
-        {
-          "heading": "## Project Structure",
-          "level": 2
-        },
-        {
-          "heading": "## Context for AI Assistants",
-          "level": 2
-        },
-        {
-          "heading": "### Key Files",
-          "level": 2
-        },
-        {
-          "heading": "### Testing Approach",
-          "level": 2
-        }
-      ],
-      "last_read": "2026-01-15T15:36:01.546539"
+      ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "read_count": 0,
-      "write_count": 1,
-      "current_version": 1,
-      "version_history": [
-        {
-          "version": 1,
-          "timestamp": "2026-01-15T20:27:40.259184",
-          "content_hash": "sha256:a424acb06649eb19de90aeaa9c6bb1e00c71cefad54e5d4d9d77c5a67805bde2",
-          "size_bytes": 27278,
-          "token_count": 6466,
-          "change_type": "modified",
-          "snapshot_path": ".cortex/history/progress_v1.md",
-          "change_description": "Added entry for commit procedure: fixed function length violations and added test coverage"
-        }
-      ],
-      "size_bytes": 27278,
-      "token_count": 6466,
+      "size_bytes": 8425,
+      "token_count": 2106,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-15T20:27:40.259602",
-      "content_hash": "sha256:a424acb06649eb19de90aeaa9c6bb1e00c71cefad54e5d4d9d77c5a67805bde2",
+      "last_modified": "2026-01-26T09:14:15.342877",
+      "content_hash": "sha256:ee5451b98973bdd3006e9fecc82c051994f10718dd85524748ca8177866d49c8",
       "sections": [
         {
-          "heading": "## 2026-01-15: Commit Procedure - Fixed Function Length Violations and Added Test Coverage",
-          "level": 2
+          "title": "## 2026-01-26",
+          "level": 2,
+          "line_start": 3,
+          "line_end": 3,
+          "content_hash": null
         },
         {
-          "heading": "### Summary",
-          "level": 2
+          "title": "## 2026-01-25",
+          "level": 2,
+          "line_start": 28,
+          "line_end": 28,
+          "content_hash": null
         },
         {
-          "heading": "### Changes Made",
-          "level": 2
+          "title": "## 2026-01-24",
+          "level": 2,
+          "line_start": 35,
+          "line_end": 35,
+          "content_hash": null
         },
         {
-          "heading": "#### 1. Function Length Violations Fixed",
-          "level": 2
+          "title": "## 2026-01-22",
+          "level": 2,
+          "line_start": 46,
+          "line_end": 46,
+          "content_hash": null
         },
         {
-          "heading": "#### 2. Test Coverage Improvements",
-          "level": 2
+          "title": "## 2026-01-21",
+          "level": 2,
+          "line_start": 100,
+          "line_end": 100,
+          "content_hash": null
         },
         {
-          "heading": "#### 3. Test Import Fixes",
-          "level": 2
-        },
-        {
-          "heading": "### Verification Results",
-          "level": 2
-        },
-        {
-          "heading": "### Impact",
-          "level": 2
-        },
-        {
-          "heading": "## 2026-01-15: Commit Procedure - Fixed Type Errors and Implicit String Concatenation",
-          "level": 2
-        },
-        {
-          "heading": "### Summary",
-          "level": 2
-        },
-        {
-          "heading": "### Changes Made",
-          "level": 2
-        },
-        {
-          "heading": "#### 1. Type Error Fixes",
-          "level": 2
-        },
-        {
-          "heading": "### Verification Results",
-          "level": 2
-        },
-        {
-          "heading": "### Impact",
-          "level": 2
-        },
-        {
-          "heading": "## 2026-01-14: Phase 18 - Markdown Lint Fix Tool Complete",
-          "level": 2
-        },
-        {
-          "heading": "### Summary",
-          "level": 2
-        },
-        {
-          "heading": "### Changes Made",
-          "level": 2
-        },
-        {
-          "heading": "#### 1. Main Script Implementation",
-          "level": 2
-        },
-        {
-          "heading": "#### 2. Core Functions",
-          "level": 2
-        },
-        {
-          "heading": "#### 3. Unit Tests",
-          "level": 2
-        },
-        {
-          "heading": "### Verification Results",
-          "level": 2
-        },
-        {
-          "heading": "### Code Quality",
-          "level": 2
-        },
-        {
-          "heading": "### Architecture Benefits",
-          "level": 2
-        },
-        {
-          "heading": "## 2026-01-15: Commit Procedure - Fixed Linting, Type Errors, and Test Failures",
-          "level": 2
-        },
-        {
-          "heading": "### Summary",
-          "level": 2
-        },
-        {
-          "heading": "### Changes Made",
-          "level": 2
-        },
-        {
-          "heading": "#### 1. Linting Fixes",
-          "level": 2
-        },
-        {
-          "heading": "#### 2. Type Error Fixes",
-          "level": 2
-        },
-        {
-          "heading": "#### 3. Test Fixes",
-          "level": 2
-        },
-        {
-          "heading": "### Verification Results",
-          "level": 2
-        },
-        {
-          "heading": "### Impact",
-          "level": 2
-        },
-        {
-          "heading": "## 2026-01-14: Type Safety and Code Organization Improvements",
-          "level": 2
-        },
-        {
-          "heading": "### Summary",
-          "level": 2
-        },
-        {
-          "heading": "### Changes Made",
-          "level": 2
-        },
-        {
-          "heading": "#### 1. Type Safety Improvements",
-          "level": 2
-        },
-        {
-          "heading": "#### 2. Code Organization - Timestamp Validation Extraction",
-          "level": 2
-        },
-        {
-          "heading": "#### 3. Code Quality Fixes",
-          "level": 2
-        },
-        {
-          "heading": "#### 4. Test Updates",
-          "level": 2
-        },
-        {
-          "heading": "### Verification Results",
-          "level": 2
-        },
-        {
-          "heading": "### Impact",
-          "level": 2
-        },
-        {
-          "heading": "## 2026-01-14: Roadmap Update - Added Future Enhancement",
-          "level": 2
-        },
-        {
-          "heading": "### Summary (Roadmap Update)",
-          "level": 2
-        },
-        {
-          "heading": "### Changes Made (Roadmap Update)",
-          "level": 2
-        },
-        {
-          "heading": "#### 1. Roadmap Update",
-          "level": 2
-        },
-        {
-          "heading": "### Verification Results (Roadmap Update)",
-          "level": 2
-        },
-        {
-          "heading": "### Code Quality (Roadmap Update)",
-          "level": 2
-        },
-        {
-          "heading": "## 2026-01-14: Commit Procedure - Pre-Commit Validation Complete",
-          "level": 2
-        },
-        {
-          "heading": "### Summary",
-          "level": 2
-        },
-        {
-          "heading": "### Pre-Commit Validation Results",
-          "level": 2
-        },
-        {
-          "heading": "### Verification Details",
-          "level": 2
-        },
-        {
-          "heading": "### Impact",
-          "level": 2
-        },
-        {
-          "heading": "## 2026-01-14: Function Length Violations Fixed",
-          "level": 2
-        },
-        {
-          "heading": "### Summary",
-          "level": 2
-        },
-        {
-          "heading": "### Changes Made",
-          "level": 2
-        },
-        {
-          "heading": "#### Function Length Violations Fixed",
-          "level": 2
-        },
-        {
-          "heading": "### Verification Results",
-          "level": 2
-        },
-        {
-          "heading": "### Impact",
-          "level": 2
-        },
-        {
-          "heading": "## 2026-01-14: Type Error Fixes and Test Corrections",
-          "level": 2
-        },
-        {
-          "heading": "### Summary",
-          "level": 2
-        },
-        {
-          "heading": "### Changes Made",
-          "level": 2
-        },
-        {
-          "heading": "#### Type Error Fixes",
-          "level": 2
-        },
-        {
-          "heading": "#### Test Fixes",
-          "level": 2
-        },
-        {
-          "heading": "#### Code Formatting",
-          "level": 2
-        },
-        {
-          "heading": "### Verification Results",
-          "level": 2
-        },
-        {
-          "heading": "### Impact",
-          "level": 2
-        },
-        {
-          "heading": "## 2026-01-13: Phase 9.7 - Error Handling Polish Complete",
-          "level": 2
-        },
-        {
-          "heading": "### Summary (Phase 9.7 Completion)",
-          "level": 2
-        },
-        {
-          "heading": "### Changes Made (Phase 9.7 Completion)",
-          "level": 2
-        },
-        {
-          "heading": "#### 1. Enhanced `src/cortex/tools/phase5_execution.py` - Error Response Helpers",
-          "level": 2
-        },
-        {
-          "heading": "#### 2. Enhanced `src/cortex/tools/configuration_operations.py` - Error Response Helper",
-          "level": 2
-        },
-        {
-          "heading": "#### 3. Enhanced `src/cortex/tools/validation_helpers.py` - Error Response Helpers",
-          "level": 2
-        },
-        {
-          "heading": "#### 4. Enhanced `src/cortex/tools/file_operations.py` - Error Response Helpers",
-          "level": 2
-        },
-        {
-          "heading": "### Verification Results (Phase 9.7 Completion)",
-          "level": 2
-        },
-        {
-          "heading": "### Code Quality (Phase 9.7 Completion)",
-          "level": 2
-        },
-        {
-          "heading": "### Architecture Benefits",
-          "level": 2
-        },
-        {
-          "heading": "### Error Handling Improvements",
-          "level": 2
-        },
-        {
-          "heading": "## 2026-01-13: Phase 9.8 - Maintainability Excellence Complete",
-          "level": 2
-        },
-        {
-          "heading": "### Summary (Phase 9.8 Completion)",
-          "level": 2
-        },
-        {
-          "heading": "### Changes Made (Phase 9.8 Completion)",
-          "level": 2
-        },
-        {
-          "heading": "#### Refactored 14 Functions with Deep Nesting",
-          "level": 2
-        },
-        {
-          "heading": "### Verification Results (Phase 9.8 Completion)",
-          "level": 2
-        },
-        {
-          "heading": "## Previous Progress",
-          "level": 2
+          "title": "## Previous Progress",
+          "level": 2,
+          "line_start": 121,
+          "line_end": 121,
+          "content_hash": null
         }
       ],
-      "last_read": "2026-01-15T20:27:40.259602"
+      "read_count": 0,
+      "write_count": 3,
+      "last_read": null,
+      "last_write": "2026-01-26T09:14:15.342877",
+      "current_version": 4,
+      "version_history": [
+        {
+          "version": 2,
+          "timestamp": "2026-01-25T21:42:42.915100",
+          "content_hash": "sha256:fdf4e8d46e32c26e6da897745a85df492acb98eb13a306e96687359ac8b6d716",
+          "size_bytes": 68145,
+          "token_count": 17135,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v2.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for resolving user-cortex MCP server blocker"
+        },
+        {
+          "version": 3,
+          "timestamp": "2026-01-26T08:21:25.941162",
+          "content_hash": "sha256:8b29da6fcaa0a59b2cfcee30f54306c001643078297664d24e5a10c84eadc0bc",
+          "size_bytes": 6981,
+          "token_count": 1786,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v3.md",
+          "changed_sections": [],
+          "change_description": "Add progress entry for commit pipeline ergonomics + scoping completion"
+        },
+        {
+          "version": 4,
+          "timestamp": "2026-01-26T09:14:15.342408",
+          "content_hash": "sha256:ee5451b98973bdd3006e9fecc82c051994f10718dd85524748ca8177866d49c8",
+          "size_bytes": 8425,
+          "token_count": 2106,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v4.md",
+          "changed_sections": [],
+          "change_description": "Added session optimization entry for enforcing automatic fixing of ALL issues"
+        }
+      ]
     },
-    "roadmap.md": {
-      "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
+    "activeContext.md": {
+      "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
+      "size_bytes": 4810,
+      "token_count": 1268,
+      "token_model": "cl100k_base",
+      "last_modified": "2026-01-26T08:21:45.157617",
+      "content_hash": "sha256:6d82cdb3efef78efb9aff0eea1b6de57e3e639d793a82f43d0ec2a2b3937699d",
+      "sections": [
+        {
+          "title": "## Current Focus (2026-01-26)",
+          "level": 2,
+          "line_start": 3,
+          "line_end": 3,
+          "content_hash": null
+        },
+        {
+          "title": "### Active Work",
+          "level": 2,
+          "line_start": 7,
+          "line_end": 7,
+          "content_hash": null
+        },
+        {
+          "title": "### Recently Completed",
+          "level": 2,
+          "line_start": 18,
+          "line_end": 18,
+          "content_hash": null
+        },
+        {
+          "title": "## Project Health",
+          "level": 2,
+          "line_start": 43,
+          "line_end": 43,
+          "content_hash": null
+        },
+        {
+          "title": "## Code Quality Standards",
+          "level": 2,
+          "line_start": 55,
+          "line_end": 55,
+          "content_hash": null
+        },
+        {
+          "title": "## Project Structure",
+          "level": 2,
+          "line_start": 63,
+          "line_end": 63,
+          "content_hash": null
+        },
+        {
+          "title": "## Context for AI Assistants",
+          "level": 2,
+          "line_start": 83,
+          "line_end": 83,
+          "content_hash": null
+        },
+        {
+          "title": "### Key Files",
+          "level": 2,
+          "line_start": 85,
+          "line_end": 85,
+          "content_hash": null
+        },
+        {
+          "title": "### Testing Approach",
+          "level": 2,
+          "line_start": 93,
+          "line_end": 93,
+          "content_hash": null
+        }
+      ],
+      "read_count": 0,
+      "write_count": 2,
+      "last_read": null,
+      "last_write": "2026-01-26T08:21:45.157617",
+      "current_version": 4,
+      "version_history": [
+        {
+          "version": 3,
+          "timestamp": "2026-01-25T21:43:22.283378",
+          "content_hash": "sha256:459830afe1f31471ebe62ac5c1e16cefd970734fa1078f9cbba7121e1ea3935c",
+          "size_bytes": 7267,
+          "token_count": 1901,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v3.md",
+          "changed_sections": [],
+          "change_description": "Updated active context after resolving user-cortex MCP server blocker"
+        },
+        {
+          "version": 4,
+          "timestamp": "2026-01-26T08:21:45.157339",
+          "content_hash": "sha256:6d82cdb3efef78efb9aff0eea1b6de57e3e639d793a82f43d0ec2a2b3937699d",
+          "size_bytes": 4810,
+          "token_count": 1268,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v4.md",
+          "changed_sections": [],
+          "change_description": "Update active context after completing commit pipeline ergonomics + scoping blocker"
+        }
+      ]
+    },
+    "tmp-mcp-test.md": {
+      "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/tmp-mcp-test.md",
+      "exists": true,
+      "size_bytes": 22,
+      "token_count": 8,
+      "token_model": "cl100k_base",
+      "last_modified": "2026-01-26T08:28:49.945359",
+      "content_hash": "sha256:80369e4c2c07a2b70335fb3af4da5178f4ffb8b6603f2c1c8ffc411da6a65931",
+      "sections": [
+        {
+          "title": "## test",
+          "level": 2,
+          "line_start": 3,
+          "line_end": 3,
+          "content_hash": null
+        }
+      ],
       "read_count": 0,
       "write_count": 1,
+      "last_read": null,
+      "last_write": "2026-01-26T08:28:49.945359",
       "current_version": 1,
       "version_history": [
         {
           "version": 1,
-          "timestamp": "2026-01-16T08:09:43.760013",
-          "content_hash": "sha256:cceef569e13dfba7a210a976e2c104a57e3fe1fe762d2393f072299a9f80052e",
-          "size_bytes": 22117,
-          "token_count": 5338,
+          "timestamp": "2026-01-26T08:28:49.944928",
+          "content_hash": "sha256:80369e4c2c07a2b70335fb3af4da5178f4ffb8b6603f2c1c8ffc411da6a65931",
+          "size_bytes": 22,
+          "token_count": 8,
           "change_type": "modified",
-          "snapshot_path": ".cortex/history/roadmap_v1.md",
-          "change_description": "Added Phase 23I Failure After Validation Refactor to roadmap as ASAP blocker and planned phase"
+          "snapshot_path": ".cortex/history/tmp-mcp-test_v1.md",
+          "changed_sections": [],
+          "change_description": "debug: manage_file write"
         }
-      ],
-      "size_bytes": 22117,
-      "token_count": 5338,
-      "token_model": "cl100k_base",
-      "last_modified": "2026-01-16T08:09:43.760414",
-      "content_hash": "sha256:cceef569e13dfba7a210a976e2c104a57e3fe1fe762d2393f072299a9f80052e",
-      "sections": [
-        {
-          "heading": "## Current Status (202601",
-          "level": 2
-        },
-        {
-          "heading": "### Active Work",
-          "level": 2
-        },
-        {
-          "heading": "### Recent Findings",
-          "level": 2
-        },
-        {
-          "heading": "## Completed Milestones",
-          "level": 2
-        },
-        {
-          "heading": "## Blockers (ASAP Priority)",
-          "level": 2
-        },
-        {
-          "heading": "## Upcoming Milestones",
-          "level": 2
-        },
-        {
-          "heading": "### Future Enhancements",
-          "level": 2
-        },
-        {
-          "heading": "### Planned Phases",
-          "level": 2
-        }
-      ],
-      "last_read": "2026-01-16T08:09:43.760414"
+      ]
     }
   },
   "dependency_graph": {
@@ -664,13 +406,13 @@
     "total_writes": 0,
     "files_by_read_frequency": [],
     "files_by_write_frequency": [],
-    "last_session_start": "2026-01-12T10:42:19.665258",
+    "last_session_start": "2026-01-25T21:38:36.940164",
     "sessions_count": 0
   },
   "totals": {
-    "total_files": 6,
-    "total_size_bytes": 58425,
-    "total_tokens": 14063,
-    "last_full_scan": "2026-01-16T08:09:43.760438"
+    "total_files": 4,
+    "total_size_bytes": 43468,
+    "total_tokens": 10918,
+    "last_full_scan": "2026-01-26T09:14:15.342914"
   }
 }

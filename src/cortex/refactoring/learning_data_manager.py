@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.async_file_utils import open_async_text_file
+from cortex.core.models import JsonValue, ModelDict
 
 
 @dataclass
@@ -30,9 +31,9 @@ class FeedbackRecord:
     was_approved: bool
     was_applied: bool
 
-    def to_dict(self) -> dict[str, object]:
-        """Convert to dictionary."""
-        return cast(dict[str, object], asdict(self))
+    def to_dict(self) -> ModelDict:
+        """Convert to JSON-serializable dict."""
+        return cast(ModelDict, asdict(self))
 
 
 @dataclass
@@ -41,7 +42,7 @@ class LearnedPattern:
 
     pattern_id: str
     pattern_type: str  # "consolidation", "split", "reorganization"
-    conditions: dict[str, object]
+    conditions: ModelDict
     success_rate: float
     total_occurrences: int
     approved_count: int
@@ -49,9 +50,9 @@ class LearnedPattern:
     last_seen: str
     confidence_adjustment: float  # How much to adjust confidence for this pattern
 
-    def to_dict(self) -> dict[str, object]:
-        """Convert to dictionary."""
-        return cast(dict[str, object], asdict(self))
+    def to_dict(self) -> ModelDict:
+        """Convert to JSON-serializable dict."""
+        return cast(ModelDict, asdict(self))
 
 
 class LearningDataManager:
@@ -80,7 +81,7 @@ class LearningDataManager:
         # In-memory storage
         self.feedback_records: dict[str, FeedbackRecord] = {}
         self.learned_patterns: dict[str, LearnedPattern] = {}
-        self.user_preferences: dict[str, object] = {}
+        self.user_preferences: dict[str, JsonValue] = {}
 
         # Load existing data
         self._load_learning_data()
@@ -108,31 +109,31 @@ class LearningDataManager:
         except Exception as e:
             self._handle_load_error(e)
 
-    def _read_learning_file(self) -> dict[str, object] | None:
+    def _read_learning_file(self) -> ModelDict | None:
         """Read and parse learning data file."""
         with open(self.learning_file) as f:
-            data_raw = cast(object, json.load(f))
+            data_raw = cast(JsonValue, json.load(f))
             if not isinstance(data_raw, dict):
                 return None
-            return cast(dict[str, object], data_raw)
+            return cast(ModelDict, data_raw)
 
-    def _load_feedback_records(self, data: dict[str, object]) -> None:
+    def _load_feedback_records(self, data: ModelDict) -> None:
         """Load feedback records from data dictionary."""
-        feedback_dict: object = data.get("feedback", {})
+        feedback_dict: JsonValue = data.get("feedback", {})
         if not isinstance(feedback_dict, dict):
             return
 
-        typed_feedback_dict: dict[str, object] = cast(dict[str, object], feedback_dict)
+        typed_feedback_dict: ModelDict = cast(ModelDict, feedback_dict)
         for key_obj, value_obj in typed_feedback_dict.items():
             feedback_id: str = str(key_obj)
             if isinstance(value_obj, dict):
                 feedback = self._deserialize_feedback_record(
-                    feedback_id, cast(dict[str, object], value_obj)
+                    feedback_id, cast(ModelDict, value_obj)
                 )
                 self.feedback_records[feedback_id] = feedback
 
     def _deserialize_feedback_record(
-        self, feedback_id: str, data: dict[str, object]
+        self, feedback_id: str, data: ModelDict
     ) -> FeedbackRecord:
         """Deserialize a feedback record from dictionary."""
         return FeedbackRecord(
@@ -147,29 +148,33 @@ class LearningDataManager:
             was_applied=cast(bool, data.get("was_applied", False)),
         )
 
-    def _load_learned_patterns(self, data: dict[str, object]) -> None:
+    def _load_learned_patterns(self, data: ModelDict) -> None:
         """Load learned patterns from data dictionary."""
-        patterns_dict: object = data.get("patterns", {})
+        patterns_dict: JsonValue = data.get("patterns", {})
         if not isinstance(patterns_dict, dict):
             return
 
-        typed_patterns_dict: dict[str, object] = cast(dict[str, object], patterns_dict)
+        typed_patterns_dict: ModelDict = cast(ModelDict, patterns_dict)
         for pattern_id, pattern_data in typed_patterns_dict.items():
             pattern_id_str: str = str(pattern_id)
             if isinstance(pattern_data, dict):
                 pattern = self._deserialize_learned_pattern(
-                    pattern_id_str, cast(dict[str, object], pattern_data)
+                    pattern_id_str, cast(ModelDict, pattern_data)
                 )
                 self.learned_patterns[pattern_id_str] = pattern
 
     def _deserialize_learned_pattern(
-        self, pattern_id: str, data: dict[str, object]
+        self, pattern_id: str, data: ModelDict
     ) -> LearnedPattern:
         """Deserialize a learned pattern from dictionary."""
+        conditions_raw: JsonValue = data.get("conditions", {})
+        conditions = (
+            cast(ModelDict, conditions_raw) if isinstance(conditions_raw, dict) else {}
+        )
         return LearnedPattern(
             pattern_id=cast(str, data.get("pattern_id", pattern_id)),
             pattern_type=cast(str, data.get("pattern_type", "")),
-            conditions=cast(dict[str, object], data.get("conditions", {})),
+            conditions=conditions,
             success_rate=cast(float, data.get("success_rate", 0.0)),
             total_occurrences=cast(int, data.get("total_occurrences", 0)),
             approved_count=cast(int, data.get("approved_count", 0)),
@@ -178,11 +183,11 @@ class LearningDataManager:
             confidence_adjustment=cast(float, data.get("confidence_adjustment", 0.0)),
         )
 
-    def _load_user_preferences(self, data: dict[str, object]) -> None:
+    def _load_user_preferences(self, data: ModelDict) -> None:
         """Load user preferences from data dictionary."""
-        preferences: object = data.get("preferences", {})
+        preferences: JsonValue = data.get("preferences", {})
         if isinstance(preferences, dict):
-            typed_preferences: dict[str, object] = cast(dict[str, object], preferences)
+            typed_preferences = cast(ModelDict, preferences)
             self.user_preferences = {str(k): v for k, v in typed_preferences.items()}
 
     def _handle_load_error(self, error: Exception) -> None:
@@ -197,7 +202,7 @@ class LearningDataManager:
     async def save_learning_data(self) -> None:
         """Save learning data to disk."""
         try:
-            data: dict[str, object] = {
+            data: ModelDict = {
                 "last_updated": datetime.now().isoformat(),
                 "feedback": {
                     feedback_id: feedback.to_dict()
@@ -231,11 +236,13 @@ class LearningDataManager:
         """Get a learned pattern by ID."""
         return self.learned_patterns.get(pattern_id)
 
-    def update_preference(self, key: str, value: object) -> None:
+    def update_preference(self, key: str, value: JsonValue) -> None:
         """Update a user preference."""
         self.user_preferences[key] = value
 
-    def get_preference(self, key: str, default: object | None = None) -> object | None:
+    def get_preference(
+        self, key: str, default: JsonValue | None = None
+    ) -> JsonValue | None:
         """Get a user preference value."""
         return self.user_preferences.get(key, default)
 
@@ -296,6 +303,6 @@ class LearningDataManager:
         """Get all learned patterns."""
         return self.learned_patterns.copy()
 
-    def get_all_preferences(self) -> dict[str, object]:
+    def get_all_preferences(self) -> ModelDict:
         """Get all user preferences."""
         return self.user_preferences.copy()

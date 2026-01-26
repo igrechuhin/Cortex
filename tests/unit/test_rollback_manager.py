@@ -3,16 +3,29 @@
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 
+from cortex.core.file_system import FileSystemManager
+from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import ModelDict
 from cortex.refactoring.rollback_manager import RollbackManager, RollbackRecord
 
-if TYPE_CHECKING:
-    from cortex.core.file_system import FileSystemManager
-    from cortex.core.metadata_index import MetadataIndex
+
+def _make_version_metadata_dict(*, version: int, change_description: str) -> ModelDict:
+    """Build a VersionMetadata-like dict for rollback tests."""
+    return {
+        "version": version,
+        "timestamp": "2025-01-01T12:00:00",
+        "content_hash": "hash",
+        "size_bytes": 0,
+        "token_count": 0,
+        "change_type": "created",
+        "snapshot_path": f".cortex/history/snapshots/v{version}.md",
+        "changed_sections": [],
+        "change_description": change_description,
+    }
 
 
 class TestRollbackRecord:
@@ -47,7 +60,7 @@ class TestRollbackRecord:
         )
 
         # Act
-        result = record.to_dict()
+        result = record.model_dump(mode="json")
 
         # Assert
         assert result["rollback_id"] == "roll-1"
@@ -64,8 +77,8 @@ class TestRollbackManagerInitialization:
     async def test_initialization_creates_empty_state(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test manager initialization with no existing data."""
         # Arrange
@@ -89,8 +102,8 @@ class TestRollbackManagerInitialization:
     async def test_initialization_loads_existing_history(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test manager loads existing rollback history."""
         # Arrange
@@ -134,8 +147,8 @@ class TestRollbackRefactoring:
     async def test_rollback_with_no_snapshot_fails(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test rollback fails when no snapshot found."""
         # Arrange
@@ -156,8 +169,8 @@ class TestRollbackRefactoring:
         )
 
         # Assert
-        assert result["status"] == "failed"
-        error = result.get("error", "")
+        assert result.status == "failed"
+        error = result.error or ""
         assert isinstance(error, str)
         assert "No snapshot found" in error
 
@@ -165,8 +178,8 @@ class TestRollbackRefactoring:
     async def test_rollback_with_dry_run(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test dry run doesn't make actual changes."""
         # Arrange
@@ -190,15 +203,15 @@ class TestRollbackRefactoring:
         result = await manager.rollback_refactoring(execution_id="exec-1", dry_run=True)
 
         # Assert
-        assert result["status"] == "success"
-        assert result["dry_run"] is True
+        assert result.status == "success"
+        assert result.dry_run is True
 
     @pytest.mark.asyncio
     async def test_rollback_detects_conflicts(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test rollback detects file conflicts."""
         # Arrange
@@ -227,20 +240,16 @@ class TestRollbackRefactoring:
         )
 
         # Assert
-        assert result["status"] == "success"
-        assert result["conflicts_detected"] == 1
-        conflicts_raw = result.get("conflicts", [])
-        assert isinstance(conflicts_raw, list)
-        # Cast to list[str] since we know from implementation that conflicts is list[str]
-        conflicts: list[str] = cast(list[str], conflicts_raw)
-        assert len(conflicts) == 1
+        assert result.status == "success"
+        assert result.conflicts_detected == 1
+        assert len(result.conflicts) == 1
 
     @pytest.mark.asyncio
     async def test_rollback_restores_files_successfully(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test successful file restoration."""
         # Arrange
@@ -267,8 +276,8 @@ class TestRollbackRefactoring:
         )
 
         # Assert
-        assert result["status"] == "success"
-        assert result["files_restored"] == 2
+        assert result.status == "success"
+        assert result.files_restored == 2
 
 
 class TestFindSnapshotForExecution:
@@ -278,8 +287,8 @@ class TestFindSnapshotForExecution:
     async def test_find_snapshot_from_execution_id(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test extracting snapshot ID from execution ID."""
         # Arrange
@@ -304,8 +313,8 @@ class TestFindSnapshotForExecution:
     async def test_find_snapshot_returns_none_for_invalid_id(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test returns None for invalid execution ID."""
         # Arrange
@@ -334,8 +343,8 @@ class TestDetectConflicts:
     async def test_detect_deleted_file_conflict(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test detecting deleted file as conflict."""
         # Arrange
@@ -363,8 +372,8 @@ class TestDetectConflicts:
     async def test_detect_modified_file_conflict(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test detecting manually modified file."""
         # Arrange
@@ -407,8 +416,8 @@ class TestRestoreFiles:
     async def test_restore_files_skips_conflicts_when_preserving(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test restore skips conflicted files when preserving edits."""
         # Arrange
@@ -441,8 +450,8 @@ class TestRestoreFiles:
     async def test_restore_files_rollback_to_snapshot(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test restoring file from snapshot version."""
         # Arrange
@@ -461,10 +470,10 @@ class TestRestoreFiles:
         mock_metadata_index.get_file_metadata = AsyncMock(
             return_value={
                 "version_history": [
-                    {
-                        "version": 1,
-                        "change_description": "Pre-refactoring snapshot: snapshot-1",
-                    }
+                    _make_version_metadata_dict(
+                        version=1,
+                        change_description="Pre-refactoring snapshot: snapshot-1",
+                    )
                 ]
             }
         )
@@ -491,8 +500,8 @@ class TestRollbackHistory:
     async def test_get_rollback_history_filters_by_time(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test history filtering by time range."""
         # Arrange
@@ -529,14 +538,14 @@ class TestRollbackHistory:
         result = await manager.get_rollback_history(time_range_days=90)
 
         # Assert
-        assert result["total_rollbacks"] == 1
+        assert result.total_rollbacks == 1
 
     @pytest.mark.asyncio
     async def test_get_rollback_by_id(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test retrieving rollback by ID."""
         # Arrange
@@ -563,7 +572,7 @@ class TestRollbackHistory:
 
         # Assert
         assert result is not None
-        assert result["rollback_id"] == "roll-1"
+        assert result.rollback_id == "roll-1"
 
 
 class TestAnalyzeRollbackImpact:
@@ -573,8 +582,8 @@ class TestAnalyzeRollbackImpact:
     async def test_analyze_rollback_impact_identifies_conflicts(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test impact analysis identifies conflicts."""
         # Arrange
@@ -607,8 +616,8 @@ class TestAnalyzeRollbackImpact:
     async def test_analyze_rollback_impact_with_no_snapshot(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test impact analysis when no snapshot found."""
         # Arrange
@@ -642,8 +651,8 @@ class TestGetAffectedFiles:
     async def test_get_affected_files_from_move_operation(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test extracting affected files from move operation."""
         # Arrange
@@ -666,10 +675,10 @@ class TestGetAffectedFiles:
         mock_metadata_index.get_file_metadata = AsyncMock(
             return_value={
                 "version_history": [
-                    {
-                        "version": 1,
-                        "change_description": "Pre-refactoring snapshot: snapshot-1",
-                    }
+                    _make_version_metadata_dict(
+                        version=1,
+                        change_description="Pre-refactoring snapshot: snapshot-1",
+                    )
                 ]
             }
         )
@@ -684,8 +693,8 @@ class TestGetAffectedFiles:
     async def test_get_affected_files_from_consolidation(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test extracting affected files from consolidation."""
         # Arrange
@@ -713,10 +722,10 @@ class TestGetAffectedFiles:
         async def mock_get_file_metadata(file_name: str) -> dict[str, object] | None:
             return {
                 "version_history": [
-                    {
-                        "version": 1,
-                        "change_description": "Pre-refactoring snapshot: snapshot-1",
-                    }
+                    _make_version_metadata_dict(
+                        version=1,
+                        change_description="Pre-refactoring snapshot: snapshot-1",
+                    )
                 ]
             }
 
@@ -734,8 +743,8 @@ class TestGetAffectedFiles:
     async def test_get_affected_files_returns_empty_for_nonexistent(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test returns empty list for nonexistent execution."""
         # Arrange
@@ -764,8 +773,8 @@ class TestBackupCurrentVersion:
     async def test_backup_creates_version_snapshot(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test backup creates version snapshot."""
         # Arrange
@@ -797,8 +806,8 @@ class TestBackupCurrentVersion:
     async def test_backup_handles_nonexistent_file(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test backup gracefully handles nonexistent file."""
         # Arrange
@@ -863,8 +872,8 @@ class TestComplexRollbackScenarios:
     async def test_rollback_with_multiple_files(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test rollback affecting multiple files."""
         # Arrange
@@ -895,15 +904,15 @@ class TestComplexRollbackScenarios:
         )
 
         # Assert
-        assert result["status"] == "success"
-        assert result["files_restored"] == 3
+        assert result.status == "success"
+        assert result.files_restored == 3
 
     @pytest.mark.asyncio
     async def test_rollback_preserving_some_manual_edits(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test rollback preserving manual edits on some files."""
         # Arrange
@@ -932,9 +941,9 @@ class TestComplexRollbackScenarios:
         )
 
         # Assert
-        assert result["status"] == "success"
-        assert result["files_restored"] == 1
-        assert result["conflicts_detected"] == 1
+        assert result.status == "success"
+        assert result.files_restored == 1
+        assert result.conflicts_detected == 1
 
 
 class TestSaveRollbacks:
@@ -944,8 +953,8 @@ class TestSaveRollbacks:
     async def test_save_rollbacks_persists_to_disk(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test save_rollbacks writes to disk."""
         # Arrange

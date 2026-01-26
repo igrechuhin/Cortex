@@ -7,6 +7,8 @@ Split from learning_engine.py in Phase 9.1 for improved modularity.
 
 from typing import cast
 
+from cortex.core.models import ModelDict
+
 from .learning_data_manager import FeedbackRecord, LearningDataManager
 
 
@@ -25,7 +27,7 @@ class PreferenceManager:
         """
         self.data_manager = data_manager
 
-    def get_or_create_preference(self, pref_key: str) -> dict[str, object]:
+    def get_or_create_preference(self, pref_key: str) -> ModelDict:
         """Get existing preference or create default.
 
         Args:
@@ -34,7 +36,7 @@ class PreferenceManager:
         Returns:
             Preference dictionary
         """
-        default_pref: dict[str, object] = {
+        default_pref: ModelDict = {
             "total": 0,
             "approved": 0,
             "rejected": 0,
@@ -42,11 +44,11 @@ class PreferenceManager:
         }
         pref_val = self.data_manager.get_preference(pref_key, default_pref)
         if isinstance(pref_val, dict):
-            return cast(dict[str, object], pref_val)
+            return cast(ModelDict, pref_val)
         return default_pref.copy()
 
     def update_preference_counts(
-        self, pref: dict[str, object], feedback: FeedbackRecord
+        self, pref: ModelDict, feedback: FeedbackRecord
     ) -> None:
         """Update preference counts based on feedback.
 
@@ -71,7 +73,7 @@ class PreferenceManager:
             )
             pref["rejected"] = rejected + 1
 
-    def calculate_preference_score(self, pref: dict[str, object]) -> float:
+    def calculate_preference_score(self, pref: ModelDict) -> float:
         """Calculate preference score from preference dictionary.
 
         Args:
@@ -124,19 +126,17 @@ class PreferenceManager:
                 "min_confidence_threshold", max(0.3, current_min - 0.05)
             )
 
-    def calculate_preference_summary(self) -> dict[str, dict[str, object]]:
+    def calculate_preference_summary(self) -> ModelDict:
         """Calculate summary of user preferences.
 
         Returns:
             Dictionary mapping suggestion types to preference summaries
         """
-        preference_summary: dict[str, dict[str, object]] = {}
+        preference_summary: ModelDict = {}
         for key, pref_val in self.data_manager.get_all_preferences().items():
             if key.startswith("suggestion_type_"):
-                pref: dict[str, object] = (
-                    cast(dict[str, object], pref_val)
-                    if isinstance(pref_val, dict)
-                    else {}
+                pref: ModelDict = (
+                    cast(ModelDict, pref_val) if isinstance(pref_val, dict) else {}
                 )
                 suggestion_type = key.replace("suggestion_type_", "")
                 preference_summary[suggestion_type] = {
@@ -146,7 +146,7 @@ class PreferenceManager:
                 }
         return preference_summary
 
-    def get_preference_recommendation(self, pref: dict[str, object]) -> str:
+    def get_preference_recommendation(self, pref: ModelDict) -> str:
         """Get recommendation based on preference score."""
         score_val = pref.get("preference_score", 0.5)
         score = float(score_val) if isinstance(score_val, (int, float)) else 0.5
@@ -222,10 +222,8 @@ class PreferenceManager:
         """Check for underutilized suggestion types."""
         for key, pref_val in self.data_manager.get_all_preferences().items():
             if key.startswith("suggestion_type_"):
-                pref: dict[str, object] = (
-                    cast(dict[str, object], pref_val)
-                    if isinstance(pref_val, dict)
-                    else {}
+                pref: ModelDict = (
+                    cast(ModelDict, pref_val) if isinstance(pref_val, dict) else {}
                 )
                 total_val = pref.get("total", 0)
                 total = int(total_val) if isinstance(total_val, (int, float)) else 0

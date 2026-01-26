@@ -1,339 +1,54 @@
-"""
-Phase 5.3-5.4: Safe Execution and Learning Tools
+"""Phase 5.3-5.4: Safe Execution and Learning Tools.
 
-This module contains tools for applying refactorings, providing feedback,
-and configuring learning behavior.
+Tools: apply_refactoring, provide_feedback, configure_learning.
 
-Total: 3 tools
-- apply_refactoring (consolidated: approve, apply, rollback)
-- provide_feedback
-- configure_learning
-
-Note: get_refactoring_history has been consolidated into get_memory_bank_stats()
-tool in tools/phase1_foundation.py with include_refactoring_history=True parameter.
-
-Note: approve_refactoring and rollback_refactoring have been consolidated into
-apply_refactoring() with action parameter.
+Notes:
+- get_refactoring_history is consolidated into get_memory_bank_stats(..., include_refactoring_history=True).
+- approve_refactoring/rollback_refactoring are consolidated into apply_refactoring(action=...).
 """
 
 import json
 from typing import Literal
 
-from cortex.core.responses import error_response
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
+from cortex.managers.types import ManagersDict
 from cortex.refactoring.approval_manager import ApprovalManager
 from cortex.refactoring.learning_engine import LearningEngine
+from cortex.refactoring.models import (
+    ApprovalModel,
+    ApproveResult,
+    ExecutionResult,
+    FeedbackRecordResult,
+    RefactoringSuggestionModel,
+    RollbackRefactoringResult,
+)
+from cortex.refactoring.models import (
+    ApprovalStatus as ApprovalStatusEnum,
+)
 from cortex.refactoring.refactoring_engine import (
     RefactoringEngine,
-    RefactoringSuggestion,
 )
 from cortex.refactoring.refactoring_executor import RefactoringExecutor
 from cortex.refactoring.rollback_manager import RollbackManager
 from cortex.server import mcp
-
-
-async def _approve_refactoring(
-    mgrs: dict[str, object],
-    suggestion_id: str,
-    user_comment: str | None,
-    auto_apply: bool,
-) -> dict[str, object]:
-    """Approve a refactoring suggestion."""
-    approval_manager = await get_manager(mgrs, "approval_manager", ApprovalManager)
-    return await approval_manager.approve_suggestion(
-        suggestion_id=suggestion_id,
-        user_comment=user_comment,
-        auto_apply=auto_apply,
-    )
-
-
-async def _get_suggestion(
-    mgrs: dict[str, object], suggestion_id: str
-) -> dict[str, object] | None:
-    """Get a refactoring suggestion by ID."""
-    refactoring_engine = await get_manager(
-        mgrs, "refactoring_engine", RefactoringEngine
-    )
-    suggestion = await refactoring_engine.get_suggestion(suggestion_id)
-    return suggestion.to_dict() if suggestion else None
-
-
-async def _find_approval_id(
-    mgrs: dict[str, object], suggestion_id: str, approval_id: str | None
-) -> str | dict[str, object]:
-    """Find or validate approval ID for a suggestion."""
-    if approval_id:
-        return approval_id
-
-    approval_manager = await get_manager(mgrs, "approval_manager", ApprovalManager)
-    approvals = await approval_manager.get_approvals_for_suggestion(suggestion_id)
-    approved = [a for a in approvals if a["status"] == "approved"]
-
-    if not approved:
-        return {
-            "status": "error",
-            "error": f"No approval found for suggestion '{suggestion_id}'",
-            "message": "Use action='approve' first",
-        }
-
-    approval_id_val = approved[0].get("approval_id")
-    if not isinstance(approval_id_val, str):
-        return {"status": "error", "error": "Invalid approval_id type"}
-
-    return approval_id_val
-
-
-async def _execute_refactoring(
-    mgrs: dict[str, object],
-    suggestion_id: str,
-    approval_id: str,
-    suggestion_dict: dict[str, object],
-    dry_run: bool,
-    validate_first: bool,
-) -> dict[str, object]:
-    """Execute an approved refactoring."""
-    refactoring_executor = await get_manager(
-        mgrs, "refactoring_executor", RefactoringExecutor
-    )
-    return await refactoring_executor.execute_refactoring(
-        suggestion_id=suggestion_id,
-        approval_id=approval_id,
-        suggestion=suggestion_dict,
-        dry_run=dry_run,
-        validate_first=validate_first,
-    )
-
-
-async def _mark_as_applied(
-    mgrs: dict[str, object],
-    approval_id: str,
-    result: dict[str, object],
-    dry_run: bool,
-) -> None:
-    """Mark approval as applied if execution succeeded."""
-    if result.get("status") == "success" and not dry_run:
-        execution_id_val = result.get("execution_id")
-        if isinstance(execution_id_val, str):
-            approval_manager = await get_manager(
-                mgrs, "approval_manager", ApprovalManager
-            )
-            _ = await approval_manager.mark_as_applied(
-                approval_id=approval_id, execution_id=execution_id_val
-            )
-
-
-async def _apply_approved_refactoring(
-    mgrs: dict[str, object],
-    suggestion_id: str,
-    approval_id: str | None,
-    dry_run: bool,
-    validate_first: bool,
-) -> dict[str, object]:
-    """Apply an approved refactoring suggestion."""
-    # Get the suggestion
-    suggestion_dict = await _get_suggestion(mgrs, suggestion_id)
-    if not suggestion_dict:
-        return {
-            "status": "error",
-            "error": f"Suggestion '{suggestion_id}' not found",
-        }
-
-    # Find or validate approval
-    approval_result = await _find_approval_id(mgrs, suggestion_id, approval_id)
-    if isinstance(approval_result, dict):
-        return approval_result
-    approval_id = approval_result
-
-    # Execute the refactoring
-    result = await _execute_refactoring(
-        mgrs, suggestion_id, approval_id, suggestion_dict, dry_run, validate_first
-    )
-
-    # Mark approval as applied if successful
-    await _mark_as_applied(mgrs, approval_id, result, dry_run)
-
-    return result
-
-
-async def _rollback_refactoring(
-    mgrs: dict[str, object],
-    execution_id: str,
-    restore_snapshot: bool,
-    preserve_manual_changes: bool,
-    dry_run: bool,
-) -> dict[str, object]:
-    """Rollback a previously applied refactoring."""
-    rollback_manager = await get_manager(mgrs, "rollback_manager", RollbackManager)
-    return await rollback_manager.rollback_refactoring(
-        execution_id=execution_id,
-        restore_snapshot=restore_snapshot,
-        preserve_manual_changes=preserve_manual_changes,
-        dry_run=dry_run,
-    )
-
-
-def _create_missing_param_error(param_name: str, action: str) -> str:
-    """Create error response for missing required parameter.
-
-    Args:
-        param_name: Name of missing parameter
-        action: Action that requires the parameter
-
-    Returns:
-        JSON string with error response
-    """
-    return error_response(
-        ValueError(f"{param_name} is required for {action} action"),
-        action_required=(
-            f"Provide the {param_name} parameter when calling the {action} action. "
-            f"Example: {{'{param_name}': 'your-value', 'action': '{action}'}}"
-        ),
-        context={"missing_parameter": param_name, "action": action},
-    )
-
-
-def _create_invalid_action_error(action: str) -> str:
-    """Create error response for invalid action.
-
-    Args:
-        action: The invalid action value
-
-    Returns:
-        JSON string with error response
-    """
-    return error_response(
-        ValueError(
-            f"Invalid action '{action}'. Must be 'approve', 'apply', or 'rollback'"
-        ),
-        action_required=(
-            "Set the 'action' parameter to one of: 'approve', 'apply', or 'rollback'. "
-            f"Received: '{action}'. "
-            "Example: {'action': 'approve', 'suggestion_id': 'suggestion-123'}"
-        ),
-        context={
-            "invalid_action": action,
-            "valid_actions": ["approve", "apply", "rollback"],
-        },
-    )
-
-
-def _create_execution_error_response(error: Exception) -> str:
-    """Create error response for execution exceptions.
-
-    Args:
-        error: The exception that occurred
-
-    Returns:
-        JSON string with error response
-    """
-    # Determine recovery suggestion based on error type
-    error_type = type(error).__name__
-    if "ValidationError" in error_type or "validation" in str(error).lower():
-        action_required = (
-            "Review the refactoring suggestion for issues. "
-            "Check that all required files exist and parameters are valid. "
-            "Try running with 'validate_first=true' to identify issues before execution."
-        )
-    elif "PermissionError" in error_type or "permission" in str(error).lower():
-        action_required = (
-            "Check file system permissions. Ensure the process has read/write access "
-            "to the memory bank directory. Verify no other process is locking the files."
-        )
-    elif "FileNotFoundError" in error_type or "not found" in str(error).lower():
-        action_required = (
-            "Verify that all referenced files exist. Check file paths and ensure "
-            "the memory bank is properly initialized. Run 'get_memory_bank_stats()' to verify setup."
-        )
-    else:
-        action_required = (
-            "Review the error details and retry the operation. "
-            "If the issue persists, check system logs for additional context. "
-            "Consider running with 'dry_run=true' to test without making changes."
-        )
-
-    return error_response(
-        error,
-        action_required=action_required,
-        context={"error_type": error_type},
-    )
-
-
-async def _handle_approve_action(
-    mgrs: dict[str, object],
-    suggestion_id: str | None,
-    user_comment: str | None,
-    auto_apply: bool,
-) -> str:
-    """Handle approve action.
-
-    Args:
-        mgrs: Managers dictionary
-        suggestion_id: Suggestion ID to approve
-        user_comment: Optional user comment
-        auto_apply: Whether to auto-apply after approval
-
-    Returns:
-        JSON string with approval result
-    """
-    if not suggestion_id:
-        return _create_missing_param_error("suggestion_id", "approve")
-    result = await _approve_refactoring(mgrs, suggestion_id, user_comment, auto_apply)
-    return json.dumps(result, indent=2)
-
-
-async def _handle_apply_action(
-    mgrs: dict[str, object],
-    suggestion_id: str | None,
-    approval_id: str | None,
-    dry_run: bool,
-    validate_first: bool,
-) -> str:
-    """Handle apply action.
-
-    Args:
-        mgrs: Managers dictionary
-        suggestion_id: Suggestion ID to apply
-        approval_id: Optional approval ID
-        dry_run: Whether to simulate without changes
-        validate_first: Whether to validate before executing
-
-    Returns:
-        JSON string with apply result
-    """
-    if not suggestion_id:
-        return _create_missing_param_error("suggestion_id", "apply")
-    result = await _apply_approved_refactoring(
-        mgrs, suggestion_id, approval_id, dry_run, validate_first
-    )
-    return json.dumps(result, indent=2)
-
-
-async def _handle_rollback_action(
-    mgrs: dict[str, object],
-    execution_id: str | None,
-    restore_snapshot: bool,
-    preserve_manual_changes: bool,
-    dry_run: bool,
-) -> str:
-    """Handle rollback action.
-
-    Args:
-        mgrs: Managers dictionary
-        execution_id: Execution ID to rollback
-        restore_snapshot: Whether to restore from snapshot
-        preserve_manual_changes: Whether to preserve manual changes
-        dry_run: Whether to simulate without changes
-
-    Returns:
-        JSON string with rollback result
-    """
-    if not execution_id:
-        return _create_missing_param_error("execution_id", "rollback")
-    result = await _rollback_refactoring(
-        mgrs, execution_id, restore_snapshot, preserve_manual_changes, dry_run
-    )
-    return json.dumps(result, indent=2)
+from cortex.tools.phase5_execution_errors import (
+    create_execution_error_response,
+    create_invalid_action_error,
+    create_missing_param_error,
+)
+from cortex.tools.phase5_execution_helpers import (
+    _check_approval_status,
+    _extract_feedback_managers,
+    _record_feedback_and_build_result,
+)
+from cortex.tools.phase5_execution_handlers import (
+    _apply_approved_refactoring,
+    _get_suggestion,
+    _handle_approve_action,
+    _handle_apply_action,
+    _handle_rollback_action,
+)
 
 
 @mcp.tool()
@@ -503,85 +218,231 @@ async def apply_refactoring(
         - Rollback can detect conflicts with manual edits and preserve them when requested
         - Use dry_run=True to safely preview any operation before actual execution
     """
+    return await _execute_apply_refactoring_with_validation(
+        action,
+        project_root,
+        suggestion_id,
+        approval_id,
+        execution_id,
+        user_comment,
+        auto_apply,
+        dry_run,
+        validate_first,
+        restore_snapshot,
+        preserve_manual_changes,
+    )
+
+
+async def _execute_apply_refactoring_with_validation(
+    action: str,
+    project_root: str | None,
+    suggestion_id: str | None,
+    approval_id: str | None,
+    execution_id: str | None,
+    user_comment: str | None,
+    auto_apply: bool,
+    dry_run: bool,
+    validate_first: bool,
+    restore_snapshot: bool,
+    preserve_manual_changes: bool,
+) -> str:
+    """Execute apply refactoring with validation and error handling."""
+    return await _execute_with_error_handling(
+        action,
+        project_root,
+        suggestion_id,
+        approval_id,
+        execution_id,
+        user_comment,
+        auto_apply,
+        dry_run,
+        validate_first,
+        restore_snapshot,
+        preserve_manual_changes,
+    )
+
+
+async def _execute_with_error_handling(
+    action: str,
+    project_root: str | None,
+    suggestion_id: str | None,
+    approval_id: str | None,
+    execution_id: str | None,
+    user_comment: str | None,
+    auto_apply: bool,
+    dry_run: bool,
+    validate_first: bool,
+    restore_snapshot: bool,
+    preserve_manual_changes: bool,
+) -> str:
+    """Execute with validation and error handling."""
     try:
-        root = get_project_root(project_root)
-        mgrs = await get_managers(root)
-
-        if action == "approve":
-            return await _handle_approve_action(
-                mgrs, suggestion_id, user_comment, auto_apply
-            )
-        if action == "apply":
-            return await _handle_apply_action(
-                mgrs, suggestion_id, approval_id, dry_run, validate_first
-            )
-        if action == "rollback":
-            return await _handle_rollback_action(
-                mgrs, execution_id, restore_snapshot, preserve_manual_changes, dry_run
-            )
-        return _create_invalid_action_error(action)
+        return await _execute_validated_refactoring(
+            action,
+            project_root,
+            suggestion_id,
+            approval_id,
+            execution_id,
+            user_comment,
+            auto_apply,
+            dry_run,
+            validate_first,
+            restore_snapshot,
+            preserve_manual_changes,
+        )
     except Exception as e:
-        return _create_execution_error_response(e)
+        return create_execution_error_response(e)
 
 
-async def _extract_feedback_managers(
-    mgrs: dict[str, object],
-) -> tuple[LearningEngine, RefactoringEngine, ApprovalManager]:
-    """Extract managers needed for feedback operations."""
-    learning_engine = await get_manager(mgrs, "learning_engine", LearningEngine)
-    refactoring_engine = await get_manager(
-        mgrs, "refactoring_engine", RefactoringEngine
+async def _execute_validated_refactoring(
+    action: str,
+    project_root: str | None,
+    suggestion_id: str | None,
+    approval_id: str | None,
+    execution_id: str | None,
+    user_comment: str | None,
+    auto_apply: bool,
+    dry_run: bool,
+    validate_first: bool,
+    restore_snapshot: bool,
+    preserve_manual_changes: bool,
+) -> str:
+    """Execute validated refactoring action."""
+    if validation_error := _check_validation_error(action, suggestion_id, execution_id):
+        return validation_error
+    return await _call_execute_refactoring_action(
+        action,
+        project_root,
+        suggestion_id,
+        approval_id,
+        execution_id,
+        user_comment,
+        auto_apply,
+        dry_run,
+        validate_first,
+        restore_snapshot,
+        preserve_manual_changes,
     )
-    approval_manager = await get_manager(mgrs, "approval_manager", ApprovalManager)
-    return learning_engine, refactoring_engine, approval_manager
 
 
-def _create_suggestion_not_found_error(suggestion_id: str) -> dict[str, object]:
+def _check_validation_error(
+    action: str, suggestion_id: str | None, execution_id: str | None
+) -> str | None:
+    """Check validation error and return it if present."""
+    return _validate_apply_refactoring_params(action, suggestion_id, execution_id)
+
+
+async def _call_execute_refactoring_action(
+    action: str,
+    project_root: str | None,
+    suggestion_id: str | None,
+    approval_id: str | None,
+    execution_id: str | None,
+    user_comment: str | None,
+    auto_apply: bool,
+    dry_run: bool,
+    validate_first: bool,
+    restore_snapshot: bool,
+    preserve_manual_changes: bool,
+) -> str:
+    """Call execute refactoring action with all parameters."""
+    return await _execute_refactoring_action(
+        action,
+        project_root,
+        suggestion_id,
+        approval_id,
+        execution_id,
+        user_comment,
+        auto_apply,
+        dry_run,
+        validate_first,
+        restore_snapshot,
+        preserve_manual_changes,
+    )
+
+
+async def _execute_refactoring_action(
+    action: str,
+    project_root: str | None,
+    suggestion_id: str | None,
+    approval_id: str | None,
+    execution_id: str | None,
+    user_comment: str | None,
+    auto_apply: bool,
+    dry_run: bool,
+    validate_first: bool,
+    restore_snapshot: bool,
+    preserve_manual_changes: bool,
+) -> str:
+    """Execute refactoring action after validation."""
+    root = get_project_root(project_root)
+    mgrs = await get_managers(root)
+    return await _dispatch_refactoring_action(
+        action,
+        mgrs,
+        suggestion_id,
+        approval_id,
+        execution_id,
+        user_comment,
+        auto_apply,
+        dry_run,
+        validate_first,
+        restore_snapshot,
+        preserve_manual_changes,
+    )
+
+
+async def _dispatch_refactoring_action(
+    action: str,
+    mgrs: ManagersDict,
+    suggestion_id: str | None,
+    approval_id: str | None,
+    execution_id: str | None,
+    user_comment: str | None,
+    auto_apply: bool,
+    dry_run: bool,
+    validate_first: bool,
+    restore_snapshot: bool,
+    preserve_manual_changes: bool,
+) -> str:
+    """Dispatch refactoring action to appropriate handler."""
+    if action == "approve":
+        return await _handle_approve_action(
+            mgrs, suggestion_id, user_comment, auto_apply
+        )
+    if action == "apply":
+        return await _handle_apply_action(
+            mgrs, suggestion_id, approval_id, dry_run, validate_first
+        )
+    if action == "rollback":
+        return await _handle_rollback_action(
+            mgrs, execution_id, restore_snapshot, preserve_manual_changes, dry_run
+        )
+    return create_invalid_action_error(action)
+
+
+def _validate_apply_refactoring_params(
+    action: str, suggestion_id: str | None, execution_id: str | None
+) -> str | None:
+    """Validate apply_refactoring parameters."""
+    if action == "approve" and not suggestion_id:
+        return create_missing_param_error("suggestion_id", "approve")
+    if action == "apply" and not suggestion_id:
+        return create_missing_param_error("suggestion_id", "apply")
+    if action == "rollback" and not execution_id:
+        return create_missing_param_error("execution_id", "rollback")
+    if action not in {"approve", "apply", "rollback"}:
+        return create_invalid_action_error(action)
+    return None
+
+
+def _create_suggestion_not_found_error(suggestion_id: str) -> ExecutionResult:
     """Create error response for suggestion not found."""
-    return {
-        "status": "error",
-        "error": f"Suggestion '{suggestion_id}' not found",
-    }
-
-
-def _check_approval_status(approvals: list[dict[str, object]]) -> tuple[bool, bool]:
-    """Check if suggestion was approved or applied."""
-    was_approved = (
-        len([a for a in approvals if a["status"] in ["approved", "applied"]]) > 0
+    return ExecutionResult(
+        status="validation_failed",
+        execution_id="",
+        error=f"Suggestion '{suggestion_id}' not found",
     )
-    was_applied = len([a for a in approvals if a["status"] == "applied"]) > 0
-    return was_approved, was_applied
-
-
-async def _record_feedback_and_build_result(
-    learning_engine: LearningEngine,
-    suggestion: RefactoringSuggestion,
-    suggestion_id: str,
-    feedback_type: str,
-    comment: str | None,
-    was_approved: bool,
-    was_applied: bool,
-) -> dict[str, object]:
-    """Record feedback and build result with learning summary."""
-    suggestion_dict = suggestion.to_dict()
-    result = await learning_engine.record_feedback(
-        suggestion_id=suggestion_id,
-        suggestion_type=suggestion.refactoring_type.value,
-        feedback_type=feedback_type,
-        comment=comment,
-        suggestion_confidence=suggestion.confidence_score,
-        was_approved=was_approved,
-        was_applied=was_applied,
-        suggestion_details=suggestion_dict,
-    )
-
-    insights = await learning_engine.get_learning_insights()
-    result["learning_summary"] = {
-        "total_feedback": insights["total_feedback"],
-        "approval_rate": insights["approval_rate"],
-        "min_confidence_threshold": insights["min_confidence_threshold"],
-    }
-    return result
 
 
 @mcp.tool()
@@ -707,12 +568,10 @@ async def provide_feedback(
     try:
         root = get_project_root(project_root)
         mgrs = await get_managers(root)
-
         managers = await _extract_feedback_managers(mgrs)
         suggestion = await _get_suggestion_for_feedback(managers[1], suggestion_id)
         if isinstance(suggestion, str):
             return suggestion
-
         result = await _process_feedback(
             managers[0],
             managers[1],
@@ -722,9 +581,7 @@ async def provide_feedback(
             feedback_type,
             comment,
         )
-
-        return json.dumps(result, indent=2)
-
+        return result.model_dump_json(indent=2)
     except Exception as e:
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
@@ -734,11 +591,14 @@ async def provide_feedback(
 
 async def _get_suggestion_for_feedback(
     refactoring_engine: RefactoringEngine, suggestion_id: str
-) -> RefactoringSuggestion | str:
+) -> RefactoringSuggestionModel | str:
     """Get suggestion or return error JSON."""
     suggestion = await refactoring_engine.get_suggestion(suggestion_id)
     if not suggestion:
-        return json.dumps(_create_suggestion_not_found_error(suggestion_id), indent=2)
+        return json.dumps(
+            {"status": "error", "error": f"Suggestion '{suggestion_id}' not found"},
+            indent=2,
+        )
     return suggestion
 
 
@@ -746,11 +606,11 @@ async def _process_feedback(
     learning_engine: LearningEngine,
     refactoring_engine: RefactoringEngine,
     approval_manager: ApprovalManager,
-    suggestion: RefactoringSuggestion,
+    suggestion: RefactoringSuggestionModel,
     suggestion_id: str,
     feedback_type: str,
     comment: str | None,
-) -> dict[str, object]:
+) -> FeedbackRecordResult:
     """Process feedback and return result.
 
     Args:
@@ -763,7 +623,7 @@ async def _process_feedback(
         comment: Optional comment
 
     Returns:
-        Result dictionary with feedback processing results
+        Feedback record result model
     """
     approvals = await approval_manager.get_approvals_for_suggestion(suggestion_id)
     was_approved, was_applied = _check_approval_status(approvals)

@@ -6,9 +6,8 @@ Safely execute approved refactoring suggestions with validation and rollback sup
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
 from typing import cast
 
@@ -16,46 +15,24 @@ from cortex.core.async_file_utils import open_async_text_file
 from cortex.core.exceptions import FileOperationError
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import JsonValue, ModelDict
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.linking.link_validator import LinkValidator
 
 from .execution_operations import ExecutionOperations
-from .execution_validator import ExecutionValidator, RefactoringOperation
-
-
-class RefactoringStatus(Enum):
-    """Status of a refactoring operation."""
-
-    PENDING = "pending"
-    VALIDATING = "validating"
-    EXECUTING = "executing"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    ROLLED_BACK = "rolled_back"
-
-
-@dataclass
-class RefactoringExecution:
-    """Record of a refactoring execution."""
-
-    execution_id: str
-    suggestion_id: str
-    approval_id: str
-    operations: list[RefactoringOperation]
-    status: str
-    created_at: str
-    completed_at: str | None = None
-    snapshot_id: str | None = None
-    validation_results: dict[str, object] | None = None
-    actual_impact: dict[str, object] | None = None
-    error: str | None = None
-
-    def to_dict(self) -> dict[str, object]:
-        """Convert to dictionary."""
-        data = asdict(self)
-        data["operations"] = [asdict(op) for op in self.operations]
-        return data
+from .execution_validator import ExecutionValidator
+from .models import (
+    ExecutionHistoryResult,
+    ExecutionResult,
+    RefactoringExecutionModel,
+    RefactoringExecutorConfig,
+    RefactoringImpactMetrics,
+    RefactoringOperationModel,
+    RefactoringStatus,
+    RefactoringSuggestionModel,
+    RefactoringValidationResult,
+)
 
 
 class RefactoringExecutor:
@@ -78,47 +55,67 @@ class RefactoringExecutor:
         version_manager: VersionManager,
         link_validator: LinkValidator,
         metadata_index: MetadataIndex,
-        config: dict[str, object] | None = None,
+        config: RefactoringExecutorConfig | ModelDict | None = None,
     ):
         self.memory_bank_dir: Path = Path(memory_bank_dir)
         self.fs_manager: FileSystemManager = fs_manager
         self.version_manager: VersionManager = version_manager
         self.link_validator: LinkValidator = link_validator
         self.metadata_index: MetadataIndex = metadata_index
-        self.config: dict[str, object] = config or {}
+        self.config = self._initialize_config(config)
         self.token_counter: TokenCounter = TokenCounter()
+        self.validator = self._initialize_validator(
+            memory_bank_dir, fs_manager, metadata_index
+        )
+        self.operations = self._initialize_operations(memory_bank_dir, fs_manager)
+        self.history_file: Path = (
+            self.memory_bank_dir.parent / "refactoring-history.json"
+        )
+        self.executions: dict[str, RefactoringExecutionModel] = {}
+        self._load_history()
 
-        self.validator: ExecutionValidator = ExecutionValidator(
+    def _initialize_config(
+        self, config: RefactoringExecutorConfig | ModelDict | None
+    ) -> RefactoringExecutorConfig:
+        """Initialize executor config from various input types."""
+        if config is None:
+            return RefactoringExecutorConfig()
+        if isinstance(config, RefactoringExecutorConfig):
+            return config
+        return RefactoringExecutorConfig.model_validate(config)
+
+    def _initialize_validator(
+        self,
+        memory_bank_dir: Path,
+        fs_manager: FileSystemManager,
+        metadata_index: MetadataIndex,
+    ) -> ExecutionValidator:
+        """Initialize execution validator."""
+        return ExecutionValidator(
             memory_bank_dir=memory_bank_dir,
             fs_manager=fs_manager,
             metadata_index=metadata_index,
         )
 
-        self.operations: ExecutionOperations = ExecutionOperations(
+    def _initialize_operations(
+        self, memory_bank_dir: Path, fs_manager: FileSystemManager
+    ) -> ExecutionOperations:
+        """Initialize execution operations."""
+        return ExecutionOperations(
             memory_bank_dir=memory_bank_dir,
             fs_manager=fs_manager,
         )
 
-        self.history_file: Path = (
-            self.memory_bank_dir.parent / "refactoring-history.json"
-        )
-        self.executions: dict[str, RefactoringExecution] = {}
-        self._load_history()
-
     def _load_history(self) -> None:
         """Load execution history from disk."""
-        data = self._read_history_file()
-        if data is None:
+        records = self._read_history_file()
+        if records is None:
             self.executions = {}
             return
 
-        executions_dict = cast(dict[str, object], data.get("executions", {}))
-        for exec_id, exec_data in executions_dict.items():
-            self.executions[str(exec_id)] = self._reconstruct_execution(
-                str(exec_id), cast(dict[str, object], exec_data)
-            )
+        self.executions = records
 
-    def _read_history_file(self) -> dict[str, object] | None:
+    def _read_history_file(self) -> dict[str, RefactoringExecutionModel] | None:
         """
         Read and parse the JSON history file, return None if corrupted.
 
@@ -131,77 +128,52 @@ class RefactoringExecutor:
 
         try:
             with open(self.history_file) as f:
-                return cast(dict[str, object], json.load(f))
+                raw_obj = json.load(f)
+
+            if not isinstance(raw_obj, dict):
+                return None
+            raw = cast(ModelDict, raw_obj)
+
+            executions_raw = raw.get("executions", {})
+            if not isinstance(executions_raw, dict):
+                return None
+
+            records: dict[str, RefactoringExecutionModel] = {}
+            executions_dict = cast(dict[str, JsonValue], executions_raw)
+            for exec_id, exec_data in executions_dict.items():
+                try:
+                    model = RefactoringExecutionModel.model_validate(exec_data)
+                except Exception:
+                    continue
+                records[str(exec_id)] = model
+
+            return records
         except Exception as e:
             from cortex.core.logging_config import logger
 
             logger.warning(f"Refactoring history corrupted, starting fresh: {e}")
             return None
 
-    def _reconstruct_operation(
-        self, op_data: dict[str, object]
-    ) -> RefactoringOperation:
-        """Convert a dict to RefactoringOperation with all type casts."""
-        return RefactoringOperation(
-            operation_id=cast(str, op_data.get("operation_id", "")),
-            operation_type=cast(str, op_data.get("operation_type", "")),
-            target_file=cast(str, op_data.get("target_file", "")),
-            parameters=cast(dict[str, object], op_data.get("parameters", {})),
-            status=cast(str, op_data.get("status", "pending")),
-            error=cast(str | None, op_data.get("error")),
-            created_at=cast(str | None, op_data.get("created_at")),
-            completed_at=cast(str | None, op_data.get("completed_at")),
-        )
-
-    def _reconstruct_execution(
-        self, exec_id: str, exec_data: dict[str, object]
-    ) -> RefactoringExecution:
-        """Convert a dict to RefactoringExecution with reconstructed operations."""
-        operations_list = cast(list[object], exec_data.get("operations", []))
-        operations = [
-            self._reconstruct_operation(cast(dict[str, object], op_data))
-            for op_data in operations_list
-            if isinstance(op_data, dict)
-        ]
-
-        return RefactoringExecution(
-            execution_id=cast(str, exec_data.get("execution_id", "")),
-            suggestion_id=cast(str, exec_data.get("suggestion_id", "")),
-            approval_id=cast(str, exec_data.get("approval_id", "")),
-            operations=operations,
-            status=cast(str, exec_data.get("status", "pending")),
-            created_at=cast(str, exec_data.get("created_at", "")),
-            completed_at=cast(str | None, exec_data.get("completed_at")),
-            snapshot_id=cast(str | None, exec_data.get("snapshot_id")),
-            validation_results=cast(
-                dict[str, object] | None, exec_data.get("validation_results")
-            ),
-            actual_impact=cast(
-                dict[str, object] | None, exec_data.get("actual_impact")
-            ),
-            error=cast(str | None, exec_data.get("error")),
-        )
-
     async def _save_history(self):
         """Save execution history to disk."""
         try:
-            data = {
+            payload = {
                 "last_updated": datetime.now().isoformat(),
                 "executions": {
-                    exec_id: execution.to_dict()
-                    for exec_id, execution in self.executions.items()
+                    exec_id: exec_model.model_dump()
+                    for exec_id, exec_model in self.executions.items()
                 },
             }
             async with open_async_text_file(self.history_file, "w", "utf-8") as f:
-                _ = await f.write(json.dumps(data, indent=2))
+                _ = await f.write(json.dumps(payload, indent=2))
         except Exception as e:
             raise FileOperationError(f"Failed to save execution history: {e}") from e
 
     async def validate_refactoring(
         self,
-        suggestion: dict[str, object],
+        suggestion: RefactoringSuggestionModel | ModelDict,
         dry_run: bool = True,
-    ) -> dict[str, object]:
+    ) -> RefactoringValidationResult:
         """
         Validate a refactoring suggestion before execution.
 
@@ -215,8 +187,8 @@ class RefactoringExecutor:
         return await self.validator.validate_refactoring(suggestion, dry_run)
 
     def extract_operations(
-        self, suggestion: dict[str, object]
-    ) -> list[RefactoringOperation]:
+        self, suggestion: RefactoringSuggestionModel | ModelDict
+    ) -> list[RefactoringOperationModel]:
         """Extract refactoring operations from a suggestion."""
         return self.validator.extract_operations(suggestion)
 
@@ -224,10 +196,10 @@ class RefactoringExecutor:
         self,
         suggestion_id: str,
         approval_id: str,
-        suggestion: dict[str, object],
+        suggestion: RefactoringSuggestionModel | ModelDict,
         dry_run: bool = False,
         validate_first: bool = True,
-    ) -> dict[str, object]:
+    ) -> ExecutionResult:
         """
         Execute an approved refactoring suggestion.
 
@@ -257,7 +229,7 @@ class RefactoringExecutor:
             if not dry_run:
                 execution.snapshot_id = await self._create_snapshot(operations)
 
-            execution.status = RefactoringStatus.EXECUTING.value
+            execution.status = RefactoringStatus.EXECUTING
             if not dry_run:
                 await self._execute_operations_batch(execution, operations)
 
@@ -271,64 +243,77 @@ class RefactoringExecutor:
         self,
         suggestion_id: str,
         approval_id: str,
-        operations: list[RefactoringOperation],
-    ) -> RefactoringExecution:
+        operations: list[RefactoringOperationModel],
+    ) -> RefactoringExecutionModel:
         """Create initial execution record."""
         execution_id = f"exec-{suggestion_id}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        return RefactoringExecution(
+        return RefactoringExecutionModel(
             execution_id=execution_id,
             suggestion_id=suggestion_id,
             approval_id=approval_id,
             operations=operations,
-            status=RefactoringStatus.PENDING.value,
+            status=RefactoringStatus.PENDING,
             created_at=datetime.now().isoformat(),
         )
 
     async def _validate_and_check(
         self,
-        execution: RefactoringExecution,
-        suggestion: dict[str, object],
+        execution: RefactoringExecutionModel,
+        suggestion: RefactoringSuggestionModel | ModelDict,
         dry_run: bool,
-    ) -> dict[str, object] | None:
-        """Validate refactoring; return error dict if validation fails, None if success."""
-        execution.status = RefactoringStatus.VALIDATING.value
+    ) -> ExecutionResult | None:
+        """Validate refactoring; return error result if validation fails, None if success."""
+        execution.status = RefactoringStatus.VALIDATING
         validation_results = await self.validate_refactoring(suggestion, dry_run)
-        execution.validation_results = validation_results
+        # Convert validation results to impact metrics
+        from .models import RefactoringImpactMetrics
 
-        if not validation_results["valid"]:
-            execution.status = RefactoringStatus.FAILED.value
-            issues = cast(list[str], validation_results.get("issues", []))
-            execution.error = f"Validation failed: {', '.join(issues)}"
+        execution.validation_results = RefactoringImpactMetrics(
+            token_savings=0,  # Will be calculated during execution
+            files_affected=validation_results.operations_count,
+            complexity_reduction=0,
+            risk_level="low",
+        )
+
+        if not validation_results.valid:
+            execution.status = RefactoringStatus.FAILED
+            execution.error = (
+                f"Validation failed: {', '.join(validation_results.issues)}"
+            )
             self.executions[execution.execution_id] = execution
             await self._save_history()
-            return {
-                "status": "failed",
-                "execution_id": execution.execution_id,
-                "error": execution.error,
-                "validation_results": validation_results,
-            }
+            return ExecutionResult(
+                status="failed",
+                execution_id=execution.execution_id,
+                suggestion_id=execution.suggestion_id,
+                approval_id=execution.approval_id,
+                error=execution.error,
+                validation_errors=validation_results.issues,
+            )
         return None
 
     async def _execute_operations_batch(
-        self, execution: RefactoringExecution, operations: list[RefactoringOperation]
+        self,
+        execution: RefactoringExecutionModel,
+        operations: list[RefactoringOperationModel],
     ) -> None:
         """Execute all operations in the list."""
         for operation in operations:
-            operation.status = "executing"
+            operation.status = RefactoringStatus.EXECUTING
             try:
                 await self.execute_operation(operation)
-                operation.status = "completed"
+                operation.status = RefactoringStatus.COMPLETED
                 operation.completed_at = datetime.now().isoformat()
             except Exception as e:
-                operation.status = "failed"
+                operation.status = RefactoringStatus.FAILED
                 operation.error = str(e)
                 raise
 
     async def _finalize_execution(
         self,
-        execution: RefactoringExecution,
-        operations: list[RefactoringOperation],
-        suggestion: dict[str, object],
+        execution: RefactoringExecutionModel,
+        operations: list[RefactoringOperationModel],
+        suggestion: RefactoringSuggestionModel | ModelDict,
         dry_run: bool,
     ) -> None:
         """Measure impact and mark execution as completed."""
@@ -336,59 +321,68 @@ class RefactoringExecutor:
             actual_impact = await self.measure_impact(operations, suggestion)
             execution.actual_impact = actual_impact
         else:
-            estimated_impact = suggestion.get("estimated_impact", {})
-            execution.actual_impact = cast(
-                dict[str, object] | None,
-                estimated_impact if estimated_impact else None,
-            )
+            execution.actual_impact = self._extract_estimated_impact(suggestion)
 
-        execution.status = RefactoringStatus.COMPLETED.value
+        execution.status = RefactoringStatus.COMPLETED
         execution.completed_at = datetime.now().isoformat()
         self.executions[execution.execution_id] = execution
         await self._save_history()
 
     def _build_success_result(
         self,
-        execution: RefactoringExecution,
-        operations: list[RefactoringOperation],
+        execution: RefactoringExecutionModel,
+        operations: list[RefactoringOperationModel],
         dry_run: bool,
-    ) -> dict[str, object]:
-        """Build success response dict."""
-        return {
-            "status": "success",
-            "execution_id": execution.execution_id,
-            "operations_completed": len(
+    ) -> ExecutionResult:
+        """Build success response model."""
+        actual_impact = (
+            RefactoringImpactMetrics.model_validate(execution.actual_impact)
+            if execution.actual_impact
+            else RefactoringImpactMetrics()
+        )
+
+        return ExecutionResult(
+            status="success",
+            execution_id=execution.execution_id,
+            suggestion_id=execution.suggestion_id,
+            approval_id=execution.approval_id,
+            operations_completed=len(
                 [op for op in operations if op.status == "completed"]
             ),
-            "snapshot_id": execution.snapshot_id,
-            "actual_impact": execution.actual_impact,
-            "dry_run": dry_run,
-        }
+            snapshot_id=execution.snapshot_id,
+            actual_impact=actual_impact,
+            dry_run=dry_run,
+            rollback_available=execution.snapshot_id is not None,
+        )
 
     async def _build_failure_result(
         self,
-        execution: RefactoringExecution,
-        operations: list[RefactoringOperation],
+        execution: RefactoringExecutionModel,
+        operations: list[RefactoringOperationModel],
         error: Exception,
-    ) -> dict[str, object]:
-        """Build failure response dict."""
-        execution.status = RefactoringStatus.FAILED.value
+    ) -> ExecutionResult:
+        """Build failure response model."""
+        execution.status = RefactoringStatus.FAILED
         execution.error = str(error)
         execution.completed_at = datetime.now().isoformat()
         self.executions[execution.execution_id] = execution
         await self._save_history()
 
-        return {
-            "status": "failed",
-            "execution_id": execution.execution_id,
-            "error": str(error),
-            "operations_completed": len(
+        return ExecutionResult(
+            status="failed",
+            execution_id=execution.execution_id,
+            suggestion_id=execution.suggestion_id,
+            approval_id=execution.approval_id,
+            error=str(error),
+            operations_completed=len(
                 [op for op in operations if op.status == "completed"]
             ),
-            "rollback_available": execution.snapshot_id is not None,
-        }
+            rollback_available=execution.snapshot_id is not None,
+        )
 
-    async def _create_snapshot(self, operations: list[RefactoringOperation]) -> str:
+    async def _create_snapshot(
+        self, operations: list[RefactoringOperationModel]
+    ) -> str:
         """Create snapshot of all files that will be modified."""
         snapshot_id = f"refactoring-{datetime.now().strftime('%Y%m%d%H%M%S')}"
         affected_files = self._collect_affected_files(operations)
@@ -396,7 +390,7 @@ class RefactoringExecutor:
         return snapshot_id
 
     def _collect_affected_files(
-        self, operations: list[RefactoringOperation]
+        self, operations: list[RefactoringOperationModel]
     ) -> set[str]:
         """Collect all files that will be affected by operations.
 
@@ -412,7 +406,7 @@ class RefactoringExecutor:
         return affected_files
 
     def _extract_consolidation_files(
-        self, operation: RefactoringOperation
+        self, operation: RefactoringOperationModel
     ) -> list[str]:
         """Extract file list from consolidation operation parameters.
 
@@ -422,14 +416,11 @@ class RefactoringExecutor:
         Returns:
             List of file paths from operation parameters
         """
-        files_param_raw = operation.parameters.get("files", [])
-        if not isinstance(files_param_raw, list):
-            return []
-
-        files_param = cast(list[object], files_param_raw)
-        return [
-            str(file_item) for file_item in files_param if isinstance(file_item, str)
-        ]
+        # For consolidation, files come from source_file
+        files = []
+        if operation.parameters.source_file:
+            files = [operation.parameters.source_file]
+        return files
 
     async def _create_snapshots_for_files(
         self, affected_files: set[str], snapshot_id: str
@@ -461,27 +452,27 @@ class RefactoringExecutor:
             change_description=f"Pre-refactoring snapshot: {snapshot_id}",
         )
 
-    async def execute_operation(self, operation: RefactoringOperation):
+    async def execute_operation(self, operation: RefactoringOperationModel):
         """Execute a single refactoring operation."""
         await self.operations.execute_operation(operation)
 
-    async def execute_consolidation(self, operation: RefactoringOperation) -> None:
+    async def execute_consolidation(self, operation: RefactoringOperationModel) -> None:
         """Execute consolidation operation."""
         await self.operations.execute_consolidation(operation)
 
-    async def execute_split(self, operation: RefactoringOperation) -> None:
+    async def execute_split(self, operation: RefactoringOperationModel) -> None:
         """Execute split operation."""
         await self.operations.execute_split(operation)
 
-    async def execute_create(self, operation: RefactoringOperation) -> None:
+    async def execute_create(self, operation: RefactoringOperationModel) -> None:
         """Execute create operation."""
         await self.operations.execute_create(operation)
 
     async def measure_impact(
         self,
-        operations: list[RefactoringOperation],
-        suggestion: dict[str, object],
-    ) -> dict[str, object]:
+        operations: list[RefactoringOperationModel],
+        suggestion: RefactoringSuggestionModel | ModelDict,
+    ) -> RefactoringImpactMetrics:
         """Measure actual impact of refactoring."""
         affected_files = self._collect_affected_files(operations)
         total_tokens_after = await self._calculate_token_totals(affected_files)
@@ -495,7 +486,7 @@ class RefactoringExecutor:
         self,
         time_range_days: int = 90,
         include_rollbacks: bool = True,
-    ) -> dict[str, object]:
+    ) -> ExecutionHistoryResult:
         """
         Get refactoring execution history.
 
@@ -518,11 +509,51 @@ class RefactoringExecutor:
             time_range_days, filtered_executions, status_counts
         )
 
-    async def get_execution(self, execution_id: str) -> dict[str, object] | None:
-        """Get a specific execution by ID."""
+    async def get_execution(
+        self, execution_id: str
+    ) -> RefactoringExecutionModel | None:
+        """Get a specific execution by ID.
+
+        Returns:
+            RefactoringExecutionModel or None if not found
+        """
+        from cortex.refactoring.models import RefactoringStatus
+
         execution = self.executions.get(execution_id)
         if execution:
-            return execution.to_dict()
+            operations = self._convert_operations_to_models(execution.operations)
+            validation_results = self._convert_impact_metrics(
+                execution.validation_results
+            )
+            actual_impact = self._convert_impact_metrics(execution.actual_impact)
+
+            return RefactoringExecutionModel(
+                execution_id=execution.execution_id,
+                suggestion_id=execution.suggestion_id,
+                approval_id=execution.approval_id,
+                operations=operations,
+                status=RefactoringStatus(execution.status),
+                created_at=execution.created_at,
+                completed_at=execution.completed_at,
+                snapshot_id=execution.snapshot_id,
+                validation_results=validation_results,
+                actual_impact=actual_impact,
+                error=execution.error,
+            )
+        return None
+
+    def _convert_operations_to_models(
+        self, operations: list[RefactoringOperationModel]
+    ) -> list[RefactoringOperationModel]:
+        """Convert operations to Pydantic models (already models, return as-is)."""
+        return operations
+
+    def _convert_impact_metrics(
+        self, impact: RefactoringImpactMetrics | None
+    ) -> RefactoringImpactMetrics | None:
+        """Convert impact metrics to Pydantic model."""
+        if impact:
+            return RefactoringImpactMetrics.model_validate(impact)
         return None
 
     async def _calculate_token_totals(self, affected_files: set[str]) -> int:
@@ -543,75 +574,59 @@ class RefactoringExecutor:
         return total_tokens_after
 
     def _extract_estimated_impact(
-        self, suggestion: dict[str, object]
-    ) -> dict[str, object]:
-        """Extract estimated impact data from suggestion."""
-        estimated_impact_raw = suggestion.get("estimated_impact", {})
-        return cast(
-            dict[str, object],
-            estimated_impact_raw if isinstance(estimated_impact_raw, dict) else {},
-        )
+        self, suggestion: RefactoringSuggestionModel | ModelDict
+    ) -> RefactoringImpactMetrics:
+        """Extract estimated impact data from suggestion (legacy-safe)."""
+        if isinstance(suggestion, RefactoringSuggestionModel):
+            return suggestion.estimated_impact
+        return RefactoringImpactMetrics()
 
     def _build_impact_result(
         self,
-        operations: list[RefactoringOperation],
+        operations: list[RefactoringOperationModel],
         affected_files: set[str],
         total_tokens_after: int,
-        estimated_impact: dict[str, object],
-    ) -> dict[str, object]:
-        """Build impact measurement result dictionary."""
-        estimated_token_savings_raw = estimated_impact.get("token_savings", 0)
-        estimated_token_savings = (
-            int(estimated_token_savings_raw)
-            if isinstance(estimated_token_savings_raw, (int, float))
-            else 0
+        estimated_impact: RefactoringImpactMetrics,
+    ) -> RefactoringImpactMetrics:
+        """Build impact measurement result model."""
+        return RefactoringImpactMetrics(
+            token_savings=estimated_impact.token_savings,
+            files_affected=len(affected_files),
+            operations_completed=len(operations),
+            complexity_reduction=estimated_impact.complexity_reduction,
+            risk_level=estimated_impact.risk_level,
         )
-
-        complexity_reduction_raw = estimated_impact.get("complexity_reduction", 0.0)
-        complexity_reduction = (
-            float(complexity_reduction_raw)
-            if isinstance(complexity_reduction_raw, (int, float))
-            else 0.0
-        )
-
-        return {
-            "operations_completed": len(operations),
-            "files_affected": len(affected_files),
-            "token_change": total_tokens_after - 0,  # total_tokens_before was always 0
-            "estimated_token_savings": estimated_token_savings,
-            "complexity_reduction": complexity_reduction,
-        }
 
     def _filter_executions_by_date(
         self, cutoff_date: datetime, include_rollbacks: bool
-    ) -> list[dict[str, object]]:
+    ) -> list[RefactoringExecutionModel]:
         """Filter executions by date and rollback status."""
-        filtered_executions: list[dict[str, object]] = []
+        filtered_executions: list[RefactoringExecutionModel] = []
         for execution in self.executions.values():
             exec_date = datetime.fromisoformat(execution.created_at)
             if exec_date >= cutoff_date:
                 if (
                     include_rollbacks
-                    or execution.status != RefactoringStatus.ROLLED_BACK.value
+                    or execution.status != RefactoringStatus.ROLLED_BACK
                 ):
-                    filtered_executions.append(execution.to_dict())
+                    filtered_executions.append(execution)
         return filtered_executions
 
     def _count_execution_statuses(
-        self, filtered_executions: list[dict[str, object]]
+        self, filtered_executions: list[RefactoringExecutionModel]
     ) -> dict[str, int]:
         """Count execution statuses from filtered executions."""
         successful = len(
-            [e for e in filtered_executions if str(e.get("status", "")) == "completed"]
+            [e for e in filtered_executions if e.status == RefactoringStatus.COMPLETED]
         )
         failed = len(
-            [e for e in filtered_executions if str(e.get("status", "")) == "failed"]
+            [e for e in filtered_executions if e.status == RefactoringStatus.FAILED]
         )
         rolled_back = len(
             [
                 e
                 for e in filtered_executions
-                if str(e.get("status", "")) == "rolled_back"
+                if e.status == RefactoringStatus.ROLLED_BACK
             ]
         )
         return {
@@ -624,25 +639,25 @@ class RefactoringExecutor:
     def _build_history_result(
         self,
         time_range_days: int,
-        filtered_executions: list[dict[str, object]],
+        filtered_executions: list[RefactoringExecutionModel],
         status_counts: dict[str, int],
-    ) -> dict[str, object]:
-        """Build execution history result dictionary."""
+    ) -> ExecutionHistoryResult:
+        """Build execution history result model."""
         total_executions = status_counts["total"]
         successful = status_counts["successful"]
 
-        return {
-            "time_range_days": time_range_days,
-            "total_executions": total_executions,
-            "successful": successful,
-            "failed": status_counts["failed"],
-            "rolled_back": status_counts["rolled_back"],
-            "success_rate": (
-                successful / total_executions if total_executions > 0 else 0
-            ),
-            "executions": sorted(
-                filtered_executions,
-                key=lambda e: str(e.get("created_at", "")),
-                reverse=True,
-            ),
-        }
+        # Sort by created_at descending (newest first)
+        sorted_executions = sorted(
+            filtered_executions,
+            key=lambda e: e.created_at,
+            reverse=True,
+        )
+
+        return ExecutionHistoryResult(
+            time_range_days=time_range_days,
+            total_executions=total_executions,
+            successful=successful,
+            failed=status_counts["failed"],
+            rolled_back=status_counts["rolled_back"],
+            executions=sorted_executions,
+        )

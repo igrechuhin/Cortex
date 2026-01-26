@@ -8,8 +8,8 @@ This module handles:
 """
 
 from pathlib import Path
-from typing import cast
 
+from cortex.structure.models import SetupReport
 from cortex.structure.structure_config import StructureConfig
 from cortex.structure.structure_templates import (
     generate_memory_bank_readme,
@@ -29,7 +29,7 @@ class StructureSetup:
         """
         self.config = config
 
-    async def create_structure(self, force: bool = False) -> dict[str, object]:
+    async def create_structure(self, force: bool = False) -> SetupReport:
         """Create the complete standardized structure.
 
         Args:
@@ -38,18 +38,21 @@ class StructureSetup:
         Returns:
             Report of created directories and files
         """
-        report: dict[str, object] = {
-            "created_directories": [],
-            "created_files": [],
-            "skipped": [],
-            "errors": [],
-        }
+        created_directories: list[str] = []
+        created_files: list[str] = []
+        skipped: list[str] = []
+        errors: list[str] = []
 
-        self._create_required_directories(report, force)
-        await self._create_config_file(report)
-        self._create_readme_files(report, force)
+        self._create_required_directories(created_directories, skipped, errors, force)
+        await self._create_config_file(created_files, errors)
+        self._create_readme_files(created_files, errors, force)
 
-        return report
+        return SetupReport(
+            created_directories=created_directories,
+            created_files=created_files,
+            skipped=skipped,
+            errors=errors,
+        )
 
     def _get_required_directory_list(self) -> list[Path]:
         """Get list of all required directories."""
@@ -66,28 +69,6 @@ class StructureSetup:
             self.config.get_path("config"),
             self.config.get_path("archived"),
         ]
-
-    def _extract_report_lists(
-        self, report: dict[str, object]
-    ) -> tuple[list[str], list[str], list[str]]:
-        """Extract and type-cast report lists."""
-        skipped_val = report.get("skipped", [])
-        created_dirs_val = report.get("created_directories", [])
-        errors_val = report.get("errors", [])
-
-        skipped_list: list[str] = (
-            cast(list[str], skipped_val) if isinstance(skipped_val, list) else []
-        )
-        created_dirs_list: list[str] = (
-            cast(list[str], created_dirs_val)
-            if isinstance(created_dirs_val, list)
-            else []
-        )
-        errors_list: list[str] = (
-            cast(list[str], errors_val) if isinstance(errors_val, list) else []
-        )
-
-        return skipped_list, created_dirs_list, errors_list
 
     def _process_directory_creation(
         self,
@@ -108,72 +89,52 @@ class StructureSetup:
                 errors_list.append(f"Failed to create {directory}: {e}")
 
     def _create_required_directories(
-        self, report: dict[str, object], force: bool
+        self,
+        created_directories: list[str],
+        skipped: list[str],
+        errors: list[str],
+        force: bool,
     ) -> None:
         """Create all required directories for the structure.
 
         Args:
-            report: Report dictionary to update
+            created_directories: List to append created directories to
+            skipped: List to append skipped directories to
+            errors: List to append errors to
             force: Force recreation even if directories exist
         """
         directories = self._get_required_directory_list()
-        skipped_list, created_dirs_list, errors_list = self._extract_report_lists(
-            report
-        )
 
         for directory in directories:
             self._process_directory_creation(
-                directory, force, skipped_list, created_dirs_list, errors_list
+                directory, force, skipped, created_directories, errors
             )
 
-        report["skipped"] = skipped_list
-        report["created_directories"] = created_dirs_list
-        report["errors"] = errors_list
-
-    async def _create_config_file(self, report: dict[str, object]) -> None:
+    async def _create_config_file(
+        self, created_files: list[str], errors: list[str]
+    ) -> None:
         """Create structure configuration file.
 
         Args:
-            report: Report dictionary to update
+            created_files: List to append created files to
+            errors: List to append errors to
         """
-        created_files_val = report.get("created_files", [])
-        created_files_list: list[str] = (
-            cast(list[str], created_files_val)
-            if isinstance(created_files_val, list)
-            else []
-        )
-        errors_val = report.get("errors", [])
-        errors_list: list[str] = (
-            cast(list[str], errors_val) if isinstance(errors_val, list) else []
-        )
-
         try:
             await self.config.save_structure_config()
-            created_files_list.append(str(self.config.structure_config_path))
+            created_files.append(str(self.config.structure_config_path))
         except Exception as e:
-            errors_list.append(f"Failed to create config: {e}")
+            errors.append(f"Failed to create config: {e}")
 
-        report["created_files"] = created_files_list
-        report["errors"] = errors_list
-
-    def _create_readme_files(self, report: dict[str, object], force: bool) -> None:
+    def _create_readme_files(
+        self, created_files: list[str], errors: list[str], force: bool
+    ) -> None:
         """Create README files for structure directories.
 
         Args:
-            report: Report dictionary to update
+            created_files: List to append created files to
+            errors: List to append errors to
             force: Force recreation even if files exist
         """
-        created_files_val = report.get("created_files", [])
-        created_files_list: list[str] = (
-            cast(list[str], created_files_val)
-            if isinstance(created_files_val, list)
-            else []
-        )
-        errors_val = report.get("errors", [])
-        errors_list: list[str] = (
-            cast(list[str], errors_val) if isinstance(errors_val, list) else []
-        )
-
         readme_files = [
             (self.config.get_path("plans") / "README.md", generate_plans_readme()),
             (
@@ -187,9 +148,6 @@ class StructureSetup:
             if not readme_path.exists() or force:
                 try:
                     _ = readme_path.write_text(content, encoding="utf-8")
-                    created_files_list.append(str(readme_path))
+                    created_files.append(str(readme_path))
                 except Exception as e:
-                    errors_list.append(f"Failed to create {readme_path}: {e}")
-
-        report["created_files"] = created_files_list
-        report["errors"] = errors_list
+                    errors.append(f"Failed to create {readme_path}: {e}")

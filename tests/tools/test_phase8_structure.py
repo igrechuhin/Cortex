@@ -10,11 +10,11 @@ This test suite provides comprehensive coverage for:
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from cortex.tools.models import CleanupReport
 from cortex.tools.phase8_structure import (
     build_health_result,
     check_structure_health,
@@ -482,19 +482,22 @@ class TestHelperFunctions:
     def test_record_archive_action(self) -> None:
         """Test record_archive_action."""
         # Arrange
-        report: dict[str, object] = {"actions_performed": []}
+        report = CleanupReport(
+            dry_run=True,
+            actions_performed=[],
+            files_modified=[],
+            recommendations=[],
+            post_cleanup_health={},
+        )
         stale_plans = [Path("/plan1.md"), Path("/plan2.md")]
 
         # Act
         record_archive_action(report, stale_plans)
 
         # Assert
-        actions_raw = report["actions_performed"]
-        assert isinstance(actions_raw, list)
-        actions = cast(list[dict[str, object]], actions_raw)
-        assert len(actions) == 1
-        assert actions[0]["action"] == "archive_stale"
-        assert actions[0]["stale_plans_found"] == 2
+        assert len(report.actions_performed) == 1
+        assert report.actions_performed[0].action == "archive_stale"
+        assert report.actions_performed[0].stale_plans_found == 2
 
     def test_move_stale_plans(self, tmp_path: Path) -> None:
         """Test move_stale_plans."""
@@ -507,7 +510,13 @@ class TestHelperFunctions:
         _ = plan1.write_text("content")
 
         stale_plans = [plan1]
-        report: dict[str, object] = {"files_modified": []}
+        report = CleanupReport(
+            dry_run=False,
+            actions_performed=[],
+            files_modified=[],
+            recommendations=[],
+            post_cleanup_health={},
+        )
 
         # Act
         move_stale_plans(plans_archived, stale_plans, report)
@@ -516,10 +525,7 @@ class TestHelperFunctions:
         assert plans_archived.exists()
         assert (plans_archived / "plan1.md").exists()
         assert not plan1.exists()
-        files_modified_raw = report["files_modified"]
-        assert isinstance(files_modified_raw, list)
-        files_modified = cast(list[str], files_modified_raw)
-        assert len(files_modified) == 1
+        assert len(report.files_modified) == 1
 
     def test_perform_cleanup_actions(self, mock_structure_manager: MagicMock) -> None:
         """Test perform_cleanup_actions."""
@@ -554,32 +560,38 @@ class TestHelperFunctions:
 
         mock_structure_manager.get_path.side_effect = get_path_side_effect
 
-        report: dict[str, object] = {
-            "actions_performed": [],
-            "files_modified": [],
-        }
+        report = CleanupReport(
+            dry_run=True,
+            actions_performed=[],
+            files_modified=[],
+            recommendations=[],
+            post_cleanup_health={},
+        )
 
         # Act
         perform_archive_stale(mock_structure_manager, 90, True, report)
 
         # Assert
         # Should not fail even with no stale plans
-        assert isinstance(report["actions_performed"], list)
+        assert isinstance(report.actions_performed, list)
 
     def test_perform_fix_symlinks(self, mock_structure_manager: MagicMock) -> None:
         """Test perform_fix_symlinks."""
         # Arrange
-        report: dict[str, object] = {"actions_performed": []}
+        report = CleanupReport(
+            dry_run=True,
+            actions_performed=[],
+            files_modified=[],
+            recommendations=[],
+            post_cleanup_health={},
+        )
 
         # Act
         perform_fix_symlinks(mock_structure_manager, report)
 
         # Assert
-        actions_raw = report["actions_performed"]
-        assert isinstance(actions_raw, list)
-        actions = cast(list[dict[str, object]], actions_raw)
-        assert len(actions) == 1
-        assert actions[0]["action"] == "fix_symlinks"
+        assert len(report.actions_performed) == 1
+        assert report.actions_performed[0].action == "fix_symlinks"
 
     def test_perform_remove_empty(
         self, tmp_path: Path, mock_structure_manager: MagicMock
@@ -592,17 +604,20 @@ class TestHelperFunctions:
         (plans / "archived").mkdir(parents=True)
 
         mock_structure_manager.get_path.return_value = plans
-        report: dict[str, object] = {"actions_performed": []}
+        report = CleanupReport(
+            dry_run=True,
+            actions_performed=[],
+            files_modified=[],
+            recommendations=[],
+            post_cleanup_health={},
+        )
 
         # Act
         perform_remove_empty(mock_structure_manager, report)
 
         # Assert
-        actions_raw = report["actions_performed"]
-        assert isinstance(actions_raw, list)
-        actions = cast(list[dict[str, object]], actions_raw)
-        assert len(actions) == 1
-        assert actions[0]["action"] == "remove_empty"
+        assert len(report.actions_performed) == 1
+        assert report.actions_performed[0].action == "remove_empty"
 
 
 # ============================================================================

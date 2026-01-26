@@ -8,9 +8,18 @@ and Cursor IDE integration. Delegates to specialized components.
 
 from pathlib import Path
 
+from cortex.core.models import ModelDict
 from cortex.structure.lifecycle.health import StructureHealthChecker
 from cortex.structure.lifecycle.setup import StructureSetup
 from cortex.structure.lifecycle.symlinks import CursorSymlinkManager
+from cortex.structure.models import (
+    HealthCheckResult,
+    SetupReport,
+    StructureInfoResult,
+    StructurePaths,
+    SymlinkEntry,
+    SymlinkReport,
+)
 from cortex.structure.structure_config import (
     PLAN_TEMPLATES,
     STANDARD_MEMORY_BANK_FILES,
@@ -44,7 +53,7 @@ class StructureLifecycleManager:
         return self.config.project_root
 
     @property
-    def structure_config(self) -> dict[str, object]:
+    def structure_config(self) -> ModelDict:
         """Get structure configuration."""
         return self.config.structure_config
 
@@ -68,7 +77,7 @@ class StructureLifecycleManager:
         """Save structure configuration."""
         await self.config.save_structure_config()
 
-    async def create_structure(self, force: bool = False) -> dict[str, object]:
+    async def create_structure(self, force: bool = False) -> SetupReport:
         """Create the complete standardized structure.
 
         Delegates to StructureSetup component.
@@ -81,7 +90,7 @@ class StructureLifecycleManager:
         """
         return await self.setup.create_structure(force)
 
-    def setup_cursor_integration(self) -> dict[str, object]:
+    def setup_cursor_integration(self) -> SymlinkReport:
         """Setup Cursor IDE integration via symlinks.
 
         Delegates to CursorSymlinkManager component.
@@ -92,7 +101,11 @@ class StructureLifecycleManager:
         return self.symlinks.setup_cursor_integration()
 
     def create_symlink(
-        self, target: Path, link: Path, report: dict[str, object]
+        self,
+        target: Path,
+        link: Path,
+        symlinks_created: list[SymlinkEntry],
+        errors: list[str],
     ) -> None:
         """Create a symlink with cross-platform compatibility.
 
@@ -101,11 +114,12 @@ class StructureLifecycleManager:
         Args:
             target: Target path (what the symlink points to)
             link: Symlink path (the symlink itself)
-            report: Report dictionary to update
+            symlinks_created: List to append created symlinks to
+            errors: List to append errors to
         """
-        self.symlinks.create_symlink(target, link, report)
+        self.symlinks.create_symlink(target, link, symlinks_created, errors)
 
-    def check_structure_health(self) -> dict[str, object]:
+    def check_structure_health(self) -> HealthCheckResult:
         """Check the health of the project structure.
 
         Delegates to StructureHealthChecker component.
@@ -115,32 +129,43 @@ class StructureLifecycleManager:
         """
         return self.health.check_structure_health()
 
-    def get_structure_info(self) -> dict[str, object]:
+    def get_structure_info(self) -> StructureInfoResult:
         """Get current structure configuration and status.
 
         Returns:
             Structure information including paths and configuration
         """
-        return {
-            "version": self.structure_config["version"],
-            "paths": {
-                "root": str(self.get_path("root")),
-                "memory_bank": str(self.get_path("memory_bank")),
-                "rules": str(self.get_path("rules")),
-                "plans": str(self.get_path("plans")),
-                "config": str(self.get_path("config")),
-            },
-            "configuration": self.structure_config,
-            "exists": self.get_path("root").exists(),
-            "health": (
-                self.check_structure_health()
-                if self.get_path("root").exists()
-                else None
+        from cortex.core.models import JsonDict
+        from cortex.structure.models import StructureConfigModel
+
+        version_val = self.structure_config.get("version", "2.0")
+        version = str(version_val) if isinstance(version_val, str) else "2.0"
+
+        structure_config_dict = JsonDict.model_validate(self.structure_config)
+        configuration = StructureConfigModel.model_validate(
+            structure_config_dict.model_dump()
+        )
+
+        health: HealthCheckResult | None = None
+        if self.get_path("root").exists():
+            health = self.check_structure_health()
+
+        return StructureInfoResult(
+            version=version,
+            paths=StructurePaths(
+                root=str(self.get_path("root")),
+                memory_bank=str(self.get_path("memory_bank")),
+                rules=str(self.get_path("rules")),
+                plans=str(self.get_path("plans")),
+                config=str(self.get_path("config")),
             ),
-        }
+            configuration=configuration,
+            exists=self.get_path("root").exists(),
+            health=health,
+        )
 
 
-# Expose constants and standard files for backward compatibility
+# Expose constants and standard files for convenience
 __all__ = [
     "StructureLifecycleManager",
     "STANDARD_MEMORY_BANK_FILES",

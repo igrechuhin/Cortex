@@ -12,28 +12,36 @@ import asyncio
 import time
 from collections import defaultdict
 from collections.abc import Callable
-from typing import TypedDict
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.cache import LRUCache, TTLCache
+from cortex.core.models import CacheConfig, JsonValue, ManagerCacheDefaults, ModelDict
 
 
-class CacheStats(TypedDict):
+class CacheStats(BaseModel):
     """Cache statistics for monitoring performance."""
 
-    hits: int
-    misses: int
-    evictions: int
-    size: int
-    hit_rate: float
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    hits: int = Field(ge=0, description="Number of cache hits")
+    misses: int = Field(ge=0, description="Number of cache misses")
+    evictions: int = Field(ge=0, description="Number of evictions")
+    size: int = Field(ge=0, description="Current cache size")
+    hit_rate: float = Field(ge=0.0, le=1.0, description="Hit rate (0-1)")
 
 
-class AccessPattern(TypedDict):
+class AccessPattern(BaseModel):
     """Access pattern for predictive prefetching."""
 
-    file: str
-    co_accessed_files: list[str]
-    frequency: int
-    last_access: float
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    file: str = Field(description="File path")
+    co_accessed_files: list[str] = Field(
+        default_factory=list, description="Files accessed together"
+    )
+    frequency: int = Field(ge=0, description="Access frequency")
+    last_access: float = Field(ge=0.0, description="Last access timestamp")
 
 
 class AdvancedCacheManager:
@@ -62,8 +70,8 @@ class AdvancedCacheManager:
             lru_max_size: Max size for LRU cache (default: 100 entries)
             enable_prefetch: Enable predictive prefetching (default: True)
         """
-        self.ttl_cache: TTLCache = TTLCache(ttl_seconds)
-        self.lru_cache: LRUCache = LRUCache(lru_max_size)
+        self.ttl_cache: TTLCache[JsonValue] = TTLCache(ttl_seconds)
+        self.lru_cache: LRUCache[JsonValue] = LRUCache(lru_max_size)
         self.enable_prefetch: bool = enable_prefetch
 
         # Statistics tracking
@@ -79,7 +87,7 @@ class AdvancedCacheManager:
         self._access_patterns: dict[str, AccessPattern] = {}
         self._co_access_tracking: dict[str, list[tuple[str, float]]] = defaultdict(list)
 
-    def get(self, key: str) -> object | None:
+    def get(self, key: str) -> JsonValue | None:
         """
         Get value from cache (tries TTL first, then LRU).
 
@@ -109,7 +117,7 @@ class AdvancedCacheManager:
         self._stats["misses"] += 1
         return None
 
-    def set(self, key: str, value: object) -> None:
+    def set(self, key: str, value: JsonValue) -> None:
         """
         Set value in both caches.
 
@@ -148,13 +156,13 @@ class AdvancedCacheManager:
         total_requests = self._stats["hits"] + self._stats["misses"]
         hit_rate = self._stats["hits"] / total_requests if total_requests > 0 else 0.0
 
-        return {
-            "hits": self._stats["hits"],
-            "misses": self._stats["misses"],
-            "evictions": self._stats["evictions"],
-            "size": len(self.ttl_cache) + len(self.lru_cache),
-            "hit_rate": hit_rate,
-        }
+        return CacheStats(
+            hits=self._stats["hits"],
+            misses=self._stats["misses"],
+            evictions=self._stats["evictions"],
+            size=len(self.ttl_cache) + len(self.lru_cache),
+            hit_rate=hit_rate,
+        )
 
     def reset_stats(self) -> None:
         """Reset cache statistics."""
@@ -180,16 +188,16 @@ class AdvancedCacheManager:
 
         # Update access pattern
         if key not in self._access_patterns:
-            self._access_patterns[key] = {
-                "file": key,
-                "co_accessed_files": [],
-                "frequency": 0,
-                "last_access": now,
-            }
+            self._access_patterns[key] = AccessPattern(
+                file=key,
+                co_accessed_files=[],
+                frequency=0,
+                last_access=now,
+            )
 
         pattern = self._access_patterns[key]
-        pattern["frequency"] += 1
-        pattern["last_access"] = now
+        pattern.frequency += 1
+        pattern.last_access = now
 
         # Track co-accesses (files accessed within 60 seconds)
         recent_accesses = [
@@ -198,7 +206,9 @@ class AdvancedCacheManager:
         self._co_access_tracking[key] = recent_accesses
         self._co_access_tracking[key].append((key, now))
 
-    async def warm_cache(self, keys: list[str], loader: Callable[[str], object]) -> int:
+    async def warm_cache(
+        self, keys: list[str], loader: Callable[[str], JsonValue]
+    ) -> int:
         """
         Warm cache by pre-loading frequently accessed keys.
 
@@ -221,7 +231,9 @@ class AdvancedCacheManager:
 
         return warmed
 
-    async def prefetch_related(self, key: str, loader: Callable[[str], object]) -> int:
+    async def prefetch_related(
+        self, key: str, loader: Callable[[str], JsonValue]
+    ) -> int:
         """
         Prefetch files that are frequently co-accessed with the given key.
 
@@ -237,11 +249,11 @@ class AdvancedCacheManager:
 
         # Get co-accessed files from pattern
         pattern = self._access_patterns.get(key)
-        if not pattern:
+        if pattern is None:
             return 0
 
         prefetched = 0
-        for related_key in pattern["co_accessed_files"][:5]:  # Limit to top 5
+        for related_key in pattern.co_accessed_files[:5]:  # Limit to top 5
             # Skip if already cached
             if self.get(related_key) is not None:
                 self._stats["prefetch_hits"] += 1
@@ -266,14 +278,14 @@ class AdvancedCacheManager:
         """
         for file, co_accessed in co_access_data.items():
             if file in self._access_patterns:
-                self._access_patterns[file]["co_accessed_files"] = co_accessed
+                self._access_patterns[file].co_accessed_files = co_accessed
             else:
-                self._access_patterns[file] = {
-                    "file": file,
-                    "co_accessed_files": co_accessed,
-                    "frequency": 0,
-                    "last_access": time.time(),
-                }
+                self._access_patterns[file] = AccessPattern(
+                    file=file,
+                    co_accessed_files=co_accessed,
+                    frequency=0,
+                    last_access=time.time(),
+                )
 
     def cleanup_expired(self) -> int:
         """
@@ -298,7 +310,7 @@ class AdvancedCacheManager:
         """
         sorted_patterns = sorted(
             self._access_patterns.items(),
-            key=lambda x: x[1]["frequency"],
+            key=lambda x: x[1].frequency,
             reverse=True,
         )
         return [key for key, _ in sorted_patterns[:limit]]
@@ -314,7 +326,7 @@ class AdvancedCacheManager:
 
 
 def create_cache_for_manager(
-    manager_name: str, config: dict[str, object] | None = None
+    manager_name: str, config: CacheConfig | ModelDict | None = None
 ) -> AdvancedCacheManager:
     """
     Create cache instance for a specific manager with optimized settings.
@@ -326,32 +338,22 @@ def create_cache_for_manager(
     Returns:
         Configured AdvancedCacheManager instance
     """
-    config = config or {}
 
     # Default configurations per manager type
-    defaults: dict[str, dict[str, object]] = {
-        "token_counter": {"ttl_seconds": 600, "lru_max_size": 200},
-        "file_system": {"ttl_seconds": 300, "lru_max_size": 100},
-        "dependency_graph": {"ttl_seconds": 900, "lru_max_size": 50},
-        "structure_analyzer": {"ttl_seconds": 1800, "lru_max_size": 50},
-        "pattern_analyzer": {"ttl_seconds": 3600, "lru_max_size": 100},
-    }
+    defaults = ManagerCacheDefaults()
+    manager_config = defaults.get_manager_config(manager_name)
 
-    manager_config: dict[str, object] = dict(defaults.get(manager_name, {}))
-    # Update with config overrides
-    for key, value in config.items():
-        manager_config[key] = value
-
-    ttl_seconds = manager_config.get("ttl_seconds", 300)
-    lru_max_size = manager_config.get("lru_max_size", 100)
-    enable_prefetch = manager_config.get("enable_prefetch", True)
+    # Update with config overrides if provided
+    if config is not None:
+        overrides = (
+            config
+            if isinstance(config, CacheConfig)
+            else CacheConfig.model_validate(config)
+        )
+        manager_config = manager_config.model_copy(update=overrides.model_dump())
 
     return AdvancedCacheManager(
-        ttl_seconds=int(ttl_seconds) if isinstance(ttl_seconds, (int, float)) else 300,
-        lru_max_size=(
-            int(lru_max_size) if isinstance(lru_max_size, (int, float)) else 100
-        ),
-        enable_prefetch=(
-            bool(enable_prefetch) if isinstance(enable_prefetch, bool) else True
-        ),
+        ttl_seconds=manager_config.ttl_seconds,
+        lru_max_size=manager_config.lru_max_size,
+        enable_prefetch=True,
     )

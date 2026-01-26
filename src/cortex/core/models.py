@@ -5,16 +5,128 @@ These models are defined here to avoid circular imports with tools/models.py.
 Used by: version_manager, dependency_graph, metadata_index, migration
 """
 
+from collections.abc import ItemsView, KeysView, ValuesView
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+# JSON-serializable value type (Python 3.13+ recursive type alias).
+type JsonPrimitive = str | int | float | bool | None
+type JsonValue = JsonPrimitive | list[JsonValue] | dict[str, JsonValue]
+
+# Common JSON dictionary shape used at JSON boundaries.
+type ModelDict = dict[str, JsonValue]
+
+# ============================================================================
+# Dict-like Pydantic base model (preserves legacy call sites)
+# ============================================================================
+
+
+class DictLikeModel(BaseModel):
+    """A Pydantic model that supports dict-like access."""
+
+    def __getitem__(self, key: str) -> JsonValue:
+        data: ModelDict = self.model_dump(mode="python", by_alias=True)
+        return data[key]
+
+    def get(self, key: str, default: JsonValue | None = None) -> JsonValue | None:
+        data: ModelDict = self.model_dump(mode="python", by_alias=True)
+        return data.get(key, default)
+
+    def __contains__(self, key: object) -> bool:
+        if not isinstance(key, str):
+            return False
+        data: ModelDict = self.model_dump(mode="python", by_alias=True)
+        return key in data
+
+    def keys(self) -> KeysView[str]:
+        data: ModelDict = self.model_dump(mode="python", by_alias=True)
+        return data.keys()
+
+    def items(self) -> ItemsView[str, JsonValue]:
+        data: ModelDict = self.model_dump(mode="python", by_alias=True)
+        return data.items()
+
+    def values(self) -> ValuesView[JsonValue]:
+        data: ModelDict = self.model_dump(mode="python", by_alias=True)
+        return data.values()
+
+
+# ============================================================================
+# JSON Value Models (for security.py and other modules handling arbitrary JSON)
+# ============================================================================
+
+
+class JsonDict(BaseModel):
+    """Pydantic model for JSON dictionary structures.
+
+    This model replaces `ModelDict` for type-safe JSON dictionary handling.
+    It allows arbitrary keys and values, making it suitable for JSON data.
+    Uses extra="allow" to accept any keys dynamically.
+    """
+
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
+
+    def to_dict(self) -> ModelDict:
+        """Convert to plain dictionary.
+
+        Returns:
+            Dictionary representation (use model_dump() directly for better typing)
+        """
+        return self.model_dump(exclude_none=True)
+
+    @classmethod
+    def from_dict(cls, data: ModelDict | dict[str, JsonValue]):
+        """Create JsonDict from a dictionary.
+
+        Args:
+            data: Dictionary to convert
+
+        Returns:
+            JsonDict instance
+        """
+        return cls.model_validate(data)
+
+
+class JsonList(BaseModel):
+    """Pydantic model for JSON list structures.
+
+    This model replaces untyped JSON lists for type-safe JSON list handling.
+    """
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    items: list[JsonValue] = Field(
+        default_factory=lambda: list[JsonValue](), description="List items"
+    )
+
+    def to_list(self) -> list[JsonValue]:
+        """Convert to plain list.
+
+        Returns:
+            List representation (use items directly for better typing)
+        """
+        return self.items
+
+    @classmethod
+    def from_list(cls, data: list[JsonValue]):
+        """Create JsonList from a list.
+
+        Args:
+            data: List to convert
+
+        Returns:
+            JsonList instance
+        """
+        return cls(items=data)
+
 
 # ============================================================================
 # Version Manager Models
 # ============================================================================
 
 
-class VersionMetadata(BaseModel):
+class VersionMetadata(DictLikeModel):
     """Version snapshot metadata."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
@@ -29,7 +141,8 @@ class VersionMetadata(BaseModel):
     )
     snapshot_path: str = Field(description="Path to snapshot file")
     changed_sections: list[str] = Field(
-        default_factory=list, description="Section headings that changed"
+        default_factory=lambda: list[str](),
+        description="Section headings that changed",
     )
     change_description: str | None = Field(
         default=None, description="Optional description of changes"
@@ -78,8 +191,8 @@ class DependencyEdge(BaseModel):
         extra="forbid", validate_assignment=True, populate_by_name=True
     )
 
-    from_file: str = Field(alias="from", description="Source file")
-    to_file: str = Field(alias="to", description="Target file")
+    from_: str = Field(alias="from", description="Source file")
+    to_: str = Field(alias="to", description="Target file")
     type: str = Field(description="Edge type (links or informs)")
     strength: str = Field(description="Edge strength (strong or medium)")
 
@@ -111,8 +224,8 @@ class TransclusionEdge(BaseModel):
         extra="forbid", validate_assignment=True, populate_by_name=True
     )
 
-    from_file: str = Field(alias="from", description="Source file")
-    to_file: str = Field(alias="to", description="Target file")
+    from_: str = Field(alias="from", description="Source file")
+    to_: str = Field(alias="to", description="Target file")
     type: str = Field(description="Edge type (always transclusion)")
 
 
@@ -132,8 +245,8 @@ class ReferenceEdge(BaseModel):
         extra="forbid", validate_assignment=True, populate_by_name=True
     )
 
-    from_file: str = Field(alias="from", description="Source file")
-    to_file: str = Field(alias="to", description="Target file")
+    from_: str = Field(alias="from", description="Source file")
+    to_: str = Field(alias="to", description="Target file")
     type: str = Field(description="Edge type (always reference)")
 
 
@@ -183,15 +296,22 @@ class FileMetadata(BaseModel):
     version: int = Field(ge=1, description="Version number")
 
 
-class SectionMetadata(BaseModel):
+class SectionMetadata(DictLikeModel):
     """Section metadata within a file."""
 
     model_config = ConfigDict(
         extra="forbid", validate_assignment=True, populate_by_name=True
     )
 
-    # Support both "title" (new format) and "heading" (legacy format in index.json)
-    title: str = Field(validation_alias="heading", description="Section title/heading")
+    # Support both "title" (internal) and "heading" (legacy/external)
+    # - Accept input as either `title` or `heading`
+    # - Serialize using `heading` for compatibility with existing tests/index.json
+    title: str = Field(
+        alias="heading",
+        validation_alias="heading",
+        serialization_alias="heading",
+        description="Section title/heading",
+    )
     level: int = Field(default=1, ge=1, le=6, description="Heading level (1-6)")
     # Make line_start and line_end optional with defaults for legacy data
     line_start: int = Field(default=1, ge=1, description="Starting line number")
@@ -347,7 +467,7 @@ class MigrationStatus(BaseModel):
     )
 
 
-class DiskUsageInfo(BaseModel):
+class DiskUsageInfo(DictLikeModel):
     """Disk usage information for version history."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
@@ -594,6 +714,27 @@ class DependencyGraphDict(BaseModel):
     )
 
 
+class FileDependencyData(BaseModel):
+    """Dependency data for a single file."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    priority: int = Field(ge=0, description="Loading priority")
+    dependencies: list[str] = Field(
+        default_factory=list, description="List of file dependencies"
+    )
+
+
+class GraphDataDict(BaseModel):
+    """Graph data dictionary for dependency visualization."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    files: dict[str, FileDependencyData] = Field(
+        default_factory=dict, description="File dependency data by file name"
+    )
+
+
 # ============================================================================
 # File System Protocol Models
 # ============================================================================
@@ -766,6 +907,46 @@ class GitCommandResult(BaseModel):
     error: str | None = Field(default=None, description="Error message if failed")
 
 
+class GitTimeoutResponse(BaseModel):
+    """Response for git command timeout."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    success: bool = Field(default=False, description="Always False for timeout")
+    error: str = Field(description="Timeout error message")
+    stdout: str = Field(default="", description="Empty stdout")
+    stderr: str = Field(default="", description="Empty stderr")
+
+
+class SubmoduleInitResult(BaseModel):
+    """Result of submodule initialization."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    status: Literal["success", "error"] = Field(description="Operation status")
+    action: str | None = Field(default=None, description="Action performed")
+    repo_url: str | None = Field(default=None, description="Repository URL")
+    local_path: str | None = Field(default=None, description="Local submodule path")
+    submodule_added: bool | None = Field(
+        default=None, description="Whether submodule was added"
+    )
+    error: str | None = Field(default=None, description="Error message if failed")
+    stdout: str | None = Field(default=None, description="Standard output")
+    stderr: str | None = Field(default=None, description="Standard error")
+
+
+class SubmoduleSyncResult(BaseModel):
+    """Result of submodule synchronization."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    status: Literal["success", "error"] = Field(description="Sync status")
+    pulled: bool = Field(default=False, description="Whether pull was performed")
+    pushed: bool = Field(default=False, description="Whether push was performed")
+    changes: dict[str, str] = Field(default_factory=dict, description="Changes summary")
+    error: str | None = Field(default=None, description="Error message if failed")
+
+
 # ============================================================================
 # File Organization Result Models
 # ============================================================================
@@ -819,5 +1000,236 @@ class SnapshotMetadataInput(BaseModel):
         default=None, description="Change description"
     )
     changed_sections: list[str] = Field(
-        default_factory=list, description="Changed sections"
+        default_factory=lambda: list[str](),
+        description="Changed sections",
     )
+
+
+# ============================================================================
+# Token Counter Models
+# ============================================================================
+
+
+class SectionTokenCount(BaseModel):
+    """Token count for a single section."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    heading: str = Field(description="Section heading")
+    token_count: int = Field(ge=0, description="Token count for this section")
+    percentage: float = Field(
+        ge=0.0, le=100.0, description="Percentage of total tokens"
+    )
+
+
+class TokenCountSectionsResult(BaseModel):
+    """Result of counting tokens per section."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    total_tokens: int = Field(ge=0, description="Total token count")
+    sections: list[SectionTokenCount] = Field(
+        default_factory=lambda: list[SectionTokenCount](),
+        description="Token counts per section",
+    )
+
+
+class ContextSizeEstimate(BaseModel):
+    """Estimate of context size for loading files."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    total_tokens: int = Field(ge=0, description="Total token count")
+    estimated_cost_gpt4: float = Field(ge=0.0, description="Estimated cost in USD")
+    warnings: list[str] = Field(
+        default_factory=lambda: list[str](),
+        description="Warnings about token count",
+    )
+    breakdown: dict[str, int] = Field(
+        default_factory=lambda: dict[str, int](),
+        description="Token count per file",
+    )
+
+
+class ParsedMarkdownSection(BaseModel):
+    """Parsed markdown section information."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    title: str = Field(description="Section heading text")
+    level: int = Field(ge=1, le=6, description="Heading level (1-6)")
+    start_line: int = Field(
+        ge=1, description="Line number where section starts (1-indexed)"
+    )
+
+
+# ============================================================================
+# MCP Stability Models
+# ============================================================================
+
+
+class ConnectionHealth(BaseModel):
+    """MCP connection health metrics."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    healthy: bool = Field(description="Whether connection is healthy")
+    concurrent_operations: int = Field(
+        ge=0, description="Current concurrent operations"
+    )
+    max_concurrent: int = Field(
+        ge=1, description="Maximum allowed concurrent operations"
+    )
+    semaphore_available: int = Field(ge=0, description="Available semaphore slots")
+    utilization_percent: float = Field(
+        ge=0.0, le=100.0, description="Resource utilization percentage"
+    )
+
+
+# ============================================================================
+# Container Models
+# ============================================================================
+
+# ============================================================================
+# MCP Tool Execution Models
+# ============================================================================
+
+
+class MCPToolArguments(BaseModel):
+    """Arguments for MCP tool execution.
+
+    This model replaces `ModelDict` for kwargs in MCP tool execution.
+    Since tool arguments are dynamic and vary by tool, we use a flexible
+    model that can accept any keyword arguments.
+    """
+
+    model_config = ConfigDict(extra="allow", validate_assignment=False)
+
+    # Use model_dump(exclude_none=True) directly instead of to_kwargs()
+    # This avoids `ModelDict` return type
+
+
+# ============================================================================
+# Cache Configuration Models
+# ============================================================================
+
+
+class CacheConfig(BaseModel):
+    """Cache configuration settings.
+
+    This model replaces `ModelDict` for cache configuration.
+    """
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    ttl_seconds: int = Field(default=3600, ge=0, description="Time-to-live in seconds")
+    lru_max_size: int = Field(default=100, ge=1, description="LRU cache maximum size")
+
+    def to_dict(self) -> ModelDict:
+        """Convert to dictionary for compatibility.
+
+        Returns:
+            Dictionary representation (use model_dump() directly for better typing)
+        """
+        return self.model_dump()
+
+
+class ManagerCacheDefaults(BaseModel):
+    """Default cache configurations per manager type.
+
+    This model replaces `dict[str, ModelDict]` for manager cache defaults.
+    """
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    token_counter: CacheConfig = Field(
+        default_factory=lambda: CacheConfig(ttl_seconds=600, lru_max_size=200),
+        description="Token counter cache config",
+    )
+    file_system: CacheConfig = Field(
+        default_factory=lambda: CacheConfig(ttl_seconds=300, lru_max_size=100),
+        description="File system cache config",
+    )
+    dependency_graph: CacheConfig = Field(
+        default_factory=lambda: CacheConfig(ttl_seconds=900, lru_max_size=50),
+        description="Dependency graph cache config",
+    )
+    structure_analyzer: CacheConfig = Field(
+        default_factory=lambda: CacheConfig(ttl_seconds=1800, lru_max_size=50),
+        description="Structure analyzer cache config",
+    )
+    pattern_analyzer: CacheConfig = Field(
+        default_factory=lambda: CacheConfig(ttl_seconds=3600, lru_max_size=100),
+        description="Pattern analyzer cache config",
+    )
+
+    def get_manager_config(self, manager_name: str) -> CacheConfig:
+        """Get cache config for a manager.
+
+        Args:
+            manager_name: Name of the manager
+
+        Returns:
+            CacheConfig for the manager, or default if not found
+        """
+        try:
+            return getattr(self, manager_name)
+        except AttributeError:
+            # Conservative fallback for unknown managers.
+            return self.file_system
+
+
+# ============================================================================
+# Response Models (for responses.py)
+# ============================================================================
+
+
+class SuccessResponseData(BaseModel):
+    """Data for a success response.
+
+    This model replaces `ModelDict` for success response data.
+    """
+
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
+
+    def to_dict(self) -> ModelDict:
+        """Convert to dictionary for JSON serialization.
+
+        Returns:
+            Dictionary representation (use model_dump(exclude_none=True) directly for better typing)
+        """
+        return self.model_dump(exclude_none=True)
+
+
+class ErrorContext(BaseModel):
+    """Context information for error responses.
+
+    This model replaces `ModelDict` for error context.
+    """
+
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
+
+    def to_dict(self) -> ModelDict:
+        """Convert to dictionary for JSON serialization.
+
+        Returns:
+            Dictionary representation (use model_dump(exclude_none=True) directly for better typing)
+        """
+        return self.model_dump(exclude_none=True)
+
+
+class ErrorResponseModel(BaseModel):
+    """Complete error response model.
+
+    This model replaces `ModelDict` for error responses.
+    """
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    status: Literal["error"] = Field(description="Response status")
+    error: str = Field(description="Error message")
+    error_type: str = Field(description="Error type name")
+    action_required: str | None = Field(
+        default=None, description="Action required to resolve"
+    )
+    context: JsonDict | None = Field(default=None, description="Error context")

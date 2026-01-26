@@ -7,11 +7,20 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.managers.lazy_manager import LazyManager
 from cortex.tools.analysis_operations import analyze
 from cortex.tools.configuration_operations import configure
 from cortex.tools.file_operations import manage_file
+from cortex.tools.models import SchemaValidationResult
 from cortex.tools.refactoring_operations import suggest_refactoring
 from cortex.tools.validation_operations import validate
+from cortex.validation.models import (
+    CategoryBreakdown,
+    DuplicateEntry,
+    DuplicationScanResult,
+    QualityScoreResult,
+)
+from tests.helpers.managers import make_test_managers
 
 
 @pytest.mark.asyncio
@@ -54,7 +63,7 @@ class TestManageFile:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -99,7 +108,7 @@ class TestManageFile:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -139,7 +148,7 @@ class TestManageFile:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -181,12 +190,10 @@ class TestManageFile:
         mock_tokens.count_tokens = MagicMock(side_effect=count_tokens_side_effect)
         mock_versions = AsyncMock()
         mock_versions.get_version_count = AsyncMock(return_value=5)
-        mock_versions.create_snapshot = AsyncMock(
-            return_value={
-                "version": 6,
-                "snapshot_path": "memory-bank/projectBrief_v6.md",
-            }
-        )
+        version_info = MagicMock()
+        version_info.version = 6
+        version_info.snapshot_path = "memory-bank/projectBrief_v6.md"
+        mock_versions.create_snapshot = AsyncMock(return_value=version_info)
         mock_managers_dict = {
             "fs": mock_fs,
             "index": mock_index,
@@ -196,7 +203,7 @@ class TestManageFile:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -234,7 +241,7 @@ class TestManageFile:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -283,7 +290,7 @@ class TestManageFile:
         try:
             with patch(
                 "cortex.tools.file_operations.get_managers",
-                return_value=mock_managers_dict,
+                return_value=make_test_managers(**mock_managers_dict),
             ):
                 with patch(
                     "cortex.tools.file_operations.get_project_root",
@@ -324,7 +331,7 @@ class TestManageFile:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -360,12 +367,7 @@ class TestValidate:
         mock_index = AsyncMock()
         mock_schema_validator = AsyncMock()
         mock_schema_validator.validate_file = AsyncMock(
-            return_value={
-                "valid": True,
-                "file": file_name,
-                "errors": [],
-                "warnings": [],
-            }
+            return_value=SchemaValidationResult(valid=True)
         )
         mock_managers_dict = {
             "fs": mock_fs,
@@ -378,7 +380,7 @@ class TestValidate:
 
         with patch(
             "cortex.managers.initialization.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.managers.initialization.get_project_root",
@@ -422,17 +424,21 @@ class TestValidate:
         mock_index = AsyncMock()
         mock_duplication_detector = AsyncMock()
         mock_duplication_detector.scan_all_files = AsyncMock(
-            return_value={
-                "duplicates_found": 1,
-                "exact_duplicates": [
-                    {
-                        "files": ["file1.md", "file2.md"],
-                        "token_count": 100,
-                        "similarity": 0.95,
-                    }
+            return_value=DuplicationScanResult(
+                duplicates_found=1,
+                exact_duplicates=[
+                    DuplicateEntry(
+                        file1="file1.md",
+                        section1="content",
+                        file2="file2.md",
+                        section2="content",
+                        similarity=1.0,
+                        type="exact",
+                        suggestion="Consolidate shared content",
+                    )
                 ],
-                "similar_content": [],
-            }
+                similar_content=[],
+            )
         )
         mock_validation_config = AsyncMock()
         mock_validation_config.get_duplication_threshold = MagicMock(return_value=0.8)
@@ -447,13 +453,13 @@ class TestValidate:
 
         with patch(
             "cortex.managers.initialization.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
 
-            def mock_get_manager(
-                mgrs: dict[str, object], key: str, cls: type
-            ) -> object:
-                return mgrs.get(key)
+            def mock_get_manager(mgrs: object, key: str, cls: type) -> object:
+                if isinstance(mgrs, dict):
+                    return mgrs.get(key)
+                return getattr(mgrs, key, None)
 
             with patch(
                 "cortex.managers.manager_utils.get_manager",
@@ -508,16 +514,27 @@ class TestValidate:
             return_value={"size_bytes": 100, "token_count": 20}
         )
         mock_duplication_detector = AsyncMock()
-        mock_duplication_detector.scan_all_files = AsyncMock(return_value=[])
+        mock_duplication_detector.scan_all_files = AsyncMock(
+            return_value=DuplicationScanResult(
+                duplicates_found=0, exact_duplicates=[], similar_content=[]
+            )
+        )
         mock_quality_metrics = AsyncMock()
         mock_quality_metrics.calculate_overall_score = AsyncMock(
-            return_value={
-                "overall_score": 85.0,
-                "grade": "B",
-                "category_scores": {},
-                "file_scores": {},
-                "recommendations": [],
-            }
+            return_value=QualityScoreResult(
+                overall_score=85,
+                breakdown=CategoryBreakdown(
+                    completeness=90,
+                    consistency=80,
+                    freshness=75,
+                    structure=85,
+                    token_efficiency=80,
+                ),
+                grade="B",
+                status="healthy",
+                issues=[],
+                recommendations=[],
+            )
         )
         mock_managers_dict = {
             "fs": mock_fs,
@@ -530,7 +547,7 @@ class TestValidate:
 
         with patch(
             "cortex.managers.initialization.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.managers.initialization.get_project_root",
@@ -577,7 +594,7 @@ class TestValidate:
 
         with patch(
             "cortex.managers.initialization.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.managers.initialization.get_project_root",
@@ -619,7 +636,7 @@ class TestAnalyze:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -639,24 +656,42 @@ class TestAnalyze:
         """Test structure analysis."""
         # Setup
         mock_structure_analyzer = AsyncMock()
-        mock_structure_analyzer.analyze_file_organization = AsyncMock(
+        organization = MagicMock()
+        organization.model_dump = MagicMock(
             return_value={"total_files": 5, "total_size_bytes": 5000}
         )
+        mock_structure_analyzer.analyze_file_organization = AsyncMock(
+            return_value=organization
+        )
         mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
+        complexity = MagicMock()
+        complexity.model_dump = MagicMock(return_value={"assessment": {"grade": "A"}})
         mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-            return_value={"assessment": {"grade": "A"}}
+            return_value=complexity
         )
         mock_structure_analyzer.find_dependency_chains = AsyncMock(return_value=[])
 
         # Create LazyManager mocks that return the actual analyzers
-        mock_pattern_analyzer_mgr = AsyncMock()
-        mock_pattern_analyzer_mgr.get = AsyncMock(return_value=AsyncMock())
-        mock_structure_analyzer_mgr = AsyncMock()
-        mock_structure_analyzer_mgr.get = AsyncMock(
-            return_value=mock_structure_analyzer
+        mock_pattern_analyzer = AsyncMock()
+
+        async def pattern_factory() -> object:
+            return mock_pattern_analyzer
+
+        async def structure_factory() -> object:
+            return mock_structure_analyzer
+
+        mock_insight_engine = AsyncMock()
+
+        async def insight_factory() -> object:
+            return mock_insight_engine
+
+        mock_pattern_analyzer_mgr = LazyManager(
+            pattern_factory, name="pattern_analyzer"
         )
-        mock_insight_engine_mgr = AsyncMock()
-        mock_insight_engine_mgr.get = AsyncMock(return_value=AsyncMock())
+        mock_structure_analyzer_mgr = LazyManager(
+            structure_factory, name="structure_analyzer"
+        )
+        mock_insight_engine_mgr = LazyManager(insight_factory, name="insight_engine")
         mock_managers_dict_with_lazy = {
             "pattern_analyzer": mock_pattern_analyzer_mgr,
             "structure_analyzer": mock_structure_analyzer_mgr,
@@ -665,7 +700,7 @@ class TestAnalyze:
 
         with patch(
             "cortex.tools.analysis_operations.get_managers",
-            return_value=mock_managers_dict_with_lazy,
+            return_value=make_test_managers(**mock_managers_dict_with_lazy),
         ):
             with patch(
                 "cortex.tools.analysis_operations.get_project_root",
@@ -695,15 +730,31 @@ class TestAnalyze:
             "summary": {"total_insights": 1, "high_severity": 1},
         }
         mock_insight_engine = AsyncMock()
-        mock_insight_engine.generate_insights = AsyncMock(return_value=insights_data)
+        insights_model = MagicMock()
+        insights_model.model_dump = MagicMock(return_value=insights_data)
+        mock_insight_engine.generate_insights = AsyncMock(return_value=insights_model)
         # Mock lazy managers - they need a .get() method that returns the actual mock
         # Create LazyManager mocks that return the actual analyzers
-        mock_pattern_analyzer_mgr = AsyncMock()
-        mock_pattern_analyzer_mgr.get = AsyncMock(return_value=AsyncMock())
-        mock_structure_analyzer_mgr = AsyncMock()
-        mock_structure_analyzer_mgr.get = AsyncMock(return_value=AsyncMock())
-        mock_insight_engine_mgr = AsyncMock()
-        mock_insight_engine_mgr.get = AsyncMock(return_value=mock_insight_engine)
+        mock_pattern_analyzer = AsyncMock()
+
+        async def pattern_factory() -> object:
+            return mock_pattern_analyzer
+
+        mock_structure_analyzer = AsyncMock()
+
+        async def structure_factory() -> object:
+            return mock_structure_analyzer
+
+        async def insight_factory() -> object:
+            return mock_insight_engine
+
+        mock_pattern_analyzer_mgr = LazyManager(
+            pattern_factory, name="pattern_analyzer"
+        )
+        mock_structure_analyzer_mgr = LazyManager(
+            structure_factory, name="structure_analyzer"
+        )
+        mock_insight_engine_mgr = LazyManager(insight_factory, name="insight_engine")
         mock_managers_dict_with_lazy = {
             "pattern_analyzer": mock_pattern_analyzer_mgr,
             "structure_analyzer": mock_structure_analyzer_mgr,
@@ -712,7 +763,7 @@ class TestAnalyze:
 
         with patch(
             "cortex.tools.analysis_operations.get_managers",
-            return_value=mock_managers_dict_with_lazy,
+            return_value=make_test_managers(**mock_managers_dict_with_lazy),
         ):
             with patch(
                 "cortex.tools.analysis_operations.get_project_root",
@@ -747,7 +798,7 @@ class TestAnalyze:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -795,15 +846,27 @@ class TestSuggestRefactoring:
         )
         mock_consolidation_detector.min_similarity = 0.80
         mock_consolidation_detector.target_reduction = 0.30
-        # Mock lazy managers
-        mock_consolidation_detector_mgr = AsyncMock()
-        mock_consolidation_detector_mgr.get = AsyncMock(
-            return_value=mock_consolidation_detector
+        mock_split_recommender = AsyncMock()
+        mock_reorganization_planner = AsyncMock()
+
+        async def consolidation_factory() -> object:
+            return mock_consolidation_detector
+
+        async def split_factory() -> object:
+            return mock_split_recommender
+
+        async def reorg_factory() -> object:
+            return mock_reorganization_planner
+
+        mock_consolidation_detector_mgr = LazyManager(
+            consolidation_factory, name="consolidation_detector"
         )
-        mock_split_recommender_mgr = AsyncMock()
-        mock_split_recommender_mgr.get = AsyncMock(return_value=AsyncMock())
-        mock_reorganization_planner_mgr = AsyncMock()
-        mock_reorganization_planner_mgr.get = AsyncMock(return_value=AsyncMock())
+        mock_split_recommender_mgr = LazyManager(
+            split_factory, name="split_recommender"
+        )
+        mock_reorganization_planner_mgr = LazyManager(
+            reorg_factory, name="reorganization_planner"
+        )
         mock_managers_dict = {
             "consolidation_detector": mock_consolidation_detector_mgr,
             "split_recommender": mock_split_recommender_mgr,
@@ -813,7 +876,7 @@ class TestSuggestRefactoring:
 
         with patch(
             "cortex.tools.refactoring_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.refactoring_operations.get_project_root",
@@ -854,13 +917,27 @@ class TestSuggestRefactoring:
         )
         mock_split_recommender.max_file_size = 5000
         mock_split_recommender.max_sections = 10
-        # Mock lazy managers
-        mock_consolidation_detector_mgr = AsyncMock()
-        mock_consolidation_detector_mgr.get = AsyncMock(return_value=AsyncMock())
-        mock_split_recommender_mgr = AsyncMock()
-        mock_split_recommender_mgr.get = AsyncMock(return_value=mock_split_recommender)
-        mock_reorganization_planner_mgr = AsyncMock()
-        mock_reorganization_planner_mgr.get = AsyncMock(return_value=AsyncMock())
+        mock_consolidation_detector = AsyncMock()
+        mock_reorganization_planner = AsyncMock()
+
+        async def consolidation_factory() -> object:
+            return mock_consolidation_detector
+
+        async def split_factory() -> object:
+            return mock_split_recommender
+
+        async def reorg_factory() -> object:
+            return mock_reorganization_planner
+
+        mock_consolidation_detector_mgr = LazyManager(
+            consolidation_factory, name="consolidation_detector"
+        )
+        mock_split_recommender_mgr = LazyManager(
+            split_factory, name="split_recommender"
+        )
+        mock_reorganization_planner_mgr = LazyManager(
+            reorg_factory, name="reorganization_planner"
+        )
         mock_managers_dict = {
             "consolidation_detector": mock_consolidation_detector_mgr,
             "split_recommender": mock_split_recommender_mgr,
@@ -870,7 +947,7 @@ class TestSuggestRefactoring:
 
         with patch(
             "cortex.tools.refactoring_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.refactoring_operations.get_project_root",
@@ -904,31 +981,59 @@ class TestSuggestRefactoring:
                 }
 
         mock_reorganization_planner = AsyncMock()
+        plan_model = MagicMock()
+        plan_model.model_dump = MagicMock(return_value=MockPlan().to_dict())
         mock_reorganization_planner.create_reorganization_plan = AsyncMock(
-            return_value=MockPlan().to_dict()
+            return_value=plan_model
         )
         mock_reorganization_planner.preview_reorganization = AsyncMock(
             return_value={"preview": "Reorganization preview"}
         )
         mock_structure_analyzer = AsyncMock()
-        mock_structure_analyzer.analyze_file_organization = AsyncMock(return_value={})
+        organization = MagicMock()
+        organization.file_count = 0
+        organization.model_dump = MagicMock(return_value={})
+        mock_structure_analyzer.analyze_file_organization = AsyncMock(
+            return_value=organization
+        )
         mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
-        mock_structure_analyzer.measure_complexity_metrics = AsyncMock(return_value={})
+        complexity = MagicMock()
+        complexity.model_dump = MagicMock(return_value={})
+        mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
+            return_value=complexity
+        )
         mock_dep_graph = MagicMock()
         mock_dep_graph.get_graph_dict = MagicMock(return_value={})
-        mock_dep_graph.to_dict = MagicMock(return_value={})
-        # Create LazyManager mocks that return the actual managers
-        mock_consolidation_detector_mgr = AsyncMock()
-        mock_consolidation_detector_mgr.get = AsyncMock(return_value=AsyncMock())
-        mock_split_recommender_mgr = AsyncMock()
-        mock_split_recommender_mgr.get = AsyncMock(return_value=AsyncMock())
-        mock_reorganization_planner_mgr = AsyncMock()
-        mock_reorganization_planner_mgr.get = AsyncMock(
-            return_value=mock_reorganization_planner
+        graph_export = MagicMock()
+        graph_export.model_dump = MagicMock(return_value={"dependencies": {}})
+        mock_dep_graph.to_dict = MagicMock(return_value=graph_export)
+
+        mock_consolidation_detector = AsyncMock()
+        mock_split_recommender = AsyncMock()
+
+        async def consolidation_factory() -> object:
+            return mock_consolidation_detector
+
+        async def split_factory() -> object:
+            return mock_split_recommender
+
+        async def reorg_factory() -> object:
+            return mock_reorganization_planner
+
+        async def structure_factory() -> object:
+            return mock_structure_analyzer
+
+        mock_consolidation_detector_mgr = LazyManager(
+            consolidation_factory, name="consolidation_detector"
         )
-        mock_structure_analyzer_mgr = AsyncMock()
-        mock_structure_analyzer_mgr.get = AsyncMock(
-            return_value=mock_structure_analyzer
+        mock_split_recommender_mgr = LazyManager(
+            split_factory, name="split_recommender"
+        )
+        mock_reorganization_planner_mgr = LazyManager(
+            reorg_factory, name="reorganization_planner"
+        )
+        mock_structure_analyzer_mgr = LazyManager(
+            structure_factory, name="structure_analyzer"
         )
         mock_managers_dict = {
             "consolidation_detector": mock_consolidation_detector_mgr,
@@ -940,7 +1045,7 @@ class TestSuggestRefactoring:
 
         with patch(
             "cortex.tools.refactoring_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.refactoring_operations.get_project_root",
@@ -970,7 +1075,7 @@ class TestSuggestRefactoring:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -993,19 +1098,21 @@ class TestConfigure:
         """Test viewing validation configuration."""
         # Setup
         mock_validation_config = MagicMock()
-        mock_validation_config.to_dict = MagicMock(
+        mock_validation_config.config = MagicMock()
+        mock_validation_config.config.model_dump = MagicMock(
             return_value={
                 "token_budget": {"max_total_tokens": 100000},
                 "schema": {"strict": False},
             }
         )
         mock_validation_config.set = MagicMock()
-        mock_validation_config.reset = MagicMock()
+        mock_validation_config.reset_to_defaults = MagicMock()
+        mock_validation_config.save = AsyncMock()
         mock_managers_dict = {"validation_config": mock_validation_config}
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -1030,13 +1137,14 @@ class TestConfigure:
         mock_validation_config = MagicMock()
         mock_validation_config.set = MagicMock()
         mock_validation_config.save = AsyncMock()
-        mock_validation_config.to_dict = MagicMock(return_value={})
+        mock_validation_config.config = MagicMock()
+        mock_validation_config.config.model_dump = MagicMock(return_value={})
         mock_managers_dict: dict[str, object] = {
             "validation_config": mock_validation_config
         }
 
-        async def mock_get_managers(root: Path) -> dict[str, object]:
-            return mock_managers_dict
+        async def mock_get_managers(root: Path) -> object:
+            return make_test_managers(**mock_managers_dict)
 
         with patch(
             "cortex.tools.configuration_operations.get_managers",
@@ -1066,12 +1174,13 @@ class TestConfigure:
         mock_validation_config = MagicMock()
         mock_validation_config.reset_to_defaults = MagicMock()
         mock_validation_config.save = AsyncMock()
-        mock_validation_config.to_dict = MagicMock(return_value={})
+        mock_validation_config.config = MagicMock()
+        mock_validation_config.config.model_dump = MagicMock(return_value={})
         mock_managers_dict = {"validation_config": mock_validation_config}
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -1104,7 +1213,7 @@ class TestConfigure:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -1136,7 +1245,7 @@ class TestConfigure:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -1179,7 +1288,7 @@ class TestConfigure:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -1214,7 +1323,7 @@ class TestConfigure:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -1257,7 +1366,7 @@ class TestConfigure:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -1300,7 +1409,7 @@ class TestConfigure:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -1323,7 +1432,7 @@ class TestConfigure:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -1348,7 +1457,7 @@ class TestConfigure:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",

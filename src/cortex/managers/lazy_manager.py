@@ -2,12 +2,9 @@
 
 import asyncio
 from collections.abc import Awaitable, Callable
-from typing import Generic, TypeVar
-
-T = TypeVar("T")
 
 
-class LazyManager(Generic[T]):
+class LazyManager[T]:
     """Lazy initialization wrapper for managers.
 
     Delays manager initialization until first access.

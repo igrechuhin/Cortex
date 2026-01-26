@@ -17,6 +17,7 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.file_watcher import FileWatcherManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.migration import MigrationManager
+from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
@@ -30,6 +31,7 @@ from cortex.linking.link_parser import LinkParser
 from cortex.linking.link_validator import LinkValidator
 from cortex.linking.transclusion_engine import TransclusionEngine
 from cortex.managers.lazy_manager import LazyManager
+from cortex.managers.types import CoreManagersDict, ManagersDict
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.progressive_loader import ProgressiveLoader
@@ -69,6 +71,10 @@ from cortex.templates.system_patterns import (
     TEMPLATE as SYSTEM_PATTERNS_TEMPLATE,
 )
 from cortex.templates.tech_context import TEMPLATE as TECH_CONTEXT_TEMPLATE
+from cortex.validation.duplication_detector import DuplicationDetector
+from cortex.validation.quality_metrics import QualityMetrics
+from cortex.validation.schema_validator import SchemaValidator
+from cortex.validation.validation_config import ValidationConfig
 
 # Templates dictionary for Memory Bank files
 TEMPLATES = {
@@ -142,11 +148,8 @@ def get_project_root(project_root: str | None = None) -> Path:
     return current
 
 
-async def get_managers(project_root: Path) -> dict[str, object]:
+async def get_managers(project_root: Path) -> ManagersDict:
     """Get or initialize managers for a project with lazy loading.
-
-    DEPRECATED: This function uses a module-level cache for backward compatibility.
-    For proper dependency injection, use ManagerRegistry.get_managers() instead.
 
     Core managers (priority 1) are initialized immediately for reliability.
     Other managers are wrapped in LazyManager for on-demand initialization.
@@ -155,27 +158,34 @@ async def get_managers(project_root: Path) -> dict[str, object]:
         project_root: Project root directory
 
     Returns:
-        Dictionary of manager instances (or LazyManager wrappers)
+        ManagersDict model with manager instances (or LazyManager wrappers)
     """
     from cortex.core.manager_registry import ManagerRegistry
 
-    # For backward compatibility, create a temporary registry
-    # In production, use ManagerRegistry directly for better testability
     registry = ManagerRegistry()
-    return await registry.get_managers(project_root)
+    managers_dict = await registry.get_managers(project_root)
+    return ManagersDict.model_validate(managers_dict)
 
 
-async def initialize_managers(project_root: Path) -> dict[str, object]:
+async def initialize_managers(project_root: Path) -> ManagersDict:
     """Initialize all managers with core managers eager and others lazy.
 
     Args:
         project_root: Project root directory
 
     Returns:
-        Dictionary of manager instances and LazyManager wrappers
+        ManagersDict model with manager instances and LazyManager wrappers
     """
     core_managers = await _init_core_managers(project_root)
-    managers: dict[str, object] = {**core_managers}
+    managers = ManagersDict(
+        fs=core_managers.fs,
+        index=core_managers.index,
+        tokens=core_managers.tokens,
+        graph=core_managers.graph,
+        versions=core_managers.versions,
+        migration=core_managers.migration,
+        watcher=core_managers.watcher,
+    )
 
     _add_linking_managers(managers, core_managers)
     _add_validation_managers(managers, project_root)
@@ -185,12 +195,11 @@ async def initialize_managers(project_root: Path) -> dict[str, object]:
     _add_execution_managers(managers, project_root, core_managers)
 
     await _post_init_setup(project_root, managers)
-
     return managers
 
 
 def _add_linking_managers(
-    managers: dict[str, object], core_managers: dict[str, object]
+    managers: ManagersDict, core_managers: CoreManagersDict
 ) -> None:
     """Add Phase 2 linking managers as lazy.
 
@@ -198,41 +207,43 @@ def _add_linking_managers(
         managers: Managers dictionary to update
         core_managers: Core managers dictionary
     """
-    managers["link_parser"] = LazyManager(
+    managers.link_parser = LazyManager(
         lambda: _create_link_parser(), name="link_parser"
     )
-    managers["transclusion"] = LazyManager(
-        lambda: _create_transclusion_engine(core_managers), name="transclusion"
+    managers.transclusion = LazyManager(
+        lambda: _create_transclusion_engine(core_managers),
+        name="transclusion",
     )
-    managers["link_validator"] = LazyManager(
-        lambda: _create_link_validator(core_managers), name="link_validator"
+    managers.link_validator = LazyManager(
+        lambda: _create_link_validator(core_managers),
+        name="link_validator",
     )
 
 
-def _add_validation_managers(managers: dict[str, object], project_root: Path) -> None:
+def _add_validation_managers(managers: ManagersDict, project_root: Path) -> None:
     """Add Phase 3 validation managers as lazy.
 
     Args:
         managers: Managers dictionary to update
         project_root: Project root directory
     """
-    managers["validation_config"] = LazyManager(
+    managers.validation_config = LazyManager(
         lambda: _create_validation_config(project_root), name="validation_config"
     )
-    managers["schema_validator"] = LazyManager(
-        lambda: _create_schema_validator(project_root, managers),
+    managers.schema_validator = LazyManager(
+        lambda: _create_schema_validator(project_root),
         name="schema_validator",
     )
-    managers["duplication_detector"] = LazyManager(
+    managers.duplication_detector = LazyManager(
         lambda: _create_duplication_detector(), name="duplication_detector"
     )
-    managers["quality_metrics"] = LazyManager(
+    managers.quality_metrics = LazyManager(
         lambda: _create_quality_metrics(managers), name="quality_metrics"
     )
 
 
 def _make_synapse_factory(
-    proj_root: Path, mgrs: dict[str, object]
+    proj_root: Path, mgrs: ManagersDict
 ) -> collections.abc.Callable[[], collections.abc.Awaitable[SynapseManager]]:
     """Create factory function for SynapseManager.
 
@@ -251,9 +262,9 @@ def _make_synapse_factory(
 
 
 def _add_optimization_managers(
-    managers: dict[str, object],
+    managers: ManagersDict,
     project_root: Path,
-    core_managers: dict[str, object],
+    core_managers: CoreManagersDict,
 ) -> None:
     """Add Phase 4 optimization managers as lazy.
 
@@ -262,37 +273,38 @@ def _add_optimization_managers(
         project_root: Project root directory
         core_managers: Core managers dictionary
     """
-    managers["optimization_config"] = LazyManager(
+    managers.optimization_config = LazyManager(
         lambda: _create_optimization_config(project_root), name="optimization_config"
     )
-    managers["relevance_scorer"] = LazyManager(
+    managers.relevance_scorer = LazyManager(
         lambda: _create_relevance_scorer(core_managers, managers),
         name="relevance_scorer",
     )
-    managers["context_optimizer"] = LazyManager(
+    managers.context_optimizer = LazyManager(
         lambda: _create_context_optimizer(core_managers, managers),
         name="context_optimizer",
     )
-    managers["progressive_loader"] = LazyManager(
+    managers.progressive_loader = LazyManager(
         lambda: _create_progressive_loader(core_managers, managers),
         name="progressive_loader",
     )
-    managers["summarization_engine"] = LazyManager(
-        lambda: _create_summarization_engine(core_managers), name="summarization_engine"
+    managers.summarization_engine = LazyManager(
+        lambda: _create_summarization_engine(core_managers),
+        name="summarization_engine",
     )
-    managers["rules_manager"] = LazyManager(
+    managers.rules_manager = LazyManager(
         lambda: _create_rules_manager(project_root, core_managers, managers),
         name="rules_manager",
     )
-    managers["synapse"] = LazyManager(
+    managers.synapse = LazyManager(
         _make_synapse_factory(project_root, managers), name="synapse"
     )
 
 
 def _add_analysis_managers(
-    managers: dict[str, object],
+    managers: ManagersDict,
     project_root: Path,
-    core_managers: dict[str, object],
+    core_managers: CoreManagersDict,
 ) -> None:
     """Add Phase 5.1 analysis managers as lazy.
 
@@ -301,46 +313,46 @@ def _add_analysis_managers(
         project_root: Project root directory
         core_managers: Core managers dictionary
     """
-    managers["pattern_analyzer"] = LazyManager(
+    managers.pattern_analyzer = LazyManager(
         lambda: _create_pattern_analyzer(project_root), name="pattern_analyzer"
     )
-    managers["structure_analyzer"] = LazyManager(
+    managers.structure_analyzer = LazyManager(
         lambda: _create_structure_analyzer(project_root, core_managers),
         name="structure_analyzer",
     )
-    managers["insight_engine"] = LazyManager(
+    managers.insight_engine = LazyManager(
         lambda: _create_insight_engine(managers), name="insight_engine"
     )
 
 
-def _add_refactoring_managers(managers: dict[str, object], project_root: Path) -> None:
+def _add_refactoring_managers(managers: ManagersDict, project_root: Path) -> None:
     """Add Phase 5.2 refactoring managers as lazy.
 
     Args:
         managers: Managers dictionary to update
         project_root: Project root directory
     """
-    managers["refactoring_engine"] = LazyManager(
+    managers.refactoring_engine = LazyManager(
         lambda: _create_refactoring_engine(project_root, managers),
         name="refactoring_engine",
     )
-    managers["consolidation_detector"] = LazyManager(
+    managers.consolidation_detector = LazyManager(
         lambda: _create_consolidation_detector(project_root),
         name="consolidation_detector",
     )
-    managers["split_recommender"] = LazyManager(
+    managers.split_recommender = LazyManager(
         lambda: _create_split_recommender(project_root), name="split_recommender"
     )
-    managers["reorganization_planner"] = LazyManager(
+    managers.reorganization_planner = LazyManager(
         lambda: _create_reorganization_planner(project_root),
         name="reorganization_planner",
     )
 
 
 def _add_execution_managers(
-    managers: dict[str, object],
+    managers: ManagersDict,
     project_root: Path,
-    core_managers: dict[str, object],
+    core_managers: CoreManagersDict,
 ) -> None:
     """Add Phase 5.3-5.4 execution managers as lazy.
 
@@ -349,27 +361,27 @@ def _add_execution_managers(
         project_root: Project root directory
         core_managers: Core managers dictionary
     """
-    managers["refactoring_executor"] = LazyManager(
+    managers.refactoring_executor = LazyManager(
         lambda: _create_refactoring_executor(project_root, core_managers, managers),
         name="refactoring_executor",
     )
-    managers["approval_manager"] = LazyManager(
-        lambda: _create_approval_manager(project_root, managers),
+    managers.approval_manager = LazyManager(
+        lambda: _create_approval_manager(project_root),
         name="approval_manager",
     )
-    managers["rollback_manager"] = LazyManager(
-        lambda: _create_rollback_manager(project_root, core_managers, managers),
+    managers.rollback_manager = LazyManager(
+        lambda: _create_rollback_manager(project_root, core_managers),
         name="rollback_manager",
     )
-    managers["learning_engine"] = LazyManager(
+    managers.learning_engine = LazyManager(
         lambda: _create_learning_engine(project_root, managers), name="learning_engine"
     )
-    managers["adaptation_config"] = LazyManager(
+    managers.adaptation_config = LazyManager(
         lambda: _create_adaptation_config(managers), name="adaptation_config"
     )
 
 
-async def _init_core_managers(project_root: Path) -> dict[str, object]:
+async def _init_core_managers(project_root: Path) -> CoreManagersDict:
     """Initialize core managers that are always needed (priority 1).
 
     Args:
@@ -386,15 +398,17 @@ async def _init_core_managers(project_root: Path) -> dict[str, object]:
     migration = MigrationManager(project_root)
     watcher = FileWatcherManager()
 
-    return {
-        "fs": fs,
-        "index": index,
-        "tokens": tokens,
-        "graph": graph,
-        "versions": versions,
-        "migration": migration,
-        "watcher": watcher,
-    }
+    from cortex.managers.types import CoreManagersDict
+
+    return CoreManagersDict(
+        fs=fs,
+        index=index,
+        tokens=tokens,
+        graph=graph,
+        versions=versions,
+        migration=migration,
+        watcher=watcher,
+    )
 
 
 # Factory functions for lazy manager creation
@@ -406,10 +420,10 @@ async def _create_link_parser() -> LinkParser:
 
 
 async def _create_transclusion_engine(
-    core_managers: dict[str, object],
+    core_managers: CoreManagersDict,
 ) -> TransclusionEngine:
     """Create TransclusionEngine instance."""
-    fs_manager = cast(FileSystemManager, core_managers["fs"])
+    fs_manager = core_managers.fs
     link_parser = LinkParser()
     return TransclusionEngine(
         file_system=fs_manager,
@@ -419,9 +433,9 @@ async def _create_transclusion_engine(
     )
 
 
-async def _create_link_validator(core_managers: dict[str, object]) -> LinkValidator:
+async def _create_link_validator(core_managers: CoreManagersDict) -> LinkValidator:
     """Create LinkValidator instance."""
-    fs_manager = cast(FileSystemManager, core_managers["fs"])
+    fs_manager = core_managers.fs
     link_parser = LinkParser()
     return LinkValidator(file_system=fs_manager, link_parser=link_parser)
 
@@ -432,13 +446,13 @@ async def _create_optimization_config(project_root: Path) -> OptimizationConfig:
 
 
 async def _create_relevance_scorer(
-    core_managers: dict[str, object], managers: dict[str, object]
+    core_managers: CoreManagersDict, managers: ManagersDict
 ) -> RelevanceScorer:
     """Create RelevanceScorer instance."""
     from cortex.managers.manager_utils import get_manager
 
-    dep_graph = cast(DependencyGraph, core_managers["graph"])
-    metadata_index = cast(MetadataIndex, core_managers["index"])
+    dep_graph = core_managers.graph
+    metadata_index = core_managers.index
     optimization_config = await get_manager(
         managers, "optimization_config", OptimizationConfig
     )
@@ -451,13 +465,13 @@ async def _create_relevance_scorer(
 
 
 async def _create_context_optimizer(
-    core_managers: dict[str, object], managers: dict[str, object]
+    core_managers: CoreManagersDict, managers: ManagersDict
 ) -> ContextOptimizer:
     """Create ContextOptimizer instance."""
     from cortex.managers.manager_utils import get_manager
 
-    token_counter = cast(TokenCounter, core_managers["tokens"])
-    dep_graph = cast(DependencyGraph, core_managers["graph"])
+    token_counter = core_managers.tokens
+    dep_graph = core_managers.graph
     relevance_scorer = await get_manager(managers, "relevance_scorer", RelevanceScorer)
     optimization_config = await get_manager(
         managers, "optimization_config", OptimizationConfig
@@ -472,13 +486,13 @@ async def _create_context_optimizer(
 
 
 async def _create_progressive_loader(
-    core_managers: dict[str, object], managers: dict[str, object]
+    core_managers: CoreManagersDict, managers: ManagersDict
 ) -> ProgressiveLoader:
     """Create ProgressiveLoader instance."""
     from cortex.managers.manager_utils import get_manager
 
-    fs_manager = cast(FileSystemManager, core_managers["fs"])
-    metadata_index = cast(MetadataIndex, core_managers["index"])
+    fs_manager = core_managers.fs
+    metadata_index = core_managers.index
     context_optimizer = await get_manager(
         managers, "context_optimizer", ContextOptimizer
     )
@@ -491,11 +505,11 @@ async def _create_progressive_loader(
 
 
 async def _create_summarization_engine(
-    core_managers: dict[str, object],
+    core_managers: CoreManagersDict,
 ) -> SummarizationEngine:
     """Create SummarizationEngine instance."""
-    token_counter = cast(TokenCounter, core_managers["tokens"])
-    metadata_index = cast(MetadataIndex, core_managers["index"])
+    token_counter = core_managers.tokens
+    metadata_index = core_managers.index
 
     return SummarizationEngine(
         token_counter=token_counter, metadata_index=metadata_index
@@ -503,14 +517,14 @@ async def _create_summarization_engine(
 
 
 async def _create_rules_manager(
-    project_root: Path, core_managers: dict[str, object], managers: dict[str, object]
+    project_root: Path, core_managers: CoreManagersDict, managers: ManagersDict
 ) -> RulesManager:
     """Create RulesManager instance."""
     from cortex.managers.manager_utils import get_manager
 
-    fs_manager = cast(FileSystemManager, core_managers["fs"])
-    metadata_index = cast(MetadataIndex, core_managers["index"])
-    token_counter = cast(TokenCounter, core_managers["tokens"])
+    fs_manager = core_managers.fs
+    metadata_index = core_managers.index
+    token_counter = core_managers.tokens
     optimization_config = await get_manager(
         managers, "optimization_config", OptimizationConfig
     )
@@ -530,7 +544,7 @@ async def _create_rules_manager(
 
 
 async def _create_synapse_manager(
-    project_root: Path, managers: dict[str, object]
+    project_root: Path, managers: ManagersDict
 ) -> SynapseManager:
     """Create SynapseManager instance."""
     from cortex.managers.manager_utils import get_manager
@@ -553,12 +567,12 @@ async def _create_pattern_analyzer(project_root: Path) -> PatternAnalyzer:
 
 
 async def _create_structure_analyzer(
-    project_root: Path, core_managers: dict[str, object]
+    project_root: Path, core_managers: CoreManagersDict
 ) -> StructureAnalyzer:
     """Create StructureAnalyzer instance."""
-    dep_graph = cast(DependencyGraph, core_managers["graph"])
-    fs_manager = cast(FileSystemManager, core_managers["fs"])
-    metadata_index = cast(MetadataIndex, core_managers["index"])
+    dep_graph = core_managers.graph
+    fs_manager = core_managers.fs
+    metadata_index = core_managers.index
 
     return StructureAnalyzer(
         project_root=project_root,
@@ -568,7 +582,7 @@ async def _create_structure_analyzer(
     )
 
 
-async def _create_insight_engine(managers: dict[str, object]) -> InsightEngine:
+async def _create_insight_engine(managers: ManagersDict) -> InsightEngine:
     """Create InsightEngine instance."""
     from cortex.managers.manager_utils import get_manager
 
@@ -583,7 +597,7 @@ async def _create_insight_engine(managers: dict[str, object]) -> InsightEngine:
 
 
 async def _create_refactoring_engine(
-    project_root: Path, managers: dict[str, object]
+    project_root: Path, managers: ManagersDict
 ) -> RefactoringEngine:
     """Create RefactoringEngine instance."""
     from cortex.managers.manager_utils import get_manager
@@ -645,18 +659,15 @@ async def _create_reorganization_planner(
 
 
 async def _create_refactoring_executor(
-    project_root: Path, core_managers: dict[str, object], managers: dict[str, object]
+    project_root: Path, core_managers: CoreManagersDict, managers: ManagersDict
 ) -> RefactoringExecutor:
     """Create RefactoringExecutor instance."""
     from cortex.managers.manager_utils import get_manager
 
-    fs_manager = cast(FileSystemManager, core_managers["fs"])
-    metadata_index = cast(MetadataIndex, core_managers["index"])
-    version_manager = cast(VersionManager, core_managers["versions"])
+    fs_manager = core_managers.fs
+    metadata_index = core_managers.index
+    version_manager = core_managers.versions
     link_validator = await get_manager(managers, "link_validator", LinkValidator)
-    optimization_config = await get_manager(
-        managers, "optimization_config", OptimizationConfig
-    )
     memory_bank_path = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
 
     return RefactoringExecutor(
@@ -665,38 +676,26 @@ async def _create_refactoring_executor(
         version_manager=version_manager,
         link_validator=link_validator,
         metadata_index=metadata_index,
-        config=optimization_config.config,
+        config=None,
     )
 
 
 async def _create_approval_manager(
-    project_root: Path, managers: dict[str, object]
+    project_root: Path,
 ) -> ApprovalManager:
     """Create ApprovalManager instance."""
-    from cortex.managers.manager_utils import get_manager
-
-    optimization_config = await get_manager(
-        managers, "optimization_config", OptimizationConfig
-    )
     memory_bank_path = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
 
-    return ApprovalManager(
-        memory_bank_dir=memory_bank_path, config=optimization_config.config
-    )
+    return ApprovalManager(memory_bank_dir=memory_bank_path, config=None)
 
 
 async def _create_rollback_manager(
-    project_root: Path, core_managers: dict[str, object], managers: dict[str, object]
+    project_root: Path, core_managers: CoreManagersDict
 ) -> RollbackManager:
     """Create RollbackManager instance."""
-    from cortex.managers.manager_utils import get_manager
-
-    fs_manager = cast(FileSystemManager, core_managers["fs"])
-    version_manager = cast(VersionManager, core_managers["versions"])
-    metadata_index = cast(MetadataIndex, core_managers["index"])
-    optimization_config = await get_manager(
-        managers, "optimization_config", OptimizationConfig
-    )
+    fs_manager = core_managers.fs
+    version_manager = core_managers.versions
+    metadata_index = core_managers.index
     memory_bank_path = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
 
     return RollbackManager(
@@ -704,12 +703,12 @@ async def _create_rollback_manager(
         fs_manager=fs_manager,
         version_manager=version_manager,
         metadata_index=metadata_index,
-        config=optimization_config.config,
+        config=None,
     )
 
 
 async def _create_learning_engine(
-    project_root: Path, managers: dict[str, object]
+    project_root: Path, managers: ManagersDict
 ) -> LearningEngine:
     """Create LearningEngine instance."""
     from cortex.managers.manager_utils import get_manager
@@ -721,61 +720,48 @@ async def _create_learning_engine(
 
     return LearningEngine(
         memory_bank_dir=memory_bank_path,
-        config=cast(
-            dict[str, object] | None,
-            optimization_config.get("self_evolution.learning", {}),
-        ),
+        config=cast(ModelDict, optimization_config.get("self_evolution.learning", {})),
     )
 
 
-async def _create_validation_config(project_root: Path) -> object:
+async def _create_validation_config(project_root: Path) -> ValidationConfig:
     """Create ValidationConfig instance."""
-    from cortex.validation.validation_config import ValidationConfig
-
     return ValidationConfig(project_root)
 
 
 async def _create_schema_validator(
-    project_root: Path, managers: dict[str, object]
-) -> object:
+    project_root: Path,
+) -> SchemaValidator:
     """Create SchemaValidator instance."""
-    from cortex.validation.schema_validator import SchemaValidator
 
     return SchemaValidator(config_path=project_root / ".cortex" / "validation.json")
 
 
-async def _create_duplication_detector() -> object:
+async def _create_duplication_detector() -> DuplicationDetector:
     """Create DuplicationDetector instance."""
-    from cortex.validation.duplication_detector import DuplicationDetector
 
     return DuplicationDetector()
 
 
-async def _create_quality_metrics(managers: dict[str, object]) -> object:
+async def _create_quality_metrics(managers: ManagersDict) -> QualityMetrics:
     """Create QualityMetrics instance."""
     from cortex.managers.manager_utils import get_manager
-    from cortex.validation.quality_metrics import QualityMetrics
-    from cortex.validation.schema_validator import SchemaValidator
 
     schema_validator = await get_manager(managers, "schema_validator", SchemaValidator)
-    metadata_index = cast(MetadataIndex, managers["index"])
+    metadata_index = managers.index
     return QualityMetrics(
         schema_validator=schema_validator, metadata_index=metadata_index
     )
 
 
-async def _create_adaptation_config(managers: dict[str, object]) -> AdaptationConfig:
+async def _create_adaptation_config(managers: ManagersDict) -> AdaptationConfig:
     """Create AdaptationConfig instance."""
-    from cortex.managers.manager_utils import get_manager
-
-    optimization_config = await get_manager(
-        managers, "optimization_config", OptimizationConfig
-    )
-
-    return AdaptationConfig(base_config=optimization_config.config)
+    # AdaptationConfig uses a dedicated schema (learning/feedback/etc.) and should
+    # not be hydrated from OptimizationConfig's `self_evolution` section.
+    return AdaptationConfig(base_config=None)
 
 
-async def _post_init_setup(project_root: Path, managers: dict[str, object]) -> None:
+async def _post_init_setup(project_root: Path, managers: ManagersDict) -> None:
     """Perform post-initialization setup tasks for core managers.
 
     Args:
@@ -784,8 +770,8 @@ async def _post_init_setup(project_root: Path, managers: dict[str, object]) -> N
     """
     from cortex.managers.manager_utils import get_manager
 
-    metadata_index = cast(MetadataIndex, managers["index"])
-    fs_manager = cast(FileSystemManager, managers["fs"])
+    metadata_index = managers.index
+    fs_manager = managers.fs
 
     # Load metadata index if it exists
     index_path = project_root / ".cortex" / "index.json"
@@ -828,9 +814,9 @@ async def handle_file_change(file_path: Path, event_type: str) -> None:
         mgrs = await get_managers(project_root)
 
         file_name = file_path.name
-        metadata_index = cast(MetadataIndex, mgrs["index"])
-        fs_manager = cast(FileSystemManager, mgrs["fs"])
-        token_counter = cast(TokenCounter, mgrs["tokens"])
+        metadata_index = mgrs.index
+        fs_manager = mgrs.fs
+        token_counter = mgrs.tokens
 
         if event_type == "deleted":
             await _handle_deleted_file(metadata_index, file_name, file_path)
@@ -869,9 +855,7 @@ async def _handle_modified_file(
     """Handle created or modified file event."""
     content, content_hash = await fs_manager.read_file(file_path)
     sections_raw = fs_manager.parse_sections(content)
-    sections: list[dict[str, object]] = [
-        cast(dict[str, object], section) for section in sections_raw
-    ]
+    sections = sections_raw
     token_count = token_counter.count_tokens(content)
 
     await metadata_index.update_file_metadata(

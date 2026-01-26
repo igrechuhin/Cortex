@@ -1,68 +1,68 @@
 """Unit tests for ExecutionValidator - Phase 5.3"""
 
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import cast
 from unittest.mock import AsyncMock
 
 import pytest
 
-from cortex.refactoring.execution_validator import (
-    ExecutionValidator,
-    RefactoringOperation,
+from cortex.core.file_system import FileSystemManager
+from cortex.core.metadata_index import MetadataIndex
+from cortex.refactoring.execution_validator import ExecutionValidator
+from cortex.refactoring.models import (
+    OperationParameters,
+    RefactoringOperationModel,
+    RefactoringStatus,
 )
-
-if TYPE_CHECKING:
-    from cortex.core.file_system import FileSystemManager
-    from cortex.core.metadata_index import MetadataIndex
 
 
 class TestRefactoringOperation:
-    """Test RefactoringOperation dataclass."""
+    """Test RefactoringOperationModel Pydantic model."""
 
     def test_initialization_with_required_fields(self):
         """Test operation initialization with required fields."""
         # Arrange & Act
-        op = RefactoringOperation(
+        op = RefactoringOperationModel(
             operation_id="op-1",
             operation_type="consolidate",
             target_file="test.md",
-            parameters={"key": "value"},
+            parameters=OperationParameters(),
         )
 
         # Assert
         assert op.operation_id == "op-1"
         assert op.operation_type == "consolidate"
         assert op.target_file == "test.md"
-        assert op.parameters == {"key": "value"}
-        assert op.status == "pending"
+        assert isinstance(op.parameters, OperationParameters)
+        assert op.status == RefactoringStatus.PENDING
         assert op.error is None
         assert op.created_at is not None
 
-    def test_post_init_sets_created_at(self):
-        """Test __post_init__ sets created_at timestamp."""
+    def test_default_created_at(self):
+        """Test default created_at timestamp."""
         # Arrange & Act
-        op = RefactoringOperation(
+        op = RefactoringOperationModel(
             operation_id="op-1",
             operation_type="modify",
             target_file="test.md",
-            parameters={},
+            parameters=OperationParameters(),
         )
 
         # Assert
         assert op.created_at is not None
         assert isinstance(op.created_at, str)
 
-    def test_custom_created_at_not_overridden(self):
+    def test_custom_created_at(self):
         """Test that custom created_at is preserved."""
         # Arrange
         custom_time = "2025-01-01T12:00:00"
 
         # Act
-        op = RefactoringOperation(
+        op = RefactoringOperationModel(
             operation_id="op-1",
             operation_type="delete",
             target_file="test.md",
-            parameters={},
+            parameters=OperationParameters(),
             created_at=custom_time,
         )
 
@@ -77,8 +77,8 @@ class TestExecutionValidatorInitialization:
     async def test_initialization_with_valid_dependencies(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test validator initialization with valid dependencies."""
         # Arrange & Act
@@ -101,8 +101,8 @@ class TestExtractOperations:
     async def test_extract_consolidation_operation(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test extracting consolidation operation from suggestion."""
         # Arrange
@@ -117,9 +117,7 @@ class TestExtractOperations:
             "type": "consolidation",
             "target_file": "consolidated.md",
             "files": ["file1.md", "file2.md"],
-            "sections": [
-                {"file": "file1.md", "section": "Section1", "content": "Content1"}
-            ],
+            "sections": ["Section1"],
             "extraction_target": "common.md",
         }
 
@@ -130,14 +128,14 @@ class TestExtractOperations:
         assert len(operations) == 1
         assert operations[0].operation_type == "consolidate"
         assert operations[0].target_file == "consolidated.md"
-        assert operations[0].parameters["files"] == ["file1.md", "file2.md"]
+        assert operations[0].parameters.source_files == ["file1.md", "file2.md"]
 
     @pytest.mark.asyncio
     async def test_extract_split_operations(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test extracting split operations from suggestion."""
         # Arrange
@@ -172,15 +170,15 @@ class TestExtractOperations:
         assert len(operations) == 2
         assert all(op.operation_type == "split" for op in operations)
         assert operations[0].target_file == "large.md"
-        assert operations[0].parameters["new_file"] == "part1.md"
-        assert operations[1].parameters["new_file"] == "part2.md"
+        assert operations[0].parameters.destination_file == "part1.md"
+        assert operations[1].parameters.destination_file == "part2.md"
 
     @pytest.mark.asyncio
     async def test_extract_reorganization_operations(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test extracting reorganization operations from suggestion."""
         # Arrange
@@ -213,8 +211,8 @@ class TestExtractOperations:
     async def test_extract_operations_with_no_type(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test extracting operations from suggestion with no type."""
         # Arrange
@@ -240,8 +238,8 @@ class TestValidateRefactoring:
     async def test_validate_with_nonexistent_target_file(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test validation fails when target file doesn't exist."""
         # Arrange
@@ -275,8 +273,8 @@ class TestValidateRefactoring:
     async def test_validate_with_existing_file_creation(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test validation fails when creating file that exists."""
         # Arrange
@@ -312,8 +310,8 @@ class TestValidateRefactoring:
     async def test_validate_with_uncommitted_changes_warning(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test validation warns about uncommitted changes."""
         # Arrange
@@ -356,8 +354,8 @@ class TestValidateRefactoring:
     async def test_validate_with_token_budget_impact_warning(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test validation warns about negative token impact."""
         # Arrange
@@ -391,8 +389,8 @@ class TestValidateRefactoring:
     async def test_validate_with_complexity_increase_warning(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test validation warns about complexity increase."""
         # Arrange
@@ -427,8 +425,8 @@ class TestValidateRefactoring:
     async def test_validate_dependency_integrity_check(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test validation checks for dependency integrity."""
         # Arrange
@@ -471,8 +469,8 @@ class TestValidateRefactoring:
     async def test_validate_returns_operations_count(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test validation returns operations count."""
         # Arrange
@@ -508,8 +506,8 @@ class TestGetAllMemoryBankFiles:
     async def test_get_all_files_with_multiple_files(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test retrieving all memory bank files."""
         # Arrange
@@ -539,8 +537,8 @@ class TestGetAllMemoryBankFiles:
     async def test_get_all_files_excludes_non_markdown(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test that non-markdown files are excluded."""
         # Arrange
@@ -566,8 +564,8 @@ class TestGetAllMemoryBankFiles:
     async def test_get_all_files_empty_directory(
         self,
         memory_bank_dir: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test getting files from empty directory."""
         # Arrange

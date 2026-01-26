@@ -11,6 +11,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.models import ModelDict
+
 # ============================================================================
 # Base Model
 # ============================================================================
@@ -23,7 +25,6 @@ class RefactoringBaseModel(BaseModel):
         extra="forbid",
         validate_assignment=True,
         validate_default=True,
-        use_enum_values=True,
     )
 
 
@@ -82,10 +83,21 @@ class RefactoringStatus(str, Enum):
 class RefactoringImpactMetrics(RefactoringBaseModel):
     """Estimated impact metrics for refactoring operations."""
 
-    token_savings: int = Field(default=0, ge=0, description="Estimated token savings")
+    # token_savings may be negative when a refactoring increases token usage.
+    token_savings: int = Field(
+        default=0,
+        description="Estimated token savings (positive) or increase (negative)",
+    )
     files_affected: int = Field(default=0, ge=0, description="Number of files affected")
+    operations_completed: int = Field(
+        default=0, ge=0, description="Number of operations completed"
+    )
+    # complexity_reduction may be negative when complexity increases.
     complexity_reduction: float = Field(
-        default=0.0, ge=0.0, le=1.0, description="Complexity reduction percentage"
+        default=0.0,
+        ge=-1.0,
+        le=1.0,
+        description="Complexity reduction factor (negative means increase)",
     )
     risk_level: Literal["low", "medium", "high"] = Field(
         default="low", description="Risk level"
@@ -206,7 +218,6 @@ class RefactoringSuggestionModel(RefactoringBaseModel):
     model_config = ConfigDict(
         extra="forbid",
         validate_assignment=True,
-        use_enum_values=True,
     )
 
     suggestion_id: str = Field(..., description="Unique suggestion identifier")
@@ -267,6 +278,22 @@ class ConsolidationOpportunityModel(RefactoringBaseModel):
     )
 
 
+class ConsolidationImpactModel(RefactoringBaseModel):
+    """Impact analysis for applying a consolidation."""
+
+    opportunity_id: str = Field(..., description="Opportunity identifier")
+    token_savings: int = Field(..., ge=0, description="Token savings")
+    files_affected: int = Field(..., ge=0, description="Number of files affected")
+    extraction_required: bool = Field(
+        default=True, description="Whether extraction is required"
+    )
+    transclusion_count: int = Field(..., ge=0, description="Number of transclusions")
+    similarity_score: float = Field(..., ge=0.0, le=1.0, description="Similarity score")
+    risk_level: Literal["low", "medium", "high"] = Field(..., description="Risk level")
+    benefits: list[str] = Field(default_factory=list, description="List of benefits")
+    risks: list[str] = Field(default_factory=list, description="List of risks")
+
+
 # ============================================================================
 # Split Models (from split_recommender.py)
 # ============================================================================
@@ -276,7 +303,7 @@ class ParsedSectionModel(RefactoringBaseModel):
     """Represents a parsed markdown section.
 
     Used by SplitAnalyzer and SplitRecommender for file structure analysis.
-    Replaces dict[str, object] for type-safe section handling.
+    Replaces `ModelDict` for type-safe section handling.
     """
 
     heading: str = Field(..., description="Section heading text")
@@ -297,6 +324,25 @@ class SplitPointModel(RefactoringBaseModel):
         ..., ge=0.0, le=1.0, description="Independence score 0-1"
     )
     suggested_filename: str = Field(..., description="Suggested filename")
+    # Protocol compatibility fields
+    split_id: str | None = Field(default=None, description="Split point ID")
+    section_title: str | None = Field(default=None, description="Section title (alias)")
+    line_number: int | None = Field(
+        default=None, ge=1, description="Line number (alias)"
+    )
+
+
+class SplitFileAnalysisResult(RefactoringBaseModel):
+    """Result of analyzing a file for splitting opportunities."""
+
+    file: str = Field(..., description="File path analyzed")
+    size: int = Field(..., ge=0, description="File size in bytes")
+    should_split: bool = Field(..., description="Whether file should be split")
+    reason: str = Field(..., description="Reason for split recommendation")
+    split_points: list[SplitPointModel] = Field(
+        default_factory=lambda: list[SplitPointModel](),
+        description="Suggested split points",
+    )
 
 
 class SplitStructure(RefactoringBaseModel):
@@ -519,6 +565,9 @@ class OperationParameters(RefactoringBaseModel):
     """Parameters for a refactoring operation."""
 
     source_file: str | None = Field(default=None, description="Source file path")
+    source_files: list[str] | None = Field(
+        default=None, description="Source files for multi-file operations"
+    )
     destination_file: str | None = Field(
         default=None, description="Destination file path"
     )
@@ -567,7 +616,7 @@ class RefactoringExecutionModel(RefactoringBaseModel):
     execution_id: str = Field(..., description="Unique execution identifier")
     suggestion_id: str = Field(..., description="Associated suggestion ID")
     approval_id: str = Field(..., description="Associated approval ID")
-    operations: list["RefactoringOperationModel"] = Field(
+    operations: list[RefactoringOperationModel] = Field(
         default_factory=lambda: list[RefactoringOperationModel](),
         description="Operations performed",
     )
@@ -662,7 +711,7 @@ class ReorganizationStructure(RefactoringBaseModel):
 class MemoryBankStructureData(RefactoringBaseModel):
     """Analyzed structure data for Memory Bank reorganization.
 
-    This model replaces dict[str, object] in reorganization modules,
+    This model replaces `ModelDict` in reorganization modules,
     providing type-safe access to structure analysis results.
     """
 
@@ -726,13 +775,36 @@ class DependencyGraphInput(RefactoringBaseModel):
     )
 
 
+class ReorganizationImpactModel(RefactoringBaseModel):
+    """Impact metrics for reorganization operations."""
+
+    files_moved: int = Field(..., ge=0, description="Number of files moved")
+    categories_created: int = Field(
+        ..., ge=0, description="Number of categories created"
+    )
+    dependency_depth_reduction: float = Field(
+        ..., ge=0.0, le=1.0, description="Dependency depth reduction factor"
+    )
+    complexity_reduction: float = Field(
+        ..., ge=0.0, le=1.0, description="Complexity reduction factor"
+    )
+    maintainability_improvement: float = Field(
+        ..., ge=0.0, le=1.0, description="Maintainability improvement factor"
+    )
+    navigation_improvement: float = Field(
+        ..., ge=0.0, le=1.0, description="Navigation improvement factor"
+    )
+    estimated_effort: Literal["low", "medium", "high"] = Field(
+        ..., description="Estimated effort level"
+    )
+
+
 class ReorganizationPlanModel(RefactoringBaseModel):
     """Represents a complete reorganization plan."""
 
     model_config = ConfigDict(
         extra="forbid",
         validate_assignment=True,
-        use_enum_values=True,
     )
 
     plan_id: str = Field(..., description="Unique plan identifier")
@@ -749,8 +821,9 @@ class ReorganizationPlanModel(RefactoringBaseModel):
         default_factory=lambda: list[ReorganizationActionModel](),
         description="Actions to perform",
     )
-    estimated_impact: RefactoringImpactMetrics = Field(
-        default_factory=RefactoringImpactMetrics, description="Estimated impact"
+    estimated_impact: ReorganizationImpactModel = Field(
+        ...,
+        description="Estimated impact",
     )
     risks: list[str] = Field(default_factory=list, description="Identified risks")
     benefits: list[str] = Field(default_factory=list, description="Expected benefits")
@@ -759,9 +832,28 @@ class ReorganizationPlanModel(RefactoringBaseModel):
     )
 
 
+class ReorganizationPreviewResult(RefactoringBaseModel):
+    """Result of previewing a reorganization plan."""
+
+    files_to_move: int = Field(..., ge=0, description="Number of files to move")
+    estimated_improvement: float = Field(
+        ..., ge=0.0, le=1.0, description="Estimated improvement factor"
+    )
+    risks: list[str] = Field(default_factory=list, description="Identified risks")
+
+
 # ============================================================================
 # Protocol Return Type Models (for ApprovalManagerProtocol)
 # ============================================================================
+
+
+class CleanupExpiredApprovalsResult(RefactoringBaseModel):
+    """Result of cleaning up expired approvals."""
+
+    status: str = Field(..., description="Operation status")
+    expired_count: int = Field(..., ge=0, description="Number of expired approvals")
+    expiry_days: int = Field(..., ge=0, description="Expiry threshold in days")
+    message: str = Field(..., description="Human-readable message")
 
 
 class ApprovalRequestResult(RefactoringBaseModel):
@@ -842,12 +934,17 @@ class RollbackHistoryEntry(RefactoringBaseModel):
 class FeedbackRecordResult(RefactoringBaseModel):
     """Result of recording feedback."""
 
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
+
     status: Literal["recorded", "error"] = Field(..., description="Record status")
     feedback_id: str | None = Field(default=None, description="Feedback ID if recorded")
     learning_enabled: bool = Field(
         default=True, description="Whether learning is enabled"
     )
     message: str = Field(default="Feedback recorded", description="Status message")
+    learning_summary: ModelDict | None = Field(
+        default=None, description="Learning insights summary"
+    )
 
 
 class ConfidenceAdjustmentResult(RefactoringBaseModel):
@@ -868,7 +965,14 @@ class ConfidenceAdjustmentResult(RefactoringBaseModel):
 class LearningInsights(RefactoringBaseModel):
     """Learning insights and statistics."""
 
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
+
+    learning_enabled: bool = Field(
+        default=True, description="Whether learning is enabled"
+    )
     total_feedback: int = Field(default=0, ge=0, description="Total feedback count")
+    approved: int = Field(default=0, ge=0, description="Number of approved suggestions")
+    rejected: int = Field(default=0, ge=0, description="Number of rejected suggestions")
     approval_rate: float = Field(
         default=0.0, ge=0.0, le=1.0, description="Approval rate"
     )
@@ -876,13 +980,19 @@ class LearningInsights(RefactoringBaseModel):
         default=0.5, ge=0.0, le=1.0, description="Minimum confidence threshold"
     )
     learned_patterns: int = Field(
-        default=0, ge=0, description="Number of patterns learned"
+        default=0, ge=0, description="Number of learned patterns"
     )
-    top_patterns: list[str] = Field(
-        default_factory=list, description="Top learned patterns"
+    pattern_statistics: ModelDict = Field(
+        default_factory=dict, description="Pattern statistics"
+    )
+    user_preferences: ModelDict = Field(
+        default_factory=dict, description="User preference summary"
     )
     recommendations: list[str] = Field(
         default_factory=list, description="Learning recommendations"
+    )
+    top_patterns: list[str] = Field(
+        default_factory=list, description="Top learned patterns"
     )
 
 
@@ -1206,6 +1316,21 @@ class ApprovalManagerConfig(RefactoringBaseModel):
     )
 
 
+class ApprovalFileData(RefactoringBaseModel):
+    """Structure of approval history file."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    last_updated: str = Field(..., description="ISO timestamp of last update")
+    approvals: dict[str, ApprovalModel] = Field(
+        default_factory=dict, description="Approval records by ID"
+    )
+    preferences: list[ApprovalPreferenceModel] = Field(
+        default_factory=lambda: list[ApprovalPreferenceModel](),
+        description="User preferences",
+    )
+
+
 class RollbackManagerConfig(RefactoringBaseModel):
     """Configuration for RollbackManager."""
 
@@ -1214,6 +1339,17 @@ class RollbackManagerConfig(RefactoringBaseModel):
     )
     max_rollback_history: int = Field(
         default=50, ge=1, description="Maximum rollback history entries to keep"
+    )
+
+
+class RollbackFileData(RefactoringBaseModel):
+    """Structure of rollback history file."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    last_updated: str = Field(..., description="ISO timestamp of last update")
+    rollbacks: dict[str, RollbackRecordModel] = Field(
+        default_factory=dict, description="Rollback records by ID"
     )
 
 
@@ -1453,6 +1589,68 @@ class SuggestionDetails(RefactoringBaseModel):
 
 
 # ============================================================================
+# Protocol Parameter Models (for RefactoringEngineProtocol)
+# ============================================================================
+
+
+class InsightDataModel(RefactoringBaseModel):
+    """Insight data for refactoring suggestion generation.
+
+    This model replaces `ModelDict` for insight_data parameter
+    in RefactoringEngineProtocol.generate_suggestions().
+    """
+
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
+
+    duplicated_content: list[dict[str, str]] = Field(
+        default_factory=lambda: list[dict[str, str]](),
+        description="List of duplicated content entries",
+    )
+    large_files: list[dict[str, str | int]] = Field(
+        default_factory=lambda: list[dict[str, str | int]](),
+        description="List of large files with metadata",
+    )
+    unused_files: list[str] = Field(
+        default_factory=lambda: list[str](),
+        description="List of unused file paths",
+    )
+    complexity_hotspots: list[dict[str, str | float]] = Field(
+        default_factory=lambda: list[dict[str, str | float]](),
+        description="List of complexity hotspots",
+    )
+    dependency_issues: list[dict[str, str]] = Field(
+        default_factory=lambda: list[dict[str, str]](),
+        description="List of dependency issues",
+    )
+
+
+class AnalysisDataModel(RefactoringBaseModel):
+    """Analysis data for refactoring suggestion generation.
+
+    This model replaces `ModelDict` for analysis_data parameter
+    in RefactoringEngineProtocol.generate_suggestions().
+    """
+
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
+
+    file_sizes: dict[str, int] = Field(
+        default_factory=dict, description="File sizes in bytes"
+    )
+    file_tokens: dict[str, int] = Field(
+        default_factory=dict, description="File token counts"
+    )
+    dependency_graph: dict[str, list[str]] = Field(
+        default_factory=dict, description="Dependency graph structure"
+    )
+    access_patterns: dict[str, int] = Field(
+        default_factory=dict, description="File access frequency patterns"
+    )
+    structure_metrics: dict[str, int | float] = Field(
+        default_factory=dict, description="Structure complexity metrics"
+    )
+
+
+# ============================================================================
 # Adaptation Configuration Models
 # ============================================================================
 
@@ -1575,7 +1773,7 @@ class SelfEvolutionAdaptationConfigModel(RefactoringBaseModel):
 class AdaptationConfigModel(RefactoringBaseModel):
     """Complete adaptation configuration model.
 
-    This replaces the dict[str, object] based AdaptationConfig with a
+    This replaces the `ModelDict`-based AdaptationConfig with a
     fully typed Pydantic model for better validation and IDE support.
     """
 

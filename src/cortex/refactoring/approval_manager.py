@@ -5,68 +5,29 @@ Manage user approvals and preferences for refactoring suggestions.
 """
 
 import json
-from dataclasses import asdict, dataclass
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
-from typing import cast
 
 from cortex.core.async_file_utils import open_async_text_file
-
-
-def _to_dict(obj: object) -> dict[str, object]:
-    """Convert dataclass to dictionary with proper typing."""
-    # Runtime check to ensure it's a dataclass
-    if not hasattr(obj, "__dataclass_fields__"):
-        raise TypeError(f"Object {type(obj).__name__} is not a dataclass")
-    # Type checker cannot verify dataclass at static analysis time
-    # but we've verified it at runtime above
-    result = asdict(obj)  # type: ignore[arg-type]
-    return cast(dict[str, object], result)
-
-
-class ApprovalStatus(Enum):
-    """Status of an approval."""
-
-    PENDING = "pending"
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    EXPIRED = "expired"
-    APPLIED = "applied"
-
-
-@dataclass
-class Approval:
-    """Approval record for a refactoring suggestion."""
-
-    approval_id: str
-    suggestion_id: str
-    suggestion_type: str
-    status: str
-    created_at: str
-    approved_at: str | None = None
-    applied_at: str | None = None
-    user_comment: str | None = None
-    auto_apply: bool = False
-    execution_id: str | None = None
-
-    def to_dict(self) -> dict[str, object]:  # type: ignore[misc]
-        """Convert to dictionary."""
-        return _to_dict(self)
-
-
-@dataclass
-class ApprovalPreference:
-    """User preference for auto-approvals."""
-
-    pattern_type: str  # "consolidation", "split", "reorganization", etc.
-    conditions: dict[str, object]  # type: ignore[misc]
-    auto_approve: bool
-    created_at: str
-
-    def to_dict(self) -> dict[str, object]:  # type: ignore[misc]
-        """Convert to dictionary."""
-        return _to_dict(self)
+from cortex.refactoring.models import (
+    ApprovalConditions,
+    ApprovalFileData,
+    ApprovalHistoryResult,
+    ApprovalManagerConfig,
+    ApprovalModel,
+    ApprovalPreferenceModel,
+    ApprovalRequestResult,
+    ApproveResult,
+    CleanupExpiredApprovalsResult,
+    MarkAppliedResult,
+    PendingApprovalsResult,
+    PreferenceResult,
+    PreferencesListResult,
+    RejectResult,
+)
+from cortex.refactoring.models import (
+    ApprovalStatus as ApprovalStatusEnum,
+)
 
 
 class ApprovalManager:
@@ -84,17 +45,20 @@ class ApprovalManager:
     def __init__(
         self,
         memory_bank_dir: Path,
-        config: dict[str, object] | None = None,  # type: ignore[misc]
+        config: ApprovalManagerConfig | None = None,
     ) -> None:
         self.memory_bank_dir: Path = Path(memory_bank_dir)
-        self.config: dict[str, object] = config or {}  # type: ignore[misc]
+        if config is None:
+            self.config = ApprovalManagerConfig()
+        else:
+            self.config = config
 
         # Approval data file
         self.approval_file: Path = self.memory_bank_dir.parent / "approvals.json"
 
         # In-memory storage
-        self.approvals: dict[str, Approval] = {}
-        self.preferences: list[ApprovalPreference] = []
+        self.approvals: dict[str, ApprovalModel] = {}
+        self.preferences: list[ApprovalPreferenceModel] = []
 
         # Load existing data
         self._load_approvals()
@@ -112,118 +76,48 @@ class ApprovalManager:
 
         try:
             with open(self.approval_file) as f:
-                data: dict[str, object] = cast(dict[str, object], json.load(f))
+                data = json.load(f)
 
-            self._load_approvals_from_data(data)
-            self._load_preferences_from_data(data)
+            approval_file_data = ApprovalFileData.model_validate(data)
+            self._load_approvals_from_data(approval_file_data)
+            self._load_preferences_from_data(approval_file_data)
 
         except Exception as e:
             from cortex.core.logging_config import logger
 
             logger.warning(f"Approval file corrupted, starting fresh: {e}")
 
-    def _load_approvals_from_data(self, data: dict[str, object]) -> None:
-        """Load approvals from data dictionary.
+    def _load_approvals_from_data(self, data: ApprovalFileData) -> None:
+        """Load approvals from ApprovalFileData.
 
         Args:
-            data: Data dictionary from JSON file
+            data: ApprovalFileData model
         """
-        approvals_dict: dict[str, object] = cast(
-            dict[str, object], data.get("approvals", {})
-        )
-        for approval_id, approval_data in approvals_dict.items():
-            approval_data_dict: dict[str, object] = cast(
-                dict[str, object], approval_data
-            )
-            self.approvals[str(approval_id)] = self._create_approval_from_dict(
-                approval_data_dict
-            )
+        for approval_id, approval_model in data.approvals.items():
+            self.approvals[str(approval_id)] = approval_model
 
-    def _create_approval_from_dict(self, approval_data: dict[str, object]) -> Approval:
-        """Create Approval object from dictionary.
+    def _load_preferences_from_data(self, data: ApprovalFileData) -> None:
+        """Load preferences from ApprovalFileData.
 
         Args:
-            approval_data: Approval data dictionary
-
-        Returns:
-            Approval object
+            data: ApprovalFileData model
         """
-        return Approval(
-            approval_id=cast(str, approval_data.get("approval_id", "")),
-            suggestion_id=cast(str, approval_data.get("suggestion_id", "")),
-            suggestion_type=cast(str, approval_data.get("suggestion_type", "")),
-            status=cast(str, approval_data.get("status", "pending")),
-            created_at=cast(str, approval_data.get("created_at", "")),
-            approved_at=cast(str | None, approval_data.get("approved_at")),
-            applied_at=cast(str | None, approval_data.get("applied_at")),
-            user_comment=cast(str | None, approval_data.get("user_comment")),
-            auto_apply=cast(bool, approval_data.get("auto_apply", False)),
-            execution_id=cast(str | None, approval_data.get("execution_id")),
-        )
-
-    def _load_preferences_from_data(self, data: dict[str, object]) -> None:
-        """Load preferences from data dictionary.
-
-        Args:
-            data: Data dictionary from JSON file
-        """
-        preferences_list_raw: object = data.get("preferences", [])
-        if not isinstance(preferences_list_raw, list):
-            return
-
-        for item_raw in cast(list[object], preferences_list_raw):
-            if isinstance(item_raw, dict):
-                item: dict[str, object] = cast(dict[str, object], item_raw)
-                preference = self._create_preference_from_dict(item)
-                if preference:
-                    self.preferences.append(preference)
-
-    def _create_preference_from_dict(
-        self, pref_data: dict[str, object]
-    ) -> ApprovalPreference | None:
-        """Create ApprovalPreference object from dictionary.
-
-        Args:
-            pref_data: Preference data dictionary
-
-        Returns:
-            ApprovalPreference object or None if invalid
-        """
-        pattern_type = str(pref_data.get("pattern_type", ""))
-        conditions_raw: object = pref_data.get("conditions", {})
-        if not isinstance(conditions_raw, dict):
-            return None
-
-        conditions: dict[str, object] = cast(dict[str, object], conditions_raw)
-        auto_approve = bool(pref_data.get("auto_approve", False))
-        created_at = str(pref_data.get("created_at", ""))
-
-        return ApprovalPreference(
-            pattern_type=pattern_type,
-            conditions=conditions,
-            auto_approve=auto_approve,
-            created_at=created_at,
-        )
+        self.preferences = list(data.preferences)
 
     async def _save_approvals(self) -> None:
         """Save approvals and preferences to disk."""
         try:
-            approvals_dict: dict[str, dict[str, object]] = {}  # type: ignore[misc]
-            for approval_id, approval in self.approvals.items():
-                approvals_dict[approval_id] = approval.to_dict()
+            approvals_dict: dict[str, ApprovalModel] = dict(self.approvals)
+            preferences_list: list[ApprovalPreferenceModel] = list(self.preferences)
 
-            preferences_list: list[dict[str, object]] = [  # type: ignore[misc]
-                pref.to_dict() for pref in self.preferences
-            ]
-
-            data: dict[str, object] = {  # type: ignore[misc]
-                "last_updated": datetime.now().isoformat(),
-                "approvals": approvals_dict,
-                "preferences": preferences_list,
-            }
+            data = ApprovalFileData(
+                last_updated=datetime.now().isoformat(),
+                approvals=approvals_dict,
+                preferences=preferences_list,
+            )
 
             async with open_async_text_file(self.approval_file, "w", "utf-8") as f:
-                _ = await f.write(json.dumps(data, indent=2))
+                _ = await f.write(data.model_dump_json(indent=2))
 
         except Exception as exc:
             raise Exception(f"Failed to save approvals: {exc}") from exc
@@ -233,7 +127,7 @@ class ApprovalManager:
         suggestion_id: str,
         suggestion_type: str,
         auto_apply: bool = False,
-    ) -> dict[str, object]:  # type: ignore[misc]
+    ) -> ApprovalRequestResult:
         """
         Request approval for a refactoring suggestion.
 
@@ -248,9 +142,7 @@ class ApprovalManager:
         approval_id = self._generate_approval_id(suggestion_id)
         auto_approve = self._check_auto_approval(suggestion_type)
         status = (
-            ApprovalStatus.APPROVED.value
-            if auto_approve
-            else ApprovalStatus.PENDING.value
+            ApprovalStatusEnum.APPROVED if auto_approve else ApprovalStatusEnum.PENDING
         )
 
         approval = self._create_approval(
@@ -279,12 +171,12 @@ class ApprovalManager:
         approval_id: str,
         suggestion_id: str,
         suggestion_type: str,
-        status: str,
+        status: ApprovalStatusEnum,
         auto_apply: bool,
         auto_approve: bool,
-    ) -> Approval:
-        """Create approval object."""
-        return Approval(
+    ) -> ApprovalModel:
+        """Create approval model."""
+        return ApprovalModel(
             approval_id=approval_id,
             suggestion_id=suggestion_id,
             suggestion_type=suggestion_type,
@@ -297,29 +189,29 @@ class ApprovalManager:
     def _build_approval_response(
         self,
         approval_id: str,
-        status: str,
+        status: ApprovalStatusEnum,
         auto_approve: bool,
         auto_apply: bool,
-    ) -> dict[str, object]:
-        """Build approval response dictionary."""
-        return {
-            "approval_id": approval_id,
-            "status": status,
-            "auto_approved": auto_approve,
-            "auto_apply": auto_apply,
-            "message": (
+    ) -> ApprovalRequestResult:
+        """Build approval response model."""
+        return ApprovalRequestResult(
+            approval_id=approval_id,
+            status=status.value,
+            auto_approved=auto_approve,
+            auto_apply=auto_apply,
+            message=(
                 "Auto-approved based on preferences"
                 if auto_approve
                 else "Awaiting user approval"
             ),
-        }
+        )
 
     async def approve_suggestion(
         self,
         suggestion_id: str,
         user_comment: str | None = None,
         auto_apply: bool = False,
-    ) -> dict[str, object]:  # type: ignore[misc]
+    ) -> ApproveResult:
         """
         Approve a refactoring suggestion.
 
@@ -350,52 +242,50 @@ class ApprovalManager:
 
     def _find_pending_approval(
         self, suggestion_id: str
-    ) -> tuple[Approval | None, str | None]:
+    ) -> tuple[ApprovalModel | None, str | None]:
         """Find pending approval for suggestion."""
         for aid, apr in self.approvals.items():
             if (
                 apr.suggestion_id == suggestion_id
-                and apr.status == ApprovalStatus.PENDING.value
+                and apr.status == ApprovalStatusEnum.PENDING
             ):
                 return apr, aid
         return None, None
 
     async def _create_missing_approval(
         self, suggestion_id: str, auto_apply: bool
-    ) -> tuple[Approval, str]:
+    ) -> tuple[ApprovalModel, str]:
         """Create approval if not found."""
-        result: dict[str, object] = await self.request_approval(
-            suggestion_id, "unknown", auto_apply
-        )  # type: ignore[misc]
-        approval_id = cast(str, result["approval_id"])
+        result = await self.request_approval(suggestion_id, "unknown", auto_apply)
+        approval_id = result.approval_id
         return self.approvals[approval_id], approval_id
 
     def _update_approval_status(
-        self, approval: Approval, user_comment: str | None, auto_apply: bool
+        self, approval: ApprovalModel, user_comment: str | None, auto_apply: bool
     ) -> None:
         """Update approval status."""
-        approval.status = ApprovalStatus.APPROVED.value
+        approval.status = ApprovalStatusEnum.APPROVED
         approval.approved_at = datetime.now().isoformat()
         approval.user_comment = user_comment
         approval.auto_apply = auto_apply
 
     def _build_approval_success_response(
         self, approval_id: str, suggestion_id: str, auto_apply: bool
-    ) -> dict[str, object]:
+    ) -> ApproveResult:
         """Build approval success response."""
-        return {
-            "approval_id": approval_id,
-            "status": "approved",
-            "suggestion_id": suggestion_id,
-            "auto_apply": auto_apply,
-            "message": "Suggestion approved",
-        }
+        return ApproveResult(
+            approval_id=approval_id,
+            status="approved",
+            suggestion_id=suggestion_id,
+            auto_apply=auto_apply,
+            message="Suggestion approved",
+        )
 
     async def reject_suggestion(
         self,
         suggestion_id: str,
         user_comment: str | None = None,
-    ) -> dict[str, object]:  # type: ignore[misc]
+    ) -> RejectResult:
         """
         Reject a refactoring suggestion.
 
@@ -417,29 +307,30 @@ class ApprovalManager:
                 break
 
         if not approval:
-            return {
-                "status": "error",
-                "message": f"No approval found for suggestion {suggestion_id}",
-            }
+            return RejectResult(
+                status="error",
+                suggestion_id=suggestion_id,
+                message=f"No approval found for suggestion {suggestion_id}",
+            )
 
         # Update approval
-        approval.status = ApprovalStatus.REJECTED.value
+        approval.status = ApprovalStatusEnum.REJECTED
         approval.user_comment = user_comment
 
         await self._save_approvals()
 
-        return {
-            "approval_id": approval_id,
-            "status": "rejected",
-            "suggestion_id": suggestion_id,
-            "message": "Suggestion rejected",
-        }
+        return RejectResult(
+            status="rejected",
+            approval_id=approval_id,
+            suggestion_id=suggestion_id,
+            message="Suggestion rejected",
+        )
 
     async def mark_as_applied(
         self,
         approval_id: str,
         execution_id: str,
-    ) -> dict[str, object]:  # type: ignore[misc]
+    ) -> MarkAppliedResult:
         """
         Mark an approval as applied.
 
@@ -453,23 +344,24 @@ class ApprovalManager:
         approval = self.approvals.get(approval_id)
 
         if not approval:
-            return {
-                "status": "error",
-                "message": f"Approval {approval_id} not found",
-            }
+            return MarkAppliedResult(
+                status="error",
+                approval_id=approval_id,
+                message=f"Approval {approval_id} not found",
+            )
 
-        approval.status = ApprovalStatus.APPLIED.value
+        approval.status = ApprovalStatusEnum.APPLIED
         approval.applied_at = datetime.now().isoformat()
         approval.execution_id = execution_id
 
         await self._save_approvals()
 
-        return {
-            "approval_id": approval_id,
-            "status": "applied",
-            "execution_id": execution_id,
-            "message": "Approval marked as applied",
-        }
+        return MarkAppliedResult(
+            status="applied",
+            approval_id=approval_id,
+            execution_id=execution_id,
+            message="Approval marked as applied",
+        )
 
     def _check_auto_approval(self, suggestion_type: str) -> bool:
         """Check if a suggestion type should be auto-approved."""
@@ -482,8 +374,8 @@ class ApprovalManager:
         self,
         pattern_type: str,
         auto_approve: bool,
-        conditions: dict[str, object] | None = None,  # type: ignore[misc]
-    ) -> dict[str, object]:  # type: ignore[misc]
+        conditions: ApprovalConditions | None = None,
+    ) -> PreferenceResult:
         """
         Add an auto-approval preference.
 
@@ -495,9 +387,12 @@ class ApprovalManager:
         Returns:
             Created preference
         """
-        preference = ApprovalPreference(
+        if conditions is None:
+            conditions = ApprovalConditions()
+
+        preference = ApprovalPreferenceModel(
             pattern_type=pattern_type,
-            conditions=conditions or {},
+            conditions=conditions,
             auto_approve=auto_approve,
             created_at=datetime.now().isoformat(),
         )
@@ -510,17 +405,17 @@ class ApprovalManager:
         self.preferences.append(preference)
         await self._save_approvals()
 
-        return {
-            "status": "success",
-            "pattern_type": pattern_type,
-            "auto_approve": auto_approve,
-            "message": f"Preference added for {pattern_type}",
-        }
+        return PreferenceResult(
+            status="success",
+            pattern_type=pattern_type,
+            auto_approve=auto_approve,
+            message=f"Preference added for {pattern_type}",
+        )
 
     async def remove_preference(
         self,
         pattern_type: str,
-    ) -> dict[str, object]:  # type: ignore[misc]
+    ) -> PreferenceResult:
         """
         Remove an auto-approval preference.
 
@@ -539,66 +434,63 @@ class ApprovalManager:
 
         if removed > 0:
             await self._save_approvals()
-            return {
-                "status": "success",
-                "pattern_type": pattern_type,
-                "message": f"Preference removed for {pattern_type}",
-            }
+            return PreferenceResult(
+                status="success",
+                pattern_type=pattern_type,
+                message=f"Preference removed for {pattern_type}",
+            )
         else:
-            return {
-                "status": "not_found",
-                "pattern_type": pattern_type,
-                "message": f"No preference found for {pattern_type}",
-            }
+            return PreferenceResult(
+                status="not_found",
+                pattern_type=pattern_type,
+                message=f"No preference found for {pattern_type}",
+            )
 
-    async def get_preferences(self) -> dict[str, object]:  # type: ignore[misc]
+    async def get_preferences(self) -> PreferencesListResult:
         """
         Get all approval preferences.
 
         Returns:
             List of preferences
         """
-        return {
-            "preferences": [pref.to_dict() for pref in self.preferences],
-            "count": len(self.preferences),
-        }
+        return PreferencesListResult(
+            preferences=list(self.preferences),
+            count=len(self.preferences),
+        )
 
-    async def get_approval(self, approval_id: str) -> dict[str, object] | None:  # type: ignore[misc]
+    async def get_approval(self, approval_id: str) -> ApprovalModel | None:
         """Get a specific approval by ID."""
         approval = self.approvals.get(approval_id)
-        if approval:
-            return approval.to_dict()
-        return None
+        return approval
 
     async def get_approvals_for_suggestion(
         self, suggestion_id: str
-    ) -> list[dict[str, object]]:  # type: ignore[misc]
+    ) -> list[ApprovalModel]:
         """Get all approvals for a specific suggestion."""
-        approvals: list[dict[str, object]] = [  # type: ignore[misc]
-            approval.to_dict()
+        return [
+            approval
             for approval in self.approvals.values()
             if approval.suggestion_id == suggestion_id
         ]
-        return approvals
 
-    async def get_pending_approvals(self) -> dict[str, object]:  # type: ignore[misc]
+    async def get_pending_approvals(self) -> PendingApprovalsResult:
         """Get all pending approvals."""
-        pending: list[dict[str, object]] = [  # type: ignore[misc]
-            approval.to_dict()
+        pending: list[ApprovalModel] = [
+            approval
             for approval in self.approvals.values()
-            if approval.status == ApprovalStatus.PENDING.value
+            if approval.status == ApprovalStatusEnum.PENDING
         ]
 
-        return {
-            "pending_approvals": pending,
-            "count": len(pending),
-        }
+        return PendingApprovalsResult(
+            pending_approvals=pending,
+            count=len(pending),
+        )
 
     async def get_approval_history(
         self,
         time_range_days: int = 90,
-        status_filter: str | None = None,
-    ) -> dict[str, object]:  # type: ignore[misc]
+        status_filter: ApprovalStatusEnum | None = None,
+    ) -> ApprovalHistoryResult:
         """
         Get approval history.
 
@@ -613,38 +505,33 @@ class ApprovalManager:
 
         cutoff_date = datetime.now() - timedelta(days=time_range_days)
 
-        filtered_approvals: list[dict[str, object]] = []  # type: ignore[misc]
+        filtered_approvals: list[ApprovalModel] = []
         for approval in self.approvals.values():
             approval_date = datetime.fromisoformat(approval.created_at)
             if approval_date >= cutoff_date:
                 if not status_filter or approval.status == status_filter:
-                    filtered_approvals.append(approval.to_dict())
+                    filtered_approvals.append(approval)
 
-        # Calculate statistics
-        total = len(filtered_approvals)
-        approved = len([a for a in filtered_approvals if a.get("status") == "approved"])
-        rejected = len([a for a in filtered_approvals if a.get("status") == "rejected"])
-        pending = len([a for a in filtered_approvals if a.get("status") == "pending"])
-        applied = len([a for a in filtered_approvals if a.get("status") == "applied"])
-
-        def get_created_at(approval: dict[str, object]) -> str:  # type: ignore[misc]
-            """Get created_at from approval dict."""
-            return str(approval.get("created_at", ""))
-
-        return {
-            "time_range_days": time_range_days,
-            "total_approvals": total,
-            "approved": approved,
-            "rejected": rejected,
-            "pending": pending,
-            "applied": applied,
-            "approval_rate": approved / total if total > 0 else 0,
-            "approvals": sorted(filtered_approvals, key=get_created_at, reverse=True),
-        }
+        stats = self._calculate_approval_statistics(filtered_approvals)
+        sorted_approvals = sorted(
+            filtered_approvals, key=lambda a: a.created_at, reverse=True
+        )
+        return ApprovalHistoryResult(
+            time_range_days=time_range_days,
+            total_approvals=stats["total"],
+            approved=stats["approved"],
+            rejected=stats["rejected"],
+            pending=stats["pending"],
+            applied=stats["applied"],
+            approval_rate=(
+                stats["approved"] / stats["total"] if stats["total"] > 0 else 0.0
+            ),
+            approvals=sorted_approvals,
+        )
 
     async def cleanup_expired_approvals(
         self, expiry_days: int = 30
-    ) -> dict[str, object]:  # type: ignore[misc]
+    ) -> CleanupExpiredApprovalsResult:
         """
         Clean up old pending approvals.
 
@@ -660,18 +547,18 @@ class ApprovalManager:
         expired_count = 0
 
         for approval in self.approvals.values():
-            if approval.status == ApprovalStatus.PENDING.value:
+            if approval.status == ApprovalStatusEnum.PENDING:
                 approval_date = datetime.fromisoformat(approval.created_at)
                 if approval_date < cutoff_date:
-                    approval.status = ApprovalStatus.EXPIRED.value
+                    approval.status = ApprovalStatusEnum.EXPIRED
                     expired_count += 1
 
         if expired_count > 0:
             await self._save_approvals()
 
-        return {
-            "status": "success",
-            "expired_count": expired_count,
-            "expiry_days": expiry_days,
-            "message": f"Expired {expired_count} old pending approvals",
-        }
+        return CleanupExpiredApprovalsResult(
+            status="success",
+            expired_count=expired_count,
+            expiry_days=expiry_days,
+            message=f"Expired {expired_count} old pending approvals",
+        )

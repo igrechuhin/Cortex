@@ -11,13 +11,16 @@ from typing import cast
 
 import pytest
 
-from cortex.refactoring.refactoring_engine import (
-    RefactoringAction,
-    RefactoringEngine,
+from cortex.refactoring.models import (
+    ActionDetails,
+    RefactoringActionModel,
+    RefactoringImpactMetrics,
+    RefactoringMetadata,
     RefactoringPriority,
-    RefactoringSuggestion,
+    RefactoringSuggestionModel,
     RefactoringType,
 )
+from cortex.refactoring.refactoring_engine import RefactoringEngine
 
 
 @pytest.fixture
@@ -998,19 +1001,18 @@ class TestClearSuggestions:
         assert refactoring_engine.suggestion_counter == 0
 
 
-class TestRefactoringSuggestionDataclass:
-    """Test RefactoringSuggestion dataclass"""
+class TestRefactoringSuggestionModel:
+    """Test RefactoringSuggestionModel."""
 
-    def test_to_dict_conversion(self):
-        """Test converting suggestion to dictionary"""
-        action = RefactoringAction(
+    def test_model_dump_json_shape(self):
+        """Test JSON dump contains expected keys/values."""
+        action = RefactoringActionModel(
             action_type="create",
             target_file="test.md",
             description="Test action",
-            details={"key": "value"},
+            details=ActionDetails.model_validate({"key": "value"}),
         )
-
-        suggestion = RefactoringSuggestion(
+        suggestion = RefactoringSuggestionModel(
             suggestion_id="TEST-001",
             refactoring_type=RefactoringType.CONSOLIDATION,
             priority=RefactoringPriority.HIGH,
@@ -1019,29 +1021,24 @@ class TestRefactoringSuggestionDataclass:
             reasoning="Test reasoning",
             affected_files=["file1.md", "file2.md"],
             actions=[action],
-            estimated_impact={"token_savings": 100},
+            estimated_impact=RefactoringImpactMetrics(token_savings=100),
             confidence_score=0.85,
-            metadata={"source": "test"},
+            metadata=RefactoringMetadata(source="test"),
         )
 
-        result = suggestion.to_dict()
-
-        assert result["suggestion_id"] == "TEST-001"
-        assert result["refactoring_type"] == "consolidation"
-        assert result["priority"] == "high"
-        assert result["title"] == "Test Suggestion"
-        actions: object | None = result.get("actions")
-        assert actions is not None
-        assert isinstance(actions, list)
-        actions_list: list[dict[str, object]] = cast(list[dict[str, object]], actions)
-        assert len(actions_list) == 1
-        assert isinstance(actions_list[0], dict)
-        assert actions_list[0]["action_type"] == "create"
-        assert result["confidence_score"] == 0.85
+        dumped = suggestion.model_dump(mode="json")
+        assert dumped["suggestion_id"] == "TEST-001"
+        assert dumped["refactoring_type"] == RefactoringType.CONSOLIDATION.value
+        assert dumped["priority"] == RefactoringPriority.HIGH.value
+        assert dumped["title"] == "Test Suggestion"
+        actions_raw = dumped.get("actions")
+        assert isinstance(actions_raw, list)
+        assert actions_raw[0]["action_type"] == "create"
+        assert dumped["confidence_score"] == 0.85
 
     def test_created_at_generated(self):
         """Test that created_at is automatically generated"""
-        suggestion = RefactoringSuggestion(
+        suggestion = RefactoringSuggestionModel(
             suggestion_id="TEST-001",
             refactoring_type=RefactoringType.CONSOLIDATION,
             priority=RefactoringPriority.HIGH,
@@ -1050,7 +1047,7 @@ class TestRefactoringSuggestionDataclass:
             reasoning="Test",
             affected_files=[],
             actions=[],
-            estimated_impact={},
+            estimated_impact=RefactoringImpactMetrics(),
             confidence_score=0.8,
         )
 
@@ -1058,25 +1055,26 @@ class TestRefactoringSuggestionDataclass:
         assert "T" in suggestion.created_at  # ISO format
 
 
-class TestRefactoringAction:
-    """Test RefactoringAction dataclass"""
+class TestRefactoringActionModel:
+    """Test RefactoringActionModel."""
 
     def test_action_with_defaults(self):
         """Test action with default details"""
-        action = RefactoringAction(
+        action = RefactoringActionModel(
             action_type="create", target_file="test.md", description="Test"
         )
-
-        assert action.details == {}
+        assert action.details.model_dump(mode="json", exclude_none=True) == {}
 
     def test_action_with_details(self):
         """Test action with custom details"""
         details: dict[str, str | int] = {"key1": "value1", "key2": 42}
-        action = RefactoringAction(
+        action = RefactoringActionModel(
             action_type="modify",
             target_file="test.md",
             description="Test",
-            details=cast(dict[str, object], details),
+            details=ActionDetails.model_validate(details),
         )
 
-        assert action.details == details
+        dumped = action.details.model_dump(mode="json")
+        assert dumped["key1"] == "value1"
+        assert dumped["key2"] == 42

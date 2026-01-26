@@ -3,10 +3,13 @@
 Adapter for Python projects using pytest, ruff, pyright, and black.
 """
 
+import re
 import subprocess
 from collections.abc import Sequence
 
 from .base import CheckResult, FrameworkAdapter, TestResult
+
+_RUFF_DIAGNOSTIC_RE = re.compile(r"^.+?:\d+:\d+:\s+[A-Z]{1,6}\d{1,4}\b")
 
 
 class PythonAdapter(FrameworkAdapter):
@@ -111,7 +114,7 @@ class PythonAdapter(FrameworkAdapter):
         auto_fix: bool = True,
         strict_mode: bool = False,
     ) -> CheckResult:
-        """Fix errors using ruff and pyright.
+        """Fix errors using ruff and formatting tools.
 
         Args:
             error_types: Types of errors to fix (e.g., ['formatting', 'linting']).
@@ -130,7 +133,6 @@ class PythonAdapter(FrameworkAdapter):
             error_types, files_modified, errors, warnings, output_parts
         )
         self._fix_formatting_errors(error_types, files_modified, errors, output_parts)
-        self._check_type_errors(errors, output_parts)
 
         return CheckResult(
             check_type="fix_errors",
@@ -152,10 +154,10 @@ class PythonAdapter(FrameworkAdapter):
         """Fix linting errors."""
         if not error_types or "linting" in error_types:
             lint_result = self._run_ruff_fix()
-            output_parts.append(lint_result["output"])
-            files_modified.extend(lint_result["files_modified"])
-            errors.extend(lint_result["errors"])
-            warnings.extend(lint_result["warnings"])
+            output_parts.append(lint_result.output)
+            files_modified.extend(lint_result.files_modified)
+            errors.extend(lint_result.errors)
+            warnings.extend(lint_result.warnings)
 
     def _fix_formatting_errors(
         self,
@@ -167,16 +169,9 @@ class PythonAdapter(FrameworkAdapter):
         """Fix formatting errors."""
         if not error_types or "formatting" in error_types:
             format_result = self.format_code()
-            output_parts.append(format_result["output"])
-            files_modified.extend(format_result["files_modified"])
-            errors.extend(format_result["errors"])
-
-    def _check_type_errors(self, errors: list[str], output_parts: list[str]) -> None:
-        """Check type errors."""
-        type_result = self.type_check()
-        output_parts.append(type_result["output"])
-        if type_result["errors"]:
-            errors.extend(type_result["errors"])
+            output_parts.append(format_result.output)
+            files_modified.extend(format_result.files_modified)
+            errors.extend(format_result.errors)
 
     def format_code(self) -> CheckResult:
         """Format code using black and ruff import sorting.
@@ -315,7 +310,8 @@ class PythonAdapter(FrameworkAdapter):
         # Build errors only if tests actually failed
         errors = self._build_test_errors(not actual_success)
 
-        pass_rate = (tests_passed / tests_run * 100.0) if tests_run > 0 else 0.0
+        # `TestResult.pass_rate` is a ratio in [0, 1] (not a percentage).
+        pass_rate = (tests_passed / tests_run) if tests_run > 0 else 0.0
 
         return TestResult(
             success=actual_success,
@@ -425,7 +421,19 @@ class PythonAdapter(FrameworkAdapter):
     def _parse_lint_errors(self, output: str) -> list[str]:
         """Parse ruff output for linting errors."""
         errors: list[str] = []
-        for line in output.split("\n"):
-            if "error" in line.lower() or "E" in line[:5]:
-                errors.append(line.strip())
+        for raw_line in output.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+
+            # Ruff emits summary lines like:
+            # - "Found N errors (M fixed, K remaining)."
+            # Those should not be counted as "remaining errors".
+            if line.lower().startswith("error:"):
+                errors.append(line)
+                continue
+
+            if _RUFF_DIAGNOSTIC_RE.match(line):
+                errors.append(line)
+
         return errors

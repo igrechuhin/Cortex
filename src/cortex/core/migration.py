@@ -9,6 +9,14 @@ from .dependency_graph import DependencyGraph
 from .exceptions import MigrationFailedError
 from .file_system import FileSystemManager
 from .metadata_index import MetadataIndex
+from .models import (
+    BackupInfo,
+    MigrationInfo,
+    MigrationResult,
+    SectionMetadata,
+    VerificationResult,
+    VersionMetadata,
+)
 from .token_counter import TokenCounter
 from .version_manager import VersionManager
 
@@ -55,47 +63,47 @@ class MigrationManager:
         md_files = list(self.memory_bank_dir.glob("*.md"))
         return len(md_files) > 0
 
-    async def get_migration_info(self) -> dict[str, object]:
+    async def get_migration_info(self) -> MigrationInfo:
         """
         Get information about what will be migrated.
 
         Returns:
-            Dict with migration details
+            MigrationInfo with migration details
         """
         if not self.memory_bank_dir.exists():
-            return {
-                "needs_migration": False,
-                "reason": "No .cortex/memory-bank directory found",
-            }
+            return MigrationInfo(
+                needs_migration=False,
+                reason="No .cortex/memory-bank directory found",
+            )
 
         md_files = list(self.memory_bank_dir.glob("*.md"))
         if len(md_files) == 0:
-            return {
-                "needs_migration": False,
-                "reason": "No markdown files found in .cortex/memory-bank directory",
-            }
+            return MigrationInfo(
+                needs_migration=False,
+                reason="No markdown files found in .cortex/memory-bank directory",
+            )
 
         if self.index_path.exists():
-            return {
-                "needs_migration": False,
-                "reason": "Already migrated (.cortex/index.json exists)",
-            }
+            return MigrationInfo(
+                needs_migration=False,
+                reason="Already migrated (.cortex/index.json exists)",
+            )
 
         total_size = sum(f.stat().st_size for f in md_files)
 
-        return {
-            "needs_migration": True,
-            "files_found": len(md_files),
-            "file_names": [f.name for f in md_files],
-            "total_size_bytes": total_size,
-            "estimated_tokens": total_size // 4,  # Rough estimate (4 bytes per token)
-            "backup_location": str(
+        return MigrationInfo(
+            needs_migration=True,
+            files_found=len(md_files),
+            file_names=[f.name for f in md_files],
+            total_size_bytes=total_size,
+            estimated_tokens=total_size // 4,  # Rough estimate (4 bytes per token)
+            backup_location=str(
                 self.project_root
                 / f".cortex-backup-{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             ),
-        }
+        )
 
-    async def migrate(self, auto_backup: bool = True) -> dict[str, object]:
+    async def migrate(self, auto_backup: bool = True) -> MigrationResult:
         """
         Perform automatic migration with backup and rollback capability.
 
@@ -123,9 +131,9 @@ class MigrationManager:
             await self._build_migration_dependency_graph()
 
             verification = await self.verify_migration(md_files)
-            if not verification["success"]:
+            if not verification.success:
                 raise MigrationFailedError(
-                    cast(str, verification["error"]),
+                    verification.error or "Migration verification failed",
                     str(backup_dir) if backup_dir else None,
                 )
 
@@ -222,7 +230,7 @@ class MigrationManager:
         size_bytes: int,
         token_count: int,
         content_hash: str,
-        sections: list[dict[str, str | int]],
+        sections: list[SectionMetadata],
     ) -> None:
         """Update file metadata for migration."""
         await metadata_index.update_file_metadata(
@@ -232,7 +240,7 @@ class MigrationManager:
             size_bytes=size_bytes,
             token_count=token_count,
             content_hash=content_hash,
-            sections=cast(list[dict[str, object]], sections),
+            sections=sections,
             change_source="migration",
         )
 
@@ -244,8 +252,9 @@ class MigrationManager:
         size_bytes: int,
         token_count: int,
         content_hash: str,
-    ) -> dict[str, object]:
+    ) -> VersionMetadata:
         """Create initial snapshot for migrated file."""
+
         return await version_manager.create_snapshot(
             file_path=md_file,
             version=1,
@@ -327,7 +336,7 @@ class MigrationManager:
             shutil.rmtree(self.memory_bank_dir)
             _ = shutil.copytree(backup_dir, self.memory_bank_dir)
 
-    async def verify_migration(self, md_files: list[Path]) -> dict[str, object]:
+    async def verify_migration(self, md_files: list[Path]) -> VerificationResult:
         """
         Verify migration completed successfully.
 
@@ -335,49 +344,68 @@ class MigrationManager:
             md_files: List of markdown files that were migrated
 
         Returns:
-            Verification result dict
+            VerificationResult with verification status
         """
         # Check index exists
         if not self.index_path.exists():
-            return {"success": False, "error": "Index file not created"}
+            return VerificationResult(success=False, error="Index file not created")
 
         # Check history directory exists
         history_dir = self.cortex_dir / "history"
         if not history_dir.exists():
-            return {"success": False, "error": "History directory not created"}
+            return VerificationResult(
+                success=False, error="History directory not created"
+            )
 
         # Load and validate index
         try:
             metadata_index = MetadataIndex(self.project_root)
             _ = await metadata_index.load()
 
-            # Check all files are in index
-            for md_file in md_files:
-                if not await metadata_index.file_exists_in_index(md_file.name):
-                    return {
-                        "success": False,
-                        "error": f"File {md_file.name} not found in index",
-                    }
+            index_check = await self._verify_files_in_index(metadata_index, md_files)
+            if not index_check.success:
+                return index_check
 
-            # Check snapshots exist
-            version_manager = VersionManager(self.project_root)
-            for md_file in md_files:
-                snapshot_path = version_manager.get_snapshot_path(md_file.name, 1)
-                if not snapshot_path.exists():
-                    return {
-                        "success": False,
-                        "error": f"Snapshot for {md_file.name} version 1 not created at {snapshot_path}",
-                    }
+            snapshot_check = await self._verify_snapshots_exist(md_files)
+            if not snapshot_check.success:
+                return snapshot_check
 
-            return {
-                "success": True,
-                "files_verified": len(md_files),
-                "index_valid": True,
-                "snapshots_created": True,
-            }
+            return VerificationResult(
+                success=True,
+                files_verified=len(md_files),
+                index_valid=True,
+                snapshots_created=True,
+            )
 
         except Exception as e:
-            return {"success": False, "error": f"Verification failed: {str(e)}"}
+            return VerificationResult(
+                success=False,
+                error=f"Verification failed: {e}",
+            )
+
+    async def _verify_files_in_index(
+        self, metadata_index: MetadataIndex, md_files: list[Path]
+    ) -> VerificationResult:
+        """Verify all files are in the index."""
+        for md_file in md_files:
+            if not await metadata_index.file_exists_in_index(md_file.name):
+                return VerificationResult(
+                    success=False,
+                    error=f"File {md_file.name} not found in index",
+                )
+        return VerificationResult(success=True)
+
+    async def _verify_snapshots_exist(self, md_files: list[Path]) -> VerificationResult:
+        """Verify snapshots exist for all files."""
+        version_manager = VersionManager(self.project_root)
+        for md_file in md_files:
+            snapshot_path = version_manager.get_snapshot_path(md_file.name, 1)
+            if not snapshot_path.exists():
+                return VerificationResult(
+                    success=False,
+                    error=f"Snapshot not found for {md_file.name}",
+                )
+        return VerificationResult(success=True)
 
     async def cleanup_old_backups(self, keep_last: int = 3):
         """
@@ -396,16 +424,16 @@ class MigrationManager:
                     # Backup directory inaccessible - skip
                     pass
 
-    async def get_backup_list(self) -> list[dict[str, object]]:
+    async def get_backup_list(self) -> list[BackupInfo]:
         """
         Get list of available backups.
 
         Returns:
-            List of backup info dicts
+            List of backup info models
         """
         backup_dirs = sorted(self.project_root.glob(".cortex-backup-*"))
 
-        backups: list[dict[str, object]] = []
+        backups: list[BackupInfo] = []
         for backup_dir in backup_dirs:
             # Extract timestamp from directory name
             timestamp_str = backup_dir.name.replace(".cortex-backup-", "")
@@ -421,12 +449,12 @@ class MigrationManager:
             )
 
             backups.append(
-                {
-                    "path": str(backup_dir),
-                    "timestamp": timestamp_str,
-                    "created": created_time.isoformat() if created_time else None,
-                    "size_bytes": total_size,
-                }
+                BackupInfo(
+                    path=str(backup_dir),
+                    timestamp=timestamp_str,
+                    created=created_time.isoformat() if created_time else None,
+                    size_bytes=total_size,
+                )
             )
 
         return backups
@@ -462,12 +490,12 @@ class MigrationManager:
         self,
         md_files: list[Path],
         backup_dir: Path | None,
-        verification: dict[str, object],
-    ) -> dict[str, object]:
-        """Build migration result dictionary."""
-        return {
-            "status": "success",
-            "files_migrated": len(md_files),
-            "backup_location": str(backup_dir) if backup_dir else None,
-            "details": verification,
-        }
+        verification: VerificationResult,
+    ) -> MigrationResult:
+        """Build migration result model."""
+        return MigrationResult(
+            status="success",
+            files_migrated=len(md_files),
+            backup_location=str(backup_dir) if backup_dir else None,
+            details=verification,
+        )

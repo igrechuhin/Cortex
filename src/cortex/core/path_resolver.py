@@ -20,6 +20,7 @@ class CortexResourceType(Enum):
     ARCHIVED = "archived"
     REVIEWS = "reviews"
     SESSION = ".session"
+    CACHE = ".cache"
     INDEX = "index.json"
 
 
@@ -39,6 +40,8 @@ def get_cortex_path(project_root: Path, resource_type: CortexResourceType) -> Pa
         Path("/project/.cortex/memory-bank")
         >>> get_cortex_path(root, CortexResourceType.INDEX)
         Path("/project/.cortex/index.json")
+        >>> get_cortex_path(root, CortexResourceType.CACHE)
+        Path("/project/.cortex/.cache")
     """
     cortex_dir = project_root / ".cortex"
 
@@ -48,3 +51,29 @@ def get_cortex_path(project_root: Path, resource_type: CortexResourceType) -> Pa
         return cortex_dir / "index.json"
     else:
         return cortex_dir / resource_type.value
+
+
+def get_cache_path(project_root: Path, cache_type: str | None = None) -> Path:
+    """Get cache directory path.
+
+    Args:
+        project_root: Root directory of the project
+        cache_type: Optional cache subdirectory type (string value, typically from CacheType enum)
+
+    Returns:
+        Path to cache directory or cache subdirectory
+
+    Examples:
+        >>> root = Path("/project")
+        >>> get_cache_path(root)
+        Path("/project/.cortex/.cache")
+        >>> from cortex.core.cache_utils import CacheType
+        >>> get_cache_path(root, CacheType.SUMMARIES.value)
+        Path("/project/.cortex/.cache/summaries")
+    """
+    cache_dir = get_cortex_path(project_root, CortexResourceType.CACHE)
+
+    if cache_type:
+        return cache_dir / cache_type
+
+    return cache_dir

@@ -8,6 +8,8 @@ Split from learning_engine.py in Phase 9.1 for improved modularity.
 from collections import defaultdict
 from datetime import datetime
 
+from cortex.core.models import ModelDict
+
 from .learning_data_manager import FeedbackRecord, LearnedPattern, LearningDataManager
 
 
@@ -29,7 +31,7 @@ class PatternManager:
     def extract_pattern_key(
         self,
         feedback: FeedbackRecord,
-        suggestion_details: dict[str, object],
+        suggestion_details: ModelDict,
     ) -> str | None:
         """Extract a pattern key from suggestion details."""
         suggestion_type = feedback.suggestion_type
@@ -55,7 +57,7 @@ class PatternManager:
 
         return None
 
-    def _extract_split_pattern_key(self, suggestion_details: dict[str, object]) -> str:
+    def _extract_split_pattern_key(self, suggestion_details: ModelDict) -> str:
         """Extract pattern key for split suggestions based on file size.
 
         Args:
@@ -73,9 +75,7 @@ class PatternManager:
             return "split-medium-file"
         return "split-small-file"
 
-    def extract_conditions(
-        self, suggestion_details: dict[str, object]
-    ) -> dict[str, object]:
+    def extract_conditions(self, suggestion_details: ModelDict) -> ModelDict:
         """Extract conditions from suggestion details."""
         return {
             "min_confidence": suggestion_details.get("confidence", 0.5),
@@ -86,7 +86,7 @@ class PatternManager:
     async def update_patterns(
         self,
         feedback: FeedbackRecord,
-        suggestion_details: dict[str, object],
+        suggestion_details: ModelDict,
     ) -> None:
         """Update learned patterns based on feedback."""
         pattern_key = self.extract_pattern_key(feedback, suggestion_details)
@@ -131,7 +131,7 @@ class PatternManager:
         self,
         pattern_key: str,
         feedback: FeedbackRecord,
-        suggestion_details: dict[str, object],
+        suggestion_details: ModelDict,
     ) -> LearnedPattern:
         """Create a new pattern from feedback."""
         return LearnedPattern(
@@ -146,7 +146,7 @@ class PatternManager:
             confidence_adjustment=0.0,
         )
 
-    def calculate_pattern_statistics(self) -> dict[str, dict[str, object]]:
+    def calculate_pattern_statistics(self) -> ModelDict:
         """Calculate statistics for learned patterns.
 
         Returns:
@@ -156,7 +156,7 @@ class PatternManager:
         for pattern in self.data_manager.get_all_patterns().values():
             patterns_by_type[pattern.pattern_type].append(pattern)
 
-        pattern_stats: dict[str, dict[str, object]] = {}
+        pattern_stats: ModelDict = {}
         for pattern_type, patterns in patterns_by_type.items():
             avg_success_rate = (
                 sum(p.success_rate for p in patterns) / len(patterns)

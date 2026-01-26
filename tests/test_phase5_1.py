@@ -18,6 +18,7 @@ from typing import cast
 import pytest
 
 from cortex.analysis.insight_engine import InsightEngine
+from cortex.analysis.insight_types import InsightDict, InsightsResultDict, SummaryDict
 
 # Import Phase 5.1 modules
 from cortex.analysis.pattern_analyzer import PatternAnalyzer
@@ -31,7 +32,7 @@ from cortex.optimization.optimization_config import OptimizationConfig
 
 
 @pytest.fixture
-def temp_project() -> Generator[Path, None, None]:
+def temp_project() -> Generator[Path]:
     """Create a temporary project directory with sample files."""
     temp_dir = Path(tempfile.mkdtemp())
     # Create .cortex directory for config files
@@ -348,29 +349,37 @@ async def test_generate_organization_insights(insight_engine: InsightEngine) -> 
 @pytest.mark.asyncio
 async def test_export_insights_json(insight_engine: InsightEngine) -> None:
     """Test exporting insights as JSON."""
-    insights = {
-        "generated_at": "2025-01-01T00:00:00",
-        "total_insights": 1,
-        "insights": [
-            {
-                "id": "test",
-                "title": "Test Insight",
-                "description": "Test",
-                "impact_score": 0.8,
-                "severity": "high",
-                "recommendations": ["Fix this"],
-            }
+    insights = InsightsResultDict(
+        generated_at="2025-01-01T00:00:00",
+        total_insights=1,
+        high_impact_count=1,
+        medium_impact_count=0,
+        low_impact_count=0,
+        estimated_total_token_savings=1000,
+        insights=[
+            InsightDict(
+                id="test",
+                category="test",
+                title="Test Insight",
+                description="Test",
+                impact_score=0.8,
+                severity="high",
+                recommendations=["Fix this"],
+                estimated_token_savings=1000,
+                affected_files=[],
+            )
         ],
-        "summary": {"status": "good", "message": "All good"},
-        "high_impact_count": 1,
-        "medium_impact_count": 0,
-        "low_impact_count": 0,
-        "estimated_total_token_savings": 1000,
-    }
-
-    exported = await insight_engine.export_insights(
-        cast(dict[str, object], insights), format="json"
+        summary=SummaryDict(
+            status="good",
+            message="All good",
+            high_severity_count=1,
+            medium_severity_count=0,
+            low_severity_count=0,
+            top_recommendations=[],
+        ),
     )
+
+    exported = await insight_engine.export_insights(insights, format="json")
 
     assert isinstance(exported, str)
     parsed = json.loads(exported)
@@ -380,29 +389,37 @@ async def test_export_insights_json(insight_engine: InsightEngine) -> None:
 @pytest.mark.asyncio
 async def test_export_insights_markdown(insight_engine: InsightEngine) -> None:
     """Test exporting insights as Markdown."""
-    insights = {
-        "generated_at": "2025-01-01T00:00:00",
-        "total_insights": 1,
-        "insights": [
-            {
-                "id": "test",
-                "title": "Test Insight",
-                "description": "Test",
-                "impact_score": 0.8,
-                "severity": "high",
-                "recommendations": ["Fix this"],
-            }
+    insights = InsightsResultDict(
+        generated_at="2025-01-01T00:00:00",
+        total_insights=1,
+        high_impact_count=1,
+        medium_impact_count=0,
+        low_impact_count=0,
+        estimated_total_token_savings=1000,
+        insights=[
+            InsightDict(
+                id="test",
+                category="test",
+                title="Test Insight",
+                description="Test",
+                impact_score=0.8,
+                severity="high",
+                recommendations=["Fix this"],
+                estimated_token_savings=1000,
+                affected_files=[],
+            )
         ],
-        "summary": {"status": "good", "message": "All good"},
-        "high_impact_count": 1,
-        "medium_impact_count": 0,
-        "low_impact_count": 0,
-        "estimated_total_token_savings": 1000,
-    }
-
-    exported = await insight_engine.export_insights(
-        cast(dict[str, object], insights), format="markdown"
+        summary=SummaryDict(
+            status="good",
+            message="All good",
+            high_severity_count=1,
+            medium_severity_count=0,
+            low_severity_count=0,
+            top_recommendations=[],
+        ),
     )
+
+    exported = await insight_engine.export_insights(insights, format="markdown")
 
     assert isinstance(exported, str)
     assert "# Memory Bank Insights Report" in exported

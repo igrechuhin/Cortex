@@ -3,9 +3,10 @@
 Generate insights from usage patterns and file organization.
 """
 
-from typing import cast
+from cortex.core.models import FileOrganizationResult, FileSizeEntry
 
 from .insight_types import InsightDict
+from .models import AntiPatternInfo, CoAccessPattern
 from .pattern_analyzer import PatternAnalyzer, UnusedFileEntry
 from .structure_analyzer import StructureAnalyzer
 
@@ -68,7 +69,10 @@ class UsageOrganizationInsights:
         never_accessed: int,
     ) -> InsightDict:
         """Create insight for unused files."""
-        return InsightDict(
+        evidence = self._build_unused_files_evidence(
+            unused_files, stale_count, never_accessed
+        )
+        return InsightDict.model_validate(
             {
                 "id": "unused_files",
                 "category": "usage",
@@ -79,20 +83,33 @@ class UsageOrganizationInsights:
                 ),
                 "impact_score": 0.7,
                 "severity": "medium",
-                "evidence": {
-                    "unused_count": len(unused_files),
-                    "stale_count": stale_count,
-                    "never_accessed_count": never_accessed,
-                    "examples": unused_files[:3],
-                },
-                "recommendations": [
-                    "Review unused files and consider archiving or removing them",
-                    "Add links from active files if these should be used",
-                    "Update content if files are outdated",
-                ],
+                "evidence": evidence,
+                "recommendations": self._get_unused_files_recommendations(),
                 "estimated_token_savings": len(unused_files) * 500,
             }
         )
+
+    def _build_unused_files_evidence(
+        self,
+        unused_files: list[UnusedFileEntry],
+        stale_count: int,
+        never_accessed: int,
+    ) -> dict[str, object]:
+        """Build evidence dict for unused files insight."""
+        return {
+            "unused_count": len(unused_files),
+            "stale_count": stale_count,
+            "never_accessed_count": never_accessed,
+            "example_files": [f.model_dump(mode="json") for f in unused_files[:3]],
+        }
+
+    def _get_unused_files_recommendations(self) -> list[str]:
+        """Get recommendations for unused files."""
+        return [
+            "Review unused files and consider archiving or removing them",
+            "Add links from active files if these should be used",
+            "Update content if files are outdated",
+        ]
 
     def _count_unused_file_statuses(
         self, unused_files: list[UnusedFileEntry]
@@ -105,12 +122,8 @@ class UsageOrganizationInsights:
         Returns:
             Tuple of (stale_count, never_accessed_count)
         """
-        stale_count = len(
-            [f for f in unused_files if str(f.get("status", "")) == "stale"]
-        )
-        never_accessed = len(
-            [f for f in unused_files if str(f.get("status", "")) == "never_accessed"]
-        )
+        stale_count = len([f for f in unused_files if f.status == "stale"])
+        never_accessed = len([f for f in unused_files if f.status == "never_accessed"])
         return (stale_count, never_accessed)
 
     async def _analyze_co_access_patterns(self) -> InsightDict | None:
@@ -119,14 +132,14 @@ class UsageOrganizationInsights:
         Returns:
             Insight dictionary or None if no patterns found
         """
-        co_access: list[dict[str, object]] = (
+        co_access: list[CoAccessPattern] = (
             await self.pattern_analyzer.get_co_access_patterns(min_co_access_count=5)
         )
 
         if len(co_access) < 3:
             return None
 
-        return InsightDict(
+        return InsightDict.model_validate(
             {
                 "id": "co_access_patterns",
                 "category": "usage",
@@ -139,7 +152,9 @@ class UsageOrganizationInsights:
                 "severity": "low",
                 "evidence": {
                     "pattern_count": len(co_access),
-                    "examples": co_access[:5],
+                    "example_patterns": [
+                        p.model_dump(mode="json") for p in co_access[:5]
+                    ],
                 },
                 "recommendations": [
                     "Consider consolidating closely related files",
@@ -156,8 +171,8 @@ class UsageOrganizationInsights:
 
         org_analysis = await self.structure_analyzer.analyze_file_organization()
 
-        if str(org_analysis.get("status", "")) == "analyzed":
-            issues = self._extract_issues_from_analysis(org_analysis)
+        if org_analysis.status == "analyzed":
+            issues = org_analysis.issues or []
 
             if issues and any("large" in issue for issue in issues):
                 large_insight = self._create_large_files_insight(org_analysis, issues)
@@ -171,25 +186,8 @@ class UsageOrganizationInsights:
 
         return insights
 
-    def _extract_issues_from_analysis(
-        self, org_analysis: dict[str, object]
-    ) -> list[str]:
-        """Extract issues list from organization analysis.
-
-        Args:
-            org_analysis: Organization analysis dictionary
-
-        Returns:
-            List of issue strings
-        """
-        issues_raw: object = org_analysis.get("issues", [])
-        if isinstance(issues_raw, list):
-            issues_list_raw: list[object] = cast(list[object], issues_raw)
-            return [str(item) for item in issues_list_raw if isinstance(item, str)]
-        return []
-
     def _create_large_files_insight(
-        self, org_analysis: dict[str, object], issues: list[str]
+        self, org_analysis: FileOrganizationResult, issues: list[str]
     ) -> InsightDict | None:
         """Create insight for large files.
 
@@ -223,11 +221,16 @@ class UsageOrganizationInsights:
     def _build_large_files_insight_dict(
         self,
         large_count: int,
-        largest_files: list[dict[str, object]],
+        largest_files: list[FileSizeEntry],
         affected_files: list[str],
     ) -> InsightDict:
         """Build large files insight dictionary."""
-        return InsightDict(
+        largest_files_dict = self._convert_file_size_entries_to_dict(largest_files)
+        evidence = {
+            "large_file_count": large_count,
+            "largest_files": largest_files_dict,
+        }
+        return InsightDict.model_validate(
             {
                 "id": "large_files",
                 "category": "organization",
@@ -238,77 +241,80 @@ class UsageOrganizationInsights:
                 ),
                 "impact_score": 0.75,
                 "severity": "medium",
-                "evidence": {
-                    "large_file_count": large_count,
-                    "largest_files": largest_files,
-                },
+                "evidence": evidence,
                 "affected_files": affected_files,
-                "recommendations": [
-                    "Split large files by topic or section",
-                    "Extract reusable content into separate files",
-                    "Use transclusion to compose split files",
-                ],
+                "recommendations": self._get_large_files_recommendations(),
                 "estimated_token_savings": large_count * 1000,
             }
         )
 
-    def _extract_largest_files(
-        self, org_analysis: dict[str, object]
+    def _convert_file_size_entries_to_dict(
+        self, files: list[FileSizeEntry]
     ) -> list[dict[str, object]]:
+        """Convert FileSizeEntry list to dict list."""
+        return [
+            {"file": f.file, "size_bytes": f.size_bytes, "tokens": f.tokens}
+            for f in files
+        ]
+
+    def _get_large_files_recommendations(self) -> list[str]:
+        """Get recommendations for large files."""
+        return [
+            "Split large files by topic or section",
+            "Extract reusable content into separate files",
+            "Use transclusion to compose split files",
+        ]
+
+    def _extract_largest_files(
+        self, org_analysis: FileOrganizationResult
+    ) -> list[FileSizeEntry]:
         """Extract largest files from organization analysis.
 
         Args:
-            org_analysis: Organization analysis dictionary
+            org_analysis: Organization analysis result
 
         Returns:
-            List of largest file dictionaries
+            List of largest file info models
         """
-        largest_files_raw: object = org_analysis.get("largest_files", [])
-        largest_files: list[dict[str, object]] = []
-        if isinstance(largest_files_raw, list):
-            largest_files_list: list[object] = cast(list[object], largest_files_raw)
-            for item in largest_files_list[:3]:
-                if isinstance(item, dict):
-                    largest_files.append(cast(dict[str, object], item))
-        return largest_files
+        return org_analysis.largest_files[:3] if org_analysis.largest_files else []
 
-    def _extract_affected_files(
-        self, largest_files: list[dict[str, object]]
-    ) -> list[str]:
+    def _extract_affected_files(self, largest_files: list[FileSizeEntry]) -> list[str]:
         """Extract affected file names from largest files.
 
         Args:
-            largest_files: List of largest file dictionaries
+            largest_files: List of largest file info models
 
         Returns:
             List of affected file names
         """
-        affected_files_list: list[str] = []
-        for file_info in largest_files:
-            file_name = file_info.get("file", "")
-            if isinstance(file_name, str) and file_name:
-                affected_files_list.append(file_name)
-        return affected_files_list
+        return [file_info.file for file_info in largest_files if file_info.file]
 
     def _create_small_files_insight(
-        self, org_analysis: dict[str, object]
+        self, org_analysis: FileOrganizationResult
     ) -> InsightDict | None:
         """Create insight for small files.
 
         Args:
-            org_analysis: Organization analysis dictionary
+            org_analysis: Organization analysis result
 
         Returns:
             Small files insight dictionary or None
         """
-        smallest_files = self._extract_smallest_files(org_analysis)
+        smallest_files = org_analysis.smallest_files or []
         small_count = self._count_very_small_files(smallest_files)
 
         if small_count < 3:
             return None
 
         smallest_files_slice = smallest_files[:3]
-        return InsightDict(
+        smallest_files_dict = self._convert_file_size_entries_to_dict(
+            smallest_files_slice
+        )
+        evidence = {
+            "small_file_count": small_count,
+            "smallest_files": smallest_files_dict,
+        }
+        return InsightDict.model_validate(
             {
                 "id": "small_files",
                 "category": "organization",
@@ -318,57 +324,30 @@ class UsageOrganizationInsights:
                 ),
                 "impact_score": 0.5,
                 "severity": "low",
-                "evidence": {
-                    "small_file_count": small_count,
-                    "smallest_files": smallest_files_slice,
-                },
-                "recommendations": [
-                    "Consider consolidating related small files",
-                    "Merge small files with their parent topics",
-                    "Evaluate if content justifies separate files",
-                ],
+                "evidence": evidence,
+                "recommendations": self._get_small_files_recommendations(),
                 "estimated_token_savings": small_count * 50,
             }
         )
 
-    def _extract_smallest_files(
-        self, org_analysis: dict[str, object]
-    ) -> list[dict[str, object]]:
-        """Extract smallest files from organization analysis.
+    def _get_small_files_recommendations(self) -> list[str]:
+        """Get recommendations for small files."""
+        return [
+            "Consider consolidating related small files",
+            "Merge small files with their parent topics",
+            "Evaluate if content justifies separate files",
+        ]
 
-        Args:
-            org_analysis: Organization analysis dictionary
-
-        Returns:
-            List of smallest file dictionaries
-        """
-        smallest_files_raw: object = org_analysis.get("smallest_files", [])
-        smallest_files: list[dict[str, object]] = []
-        if isinstance(smallest_files_raw, list):
-            smallest_files_list: list[object] = cast(list[object], smallest_files_raw)
-            for item in smallest_files_list:
-                if isinstance(item, dict):
-                    smallest_files.append(cast(dict[str, object], item))
-        return smallest_files
-
-    def _count_very_small_files(self, smallest_files: list[dict[str, object]]) -> int:
+    def _count_very_small_files(self, smallest_files: list[FileSizeEntry]) -> int:
         """Count files smaller than 500 bytes.
 
         Args:
-            smallest_files: List of smallest file dictionaries
+            smallest_files: List of smallest file info models
 
         Returns:
             Count of very small files
         """
-        return sum(
-            1
-            for f in smallest_files
-            if (
-                (size_bytes := f.get("size_bytes")) is not None
-                and isinstance(size_bytes, (int, float))
-                and int(size_bytes) < 500
-            )
-        )
+        return sum(1 for f in smallest_files if f.size_bytes < 500)
 
     async def generate_redundancy_insights(self) -> list[InsightDict]:
         """Generate insights about redundant content."""
@@ -383,20 +362,16 @@ class UsageOrganizationInsights:
         return insights
 
     def _extract_similar_filename_patterns(
-        self, anti_patterns: list[dict[str, object]]
-    ) -> list[dict[str, object]]:
+        self, anti_patterns: list[AntiPatternInfo]
+    ) -> list[AntiPatternInfo]:
         """Extract similar filename patterns from anti-patterns."""
-        similar_names: list[dict[str, object]] = []
-        for ap in anti_patterns:
-            if str(ap.get("type", "")) == "similar_filenames":
-                similar_names.append(ap)
-        return similar_names
+        return [ap for ap in anti_patterns if ap.type == "similar_filenames"]
 
     def _create_similar_filenames_insight(
-        self, similar_names: list[dict[str, object]]
+        self, similar_names: list[AntiPatternInfo]
     ) -> InsightDict:
         """Create insight for similar filenames."""
-        return InsightDict(
+        return InsightDict.model_validate(
             {
                 "id": "similar_filenames",
                 "category": "redundancy",
@@ -406,7 +381,9 @@ class UsageOrganizationInsights:
                 "severity": "medium",
                 "evidence": {
                     "similar_pair_count": len(similar_names),
-                    "examples": similar_names[:3],
+                    "example_patterns": [
+                        ap.model_dump(mode="json") for ap in similar_names[:3]
+                    ],
                 },
                 "recommendations": [
                     "Review files with similar names for duplicate content",

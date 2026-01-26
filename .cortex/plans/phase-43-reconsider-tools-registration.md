@@ -445,7 +445,7 @@ Need to verify FastMCP 2.0 Resource decorator syntax. Based on FastMCP 2.0 patte
 
 ## Notes
 
-### User-Provided Context
+### User-Provided Context (FastMCP Resources vs Tools)
 
 The user has provided the following context that should be attached to this plan:
 

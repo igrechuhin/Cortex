@@ -11,9 +11,10 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.async_file_utils import open_async_text_file
+from cortex.core.models import ModelDict
 
 # Default structure definition
-DEFAULT_STRUCTURE: dict[str, object] = {
+DEFAULT_STRUCTURE: ModelDict = {
     "version": "2.0",
     "layout": {
         "root": ".cortex",
@@ -79,9 +80,9 @@ class StructureConfig:
         self.structure_config_path: Path = (
             project_root / ".cortex" / "config" / "structure.json"
         )
-        self.structure_config: dict[str, object] = self._load_structure_config()
+        self.structure_config: ModelDict = self._load_structure_config()
 
-    def _load_structure_config(self) -> dict[str, object]:
+    def _load_structure_config(self) -> ModelDict:
         """
         Load structure configuration or return default.
 
@@ -92,7 +93,10 @@ class StructureConfig:
         if self.structure_config_path.exists():
             try:
                 with open(self.structure_config_path, encoding="utf-8") as f:
-                    return json.load(f)
+                    raw = json.load(f)
+                    if isinstance(raw, dict):
+                        return cast(ModelDict, raw)
+                    return DEFAULT_STRUCTURE.copy()
             except Exception as e:
                 from cortex.core.logging_config import logger
 
@@ -118,7 +122,7 @@ class StructureConfig:
         layout_val = self.structure_config.get("layout")
         if not isinstance(layout_val, dict):
             raise ValueError("Invalid structure config: layout must be a dict")
-        layout = cast(dict[str, object], layout_val)
+        layout = cast(ModelDict, layout_val)
         root_val = layout.get("root")
         if not isinstance(root_val, str):
             raise ValueError("Invalid structure config: layout.root must be a string")

@@ -7,10 +7,10 @@ Handle file restoration and rollback execution operations.
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 from pathlib import Path
-from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import VersionMetadata
 from cortex.core.version_manager import VersionManager
 from cortex.refactoring.version_snapshots import (
     find_snapshot_version,
@@ -189,7 +189,7 @@ async def restore_single_file(
 
 async def _rollback_file_to_version(
     file_path: str,
-    version_history: list[dict[str, object]],
+    version_history: list[VersionMetadata],
     version: int,
     version_manager: VersionManager,
 ) -> bool:
@@ -197,7 +197,7 @@ async def _rollback_file_to_version(
 
     Args:
         file_path: Path to file
-        version_history: Version history list (dicts)
+        version_history: Version history list (Pydantic models)
         version: Version number to rollback to
         version_manager: Version manager
 
@@ -264,9 +264,9 @@ async def _create_backup_snapshot(
 async def _get_version_count(metadata_index: MetadataIndex, file_path: str) -> int:
     """Get current version count from metadata."""
     file_meta = await metadata_index.get_file_metadata(file_path)
-    if not file_meta:
+    if not isinstance(file_meta, dict):
         return 0
-    version_history_raw: object = file_meta.get("version_history", [])
-    if isinstance(version_history_raw, list):
-        return len(cast(list[object], version_history_raw))
-    return 0
+    version_history_raw = file_meta.get("version_history", [])
+    if not isinstance(version_history_raw, list):
+        return 0
+    return len(version_history_raw)

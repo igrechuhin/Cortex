@@ -8,6 +8,8 @@ and determine if reorganization is needed.
 from pathlib import Path
 from typing import cast
 
+from cortex.core.models import JsonValue, ModelDict
+
 
 class ReorganizationAnalyzer:
     """
@@ -38,8 +40,8 @@ class ReorganizationAnalyzer:
         self.enable_categories = enable_categories
 
     async def analyze_current_structure(
-        self, structure_data: dict[str, object], dependency_graph: dict[str, object]
-    ) -> dict[str, object]:
+        self, structure_data: ModelDict, dependency_graph: ModelDict
+    ) -> ModelDict:
         """
         Analyze current Memory Bank structure.
 
@@ -54,7 +56,12 @@ class ReorganizationAnalyzer:
         structure = self._build_base_structure(files)
         self._apply_structure_data(structure, structure_data)
         self._apply_dependency_data(structure, dependency_graph)
-        structure["categories"] = self.infer_categories(files)
+        inferred = self.infer_categories(files)
+        categories_json: dict[str, JsonValue] = {
+            category: cast(JsonValue, cast(list[JsonValue], file_list))
+            for category, file_list in inferred.items()
+        }
+        structure["categories"] = categories_json
         return structure
 
     async def get_all_markdown_files(self) -> list[str]:
@@ -98,7 +105,7 @@ class ReorganizationAnalyzer:
         return {k: v for k, v in categories.items() if v}
 
     def needs_reorganization(
-        self, current_structure: dict[str, object], optimize_for: str
+        self, current_structure: ModelDict, optimize_for: str
     ) -> tuple[bool, list[str]]:
         """
         Determine if reorganization is needed.
@@ -121,7 +128,7 @@ class ReorganizationAnalyzer:
 
         return len(reasons) > 0, reasons
 
-    def _build_base_structure(self, files: list[str]) -> dict[str, object]:
+    def _build_base_structure(self, files: list[str]) -> ModelDict:
         """
         Build base structure dictionary.
 
@@ -131,19 +138,20 @@ class ReorganizationAnalyzer:
         Returns:
             Base structure dictionary
         """
+        files_json = cast(list[JsonValue], files)
         return {
             "total_files": len(files),
-            "files": files,
+            "files": files_json,
             "organization": "flat",
-            "categories": {},
+            "categories": cast(dict[str, JsonValue], {}),
             "dependency_depth": 0,
-            "orphaned_files": [],
-            "hub_files": [],
+            "orphaned_files": cast(list[JsonValue], []),
+            "hub_files": cast(list[JsonValue], []),
             "complexity_score": 0,
         }
 
     def _apply_structure_data(
-        self, structure: dict[str, object], structure_data: dict[str, object] | None
+        self, structure: ModelDict, structure_data: ModelDict | None
     ) -> None:
         """
         Apply structure data to structure dictionary.
@@ -159,7 +167,7 @@ class ReorganizationAnalyzer:
         self._update_structure_with_data(structure, extracted_data)
 
     def _apply_dependency_data(
-        self, structure: dict[str, object], dependency_graph: dict[str, object] | None
+        self, structure: ModelDict, dependency_graph: ModelDict | None
     ) -> None:
         """
         Apply dependency data to structure dictionary.
@@ -173,19 +181,19 @@ class ReorganizationAnalyzer:
 
         dependencies_raw = dependency_graph.get("dependencies", {})
         dependencies = (
-            cast(dict[str, object], dependencies_raw)
+            cast(ModelDict, dependencies_raw)
             if isinstance(dependencies_raw, dict)
             else {}
         )
 
         hub_files: list[str] = []
         for file, deps in dependencies.items():
-            deps_dict = cast(dict[str, object], deps) if isinstance(deps, dict) else {}
+            deps_dict = cast(ModelDict, deps) if isinstance(deps, dict) else {}
             dependents = cast(list[str], deps_dict.get("dependents", []))
             if len(dependents) > 3:
                 hub_files.append(str(file))
 
-        structure["hub_files"] = hub_files
+        structure["hub_files"] = cast(list[JsonValue], hub_files)
 
     def _categorize_file(self, file_path: str) -> str:
         """
@@ -216,7 +224,7 @@ class ReorganizationAnalyzer:
         return "uncategorized"
 
     def _check_dependency_depth(
-        self, current_structure: dict[str, object], reasons: list[str]
+        self, current_structure: ModelDict, reasons: list[str]
     ) -> None:
         """
         Check if dependency depth exceeds maximum.
@@ -231,7 +239,7 @@ class ReorganizationAnalyzer:
             reasons.append(f"Dependency depth ({depth}) exceeds recommended maximum")
 
     def _check_category_based(
-        self, current_structure: dict[str, object], reasons: list[str]
+        self, current_structure: ModelDict, reasons: list[str]
     ) -> None:
         """
         Check category-based organization issues.
@@ -252,9 +260,7 @@ class ReorganizationAnalyzer:
 
         categories_raw = current_structure.get("categories", {})
         categories = (
-            cast(dict[str, object], categories_raw)
-            if isinstance(categories_raw, dict)
-            else {}
+            cast(ModelDict, categories_raw) if isinstance(categories_raw, dict) else {}
         )
         uncategorized_raw = categories.get("uncategorized", [])
         uncategorized: list[str] = (
@@ -266,7 +272,7 @@ class ReorganizationAnalyzer:
             reasons.append(f"{len(uncategorized)} files lack clear categorization")
 
     def _check_complexity(
-        self, current_structure: dict[str, object], reasons: list[str]
+        self, current_structure: ModelDict, reasons: list[str]
     ) -> None:
         """
         Check complexity-related issues.
@@ -289,9 +295,7 @@ class ReorganizationAnalyzer:
         if len(orphaned) > 2:
             reasons.append(f"{len(orphaned)} orphaned files need integration")
 
-    def _extract_structure_data_fields(
-        self, structure_data: dict[str, object]
-    ) -> dict[str, object]:
+    def _extract_structure_data_fields(self, structure_data: ModelDict) -> ModelDict:
         """
         Extract fields from structure data.
 
@@ -301,34 +305,34 @@ class ReorganizationAnalyzer:
         Returns:
             Extracted fields dictionary
         """
-        organization_raw = structure_data.get("organization", {})
-        organization = (
-            cast(dict[str, object], organization_raw)
-            if isinstance(organization_raw, dict)
-            else {}
+        organization_raw = structure_data.get("organization", "flat")
+        org_type = (
+            str(organization_raw) if isinstance(organization_raw, str) else "flat"
         )
-        complexity_metrics_raw = structure_data.get("complexity_metrics", {})
-        complexity_metrics = (
-            cast(dict[str, object], complexity_metrics_raw)
-            if isinstance(complexity_metrics_raw, dict)
-            else {}
+
+        dep_depth_raw = structure_data.get("dependency_depth", 0)
+        dep_depth = int(dep_depth_raw) if isinstance(dep_depth_raw, (int, float)) else 0
+
+        orphaned_raw = structure_data.get("orphaned_files", [])
+        orphaned = (
+            cast(list[str], orphaned_raw) if isinstance(orphaned_raw, list) else []
         )
-        anti_patterns_raw = structure_data.get("anti_patterns", {})
-        anti_patterns = (
-            cast(dict[str, object], anti_patterns_raw)
-            if isinstance(anti_patterns_raw, dict)
-            else {}
+        orphaned_json = cast(list[JsonValue], orphaned)
+
+        complexity_raw = structure_data.get("complexity_score", 0.0)
+        complexity_score = (
+            float(complexity_raw) if isinstance(complexity_raw, (int, float)) else 0.0
         )
 
         return {
-            "org_type": organization.get("type", "flat"),
-            "dep_depth": complexity_metrics.get("max_dependency_depth", 0),
-            "orphaned": anti_patterns.get("orphaned_files", []),
-            "complexity_score": complexity_metrics.get("overall_complexity", 0),
+            "org_type": org_type,
+            "dep_depth": dep_depth,
+            "orphaned": orphaned_json,
+            "complexity_score": complexity_score,
         }
 
     def _update_structure_with_data(
-        self, structure: dict[str, object], extracted_data: dict[str, object]
+        self, structure: ModelDict, extracted_data: ModelDict
     ) -> None:
         """
         Update structure dictionary with extracted data.
@@ -346,9 +350,16 @@ class ReorganizationAnalyzer:
         structure["dependency_depth"] = (
             int(dep_depth) if isinstance(dep_depth, (int, float)) else 0
         )
-        structure["orphaned_files"] = (
-            cast(list[str], orphaned) if isinstance(orphaned, list) else []
+        orphaned_files: list[str] = (
+            [
+                str(item)
+                for item in cast(list[JsonValue], orphaned)
+                if isinstance(item, str)
+            ]
+            if isinstance(orphaned, list)
+            else []
         )
+        structure["orphaned_files"] = cast(list[JsonValue], orphaned_files)
         structure["complexity_score"] = (
             float(complexity_score)
             if isinstance(complexity_score, (int, float))

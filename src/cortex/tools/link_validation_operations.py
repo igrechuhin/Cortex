@@ -6,7 +6,6 @@ for validating markdown links and transclusion directives.
 
 import json
 from pathlib import Path
-from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -153,7 +152,7 @@ async def validate_links(
         root = get_project_root(project_root)
         mgrs = await get_managers(root)
         link_validator = await get_manager(mgrs, "link_validator", LinkValidator)
-        fs_manager = cast(FileSystemManager, mgrs["fs"])
+        fs_manager = await get_manager(mgrs, "fs", FileSystemManager)
         memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
 
         if file_name:

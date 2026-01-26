@@ -12,7 +12,6 @@ Tests all Phase 4 modules:
 import tempfile
 from collections.abc import Generator
 from pathlib import Path
-from typing import cast
 
 import pytest
 
@@ -23,6 +22,7 @@ from cortex.core.metadata_index import MetadataIndex
 # Import dependencies
 from cortex.core.token_counter import TokenCounter
 from cortex.optimization.context_optimizer import ContextOptimizer
+from cortex.optimization.models import FileMetadataForScoring
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.progressive_loader import ProgressiveLoader
 
@@ -38,7 +38,7 @@ class TestRelevanceScorer:
     """Test relevance scoring functionality."""
 
     @pytest.fixture
-    def scorer(self) -> Generator[RelevanceScorer, None, None]:
+    def scorer(self) -> Generator[RelevanceScorer]:
         """Create a relevance scorer."""
         dep_graph = DependencyGraph()
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -92,16 +92,16 @@ class TestRelevanceScorer:
             "ui.md": "User interface components and styling.",
         }
 
-        files_metadata = {
-            "auth.md": {"last_modified": "2025-12-19T10:00:00Z"},
-            "database.md": {"last_modified": "2025-11-01T10:00:00Z"},
-            "ui.md": {"last_modified": "2025-10-01T10:00:00Z"},
+        files_metadata: dict[str, FileMetadataForScoring] = {
+            "auth.md": FileMetadataForScoring(last_modified="2025-12-19T10:00:00Z"),
+            "database.md": FileMetadataForScoring(last_modified="2025-11-01T10:00:00Z"),
+            "ui.md": FileMetadataForScoring(last_modified="2025-10-01T10:00:00Z"),
         }
 
         scores = await scorer.score_files(
             task_description,
             files_content,
-            cast(dict[str, dict[str, object]], files_metadata),
+            files_metadata,
         )
 
         assert "auth.md" in scores
@@ -150,7 +150,7 @@ class TestContextOptimizer:
     """Test context optimization functionality."""
 
     @pytest.fixture
-    def optimizer(self) -> Generator[ContextOptimizer, None, None]:
+    def optimizer(self) -> Generator[ContextOptimizer]:
         """Create a context optimizer."""
         token_counter = TokenCounter()
         dep_graph = DependencyGraph()
@@ -209,7 +209,7 @@ class TestProgressiveLoader:
         """Create a progressive loader."""
         from collections.abc import AsyncGenerator
 
-        async def _loader() -> AsyncGenerator[ProgressiveLoader, None]:
+        async def _loader() -> AsyncGenerator[ProgressiveLoader]:
             with tempfile.TemporaryDirectory() as tmpdir:
                 tmppath = Path(tmpdir)
 
@@ -262,7 +262,7 @@ class TestSummarizationEngine:
         """Create a summarization engine."""
         from collections.abc import AsyncGenerator
 
-        async def _engine() -> AsyncGenerator[SummarizationEngine, None]:
+        async def _engine() -> AsyncGenerator[SummarizationEngine]:
             with tempfile.TemporaryDirectory() as tmpdir:
                 tmp_path = Path(tmpdir)
                 # Create .cortex directory
@@ -365,7 +365,7 @@ class TestOptimizationConfig:
     """Test optimization configuration."""
 
     @pytest.fixture
-    def config(self) -> Generator[OptimizationConfig, None, None]:
+    def config(self) -> Generator[OptimizationConfig]:
         """Create optimization config."""
         with tempfile.TemporaryDirectory() as tmpdir:
             config = OptimizationConfig(Path(tmpdir))

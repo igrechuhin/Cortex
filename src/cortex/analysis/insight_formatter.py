@@ -10,17 +10,17 @@ Performance optimizations (Phase 10.3.1 Day 5):
 - Pre-allocated list capacity for better memory performance
 """
 
-from typing import cast
-
 from cortex.core.exceptions import MemoryBankError
 
-from .insight_types import InsightDict
+from .insight_types import InsightDict, InsightsResultDict
 
 
 class InsightFormatter:
     """Formatter for exporting insights in various formats."""
 
-    def export_insights(self, insights: dict[str, object], format: str = "json") -> str:
+    def export_insights(
+        self, insights: InsightsResultDict, format: str = "json"
+    ) -> str:
         """
         Export insights in various formats.
 
@@ -43,7 +43,7 @@ class InsightFormatter:
         else:
             raise MemoryBankError(f"Unsupported export format: {format}")
 
-    def _export_insights_json(self, insights: dict[str, object]) -> str:
+    def _export_insights_json(self, insights: InsightsResultDict) -> str:
         """Export insights as JSON.
 
         Args:
@@ -54,9 +54,9 @@ class InsightFormatter:
         """
         import json
 
-        return json.dumps(insights, indent=2)
+        return json.dumps(insights.model_dump(mode="json"), indent=2)
 
-    def _export_insights_markdown(self, insights: dict[str, object]) -> str:
+    def _export_insights_markdown(self, insights: InsightsResultDict) -> str:
         """Export insights as Markdown.
 
         Args:
@@ -66,11 +66,10 @@ class InsightFormatter:
             Markdown-formatted string
         """
         lines = self._build_markdown_header(insights)
-        insights_list = self._extract_insights_list(insights)
-        lines.extend(self._format_insights_markdown(insights_list))
+        lines.extend(self._format_insights_markdown(insights.insights))
         return "\n".join(lines)
 
-    def _build_markdown_header(self, insights: dict[str, object]) -> list[str]:
+    def _build_markdown_header(self, insights: InsightsResultDict) -> list[str]:
         """Build Markdown header section.
 
         Args:
@@ -79,37 +78,18 @@ class InsightFormatter:
         Returns:
             List of header lines
         """
-        summary_dict = cast(dict[str, object], insights.get("summary", {}))
         return [
             "# Memory Bank Insights Report",
-            f"\n**Generated:** {str(insights.get('generated_at', ''))}",
-            f"\n**Total Insights:** {insights.get('total_insights', 0)}",
-            f"**Estimated Token Savings:** {insights.get('estimated_total_token_savings', 0)}",
+            f"\n**Generated:** {insights.generated_at}",
+            f"\n**Total Insights:** {insights.total_insights}",
+            f"**Estimated Token Savings:** {insights.estimated_total_token_savings}",
             "\n## Summary",
-            f"\n{str(summary_dict.get('message', ''))}",
-            f"\n- High Priority: {insights.get('high_impact_count', 0)}",
-            f"- Medium Priority: {insights.get('medium_impact_count', 0)}",
-            f"- Low Priority: {insights.get('low_impact_count', 0)}",
+            f"\n{insights.summary.message}",
+            f"\n- High Priority: {insights.high_impact_count}",
+            f"- Medium Priority: {insights.medium_impact_count}",
+            f"- Low Priority: {insights.low_impact_count}",
             "\n## Insights\n",
         ]
-
-    def _extract_insights_list(self, insights: dict[str, object]) -> list[InsightDict]:
-        """Extract insights list from insights dictionary.
-
-        Args:
-            insights: Insights dictionary
-
-        Returns:
-            List of insight dictionaries
-        """
-        insights_list_obj: object = insights.get("insights", [])
-        insights_list: list[InsightDict] = []
-        if isinstance(insights_list_obj, list):
-            insights_list_raw: list[object] = cast(list[object], insights_list_obj)
-            for item in insights_list_raw:
-                if isinstance(item, dict):
-                    insights_list.append(cast(InsightDict, item))
-        return insights_list
 
     def _format_insights_markdown(self, insights_list: list[InsightDict]) -> list[str]:
         """Format insights list as Markdown.
@@ -131,25 +111,19 @@ class InsightFormatter:
             lines = ["" for _ in range(estimated_capacity)]
             lines.clear()  # Clear but keep capacity
 
-        for i, insight_dict in enumerate(insights_list, 1):
-            lines.append(f"\n### {i}. {str(insight_dict.get('title', ''))}")
-            impact_score = insight_dict.get("impact_score", 0.0)
-            impact_float = float(impact_score)
+        for i, insight in enumerate(insights_list, 1):
+            lines.append(f"\n### {i}. {insight.title}")
+            impact_float = float(insight.impact_score)
             lines.append(
-                f"\n**Impact:** {impact_float:.2f} | **Severity:** {str(insight_dict.get('severity', ''))}"
+                f"\n**Impact:** {impact_float:.2f} | **Severity:** {insight.severity}"
             )
-            lines.append(f"\n{str(insight_dict.get('description', ''))}")
+            lines.append(f"\n{insight.description}")
             lines.append("\n**Recommendations:**")
-            recommendations_raw: object = insight_dict.get("recommendations", [])
-            if isinstance(recommendations_raw, list):
-                recommendations_list: list[object] = cast(
-                    list[object], recommendations_raw
-                )
-                # Batch append for better performance
-                lines.extend(f"- {str(rec_item)}" for rec_item in recommendations_list)
+            # Batch append for better performance
+            lines.extend(f"- {rec}" for rec in insight.recommendations)
         return lines
 
-    def _export_insights_text(self, insights: dict[str, object]) -> str:
+    def _export_insights_text(self, insights: InsightsResultDict) -> str:
         """Export insights as plain text.
 
         Args:
@@ -159,11 +133,10 @@ class InsightFormatter:
             Plain text-formatted string
         """
         lines = self._build_text_header(insights)
-        insights_list = self._extract_insights_list(insights)
-        lines.extend(self._format_insights_text(insights_list))
+        lines.extend(self._format_insights_text(insights.insights))
         return "\n".join(lines)
 
-    def _build_text_header(self, insights: dict[str, object]) -> list[str]:
+    def _build_text_header(self, insights: InsightsResultDict) -> list[str]:
         """Build text header section.
 
         Args:
@@ -172,16 +145,15 @@ class InsightFormatter:
         Returns:
             List of header lines
         """
-        summary_dict = cast(dict[str, object], insights.get("summary", {}))
         return [
             "MEMORY BANK INSIGHTS REPORT",
             "=" * 50,
-            f"Generated: {str(insights.get('generated_at', ''))}",
-            f"Total Insights: {insights.get('total_insights', 0)}",
-            f"Estimated Token Savings: {insights.get('estimated_total_token_savings', 0)}",
+            f"Generated: {insights.generated_at}",
+            f"Total Insights: {insights.total_insights}",
+            f"Estimated Token Savings: {insights.estimated_total_token_savings}",
             "",
             "SUMMARY:",
-            str(summary_dict.get("message", "")),
+            insights.summary.message,
             "",
             "INSIGHTS:",
             "",
@@ -207,13 +179,12 @@ class InsightFormatter:
             lines = ["" for _ in range(estimated_capacity)]
             lines.clear()  # Clear but keep capacity
 
-        for i, insight_dict in enumerate(insights_list, 1):
-            lines.append(f"{i}. {str(insight_dict.get('title', ''))}")
-            impact_score = insight_dict.get("impact_score", 0.0)
-            impact_float = float(impact_score)
+        for i, insight in enumerate(insights_list, 1):
+            lines.append(f"{i}. {insight.title}")
+            impact_float = float(insight.impact_score)
             lines.append(
-                f"   Impact: {impact_float:.2f} | Severity: {str(insight_dict.get('severity', ''))}"
+                f"   Impact: {impact_float:.2f} | Severity: {insight.severity}"
             )
-            lines.append(f"   {str(insight_dict.get('description', ''))}")
+            lines.append(f"   {insight.description}")
             lines.append("")
         return lines

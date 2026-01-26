@@ -2,11 +2,13 @@
 
 from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import Literal, TypeAlias, TypedDict, cast
+from typing import Literal, cast
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
-from cortex.managers.initialization import get_managers, get_project_root
+from cortex.managers import initialization
 from cortex.managers.manager_utils import get_manager
 from cortex.tools.validation_duplication import handle_duplications_validation
 from cortex.tools.validation_helpers import create_invalid_check_type_error
@@ -20,7 +22,7 @@ from cortex.validation.quality_metrics import QualityMetrics
 from cortex.validation.schema_validator import SchemaValidator
 from cortex.validation.validation_config import ValidationConfig
 
-ValidationManagers: TypeAlias = dict[
+type ValidationManagers = dict[
     str,
     FileSystemManager
     | MetadataIndex
@@ -30,7 +32,7 @@ ValidationManagers: TypeAlias = dict[
     | ValidationConfig,
 ]
 
-CheckType: TypeAlias = Literal[
+type CheckType = Literal[
     "schema",
     "duplications",
     "quality",
@@ -40,13 +42,15 @@ CheckType: TypeAlias = Literal[
 ]
 
 
-class InfrastructureOptions(TypedDict):
+class InfrastructureOptions(BaseModel):
     """Options for infrastructure validation."""
 
-    commit_ci: bool
-    code_quality: bool
-    documentation: bool
-    config: bool
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    commit_ci: bool = Field(description="Check commit prompt vs CI alignment")
+    code_quality: bool = Field(description="Check code quality consistency")
+    documentation: bool = Field(description="Check documentation consistency")
+    config: bool = Field(description="Check configuration consistency")
 
 
 async def handle_schema_validation_wrapper(
@@ -156,10 +160,10 @@ def _create_validation_handlers(
         "quality": lambda: handle_quality_validation_wrapper(managers, root, file_name),
         "infrastructure": lambda: handle_infrastructure_validation_wrapper(
             root,
-            infra_opts["commit_ci"],
-            infra_opts["code_quality"],
-            infra_opts["documentation"],
-            infra_opts["config"],
+            infra_opts.commit_ci,
+            infra_opts.code_quality,
+            infra_opts.documentation,
+            infra_opts.config,
         ),
         "timestamps": lambda: handle_timestamps_validation_wrapper(
             managers, root, file_name
@@ -172,7 +176,7 @@ def _create_validation_handlers(
 
 async def _dispatch_validation(
     check_type: CheckType,
-    validation_managers: dict[str, object],
+    validation_managers: ValidationManagers,
     root: Path,
     file_name: str | None,
     similarity_threshold: float | None,
@@ -184,12 +188,12 @@ async def _dispatch_validation(
 ) -> str:
     """Dispatch validation to appropriate handler."""
     typed_managers = _get_typed_validation_managers(validation_managers)
-    infra_opts: InfrastructureOptions = {
-        "commit_ci": check_commit_ci_alignment,
-        "code_quality": check_code_quality_consistency,
-        "documentation": check_documentation_consistency,
-        "config": check_config_consistency,
-    }
+    infra_opts = InfrastructureOptions(
+        commit_ci=check_commit_ci_alignment,
+        code_quality=check_code_quality_consistency,
+        documentation=check_documentation_consistency,
+        config=check_config_consistency,
+    )
     handlers = _create_validation_handlers(
         typed_managers, root, file_name, similarity_threshold, suggest_fixes, infra_opts
     )
@@ -214,28 +218,17 @@ async def _execute_validation_handler(
 
 
 def _get_typed_validation_managers(
-    validation_managers: dict[str, object],
+    validation_managers: ValidationManagers,
 ) -> ValidationManagers:
-    """Get typed validation managers from dict[str, object].
+    """Get typed validation managers from ValidationManagers.
 
     Args:
-        validation_managers: Dictionary of validation managers as object
+        validation_managers: Dictionary of validation managers
 
     Returns:
         Typed dictionary of validation managers
     """
-    return cast(
-        dict[
-            str,
-            FileSystemManager
-            | MetadataIndex
-            | SchemaValidator
-            | DuplicationDetector
-            | QualityMetrics
-            | ValidationConfig,
-        ],
-        validation_managers,
-    )
+    return validation_managers
 
 
 async def setup_validation_managers(
@@ -257,9 +250,9 @@ async def setup_validation_managers(
     Returns:
         Dictionary with all validation managers
     """
-    mgrs = await get_managers(root)
-    fs_manager = cast(FileSystemManager, mgrs["fs"])
-    metadata_index = cast(MetadataIndex, mgrs["index"])
+    mgrs = await initialization.get_managers(root)
+    fs_manager = await get_manager(mgrs, "fs", FileSystemManager)
+    metadata_index = await get_manager(mgrs, "index", MetadataIndex)
 
     schema_validator = await get_manager(mgrs, "schema_validator", SchemaValidator)
     duplication_detector = await get_manager(
@@ -280,7 +273,7 @@ async def setup_validation_managers(
 
 async def prepare_validation_managers(
     project_root: str | None,
-) -> tuple[Path, dict[str, object]]:
+) -> tuple[Path, ValidationManagers]:
     """Prepare validation managers and root path.
 
     Args:
@@ -289,14 +282,14 @@ async def prepare_validation_managers(
     Returns:
         Tuple of (root path, validation managers)
     """
-    root = get_project_root(project_root)
+    root = initialization.get_project_root(project_root)
     validation_managers = await setup_validation_managers(root)
-    return root, cast(dict[str, object], validation_managers)
+    return root, validation_managers
 
 
 async def call_dispatch_validation(
     check_type: CheckType,
-    managers: dict[str, object],
+    managers: ValidationManagers,
     root: Path,
     file_name: str | None,
     similarity_threshold: float | None,

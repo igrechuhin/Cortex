@@ -7,7 +7,10 @@ Handle version snapshot operations for rollback functionality.
 from pathlib import Path
 from typing import cast
 
+from pydantic import BaseModel
+
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import JsonValue, VersionMetadata
 
 
 async def find_snapshot_for_execution(execution_id: str) -> str | None:
@@ -77,23 +80,12 @@ async def _file_has_snapshot(
         True if file has matching snapshot
     """
     file_meta = await metadata_index.get_file_metadata(rel_path)
-
-    if file_meta is None:
+    version_history = _extract_version_history(file_meta)
+    if version_history is None:
         return False
 
-    # file_meta is dict[str, object] - use dict-style access
-    version_history_raw = file_meta.get("version_history", [])
-    if not isinstance(version_history_raw, list):
-        return False
-
-    # Cast the list to proper type for iteration
-    version_history: list[object] = cast(list[object], version_history_raw)
-    for item in version_history:
-        if not isinstance(item, dict):
-            continue
-        version_dict = cast(dict[str, object], item)
-        desc_raw = version_dict.get("change_description", "") or ""
-        change_description = str(desc_raw)
+    for version_entry in version_history:
+        change_description = version_entry.change_description or ""
         if change_description.startswith(f"Pre-refactoring snapshot: {snapshot_id}"):
             return True
 
@@ -102,7 +94,7 @@ async def _file_has_snapshot(
 
 async def get_version_history(
     file_path: str, metadata_index: MetadataIndex
-) -> list[dict[str, object]] | None:
+) -> list[VersionMetadata] | None:
     """Get version history for a file.
 
     Args:
@@ -110,39 +102,69 @@ async def get_version_history(
         metadata_index: Metadata index instance
 
     Returns:
-        Version history list (as list of dicts) or None if not found
+        Version history list (as Pydantic models) or None if not found
     """
     file_meta = await metadata_index.get_file_metadata(file_path)
     if file_meta is None:
         return None
 
-    # file_meta is dict[str, object] - use dict-style access
-    version_history_raw = file_meta.get("version_history", [])
-    if not isinstance(version_history_raw, list):
-        return None
-
-    # Cast to list of dicts (each version entry is a dict)
-    version_list: list[object] = cast(list[object], version_history_raw)
-    return [cast(dict[str, object], v) for v in version_list if isinstance(v, dict)]
+    return _extract_version_history(file_meta)
 
 
 def find_snapshot_version(
-    version_history: list[dict[str, object]], snapshot_id: str
+    version_history: list[VersionMetadata], snapshot_id: str
 ) -> int | None:
     """Find version number for a snapshot.
 
     Args:
-        version_history: Version history list (list of dicts)
+        version_history: Version history list (Pydantic models)
         snapshot_id: Snapshot to find
 
     Returns:
         Version number or None if not found
     """
-    for version_dict in version_history:
-        change_description = str(version_dict.get("change_description", "") or "")
-        if change_description.startswith(f"Pre-refactoring snapshot: {snapshot_id}"):
-            version_num = version_dict.get("version")
-            if isinstance(version_num, int):
-                return version_num
+
+    for version_entry in version_history:
+        change_description = version_entry.change_description or ""
+        if not change_description.startswith(
+            f"Pre-refactoring snapshot: {snapshot_id}"
+        ):
+            continue
+
+        return version_entry.version
 
     return None
+
+
+def _extract_version_history(file_meta: JsonValue) -> list[VersionMetadata] | None:
+    """Extract version_history from either a dict or a metadata model."""
+    if file_meta is None:
+        return None
+
+    if isinstance(file_meta, dict):
+        history_raw = file_meta.get("version_history")
+        if not isinstance(history_raw, list):
+            return None
+        history: list[VersionMetadata] = []
+        for item in cast(list[JsonValue], history_raw):
+            if isinstance(item, VersionMetadata):
+                history.append(item)
+            elif isinstance(item, BaseModel):
+                history.append(
+                    VersionMetadata.model_validate(item.model_dump(mode="json"))
+                )
+            elif isinstance(item, dict):
+                history.append(VersionMetadata.model_validate(item))
+        return history
+
+    version_history_attr = getattr(file_meta, "version_history", None)
+    if not isinstance(version_history_attr, list):
+        return None
+
+    history: list[VersionMetadata] = []
+    for item in cast(list[JsonValue], version_history_attr):
+        if isinstance(item, BaseModel):
+            history.append(VersionMetadata.model_validate(item.model_dump(mode="json")))
+        elif isinstance(item, dict):
+            history.append(VersionMetadata.model_validate(item))
+    return history

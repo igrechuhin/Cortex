@@ -8,9 +8,11 @@ import json
 from typing import cast
 
 from cortex.core.dependency_graph import DependencyGraph
+from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.linking.link_parser import LinkParser
 from cortex.managers.initialization import get_managers, get_project_root
+from cortex.managers.manager_utils import get_manager
 from cortex.server import mcp
 
 
@@ -204,8 +206,8 @@ async def _build_link_graph_data(
     mgrs = await get_managers(root)
 
     memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
-    link_parser = cast(LinkParser, mgrs["link_parser"])
-    link_graph = cast(DependencyGraph, mgrs["graph"])
+    link_parser = await get_manager(mgrs, "link_parser", LinkParser)
+    link_graph = await get_manager(mgrs, "graph", DependencyGraph)
 
     await link_graph.build_from_links(memory_bank_dir, link_parser)
     cycles = link_graph.detect_cycles()
@@ -324,9 +326,11 @@ def _generate_json_response(
         JSON string with graph data
     """
     if include_transclusions:
-        graph_data = link_graph.to_dict()
+        graph_data = cast(ModelDict, link_graph.to_dict().model_dump(mode="json"))
     else:
-        graph_data = link_graph.get_reference_graph()
+        graph_data = cast(
+            ModelDict, link_graph.get_reference_graph().model_dump(mode="json")
+        )
 
     summary = _calculate_link_summary(link_graph, cycles)
 

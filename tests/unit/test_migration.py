@@ -23,6 +23,7 @@ import pytest
 
 from cortex.core.exceptions import MigrationFailedError
 from cortex.core.migration import MigrationManager
+from cortex.core.models import VerificationResult
 
 
 class TestMigrationManagerInitialization:
@@ -314,7 +315,10 @@ class TestMigrate:
             mock_metadata.update_dependency_graph = AsyncMock()
 
             mock_version = AsyncMock()
-            mock_version.create_snapshot = AsyncMock(return_value={"version": 1})
+            version_meta = MagicMock()
+            version_meta.version = 1
+            version_meta.model_dump = MagicMock(return_value={"version": 1})
+            mock_version.create_snapshot = AsyncMock(return_value=version_meta)
 
             mock_dep = MagicMock()
             mock_dep.to_dict = MagicMock(return_value={})
@@ -344,7 +348,7 @@ class TestMigrate:
                 with patch.object(
                     manager, "verify_migration", new_callable=AsyncMock
                 ) as mock_verify:
-                    mock_verify.return_value = {"success": True}
+                    mock_verify.return_value = VerificationResult(success=True)
 
                     _ = await manager.migrate()
 
@@ -375,7 +379,10 @@ class TestMigrate:
             mock_metadata.update_dependency_graph = AsyncMock()
 
             mock_version = AsyncMock()
-            mock_version.create_snapshot = AsyncMock(return_value={"version": 1})
+            version_meta = MagicMock()
+            version_meta.version = 1
+            version_meta.model_dump = MagicMock(return_value={"version": 1})
+            mock_version.create_snapshot = AsyncMock(return_value=version_meta)
 
             mock_dep = MagicMock()
             mock_dep.to_dict = MagicMock(return_value={})
@@ -405,7 +412,7 @@ class TestMigrate:
                 with patch.object(
                     manager, "verify_migration", new_callable=AsyncMock
                 ) as mock_verify:
-                    mock_verify.return_value = {"success": True}
+                    mock_verify.return_value = VerificationResult(success=True)
 
                     _ = await manager.migrate(auto_backup=False)
 
@@ -433,7 +440,10 @@ class TestMigrate:
         mock_metadata.update_dependency_graph = AsyncMock()
 
         mock_version = AsyncMock()
-        mock_version.create_snapshot = AsyncMock(return_value={"version": 1})
+        version_meta = MagicMock()
+        version_meta.version = 1
+        version_meta.model_dump = MagicMock(return_value={"version": 1})
+        mock_version.create_snapshot = AsyncMock(return_value=version_meta)
 
         mock_dep = MagicMock()
         mock_dep.to_dict = MagicMock(return_value={})
@@ -454,7 +464,9 @@ class TestMigrate:
             with patch.object(
                 manager, "verify_migration", new_callable=AsyncMock
             ) as mock_verify:
-                mock_verify.return_value = {"success": True, "files_verified": 1}
+                mock_verify.return_value = VerificationResult(
+                    success=True, files_verified=1
+                )
 
                 result = await manager.migrate(auto_backup=False)
 
@@ -487,16 +499,18 @@ class TestMigrate:
             mock_index_class.return_value = mock_metadata
 
             mock_version = AsyncMock()
-            mock_version.create_snapshot = AsyncMock(return_value={"version": 1})
+            version_meta = MagicMock()
+            version_meta.version = 1
+            version_meta.model_dump = MagicMock(return_value={"version": 1})
+            mock_version.create_snapshot = AsyncMock(return_value=version_meta)
             mock_version_class.return_value = mock_version
 
             with patch.object(
                 manager, "verify_migration", new_callable=AsyncMock
             ) as mock_verify:
-                mock_verify.return_value = {
-                    "success": False,
-                    "error": "Verification failed",
-                }
+                mock_verify.return_value = VerificationResult(
+                    success=False, error="Verification failed"
+                )
 
                 with pytest.raises(MigrationFailedError):
                     _ = await manager.migrate(auto_backup=False)

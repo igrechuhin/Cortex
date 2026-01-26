@@ -9,9 +9,15 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 from pathlib import Path
-from typing import cast
 
 from cortex.core.security import CommitMessageSanitizer
+from cortex.rules.models import (
+    GitCommandResult,
+    SubmoduleInitResult,
+    SyncChanges,
+    SyncResult,
+    UpdateResult,
+)
 
 
 class SynapseRepository:
@@ -30,7 +36,7 @@ class SynapseRepository:
         project_root: Path,
         synapse_path: Path,
         git_command_runner: (
-            Callable[[list[str]], Awaitable[dict[str, object]]] | None
+            Callable[[list[str]], Awaitable[GitCommandResult]] | None
         ) = None,
     ):
         """
@@ -45,12 +51,12 @@ class SynapseRepository:
         self.synapse_path: Path = synapse_path
         self.last_sync: datetime | None = None
         self.git_command_runner: (
-            Callable[[list[str]], Awaitable[dict[str, object]]] | None
+            Callable[[list[str]], Awaitable[GitCommandResult]] | None
         ) = git_command_runner
 
     async def run_git_command(
         self, cmd: list[str], timeout: int = 30
-    ) -> dict[str, object]:
+    ) -> GitCommandResult:
         """
         Run a git command asynchronously with timeout.
 
@@ -59,7 +65,7 @@ class SynapseRepository:
             timeout: Timeout in seconds (default: 30)
 
         Returns:
-            Dict with success status, stdout, stderr
+            Git command result model
         """
         if self.git_command_runner is not None:
             return await self.git_command_runner(cmd)
@@ -67,7 +73,7 @@ class SynapseRepository:
         return await self._run_git_command_internal(cmd, timeout)
 
     def set_git_command_runner(
-        self, runner: Callable[[list[str]], Awaitable[dict[str, object]]] | None
+        self, runner: Callable[[list[str]], Awaitable[GitCommandResult]] | None
     ) -> None:
         """
         Set git command runner for testing.
@@ -79,7 +85,7 @@ class SynapseRepository:
 
     async def _run_git_command_internal(
         self, cmd: list[str], timeout: int = 30
-    ) -> dict[str, object]:
+    ) -> GitCommandResult:
         """Internal method to run git command."""
         try:
             cmd = [c for c in cmd if c]
@@ -96,34 +102,34 @@ class SynapseRepository:
                 process.communicate(), timeout=timeout
             )
             return self._build_git_success_response(process, stdout, stderr)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return self._build_git_timeout_response(timeout)
         except Exception as e:
-            return {"success": False, "error": str(e), "stdout": "", "stderr": ""}
+            return GitCommandResult(success=False, error=str(e), stdout="", stderr="")
 
     def _build_git_success_response(
         self, process: asyncio.subprocess.Process, stdout: bytes, stderr: bytes
-    ) -> dict[str, object]:
+    ) -> GitCommandResult:
         """Build success response for git command."""
-        return {
-            "success": process.returncode == 0,
-            "stdout": stdout.decode("utf-8", errors="replace"),
-            "stderr": stderr.decode("utf-8", errors="replace"),
-            "returncode": process.returncode,
-        }
+        return GitCommandResult(
+            success=process.returncode == 0,
+            stdout=stdout.decode("utf-8", errors="replace"),
+            stderr=stderr.decode("utf-8", errors="replace"),
+            returncode=process.returncode,
+        )
 
-    def _build_git_timeout_response(self, timeout: int) -> dict[str, object]:
+    def _build_git_timeout_response(self, timeout: int) -> GitCommandResult:
         """Build timeout response for git command."""
-        return {
-            "success": False,
-            "error": f"Git command timed out after {timeout}s",
-            "stdout": "",
-            "stderr": "",
-        }
+        return GitCommandResult(
+            success=False,
+            error=f"Git command timed out after {timeout}s",
+            stdout="",
+            stderr="",
+        )
 
     async def initialize_submodule(
         self, repo_url: str, force: bool = False
-    ) -> dict[str, object]:
+    ) -> SubmoduleInitResult:
         """
         Initialize Synapse as git submodule.
 
@@ -132,7 +138,7 @@ class SynapseRepository:
             force: Force re-initialization even if exists
 
         Returns:
-            Dict with initialization status and details
+            Submodule initialization result model
         """
         try:
             if self.synapse_path.exists() and not force:
@@ -141,20 +147,20 @@ class SynapseRepository:
             return await self._add_new_submodule(repo_url, force)
 
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "action": "initialize_synapse",
-            }
+            return SubmoduleInitResult(
+                status="error",
+                error=str(e),
+                action="initialize_synapse",
+            )
 
-    async def _update_existing_submodule(self, repo_url: str) -> dict[str, object]:
+    async def _update_existing_submodule(self, repo_url: str) -> SubmoduleInitResult:
         """Update existing submodule.
 
         Args:
             repo_url: Git repository URL
 
         Returns:
-            Success response dict
+            Submodule initialization result model
         """
         result = await self.run_git_command(
             [
@@ -167,23 +173,25 @@ class SynapseRepository:
             ]
         )
 
-        if result["success"]:
-            return {
-                "status": "success",
-                "action": "updated_existing",
-                "repo_url": repo_url,
-                "local_path": str(self.synapse_path),
-                "submodule_added": False,
-            }
+        if result.success:
+            return SubmoduleInitResult(
+                status="success",
+                action="updated_existing",
+                repo_url=repo_url,
+                local_path=str(self.synapse_path),
+                submodule_added=False,
+            )
 
-        return {
-            "status": "error",
-            "error": f"Failed to update submodule: {result.get('error', 'Unknown error')}",
-            "stdout": result.get("stdout", ""),
-            "stderr": result.get("stderr", ""),
-        }
+        return SubmoduleInitResult(
+            status="error",
+            error=f"Failed to update submodule: {result.error or 'Unknown error'}",
+            stdout=result.stdout,
+            stderr=result.stderr,
+        )
 
-    async def _add_new_submodule(self, repo_url: str, force: bool) -> dict[str, object]:
+    async def _add_new_submodule(
+        self, repo_url: str, force: bool
+    ) -> SubmoduleInitResult:
         """Add new submodule.
 
         Args:
@@ -191,7 +199,7 @@ class SynapseRepository:
             force: Force add even if exists
 
         Returns:
-            Success or error response dict
+            Submodule initialization result model
         """
         result = await self.run_git_command(
             [
@@ -204,29 +212,29 @@ class SynapseRepository:
             ]
         )
 
-        if not result["success"]:
-            return {
-                "status": "error",
-                "error": f"Failed to add submodule: {result.get('error', 'Unknown error')}",
-                "stdout": result.get("stdout", ""),
-                "stderr": result.get("stderr", ""),
-            }
+        if not result.success:
+            return SubmoduleInitResult(
+                status="error",
+                error=f"Failed to add submodule: {result.error or 'Unknown error'}",
+                stdout=result.stdout,
+                stderr=result.stderr,
+            )
 
         _ = await self.run_git_command(
             ["git", "submodule", "update", "--init", "--recursive"]
         )
 
-        return {
-            "status": "success",
-            "action": "initialized",
-            "repo_url": repo_url,
-            "local_path": str(self.synapse_path),
-            "submodule_added": True,
-        }
+        return SubmoduleInitResult(
+            status="success",
+            action="initialized",
+            repo_url=repo_url,
+            local_path=str(self.synapse_path),
+            submodule_added=True,
+        )
 
     async def sync_repository(
         self, pull: bool = True, push: bool = False
-    ) -> dict[str, object]:
+    ) -> SyncResult:
         """
         Sync repository with remote.
 
@@ -235,16 +243,16 @@ class SynapseRepository:
             push: Push local changes to remote
 
         Returns:
-            Dict with sync status and changes
+            Sync result model
         """
         try:
             if not self.synapse_path.exists():
-                return {
-                    "status": "error",
-                    "error": "Synapse folder not found. Run initialize_synapse first.",
-                }
+                return SyncResult(
+                    status="error",
+                    error="Synapse folder not found. Run initialize_synapse first.",
+                )
 
-            changes: dict[str, list[str]] = {"added": [], "modified": [], "deleted": []}
+            changes = SyncChanges(added=[], modified=[], deleted=[])
 
             if pull:
                 pull_error = await self._pull_changes(changes)
@@ -254,30 +262,24 @@ class SynapseRepository:
             pushed = await self._push_changes(push)
             self.last_sync = datetime.now()
 
-            return {
-                "status": "success",
-                "pulled": pull,
-                "pushed": pushed,
-                "changes": changes,
-                "reindex_triggered": bool(
-                    changes["added"] or changes["modified"] or changes["deleted"]
-                ),
-                "last_sync": self.last_sync.isoformat() if self.last_sync else None,
-            }
+            return SyncResult(
+                status="success",
+                pulled=pull,
+                pushed=pushed,
+                changes=changes,
+            )
 
         except Exception as e:
-            return {"status": "error", "error": str(e), "action": "sync_synapse"}
+            return SyncResult(status="error", error=str(e))
 
-    async def _pull_changes(
-        self, changes: dict[str, list[str]]
-    ) -> dict[str, object] | None:
+    async def _pull_changes(self, changes: SyncChanges) -> SyncResult | None:
         """Pull changes from remote.
 
         Args:
-            changes: Changes dictionary to update
+            changes: Changes model to update
 
         Returns:
-            Error dict if pull fails, None otherwise
+            Error result if pull fails, None otherwise
         """
         result = await self.run_git_command(
             [
@@ -290,16 +292,16 @@ class SynapseRepository:
             ]
         )
 
-        if not result["success"]:
-            return {
-                "status": "error",
-                "error": f"Failed to pull changes: {result.get('error', 'Unknown error')}",
-            }
+        if not result.success:
+            return SyncResult(
+                status="error",
+                error=f"Failed to pull changes: {result.error or 'Unknown error'}",
+            )
 
         await self._parse_diff_changes(changes)
         return None
 
-    async def _parse_diff_changes(self, changes: dict[str, list[str]]) -> None:
+    async def _parse_diff_changes(self, changes: SyncChanges) -> None:
         """Parse git diff output to track changes.
 
         Args:
@@ -318,22 +320,19 @@ class SynapseRepository:
         )
 
         # Early exit if no diff output
-        if not diff_result["success"] or not diff_result["stdout"]:
+        if not diff_result.success or not diff_result.stdout:
             return
 
         # Process each line of diff output
-        stdout_str = (
-            str(diff_result["stdout"]) if isinstance(diff_result["stdout"], str) else ""
-        )
-        for line in stdout_str.strip().split("\n"):
+        for line in diff_result.stdout.strip().split("\n"):
             self._process_diff_line(line, changes)
 
-    def _process_diff_line(self, line: str, changes: dict[str, list[str]]) -> None:
+    def _process_diff_line(self, line: str, changes: SyncChanges) -> None:
         """Process a single line from git diff output.
 
         Args:
             line: Diff output line
-            changes: Changes dictionary to update
+            changes: Changes model to update
         """
         # Skip empty lines
         if not line:
@@ -347,15 +346,12 @@ class SynapseRepository:
         status, file = parts
 
         # Map status to change category
-        status_map = {
-            "A": "added",
-            "M": "modified",
-            "D": "deleted",
-        }
-
-        category = status_map.get(status)
-        if category:
-            changes[category].append(file)
+        if status == "A":
+            changes.added.append(file)
+        elif status == "M":
+            changes.modified.append(file)
+        elif status == "D":
+            changes.deleted.append(file)
 
     async def _push_changes(self, push: bool) -> bool:
         """Push changes to remote.
@@ -372,10 +368,10 @@ class SynapseRepository:
         result = await self.run_git_command(
             ["git", "-C", str(self.synapse_path), "push"]
         )
-        return cast(bool, result.get("success", False))
+        return result.success
 
-    async def _git_add_file(self, file_path: Path) -> dict[str, object] | None:
-        """Add file to git staging area, return error dict if failed."""
+    async def _git_add_file(self, file_path: Path) -> UpdateResult | None:
+        """Add file to git staging area, return error result if failed."""
         add_result = await self.run_git_command(
             [
                 "git",
@@ -385,11 +381,11 @@ class SynapseRepository:
                 str(file_path.relative_to(self.synapse_path)),
             ]
         )
-        if not add_result["success"]:
-            return {
-                "status": "error",
-                "error": f"Failed to git add: {add_result.get('error', 'Unknown error')}",
-            }
+        if not add_result.success:
+            return UpdateResult(
+                status="error",
+                error=f"Failed to git add: {add_result.error or 'Unknown error'}",
+            )
         return None
 
     async def _git_commit_file(self, commit_message: str) -> tuple[bool, str | None]:
@@ -410,7 +406,7 @@ class SynapseRepository:
                 sanitized_message,
             ]
         )
-        committed = cast(bool, commit_result["success"])
+        committed = commit_result.success
         commit_hash = await self._get_commit_hash() if committed else None
         return committed, commit_hash
 
@@ -419,22 +415,20 @@ class SynapseRepository:
         push_result = await self.run_git_command(
             ["git", "-C", str(self.synapse_path), "push"]
         )
-        return cast(bool, push_result["success"])
+        return push_result.success
 
     def _build_update_success_response(
         self, committed: bool, pushed: bool, commit_hash: str | None
-    ) -> dict[str, object]:
+    ) -> UpdateResult:
         """Build success response for file update."""
-        return {
-            "status": "success",
-            "committed": committed,
-            "pushed": pushed,
-            "commit_hash": commit_hash,
-        }
+        return UpdateResult(
+            status="success",
+            committed=committed,
+            pushed=pushed,
+            commit_hash=commit_hash,
+        )
 
-    async def update_file(
-        self, file_path: Path, commit_message: str
-    ) -> dict[str, object]:
+    async def update_file(self, file_path: Path, commit_message: str) -> UpdateResult:
         """
         Add, commit, and push a file change.
 
@@ -443,7 +437,7 @@ class SynapseRepository:
             commit_message: Git commit message
 
         Returns:
-            Dict with update status
+            Update result model
         """
         try:
             error_response = await self._git_add_file(file_path)
@@ -456,7 +450,7 @@ class SynapseRepository:
             return self._build_update_success_response(committed, pushed, commit_hash)
 
         except Exception as e:
-            return {"status": "error", "error": str(e)}
+            return UpdateResult(status="error", error=str(e))
 
     async def _get_commit_hash(self) -> str | None:
         """Get current commit hash.
@@ -467,11 +461,6 @@ class SynapseRepository:
         hash_result = await self.run_git_command(
             ["git", "-C", str(self.synapse_path), "rev-parse", "HEAD"]
         )
-        if hash_result["success"]:
-            stdout_value = hash_result["stdout"]
-            return (
-                str(stdout_value).strip()
-                if isinstance(stdout_value, str)
-                else str(stdout_value).strip() if stdout_value else None
-            )
+        if hash_result.success:
+            return hash_result.stdout.strip() if hash_result.stdout else None
         return None

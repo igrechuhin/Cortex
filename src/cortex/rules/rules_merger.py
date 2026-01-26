@@ -5,8 +5,11 @@ This module handles merging of shared and local rules with conflict resolution
 and priority-based strategies.
 """
 
-from datetime import datetime
 from typing import cast
+
+from cortex.core.models import ModelDict
+
+from .models import RuleMetadataEntry, RulesManifestModel
 
 
 class RulesMerger:
@@ -22,10 +25,10 @@ class RulesMerger:
 
     async def merge_rules(
         self,
-        shared_rules: list[dict[str, object]],
-        local_rules: list[dict[str, object]],
+        shared_rules: list[ModelDict],
+        local_rules: list[ModelDict],
         priority: str = "local_overrides_shared",
-    ) -> list[dict[str, object]]:
+    ) -> list[ModelDict]:
         """
         Merge shared and local rules based on priority strategy.
 
@@ -47,9 +50,9 @@ class RulesMerger:
 
     def _merge_local_overrides_shared(
         self,
-        shared_rules: list[dict[str, object]],
-        local_rules: list[dict[str, object]],
-    ) -> list[dict[str, object]]:
+        shared_rules: list[ModelDict],
+        local_rules: list[ModelDict],
+    ) -> list[ModelDict]:
         """Merge with local rules overriding shared rules.
 
         Args:
@@ -73,9 +76,9 @@ class RulesMerger:
 
     def _merge_shared_overrides_local(
         self,
-        shared_rules: list[dict[str, object]],
-        local_rules: list[dict[str, object]],
-    ) -> list[dict[str, object]]:
+        shared_rules: list[ModelDict],
+        local_rules: list[ModelDict],
+    ) -> list[ModelDict]:
         """Merge with shared rules overriding local rules.
 
         Args:
@@ -97,7 +100,7 @@ class RulesMerger:
 
         return merged
 
-    def _get_priority(self, r: dict[str, object]) -> int:
+    def _get_priority(self, r: ModelDict) -> int:
         """Extract priority from rule dict.
 
         Args:
@@ -111,44 +114,55 @@ class RulesMerger:
 
     def add_rule_to_manifest(
         self,
-        manifest: dict[str, object],
+        manifest: RulesManifestModel,
         category: str,
         filename: str,
-        metadata: dict[str, object],
-    ) -> dict[str, object]:
+        metadata: ModelDict,
+    ) -> RulesManifestModel:
         """
         Add a rule entry to the manifest.
 
         Args:
-            manifest: Manifest dictionary
+            manifest: Manifest model
             category: Category name
             filename: Rule filename
             metadata: Rule metadata (priority, keywords, etc.)
 
         Returns:
-            Updated manifest
+            Updated manifest model
         """
-        categories = self._get_or_create_categories(manifest)
-        self._ensure_category_exists(categories, category)
 
-        category_entry = cast(dict[str, object], categories.get(category, {}))
-        rules_list = self._get_or_create_rules_list(category_entry)
+        # Ensure category exists
+        if category not in manifest.categories:
+            from .models import CategoryInfo
 
-        rule_entry = {
-            "file": filename,
-            "priority": metadata.get("priority", 50),
-            "keywords": metadata.get("keywords", []),
-            "applies_to": metadata.get("applies_to", ["*"]),
-        }
+            manifest.categories[category] = CategoryInfo()
 
-        rules_list.append(rule_entry)
-        manifest["last_updated"] = datetime.now().isoformat()
+        category_info = manifest.categories[category]
+
+        # Create rule entry
+        priority_value = metadata.get("priority", 50)
+        keywords_value = metadata.get("keywords", [])
+        description_value = metadata.get("description", "")
+
+        rule_entry = RuleMetadataEntry(
+            file=filename,
+            priority=(
+                int(priority_value) if isinstance(priority_value, (int, float)) else 50
+            ),
+            keywords=(
+                cast(list[str], keywords_value)
+                if isinstance(keywords_value, list)
+                else []
+            ),
+            description=str(description_value) if description_value is not None else "",
+        )
+
+        category_info.rules.append(rule_entry)
 
         return manifest
 
-    def _get_or_create_categories(
-        self, manifest: dict[str, object]
-    ) -> dict[str, object]:
+    def _get_or_create_categories(self, manifest: ModelDict) -> ModelDict:
         """Get or create categories dict in manifest.
 
         Args:
@@ -159,14 +173,12 @@ class RulesMerger:
         """
         categories_raw = manifest.get("categories", {})
         if not isinstance(categories_raw, dict):
-            categories: dict[str, object] = {}
+            categories: ModelDict = {}
             manifest["categories"] = categories
             return categories
-        return cast(dict[str, object], categories_raw)
+        return cast(ModelDict, categories_raw)
 
-    def _ensure_category_exists(
-        self, categories: dict[str, object], category: str
-    ) -> None:
+    def _ensure_category_exists(self, categories: ModelDict, category: str) -> None:
         """Ensure category exists in categories dict.
 
         Args:
@@ -180,9 +192,7 @@ class RulesMerger:
                 "rules": [],
             }
 
-    def _get_or_create_rules_list(
-        self, category_entry: dict[str, object]
-    ) -> list[dict[str, object]]:
+    def _get_or_create_rules_list(self, category_entry: ModelDict) -> list[ModelDict]:
         """Get or create rules list in category entry.
 
         Args:
@@ -195,4 +205,4 @@ class RulesMerger:
         if not isinstance(rules_list_value_raw, list):
             rules_list_value_raw = []
             category_entry["rules"] = rules_list_value_raw
-        return cast(list[dict[str, object]], rules_list_value_raw)
+        return cast(list[ModelDict], rules_list_value_raw)

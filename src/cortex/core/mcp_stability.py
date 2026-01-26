@@ -10,7 +10,9 @@ This module provides connection stability features for MCP tool handlers:
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TypeVar
+from inspect import Signature
+from types import TracebackType
+from typing import Protocol, cast
 
 import anyio
 
@@ -20,20 +22,72 @@ from cortex.core.constants import (
     MCP_MAX_CONCURRENT_TOOLS,
     MCP_TOOL_TIMEOUT_SECONDS,
 )
+from cortex.core.models import ConnectionHealth, JsonValue, MCPToolArguments
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T")
+
+class _SignatureAware(Protocol):
+    __signature__: Signature
+
+
+class TrackedSemaphore:
+    """Semaphore wrapper that tracks available count without accessing private attributes."""
+
+    def __init__(self, value: int) -> None:
+        """Initialize semaphore with initial value.
+
+        Args:
+            value: Initial semaphore value
+        """
+        self._semaphore = asyncio.Semaphore(value)
+        self._max_value = value
+        self._current_count = value
+
+    async def acquire(self) -> None:
+        """Acquire semaphore, decrementing available count."""
+        _ = await self._semaphore.acquire()
+        self._current_count -= 1
+
+    def release(self) -> None:
+        """Release semaphore, incrementing available count."""
+        self._semaphore.release()
+        self._current_count += 1
+
+    async def __aenter__(self) -> "TrackedSemaphore":
+        """Async context manager entry."""
+        await self.acquire()
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        """Async context manager exit."""
+        self.release()
+
+    @property
+    def available(self) -> int:
+        """Get available semaphore slots."""
+        return max(0, self._current_count)
+
+    @property
+    def current(self) -> int:
+        """Get current concurrent operations."""
+        return self._max_value - self.available
+
 
 # Global semaphore for limiting concurrent tool executions
-_concurrent_tools_semaphore: asyncio.Semaphore | None = None
+_concurrent_tools_semaphore: TrackedSemaphore | None = None
 
 
-def _get_semaphore() -> asyncio.Semaphore:
+def _get_semaphore() -> TrackedSemaphore:
     """Get or create the global semaphore for concurrent tool limits."""
     global _concurrent_tools_semaphore
     if _concurrent_tools_semaphore is None:
-        _concurrent_tools_semaphore = asyncio.Semaphore(MCP_MAX_CONCURRENT_TOOLS)
+        _concurrent_tools_semaphore = TrackedSemaphore(MCP_MAX_CONCURRENT_TOOLS)
     return _concurrent_tools_semaphore
 
 
@@ -87,17 +141,17 @@ async def _handle_connection_error(
     return None, e
 
 
-async def _execute_single_attempt(
+async def _execute_single_attempt[T](
     func: Callable[..., Awaitable[T]],
-    semaphore: asyncio.Semaphore,
+    semaphore: TrackedSemaphore,
     timeout: float,
-    args: tuple[object, ...],
-    kwargs: dict[str, object],
+    args: tuple[JsonValue, ...],
+    kwargs: MCPToolArguments,
 ) -> T:
     """Execute function once with timeout and resource limits."""
     async with semaphore:
         async with asyncio.timeout(timeout):
-            return await func(*args, **kwargs)
+            return await func(*args, **kwargs.model_dump(exclude_none=True))
 
 
 def _is_connection_error(e: Exception) -> bool:
@@ -163,12 +217,12 @@ async def _handle_retry_exception(
     raise
 
 
-async def _execute_with_retry(
+async def _execute_with_retry[T](
     func: Callable[..., Awaitable[T]],
-    semaphore: asyncio.Semaphore,
+    semaphore: TrackedSemaphore,
     timeout: float,
-    args: tuple[object, ...],
-    kwargs: dict[str, object],
+    args: tuple[JsonValue, ...],
+    kwargs: MCPToolArguments,
 ) -> T:
     """Execute function with retry logic for transient failures."""
     last_exception: Exception | None = None
@@ -190,11 +244,11 @@ async def _execute_with_retry(
     raise RuntimeError(f"MCP tool {func_name} failed unexpectedly")
 
 
-async def with_mcp_stability(
+async def with_mcp_stability[T](
     func: Callable[..., Awaitable[T]],
-    *args: object,
+    *args: JsonValue,
     timeout: float = MCP_TOOL_TIMEOUT_SECONDS,
-    **kwargs: object,
+    **kwargs: JsonValue,
 ) -> T:
     """Execute MCP tool with stability protections.
 
@@ -218,10 +272,11 @@ async def with_mcp_stability(
         RuntimeError: If resource limits exceeded or connection fails
     """
     semaphore = _get_semaphore()
-    return await _execute_with_retry(func, semaphore, timeout, args, kwargs)
+    kwargs_model = MCPToolArguments.model_validate(kwargs)
+    return await _execute_with_retry(func, semaphore, timeout, args, kwargs_model)
 
 
-def mcp_tool_wrapper(
+def mcp_tool_wrapper[T](
     timeout: float = MCP_TOOL_TIMEOUT_SECONDS,
 ) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]:
     """Decorator for MCP tools to add stability protections.
@@ -245,25 +300,25 @@ def mcp_tool_wrapper(
         """Apply stability wrapper to function."""
 
         @functools.wraps(func)
-        async def wrapper(*args: object, **kwargs: object) -> T:
+        async def wrapper(*args: JsonValue, **kwargs: JsonValue) -> T:
             """Wrapped function with stability protections."""
             return await with_mcp_stability(func, *args, timeout=timeout, **kwargs)
 
         # Explicitly preserve signature for FastMCP
         # FastMCP uses inspect.signature() which needs the original signature
         original_sig = inspect.signature(func)
-        wrapper.__signature__ = original_sig  # type: ignore[attr-defined]
+        cast(_SignatureAware, wrapper).__signature__ = original_sig
 
         return wrapper
 
     return decorator
 
 
-async def execute_tool_with_stability(
+async def execute_tool_with_stability[T](
     func: Callable[..., Awaitable[T]],
-    *args: object,
+    *args: JsonValue,
     timeout: float = MCP_TOOL_TIMEOUT_SECONDS,
-    **kwargs: object,
+    **kwargs: JsonValue,
 ) -> T:
     """Execute MCP tool function with stability protections.
 
@@ -289,28 +344,24 @@ async def execute_tool_with_stability(
     return await with_mcp_stability(func, *args, timeout=timeout, **kwargs)
 
 
-async def check_connection_health() -> dict[str, object]:
+async def check_connection_health() -> ConnectionHealth:
     """Check MCP connection health status.
 
     Returns:
-        Dictionary with health metrics:
-        - healthy: bool - Whether connection is healthy
-        - concurrent_operations: int - Current concurrent operations
-        - max_concurrent: int - Maximum allowed concurrent operations
-        - semaphore_available: int - Available semaphore slots
+        Connection health metrics
     """
     semaphore = _get_semaphore()
-    available = semaphore._value  # pyright: ignore[reportPrivateUsage]
-    current = MCP_MAX_CONCURRENT_TOOLS - available
+    available = semaphore.available
+    current = semaphore.current
 
-    return {
-        "healthy": True,  # Connection is healthy if we can check
-        "concurrent_operations": current,
-        "max_concurrent": MCP_MAX_CONCURRENT_TOOLS,
-        "semaphore_available": available,
-        "utilization_percent": (
+    return ConnectionHealth(
+        healthy=True,  # Connection is healthy if we can check
+        concurrent_operations=current,
+        max_concurrent=MCP_MAX_CONCURRENT_TOOLS,
+        semaphore_available=available,
+        utilization_percent=(
             (current / MCP_MAX_CONCURRENT_TOOLS) * 100
             if MCP_MAX_CONCURRENT_TOOLS > 0
-            else 0
+            else 0.0
         ),
-    }
+    )

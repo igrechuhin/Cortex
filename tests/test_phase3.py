@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
+from pydantic import ValidationError
 
 from cortex.validation.duplication_detector import DuplicationDetector
 from cortex.validation.quality_metrics import QualityMetrics
@@ -152,19 +153,7 @@ More content
         schema = validator.get_schema("projectBrief.md")
 
         assert schema is not None
-        assert isinstance(schema, dict)
-        assert "required_sections" in schema
-        required_sections_raw = schema.get("required_sections")
-        assert isinstance(required_sections_raw, (list, dict, str))
-        if isinstance(required_sections_raw, list):
-            required_sections_list = cast(list[str], required_sections_raw)
-            assert "Project Overview" in required_sections_list
-        elif isinstance(required_sections_raw, dict):
-            required_sections_dict = cast(dict[str, object], required_sections_raw)
-            assert "Project Overview" in required_sections_dict
-        else:
-            # Must be str at this point
-            assert "Project Overview" in required_sections_raw
+        assert "Project Overview" in schema.required_sections
 
 
 # ============================================================================
@@ -201,19 +190,13 @@ Other content.
 
         result = await detector.scan_all_files(files_content)
 
-        assert isinstance(result, dict)
-        duplicates_found = result.get("duplicates_found", 0)
-        assert isinstance(duplicates_found, (int, float))
-        assert duplicates_found > 0
-        exact_duplicates_raw = result.get("exact_duplicates", [])
-        assert isinstance(exact_duplicates_raw, list)
-        exact_duplicates = cast(list[dict[str, object]], exact_duplicates_raw)
-        assert len(exact_duplicates) > 0
+        assert result.duplicates_found > 0
+        assert len(result.exact_duplicates) > 0
 
         # Check that the duplicate was found
-        dup = exact_duplicates[0]
-        assert cast(float, dup.get("similarity")) == 1.0
-        assert cast(str, dup.get("type")) == "exact"
+        dup = result.exact_duplicates[0]
+        assert dup.similarity == 1.0
+        assert dup.type == "exact"
 
     @pytest.mark.asyncio
     async def test_find_similar_content(self):
@@ -239,20 +222,10 @@ This will need careful planning and execution.
 
         # Should find similar content (not exact) OR exact duplicates
         # Since the content is very similar, it might be detected
-        similar_content_raw = result.get("similar_content", [])
-        exact_duplicates_raw = result.get("exact_duplicates", [])
-        similar_content = (
-            cast(list[object], similar_content_raw)
-            if isinstance(similar_content_raw, list)
-            else []
-        )
-        exact_duplicates = (
-            cast(list[object], exact_duplicates_raw)
-            if isinstance(exact_duplicates_raw, list)
-            else []
-        )
-        total_found = len(similar_content) + len(exact_duplicates)
-        assert total_found > 0, f"Expected to find similar content, but found {result}"
+        total_found = len(result.similar_content) + len(result.exact_duplicates)
+        assert (
+            total_found > 0
+        ), f"Expected to find similar content, but found {result.model_dump(mode='json')}"
 
     @pytest.mark.asyncio
     async def test_no_duplicates(self):
@@ -272,21 +245,9 @@ The frontend is built with React and TypeScript.
 
         result = await detector.scan_all_files(files_content)
 
-        assert result["duplicates_found"] == 0
-        exact_duplicates_raw = result.get("exact_duplicates", [])
-        similar_content_raw = result.get("similar_content", [])
-        exact_duplicates = (
-            cast(list[object], exact_duplicates_raw)
-            if isinstance(exact_duplicates_raw, list)
-            else []
-        )
-        similar_content = (
-            cast(list[object], similar_content_raw)
-            if isinstance(similar_content_raw, list)
-            else []
-        )
-        assert len(exact_duplicates) == 0
-        assert len(similar_content) == 0
+        assert result.duplicates_found == 0
+        assert len(result.exact_duplicates) == 0
+        assert len(result.similar_content) == 0
 
     def test_compare_sections(self):
         """Test section comparison."""
@@ -530,11 +491,10 @@ class TestValidationConfig:
             config = ValidationConfig(Path(tmpdir))
 
             # Set invalid values
-            config.set("duplication.threshold", 1.5)  # Should be 0-1
-            config.set("token_budget.max_total_tokens", -100)  # Should be positive
-
-            errors = config.validate_config()
-            assert len(errors) > 0
+            with pytest.raises(ValidationError):
+                config.set("duplication.threshold", 1.5)  # Should be 0-1
+            with pytest.raises(ValidationError):
+                config.set("token_budget.max_total_tokens", -100)  # Should be positive
 
     def test_reset_to_defaults(self):
         """Test resetting config to defaults."""

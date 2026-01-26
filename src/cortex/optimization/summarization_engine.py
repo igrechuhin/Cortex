@@ -1,3 +1,4 @@
+# ruff: noqa: I001
 """
 Content summarization for token usage reduction.
 
@@ -12,8 +13,16 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.async_file_utils import open_async_text_file
+from cortex.core.cache_utils import CacheType
+from cortex.core.models import ModelDict
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.path_resolver import get_cache_path
 from cortex.core.token_counter import TokenCounter
+from cortex.optimization.models import (
+    ScoredSectionModel,
+    SummarizationResultModel,
+    SummarizationState,
+)
 
 
 class SummarizationEngine:
@@ -35,10 +44,10 @@ class SummarizationEngine:
         """
         self.token_counter: TokenCounter = token_counter
         self.metadata_index: MetadataIndex = metadata_index
-        self.cache_dir: Path = cache_dir or (
-            Path(metadata_index.project_root) / ".cortex" / "summaries"
+        self.cache_dir: Path = cache_dir or get_cache_path(
+            Path(metadata_index.project_root), CacheType.SUMMARIES.value
         )
-        self.cache_dir.mkdir(exist_ok=True)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     async def summarize_file(
         self,
@@ -46,7 +55,7 @@ class SummarizationEngine:
         content: str,
         target_reduction: float = 0.5,
         strategy: str = "extract_key_sections",
-    ) -> dict[str, object]:
+    ) -> ModelDict:
         """
         Summarize file content.
 
@@ -65,27 +74,106 @@ class SummarizationEngine:
                 "strategy_used": "extract_key_sections"
             }
         """
+        strategy_effective = self._normalize_strategy(strategy)
         if not content:
-            return self._build_empty_summary_result(strategy)
+            return self._result_to_legacy_dict(
+                self._build_empty_summary_result(strategy_effective),
+                cached=False,
+                strategy_used=strategy,
+            )
+        return await self._summarize_with_cache(
+            file_name, content, target_reduction, strategy, strategy_effective
+        )
 
+    def _normalize_strategy(self, strategy: str) -> str:
+        """Normalize strategy to valid value."""
+        valid_strategies = {"extract_key_sections", "compress_verbose", "headers_only"}
+        return strategy if strategy in valid_strategies else "extract_key_sections"
+
+    async def _summarize_with_cache(
+        self,
+        file_name: str,
+        content: str,
+        target_reduction: float,
+        strategy: str,
+        strategy_effective: str,
+    ) -> ModelDict:
+        """Summarize file with cache checking."""
         original_tokens = self.token_counter.count_tokens(content)
         target_tokens = int(original_tokens * (1 - target_reduction))
         content_hash = self.compute_hash(content)
-
         cached_result = self._check_cache_and_return(
-            file_name, content_hash, strategy, original_tokens
+            file_name, content_hash, strategy_effective, original_tokens
         )
         if cached_result:
-            return cached_result
+            return self._result_to_legacy_dict(
+                cached_result,
+                cached=True,
+                strategy_used=strategy,
+            )
+        return await self._generate_and_cache_summary(
+            file_name,
+            content,
+            target_tokens,
+            target_reduction,
+            strategy,
+            strategy_effective,
+            content_hash,
+            original_tokens,
+        )
 
+    async def _generate_and_cache_summary(
+        self,
+        file_name: str,
+        content: str,
+        target_tokens: int,
+        target_reduction: float,
+        strategy: str,
+        strategy_effective: str,
+        content_hash: str,
+        original_tokens: int,
+    ) -> ModelDict:
+        """Generate summary and cache it."""
         summary = await self._generate_summary_by_strategy(
-            content, target_tokens, target_reduction, strategy
+            content, target_tokens, target_reduction, strategy_effective
         )
         summarized_tokens = self.token_counter.count_tokens(summary)
-        await self.cache_summary(file_name, content_hash, strategy, summary)
+        await self.cache_summary(file_name, content_hash, strategy_effective, summary)
+        return self._build_final_summary_result(
+            original_tokens, summarized_tokens, summary, strategy_effective, strategy
+        )
 
-        return self._build_summary_result(
-            original_tokens, summarized_tokens, summary, strategy, cached=False
+    def _build_final_summary_result(
+        self,
+        original_tokens: int,
+        summarized_tokens: int,
+        summary: str,
+        strategy_effective: str,
+        strategy: str,
+    ) -> ModelDict:
+        """Build final summary result dictionary."""
+        return self._result_to_legacy_dict(
+            self._build_summary_result(
+                original_tokens,
+                summarized_tokens,
+                summary,
+                strategy_effective,
+                cached=False,
+            ),
+            cached=False,
+            strategy_used=strategy,
+        )
+
+        return self._result_to_legacy_dict(
+            self._build_summary_result(
+                original_tokens,
+                summarized_tokens,
+                summary,
+                strategy_effective,
+                cached=False,
+            ),
+            cached=False,
+            strategy_used=strategy,
         )
 
     async def extract_key_sections(self, content: str, target_tokens: int) -> str:
@@ -104,10 +192,8 @@ class SummarizationEngine:
         if not sections:
             return _handle_no_sections(content)
 
-        section_scores = _score_all_sections(
-            self, sections, self.score_section_importance, self.token_counter
-        )
-        section_scores.sort(key=lambda x: cast(float, x["score"]), reverse=True)
+        section_scores = _score_all_sections(self, sections, self.token_counter)
+        section_scores.sort(key=lambda x: float(x.score), reverse=True)
 
         selected_sections = _select_sections_by_budget(section_scores, target_tokens)
         return _reconstruct_content(selected_sections, len(section_scores))
@@ -129,11 +215,7 @@ class SummarizationEngine:
         """
         lines = content.split("\n")
         result_lines: list[str] = []
-        state: dict[str, object] = {
-            "in_code_block": False,
-            "in_example": False,
-            "code_block_lines": [],
-        }
+        state = SummarizationState()
 
         for line in lines:
             processed = _process_code_block(line, state, result_lines)
@@ -309,15 +391,17 @@ class SummarizationEngine:
         except OSError:
             pass  # Silently fail on cache write errors
 
-    def _build_empty_summary_result(self, strategy: str) -> dict[str, object]:
-        """Build result dictionary for empty content."""
-        return {
-            "original_tokens": 0,
-            "summarized_tokens": 0,
-            "reduction": 0.0,
-            "summary": "",
-            "strategy_used": strategy,
-        }
+    def _build_empty_summary_result(self, strategy: str) -> SummarizationResultModel:
+        """Build result model for empty content."""
+        return SummarizationResultModel(
+            original_tokens=0,
+            summary_tokens=0,
+            reduction=0.0,
+            summary="",
+            strategy=strategy,
+            sections_kept=0,
+            sections_removed=0,
+        )
 
     def _check_cache_and_return(
         self,
@@ -325,21 +409,22 @@ class SummarizationEngine:
         content_hash: str,
         strategy: str,
         original_tokens: int,
-    ) -> dict[str, object] | None:
+    ) -> SummarizationResultModel | None:
         """Check cache and return cached result if available."""
         cached_summary = self.get_cached_summary(file_name, content_hash, strategy)
         if not cached_summary:
             return None
 
         summarized_tokens = self.token_counter.count_tokens(cached_summary)
-        return {
-            "original_tokens": original_tokens,
-            "summarized_tokens": summarized_tokens,
-            "reduction": self._calculate_reduction(original_tokens, summarized_tokens),
-            "summary": cached_summary,
-            "strategy_used": strategy,
-            "cached": True,
-        }
+        return SummarizationResultModel(
+            original_tokens=original_tokens,
+            summary_tokens=summarized_tokens,
+            reduction=self._calculate_reduction(original_tokens, summarized_tokens),
+            summary=cached_summary,
+            strategy=strategy,
+            sections_kept=0,  # Cache doesn't track sections
+            sections_removed=0,
+        )
 
     async def _generate_summary_by_strategy(
         self,
@@ -364,17 +449,35 @@ class SummarizationEngine:
         summarized_tokens: int,
         summary: str,
         strategy: str,
+        cached: bool,  # noqa: ARG002
+    ) -> SummarizationResultModel:
+        """Build summary result model."""
+        # Calculate sections kept/removed if possible (simplified for now)
+        sections_kept = 0
+        sections_removed = 0
+
+        return SummarizationResultModel(
+            original_tokens=original_tokens,
+            summary_tokens=summarized_tokens,
+            reduction=self._calculate_reduction(original_tokens, summarized_tokens),
+            summary=summary,
+            strategy=strategy,
+            sections_kept=sections_kept,
+            sections_removed=sections_removed,
+        )
+
+    def _result_to_legacy_dict(
+        self,
+        result: SummarizationResultModel,
         cached: bool,
-    ) -> dict[str, object]:
-        """Build summary result dictionary."""
-        return {
-            "original_tokens": original_tokens,
-            "summarized_tokens": summarized_tokens,
-            "reduction": self._calculate_reduction(original_tokens, summarized_tokens),
-            "summary": summary,
-            "strategy_used": strategy,
-            "cached": cached,
-        }
+        strategy_used: str,
+    ) -> ModelDict:
+        """Convert typed model to legacy dict shape expected by tools/tests."""
+        data = cast(ModelDict, result.model_dump(mode="json"))
+        data["summarized_tokens"] = data["summary_tokens"]
+        data["strategy_used"] = strategy_used
+        data["cached"] = cached
+        return data
 
     def _calculate_reduction(
         self, original_tokens: int, summarized_tokens: int
@@ -460,41 +563,39 @@ def _handle_no_sections(content: str) -> str:
 def _score_all_sections(
     engine: SummarizationEngine,
     sections: dict[str, str],
-    score_func: object,
     token_counter: TokenCounter,
-) -> list[dict[str, object]]:
+) -> list[ScoredSectionModel]:
     """Score all sections by importance.
 
     Args:
         engine: SummarizationEngine instance
         sections: Dictionary of section names to content
-        score_func: Function to score section importance
         token_counter: Token counter instance
 
     Returns:
-        List of section dictionaries with scores and tokens
+        List of scored section models
     """
-    section_scores: list[dict[str, object]] = []
+    section_scores: list[ScoredSectionModel] = []
 
     for section_name, section_content in sections.items():
         score = engine.score_section_importance(section_name, section_content)
         tokens = token_counter.count_tokens(section_content)
 
         section_scores.append(
-            {
-                "name": section_name,
-                "content": section_content,
-                "score": score,
-                "tokens": tokens,
-            }
+            ScoredSectionModel(
+                name=section_name,
+                content=section_content,
+                score=score,
+                tokens=tokens,
+            )
         )
 
     return section_scores
 
 
 def _select_sections_by_budget(
-    section_scores: list[dict[str, object]], target_tokens: int
-) -> list[dict[str, object]]:
+    section_scores: list[ScoredSectionModel], target_tokens: int
+) -> list[ScoredSectionModel]:
     """Select sections within token budget.
 
     Args:
@@ -504,14 +605,13 @@ def _select_sections_by_budget(
     Returns:
         List of selected sections
     """
-    selected_sections: list[dict[str, object]] = []
+    selected_sections: list[ScoredSectionModel] = []
     total_tokens = 0
 
     for section in section_scores:
-        section_tokens = cast(int, section["tokens"])
-        if total_tokens + section_tokens <= target_tokens:
+        if total_tokens + section.tokens <= target_tokens:
             selected_sections.append(section)
-            total_tokens += section_tokens
+            total_tokens += section.tokens
         elif not selected_sections:
             # Include at least one section
             selected_sections.append(section)
@@ -521,7 +621,7 @@ def _select_sections_by_budget(
 
 
 def _reconstruct_content(
-    selected_sections: list[dict[str, object]], total_sections: int
+    selected_sections: list[ScoredSectionModel], total_sections: int
 ) -> str:
     """Reconstruct content from selected sections.
 
@@ -535,10 +635,8 @@ def _reconstruct_content(
     result_parts: list[str] = []
 
     for section in selected_sections:
-        section_name = cast(str, section.get("name", ""))
-        section_content = cast(str, section.get("content", ""))
-        result_parts.append(f"## {section_name}")
-        result_parts.append(section_content)
+        result_parts.append(f"## {section.name}")
+        result_parts.append(section.content)
         result_parts.append("")
 
     if len(selected_sections) < total_sections:
@@ -550,48 +648,45 @@ def _reconstruct_content(
 
 
 def _process_code_block(
-    line: str, state: dict[str, object], result_lines: list[str]
+    line: str, state: SummarizationState, result_lines: list[str]
 ) -> bool:
     """Process code block line.
 
     Args:
         line: Current line
-        state: Processing state dictionary
+        state: Processing state model
         result_lines: Result lines list
 
     Returns:
         True if line was processed, False otherwise
     """
-    in_code_block = cast(bool, state["in_code_block"])
-    code_block_lines = cast(list[str], state["code_block_lines"])
-
     if line.strip().startswith("```"):
-        if not in_code_block:
-            state["in_code_block"] = True
-            state["code_block_lines"] = [line]
+        if not state.in_code_block:
+            state.in_code_block = True
+            state.code_block_lines = [line]
         else:
-            state["in_code_block"] = False
-            code_block_lines.append(line)
+            state.in_code_block = False
+            state.code_block_lines.append(line)
 
-            if len(code_block_lines) > 20:
-                result_lines.append(code_block_lines[0])
+            if len(state.code_block_lines) > 20:
+                result_lines.append(state.code_block_lines[0])
                 result_lines.append("# ... code omitted ...")
-                result_lines.append(code_block_lines[-1])
+                result_lines.append(state.code_block_lines[-1])
             else:
-                result_lines.extend(code_block_lines)
+                result_lines.extend(state.code_block_lines)
 
-            state["code_block_lines"] = []
+            state.code_block_lines = []
         return True
 
-    if in_code_block:
-        code_block_lines.append(line)
+    if state.in_code_block:
+        state.code_block_lines.append(line)
         return True
 
     return False
 
 
 def _process_example_section(
-    line: str, state: dict[str, object], result_lines: list[str]
+    line: str, state: SummarizationState, result_lines: list[str]
 ) -> bool:
     """Process example section line.
 
@@ -603,21 +698,19 @@ def _process_example_section(
     Returns:
         True if line was processed, False otherwise
     """
-    in_example = cast(bool, state["in_example"])
-
     if re.match(r"^#+\s+Example", line, re.IGNORECASE):
-        state["in_example"] = True
+        state.in_example = True
         result_lines.append(line)
         result_lines.append("[Example omitted]")
         return True
 
-    if in_example and line.startswith("#"):
-        state["in_example"] = False
+    if state.in_example and line.startswith("#"):
+        state.in_example = False
         # Add the new header line when exiting example section
         result_lines.append(line)
         return True
 
-    if in_example:
+    if state.in_example:
         return True
 
     return False

@@ -59,7 +59,11 @@ class TestValidateSchemaHelpers:
 
         mock_validator = MagicMock()
         mock_validator.validate_file = AsyncMock(
-            return_value={"valid": True, "errors": [], "warnings": []}
+            return_value=MagicMock(
+                model_dump=MagicMock(
+                    return_value={"valid": True, "errors": [], "warnings": []}
+                )
+            )
         )
 
         # Act
@@ -166,8 +170,20 @@ class TestValidateSchemaHelpers:
         mock_validator = MagicMock()
         mock_validator.validate_file = AsyncMock(
             side_effect=[
-                {"valid": True, "errors": [], "warnings": []},
-                {"valid": False, "errors": ["Missing section"], "warnings": []},
+                MagicMock(
+                    model_dump=MagicMock(
+                        return_value={"valid": True, "errors": [], "warnings": []}
+                    )
+                ),
+                MagicMock(
+                    model_dump=MagicMock(
+                        return_value={
+                            "valid": False,
+                            "errors": ["Missing section"],
+                            "warnings": [],
+                        }
+                    )
+                ),
             ]
         )
 
@@ -333,13 +349,16 @@ class TestValidateDuplications:
         mock_fs_manager.read_file = AsyncMock(return_value=("Content", None))
 
         mock_detector = MagicMock()
-        mock_detector.scan_all_files = AsyncMock(
+        duplications = MagicMock()
+        duplications.model_dump = MagicMock(
             return_value={
                 "duplicates_found": 0,
                 "exact_duplicates": [],
                 "similar_content": [],
             }
         )
+        duplications.duplicates_found = 0
+        mock_detector.scan_all_files = AsyncMock(return_value=duplications)
 
         mock_config = MagicMock()
 
@@ -372,13 +391,16 @@ class TestValidateDuplications:
         mock_fs_manager.read_file = AsyncMock(return_value=("Content", None))
 
         mock_detector = MagicMock()
-        mock_detector.scan_all_files = AsyncMock(
+        duplications = MagicMock()
+        duplications.model_dump = MagicMock(
             return_value={
                 "duplicates_found": 0,
                 "exact_duplicates": [],
                 "similar_content": [],
             }
         )
+        duplications.duplicates_found = 0
+        mock_detector.scan_all_files = AsyncMock(return_value=duplications)
 
         mock_config = MagicMock()
         mock_config.get_duplication_threshold.return_value = 0.85
@@ -410,7 +432,8 @@ class TestValidateDuplications:
         mock_fs_manager.read_file = AsyncMock(return_value=("Content", None))
 
         mock_detector = MagicMock()
-        mock_detector.scan_all_files = AsyncMock(
+        duplications = MagicMock()
+        duplications.model_dump = MagicMock(
             return_value={
                 "duplicates_found": 1,
                 "exact_duplicates": [
@@ -419,6 +442,8 @@ class TestValidateDuplications:
                 "similar_content": [],
             }
         )
+        duplications.duplicates_found = 1
+        mock_detector.scan_all_files = AsyncMock(return_value=duplications)
 
         mock_config = MagicMock()
         mock_config.get_duplication_threshold.return_value = 0.85
@@ -464,7 +489,18 @@ class TestValidateQuality:
 
         mock_metrics = MagicMock()
         mock_metrics.calculate_file_score = AsyncMock(
-            return_value={"overall": 85, "completeness": 90}
+            return_value=MagicMock(
+                model_dump=MagicMock(
+                    return_value={
+                        "file_name": "projectBrief.md",
+                        "score": 85,
+                        "grade": "B",
+                        "validation": {"valid": True, "errors": [], "warnings": []},
+                        "freshness": 90,
+                        "structure": 80,
+                    }
+                )
+            )
         )
 
         # Act
@@ -477,7 +513,7 @@ class TestValidateQuality:
         assert result_data["status"] == "success"
         assert result_data["check_type"] == "quality"
         assert result_data["file_name"] == "projectBrief.md"
-        assert result_data["score"]["overall"] == 85
+        assert result_data["score"]["score"] == 85
 
     @pytest.mark.asyncio
     async def test_validate_quality_single_file_invalid_name(
@@ -551,15 +587,23 @@ class TestValidateQuality:
 
         mock_metrics = MagicMock()
         mock_metrics.calculate_overall_score = AsyncMock(
-            return_value={
-                "overall_score": 80,
-                "status": "good",
-                "file_scores": {"file1.md": 85, "file2.md": 75},
-            }
+            return_value=MagicMock(
+                model_dump=MagicMock(
+                    return_value={
+                        "overall_score": 80,
+                        "status": "healthy",
+                        "grade": "B",
+                        "breakdown": {},
+                    }
+                )
+            )
         )
 
         mock_detector = MagicMock()
-        mock_detector.scan_all_files = AsyncMock(return_value={"duplicates_found": 0})
+        duplication_scan = MagicMock()
+        duplication_scan.model_dump = MagicMock(return_value={"duplicates_found": 0})
+        duplication_scan.duplicates_found = 0
+        mock_detector.scan_all_files = AsyncMock(return_value=duplication_scan)
 
         # Act
         result = await validate_quality_all_files(
@@ -571,7 +615,7 @@ class TestValidateQuality:
         assert result_data["status"] == "success"
         assert result_data["check_type"] == "quality"
         assert result_data["overall_score"] == 80
-        assert result_data["health_status"] == "good"
+        assert result_data["health_status"] == "healthy"
 
 
 class TestValidationHandlers:
@@ -596,7 +640,9 @@ class TestValidationHandlers:
             return_value=("Content", None)
         )
         mock_managers["schema_validator"].validate_file = AsyncMock(
-            return_value={"valid": True, "errors": []}
+            return_value=MagicMock(
+                model_dump=MagicMock(return_value={"valid": True, "errors": []})
+            )
         )
 
         # Act
@@ -628,7 +674,7 @@ class TestValidationHandlers:
             return_value=("Content", None)
         )
         mock_managers["schema_validator"].validate_file = AsyncMock(
-            return_value={"valid": True}
+            return_value=MagicMock(model_dump=MagicMock(return_value={"valid": True}))
         )
 
         # Act
@@ -661,8 +707,11 @@ class TestValidationHandlers:
         mock_managers["fs_manager"].read_file = AsyncMock(
             return_value=("Content", None)
         )
+        duplication_scan = MagicMock()
+        duplication_scan.model_dump = MagicMock(return_value={"duplicates_found": 0})
+        duplication_scan.duplicates_found = 0
         mock_managers["duplication_detector"].scan_all_files = AsyncMock(
-            return_value={"duplicates_found": 0}
+            return_value=duplication_scan
         )
         mock_managers["validation_config"].get_duplication_threshold.return_value = 0.85
 
@@ -704,7 +753,18 @@ class TestValidationHandlers:
         )
         mock_managers["metadata_index"].get_file_metadata = AsyncMock(return_value={})
         mock_managers["quality_metrics"].calculate_file_score = AsyncMock(
-            return_value={"overall": 85}
+            return_value=MagicMock(
+                model_dump=MagicMock(
+                    return_value={
+                        "file_name": "test.md",
+                        "score": 85,
+                        "grade": "B",
+                        "validation": {"valid": True, "errors": [], "warnings": []},
+                        "freshness": 90,
+                        "structure": 80,
+                    }
+                )
+            )
         )
 
         # Act
@@ -741,10 +801,22 @@ class TestValidationHandlers:
         )
         mock_managers["metadata_index"].get_file_metadata = AsyncMock(return_value={})
         mock_managers["quality_metrics"].calculate_overall_score = AsyncMock(
-            return_value={"overall_score": 80, "status": "good"}
+            return_value=MagicMock(
+                model_dump=MagicMock(
+                    return_value={
+                        "overall_score": 80,
+                        "status": "healthy",
+                        "grade": "B",
+                        "breakdown": {},
+                    }
+                )
+            )
         )
+        duplication_scan = MagicMock()
+        duplication_scan.model_dump = MagicMock(return_value={"duplicates_found": 0})
+        duplication_scan.duplicates_found = 0
         mock_managers["duplication_detector"].scan_all_files = AsyncMock(
-            return_value={}
+            return_value=duplication_scan
         )
 
         # Act

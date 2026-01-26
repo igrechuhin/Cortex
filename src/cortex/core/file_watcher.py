@@ -1,7 +1,5 @@
 """File system monitoring using watchdog for external change detection."""
 
-from __future__ import annotations
-
 import asyncio
 from collections.abc import Awaitable, Callable
 from concurrent.futures import Future
@@ -16,6 +14,7 @@ from watchdog.events import (
     FileSystemEventHandler,
 )
 from watchdog.observers import Observer
+from watchdog.observers.api import ObservedWatch
 
 
 class ObserverProtocol(Protocol):
@@ -36,7 +35,7 @@ class ObserverProtocol(Protocol):
         *,
         recursive: bool = False,
         event_filter: list[type[FileSystemEvent]] | None = None,
-    ) -> object:
+    ) -> ObservedWatch:
         """Schedule watching a path."""
         ...
 

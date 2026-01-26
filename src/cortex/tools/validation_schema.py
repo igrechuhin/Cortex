@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from cortex.core.file_system import FileSystemManager
+from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.validation.schema_validator import SchemaValidator
 
@@ -33,7 +34,7 @@ async def validate_schema_single_file(
             "status": "success",
             "check_type": "schema",
             "file_name": file_name,
-            "validation": validation_result,
+            "validation": validation_result.model_dump(),
         },
         indent=2,
     )
@@ -44,14 +45,14 @@ async def validate_schema_all_files(
 ) -> str:
     """Validate all files against schema."""
     memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
-    results_dict: dict[str, object] = {}
+    results_dict: ModelDict = {}
     for md_file in memory_bank_dir.glob("*.md"):
         if md_file.is_file():
             content, _ = await fs_manager.read_file(md_file)
             validation_result = await schema_validator.validate_file(
                 md_file.name, content
             )
-            results_dict[md_file.name] = validation_result
+            results_dict[md_file.name] = validation_result.model_dump()
     return json.dumps(
         {"status": "success", "check_type": "schema", "results": results_dict},
         indent=2,

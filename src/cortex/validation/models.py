@@ -5,9 +5,9 @@ These models are used by validation/* modules to return structured data.
 They are separate from tools/models.py which defines MCP tool return types.
 """
 
-from typing import Literal
+from typing import Literal, cast
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
 from cortex.core.constants import (
     DEFAULT_TOKEN_BUDGET,
@@ -19,6 +19,7 @@ from cortex.core.constants import (
     QUALITY_WEIGHT_STRUCTURE,
     SIMILARITY_THRESHOLD_DUPLICATE,
 )
+from cortex.core.models import JsonValue, ModelDict
 
 # ============================================================================
 # Validation Config Models (from validation_config.py)
@@ -157,12 +158,72 @@ class QualityConfigModel(BaseModel):
     )
 
 
+# ============================================================================
+# Infrastructure Validator Models
+# ============================================================================
+
+
+class JobStepModel(BaseModel):
+    """A single step in a CI/CD job configuration.
+
+    This model replaces `ModelDict` for job step definitions.
+    """
+
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
+
+    name: str = Field(..., description="Step name")
+    run: str | None = Field(default=None, description="Command to run")
+    uses: str | None = Field(default=None, description="Action to use")
+
+
+class JobConfigModel(BaseModel):
+    """CI/CD job configuration.
+
+    This model replaces `ModelDict` for job configuration.
+    """
+
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
+
+    name: str | None = Field(default=None, description="Job name")
+    steps: list[JobStepModel] = Field(
+        default_factory=lambda: list[JobStepModel](),
+        description="Job steps",
+    )
+
+    @classmethod
+    def from_dict(cls, data: ModelDict) -> "JobConfigModel":
+        """Create JobConfigModel from a dictionary.
+
+        Args:
+            data: Dictionary with job configuration
+
+        Returns:
+            JobConfigModel instance
+        """
+        steps_data_raw = data.get("steps", [])
+        steps_data: list[JsonValue] = (
+            cast(list[JsonValue], steps_data_raw)
+            if isinstance(steps_data_raw, list)
+            else []
+        )
+        steps = [
+            JobStepModel.model_validate(step)
+            for step in steps_data
+            if isinstance(step, dict)
+        ]
+        return cls.model_validate({**data, "steps": steps})
+
+
 class ValidationConfigModel(BaseModel):
     """Complete validation configuration."""
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    # NOTE: Allow extra keys so users/tests can store experimental settings.
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
 
-    enabled: bool = Field(default=True, description="Whether validation is enabled")
+    enabled: str | StrictBool = Field(
+        default=True,
+        description="Whether validation is enabled (may be invalid when loaded from user config)",
+    )
     auto_validate_on_write: bool = Field(
         default=True, description="Whether to auto-validate on write"
     )
@@ -568,3 +629,27 @@ class AllFilesTimestampResult(BaseModel):
         default_factory=dict, description="Results by file name"
     )
     valid: bool = Field(..., description="Whether overall validation passed")
+
+
+# ============================================================================
+# Duplication Fix Models (for validation_helpers.py)
+# ============================================================================
+
+
+class TransclusionFix(BaseModel):
+    """Transclusion fix suggestion for duplicated files."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    files: list[str] = Field(
+        ..., min_length=2, description="List of files with duplicate content"
+    )
+    suggestion: str = Field(
+        ...,
+        description="Suggestion text for using transclusion",
+    )
+    steps: list[str] = Field(
+        ...,
+        min_length=1,
+        description="Step-by-step instructions for applying the fix",
+    )

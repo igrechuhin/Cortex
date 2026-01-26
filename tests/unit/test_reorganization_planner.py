@@ -6,15 +6,18 @@ of Memory Bank files to improve dependency structure and optimize file organizat
 """
 
 from pathlib import Path
-from typing import cast
 
 import pytest
 
-from cortex.refactoring.reorganization_planner import (
-    ReorganizationAction,
-    ReorganizationPlan,
-    ReorganizationPlanner,
+from cortex.refactoring.models import (
+    DependencyGraphInput,
+    DependencyInfo,
+    MemoryBankStructureData,
+    ReorganizationActionModel,
+    ReorganizationImpactModel,
+    ReorganizationPlanModel,
 )
+from cortex.refactoring.reorganization_planner import ReorganizationPlanner
 
 
 @pytest.fixture
@@ -26,45 +29,41 @@ def reorganization_planner(tmp_path: Path):
 
 
 @pytest.fixture
-def sample_structure_data() -> dict[str, object]:
+def sample_structure_data() -> MemoryBankStructureData:
     """Sample structure analysis data"""
-    return {
-        "organization": {
-            "type": "flat",
-        },
-        "complexity_metrics": {
-            "max_dependency_depth": 7,
-            "overall_complexity": 0.8,
-        },
-        "anti_patterns": {
-            "orphaned_files": ["orphan1.md", "orphan2.md", "orphan3.md"],
-        },
-    }
+    return MemoryBankStructureData(
+        organization="flat",
+        dependency_depth=7,
+        complexity_score=0.8,
+        orphaned_files=["orphan1.md", "orphan2.md", "orphan3.md"],
+        total_files=10,
+        files=["projectBrief.md", "activeContext.md", "progress.md", "techContext.md"],
+    )
 
 
 @pytest.fixture
-def sample_dependency_graph() -> dict[str, object]:
+def sample_dependency_graph() -> DependencyGraphInput:
     """Sample dependency graph data"""
-    return {
-        "dependencies": {
-            "projectBrief.md": {
-                "dependencies": [],
-                "dependents": ["activeContext.md", "progress.md", "techContext.md"],
-            },
-            "activeContext.md": {
-                "dependencies": ["projectBrief.md"],
-                "dependents": [],
-            },
-            "progress.md": {
-                "dependencies": ["projectBrief.md"],
-                "dependents": [],
-            },
-            "techContext.md": {
-                "dependencies": ["projectBrief.md"],
-                "dependents": [],
-            },
+    return DependencyGraphInput(
+        dependencies={
+            "projectBrief.md": DependencyInfo(
+                depends_on=[],
+                dependents=["activeContext.md", "progress.md", "techContext.md"],
+            ),
+            "activeContext.md": DependencyInfo(
+                depends_on=["projectBrief.md"],
+                dependents=[],
+            ),
+            "progress.md": DependencyInfo(
+                depends_on=["projectBrief.md"],
+                dependents=[],
+            ),
+            "techContext.md": DependencyInfo(
+                depends_on=["projectBrief.md"],
+                dependents=[],
+            ),
         }
-    }
+    )
 
 
 class TestReorganizationPlannerInitialization:
@@ -221,7 +220,7 @@ class TestNeedsReorganization:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test detecting need for reorganization based on dependency depth"""
-        structure = cast(dict[str, object], {"dependency_depth": 7})
+        structure = MemoryBankStructureData(dependency_depth=7)
 
         needs_reorg, reasons = reorganization_planner.needs_reorganization(
             structure, "dependency_depth"
@@ -235,7 +234,7 @@ class TestNeedsReorganization:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test no reorganization needed for acceptable dependency depth"""
-        structure = cast(dict[str, object], {"dependency_depth": 3})
+        structure = MemoryBankStructureData(dependency_depth=3)
 
         needs_reorg, reasons = reorganization_planner.needs_reorganization(
             structure, "dependency_depth"
@@ -248,9 +247,8 @@ class TestNeedsReorganization:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test detecting need for categorization in flat structure"""
-        structure = cast(
-            dict[str, object],
-            {"organization": "flat", "total_files": 10, "categories": {}},
+        structure = MemoryBankStructureData(
+            organization="flat", total_files=10, categories={}
         )
 
         needs_reorg, reasons = reorganization_planner.needs_reorganization(
@@ -264,12 +262,10 @@ class TestNeedsReorganization:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test detecting need for categorization with uncategorized files"""
-        structure = cast(
-            dict[str, object],
-            {
-                "categories": {
-                    "uncategorized": ["file1.md", "file2.md", "file3.md", "file4.md"]
-                }
+        structure = MemoryBankStructureData(
+            organization="category_based",
+            categories={
+                "uncategorized": ["file1.md", "file2.md", "file3.md", "file4.md"],
             },
         )
 
@@ -284,9 +280,7 @@ class TestNeedsReorganization:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test detecting need for reorganization based on complexity"""
-        structure = cast(
-            dict[str, object], {"complexity_score": 0.85, "orphaned_files": []}
-        )
+        structure = MemoryBankStructureData(complexity_score=0.85, orphaned_files=[])
 
         needs_reorg, reasons = reorganization_planner.needs_reorganization(
             structure, "complexity"
@@ -299,12 +293,9 @@ class TestNeedsReorganization:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test detecting need for reorganization with orphaned files"""
-        structure = cast(
-            dict[str, object],
-            {
-                "complexity_score": 0.3,
-                "orphaned_files": ["file1.md", "file2.md", "file3.md"],
-            },
+        structure = MemoryBankStructureData(
+            complexity_score=0.3,
+            orphaned_files=["file1.md", "file2.md", "file3.md"],
         )
 
         needs_reorg, reasons = reorganization_planner.needs_reorganization(
@@ -321,19 +312,16 @@ class TestOptimizeDependencyOrder:
     def test_optimize_dependency_order_basic(
         self,
         reorganization_planner: ReorganizationPlanner,
-        sample_dependency_graph: dict[str, object],
+        sample_dependency_graph: DependencyGraphInput,
     ):
         """Test basic dependency order optimization"""
-        structure = cast(
-            dict[str, object],
-            {
-                "files": [
-                    "activeContext.md",
-                    "projectBrief.md",
-                    "progress.md",
-                    "techContext.md",
-                ]
-            },
+        structure = MemoryBankStructureData(
+            files=[
+                "activeContext.md",
+                "projectBrief.md",
+                "progress.md",
+                "techContext.md",
+            ]
         )
 
         order = reorganization_planner.optimize_dependency_order(
@@ -349,10 +337,8 @@ class TestOptimizeDependencyOrder:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test optimization with empty dependency graph"""
-        structure = cast(
-            dict[str, object], {"files": ["file1.md", "file2.md", "file3.md"]}
-        )
-        empty_graph: dict[str, object] = {}
+        structure = MemoryBankStructureData(files=["file1.md", "file2.md", "file3.md"])
+        empty_graph = DependencyGraphInput(dependencies={})
 
         order = reorganization_planner.optimize_dependency_order(structure, empty_graph)
 
@@ -362,19 +348,16 @@ class TestOptimizeDependencyOrder:
     def test_optimize_dependency_order_deterministic(
         self,
         reorganization_planner: ReorganizationPlanner,
-        sample_dependency_graph: dict[str, object],
+        sample_dependency_graph: DependencyGraphInput,
     ):
         """Test that optimization produces deterministic results"""
-        structure = cast(
-            dict[str, object],
-            {
-                "files": [
-                    "activeContext.md",
-                    "projectBrief.md",
-                    "progress.md",
-                    "techContext.md",
-                ]
-            },
+        structure = MemoryBankStructureData(
+            files=[
+                "activeContext.md",
+                "projectBrief.md",
+                "progress.md",
+                "techContext.md",
+            ]
         )
 
         order1 = reorganization_planner.optimize_dependency_order(
@@ -394,14 +377,12 @@ class TestProposedStructures:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test proposing category-based structure"""
-        current = cast(
-            dict[str, object],
-            {
-                "categories": {
-                    "context": ["activeContext.md", "systemPatterns.md"],
-                    "technical": ["techContext.md"],
-                    "uncategorized": ["random.md", "misc.md"],
-                }
+        current = MemoryBankStructureData(
+            organization="category_based",
+            categories={
+                "context": ["activeContext.md", "systemPatterns.md"],
+                "technical": ["techContext.md"],
+                "uncategorized": ["random.md", "misc.md"],
             },
         )
 
@@ -417,17 +398,14 @@ class TestProposedStructures:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test proposing simplified structure"""
-        current = cast(
-            dict[str, object],
-            {
-                "files": [
-                    "memorybankinstructions.md",
-                    "projectBrief.md",
-                    "activeContext.md",
-                    "progress.md",
-                    "techContext.md",
-                ]
-            },
+        current = MemoryBankStructureData(
+            files=[
+                "memorybankinstructions.md",
+                "projectBrief.md",
+                "activeContext.md",
+                "progress.md",
+                "techContext.md",
+            ]
         )
 
         simplified = reorganization_planner.propose_simplified_structure(current)
@@ -448,14 +426,12 @@ class TestActionGeneration:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test generating actions for category-based reorganization"""
-        current = cast(dict[str, object], {"files": ["file1.md", "file2.md"]})
-        proposed = cast(
-            dict[str, object],
-            {
-                "categories": {
-                    "context": ["file1.md"],
-                    "technical": ["file2.md"],
-                }
+        current = MemoryBankStructureData(files=["file1.md", "file2.md"])
+        proposed = MemoryBankStructureData(
+            organization="category_based",
+            categories={
+                "context": ["file1.md"],
+                "technical": ["file2.md"],
             },
         )
 
@@ -475,9 +451,10 @@ class TestActionGeneration:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test generating actions for dependency depth optimization"""
-        current = cast(dict[str, object], {"files": ["file1.md", "file2.md"]})
-        proposed = cast(
-            dict[str, object], {"dependency_order": ["file1.md", "file2.md"]}
+        current = MemoryBankStructureData(files=["file1.md", "file2.md"])
+        proposed = MemoryBankStructureData(
+            organization="dependency_optimized",
+            dependency_order=["file1.md", "file2.md"],
         )
 
         actions = await reorganization_planner.generate_actions(
@@ -493,14 +470,12 @@ class TestActionGeneration:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test generating actions for complexity reduction"""
-        current = cast(dict[str, object], {"files": ["file1.md", "file2.md"]})
-        proposed = cast(
-            dict[str, object],
-            {
-                "categories": {
-                    "core": ["file1.md"],
-                    "context": ["file2.md"],
-                }
+        current = MemoryBankStructureData(files=["file1.md", "file2.md"])
+        proposed = MemoryBankStructureData(
+            organization="simplified",
+            categories={
+                "core": ["file1.md"],
+                "context": ["file2.md"],
             },
         )
 
@@ -520,46 +495,76 @@ class TestImpactCalculation:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test basic impact calculation"""
-        current = cast(dict[str, object], {"total_files": 5})
-        proposed = cast(dict[str, object], {"organization": "category_based"})
+        current = MemoryBankStructureData(total_files=5)
+        proposed = MemoryBankStructureData(organization="category_based")
         actions = [
-            ReorganizationAction("move", "file1.md", "context/file1.md", "test"),
-            ReorganizationAction("move", "file2.md", "context/file2.md", "test"),
-            ReorganizationAction("create_category", "", "context", "test"),
+            ReorganizationActionModel(
+                action_type="move",
+                source="file1.md",
+                target="context/file1.md",
+                reason="test",
+                dependencies_affected=[],
+            ),
+            ReorganizationActionModel(
+                action_type="move",
+                source="file2.md",
+                target="context/file2.md",
+                reason="test",
+                dependencies_affected=[],
+            ),
+            ReorganizationActionModel(
+                action_type="create_category",
+                source="",
+                target="context",
+                reason="test",
+                dependencies_affected=[],
+            ),
         ]
 
         impact = reorganization_planner.calculate_impact(current, proposed, actions)
 
-        assert impact["files_moved"] == 2
-        assert impact["categories_created"] == 1
-        assert "dependency_depth_reduction" in impact
-        assert "complexity_reduction" in impact
+        assert impact.files_moved == 2
+        assert impact.categories_created == 1
+        assert isinstance(impact.dependency_depth_reduction, float)
+        assert isinstance(impact.complexity_reduction, float)
 
     def test_calculate_impact_effort_estimation(
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test effort estimation based on action count"""
-        current: dict[str, object] = {}
-        proposed: dict[str, object] = {}
+        current = MemoryBankStructureData()
+        proposed = MemoryBankStructureData()
 
         # Few actions -> low effort
         few_actions = [
-            ReorganizationAction("move", "file1.md", "context/file1.md", "test")
+            ReorganizationActionModel(
+                action_type="move",
+                source="file1.md",
+                target="context/file1.md",
+                reason="test",
+                dependencies_affected=[],
+            )
         ]
         impact_low = reorganization_planner.calculate_impact(
             current, proposed, few_actions
         )
-        assert impact_low["estimated_effort"] == "low"
+        assert impact_low.estimated_effort == "low"
 
         # Many actions -> medium effort
         many_actions = [
-            ReorganizationAction("move", f"file{i}.md", f"context/file{i}.md", "test")
+            ReorganizationActionModel(
+                action_type="move",
+                source=f"file{i}.md",
+                target=f"context/file{i}.md",
+                reason="test",
+                dependencies_affected=[],
+            )
             for i in range(15)
         ]
         impact_medium = reorganization_planner.calculate_impact(
             current, proposed, many_actions
         )
-        assert impact_medium["estimated_effort"] == "medium"
+        assert impact_medium.estimated_effort == "medium"
 
 
 class TestRiskIdentification:
@@ -570,10 +575,16 @@ class TestRiskIdentification:
     ):
         """Test identifying risks with many file moves"""
         actions = [
-            ReorganizationAction("move", f"file{i}.md", f"context/file{i}.md", "test")
+            ReorganizationActionModel(
+                action_type="move",
+                source=f"file{i}.md",
+                target=f"context/file{i}.md",
+                reason="test",
+                dependencies_affected=[],
+            )
             for i in range(8)
         ]
-        current = cast(dict[str, object], {"dependency_depth": 2})
+        current = MemoryBankStructureData(dependency_depth=2)
 
         risks = reorganization_planner.identify_risks(actions, current)
 
@@ -585,10 +596,16 @@ class TestRiskIdentification:
     ):
         """Test identifying risks for large-scale reorganization"""
         actions = [
-            ReorganizationAction("move", f"file{i}.md", f"context/file{i}.md", "test")
+            ReorganizationActionModel(
+                action_type="move",
+                source=f"file{i}.md",
+                target=f"context/file{i}.md",
+                reason="test",
+                dependencies_affected=[],
+            )
             for i in range(15)
         ]
-        current = cast(dict[str, object], {"dependency_depth": 2})
+        current = MemoryBankStructureData(dependency_depth=2)
 
         risks = reorganization_planner.identify_risks(actions, current)
 
@@ -598,8 +615,16 @@ class TestRiskIdentification:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test identifying risks with complex dependencies"""
-        actions = [ReorganizationAction("move", "file1.md", "context/file1.md", "test")]
-        current = cast(dict[str, object], {"dependency_depth": 5})
+        actions = [
+            ReorganizationActionModel(
+                action_type="move",
+                source="file1.md",
+                target="context/file1.md",
+                reason="test",
+                dependencies_affected=[],
+            )
+        ]
+        current = MemoryBankStructureData(dependency_depth=5)
 
         risks = reorganization_planner.identify_risks(actions, current)
 
@@ -607,8 +632,16 @@ class TestRiskIdentification:
 
     def test_identify_low_risk(self, reorganization_planner: ReorganizationPlanner):
         """Test identifying low risk scenarios"""
-        actions = [ReorganizationAction("move", "file1.md", "context/file1.md", "test")]
-        current = cast(dict[str, object], {"dependency_depth": 2})
+        actions = [
+            ReorganizationActionModel(
+                action_type="move",
+                source="file1.md",
+                target="context/file1.md",
+                reason="test",
+                dependencies_affected=[],
+            )
+        ]
+        current = MemoryBankStructureData(dependency_depth=2)
 
         risks = reorganization_planner.identify_risks(actions, current)
 
@@ -622,8 +655,8 @@ class TestBenefitIdentification:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test identifying benefits of category-based organization"""
-        proposed = cast(dict[str, object], {"organization": "category_based"})
-        current = cast(dict[str, object], {"organization": "flat"})
+        proposed = MemoryBankStructureData(organization="category_based")
+        current = MemoryBankStructureData(organization="flat")
 
         benefits = reorganization_planner.identify_benefits(proposed, current)
 
@@ -635,8 +668,8 @@ class TestBenefitIdentification:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test identifying benefits of dependency optimization"""
-        proposed = cast(dict[str, object], {"organization": "dependency_optimized"})
-        current = cast(dict[str, object], {"organization": "flat"})
+        proposed = MemoryBankStructureData(organization="dependency_optimized")
+        current = MemoryBankStructureData(organization="flat")
 
         benefits = reorganization_planner.identify_benefits(proposed, current)
 
@@ -647,8 +680,8 @@ class TestBenefitIdentification:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test identifying benefits of simplified structure"""
-        proposed = cast(dict[str, object], {"organization": "simplified"})
-        current = cast(dict[str, object], {"organization": "complex"})
+        proposed = MemoryBankStructureData(organization="simplified")
+        current = MemoryBankStructureData(organization="complex")
 
         benefits = reorganization_planner.identify_benefits(proposed, current)
 
@@ -663,8 +696,8 @@ class TestBenefitIdentification:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test that general benefit is always included"""
-        proposed = cast(dict[str, object], {"organization": "unknown"})
-        current = cast(dict[str, object], {"organization": "flat"})
+        proposed = MemoryBankStructureData(organization="unknown")
+        current = MemoryBankStructureData(organization="flat")
 
         benefits = reorganization_planner.identify_benefits(proposed, current)
 
@@ -681,8 +714,8 @@ class TestCreateReorganizationPlan:
         self,
         reorganization_planner: ReorganizationPlanner,
         tmp_path: Path,
-        sample_structure_data: dict[str, object],
-        sample_dependency_graph: dict[str, object],
+        sample_structure_data: MemoryBankStructureData,
+        sample_dependency_graph: DependencyGraphInput,
     ):
         """Test creating a successful reorganization plan"""
         # Create test files
@@ -710,15 +743,12 @@ class TestCreateReorganizationPlan:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test that no plan is created when reorganization not needed"""
-        structure_data = cast(
-            dict[str, object],
-            {
-                "organization": {"type": "flat"},
-                "complexity_metrics": {"max_dependency_depth": 2},
-                "anti_patterns": {"orphaned_files": []},
-            },
+        structure_data = MemoryBankStructureData(
+            organization="flat",
+            dependency_depth=2,
+            orphaned_files=[],
         )
-        dependency_graph = cast(dict[str, object], {"dependencies": {}})
+        dependency_graph = DependencyGraphInput(dependencies={})
 
         plan = await reorganization_planner.create_reorganization_plan(
             optimize_for="dependency_depth",
@@ -739,15 +769,12 @@ class TestCreateReorganizationPlan:
         for i in range(10):
             _ = (tmp_path / f"file{i}.md").write_text(f"# File {i}")
 
-        structure_data = cast(
-            dict[str, object],
-            {
-                "organization": {"type": "flat"},
-                "complexity_metrics": {},
-                "anti_patterns": {},
-            },
+        structure_data = MemoryBankStructureData(
+            organization="flat",
+            total_files=10,
+            files=[f"file{i}.md" for i in range(10)],
         )
-        dependency_graph = cast(dict[str, object], {"dependencies": {}})
+        dependency_graph = DependencyGraphInput(dependencies={})
 
         plan = await reorganization_planner.create_reorganization_plan(
             optimize_for="category_based",
@@ -764,8 +791,8 @@ class TestCreateReorganizationPlan:
         self,
         reorganization_planner: ReorganizationPlanner,
         tmp_path: Path,
-        sample_structure_data: dict[str, object],
-        sample_dependency_graph: dict[str, object],
+        sample_structure_data: MemoryBankStructureData,
+        sample_dependency_graph: DependencyGraphInput,
     ):
         """Test creating complexity reduction plan"""
         _ = (tmp_path / "file1.md").write_text("# File 1")
@@ -799,18 +826,36 @@ class TestPreviewReorganization:
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test preview with detailed information"""
-        plan = ReorganizationPlan(
+        plan = ReorganizationPlanModel(
             plan_id="REORG-0001",
             optimization_goal="category_based",
-            current_structure={"organization": "flat"},
-            proposed_structure={"organization": "category_based"},
+            current_structure=MemoryBankStructureData(organization="flat"),
+            proposed_structure=MemoryBankStructureData(organization="category_based"),
             actions=[
-                ReorganizationAction("move", "file1.md", "context/file1.md", "test"),
-                ReorganizationAction(
-                    "create_category", "", "context", "create context category"
+                ReorganizationActionModel(
+                    action_type="move",
+                    source="file1.md",
+                    target="context/file1.md",
+                    reason="test",
+                    dependencies_affected=[],
+                ),
+                ReorganizationActionModel(
+                    action_type="create_category",
+                    source="",
+                    target="context",
+                    reason="create context category",
+                    dependencies_affected=[],
                 ),
             ],
-            estimated_impact={"files_moved": 1},
+            estimated_impact=ReorganizationImpactModel(
+                files_moved=1,
+                categories_created=1,
+                dependency_depth_reduction=0.0,
+                complexity_reduction=0.0,
+                maintainability_improvement=0.0,
+                navigation_improvement=0.0,
+                estimated_effort="low",
+            ),
             risks=["Low risk"],
             benefits=["Improved organization"],
         )
@@ -819,24 +864,32 @@ class TestPreviewReorganization:
             plan, show_details=True
         )
 
-        assert preview["plan_id"] == "REORG-0001"
-        assert preview["optimization_goal"] == "category_based"
-        assert preview["actions_count"] == 2
-        assert "actions" in preview
-        assert "structure_comparison" in preview
+        assert preview.plan_id == "REORG-0001"
+        assert preview.optimization_goal == "category_based"
+        assert preview.actions_count == 2
+        assert len(preview.actions) == 2
+        assert preview.structure_comparison is not None
 
     @pytest.mark.asyncio
     async def test_preview_without_details(
         self, reorganization_planner: ReorganizationPlanner
     ):
         """Test preview without detailed information"""
-        plan = ReorganizationPlan(
+        plan = ReorganizationPlanModel(
             plan_id="REORG-0001",
             optimization_goal="dependency_depth",
-            current_structure={},
-            proposed_structure={},
+            current_structure=MemoryBankStructureData(),
+            proposed_structure=MemoryBankStructureData(),
             actions=[],
-            estimated_impact={},
+            estimated_impact=ReorganizationImpactModel(
+                files_moved=0,
+                categories_created=0,
+                dependency_depth_reduction=0.0,
+                complexity_reduction=0.0,
+                maintainability_improvement=0.0,
+                navigation_improvement=0.0,
+                estimated_effort="low",
+            ),
             risks=[],
             benefits=[],
         )
@@ -845,75 +898,58 @@ class TestPreviewReorganization:
             plan, show_details=False
         )
 
-        assert "actions" not in preview
-        assert "structure_comparison" not in preview
-        assert "plan_id" in preview
-        assert "optimization_goal" in preview
+        assert preview.plan_id == "REORG-0001"
+        assert preview.optimization_goal == "dependency_depth"
+        assert preview.actions == []
+        assert preview.structure_comparison is None
 
 
-class TestReorganizationPlanDataclass:
-    """Test ReorganizationPlan dataclass"""
+class TestReorganizationPlanModel:
+    """Test ReorganizationPlanModel."""
 
-    def test_to_dict_conversion(self):
-        """Test converting plan to dictionary"""
-        actions = [
-            ReorganizationAction(
-                "move", "file1.md", "context/file1.md", "test", ["dep1"]
-            ),
-            ReorganizationAction("create_category", "", "context", "create context"),
-        ]
-
-        plan = ReorganizationPlan(
+    def test_model_dump_json(self):
+        plan = ReorganizationPlanModel(
             plan_id="REORG-0001",
             optimization_goal="category_based",
-            current_structure={"organization": "flat"},
-            proposed_structure={"organization": "category_based"},
-            actions=actions,
-            estimated_impact={"files_moved": 1},
+            current_structure=MemoryBankStructureData(organization="flat"),
+            proposed_structure=MemoryBankStructureData(organization="category_based"),
+            actions=[
+                ReorganizationActionModel(
+                    action_type="move",
+                    source="file1.md",
+                    target="context/file1.md",
+                    reason="test",
+                    dependencies_affected=["dep1"],
+                ),
+                ReorganizationActionModel(
+                    action_type="create_category",
+                    source="",
+                    target="context",
+                    reason="create context",
+                    dependencies_affected=[],
+                ),
+            ],
+            estimated_impact=ReorganizationImpactModel(
+                files_moved=1,
+                categories_created=1,
+                dependency_depth_reduction=0.0,
+                complexity_reduction=0.0,
+                maintainability_improvement=0.0,
+                navigation_improvement=0.0,
+                estimated_effort="low",
+            ),
             risks=["Low risk"],
             benefits=["Improved organization"],
             preserve_history=True,
         )
 
-        result = plan.to_dict()
-
-        assert result["plan_id"] == "REORG-0001"
-        assert result["optimization_goal"] == "category_based"
-        assert result["current_structure"] == {"organization": "flat"}
-        assert result["proposed_structure"] == {"organization": "category_based"}
-        actions = cast(list[object], result["actions"])
-        assert len(actions) == 2
-        assert result["estimated_impact"] == {"files_moved": 1}
-        assert result["risks"] == ["Low risk"]
-        assert result["benefits"] == ["Improved organization"]
-        assert result["preserve_history"] is True
-
-    def test_to_dict_actions_format(self):
-        """Test that actions are properly formatted in dict"""
-        action = ReorganizationAction(
-            "move", "file1.md", "context/file1.md", "test reason", ["dep1", "dep2"]
-        )
-
-        plan = ReorganizationPlan(
-            plan_id="REORG-0001",
-            optimization_goal="test",
-            current_structure={},
-            proposed_structure={},
-            actions=[action],
-            estimated_impact={},
-            risks=[],
-            benefits=[],
-        )
-
-        result = plan.to_dict()
-        actions = cast(list[dict[str, object]], result["actions"])
-        action_dict = actions[0]
-
-        assert action_dict["type"] == "move"
-        assert action_dict["source"] == "file1.md"
-        assert action_dict["target"] == "context/file1.md"
-        assert action_dict["reason"] == "test reason"
-        assert action_dict["dependencies_affected"] == 2
+        dumped = plan.model_dump(mode="json")
+        assert dumped["plan_id"] == "REORG-0001"
+        assert dumped["optimization_goal"] == "category_based"
+        assert dumped["current_structure"]["organization"] == "flat"
+        assert dumped["proposed_structure"]["organization"] == "category_based"
+        assert isinstance(dumped["actions"], list)
+        assert dumped["estimated_impact"]["files_moved"] == 1
 
 
 class TestHelperMethods:
@@ -940,8 +976,8 @@ class TestHelperMethods:
         self,
         reorganization_planner: ReorganizationPlanner,
         tmp_path: Path,
-        sample_structure_data: dict[str, object],
-        sample_dependency_graph: dict[str, object],
+        sample_structure_data: MemoryBankStructureData,
+        sample_dependency_graph: DependencyGraphInput,
     ):
         """Test analyzing current structure"""
         # Create test files
@@ -952,42 +988,40 @@ class TestHelperMethods:
             sample_structure_data, sample_dependency_graph
         )
 
-        assert "total_files" in structure
-        assert "files" in structure
-        assert "organization" in structure
-        assert "categories" in structure
-        assert "dependency_depth" in structure
+        assert isinstance(structure.total_files, int)
+        assert isinstance(structure.files, list)
+        assert isinstance(structure.organization, str)
+        assert isinstance(structure.categories, dict)
+        assert isinstance(structure.dependency_depth, int)
 
     @pytest.mark.asyncio
     async def test_generate_proposed_structure_dependency(
         self,
         reorganization_planner: ReorganizationPlanner,
-        sample_dependency_graph: dict[str, object],
+        sample_dependency_graph: DependencyGraphInput,
     ):
         """Test generating proposed structure for dependency optimization"""
-        current = cast(dict[str, object], {"files": ["file1.md", "file2.md"]})
+        current = MemoryBankStructureData(files=["file1.md", "file2.md"])
 
         proposed = await reorganization_planner.generate_proposed_structure(
             current, "dependency_depth", sample_dependency_graph
         )
 
-        assert proposed["organization"] == "dependency_optimized"
-        assert "dependency_order" in proposed
+        assert proposed.organization == "dependency_optimized"
+        assert proposed.dependency_order is not None
 
     @pytest.mark.asyncio
     async def test_generate_proposed_structure_category(
         self,
         reorganization_planner: ReorganizationPlanner,
-        sample_dependency_graph: dict[str, object],
+        sample_dependency_graph: DependencyGraphInput,
     ):
         """Test generating proposed structure for category-based organization"""
-        current = cast(
-            dict[str, object],
-            {
-                "categories": {
-                    "context": ["activeContext.md"],
-                    "technical": ["techContext.md"],
-                }
+        current = MemoryBankStructureData(
+            organization="category_based",
+            categories={
+                "context": ["activeContext.md"],
+                "technical": ["techContext.md"],
             },
         )
 
@@ -995,25 +1029,22 @@ class TestHelperMethods:
             current, "category_based", sample_dependency_graph
         )
 
-        assert proposed["organization"] == "category_based"
-        assert "categories" in proposed
+        assert proposed.organization == "category_based"
+        assert isinstance(proposed.categories, dict)
 
     @pytest.mark.asyncio
     async def test_generate_proposed_structure_complexity(
         self,
         reorganization_planner: ReorganizationPlanner,
-        sample_dependency_graph: dict[str, object],
+        sample_dependency_graph: DependencyGraphInput,
     ):
         """Test generating proposed structure for complexity reduction"""
-        current = cast(
-            dict[str, object],
-            {
-                "files": [
-                    "memorybankinstructions.md",
-                    "projectBrief.md",
-                    "activeContext.md",
-                ]
-            },
+        current = MemoryBankStructureData(
+            files=[
+                "memorybankinstructions.md",
+                "projectBrief.md",
+                "activeContext.md",
+            ]
         )
 
         proposed = await reorganization_planner.generate_proposed_structure(

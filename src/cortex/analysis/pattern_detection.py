@@ -5,10 +5,10 @@ This module handles detection of file co-access patterns and task-based access p
 """
 
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from itertools import combinations
-from typing import cast
 
+from cortex.analysis.models import CoAccessPattern
 from cortex.analysis.pattern_types import (
     AccessRecord,
     TaskPatternEntry,
@@ -25,13 +25,7 @@ def update_co_access_patterns(
         if other_file != file_path:
             key = tuple(sorted([file_path, other_file]))
             key_str = f"{key[0]}|{key[1]}"
-
-            current_count_raw: object = co_access_patterns.get(key_str, 0)
-            try:
-                current_count = int(cast(int | str | float, current_count_raw))
-            except (TypeError, ValueError):
-                current_count = 0
-            co_access_patterns[key_str] = current_count + 1
+            co_access_patterns[key_str] = co_access_patterns.get(key_str, 0) + 1
 
 
 def update_task_patterns(
@@ -43,21 +37,14 @@ def update_task_patterns(
 ) -> None:
     """Update task patterns with file access information."""
     if task_id not in task_patterns:
-        task_patterns[task_id] = {
-            "description": task_description,
-            "files": [],
-            "timestamp": timestamp,
-        }
+        task_patterns[task_id] = TaskPatternEntry(
+            description=task_description, files=[], timestamp=timestamp
+        )
 
     task_entry = task_patterns[task_id]
-    files_list_raw: object = task_entry.get("files", [])
-    files_list_items: list[object] = (
-        cast(list[object], files_list_raw) if isinstance(files_list_raw, list) else []
-    )
-    files_list: list[str] = [str(f) for f in files_list_items if f is not None]
+    files_list = task_entry.files
     if file_path not in files_list:
         files_list.append(file_path)
-        task_entry["files"] = files_list
 
 
 def get_all_time_patterns(
@@ -94,7 +81,7 @@ def calculate_recent_patterns(
     - MAX = ACCESS_LOG_MAX_ENTRIES (10,000)
     - k = average files per task (~5-10 typically)
     """
-    cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_range_days)
+    cutoff_date = datetime.now(UTC) - timedelta(days=time_range_days)
     cutoff_str = cutoff_date.isoformat()
     task_files: defaultdict[str, set[str]] = defaultdict(set)
     recent_accesses = (
@@ -103,40 +90,45 @@ def calculate_recent_patterns(
         else accesses
     )
     for access in recent_accesses:
-        if access["timestamp"] >= cutoff_str and access["task_id"]:
-            task_files[access["task_id"]].add(access["file"])
+        if access.timestamp >= cutoff_str and access.task_id:
+            task_files[access.task_id].add(access.file)
     return _calculate_patterns_from_task_files(task_files)
 
 
 def format_co_access_results(
     patterns: dict[str, int], min_co_access_count: int
-) -> list[dict[str, object]]:
+) -> list[CoAccessPattern]:
     """Format and filter co-access pattern results."""
-    result: list[dict[str, object]] = [
-        {
-            "file_1": files[0],
-            "file_2": files[1],
-            "co_access_count": count,
-            "correlation_strength": (
-                "high" if count >= 10 else "medium" if count >= 5 else "low"
-            ),
-        }
-        for pattern_key, count in patterns.items()
-        if count >= min_co_access_count and (files := pattern_key.split("|"))
-    ]
+    result: list[CoAccessPattern] = []
+    for pattern_key, count in patterns.items():
+        if count < min_co_access_count:
+            continue
+        files = pattern_key.split("|")
+        if len(files) < 2:
+            continue
+        file_1, file_2 = files[0], files[1]
+        correlation_strength = (
+            "high" if count >= 10 else "medium" if count >= 5 else "low"
+        )
+        result.append(
+            CoAccessPattern(
+                files=[file_1, file_2],
+                file_1=file_1,
+                file_2=file_2,
+                co_access_count=count,
+                occurrences=count,
+                correlation=0.0,
+                correlation_strength=correlation_strength,
+            )
+        )
     return result
 
 
 def sort_by_co_access_count(
-    result: list[dict[str, object]],
-) -> list[dict[str, object]]:
+    result: list[CoAccessPattern],
+) -> list[CoAccessPattern]:
     """Sort results by co-access count descending."""
-
-    def get_co_access_count(x: dict[str, object]) -> int:
-        count_val_raw: object = x.get("co_access_count", 0)
-        return int(count_val_raw) if isinstance(count_val_raw, (int, float)) else 0
-
-    result.sort(key=get_co_access_count, reverse=True)
+    result.sort(key=lambda x: x.co_access_count, reverse=True)
     return result
 
 
@@ -145,7 +137,7 @@ def get_co_access_patterns(
     accesses: list[AccessRecord],
     min_co_access_count: int = 3,
     time_range_days: int | None = None,
-) -> list[dict[str, object]]:
+) -> list[CoAccessPattern]:
     """
     Get frequently co-accessed file pairs.
 
@@ -173,23 +165,18 @@ def should_skip_task_pattern(
     """Check if pattern should be skipped based on time range."""
     if time_range_days is None:
         return False
-    pattern_timestamp = pattern.get("timestamp", "") or ""
+    pattern_timestamp = pattern.timestamp
     return pattern_timestamp < cutoff_str
 
 
 def extract_files_from_pattern(pattern: TaskPatternEntry) -> list[str]:
     """Extract files list from pattern."""
-    files_raw: object = pattern.get("files", [])
-    files_list_items: list[object] = (
-        cast(list[object], files_raw) if isinstance(files_raw, list) else []
-    )
-    return [str(f) for f in files_list_items if f is not None]
+    return pattern.files
 
 
 def extract_description_from_pattern(pattern: TaskPatternEntry) -> str:
     """Extract description from pattern."""
-    description_raw: object = pattern.get("description", "")
-    return str(description_raw) if description_raw is not None else ""
+    return pattern.description or ""
 
 
 def get_task_patterns(
@@ -208,20 +195,23 @@ def get_task_patterns(
     Returns:
         List of task patterns with file access information
     """
-    result: list[TaskPatternResult] = [
-        {
-            "task_id": str(task_id),
-            "description": extract_description_from_pattern(pattern_entry),
-            "file_count": len(files_list),
-            "files": files_list,
-            "timestamp": pattern_entry.get("timestamp", "") or "",
-        }
-        for task_id, pattern in task_patterns.items()
-        if not should_skip_task_pattern(
-            (pattern_entry := pattern), time_range_days, cutoff_str
-        )
-        and (files_list := extract_files_from_pattern(pattern_entry))
-    ]
+    result: list[TaskPatternResult] = []
+    for task_id, pattern_entry in task_patterns.items():
+        if should_skip_task_pattern(pattern_entry, time_range_days, cutoff_str):
+            continue
+        files_list = extract_files_from_pattern(pattern_entry)
+        if not files_list:
+            continue
 
-    result.sort(key=lambda x: x["timestamp"], reverse=True)
+        result.append(
+            TaskPatternResult(
+                task_id=str(task_id),
+                description=extract_description_from_pattern(pattern_entry),
+                file_count=len(files_list),
+                files=files_list,
+                timestamp=pattern_entry.timestamp,
+            )
+        )
+
+    result.sort(key=lambda x: x.timestamp, reverse=True)
     return result

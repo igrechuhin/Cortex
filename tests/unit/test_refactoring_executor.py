@@ -11,12 +11,13 @@ from cortex.core.exceptions import ValidationError
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.linking.link_parser import LinkParser
-from cortex.refactoring.execution_validator import RefactoringOperation
-from cortex.refactoring.refactoring_executor import (
-    RefactoringExecution,
-    RefactoringExecutor,
+from cortex.refactoring.models import (
+    OperationParameters,
+    RefactoringExecutionModel,
+    RefactoringOperationModel,
     RefactoringStatus,
 )
+from cortex.refactoring.refactoring_executor import RefactoringExecutor
 
 
 class TestRefactoringStatus:
@@ -34,29 +35,29 @@ class TestRefactoringStatus:
 
 
 class TestRefactoringExecution:
-    """Test RefactoringExecution dataclass."""
+    """Test RefactoringExecutionModel Pydantic model."""
 
     def test_to_dict_conversion(self):
         """Test converting execution to dictionary."""
         # Arrange
-        operation = RefactoringOperation(
+        operation = RefactoringOperationModel(
             operation_id="op-1",
             operation_type="move",
             target_file="test.md",
-            parameters={"dest": "new/"},
+            parameters=OperationParameters(destination_file="new/"),
         )
 
-        execution = RefactoringExecution(
+        execution = RefactoringExecutionModel(
             execution_id="exec-1",
             suggestion_id="sug-1",
             approval_id="apr-1",
             operations=[operation],
-            status="completed",
+            status=RefactoringStatus.COMPLETED,
             created_at="2025-01-01T12:00:00",
         )
 
         # Act
-        result = execution.to_dict()
+        result = execution.model_dump()
         operations = cast(list[dict[str, object]], result["operations"])
 
         # Assert
@@ -362,11 +363,11 @@ class TestOperationExecution:
         dest_dir = memory_bank_dir / "newdir"
         dest_dir.mkdir()
 
-        operation = RefactoringOperation(
+        operation = RefactoringOperationModel(
             operation_id="op-1",
             operation_type="move",
             target_file="source.md",
-            parameters={"destination": "newdir/source.md"},
+            parameters=OperationParameters(destination_file="newdir/source.md"),
         )
 
         # Act
@@ -409,11 +410,11 @@ class TestOperationExecution:
         old_file = memory_bank_dir / "old.md"
         _ = old_file.write_text("Content")
 
-        operation = RefactoringOperation(
+        operation = RefactoringOperationModel(
             operation_id="op-1",
             operation_type="rename",
             target_file="old.md",
-            parameters={"new_name": "new.md"},
+            parameters=OperationParameters(new_name="new.md"),
         )
 
         # Act
@@ -452,11 +453,11 @@ class TestOperationExecution:
             metadata_index=mock_metadata_index,
         )
 
-        operation = RefactoringOperation(
+        operation = RefactoringOperationModel(
             operation_id="op-1",
             operation_type="create",
             target_file="newdir",
-            parameters={"type": "directory"},
+            parameters=OperationParameters(is_directory=True),
         )
 
         # Act
@@ -499,11 +500,11 @@ class TestOperationExecution:
         file_to_delete = memory_bank_dir / "delete.md"
         _ = file_to_delete.write_text("Content")
 
-        operation = RefactoringOperation(
+        operation = RefactoringOperationModel(
             operation_id="op-1",
             operation_type="delete",
             target_file="delete.md",
-            parameters={},
+            parameters=OperationParameters(),
         )
 
         # Act
@@ -546,11 +547,11 @@ class TestOperationExecution:
 
         mock_file_system.write_file = AsyncMock()
 
-        operation = RefactoringOperation(
+        operation = RefactoringOperationModel(
             operation_id="op-1",
             operation_type="modify",
             target_file="modify.md",
-            parameters={"content": "Modified content"},
+            parameters=OperationParameters(content="Modified content"),
         )
 
         # Act
@@ -588,11 +589,11 @@ class TestOperationExecution:
             metadata_index=mock_metadata_index,
         )
 
-        operation = RefactoringOperation(
+        operation = RefactoringOperationModel(
             operation_id="op-1",
             operation_type="unknown",
             target_file="test.md",
-            parameters={},
+            parameters=OperationParameters(),
         )
 
         # Act & Assert
@@ -638,21 +639,21 @@ class TestExecutionHistory:
         old_date = (datetime.now() - timedelta(days=100)).isoformat()
         new_date = datetime.now().isoformat()
 
-        executor.executions["old"] = RefactoringExecution(
+        executor.executions["old"] = RefactoringExecutionModel(
             execution_id="old",
             suggestion_id="sug-1",
             approval_id="apr-1",
             operations=[],
-            status="completed",
+            status=RefactoringStatus.COMPLETED,
             created_at=old_date,
         )
 
-        executor.executions["new"] = RefactoringExecution(
+        executor.executions["new"] = RefactoringExecutionModel(
             execution_id="new",
             suggestion_id="sug-2",
             approval_id="apr-2",
             operations=[],
-            status="completed",
+            status=RefactoringStatus.COMPLETED,
             created_at=new_date,
         )
 
@@ -695,12 +696,12 @@ class TestExecutionHistory:
             metadata_index=mock_metadata_index,
         )
 
-        execution = RefactoringExecution(
+        execution = RefactoringExecutionModel(
             execution_id="exec-1",
             suggestion_id="sug-1",
             approval_id="apr-1",
             operations=[],
-            status="completed",
+            status=RefactoringStatus.COMPLETED,
             created_at="2025-01-01T12:00:00",
         )
         executor.executions["exec-1"] = execution
@@ -895,18 +896,15 @@ class TestConsolidationExecution:
         file2 = memory_bank_dir / "file2.md"
         _ = file2.write_text("# Section2\nContent2")
 
-        operation = RefactoringOperation(
+        operation = RefactoringOperationModel(
             operation_id="op-1",
-            operation_type="consolidation",
+            operation_type="consolidate",
             target_file="consolidated.md",
-            parameters={
-                "files": ["file1.md", "file2.md"],
-                "sections": [
-                    {"name": "Section1", "content": "# Section1\nContent1"},
-                    {"name": "Section2", "content": "# Section2\nContent2"},
-                ],
-                "extraction_target": "consolidated.md",
-            },
+            parameters=OperationParameters(
+                source_files=["file1.md", "file2.md"],
+                sections=["Section1", "Section2"],
+                destination_file="consolidated.md",
+            ),
         )
 
         # Act
@@ -956,26 +954,26 @@ class TestSplitExecution:
         source = memory_bank_dir / "source.md"
         _ = source.write_text("# Part1\nContent1\n# Part2\nContent2")
 
-        operation1 = RefactoringOperation(
+        operation1 = RefactoringOperationModel(
             operation_id="op-1",
             operation_type="split",
             target_file="source.md",
-            parameters={
-                "new_file": "part1.md",
-                "sections": [],
-                "content": "# Part1\nContent1",
-            },
+            parameters=OperationParameters(
+                destination_file="part1.md",
+                sections=[],
+                content="# Part1\nContent1",
+            ),
         )
 
-        operation2 = RefactoringOperation(
+        operation2 = RefactoringOperationModel(
             operation_id="op-2",
             operation_type="split",
             target_file="source.md",
-            parameters={
-                "new_file": "part2.md",
-                "sections": [],
-                "content": "# Part2\nContent2",
-            },
+            parameters=OperationParameters(
+                destination_file="part2.md",
+                sections=[],
+                content="# Part2\nContent2",
+            ),
         )
 
         # Act
@@ -1019,11 +1017,14 @@ class TestCreateOperation:
             metadata_index=mock_metadata_index,
         )
 
-        operation = RefactoringOperation(
+        operation = RefactoringOperationModel(
             operation_id="op-1",
             operation_type="create",
             target_file="newfile.md",
-            parameters={"type": "file", "content": "New content"},
+            parameters=OperationParameters(
+                content="New content",
+                is_directory=False,
+            ),
         )
 
         # Act
@@ -1072,11 +1073,11 @@ class TestImpactMeasurement:
         _ = file1.write_text("Original content")
 
         operations = [
-            RefactoringOperation(
+            RefactoringOperationModel(
                 operation_id="op-1",
                 operation_type="modify",
                 target_file="file1.md",
-                parameters={"content": "Modified longer content here"},
+                parameters=OperationParameters(content="Modified longer content here"),
             )
         ]
 

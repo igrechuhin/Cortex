@@ -415,11 +415,7 @@ class TestFindExactDuplicates:
 
         assert len(duplicates) > 0
         first_dup = duplicates[0]
-        assert isinstance(first_dup, dict)
-        assert "suggestion" in first_dup
-        suggestion = first_dup.get("suggestion", "")
-        assert isinstance(suggestion, str)
-        assert "include:" in suggestion
+        assert "include:" in first_dup.suggestion
 
 
 @pytest.mark.unit

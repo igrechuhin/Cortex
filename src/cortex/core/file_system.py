@@ -10,6 +10,7 @@ from cortex.core.constants import (
     LOCK_POLL_INTERVAL_SECONDS,
     RATE_LIMIT_OPS_PER_SECOND,
 )
+from cortex.core.models import SectionMetadata
 
 from .async_file_utils import open_async_text_file
 from .exceptions import FileConflictError, FileLockTimeoutError, GitConflictError
@@ -296,7 +297,7 @@ class FileSystemManager:
         """
         return "sha256:" + hashlib.sha256(content.encode("utf-8")).hexdigest()
 
-    def parse_sections(self, content: str) -> list[dict[str, str | int]]:
+    def parse_sections(self, content: str) -> list[SectionMetadata]:
         """
         Parse markdown content into sections based on headings.
 
@@ -304,21 +305,12 @@ class FileSystemManager:
             content: Markdown file content
 
         Returns:
-            List of section dictionaries:
-            [
-                {
-                    "heading": "## Section Name",
-                    "level": 2,
-                    "line_start": 5,
-                    "line_end": 15,
-                    "content_hash": "sha256:..."
-                }
-            ]
+            List of section metadata models
         """
         lines = content.split("\n")
-        sections: list[dict[str, str | int]] = []
+        sections: list[SectionMetadata] = []
         heading_pattern = re.compile(r"^(#{1,6})\s+(.+)$")
-        current_section = None
+        current_section: dict[str, str | int] | None = None
 
         for i, line in enumerate(lines, start=1):
             match = heading_pattern.match(line)
@@ -338,9 +330,7 @@ class FileSystemManager:
                 }
 
         if current_section:
-            current_section = self._close_section(
-                current_section, len(lines) + 1, sections, lines
-            )
+            self._close_section(current_section, len(lines) + 1, sections, lines)
 
         return sections
 
@@ -348,7 +338,7 @@ class FileSystemManager:
         self,
         current_section: dict[str, str | int],
         end_line: int,
-        sections: list[dict[str, str | int]],
+        sections: list[SectionMetadata],
         lines: list[str],
     ) -> None:
         """Close a section and add it to sections list."""
@@ -358,7 +348,7 @@ class FileSystemManager:
         section_lines = lines[line_start - 1 : line_end]
         section_content = "\n".join(section_lines)
         current_section["content_hash"] = self.compute_hash(section_content)
-        sections.append(current_section)
+        sections.append(SectionMetadata.model_validate(current_section))
 
     def has_git_conflicts(self, content: str) -> bool:
         """

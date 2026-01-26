@@ -7,16 +7,50 @@ Memory Bank files to previous versions.
 
 import json
 from pathlib import Path
-from typing import cast
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.mcp_stability import execute_tool_with_stability
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import SectionMetadata
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
-from cortex.managers.initialization import get_managers, get_project_root
+from cortex.managers import initialization
 from cortex.server import mcp
+from cortex.tools.models import (
+    RollbackFileVersionErrorResult,
+    RollbackFileVersionResult,
+)
+
+
+class RollbackManagers(BaseModel):
+    """Typed manager bundle for rollback operations."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+
+    fs_manager: FileSystemManager = Field(description="File system manager")
+    token_counter: TokenCounter = Field(description="Token counter")
+    metadata_index: MetadataIndex = Field(description="Metadata index")
+    version_manager: VersionManager = Field(description="Version manager")
+
+
+class RollbackProcessingData(BaseModel):
+    """Rollback processing data structure.
+
+    This model replaces `ModelDict` for rollback processing data.
+    """
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    content_hash: str = Field(..., description="Content hash")
+    sections: list[SectionMetadata] = Field(
+        default_factory=lambda: list[SectionMetadata](),
+        description="Parsed sections",
+    )
+    token_count: int = Field(..., ge=0, description="Token count")
+    size_bytes: int = Field(..., ge=0, description="Size in bytes")
 
 
 @mcp.tool()
@@ -70,16 +104,17 @@ async def rollback_file_version(
         result = await execute_tool_with_stability(
             _execute_rollback, file_name, version, project_root
         )
-        return json.dumps(result, indent=2)
+        if isinstance(result, dict):
+            return json.dumps(result, indent=2)
+        return json.dumps(result.model_dump(exclude_none=True), indent=2)
     except Exception as e:
-        return json.dumps(
-            build_rollback_error_response(str(e), type(e).__name__), indent=2
-        )
+        error_result = build_rollback_error_response(str(e), type(e).__name__)
+        return json.dumps(error_result.model_dump(exclude_none=True), indent=2)
 
 
 async def _execute_rollback(
     file_name: str, version: int, project_root: str | None
-) -> dict[str, object]:
+) -> RollbackFileVersionResult | RollbackFileVersionErrorResult:
     """Execute rollback workflow.
 
     Args:
@@ -88,16 +123,24 @@ async def _execute_rollback(
         project_root: Optional project root path
 
     Returns:
-        Result dictionary (success or error)
+        RollbackFileVersionResult or RollbackFileVersionErrorResult
     """
-    root = get_project_root(project_root)
-    mgrs = await get_managers(root)
-    managers = _extract_rollback_managers(mgrs)
+    root = initialization.get_project_root(project_root)
+    mgrs = await initialization.get_managers(root)
+    # These managers are produced by our initialization pipeline.
+    # Avoid re-validating concrete manager instance types here; it makes
+    # tests unnecessarily brittle (MagicMock) without improving safety.
+    managers = RollbackManagers.model_construct(
+        fs_manager=mgrs.fs,
+        token_counter=mgrs.tokens,
+        metadata_index=mgrs.index,
+        version_manager=mgrs.versions,
+    )
 
     validation_result = await _validate_and_get_snapshot(
         managers, root, file_name, version
     )
-    if isinstance(validation_result, dict):
+    if isinstance(validation_result, RollbackFileVersionErrorResult):
         return validation_result
 
     file_path, content = validation_result
@@ -107,13 +150,11 @@ async def _execute_rollback(
 
 
 async def _validate_and_get_snapshot(
-    managers: dict[
-        str, FileSystemManager | TokenCounter | MetadataIndex | VersionManager
-    ],
+    managers: RollbackManagers,
     root: Path,
     file_name: str,
     version: int,
-) -> tuple[Path, str] | dict[str, object]:
+) -> tuple[Path, str] | RollbackFileVersionErrorResult:
     """Validate file and get snapshot content.
 
     Args:
@@ -123,32 +164,26 @@ async def _validate_and_get_snapshot(
         version: Version number
 
     Returns:
-        Tuple of (file_path, content) or error dict
+        Tuple of (file_path, content) or RollbackFileVersionErrorResult
     """
-    file_path = await _validate_rollback_file(
-        cast(FileSystemManager, managers["fs_manager"]), root, file_name
-    )
-    if isinstance(file_path, dict):
-        return cast(dict[str, object], file_path)
+    file_path = await _validate_rollback_file(managers.fs_manager, root, file_name)
+    if isinstance(file_path, RollbackFileVersionErrorResult):
+        return file_path
 
-    content = await _get_rollback_snapshot(
-        cast(VersionManager, managers["version_manager"]), file_name, version
-    )
-    if isinstance(content, dict):
-        return cast(dict[str, object], content)
+    content = await _get_rollback_snapshot(managers.version_manager, file_name, version)
+    if isinstance(content, RollbackFileVersionErrorResult):
+        return content
 
     return (file_path, content)
 
 
 async def _process_and_finalize_rollback(
-    managers: dict[
-        str, FileSystemManager | TokenCounter | MetadataIndex | VersionManager
-    ],
+    managers: RollbackManagers,
     file_name: str,
     file_path: Path,
     content: str,
     version: int,
-) -> dict[str, object]:
+) -> RollbackFileVersionResult:
     """Process content and finalize rollback.
 
     Args:
@@ -162,14 +197,14 @@ async def _process_and_finalize_rollback(
         Success response dict
     """
     rollback_data = await _process_rollback_content(
-        cast(FileSystemManager, managers["fs_manager"]),
-        cast(TokenCounter, managers["token_counter"]),
+        managers.fs_manager,
+        managers.token_counter,
         file_path,
         content,
     )
 
     new_version = await _update_rollback_metadata(
-        cast(MetadataIndex, managers["metadata_index"]),
+        managers.metadata_index,
         file_name,
         file_path,
         content,
@@ -180,19 +215,18 @@ async def _process_and_finalize_rollback(
         managers, file_name, file_path, content, rollback_data, new_version, version
     )
 
-    return build_rollback_success_response(
-        file_name, version, new_version, cast(int, rollback_data["token_count"])
+    success_result = build_rollback_success_response(
+        file_name, version, new_version, rollback_data.token_count
     )
+    return success_result
 
 
 async def _complete_rollback_finalization(
-    managers: dict[
-        str, FileSystemManager | TokenCounter | MetadataIndex | VersionManager
-    ],
+    managers: RollbackManagers,
     file_name: str,
     file_path: Path,
     content: str,
-    rollback_data: dict[str, object],
+    rollback_data: RollbackProcessingData,
     new_version: int,
     version: int,
 ) -> None:
@@ -208,8 +242,8 @@ async def _complete_rollback_finalization(
         version: Version rolled back from
     """
     await _finalize_rollback(
-        cast(VersionManager, managers["version_manager"]),
-        cast(MetadataIndex, managers["metadata_index"]),
+        managers.version_manager,
+        managers.metadata_index,
         file_name,
         file_path,
         content,
@@ -219,28 +253,9 @@ async def _complete_rollback_finalization(
     )
 
 
-def _extract_rollback_managers(
-    mgrs: dict[str, object],
-) -> dict[str, FileSystemManager | TokenCounter | MetadataIndex | VersionManager]:
-    """Extract managers for rollback operation.
-
-    Args:
-        mgrs: Managers dictionary
-
-    Returns:
-        Dictionary with extracted managers
-    """
-    return {
-        "fs_manager": cast(FileSystemManager, mgrs["fs"]),
-        "token_counter": cast(TokenCounter, mgrs["tokens"]),
-        "metadata_index": cast(MetadataIndex, mgrs["index"]),
-        "version_manager": cast(VersionManager, mgrs["versions"]),
-    }
-
-
 async def _validate_rollback_file(
     fs_manager: FileSystemManager, root: Path, file_name: str
-) -> Path | dict[str, str]:
+) -> Path | RollbackFileVersionErrorResult:
     """Validate file name for rollback.
 
     Args:
@@ -255,12 +270,15 @@ async def _validate_rollback_file(
     try:
         return fs_manager.construct_safe_path(memory_bank_dir, file_name)
     except (ValueError, PermissionError) as e:
-        return {"status": "error", "error": f"Invalid file name: {e}"}
+        return RollbackFileVersionErrorResult(
+            error=f"Invalid file name: {e}",
+            error_type=type(e).__name__,
+        )
 
 
 async def _get_rollback_snapshot(
     version_manager: VersionManager, file_name: str, version: int
-) -> str | dict[str, str]:
+) -> str | RollbackFileVersionErrorResult:
     """Get snapshot content for rollback.
 
     Args:
@@ -273,10 +291,10 @@ async def _get_rollback_snapshot(
     """
     snapshot_path = version_manager.get_snapshot_path(file_name, version)
     if not snapshot_path.exists():
-        return {
-            "status": "error",
-            "error": f"Version {version} not found for '{file_name}'",
-        }
+        return RollbackFileVersionErrorResult(
+            error=f"Version {version} not found for '{file_name}'",
+            error_type="NotFoundError",
+        )
 
     return await version_manager.get_snapshot_content(snapshot_path)
 
@@ -286,7 +304,7 @@ async def _process_rollback_content(
     token_counter: TokenCounter,
     file_path: Path,
     content: str,
-) -> dict[str, object]:
+) -> RollbackProcessingData:
     """Process rollback content: write, parse, and count tokens.
 
     Args:
@@ -296,24 +314,18 @@ async def _process_rollback_content(
         content: Content to write
 
     Returns:
-        Dictionary with processing results
+        Rollback processing data
     """
     new_hash = await fs_manager.write_file(file_path, content)
-
-    sections_raw = fs_manager.parse_sections(content)
-    sections = cast(
-        list[dict[str, object]],
-        [{k: v for k, v in section.items()} for section in sections_raw],
-    )
-
+    sections = fs_manager.parse_sections(content)
     token_count = token_counter.count_tokens(content)
 
-    return {
-        "content_hash": new_hash,
-        "sections": sections,
-        "token_count": token_count,
-        "size_bytes": len(content.encode("utf-8")),
-    }
+    return RollbackProcessingData(
+        content_hash=new_hash,
+        sections=sections,
+        token_count=token_count,
+        size_bytes=len(content.encode("utf-8")),
+    )
 
 
 async def _update_rollback_metadata(
@@ -321,7 +333,7 @@ async def _update_rollback_metadata(
     file_name: str,
     file_path: Path,
     content: str,
-    rollback_data: dict[str, object],
+    rollback_data: RollbackProcessingData,
 ) -> int:
     """Update metadata after rollback.
 
@@ -339,15 +351,19 @@ async def _update_rollback_metadata(
         file_name=file_name,
         path=file_path,
         exists=True,
-        size_bytes=cast(int, rollback_data["size_bytes"]),
-        token_count=cast(int, rollback_data["token_count"]),
-        content_hash=cast(str, rollback_data["content_hash"]),
-        sections=cast(list[dict[str, object]], rollback_data["sections"]),
+        size_bytes=rollback_data.size_bytes,
+        token_count=rollback_data.token_count,
+        content_hash=rollback_data.content_hash,
+        sections=rollback_data.sections,
         change_source="rollback",
     )
 
     file_meta = await metadata_index.get_file_metadata(file_name)
-    return cast(int, file_meta.get("current_version", 0)) + 1 if file_meta else 1
+    if not file_meta:
+        return 1
+    current_raw = file_meta.get("current_version", 0)
+    current_version = int(current_raw) if isinstance(current_raw, int) else 0
+    return current_version + 1
 
 
 async def _finalize_rollback(
@@ -356,7 +372,7 @@ async def _finalize_rollback(
     file_name: str,
     file_path: Path,
     content: str,
-    rollback_data: dict[str, object],
+    rollback_data: RollbackProcessingData,
     new_version: int,
     rolled_back_from_version: int,
 ) -> None:
@@ -376,9 +392,9 @@ async def _finalize_rollback(
         file_path=file_path,
         version=new_version,
         content=content,
-        size_bytes=cast(int, rollback_data["size_bytes"]),
-        token_count=cast(int, rollback_data["token_count"]),
-        content_hash=cast(str, rollback_data["content_hash"]),
+        size_bytes=rollback_data.size_bytes,
+        token_count=rollback_data.token_count,
+        content_hash=rollback_data.content_hash,
         change_type="rollback",
         change_description=f"Rolled back to version {rolled_back_from_version}",
     )
@@ -389,7 +405,7 @@ async def _finalize_rollback(
 
 def build_rollback_success_response(
     file_name: str, rolled_back_from_version: int, new_version: int, token_count: int
-) -> dict[str, object]:
+) -> RollbackFileVersionResult:
     """Build success response for rollback.
 
     Args:
@@ -399,20 +415,21 @@ def build_rollback_success_response(
         token_count: Token count
 
     Returns:
-        Success response dict
+        RollbackFileVersionResult model
     """
-    return {
-        "status": "success",
-        "file_name": file_name,
-        "rolled_back_from_version": rolled_back_from_version,
-        "new_version": new_version,
-        "token_count": token_count,
-    }
+    from cortex.tools.models import RollbackFileVersionResult
+
+    return RollbackFileVersionResult(
+        file_name=file_name,
+        rolled_back_from_version=rolled_back_from_version,
+        new_version=new_version,
+        token_count=token_count,
+    )
 
 
 def build_rollback_error_response(
     error_message: str, error_type: str
-) -> dict[str, object]:
+) -> RollbackFileVersionErrorResult:
     """Build error response for rollback.
 
     Args:
@@ -422,4 +439,9 @@ def build_rollback_error_response(
     Returns:
         Error response dict
     """
-    return {"status": "error", "error": error_message, "error_type": error_type}
+    from cortex.tools.models import RollbackFileVersionErrorResult
+
+    return RollbackFileVersionErrorResult(
+        error=error_message,
+        error_type=error_type,
+    )

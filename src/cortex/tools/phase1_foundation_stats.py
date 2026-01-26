@@ -7,11 +7,15 @@ comprehensive Memory Bank statistics and analytics.
 
 import json
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import JsonValue, ModelDict
 from cortex.core.version_manager import VersionManager
-from cortex.managers.initialization import get_managers, get_project_root
+from cortex.managers import initialization
+from cortex.managers.lazy_manager import LazyManager
+from cortex.managers.manager_utils import get_manager
+from cortex.managers.types import ManagersDict
 from cortex.server import mcp
 
 
@@ -104,16 +108,17 @@ async def get_memory_bank_stats(
         - "over_budget": Usage >= max tokens
     """
     try:
-        result, total_tokens = await _collect_base_stats(project_root)
-        await _add_optional_stats(
-            result,
+        base_result, total_tokens = await _collect_base_stats(project_root)
+        result_dict: ModelDict = base_result
+        updated = await _add_optional_stats(
+            result_dict,
             include_token_budget,
             include_refactoring_history,
             project_root,
             total_tokens,
             refactoring_days,
         )
-        return json.dumps(result, indent=2)
+        return json.dumps(updated if updated is not None else result_dict, indent=2)
     except Exception as e:
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
@@ -123,29 +128,29 @@ async def get_memory_bank_stats(
 
 async def _collect_base_stats(
     project_root: str | None,
-) -> tuple[dict[str, object], int]:
+) -> tuple[ModelDict, int]:
     """Collect base statistics for Memory Bank.
 
     Args:
         project_root: Optional path to project root directory
 
     Returns:
-        Tuple of (base statistics result dictionary, total_tokens)
+        Tuple of (result dict, total_tokens)
     """
-    root = get_project_root(project_root)
-    mgrs = await get_managers(root)
-    metadata_index = cast(MetadataIndex, mgrs["index"])
-    version_manager = cast(VersionManager, mgrs["versions"])
+    root = initialization.get_project_root(project_root)
+    mgrs = await initialization.get_managers(root)
+    metadata_index = await get_manager(mgrs, "index", MetadataIndex)
+    version_manager = await get_manager(mgrs, "versions", VersionManager)
 
     index_stats = await metadata_index.get_stats()
     files_metadata = await metadata_index.get_all_files_metadata()
     history_size = await _get_history_size(root, version_manager)
 
     totals = calculate_totals(files_metadata)
-    result = _build_base_stats_result(
+    result_dict = _build_base_stats_result(
         root, files_metadata, totals, history_size, index_stats
     )
-    return result, totals[0]
+    return result_dict, totals[0]
 
 
 async def _get_history_size(root: Path, version_manager: VersionManager) -> int:
@@ -154,42 +159,38 @@ async def _get_history_size(root: Path, version_manager: VersionManager) -> int:
     if not history_dir.exists():
         return 0
     disk_usage = await version_manager.get_disk_usage()
-    return disk_usage.get("total_bytes", 0)
+    return disk_usage.total_bytes
 
 
-def sum_file_field(
-    files_metadata: dict[str, dict[str, object]], field_name: str
-) -> int:
+def sum_file_field(files_metadata: dict[str, ModelDict], field_name: str) -> int:
     """Sum a numeric field across all files metadata."""
     total = 0
     for file_data in files_metadata.values():
         value = file_data.get(field_name, 0)
-        if isinstance(value, (int, float)):
+        if isinstance(value, int):
+            total += value
+        elif isinstance(value, float):
             total += int(value)
     return total
 
 
-def extract_last_updated(index_stats: dict[str, object]) -> str | None:
+def extract_last_updated(index_stats: ModelDict) -> str | None:
     """Extract last_full_scan timestamp from index stats."""
-    from typing import cast
-
-    totals = index_stats.get("totals")
-    if isinstance(totals, dict):
-        totals_dict = cast(dict[str, object], totals)
-        last_scan = totals_dict.get("last_full_scan")
-        if isinstance(last_scan, str):
-            return last_scan
-    return None
+    totals_raw = index_stats.get("totals")
+    if not isinstance(totals_raw, dict):
+        return None
+    last_full_scan = totals_raw.get("last_full_scan")
+    return last_full_scan if isinstance(last_full_scan, str) else None
 
 
 def build_summary_dict(
-    files_metadata: dict[str, dict[str, object]],
+    files_metadata: dict[str, ModelDict],
     total_tokens: int,
     total_size: int,
     total_reads: int,
     history_size: int,
-) -> dict[str, object]:
-    """Build summary dictionary with calculated totals."""
+) -> ModelDict:
+    """Build summary model with calculated totals."""
     return {
         "total_files": len(files_metadata),
         "total_tokens": total_tokens,
@@ -203,19 +204,18 @@ def build_summary_dict(
 
 def calculate_token_status(
     total_tokens: int, max_tokens: int, warn_threshold: float
-) -> str:
+) -> Literal["healthy", "warning", "over_budget"]:
     """Calculate token budget status based on usage."""
     warn_threshold_tokens = int(max_tokens * (warn_threshold / 100))
     if total_tokens >= max_tokens:
         return "over_budget"
-    elif total_tokens >= warn_threshold_tokens:
+    if total_tokens >= warn_threshold_tokens:
         return "warning"
-    else:
-        return "healthy"
+    return "healthy"
 
 
-async def _build_token_budget_dict(root: Path, total_tokens: int) -> dict[str, object]:
-    """Build token budget analysis dictionary."""
+async def _build_token_budget_dict(root: Path, total_tokens: int) -> ModelDict:
+    """Build token budget analysis dict."""
     from cortex.validation.validation_config import ValidationConfig
 
     validation_config = ValidationConfig(root)
@@ -237,26 +237,42 @@ async def _build_token_budget_dict(root: Path, total_tokens: int) -> dict[str, o
 
 
 async def _build_refactoring_history_dict(
-    mgrs: dict[str, object], refactoring_days: int
-) -> dict[str, object]:
-    """Build refactoring history dictionary."""
-    from cortex.refactoring.refactoring_executor import RefactoringExecutor
+    mgrs: ManagersDict, refactoring_days: int
+) -> ModelDict | None:
+    """Build refactoring history dict (best-effort)."""
+    executor = mgrs.refactoring_executor
+    if executor is None:
+        return None
 
-    refactoring_executor = cast(RefactoringExecutor, mgrs.get("refactoring_executor"))
-    if refactoring_executor:
-        history = await refactoring_executor.get_execution_history(
-            time_range_days=refactoring_days, include_rollbacks=True
-        )
-        return history
+    if isinstance(executor, LazyManager):
+        refactoring_executor = await executor.get()
     else:
-        return {
-            "status": "unavailable",
-            "message": "Refactoring executor not initialized",
+        refactoring_executor = executor
+    history = await refactoring_executor.get_execution_history(
+        time_range_days=refactoring_days, include_rollbacks=True
+    )
+    recent: list[JsonValue] = [
+        {
+            "type": "execution",
+            "timestamp": cast(JsonValue, exec.created_at),
+            "files_affected": cast(JsonValue, list[JsonValue]()),
+            "status": "success",
         }
+        for exec in history.executions
+    ]
+    return cast(
+        ModelDict,
+        {
+            "total_refactorings": history.total_executions,
+            "successful": history.successful,
+            "rolled_back": history.rolled_back,
+            "recent": recent,
+        },
+    )
 
 
 def calculate_totals(
-    files_metadata: dict[str, dict[str, object]],
+    files_metadata: dict[str, ModelDict],
 ) -> tuple[int, int, int]:
     """Calculate totals for tokens, size, and reads.
 
@@ -274,22 +290,22 @@ def calculate_totals(
 
 def _build_base_stats_result(
     root: Path,
-    files_metadata: dict[str, dict[str, object]],
+    files_metadata: dict[str, ModelDict],
     totals: tuple[int, int, int],
     history_size: int,
-    index_stats: dict[str, object],
-) -> dict[str, object]:
-    """Build base statistics result dictionary.
+    index_stats: ModelDict,
+) -> ModelDict:
+    """Build base statistics result model.
 
     Args:
         root: Project root path
         files_metadata: Dictionary of file metadata
         totals: Tuple of (total_tokens, total_size, total_reads)
         history_size: Size of version history in bytes
-        index_stats: Index statistics dictionary
+        index_stats: Index statistics model
 
     Returns:
-        Base statistics result dictionary
+        GetMemoryBankStatsResult with base statistics
     """
     total_tokens, total_size, total_reads = totals
     summary = build_summary_dict(
@@ -297,39 +313,51 @@ def _build_base_stats_result(
     )
     last_updated = extract_last_updated(index_stats)
 
+    files_payload: dict[str, JsonValue] = {
+        file_name: cast(JsonValue, meta) for file_name, meta in files_metadata.items()
+    }
     return {
         "status": "success",
         "project_root": str(root),
         "summary": summary,
         "last_updated": last_updated,
         "index_stats": index_stats,
+        "files": files_payload,
     }
 
 
 async def _add_optional_stats(
-    result: dict[str, object],
+    result: ModelDict,
     include_token_budget: bool,
     include_refactoring_history: bool,
     project_root: str | None,
     total_tokens: int,
     refactoring_days: int,
-) -> None:
-    """Add optional statistics to result dictionary.
+) -> ModelDict | None:
+    """Add optional statistics to result model.
 
     Args:
-        result: Result dictionary to update
+        result: Result model to update
         include_token_budget: Whether to include token budget
         include_refactoring_history: Whether to include refactoring history
         project_root: Optional project root path
         total_tokens: Total token count
         refactoring_days: Days of refactoring history to include
+
+    Returns:
+        Updated GetMemoryBankStatsResult with optional stats
     """
-    root = get_project_root(project_root)
+    root = initialization.get_project_root(project_root)
     if include_token_budget:
-        result["token_budget"] = await _build_token_budget_dict(root, total_tokens)
+        token_budget = await _build_token_budget_dict(root, total_tokens)
+        result["token_budget"] = token_budget
 
     if include_refactoring_history:
-        mgrs = await get_managers(root)
-        result["refactoring_history"] = await _build_refactoring_history_dict(
+        mgrs = await initialization.get_managers(root)
+        refactoring_history = await _build_refactoring_history_dict(
             mgrs, refactoring_days
         )
+        if refactoring_history is not None:
+            result["refactoring_history"] = refactoring_history
+
+    return result

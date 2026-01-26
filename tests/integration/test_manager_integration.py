@@ -6,7 +6,6 @@ and that the initialization system properly coordinates dependencies.
 """
 
 from pathlib import Path
-from typing import cast
 
 import pytest
 
@@ -46,7 +45,7 @@ class TestManagerCoordination:
             size_bytes=len(content.encode("utf-8")),
             token_count=token_count,
             content_hash=content_hash,
-            sections=cast("list[dict[str, object]]", sections),
+            sections=sections,
         )
 
         # Act: Check metadata through metadata_index
@@ -104,7 +103,7 @@ class TestManagerCoordination:
             size_bytes=len(content.encode("utf-8")),
             token_count=token_count,
             content_hash=content_hash,
-            sections=cast("list[dict[str, object]]", sections),
+            sections=sections,
         )
 
         # Assert 1: Metadata index updated
@@ -180,7 +179,7 @@ class TestManagerCoordination:
             size_bytes=len(content1.encode("utf-8")),
             token_count=token_count1,
             content_hash=content_hash1,
-            sections=cast("list[dict[str, object]]", sections),
+            sections=sections,
         )
 
         # Act: Create snapshot
@@ -201,17 +200,16 @@ class TestManagerCoordination:
             size_bytes=len(content1.encode("utf-8")),
             token_count=token_count1,
             content_hash=content_hash1,
-            sections=cast("list[dict[str, object]]", sections),
+            sections=sections,
         )
         # Manually set current_version in metadata (in production, this would be done by the tool layer)
         data = metadata_index.get_data()
         if data and "files" in data:
             files = data["files"]
             if isinstance(files, dict) and "test.md" in files:
-                file_metadata: dict[str, object] = cast(
-                    "dict[str, object]", files["test.md"]
-                )
-                file_metadata["current_version"] = 1
+                file_metadata = files["test.md"]
+                if isinstance(file_metadata, dict):
+                    file_metadata["current_version"] = 1
         _ = await metadata_index.save()
 
         # Assert: Metadata updated
@@ -243,14 +241,15 @@ class TestManagerCoordination:
             size_bytes=len(content2.encode("utf-8")),
             token_count=token_count2,
             content_hash=content_hash2,
-            sections=cast("list[dict[str, object]]", sections2),
+            sections=sections2,
         )
         data = metadata_index.get_data()
         if data and "files" in data:
             files = data["files"]
             if isinstance(files, dict) and "test.md" in files:
-                file_metadata = cast("dict[str, object]", files["test.md"])
-                file_metadata["current_version"] = 2
+                file_metadata = files["test.md"]
+                if isinstance(file_metadata, dict):
+                    file_metadata["current_version"] = 2
         _ = await metadata_index.save()
 
         # Assert: Version incremented
@@ -309,7 +308,7 @@ class TestManagerInitialization:
             size_bytes=len(content1.encode("utf-8")),
             token_count=token_counter.count_tokens(content1),
             content_hash=hash1,
-            sections=cast("list[dict[str, object]]", sections1),
+            sections=sections1,
         )
 
         # Act 2: Create another file
@@ -324,7 +323,7 @@ class TestManagerInitialization:
             size_bytes=len(content2.encode("utf-8")),
             token_count=token_counter.count_tokens(content2),
             content_hash=hash2,
-            sections=cast("list[dict[str, object]]", sections2),
+            sections=sections2,
         )
 
         # Assert: Both files tracked

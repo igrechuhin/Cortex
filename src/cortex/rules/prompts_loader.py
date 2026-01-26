@@ -10,6 +10,14 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.async_file_utils import open_async_text_file
+from cortex.core.models import ModelDict
+
+from .models import (
+    LoadedPrompt,
+    PromptCategoryInfo,
+    PromptMetadataEntry,
+    PromptsManifestModel,
+)
 
 
 class PromptsLoader:
@@ -31,15 +39,15 @@ class PromptsLoader:
             prompts_path: Path to prompts folder in Synapse
         """
         self.prompts_path: Path = prompts_path
-        self.manifest: dict[str, object] | None = None
-        self.manifest_cache: dict[str, object] | None = None
+        self.manifest: PromptsManifestModel | None = None
+        self.manifest_cache: ModelDict | None = None
 
-    async def load_manifest(self) -> dict[str, object] | None:
+    async def load_manifest(self) -> PromptsManifestModel | None:
         """
         Load and parse prompts-manifest.json.
 
         Returns:
-            Parsed manifest dict or None if not found
+            Parsed manifest model or None if not found
         """
         try:
             manifest_path = self.prompts_path / "prompts-manifest.json"
@@ -52,8 +60,8 @@ class PromptsLoader:
                 content = await f.read()
                 manifest_data = json.loads(content)
                 if manifest_data and isinstance(manifest_data, dict):
-                    self.manifest = manifest_data
-                    self.manifest_cache = manifest_data.copy()
+                    self.manifest = PromptsManifestModel.model_validate(manifest_data)
+                    self.manifest_cache = cast(ModelDict, manifest_data.copy())
                 else:
                     self.manifest = None
                     self.manifest_cache = None
@@ -76,13 +84,9 @@ class PromptsLoader:
         if not self.manifest:
             return []
 
-        categories = self.manifest.get("categories")
-        if isinstance(categories, dict):
-            return list(cast(dict[str, object], categories).keys())
+        return list(self.manifest.categories.keys())
 
-        return []
-
-    async def load_category(self, category: str) -> list[dict[str, object]]:
+    async def load_category(self, category: str) -> list[LoadedPrompt]:
         """
         Load all prompts from a specific category.
 
@@ -90,7 +94,7 @@ class PromptsLoader:
             category: Category name (e.g., "python", "general")
 
         Returns:
-            List of prompt dicts with content and metadata
+            List of loaded prompt models with content and metadata
         """
         if not self.manifest:
             _ = await self.load_manifest()
@@ -106,66 +110,43 @@ class PromptsLoader:
         if not category_path.exists():
             return []
 
-        prompts_list = self._extract_prompts_list(category_info)
+        prompts_list = category_info.prompts
         return await self._load_prompts_from_files(
             category, category_path, prompts_list
         )
 
-    def _get_category_info(self, category: str) -> dict[str, object] | None:
+    def _get_category_info(self, category: str) -> PromptCategoryInfo | None:
         """Get category info from manifest.
 
         Args:
             category: Category name
 
         Returns:
-            Category info dict or None if not found
+            Category info model or None if not found
         """
         if not self.manifest:
             return None
-        categories_raw: object = self.manifest.get("categories", {})
-        if not isinstance(categories_raw, dict):
+        if category not in self.manifest.categories:
             return None
-        categories: dict[str, object] = cast(dict[str, object], categories_raw)
-        if category not in categories:
-            return None
-        category_info_raw: object = categories[category]
-        if not isinstance(category_info_raw, dict):
-            return None
-        return cast(dict[str, object], category_info_raw)
-
-    def _extract_prompts_list(
-        self, category_info: dict[str, object]
-    ) -> list[dict[str, object]]:
-        """Extract prompts list from category info.
-
-        Args:
-            category_info: Category info dict
-
-        Returns:
-            List of prompt info dicts
-        """
-        prompts_list_value = category_info.get("prompts", [])
-        if not isinstance(prompts_list_value, list):
-            return []
-        return cast(list[dict[str, object]], prompts_list_value)
+        return self.manifest.categories[category]
 
     async def _load_prompts_from_files(
         self,
         category: str,
         category_path: Path,
-        prompts_list: list[dict[str, object]],
-    ) -> list[dict[str, object]]:
+        prompts_list: list[PromptMetadataEntry],
+    ) -> list[LoadedPrompt]:
         """Load prompts from files in category.
 
         Args:
             category: Category name
             category_path: Path to category directory
-            prompts_list: List of prompt info dicts
+            prompts_list: List of prompt metadata entries
 
         Returns:
-            List of loaded prompt dicts
+            List of loaded prompt models
         """
-        prompts: list[dict[str, object]] = []
+        prompts: list[LoadedPrompt] = []
         for prompt_info in prompts_list:
             prompt = await self._load_single_prompt_file(
                 category, category_path, prompt_info
@@ -178,14 +159,10 @@ class PromptsLoader:
         self,
         category: str,
         category_path: Path,
-        prompt_info: dict[str, object],
-    ) -> dict[str, object] | None:
+        prompt_info: PromptMetadataEntry,
+    ) -> LoadedPrompt | None:
         """Load a single prompt file."""
-        prompt_file_name_value = prompt_info.get("file")
-        if not isinstance(prompt_file_name_value, str):
-            return None
-
-        prompt_file = category_path / prompt_file_name_value
+        prompt_file = category_path / prompt_info.file
         if not prompt_file.exists():
             return None
 
@@ -193,34 +170,35 @@ class PromptsLoader:
             async with open_async_text_file(prompt_file, "r", "utf-8") as f:
                 content = await f.read()
 
-            return {
-                "category": category,
-                "file": prompt_file_name_value,
-                "path": str(prompt_file),
-                "content": content,
-                "name": prompt_info.get("name", prompt_file_name_value),
-                "description": prompt_info.get("description", ""),
-                "keywords": prompt_info.get("keywords", []),
-                "source": "synapse",
-            }
+            return LoadedPrompt(
+                category=category,
+                file=prompt_info.file,
+                content=content,
+                name=prompt_info.name or prompt_info.file,
+                description=prompt_info.description,
+                keywords=prompt_info.keywords,
+                path=str(prompt_file),
+                source="synapse",
+            )
         except Exception as e:
             from cortex.core.logging_config import logger
 
             logger.warning(f"Failed to load prompt {prompt_file}: {e}")
             return None
 
-    async def save_manifest(self, manifest: dict[str, object]) -> None:
+    async def save_manifest(self, manifest: PromptsManifestModel) -> None:
         """
         Save manifest to prompts-manifest.json.
 
         Args:
-            manifest: Manifest data to save
+            manifest: Manifest model to save
         """
         manifest_path = self.prompts_path / "prompts-manifest.json"
+        manifest_dict = manifest.model_dump(mode="json")
         async with open_async_text_file(manifest_path, "w", "utf-8") as f:
-            _ = await f.write(json.dumps(manifest, indent=2))
+            _ = await f.write(json.dumps(manifest_dict, indent=2))
         self.manifest = manifest
-        self.manifest_cache = manifest.copy()
+        self.manifest_cache = manifest_dict.copy()
 
     async def create_prompt_file(
         self, category: str, filename: str, content: str
@@ -256,17 +234,17 @@ class PromptsLoader:
         async with open_async_text_file(prompt_path, "w", "utf-8") as f:
             _ = await f.write(content)
 
-    async def get_all_prompts(self) -> list[dict[str, object]]:
+    async def get_all_prompts(self) -> list[LoadedPrompt]:
         """
         Load all prompts from all categories.
 
         Returns:
-            List of all prompt dicts
+            List of all loaded prompt models
         """
         if not self.manifest:
             _ = await self.load_manifest()
 
-        all_prompts: list[dict[str, object]] = []
+        all_prompts: list[LoadedPrompt] = []
         for category in self.get_categories():
             prompts = await self.load_category(category)
             all_prompts.extend(prompts)

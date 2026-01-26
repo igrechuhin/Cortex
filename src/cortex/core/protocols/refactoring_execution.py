@@ -7,13 +7,26 @@ approval management, rollback operations, and learning from feedback.
 
 from typing import Protocol
 
+from cortex.refactoring.models import (
+    ApprovalRequestDetails,
+    ApprovalRequestResult,
+    ApprovalStatusResult,
+    ApproveResult,
+    ConfidenceAdjustmentResult,
+    FeedbackData,
+    FeedbackRecordResult,
+    LearningInsights,
+    RollbackHistoryEntry,
+    RollbackRefactoringResult,
+)
+
 
 class ApprovalManagerProtocol(Protocol):
     """Protocol for refactoring approval operations using structural subtyping (PEP 544).
 
     This protocol defines the interface for managing approval workflows for
     refactoring operations. Approval management ensures safe execution with
-    user oversight. Any class implementing these methods automatically satisfies
+    user oversight. A class implementing these methods automatically satisfies
     this protocol.
 
     Used by:
@@ -29,40 +42,55 @@ class ApprovalManagerProtocol(Protocol):
                 self.approvals = {}
 
             async def request_approval(
-                self, refactoring_id: str, details: dict[str, object]
-            ) -> dict[str, object]:
+                self, refactoring_id: str, details: ApprovalRequestDetails
+            ) -> ApprovalRequestResult:
                 self.approvals[refactoring_id] = {
                     "status": "pending",
                     "details": details,
                     "requested_at": datetime.utcnow().isoformat(),
                 }
-                return {
-                    "refactoring_id": refactoring_id,
-                    "status": "pending",
-                    "message": "Approval requested",
-                }
+                return ApprovalRequestResult(
+                    approval_id=refactoring_id,
+                    status="pending",
+                    message="Approval requested",
+                )
 
-            async def get_approval_status(self, refactoring_id: str) -> dict[str, object]:
+            async def get_approval_status(self, refactoring_id: str) -> ApprovalStatusResult:
                 if refactoring_id not in self.approvals:
-                    return {"status": "not_found"}
-                return {
-                    "refactoring_id": refactoring_id,
-                    "status": self.approvals[refactoring_id]["status"],
-                    "details": self.approvals[refactoring_id]["details"],
-                }
+                    return ApprovalStatusResult(
+                        approval_id=refactoring_id,
+                        status="not_found",
+                        suggestion_id="",
+                        suggestion_type="",
+                        created_at="",
+                    )
+                approval = self.approvals[refactoring_id]
+                return ApprovalStatusResult(
+                    approval_id=refactoring_id,
+                    status=approval["status"],
+                    suggestion_id=refactoring_id,
+                    suggestion_type="",
+                    created_at=approval.get("requested_at", ""),
+                )
 
-            async def approve(self, refactoring_id: str) -> dict[str, object]:
+            async def approve(self, refactoring_id: str) -> ApproveResult:
                 if refactoring_id not in self.approvals:
-                    return {"status": "error", "message": "Refactoring not found"}
+                    return ApproveResult(
+                        approval_id=refactoring_id,
+                        status="error",
+                        suggestion_id=refactoring_id,
+                        message="Refactoring not found",
+                    )
 
                 self.approvals[refactoring_id]["status"] = "approved"
                 self.approvals[refactoring_id]["approved_at"] = datetime.utcnow().isoformat()
 
-                return {
-                    "refactoring_id": refactoring_id,
-                    "status": "approved",
-                    "message": "Refactoring approved",
-                }
+                return ApproveResult(
+                    approval_id=refactoring_id,
+                    status="approved",
+                    suggestion_id=refactoring_id,
+                    message="Refactoring approved",
+                )
 
         # SimpleApprovalManager automatically satisfies ApprovalManagerProtocol
         ```
@@ -74,8 +102,8 @@ class ApprovalManagerProtocol(Protocol):
     """
 
     async def request_approval(
-        self, refactoring_id: str, details: dict[str, object]
-    ) -> dict[str, object]:
+        self, refactoring_id: str, details: ApprovalRequestDetails
+    ) -> ApprovalRequestResult:
         """Request approval for refactoring.
 
         Args:
@@ -83,29 +111,29 @@ class ApprovalManagerProtocol(Protocol):
             details: Refactoring details
 
         Returns:
-            Approval request result
+            Approval request result model
         """
         ...
 
-    async def get_approval_status(self, refactoring_id: str) -> dict[str, object]:
+    async def get_approval_status(self, refactoring_id: str) -> ApprovalStatusResult:
         """Get approval status for refactoring.
 
         Args:
             refactoring_id: Unique refactoring identifier
 
         Returns:
-            Approval status dictionary
+            Approval status result model
         """
         ...
 
-    async def approve(self, refactoring_id: str) -> dict[str, object]:
+    async def approve(self, refactoring_id: str) -> ApproveResult:
         """Approve refactoring execution.
 
         Args:
             refactoring_id: Unique refactoring identifier
 
         Returns:
-            Approval result dictionary
+            Approval result model
         """
         ...
 
@@ -115,7 +143,7 @@ class RollbackManagerProtocol(Protocol):
 
     This protocol defines the interface for rolling back refactoring operations
     and tracking rollback history. Rollback capability provides safety and
-    confidence when executing refactorings. Any class implementing these methods
+    confidence when executing refactorings. A class implementing these methods
     automatically satisfies this protocol.
 
     Used by:
@@ -131,13 +159,13 @@ class RollbackManagerProtocol(Protocol):
                 self.version_manager = version_manager
                 self.rollback_history = []
 
-            async def rollback_refactoring(self, execution_id: str) -> dict[str, object]:
+            async def rollback_refactoring(self, execution_id: str) -> RollbackRefactoringResult:
                 # Find and restore snapshots
                 snapshot_ids = self._get_snapshots_for_execution(execution_id)
                 rolled_back = []
                 for snapshot_id in snapshot_ids:
                     result = await self.version_manager.rollback_to_version(snapshot_id)
-                    rolled_back.append(result["file_name"])
+                    rolled_back.append(result.file_name)
 
                 # Record in history
                 self.rollback_history.append({
@@ -146,10 +174,27 @@ class RollbackManagerProtocol(Protocol):
                     "timestamp": datetime.utcnow().isoformat(),
                 })
 
-                return {"status": "rolled_back", "files_restored": len(rolled_back)}
+                return RollbackRefactoringResult(
+                    status="rolled_back",
+                    execution_id=execution_id,
+                    files_restored=len(rolled_back),
+                    files_list=rolled_back,
+                    timestamp=datetime.utcnow().isoformat(),
+                )
 
-            async def get_rollback_history(self) -> list[dict[str, object]]:
-                return sorted(self.rollback_history, key=lambda x: x["timestamp"], reverse=True)
+            async def get_rollback_history(self) -> list[RollbackHistoryEntry]:
+                return [
+                    RollbackHistoryEntry(
+                        rollback_id=f"rb-{i}",
+                        execution_id=entry["execution_id"],
+                        files=entry["files"],
+                        timestamp=entry["timestamp"],
+                        status="completed",
+                    )
+                    for i, entry in enumerate(
+                        sorted(self.rollback_history, key=lambda x: x["timestamp"], reverse=True)
+                    )
+                ]
 
         # SimpleRollbackManager automatically satisfies RollbackManagerProtocol
         ```
@@ -160,22 +205,24 @@ class RollbackManagerProtocol(Protocol):
         - Enables safe experimentation
     """
 
-    async def rollback_refactoring(self, execution_id: str) -> dict[str, object]:
+    async def rollback_refactoring(
+        self, execution_id: str
+    ) -> RollbackRefactoringResult:
         """Rollback a refactoring operation.
 
         Args:
             execution_id: Execution identifier to rollback
 
         Returns:
-            Rollback result dictionary
+            Rollback result model
         """
         ...
 
-    async def get_rollback_history(self) -> list[dict[str, object]]:
+    async def get_rollback_history(self) -> list[RollbackHistoryEntry]:
         """Get history of rollback operations.
 
         Returns:
-            List of rollback history entries
+            List of rollback history entry models
         """
         ...
 
@@ -185,7 +232,7 @@ class LearningEngineProtocol(Protocol):
 
     This protocol defines the interface for learning from user feedback on
     refactoring suggestions and adapting suggestion confidence scores. Learning
-    enables continuous improvement of refactoring recommendations. Any class
+    enables continuous improvement of refactoring recommendations. A class
     implementing these methods automatically satisfies this protocol.
 
     Used by:
@@ -206,8 +253,8 @@ class LearningEngineProtocol(Protocol):
                 suggestion_id: str,
                 accepted: bool,
                 reason: str | None = None,
-                additional_data: dict[str, object] | None = None,
-            ) -> dict[str, object]:
+                additional_data: FeedbackData | None = None,
+            ) -> FeedbackRecordResult:
                 feedback = {
                     "suggestion_id": suggestion_id,
                     "accepted": accepted,
@@ -221,27 +268,34 @@ class LearningEngineProtocol(Protocol):
                 adjustment = 0.1 if accepted else -0.1
                 await self.adjust_suggestion_confidence(pattern["type"], pattern["pattern"], adjustment)
 
-                return {"status": "recorded"}
+                return FeedbackRecordResult(
+                    status="recorded",
+                    feedback_id=f"fb-{suggestion_id}",
+                )
 
             async def adjust_suggestion_confidence(
                 self,
                 suggestion_type: str,
                 pattern: str,
                 adjustment: float,
-            ) -> dict[str, object]:
+            ) -> ConfidenceAdjustmentResult:
                 key = f"{suggestion_type}:{pattern}"
                 current = self.pattern_confidence.get(key, 0.5)
                 new_confidence = max(0.0, min(1.0, current + adjustment))
                 self.pattern_confidence[key] = new_confidence
-                return {"new_confidence": new_confidence}
+                return ConfidenceAdjustmentResult(
+                    original_confidence=current,
+                    adjusted_confidence=new_confidence,
+                    reason=f"Adjusted by {adjustment}",
+                )
 
-            async def get_learning_insights(self) -> dict[str, object]:
+            async def get_learning_insights(self) -> LearningInsights:
                 total = len(self.feedback_history)
                 accepted = sum(1 for f in self.feedback_history if f["accepted"])
-                return {
-                    "total_feedback": total,
-                    "acceptance_rate": accepted / total if total > 0 else 0.0,
-                }
+                return LearningInsights(
+                    total_feedback=total,
+                    approval_rate=accepted / total if total > 0 else 0.0,
+                )
 
         # SimpleLearningEngine automatically satisfies LearningEngineProtocol
         ```
@@ -257,8 +311,8 @@ class LearningEngineProtocol(Protocol):
         suggestion_id: str,
         accepted: bool,
         reason: str | None = None,
-        additional_data: dict[str, object] | None = None,
-    ) -> dict[str, object]:
+        additional_data: FeedbackData | None = None,
+    ) -> FeedbackRecordResult:
         """Record user feedback on a suggestion.
 
         Args:
@@ -268,7 +322,7 @@ class LearningEngineProtocol(Protocol):
             additional_data: Optional additional feedback data
 
         Returns:
-            Feedback record result dictionary
+            Feedback record result model
         """
         ...
 
@@ -277,7 +331,7 @@ class LearningEngineProtocol(Protocol):
         suggestion_type: str,
         pattern: str,
         adjustment: float,
-    ) -> dict[str, object]:
+    ) -> ConfidenceAdjustmentResult:
         """Adjust confidence for a suggestion pattern.
 
         Args:
@@ -286,15 +340,15 @@ class LearningEngineProtocol(Protocol):
             adjustment: Confidence adjustment value
 
         Returns:
-            Adjustment result dictionary
+            Confidence adjustment result model
         """
         ...
 
-    async def get_learning_insights(self) -> dict[str, object]:
+    async def get_learning_insights(self) -> LearningInsights:
         """Get learning insights and statistics.
 
         Returns:
-            Learning insights dictionary
+            Learning insights model
         """
         ...
 

@@ -6,10 +6,11 @@ optimal subsets of content while respecting token budget constraints.
 """
 
 from dataclasses import dataclass
-from typing import cast
 
 from cortex.core.dependency_graph import DependencyGraph
+from cortex.core.models import ModelDict
 from cortex.core.token_counter import TokenCounter
+from cortex.optimization.models import SectionScoreModel
 
 from .relevance_scorer import RelevanceScorer
 
@@ -24,7 +25,7 @@ class OptimizationResult:
     utilization: float
     excluded_files: list[str]
     strategy_used: str
-    metadata: dict[str, object]
+    metadata: ModelDict
 
 
 class OptimizationStrategies:
@@ -414,8 +415,8 @@ class OptimizationStrategies:
         return total_tokens
 
     def _filter_and_sort_sections(
-        self, section_scores: list[dict[str, object]]
-    ) -> list[dict[str, object]]:
+        self, section_scores: list[SectionScoreModel]
+    ) -> list[SectionScoreModel]:
         """Filter and sort sections by score (highest first).
 
         Args:
@@ -427,18 +428,18 @@ class OptimizationStrategies:
         valid_sections = [
             section_data
             for section_data in section_scores
-            if isinstance(section_data.get("section"), str)
-            and section_data.get("section")
-            and cast(float, section_data.get("score", 0.0)) >= 0.5
+            if section_data.section is not None
+            and section_data.section
+            and section_data.score >= 0.5
         ]
         return sorted(
             valid_sections,
-            key=lambda x: cast(float, x.get("score", 0.0)),
+            key=lambda x: x.score,
             reverse=True,
         )
 
     def _calculate_section_tokens(
-        self, sorted_sections: list[dict[str, object]], content: str
+        self, sorted_sections: list[SectionScoreModel], content: str
     ) -> list[tuple[str, int]]:
         """Pre-calculate token counts for all sections.
 
@@ -449,21 +450,20 @@ class OptimizationStrategies:
         Returns:
             List of (section_name, token_count) tuples
         """
-        return [
-            (
-                cast(str, section_data.get("section")),
-                self.token_counter.count_tokens(
-                    self.extract_section_content(
-                        content, cast(str, section_data.get("section"))
-                    )
-                ),
+        pairs: list[tuple[str, int]] = []
+        for section_data in sorted_sections:
+            section_name = section_data.section
+            if section_name is None:
+                continue
+            section_tokens = self.token_counter.count_tokens(
+                self.extract_section_content(content, section_name)
             )
-            for section_data in sorted_sections
-        ]
+            pairs.append((section_name, section_tokens))
+        return pairs
 
     def _process_sections_for_file(
         self,
-        section_scores: list[dict[str, object]],
+        section_scores: list[SectionScoreModel],
         content: str,
         total_tokens: int,
         token_budget: int,

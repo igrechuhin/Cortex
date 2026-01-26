@@ -9,7 +9,9 @@ import json
 from typing import cast
 
 from cortex.core.metadata_index import MetadataIndex
-from cortex.managers.initialization import get_managers, get_project_root
+from cortex.core.models import ModelDict
+from cortex.managers import initialization
+from cortex.managers.manager_utils import get_manager
 from cortex.server import mcp
 
 
@@ -93,7 +95,7 @@ async def get_version_history(
 
 async def _get_file_metadata_for_history(
     file_name: str, project_root: str | None
-) -> dict[str, object] | None:
+) -> ModelDict | None:
     """Get file metadata for version history.
 
     Args:
@@ -101,81 +103,78 @@ async def _get_file_metadata_for_history(
         project_root: Optional path to project root
 
     Returns:
-        File metadata dictionary or None if not found
+        File metadata dict or None if not found
     """
-    root = get_project_root(project_root)
-    mgrs = await get_managers(root)
-    metadata_index = cast(MetadataIndex, mgrs["index"])
+    root = initialization.get_project_root(project_root)
+    mgrs = await initialization.get_managers(root)
+    metadata_index = await get_manager(mgrs, "index", MetadataIndex)
     return await metadata_index.get_file_metadata(file_name)
 
 
-def extract_version_history(file_meta: dict[str, object]) -> list[dict[str, object]]:
-    """Extract version history list from file metadata.
-
-    Args:
-        file_meta: File metadata dictionary
-
-    Returns:
-        List of version dictionaries
-    """
-    version_history_raw = file_meta.get("version_history", [])
-    if not isinstance(version_history_raw, list):
+def extract_version_history(file_meta: ModelDict) -> list[ModelDict]:
+    """Extract version history list from dict-shaped file metadata."""
+    history_raw = file_meta.get("version_history", [])
+    if not isinstance(history_raw, list):
         return []
-
-    version_list: list[dict[str, object]] = []
-    version_history_list = cast(list[object], version_history_raw)
-    for version_item_raw in version_history_list:
-        if isinstance(version_item_raw, dict):
-            version_item: dict[str, object] = cast(dict[str, object], version_item_raw)
-            version_list.append(version_item)
-    return version_list
+    return [cast(ModelDict, item) for item in history_raw if isinstance(item, dict)]
 
 
 def sort_and_limit_versions(
-    version_list: list[dict[str, object]], limit: int
-) -> list[dict[str, object]]:
-    """Sort versions by version number and limit results.
+    version_list: list[ModelDict], limit: int
+) -> list[ModelDict]:
+    """Sort dict versions by version number (desc) and apply limit."""
+    with_version: list[ModelDict] = []
+    without_version: list[ModelDict] = []
+    for item in version_list:
+        version = item.get("version")
+        if isinstance(version, (int, float)):
+            with_version.append(item)
+        else:
+            without_version.append(item)
 
-    Args:
-        version_list: List of version dictionaries
-        limit: Maximum number of versions to return
-
-    Returns:
-        Sorted and limited version list
-    """
-
-    def get_version(v: dict[str, object]) -> int:
-        version_val = v.get("version", 0)
-        if isinstance(version_val, (int, float)):
-            return int(version_val)
-        return 0
-
-    return sorted(version_list, key=get_version, reverse=True)[:limit]
+    sorted_with_version = sorted(
+        with_version,
+        key=lambda v: cast(float, v.get("version", 0.0)),
+        reverse=True,
+    )
+    combined = [*sorted_with_version, *without_version]
+    return combined[: max(0, int(limit))]
 
 
 def format_versions_for_export(
-    sorted_history: list[dict[str, object]],
-) -> list[dict[str, object]]:
-    """Format versions for export.
-
-    Args:
-        sorted_history: Sorted list of version dictionaries
-
-    Returns:
-        Formatted list of version dictionaries
-    """
-    versions: list[dict[str, object]] = []
+    sorted_history: list[ModelDict],
+) -> list[ModelDict]:
+    """Format dict versions for export with defaults."""
+    exported: list[ModelDict] = []
     for version_meta in sorted_history:
-        formatted: dict[str, object] = {
-            "version": version_meta.get("version", 0),
-            "timestamp": str(version_meta.get("timestamp", "")),
-            "change_type": str(version_meta.get("change_type", "unknown")),
+        version_raw = version_meta.get("version")
+        timestamp_raw = version_meta.get("timestamp")
+        if not isinstance(version_raw, (int, float)) or not isinstance(
+            timestamp_raw, str
+        ):
+            continue
+
+        out: ModelDict = {
+            "version": version_raw,
+            "timestamp": timestamp_raw,
+            "change_type": (
+                version_meta.get("change_type", "unknown")
+                if isinstance(version_meta.get("change_type"), str)
+                else "unknown"
+            ),
         }
-        if "change_description" in version_meta:
-            formatted["change_description"] = version_meta["change_description"]
-        if "size_bytes" in version_meta:
-            formatted["size_bytes"] = version_meta["size_bytes"]
-        if "token_count" in version_meta:
-            formatted["token_count"] = version_meta["token_count"]
-        versions.append(formatted)
-    return versions
+        change_description = version_meta.get("change_description")
+        if isinstance(change_description, str) and change_description:
+            out["change_description"] = change_description
+
+        size_bytes = version_meta.get("size_bytes")
+        if isinstance(size_bytes, int):
+            out["size_bytes"] = size_bytes
+
+        token_count = version_meta.get("token_count")
+        if isinstance(token_count, int):
+            out["token_count"] = token_count
+
+        exported.append(out)
+
+    return exported

@@ -9,32 +9,52 @@ import os
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import TypedDict
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 
-class LoadContextLogEntry(TypedDict):
+class LoadContextLogEntry(BaseModel):
     """Structure for a single load_context log entry."""
 
-    timestamp: str
-    task_description: str
-    token_budget: int
-    strategy: str
-    selected_files: list[str]
-    selected_sections: dict[str, list[str]]
-    total_tokens: int
-    utilization: float
-    excluded_files: list[str]
-    relevance_scores: dict[str, float]
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    timestamp: str = Field(description="ISO format timestamp")
+    task_description: str = Field(description="Task description")
+    token_budget: int = Field(ge=0, description="Token budget")
+    strategy: str = Field(description="Loading strategy")
+    selected_files: list[str] = Field(
+        default_factory=lambda: list[str](),
+        description="Selected files",
+    )
+    selected_sections: dict[str, list[str]] = Field(
+        default_factory=lambda: dict[str, list[str]](),
+        description="Selected sections by file",
+    )
+    total_tokens: int = Field(ge=0, description="Total tokens used")
+    utilization: float = Field(ge=0.0, le=1.0, description="Token utilization (0-1)")
+    excluded_files: list[str] = Field(
+        default_factory=lambda: list[str](),
+        description="Excluded files",
+    )
+    relevance_scores: dict[str, float] = Field(
+        default_factory=lambda: dict[str, float](),
+        description="Relevance scores by file",
+    )
 
 
-class SessionLog(TypedDict):
+class SessionLog(BaseModel):
     """Structure for the entire session log."""
 
-    session_id: str
-    session_start: str
-    load_context_calls: list[LoadContextLogEntry]
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    session_id: str = Field(description="Session identifier")
+    session_start: str = Field(description="Session start timestamp")
+    load_context_calls: list[LoadContextLogEntry] = Field(
+        default_factory=lambda: list[LoadContextLogEntry](),
+        description="List of load_context calls",
+    )
 
 
 def _get_session_id() -> str:
@@ -93,13 +113,14 @@ def _load_session_log(log_path: Path) -> SessionLog:
     """
     if log_path.exists():
         with open(log_path, encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+            return SessionLog.model_validate(data)
 
-    return {
-        "session_id": _get_session_id(),
-        "session_start": datetime.now().isoformat(timespec="minutes"),
-        "load_context_calls": [],
-    }
+    return SessionLog(
+        session_id=_get_session_id(),
+        session_start=datetime.now().isoformat(timespec="minutes"),
+        load_context_calls=[],
+    )
 
 
 def _save_session_log(log_path: Path, session_log: SessionLog) -> None:
@@ -107,10 +128,10 @@ def _save_session_log(log_path: Path, session_log: SessionLog) -> None:
 
     Args:
         log_path: Path to the session log file
-        session_log: Session log dictionary to save
+        session_log: Session log model to save
     """
     with open(log_path, "w", encoding="utf-8") as f:
-        json.dump(session_log, f, indent=2)
+        json.dump(session_log.model_dump(), f, indent=2)
 
 
 def log_load_context_call(
@@ -144,20 +165,20 @@ def log_load_context_call(
 
     session_log = _load_session_log(log_path)
 
-    entry: LoadContextLogEntry = {
-        "timestamp": datetime.now().isoformat(timespec="minutes"),
-        "task_description": task_description,
-        "token_budget": token_budget,
-        "strategy": strategy,
-        "selected_files": selected_files,
-        "selected_sections": selected_sections,
-        "total_tokens": total_tokens,
-        "utilization": utilization,
-        "excluded_files": excluded_files,
-        "relevance_scores": relevance_scores,
-    }
+    entry = LoadContextLogEntry(
+        timestamp=datetime.now().isoformat(timespec="minutes"),
+        task_description=task_description,
+        token_budget=token_budget,
+        strategy=strategy,
+        selected_files=selected_files,
+        selected_sections=selected_sections,
+        total_tokens=total_tokens,
+        utilization=utilization,
+        excluded_files=excluded_files,
+        relevance_scores=relevance_scores,
+    )
 
-    session_log["load_context_calls"].append(entry)
+    session_log.load_context_calls.append(entry)
     _save_session_log(log_path, session_log)
 
 
@@ -211,4 +232,5 @@ def read_session_log(log_path: Path) -> SessionLog | None:
         return None
 
     with open(log_path, encoding="utf-8") as f:
-        return json.load(f)
+        data = json.load(f)
+        return SessionLog.model_validate(data)

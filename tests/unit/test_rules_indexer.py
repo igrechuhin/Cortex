@@ -10,21 +10,18 @@ This module tests rule file indexing functionality including:
 
 from datetime import timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import pytest
 
+from cortex.core.token_counter import TokenCounter
 from cortex.optimization.rules_indexer import RulesIndexer
-
-if TYPE_CHECKING:
-    from cortex.core.token_counter import TokenCounter
 
 
 class TestRulesIndexerInitialization:
     """Tests for RulesIndexer initialization."""
 
     def test_initialization_with_default_interval(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test initialization with default reindex interval."""
         # Arrange & Act
@@ -42,7 +39,7 @@ class TestRulesIndexerInitialization:
         assert indexer.rules_content_hashes == {}
 
     def test_initialization_with_custom_interval(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test initialization with custom reindex interval."""
         # Arrange & Act
@@ -61,7 +58,7 @@ class TestIndexRules:
 
     @pytest.mark.asyncio
     async def test_index_rules_with_nonexistent_folder(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test indexing when rules folder doesn't exist."""
         # Arrange
@@ -81,7 +78,7 @@ class TestIndexRules:
 
     @pytest.mark.asyncio
     async def test_index_rules_with_empty_folder(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test indexing an empty rules folder."""
         # Arrange
@@ -103,7 +100,7 @@ class TestIndexRules:
 
     @pytest.mark.asyncio
     async def test_index_rules_with_valid_files(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test indexing valid rule files."""
         # Arrange
@@ -129,7 +126,7 @@ class TestIndexRules:
 
     @pytest.mark.asyncio
     async def test_index_rules_skips_when_recently_indexed(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test that indexing is skipped when recently indexed."""
         # Arrange
@@ -156,7 +153,7 @@ class TestIndexRules:
 
     @pytest.mark.asyncio
     async def test_index_rules_with_force_flag(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test that force flag bypasses skip logic."""
         # Arrange
@@ -180,7 +177,7 @@ class TestIndexRules:
 
     @pytest.mark.asyncio
     async def test_index_rules_detects_changed_files(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test that changed files are detected."""
         # Arrange
@@ -211,7 +208,7 @@ class TestIndexRules:
 
     @pytest.mark.asyncio
     async def test_index_rules_detects_unchanged_files(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test that unchanged files are detected."""
         # Arrange
@@ -238,7 +235,7 @@ class TestIndexRules:
 
     @pytest.mark.asyncio
     async def test_index_rules_stores_metadata(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test that rule metadata is correctly stored."""
         # Arrange
@@ -272,7 +269,7 @@ class TestFindRuleFiles:
     """Tests for find_rule_files method."""
 
     def test_find_rule_files_in_empty_directory(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test finding rule files in empty directory."""
         # Arrange
@@ -291,7 +288,7 @@ class TestFindRuleFiles:
         assert files == []
 
     def test_find_rule_files_with_markdown_files(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test finding markdown rule files."""
         # Arrange
@@ -313,7 +310,7 @@ class TestFindRuleFiles:
         assert all(f.suffix == ".md" for f in files)
 
     def test_find_rule_files_with_text_files(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test finding text rule files."""
         # Arrange
@@ -334,7 +331,7 @@ class TestFindRuleFiles:
         assert files[0].suffix == ".txt"
 
     def test_find_rule_files_in_subdirectories(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test finding rule files in subdirectories."""
         # Arrange
@@ -357,7 +354,7 @@ class TestFindRuleFiles:
         assert "python_rules.md" in str(files[0])
 
     def test_find_rule_files_removes_duplicates(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test that duplicate files are removed."""
         # Arrange
@@ -382,7 +379,7 @@ class TestParseRuleSections:
     """Tests for parse_rule_sections method."""
 
     def test_parse_rule_sections_with_no_sections(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test parsing content with no sections."""
         # Arrange
@@ -399,7 +396,7 @@ class TestParseRuleSections:
         assert sections == []
 
     def test_parse_rule_sections_with_single_section(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test parsing content with a single section."""
         # Arrange
@@ -418,17 +415,12 @@ Multiple lines of content.
         # Assert
         assert len(sections) == 1
         section = sections[0]
-        assert isinstance(section, dict)
-        assert section.get("name") == "Rule Name"
-        content = section.get("content")
-        assert isinstance(content, str)
-        assert "This is the content" in content
-        line_count = section.get("line_count")
-        assert isinstance(line_count, (int, float))
-        assert line_count > 0
+        assert section.name == "Rule Name"
+        assert "This is the content" in section.content
+        assert section.line_count > 0
 
     def test_parse_rule_sections_with_multiple_sections(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test parsing content with multiple sections."""
         # Arrange
@@ -451,12 +443,12 @@ Content for section 3.
 
         # Assert
         assert len(sections) == 3
-        assert sections[0]["name"] == "Section 1"
-        assert sections[1]["name"] == "Section 2"
-        assert sections[2]["name"] == "Section 3"
+        assert sections[0].name == "Section 1"
+        assert sections[1].name == "Section 2"
+        assert sections[2].name == "Section 3"
 
     def test_parse_rule_sections_with_varying_heading_levels(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test parsing with different heading levels."""
         # Arrange
@@ -476,8 +468,8 @@ Content 2
 
         # Assert
         assert len(sections) == 2
-        assert sections[0]["name"] == "H1 Heading"
-        assert sections[1]["name"] == "H4 Heading"
+        assert sections[0].name == "H1 Heading"
+        assert sections[1].name == "H4 Heading"
 
 
 class TestAutoReindex:
@@ -485,7 +477,7 @@ class TestAutoReindex:
 
     @pytest.mark.asyncio
     async def test_start_auto_reindex(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test starting automatic reindexing."""
         # Arrange
@@ -512,7 +504,7 @@ class TestAutoReindex:
 
     @pytest.mark.asyncio
     async def test_start_auto_reindex_idempotent(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test that starting auto-reindex multiple times doesn't create multiple tasks."""
         # Arrange
@@ -540,7 +532,7 @@ class TestAutoReindex:
 
     @pytest.mark.asyncio
     async def test_stop_auto_reindex(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test stopping automatic reindexing."""
         # Arrange
@@ -564,7 +556,7 @@ class TestAutoReindex:
 
     @pytest.mark.asyncio
     async def test_stop_auto_reindex_when_not_running(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test stopping auto-reindex when it's not running."""
         # Arrange
@@ -582,7 +574,7 @@ class TestGetIndex:
 
     @pytest.mark.asyncio
     async def test_get_index_returns_empty_when_not_indexed(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test get_index returns empty dict when nothing is indexed."""
         # Arrange
@@ -599,7 +591,7 @@ class TestGetIndex:
 
     @pytest.mark.asyncio
     async def test_get_index_returns_indexed_rules(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test get_index returns indexed rules."""
         # Arrange
@@ -618,14 +610,14 @@ class TestGetIndex:
 
         # Assert
         assert len(index) == 1
-        assert all(isinstance(v, dict) for v in index.values())
+        assert all(hasattr(v, "model_dump") for v in index.values())
 
 
 class TestGetStatus:
     """Tests for get_status method."""
 
     def test_get_status_before_indexing(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test get_status before any indexing."""
         # Arrange
@@ -645,7 +637,7 @@ class TestGetStatus:
 
     @pytest.mark.asyncio
     async def test_get_status_after_indexing(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test get_status after indexing."""
         # Arrange
@@ -673,7 +665,7 @@ class TestGetStatus:
 
     @pytest.mark.asyncio
     async def test_get_status_with_auto_reindex_enabled(
-        self, tmp_path: Path, mock_token_counter: "TokenCounter"
+        self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
         """Test get_status with auto-reindex enabled."""
         # Arrange

@@ -2,6 +2,9 @@
 
 from typing import cast
 
+import pytest
+from pydantic import ValidationError
+
 from cortex.refactoring.adaptation_config import AdaptationConfig
 
 
@@ -14,20 +17,19 @@ class TestAdaptationConfigInitialization:
         config = AdaptationConfig()
 
         # Assert
-        assert config.config is not None
-        assert "self_evolution" in config.config
+        se_config = config.to_dict()
+        assert "learning" in se_config
 
     def test_initialization_with_base_config(self):
         """Test initialization with base configuration."""
         # Arrange
-        base: dict[str, object] = {"existing_key": "value"}
+        base: dict[str, object] = {"self_evolution": {"learning": {"enabled": False}}}
 
         # Act
         config = AdaptationConfig(base_config=base)
 
         # Assert
-        assert config.config["existing_key"] == "value"
-        assert "self_evolution" in config.config
+        assert config.is_learning_enabled() is False
 
     def test_initialization_creates_default_sections(self):
         """Test initialization creates all default sections."""
@@ -35,8 +37,7 @@ class TestAdaptationConfigInitialization:
         config = AdaptationConfig()
 
         # Assert
-        se_config = config.config.get("self_evolution")
-        assert isinstance(se_config, dict)
+        se_config = config.to_dict()
         assert "learning" in se_config
         assert "feedback" in se_config
         assert "pattern_recognition" in se_config
@@ -96,15 +97,15 @@ class TestSetConfiguration:
         assert config.get("self_evolution.learning.enabled") is False
 
     def test_set_creates_nested_structure(self):
-        """Test setting creates nested dictionary structure."""
+        """Test setting updates a known configuration key."""
         # Arrange
         config = AdaptationConfig()
 
         # Act
-        config.set("new.nested.key", "value")
+        config.set("self_evolution.learning.export_patterns", True)
 
         # Assert
-        assert config.get("new.nested.key") == "value"
+        assert config.get("self_evolution.learning.export_patterns") is True
 
     def test_set_overwrites_existing_value(self):
         """Test setting overwrites existing value."""
@@ -436,16 +437,11 @@ class TestLearningRateMultiplier:
         assert result == 0.5
 
     def test_get_multiplier_for_unknown_defaults_to_moderate(self):
-        """Test multiplier defaults to moderate for unknown rate."""
+        """Test setting unknown learning rate is rejected."""
         # Arrange
         config = AdaptationConfig()
-        config.set("self_evolution.learning.learning_rate", "unknown")
-
-        # Act
-        result = config.get_learning_rate_multiplier()
-
-        # Assert
-        assert result == 1.0
+        with pytest.raises(ValidationError):
+            config.set("self_evolution.learning.learning_rate", "unknown")
 
 
 class TestConfigurationManagement:
@@ -506,32 +502,18 @@ class TestValidation:
         assert len(issues) == 0
 
     def test_validate_detects_invalid_learning_rate(self):
-        """Test validation detects invalid learning rate."""
+        """Test invalid learning rate is rejected on set()."""
         # Arrange
         config = AdaptationConfig()
-        config.set("self_evolution.learning.learning_rate", "invalid")
-
-        # Act
-        result = config.validate()
-
-        # Assert
-        assert result["valid"] is False
-        issues = cast(list[str], result["issues"])
-        assert any("learning_rate" in issue for issue in issues)
+        with pytest.raises(ValidationError):
+            config.set("self_evolution.learning.learning_rate", "invalid")
 
     def test_validate_detects_invalid_thresholds(self):
-        """Test validation detects invalid threshold values."""
+        """Test invalid threshold values are rejected on set()."""
         # Arrange
         config = AdaptationConfig()
-        config.set("self_evolution.adaptation.min_confidence_threshold", 1.5)
-
-        # Act
-        result = config.validate()
-
-        # Assert
-        assert result["valid"] is False
-        issues = cast(list[str], result["issues"])
-        assert any("min_confidence_threshold" in issue for issue in issues)
+        with pytest.raises(ValidationError):
+            config.set("self_evolution.adaptation.min_confidence_threshold", 1.5)
 
     def test_validate_detects_threshold_order_issue(self):
         """Test validation detects min >= max threshold."""

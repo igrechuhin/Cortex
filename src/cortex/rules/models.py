@@ -67,6 +67,8 @@ class DetectedContext(RulesBaseModel):
 class SubmoduleInitResult(RulesBaseModel):
     """Result of submodule initialization."""
 
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
+
     status: Literal["success", "error"] = Field(description="Operation status")
     action: str | None = Field(
         default=None, description="Action performed (initialized, updated_existing)"
@@ -75,6 +77,12 @@ class SubmoduleInitResult(RulesBaseModel):
     local_path: str | None = Field(default=None, description="Local path")
     submodule_added: bool | None = Field(
         default=None, description="Whether submodule was added"
+    )
+    initial_sync: bool | None = Field(
+        default=None, description="Whether initial sync was performed"
+    )
+    categories_found: list[str] | None = Field(
+        default=None, description="Categories found in manifest"
     )
     error: str | None = Field(default=None, description="Error message if failed")
     stdout: str | None = Field(default=None, description="Git stdout")
@@ -104,6 +112,8 @@ class SyncResult(RulesBaseModel):
 class UpdateResult(RulesBaseModel):
     """Result of update operation."""
 
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
+
     status: Literal["success", "error"] = Field(description="Operation status")
     file: str | None = Field(default=None, description="File updated")
     category: str | None = Field(default=None, description="Category of file")
@@ -112,6 +122,8 @@ class UpdateResult(RulesBaseModel):
     commit_hash: str | None = Field(
         default=None, description="Commit hash if committed"
     )
+    message: str | None = Field(default=None, description="Commit message")
+    type: str | None = Field(default=None, description="Type of update (rule/prompt)")
     error: str | None = Field(default=None, description="Error message if failed")
 
 
@@ -235,6 +247,8 @@ class LoadedPrompt(RulesBaseModel):
     description: str = Field(default="", description="Prompt description")
     keywords: list[str] = Field(default_factory=list, description="Keywords for search")
     content: str = Field(description="Prompt content")
+    path: str = Field(description="Full path to prompt file")
+    source: Literal["synapse"] = Field(default="synapse", description="Prompt source")
 
 
 # ============================================================================

@@ -15,6 +15,8 @@ Performance optimizations (Phase 10.3.1):
 import re
 from typing import cast
 
+from cortex.core.models import JsonValue, ModelDict
+
 # Module-level regex patterns (compiled once)
 _LINK_PATTERN: re.Pattern[str] = re.compile(r"\[([^\]]+)\]\(([^)]+)\)", re.MULTILINE)
 _TRANSCLUSION_PATTERN: re.Pattern[str] = re.compile(
@@ -70,7 +72,7 @@ class LinkParser:
         # Use module-level frozenset for O(1) lookup
         return any(name in file_path for name in _MEMORY_BANK_NAMES)
 
-    def _parse_markdown_links(self, content: str) -> list[dict[str, object]]:
+    def _parse_markdown_links(self, content: str) -> list[ModelDict]:
         """Parse markdown links from content.
 
         Optimized: Uses pre-compiled patterns and set-based protocol checks.
@@ -79,9 +81,9 @@ class LinkParser:
             content: Markdown file content
 
         Returns:
-            List of markdown link dictionaries
+            List of markdown link models
         """
-        markdown_links: list[dict[str, object]] = []
+        markdown_links: list[ModelDict] = []
         lines = content.split("\n")
 
         for line_num, line in enumerate(lines, start=1):
@@ -108,16 +110,16 @@ class LinkParser:
 
         return markdown_links
 
-    def _parse_transclusions(self, content: str) -> list[dict[str, object]]:
+    def _parse_transclusions(self, content: str) -> list[ModelDict]:
         """Parse transclusion directives from content.
 
         Args:
             content: Markdown file content
 
         Returns:
-            List of transclusion dictionaries
+            List of transclusion models
         """
-        transclusions: list[dict[str, object]] = []
+        transclusions: list[ModelDict] = []
         lines = content.split("\n")
 
         for line_num, line in enumerate(lines, start=1):
@@ -126,9 +128,8 @@ class LinkParser:
                 options_str = match.group(2)
 
                 file_path, section = self.parse_link_target(target)
-                options = (
-                    self.parse_transclusion_options(options_str) if options_str else {}
-                )
+                options = self.parse_transclusion_options(options_str)
+                full_syntax = match.group(0)
 
                 transclusions.append(
                     {
@@ -137,12 +138,13 @@ class LinkParser:
                         "options": options,
                         "line": line_num,
                         "type": "transclusion",
+                        "full_syntax": full_syntax,
                     }
                 )
 
         return transclusions
 
-    async def parse_file(self, content: str) -> dict[str, list[dict[str, object]]]:
+    async def parse_file(self, content: str) -> ModelDict:
         """
         Parse file content for links and transclusions.
 
@@ -150,32 +152,21 @@ class LinkParser:
             content: Markdown file content
 
         Returns:
-            Dictionary with two lists:
-            {
-                "markdown_links": [
-                    {
-                        "text": "See projectBrief",
-                        "target": "projectBrief.md",
-                        "section": None,
-                        "line": 15,
-                        "type": "reference"
-                    }
-                ],
-                "transclusions": [
-                    {
-                        "target": "systemPatterns.md",
-                        "section": "Architecture",
-                        "options": {"lines": 5, "recursive": true},
-                        "line": 42,
-                        "type": "transclusion"
-                    }
-                ]
-            }
+            Dict with "markdown_links" and "transclusions"
         """
         markdown_links = self._parse_markdown_links(content)
         transclusions = self._parse_transclusions(content)
 
-        return {"markdown_links": markdown_links, "transclusions": transclusions}
+        markdown_links_json: list[JsonValue] = [
+            cast(JsonValue, item) for item in markdown_links
+        ]
+        transclusions_json: list[JsonValue] = [
+            cast(JsonValue, item) for item in transclusions
+        ]
+        return {
+            "markdown_links": markdown_links_json,
+            "transclusions": transclusions_json,
+        }
 
     def parse_link_target(self, target: str) -> tuple[str, str | None]:
         """
@@ -196,7 +187,7 @@ class LinkParser:
         else:
             return target.strip(), None
 
-    def parse_transclusion_options(self, options_str: str | None) -> dict[str, object]:
+    def parse_transclusion_options(self, options_str: str | None) -> ModelDict:
         """
         Parse transclusion options.
 
@@ -206,31 +197,42 @@ class LinkParser:
             options_str: "lines=5|recursive=false" or "lines=10" or None
 
         Returns:
-            Dictionary of options: {"lines": 5, "recursive": False}
+            Dict with parsed options (only keys present in input)
         """
         if not options_str:
             return {}
 
-        options: dict[str, object] = {}
+        options: ModelDict = {}
 
         # Use pre-compiled pattern for splitting (faster than re.split)
         parts = _OPTION_SPLIT_PATTERN.split(options_str)
 
         for part in parts:
-            self._parse_single_option(part.strip(), options)
+            parsed = self._parse_single_option(part.strip())
+            if parsed is None:
+                continue
+            key, value = parsed
+            if key == "lines" and isinstance(value, int):
+                options["lines"] = value
+            elif key == "recursive" and isinstance(value, bool):
+                options["recursive"] = value
+            else:
+                options[key] = value
 
         return options
 
-    def _parse_single_option(self, part: str, options: dict[str, object]) -> None:
+    def _parse_single_option(self, part: str) -> tuple[str, int | bool | str] | None:
         """Parse a single option key=value pair.
 
         Args:
             part: Option string like "lines=5" or "recursive=false"
-            options: Dictionary to update with parsed option
+
+        Returns:
+            Tuple of (key, value) or None if invalid
         """
         # Skip if no equals sign
         if "=" not in part:
-            return
+            return None
 
         key, value = part.split("=", 1)
         key = key.strip()
@@ -238,9 +240,9 @@ class LinkParser:
 
         # Convert value to appropriate type
         parsed_value = self._parse_option_value(value)
-        options[key] = parsed_value
+        return (key, parsed_value)
 
-    def _parse_option_value(self, value: str) -> object:
+    def _parse_option_value(self, value: str) -> int | bool | str:
         """Parse option value to appropriate type.
 
         Args:
@@ -266,9 +268,7 @@ class LinkParser:
         # Default to string
         return value
 
-    def extract_all_links(
-        self, parsed_data: dict[str, list[dict[str, object]]]
-    ) -> list[str]:
+    def extract_all_links(self, parsed_data: ModelDict) -> list[str]:
         """
         Extract all unique file references from parsed data.
 
@@ -280,21 +280,27 @@ class LinkParser:
         """
         files: set[str] = set()
 
-        for link in parsed_data.get("markdown_links", []):
-            target = link.get("target")
-            if target:
-                files.add(str(target))
+        markdown_links_raw: JsonValue = parsed_data.get("markdown_links", [])
+        if isinstance(markdown_links_raw, list):
+            for link in markdown_links_raw:
+                if not isinstance(link, dict):
+                    continue
+                target = link.get("target")
+                if isinstance(target, str) and target:
+                    files.add(target)
 
-        for trans in parsed_data.get("transclusions", []):
-            target = trans.get("target")
-            if target:
-                files.add(str(target))
+        transclusions_raw: JsonValue = parsed_data.get("transclusions", [])
+        if isinstance(transclusions_raw, list):
+            for trans in transclusions_raw:
+                if not isinstance(trans, dict):
+                    continue
+                target = trans.get("target")
+                if isinstance(target, str) and target:
+                    files.add(target)
 
         return sorted(list(files))
 
-    def get_transclusion_targets(
-        self, parsed_data: dict[str, list[dict[str, object]]]
-    ) -> list[str]:
+    def get_transclusion_targets(self, parsed_data: ModelDict) -> list[str]:
         """
         Get only transclusion targets (files that will be included).
 
@@ -304,14 +310,16 @@ class LinkParser:
         Returns:
             List of files referenced in transclusion directives
         """
-        targets: list[str] = []
-
-        for trans in parsed_data.get("transclusions", []):
-            target = trans.get("target")
-            if target:
-                targets.append(cast(str, target))
-
-        return targets
+        transclusions_raw: JsonValue = parsed_data.get("transclusions", [])
+        if not isinstance(transclusions_raw, list):
+            return []
+        return [
+            str(trans["target"])
+            for trans in transclusions_raw
+            if isinstance(trans, dict)
+            and isinstance(trans.get("target"), str)
+            and bool(trans.get("target"))
+        ]
 
     def has_transclusions(self, content: str) -> bool:
         """
@@ -325,9 +333,7 @@ class LinkParser:
         """
         return bool(self.transclusion_pattern.search(content))
 
-    def count_links(
-        self, parsed_data: dict[str, list[dict[str, object]]]
-    ) -> dict[str, int]:
+    def count_links(self, parsed_data: ModelDict) -> dict[str, int]:
         """
         Count different types of links.
 
@@ -342,8 +348,14 @@ class LinkParser:
                 "unique_files": 4
             }
         """
-        markdown_count = len(parsed_data.get("markdown_links", []))
-        transclusion_count = len(parsed_data.get("transclusions", []))
+        markdown_links_raw: JsonValue = parsed_data.get("markdown_links", [])
+        transclusions_raw: JsonValue = parsed_data.get("transclusions", [])
+        markdown_count = (
+            len(markdown_links_raw) if isinstance(markdown_links_raw, list) else 0
+        )
+        transclusion_count = (
+            len(transclusions_raw) if isinstance(transclusions_raw, list) else 0
+        )
         unique_files = len(self.extract_all_links(parsed_data))
 
         return {

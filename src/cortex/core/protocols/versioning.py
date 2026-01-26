@@ -8,13 +8,19 @@ dependencies.
 
 from typing import Protocol
 
+from cortex.core.models import (
+    RollbackToVersionResult,
+    SnapshotMetadataInput,
+    VersionHistoryEntryModel,
+)
+
 
 class VersionManagerProtocol(Protocol):
     """Protocol for version management using structural subtyping (PEP 544).
 
     This protocol defines the interface for creating file version snapshots,
     tracking version history, and rolling back to previous versions. Version
-    management provides safety and auditability for content changes. Any class
+    management provides safety and auditability for content changes. A class
     implementing these methods automatically satisfies this protocol.
 
     Used by:
@@ -35,7 +41,10 @@ class VersionManagerProtocol(Protocol):
                 self.versions_dir.mkdir(exist_ok=True)
 
             async def create_snapshot(
-                self, file_name: str, content: str, metadata: dict[str, object] | None = None
+                self,
+                file_name: str,
+                content: str,
+                metadata: SnapshotMetadataInput | None = None,
             ) -> str:
                 snapshot_id = f"{file_name}_{datetime.utcnow().isoformat()}"
                 snapshot_path = self.versions_dir / f"{snapshot_id}.snapshot"
@@ -45,7 +54,7 @@ class VersionManagerProtocol(Protocol):
                     "file_name": file_name,
                     "content": content,
                     "timestamp": datetime.utcnow().isoformat(),
-                    "metadata": metadata or {},
+                    "metadata": metadata.model_dump() if metadata else {},
                 }
 
                 async with open_async_text_file(snapshot_path, "w", "utf-8") as f:
@@ -53,27 +62,33 @@ class VersionManagerProtocol(Protocol):
 
                 return snapshot_id
 
-            async def get_version_history(self, file_name: str) -> list[dict[str, object]]:
+            async def get_version_history(self, file_name: str) -> list[VersionHistoryEntryModel]:
+                from cortex.core.models import VersionHistoryEntryModel, VersionHistoryMetadata
                 history = []
                 for snapshot_file in self.versions_dir.glob(f"{file_name}_*.snapshot"):
                     async with open_async_text_file(snapshot_file, "r", "utf-8") as f:
                         data = json.loads(await f.read())
-                        history.append({
-                            "snapshot_id": data["snapshot_id"],
-                            "timestamp": data["timestamp"],
-                            "metadata": data["metadata"],
-                        })
-                return sorted(history, key=lambda x: x["timestamp"], reverse=True)
+                        history.append(VersionHistoryEntryModel(
+                            version=int(data.get("version", 1)),
+                            timestamp=data["timestamp"],
+                            change_type=data.get("change_type"),
+                            size_bytes=data.get("size_bytes"),
+                            token_count=data.get("token_count"),
+                            metadata=VersionHistoryMetadata(),
+                        ))
+                return sorted(history, key=lambda x: x.timestamp, reverse=True)
 
-            async def rollback_to_version(self, snapshot_id: str) -> dict[str, object]:
+            async def rollback_to_version(self, snapshot_id: str) -> RollbackToVersionResult:
                 snapshot_path = self.versions_dir / f"{snapshot_id}.snapshot"
                 async with open_async_text_file(snapshot_path, "r", "utf-8") as f:
                     data = json.loads(await f.read())
-                return {
-                    "file_name": data["file_name"],
-                    "content": data["content"],
-                    "restored_from": snapshot_id,
-                }
+                return RollbackToVersionResult(
+                    file_name=data["file_name"],
+                    content=data["content"],
+                    restored_from=snapshot_id,
+                    previous_version=1,
+                    new_version=2,
+                )
 
         # SimpleVersionManager automatically satisfies VersionManagerProtocol
         ```
@@ -85,7 +100,10 @@ class VersionManagerProtocol(Protocol):
     """
 
     async def create_snapshot(
-        self, file_name: str, content: str, metadata: dict[str, object] | None = None
+        self,
+        file_name: str,
+        content: str,
+        metadata: SnapshotMetadataInput | None = None,
     ) -> str:
         """Create version snapshot.
 
@@ -99,7 +117,9 @@ class VersionManagerProtocol(Protocol):
         """
         ...
 
-    async def get_version_history(self, file_name: str) -> list[dict[str, object]]:
+    async def get_version_history(
+        self, file_name: str
+    ) -> list[VersionHistoryEntryModel]:
         """Get version history for file.
 
         Args:
@@ -110,7 +130,7 @@ class VersionManagerProtocol(Protocol):
         """
         ...
 
-    async def rollback_to_version(self, snapshot_id: str) -> dict[str, object]:
+    async def rollback_to_version(self, snapshot_id: str) -> RollbackToVersionResult:
         """Rollback file to specific version.
 
         Args:

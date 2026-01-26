@@ -51,7 +51,7 @@ async def check_mcp_connection_health() -> str:
         return json.dumps(
             {
                 "status": "success",
-                "health": health,
+                "health": health.model_dump(),
             },
             indent=2,
         )

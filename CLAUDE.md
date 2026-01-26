@@ -22,16 +22,26 @@ Key capabilities:
 
 ```bash
 # Quick test run (requires gtimeout on macOS)
-gtimeout -k 5 300 python -m pytest -q
+gtimeout -k 5 300 ./.venv/bin/python -m pytest -q
 
 # Full test suite with timeout
-gtimeout -k 5 600 ./.venv/bin/pytest
+gtimeout -k 5 600 ./.venv/bin/python -m pytest
 
 # Run specific test file
-pytest tests/unit/test_file_system.py -v
+./.venv/bin/python -m pytest tests/unit/test_file_system.py -v
 
 # Run integration tests
-pytest tests/integration/ -v
+./.venv/bin/python -m pytest tests/integration/ -v
+```
+
+### Virtualenv Discoverability (IMPORTANT)
+
+- `.venv/` is usually **ignored** by git and may be **invisible** to IDE file tools/search in some environments.
+- Do **not** infer “pytest is missing” based on file-tree tools; verify with the shell instead:
+
+```bash
+test -x ./.venv/bin/python && ./.venv/bin/python -V
+test -x ./.venv/bin/pytest && ./.venv/bin/pytest --version
 ```
 
 ### Local Development
@@ -52,8 +62,8 @@ python -m cortex.main
 
 ```bash
 # Format code (MANDATORY before commit)
-black .
-isort .
+./.venv/bin/black .
+./.venv/bin/isort .
 
 # The codebase uses Black formatter with 88-char line length
 # and isort for import organization
@@ -168,9 +178,9 @@ The server initializes services in this order:
 ## Cursor / IDE Usage for MCP Development
 
 - **Interpreter alignment**: Configure Cursor and other IDEs to use `.venv/bin/python` so type checking, completions, and MCP tool discovery match the runtime environment.
-- **Typed MCP handlers**: Define all `@mcp.tool()` handlers with explicit parameter and return types, using `TypedDict` and dataclasses for JSON payloads instead of untyped `dict`.
+- **Typed MCP handlers**: Define all `@mcp.tool()` handlers with explicit parameter and return types, using Pydantic models / dataclasses for JSON payloads instead of untyped dicts.
 - **Thin async orchestrators**: Keep handlers as thin async functions that orchestrate calls to small, pure helper functions that contain the main business logic.
-- **JSON modeling**: Model known JSON shapes with `TypedDict` hierarchies and dataclasses; reserve `dict[str, object]` for true protocol edges where structure is unknown.
+- **JSON modeling**: Model known JSON shapes with Pydantic models / dataclasses; reserve JSON-boundary types (e.g. `JsonValue`) only where the domain is truly arbitrary JSON.
 - **Refactor focus**: Prefer refactoring pure helpers (not handlers) when using automated refactor tools to avoid breaking protocol contracts or async behavior.
 
 ## Synapse Architecture (CRITICAL)
@@ -284,7 +294,7 @@ All Cortex data is stored in `.cortex/` directory. For IDE compatibility, `.curs
 1. **Make changes** to source files in `src/cortex/`
 2. **Format code**: Run `black .` and `isort .` (MANDATORY)
 3. **Write tests**: Add unit tests in `tests/unit/` or integration tests in `tests/integration/`
-4. **Run tests**: Use `gtimeout -k 5 300 python -m pytest -q` for quick validation
+4. **Run tests**: Use `gtimeout -k 5 300 ./.venv/bin/python -m pytest -q` for quick validation
 5. **Check line counts**: Ensure no file exceeds 400 lines, no function exceeds 30 lines
 6. **Update memory bank**: After significant changes, update `.cortex/memory-bank/` files (MANDATORY)
 7. **No auto-commit**: Never commit or push without explicit user request (MANDATORY)

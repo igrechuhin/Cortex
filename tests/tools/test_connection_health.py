@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.core.models import ConnectionHealth
 from cortex.tools.connection_health import check_mcp_connection_health
 
 
@@ -31,7 +32,7 @@ class TestCheckMCPConnectionHealth:
         with patch(
             "cortex.tools.connection_health.check_connection_health",
             new_callable=AsyncMock,
-            return_value=expected_health,
+            return_value=ConnectionHealth(**expected_health),
         ):
             # Act
             result_str = await check_mcp_connection_health()

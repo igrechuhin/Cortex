@@ -4,19 +4,28 @@ Detects project language(s), test frameworks, and build tools from project struc
 """
 
 from pathlib import Path
-from typing import TypedDict
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class LanguageInfo(TypedDict):
+class LanguageInfo(BaseModel):
     """Language detection result."""
 
-    language: str
-    test_framework: str | None
-    formatter: str | None
-    linter: str | None
-    type_checker: str | None
-    build_tool: str | None
-    confidence: float
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    language: str = Field(description="Detected programming language")
+    test_framework: str | None = Field(
+        default=None, description="Test framework if detected"
+    )
+    formatter: str | None = Field(
+        default=None, description="Code formatter if detected"
+    )
+    linter: str | None = Field(default=None, description="Linter if detected")
+    type_checker: str | None = Field(
+        default=None, description="Type checker if detected"
+    )
+    build_tool: str | None = Field(default=None, description="Build tool if detected")
+    confidence: float = Field(ge=0.0, le=1.0, description="Detection confidence (0-1)")
 
 
 class LanguageDetector:

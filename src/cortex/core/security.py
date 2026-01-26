@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.constants import RATE_LIMIT_OPS_PER_SECOND
+from cortex.core.models import JsonDict, JsonList, JsonValue, ModelDict
 
 from .async_file_utils import open_async_text_file
 from .exceptions import IndexCorruptedError
@@ -141,53 +142,55 @@ class HTMLEscaper:
         return html.escape(content, quote=True)
 
     @staticmethod
-    def escape_dict(data: dict[str, object]) -> dict[str, object]:
+    def escape_dict(data: JsonDict | ModelDict) -> ModelDict:
         """Recursively escape all string values in a dictionary.
 
         Args:
-            data: Dictionary with potentially unsafe string values
+            data: JsonDict or dict with potentially unsafe string values
 
         Returns:
-            New dictionary with all string values HTML-escaped
+            New dict with all string values HTML-escaped
         """
-        result = HTMLEscaper._escape_dict_recursive(data)
-        return result
+        data_dict = data.to_dict() if isinstance(data, JsonDict) else data
+        return HTMLEscaper._escape_dict_recursive(dict(data_dict))
 
     @staticmethod
-    def _escape_dict_recursive(data: dict[str, object]) -> dict[str, object]:
+    def _escape_dict_recursive(data: ModelDict) -> ModelDict:
         """Recursively escape string values in a dictionary."""
-        result: dict[str, object] = {}
+        result_dict: ModelDict = {}
         for key, value in data.items():
             if isinstance(value, str):
-                result[key] = HTMLEscaper.escape(value)
+                result_dict[key] = HTMLEscaper.escape(value)
             elif isinstance(value, dict):
-                # Type narrow: we know it's a dict, cast to dict[str, object]
-                nested_dict = cast(dict[str, object], value)
-                result[key] = HTMLEscaper._escape_dict_recursive(nested_dict)
+                escaped = HTMLEscaper._escape_dict_recursive(cast(ModelDict, value))
+                result_dict[key] = escaped
             elif isinstance(value, list):
-                nested_list = cast(list[object], value)
-                result[key] = HTMLEscaper._escape_list_recursive(nested_list)
+                nested_list = JsonList.from_list(value)
+                escaped = HTMLEscaper._escape_list_recursive(nested_list)
+                result_dict[key] = escaped.to_list()
             else:
                 # int, float, bool, None - pass through unchanged
-                result[key] = value
-        return result
+                result_dict[key] = value
+        return result_dict
 
     @staticmethod
-    def _escape_list_recursive(data: list[object]) -> list[object]:
+    def _escape_list_recursive(data: JsonList) -> JsonList:
         """Recursively escape string values in a list."""
-        result: list[object] = []
-        for item in data:
+        result_list: list[JsonValue] = []
+        data_list = data.to_list()
+        for item in data_list:
             if isinstance(item, str):
-                result.append(HTMLEscaper.escape(item))
+                result_list.append(HTMLEscaper.escape(item))
             elif isinstance(item, dict):
-                nested_dict = cast(dict[str, object], item)
-                result.append(HTMLEscaper._escape_dict_recursive(nested_dict))
+                escaped = HTMLEscaper._escape_dict_recursive(cast(ModelDict, item))
+                result_list.append(escaped)
             elif isinstance(item, list):
-                nested_list = cast(list[object], item)
-                result.append(HTMLEscaper._escape_list_recursive(nested_list))
+                nested_list = JsonList.from_list(item)
+                escaped = HTMLEscaper._escape_list_recursive(nested_list)
+                result_list.append(escaped.to_list())
             else:
-                result.append(item)
-        return result
+                result_list.append(item)
+        return JsonList.from_list(result_list)
 
 
 class RegexValidator:
@@ -553,18 +556,20 @@ class JSONIntegrity:
     """Provides integrity checks for JSON configuration files."""
 
     @staticmethod
-    async def save_with_integrity(path: Path, data: dict[str, object]) -> None:
+    async def save_with_integrity(path: Path, data: JsonDict | ModelDict) -> None:
         """Save JSON with integrity hash.
 
         Args:
             path: Path to JSON file
-            data: Data to save
+            data: JsonDict data to save
 
         Raises:
             OSError: If file cannot be written
         """
+        # Convert to dict for serialization
+        data_dict = data.to_dict() if isinstance(data, JsonDict) else dict(data)
         # Serialize data
-        content = json.dumps(data, indent=2, sort_keys=True)
+        content = json.dumps(data_dict, indent=2, sort_keys=True)
 
         # Compute integrity hash
         content_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
@@ -573,7 +578,7 @@ class JSONIntegrity:
         wrapper = {
             "_integrity": content_hash,
             "_version": "1.0",
-            "data": data,
+            "data": data_dict,
         }
 
         # Write to file atomically
@@ -581,14 +586,14 @@ class JSONIntegrity:
             _ = await f.write(json.dumps(wrapper, indent=2))
 
     @staticmethod
-    async def load_with_integrity(path: Path) -> dict[str, object]:
+    async def load_with_integrity(path: Path) -> ModelDict:
         """Load JSON and verify integrity.
 
         Args:
             path: Path to JSON file
 
         Returns:
-            Loaded data
+            Loaded dict data
 
         Raises:
             FileNotFoundError: If file doesn't exist
@@ -598,24 +603,22 @@ class JSONIntegrity:
         async with open_async_text_file(path, "r", "utf-8") as f:
             content = await f.read()
 
-        wrapper_raw: object = json.loads(content)
+        wrapper_raw: JsonValue = json.loads(content)
 
         # Check if this is an integrity-protected file
         if isinstance(wrapper_raw, dict) and "_integrity" in wrapper_raw:
             # Type narrowing: we know it's a dict with string keys
-            wrapper = cast(dict[str, object], wrapper_raw)
+            wrapper = wrapper_raw
             # Extract data and verify integrity
-            data_raw: object = wrapper.get("data", {})
-            data: dict[str, object] = (
-                cast(dict[str, object], data_raw) if isinstance(data_raw, dict) else {}
-            )
-            expected_hash_raw: object = wrapper["_integrity"]
-            expected_hash: str = (
+            data_raw = wrapper.get("data", {})
+            data_dict = data_raw if isinstance(data_raw, dict) else {}
+            expected_hash_raw = wrapper["_integrity"]
+            expected_hash = (
                 str(expected_hash_raw) if expected_hash_raw is not None else ""
             )
 
             # Recompute hash of data
-            data_content = json.dumps(data, indent=2, sort_keys=True)
+            data_content = json.dumps(data_dict, indent=2, sort_keys=True)
             actual_hash = hashlib.sha256(data_content.encode("utf-8")).hexdigest()
 
             if actual_hash != expected_hash:
@@ -624,11 +627,11 @@ class JSONIntegrity:
                     + f"expected {expected_hash[:8]}..., got {actual_hash[:8]}..."
                 )
 
-            return data
+            return cast(ModelDict, data_dict)
 
         # Legacy format without integrity check
         if isinstance(wrapper_raw, dict):
-            return cast(dict[str, object], wrapper_raw)
+            return cast(ModelDict, wrapper_raw)
         return {}
 
 

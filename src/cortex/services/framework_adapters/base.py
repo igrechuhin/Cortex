@@ -6,28 +6,35 @@ Abstract base class for language-specific framework adapters.
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TypedDict
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class CheckResult(TypedDict):
+class CheckResult(BaseModel):
     """Result of a single check operation."""
 
-    check_type: str
-    success: bool
-    output: str
-    errors: list[str]
-    warnings: list[str]
-    files_modified: list[str]
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    check_type: str = Field(description="Type of check performed")
+    success: bool = Field(description="Whether check succeeded")
+    output: str = Field(description="Check output")
+    errors: list[str] = Field(default_factory=list, description="List of errors")
+    warnings: list[str] = Field(default_factory=list, description="List of warnings")
+    files_modified: list[str] = Field(
+        default_factory=list, description="List of modified files"
+    )
 
 
-class TestResult(TypedDict):
+class TestResult(BaseModel):
     """Test execution result."""
 
-    success: bool
-    tests_run: int
-    tests_passed: int
-    tests_failed: int
-    pass_rate: float
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    success: bool = Field(description="Whether tests passed")
+    tests_run: int = Field(ge=0, description="Number of tests run")
+    tests_passed: int = Field(ge=0, description="Number of tests passed")
+    tests_failed: int = Field(ge=0, description="Number of tests failed")
+    pass_rate: float = Field(ge=0.0, le=1.0, description="Pass rate (0-1)")
     coverage: float | None
     output: str
     errors: list[str]

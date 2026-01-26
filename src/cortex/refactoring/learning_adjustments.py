@@ -7,6 +7,8 @@ Split from learning_engine.py in Phase 9.1 for improved modularity.
 
 from typing import cast
 
+from cortex.core.models import JsonValue, ModelDict
+
 from .learning_data_manager import FeedbackRecord, LearningDataManager
 from .learning_patterns import PatternManager
 
@@ -30,23 +32,23 @@ class ConfidenceAdjuster:
         self.data_manager = data_manager
         self.pattern_extractor = pattern_extractor
 
-    def extract_original_confidence(self, suggestion: dict[str, object]) -> float:
+    def extract_original_confidence(self, suggestion: ModelDict) -> float:
         """Extract original confidence from suggestion."""
         confidence_val = suggestion.get("confidence", 0.5)
         return (
             float(confidence_val) if isinstance(confidence_val, (int, float)) else 0.5
         )
 
-    def extract_suggestion_type(self, suggestion: dict[str, object]) -> str:
+    def extract_suggestion_type(self, suggestion: ModelDict) -> str:
         """Extract suggestion type from suggestion."""
         suggestion_type_val = suggestion.get("type")
         return str(suggestion_type_val) if suggestion_type_val is not None else ""
 
     def apply_pattern_adjustment(
         self,
-        suggestion: dict[str, object],
+        suggestion: ModelDict,
         suggestion_type: str,
-        adjustments: list[dict[str, object]],
+        adjustments: list[ModelDict],
     ) -> float:
         """Apply pattern-based confidence adjustment."""
         pattern_key = self._extract_pattern_key(suggestion, suggestion_type)
@@ -68,7 +70,7 @@ class ConfidenceAdjuster:
         return adjustment
 
     def _extract_pattern_key(
-        self, suggestion: dict[str, object], suggestion_type: str
+        self, suggestion: ModelDict, suggestion_type: str
     ) -> str | None:
         """Extract pattern key from suggestion."""
         return self.pattern_extractor.extract_pattern_key(
@@ -89,7 +91,7 @@ class ConfidenceAdjuster:
     def apply_preference_adjustment(
         self,
         suggestion_type: str,
-        adjustments: list[dict[str, object]],
+        adjustments: list[ModelDict],
     ) -> float:
         """Apply preference-based confidence adjustment."""
         pref = self._get_preference_for_type(suggestion_type)
@@ -99,15 +101,13 @@ class ConfidenceAdjuster:
         pref_score = self._extract_preference_score(pref)
         return self._apply_preference_score_adjustment(pref_score, adjustments)
 
-    def _get_preference_for_type(
-        self, suggestion_type: str
-    ) -> dict[str, object] | None:
+    def _get_preference_for_type(self, suggestion_type: str) -> ModelDict | None:
         """Get preference dict for suggestion type."""
         pref_key = f"suggestion_type_{suggestion_type}"
         pref_val = self.data_manager.get_preference(pref_key)
-        return cast(dict[str, object], pref_val) if isinstance(pref_val, dict) else None
+        return cast(ModelDict, pref_val) if isinstance(pref_val, dict) else None
 
-    def _extract_preference_score(self, pref: dict[str, object]) -> float:
+    def _extract_preference_score(self, pref: ModelDict) -> float:
         """Extract preference score from preference dict."""
         pref_score_val = pref.get("preference_score", 0.5)
         return (
@@ -115,7 +115,7 @@ class ConfidenceAdjuster:
         )
 
     def _apply_preference_score_adjustment(
-        self, pref_score: float, adjustments: list[dict[str, object]]
+        self, pref_score: float, adjustments: list[ModelDict]
     ) -> float:
         """Apply adjustment based on preference score."""
         if pref_score > 0.7:
@@ -132,10 +132,10 @@ class ConfidenceAdjuster:
 
     def apply_all_adjustments(
         self,
-        suggestion: dict[str, object],
+        suggestion: ModelDict,
         suggestion_type: str,
         original_confidence: float,
-        adjustments: list[dict[str, object]],
+        adjustments: list[ModelDict],
     ) -> float:
         """Apply all confidence adjustments.
 
@@ -166,8 +166,8 @@ class ConfidenceAdjuster:
         self,
         original_confidence: float,
         adjusted_confidence: float,
-        adjustments: list[dict[str, object]],
-    ) -> tuple[float, dict[str, object]]:
+        adjustments: list[ModelDict],
+    ) -> tuple[float, ModelDict]:
         """Build adjustment result dictionary.
 
         Args:
@@ -178,16 +178,19 @@ class ConfidenceAdjuster:
         Returns:
             Tuple of (adjusted_confidence, adjustment_details_dict)
         """
+        adjustments_json: list[JsonValue] = [
+            cast(JsonValue, item) for item in adjustments
+        ]
         return adjusted_confidence, {
             "original_confidence": original_confidence,
             "adjusted_confidence": adjusted_confidence,
-            "adjustments": adjustments,
+            "adjustments": adjustments_json,
         }
 
     async def adjust_suggestion_confidence(
         self,
-        suggestion: dict[str, object],
-    ) -> tuple[float, dict[str, object]]:
+        suggestion: ModelDict,
+    ) -> tuple[float, ModelDict]:
         """
         Adjust suggestion confidence based on learned patterns.
 
@@ -199,7 +202,7 @@ class ConfidenceAdjuster:
         """
         original_confidence = self.extract_original_confidence(suggestion)
         suggestion_type = self.extract_suggestion_type(suggestion)
-        adjustments: list[dict[str, object]] = []
+        adjustments: list[ModelDict] = []
 
         adjusted_confidence = self.apply_all_adjustments(
             suggestion, suggestion_type, original_confidence, adjustments

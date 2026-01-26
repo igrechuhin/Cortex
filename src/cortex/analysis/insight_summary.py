@@ -1,6 +1,7 @@
 """Insight Summary - Generate summary of insights."""
 
 from .insight_types import InsightDict, SummaryDict
+from .models import RecommendationEntry
 
 
 class InsightSummaryGenerator:
@@ -23,14 +24,14 @@ class InsightSummaryGenerator:
         status, message = self._determine_status_and_message(severity_counts)
         top_recommendations = self._get_top_recommendations(insights)
 
-        return {
-            "status": status,
-            "message": message,
-            "high_severity_count": severity_counts["high"],
-            "medium_severity_count": severity_counts["medium"],
-            "low_severity_count": severity_counts["low"],
-            "top_recommendations": top_recommendations,
-        }
+        return SummaryDict(
+            status=status,
+            message=message,
+            high_severity_count=severity_counts["high"],
+            medium_severity_count=severity_counts["medium"],
+            low_severity_count=severity_counts["low"],
+            top_recommendations=top_recommendations,
+        )
 
     def calculate_impact_counts(
         self, insights: list[InsightDict]
@@ -44,28 +45,29 @@ class InsightSummaryGenerator:
         Returns:
             Tuple of (high_count, medium_count, low_count)
         """
-        high_impact = len([i for i in insights if i.get("impact_score", 0.0) >= 0.8])
-        medium_impact = len(
-            [i for i in insights if 0.5 <= i.get("impact_score", 0.0) < 0.8]
-        )
-        low_impact = len([i for i in insights if i.get("impact_score", 0.0) < 0.5])
+        high_impact = len([i for i in insights if i.impact_score >= 0.8])
+        medium_impact = len([i for i in insights if 0.5 <= i.impact_score < 0.8])
+        low_impact = len([i for i in insights if i.impact_score < 0.5])
 
         return (high_impact, medium_impact, low_impact)
 
     def _build_excellent_summary(self) -> SummaryDict:
         """Build summary for case with no insights."""
-        return {
-            "status": "excellent",
-            "message": "No significant issues found. Your Memory Bank is well-organized!",
-            "top_recommendations": [],
-        }
+        return SummaryDict(
+            status="excellent",
+            message="No significant issues found. Your Memory Bank is well-organized!",
+            high_severity_count=0,
+            medium_severity_count=0,
+            low_severity_count=0,
+            top_recommendations=[],
+        )
 
     def _count_by_severity(self, insights: list[InsightDict]) -> dict[str, int]:
         """Count insights by severity level."""
         return {
-            "high": len([i for i in insights if i.get("severity") == "high"]),
-            "medium": len([i for i in insights if i.get("severity") == "medium"]),
-            "low": len([i for i in insights if i.get("severity") == "low"]),
+            "high": len([i for i in insights if i.severity == "high"]),
+            "medium": len([i for i in insights if i.severity == "medium"]),
+            "low": len([i for i in insights if i.severity == "low"]),
         }
 
     def _determine_status_and_message(
@@ -89,20 +91,23 @@ class InsightSummaryGenerator:
 
     def _get_top_recommendations(
         self, insights: list[InsightDict]
-    ) -> list[dict[str, object]]:
+    ) -> list[RecommendationEntry]:
         """Get top 5 recommendations sorted by impact score."""
-        top_insights = sorted(
-            insights, key=lambda x: x.get("impact_score", 0.0), reverse=True
-        )[:5]
-        return [
-            {
-                "title": i.get("title", ""),
-                "impact_score": i.get("impact_score", 0.0),
-                "primary_recommendation": (
-                    i.get("recommendations", [])[0]
-                    if i.get("recommendations")
-                    else None
-                ),
-            }
-            for i in top_insights
-        ]
+        top_insights = sorted(insights, key=lambda x: x.impact_score, reverse=True)[:5]
+        recommendations: list[RecommendationEntry] = []
+        for insight in top_insights:
+            primary = insight.recommendations[0] if insight.recommendations else ""
+            priority = (
+                "high"
+                if insight.impact_score >= 0.8
+                else "medium" if insight.impact_score >= 0.5 else "low"
+            )
+            recommendations.append(
+                RecommendationEntry(
+                    title=insight.title,
+                    description=primary,
+                    priority=priority,
+                    estimated_impact=insight.impact_score,
+                )
+            )
+        return recommendations

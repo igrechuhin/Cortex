@@ -8,7 +8,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.analysis.models import (
+    AntiPatternInfo,
+    ComplexityAnalysisResult,
+    ComplexityMetrics,
+    InsightsResult,
+    SummaryModel,
+)
+from cortex.core.models import DependencyGraphDict, FileOrganizationResult
 from cortex.refactoring.consolidation_detector import ConsolidationOpportunity
+from cortex.refactoring.models import ReorganizationImpactModel, ReorganizationPlanModel
 from cortex.refactoring.split_recommender import SplitRecommendation
 from cortex.tools.analysis_operations import (
     analyze,
@@ -31,6 +40,7 @@ from cortex.tools.refactoring_operations import (
     suggest_splits,
     validate_refactoring_type,
 )
+from tests.helpers.managers import make_test_managers
 
 
 class TestAnalyzeUsagePatterns:
@@ -77,11 +87,14 @@ class TestAnalyzeStructure:
         # Arrange
         mock_analyzer = MagicMock()
         mock_analyzer.analyze_file_organization = AsyncMock(
-            return_value={"total_files": 10}
+            return_value=FileOrganizationResult(status="analyzed", file_count=10)
         )
         mock_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
         mock_analyzer.measure_complexity_metrics = AsyncMock(
-            return_value={"avg_depth": 2}
+            return_value=ComplexityAnalysisResult(
+                status="analyzed",
+                metrics=ComplexityMetrics(max_dependency_depth=2),
+            )
         )
 
         # Act
@@ -91,8 +104,13 @@ class TestAnalyzeStructure:
         result_data = json.loads(result)
         assert result_data["status"] == "success"
         assert result_data["target"] == "structure"
-        assert result_data["analysis"]["organization"]["total_files"] == 10
-        assert result_data["analysis"]["complexity_metrics"]["avg_depth"] == 2
+        assert result_data["analysis"]["organization"]["file_count"] == 10
+        assert (
+            result_data["analysis"]["complexity_metrics"]["metrics"][
+                "max_dependency_depth"
+            ]
+            == 2
+        )
 
 
 class TestAnalyzeInsights:
@@ -103,7 +121,16 @@ class TestAnalyzeInsights:
         """Test insights analysis with JSON format."""
         # Arrange
         mock_engine = MagicMock()
-        mock_insights = {"high_impact": [{"category": "duplication"}]}
+        mock_insights = InsightsResult(
+            generated_at="2026-01-01T00:00:00",
+            total_insights=1,
+            high_impact_count=1,
+            medium_impact_count=0,
+            low_impact_count=0,
+            estimated_total_token_savings=0,
+            insights=[],
+            summary=SummaryModel(status="success"),
+        )
         mock_engine.generate_insights = AsyncMock(return_value=mock_insights)
 
         # Act
@@ -114,14 +141,23 @@ class TestAnalyzeInsights:
         assert result_data["status"] == "success"
         assert result_data["target"] == "insights"
         assert result_data["format"] == "json"
-        assert result_data["insights"] == mock_insights
+        assert result_data["insights"] == mock_insights.model_dump(mode="json")
 
     @pytest.mark.asyncio
     async def test_analyze_insights_markdown_format(self) -> None:
         """Test insights analysis with markdown export format."""
         # Arrange
         mock_engine = MagicMock()
-        mock_insights = {"high_impact": [{"category": "duplication"}]}
+        mock_insights = InsightsResult(
+            generated_at="2026-01-01T00:00:00",
+            total_insights=1,
+            high_impact_count=1,
+            medium_impact_count=0,
+            low_impact_count=0,
+            estimated_total_token_savings=0,
+            insights=[],
+            summary=SummaryModel(status="success"),
+        )
         mock_engine.generate_insights = AsyncMock(return_value=mock_insights)
         mock_engine.export_insights = AsyncMock(return_value="# Markdown Report")
 
@@ -143,7 +179,16 @@ class TestAnalyzeInsights:
         """Test insights analysis with text export format."""
         # Arrange
         mock_engine = MagicMock()
-        mock_insights = {"high_impact": [{"category": "duplication"}]}
+        mock_insights = InsightsResult(
+            generated_at="2026-01-01T00:00:00",
+            total_insights=1,
+            high_impact_count=1,
+            medium_impact_count=0,
+            low_impact_count=0,
+            estimated_total_token_savings=0,
+            insights=[],
+            summary=SummaryModel(status="success"),
+        )
         mock_engine.generate_insights = AsyncMock(return_value=mock_insights)
         mock_engine.export_insights = AsyncMock(return_value="Text Report")
 
@@ -172,25 +217,14 @@ class TestGetAnalysisManagers:
         mock_structure = MagicMock()
         mock_insight = MagicMock()
 
-        mock_pattern_mgr = MagicMock()
-        mock_pattern_mgr.get = AsyncMock(return_value=mock_pattern)
-
-        mock_structure_mgr = MagicMock()
-        mock_structure_mgr.get = AsyncMock(return_value=mock_structure)
-
-        mock_insight_mgr = MagicMock()
-        mock_insight_mgr.get = AsyncMock(return_value=mock_insight)
-
-        mgrs = {
-            "pattern_analyzer": mock_pattern_mgr,
-            "structure_analyzer": mock_structure_mgr,
-            "insight_engine": mock_insight_mgr,
-        }
+        mgrs = make_test_managers(
+            pattern_analyzer=mock_pattern,
+            structure_analyzer=mock_structure,
+            insight_engine=mock_insight,
+        )
 
         # Act
-        pattern, structure, insight = await get_analysis_managers(
-            cast(dict[str, object], mgrs)
-        )
+        pattern, structure, insight = await get_analysis_managers(mgrs)
 
         # Assert
         assert pattern == mock_pattern
@@ -206,7 +240,7 @@ class TestAnalyzeHandler:
         """Test analyzing usage patterns."""
         # Arrange
         with patch(
-            "cortex.tools.analysis_operations.get_managers"
+            "cortex.tools.analysis_operations.get_managers", new_callable=AsyncMock
         ) as mock_get_managers:
             mock_pattern_analyzer = MagicMock()
             mock_pattern_analyzer.get_access_frequency = AsyncMock(
@@ -216,20 +250,11 @@ class TestAnalyzeHandler:
             mock_pattern_analyzer.get_task_patterns = AsyncMock(return_value={})
             mock_pattern_analyzer.get_unused_files = AsyncMock(return_value=[])
 
-            mock_pattern_mgr = MagicMock()
-            mock_pattern_mgr.get = AsyncMock(return_value=mock_pattern_analyzer)
-
-            mock_structure_mgr = MagicMock()
-            mock_structure_mgr.get = AsyncMock(return_value=MagicMock())
-
-            mock_insight_mgr = MagicMock()
-            mock_insight_mgr.get = AsyncMock(return_value=MagicMock())
-
-            mock_get_managers.return_value = {
-                "pattern_analyzer": mock_pattern_mgr,
-                "structure_analyzer": mock_structure_mgr,
-                "insight_engine": mock_insight_mgr,
-            }
+            mock_get_managers.return_value = make_test_managers(
+                pattern_analyzer=mock_pattern_analyzer,
+                structure_analyzer=MagicMock(),
+                insight_engine=MagicMock(),
+            )
 
             # Act
             result = await analyze(
@@ -249,31 +274,21 @@ class TestAnalyzeHandler:
         """Test analyzing structure."""
         # Arrange
         with patch(
-            "cortex.tools.analysis_operations.get_managers"
+            "cortex.tools.analysis_operations.get_managers", new_callable=AsyncMock
         ) as mock_get_managers:
             mock_structure_analyzer = MagicMock()
             mock_structure_analyzer.analyze_file_organization = AsyncMock(
-                return_value={"total_files": 5}
+                return_value=FileOrganizationResult(status="analyzed", file_count=5)
             )
             mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
             mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-                return_value={}
+                return_value=ComplexityAnalysisResult(status="analyzed")
             )
-
-            mock_structure_mgr = MagicMock()
-            mock_structure_mgr.get = AsyncMock(return_value=mock_structure_analyzer)
-
-            mock_pattern_mgr = MagicMock()
-            mock_pattern_mgr.get = AsyncMock(return_value=MagicMock())
-
-            mock_insight_mgr = MagicMock()
-            mock_insight_mgr.get = AsyncMock(return_value=MagicMock())
-
-            mock_get_managers.return_value = {
-                "pattern_analyzer": mock_pattern_mgr,
-                "structure_analyzer": mock_structure_mgr,
-                "insight_engine": mock_insight_mgr,
-            }
+            mock_get_managers.return_value = make_test_managers(
+                pattern_analyzer=MagicMock(),
+                structure_analyzer=mock_structure_analyzer,
+                insight_engine=MagicMock(),
+            )
 
             # Act
             result = await analyze(target="structure", project_root=str(tmp_path))
@@ -288,27 +303,26 @@ class TestAnalyzeHandler:
         """Test analyzing insights."""
         # Arrange
         with patch(
-            "cortex.tools.analysis_operations.get_managers"
+            "cortex.tools.analysis_operations.get_managers", new_callable=AsyncMock
         ) as mock_get_managers:
             mock_insight_engine = MagicMock()
             mock_insight_engine.generate_insights = AsyncMock(
-                return_value={"high_impact": []}
+                return_value=InsightsResult(
+                    generated_at="2026-01-01T00:00:00",
+                    total_insights=0,
+                    high_impact_count=0,
+                    medium_impact_count=0,
+                    low_impact_count=0,
+                    estimated_total_token_savings=0,
+                    insights=[],
+                    summary=SummaryModel(status="success"),
+                )
             )
-
-            mock_insight_mgr = MagicMock()
-            mock_insight_mgr.get = AsyncMock(return_value=mock_insight_engine)
-
-            mock_pattern_mgr = MagicMock()
-            mock_pattern_mgr.get = AsyncMock(return_value=MagicMock())
-
-            mock_structure_mgr = MagicMock()
-            mock_structure_mgr.get = AsyncMock(return_value=MagicMock())
-
-            mock_get_managers.return_value = {
-                "pattern_analyzer": mock_pattern_mgr,
-                "structure_analyzer": mock_structure_mgr,
-                "insight_engine": mock_insight_mgr,
-            }
+            mock_get_managers.return_value = make_test_managers(
+                pattern_analyzer=MagicMock(),
+                structure_analyzer=MagicMock(),
+                insight_engine=mock_insight_engine,
+            )
 
             # Act
             result = await analyze(
@@ -328,7 +342,7 @@ class TestAnalyzeHandler:
         """Test exception handling in analyze."""
         # Arrange
         with patch(
-            "cortex.tools.analysis_operations.get_managers"
+            "cortex.tools.analysis_operations.get_managers", new_callable=AsyncMock
         ) as mock_get_managers:
             mock_get_managers.side_effect = RuntimeError("Test error")
 
@@ -371,9 +385,13 @@ class TestDispatchAnalysisTarget:
         """Test dispatching structure analysis."""
         # Arrange
         mock_structure_analyzer = MagicMock()
-        mock_structure_analyzer.analyze_file_organization = AsyncMock(return_value={})
+        mock_structure_analyzer.analyze_file_organization = AsyncMock(
+            return_value=FileOrganizationResult(status="analyzed", file_count=1)
+        )
         mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
-        mock_structure_analyzer.measure_complexity_metrics = AsyncMock(return_value={})
+        mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
+            return_value=ComplexityAnalysisResult(status="analyzed")
+        )
 
         analyzers = (MagicMock(), mock_structure_analyzer, MagicMock())
 
@@ -391,7 +409,18 @@ class TestDispatchAnalysisTarget:
         """Test dispatching insights analysis."""
         # Arrange
         mock_insight_engine = MagicMock()
-        mock_insight_engine.generate_insights = AsyncMock(return_value={})
+        mock_insight_engine.generate_insights = AsyncMock(
+            return_value=InsightsResult(
+                generated_at="2026-01-01T00:00:00",
+                total_insights=0,
+                high_impact_count=0,
+                medium_impact_count=0,
+                low_impact_count=0,
+                estimated_total_token_savings=0,
+                insights=[],
+                summary=SummaryModel(status="success"),
+            )
+        )
 
         analyzers = (MagicMock(), MagicMock(), mock_insight_engine)
 
@@ -470,26 +499,14 @@ class TestGetRefactoringManagers:
         mock_consolidation = MagicMock()
         mock_split = MagicMock()
         mock_reorganization = MagicMock()
-
-        mock_consolidation_mgr = MagicMock()
-        mock_consolidation_mgr.get = AsyncMock(return_value=mock_consolidation)
-
-        mock_split_mgr = MagicMock()
-        mock_split_mgr.get = AsyncMock(return_value=mock_split)
-
-        mock_reorganization_mgr = MagicMock()
-        mock_reorganization_mgr.get = AsyncMock(return_value=mock_reorganization)
-
-        mgrs = {
-            "consolidation_detector": mock_consolidation_mgr,
-            "split_recommender": mock_split_mgr,
-            "reorganization_planner": mock_reorganization_mgr,
-        }
+        mgrs = make_test_managers(
+            consolidation_detector=mock_consolidation,
+            split_recommender=mock_split,
+            reorganization_planner=mock_reorganization,
+        )
 
         # Act
-        consolidation, split, reorganization = await get_refactoring_managers(
-            cast(dict[str, object], mgrs)
-        )
+        consolidation, split, reorganization = await get_refactoring_managers(mgrs)
 
         # Assert
         assert consolidation == mock_consolidation
@@ -519,23 +536,41 @@ class TestHandlePreviewMode:
 class TestConvertOpportunitiesToDict:
     """Test _convert_opportunities_to_dict helper."""
 
-    def test_convert_dict_opportunities(self) -> None:
-        """Test converting dictionary opportunities."""
+    def test_convert_dataclass_opportunities(self) -> None:
+        """Test converting ConsolidationOpportunity dataclasses."""
         # Arrange
         opportunities = [
-            {"id": "opp1", "similarity": 0.85},
-            {"id": "opp2", "similarity": 0.90},
+            ConsolidationOpportunity(
+                opportunity_id="opp1",
+                opportunity_type="exact_duplicate",
+                affected_files=["a.md", "b.md"],
+                common_content="Hello",
+                similarity_score=0.85,
+                token_savings=10,
+                suggested_action="extract",
+                extraction_target="shared.md",
+                transclusion_syntax=["{{include:shared.md}}", "{{include:shared.md}}"],
+            ),
+            ConsolidationOpportunity(
+                opportunity_id="opp2",
+                opportunity_type="similar_content",
+                affected_files=["c.md", "d.md"],
+                common_content="World",
+                similarity_score=0.90,
+                token_savings=12,
+                suggested_action="extract",
+                extraction_target="shared.md",
+                transclusion_syntax=["{{include:shared.md}}", "{{include:shared.md}}"],
+            ),
         ]
 
         # Act
-        result = convert_opportunities_to_dict(
-            cast(Sequence[ConsolidationOpportunity | dict[str, object]], opportunities)
-        )
+        result = convert_opportunities_to_dict(opportunities)
 
         # Assert
         assert len(result) == 2
-        assert result[0]["id"] == "opp1"
-        assert result[1]["id"] == "opp2"
+        assert result[0]["opportunity_id"] == "opp1"
+        assert result[1]["opportunity_id"] == "opp2"
 
     def test_convert_object_opportunities_with_to_dict(self) -> None:
         """Test converting object opportunities that have to_dict method."""
@@ -569,30 +604,43 @@ class TestConvertOpportunitiesToDict:
 
         # Assert
         assert len(result) == 1
-        # Should be cast to dict (even if it's not really a dict)
-        assert result[0] == opp
+        assert result[0] == {}
 
 
 class TestConvertRecommendationsToDict:
     """Test _convert_recommendations_to_dict helper."""
 
-    def test_convert_dict_recommendations(self) -> None:
-        """Test converting dictionary recommendations."""
+    def test_convert_dataclass_recommendations(self) -> None:
+        """Test converting SplitRecommendation dataclasses."""
         # Arrange
         recommendations = [
-            {"id": "rec1", "file": "large.md"},
-            {"id": "rec2", "file": "huge.md"},
+            SplitRecommendation(
+                recommendation_id="rec1",
+                file_path="large.md",
+                reason="Large file",
+                split_strategy="by_size",
+                split_points=[],
+                estimated_impact={},
+                new_structure={},
+            ),
+            SplitRecommendation(
+                recommendation_id="rec2",
+                file_path="huge.md",
+                reason="Huge file",
+                split_strategy="by_size",
+                split_points=[],
+                estimated_impact={},
+                new_structure={},
+            ),
         ]
 
         # Act
-        result = convert_recommendations_to_dict(
-            cast(Sequence[SplitRecommendation | dict[str, object]], recommendations)
-        )
+        result = convert_recommendations_to_dict(recommendations)
 
         # Assert
         assert len(result) == 2
-        assert result[0]["id"] == "rec1"
-        assert result[1]["id"] == "rec2"
+        assert result[0]["recommendation_id"] == "rec1"
+        assert result[1]["recommendation_id"] == "rec2"
 
     def test_convert_object_recommendations_with_to_dict(self) -> None:
         """Test converting object recommendations that have to_dict method."""
@@ -626,8 +674,7 @@ class TestConvertRecommendationsToDict:
 
         # Assert
         assert len(result) == 1
-        # Should be cast to dict (even if it's not really a dict)
-        assert result[0] == rec
+        assert result[0] == {}
 
 
 class TestSuggestConsolidation:
@@ -656,7 +703,22 @@ class TestSuggestConsolidation:
         # Arrange
         mock_detector = MagicMock()
         mock_detector.detect_opportunities = AsyncMock(
-            return_value=[{"id": "opp1", "similarity": 0.90}]
+            return_value=[
+                ConsolidationOpportunity(
+                    opportunity_id="opp1",
+                    opportunity_type="exact_duplicate",
+                    affected_files=["a.md", "b.md"],
+                    common_content="Hello",
+                    similarity_score=0.90,
+                    token_savings=10,
+                    suggested_action="extract",
+                    extraction_target="shared.md",
+                    transclusion_syntax=[
+                        "{{include:shared.md}}",
+                        "{{include:shared.md}}",
+                    ],
+                )
+            ]
         )
 
         # Act
@@ -695,7 +757,17 @@ class TestSuggestSplits:
         # Arrange
         mock_recommender = MagicMock()
         mock_recommender.suggest_file_splits = AsyncMock(
-            return_value=[{"id": "split1", "file": "large.md"}]
+            return_value=[
+                SplitRecommendation(
+                    recommendation_id="split1",
+                    file_path="large.md",
+                    reason="Large file",
+                    split_strategy="by_size",
+                    split_points=[],
+                    estimated_impact={},
+                    new_structure={},
+                )
+            ]
         )
 
         # Act
@@ -717,31 +789,38 @@ class TestGetStructureData:
         # Arrange
         mock_structure_analyzer = MagicMock()
         mock_structure_analyzer.analyze_file_organization = AsyncMock(
-            return_value={"total_files": 10}
+            return_value=FileOrganizationResult(status="analyzed", file_count=10)
         )
         mock_structure_analyzer.detect_anti_patterns = AsyncMock(
-            return_value=[{"type": "naming_inconsistency"}]
+            return_value=[
+                AntiPatternInfo(
+                    type="naming_inconsistency",
+                    severity="low",
+                    description="Naming inconsistency",
+                )
+            ]
         )
         mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-            return_value={"avg_depth": 2}
+            return_value=ComplexityAnalysisResult(
+                status="analyzed",
+                metrics=ComplexityMetrics(max_dependency_depth=2),
+            )
         )
-
-        mock_structure_mgr = MagicMock()
-        mock_structure_mgr.get = AsyncMock(return_value=mock_structure_analyzer)
-
-        mgrs = {"structure_analyzer": mock_structure_mgr}
+        mgrs = make_test_managers(structure_analyzer=mock_structure_analyzer)
 
         # Act
-        result = await get_structure_data(cast(dict[str, object], mgrs))
+        result = await get_structure_data(mgrs)
 
         # Assert
         result_dict = result
-        organization = cast(dict[str, object], result_dict["organization"])
-        assert organization["total_files"] == 10
-        anti_patterns = cast(list[object], result_dict["anti_patterns"])
+        analysis = cast(dict[str, object], result_dict["analysis"])
+        file_org = cast(dict[str, object], analysis["file_organization"])
+        assert file_org["file_count"] == 10
+        anti_patterns = cast(list[object], analysis["anti_patterns"])
         assert len(anti_patterns) == 1
-        complexity_metrics = cast(dict[str, object], result_dict["complexity_metrics"])
-        assert complexity_metrics["avg_depth"] == 2
+        complexity_metrics = cast(dict[str, object], analysis["complexity_metrics"])
+        metrics = cast(dict[str, object], complexity_metrics["metrics"])
+        assert metrics["max_dependency_depth"] == 2
 
 
 class TestSuggestReorganization:
@@ -752,25 +831,41 @@ class TestSuggestReorganization:
         """Test reorganization suggestions with default goal."""
         # Arrange
         mock_planner = MagicMock()
-        mock_planner.create_reorganization_plan = AsyncMock(return_value={"moves": []})
+        mock_planner.create_reorganization_plan = AsyncMock(
+            return_value=ReorganizationPlanModel(
+                plan_id="plan-1",
+                optimization_goal="dependency_depth",
+                estimated_impact=ReorganizationImpactModel(
+                    files_moved=0,
+                    categories_created=0,
+                    dependency_depth_reduction=0.0,
+                    complexity_reduction=0.0,
+                    maintainability_improvement=0.0,
+                    navigation_improvement=0.0,
+                    estimated_effort="low",
+                ),
+            )
+        )
 
         mock_structure_analyzer = MagicMock()
-        mock_structure_analyzer.analyze_file_organization = AsyncMock(return_value={})
+        mock_structure_analyzer.analyze_file_organization = AsyncMock(
+            return_value=FileOrganizationResult(status="analyzed", file_count=1)
+        )
         mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
-        mock_structure_analyzer.measure_complexity_metrics = AsyncMock(return_value={})
-
-        mock_structure_mgr = MagicMock()
-        mock_structure_mgr.get = AsyncMock(return_value=mock_structure_analyzer)
+        mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
+            return_value=ComplexityAnalysisResult(status="analyzed")
+        )
 
         mock_graph = MagicMock()
-        mock_graph.to_dict.return_value = {"nodes": [], "edges": []}
+        mock_graph.to_dict.return_value = DependencyGraphDict()
 
-        mgrs = {"structure_analyzer": mock_structure_mgr, "graph": mock_graph}
+        mgrs = make_test_managers(
+            structure_analyzer=mock_structure_analyzer,
+            graph=mock_graph,
+        )
 
         # Act
-        result = await suggest_reorganization(
-            mock_planner, cast(dict[str, object], mgrs), None
-        )
+        result = await suggest_reorganization(mock_planner, mgrs, None)
 
         # Assert
         result_data = json.loads(result)
@@ -784,31 +879,44 @@ class TestSuggestReorganization:
         # Arrange
         mock_planner = MagicMock()
         mock_planner.create_reorganization_plan = AsyncMock(
-            return_value={"moves": [{"from": "a/b.md", "to": "b.md"}]}
+            return_value=ReorganizationPlanModel(
+                plan_id="plan-2",
+                optimization_goal="category",
+                estimated_impact=ReorganizationImpactModel(
+                    files_moved=0,
+                    categories_created=0,
+                    dependency_depth_reduction=0.0,
+                    complexity_reduction=0.0,
+                    maintainability_improvement=0.0,
+                    navigation_improvement=0.0,
+                    estimated_effort="low",
+                ),
+            )
         )
 
         mock_structure_analyzer = MagicMock()
-        mock_structure_analyzer.analyze_file_organization = AsyncMock(return_value={})
+        mock_structure_analyzer.analyze_file_organization = AsyncMock(
+            return_value=FileOrganizationResult(status="analyzed", file_count=1)
+        )
         mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
-        mock_structure_analyzer.measure_complexity_metrics = AsyncMock(return_value={})
-
-        mock_structure_mgr = MagicMock()
-        mock_structure_mgr.get = AsyncMock(return_value=mock_structure_analyzer)
+        mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
+            return_value=ComplexityAnalysisResult(status="analyzed")
+        )
 
         mock_graph = MagicMock()
-        mock_graph.to_dict.return_value = {"nodes": [], "edges": []}
-
-        mgrs = {"structure_analyzer": mock_structure_mgr, "graph": mock_graph}
+        mock_graph.to_dict.return_value = DependencyGraphDict()
+        mgrs = make_test_managers(
+            structure_analyzer=mock_structure_analyzer,
+            graph=mock_graph,
+        )
 
         # Act
-        result = await suggest_reorganization(
-            mock_planner, cast(dict[str, object], mgrs), "category"
-        )
+        result = await suggest_reorganization(mock_planner, mgrs, "category")
 
         # Assert
         result_data = json.loads(result)
         assert result_data["goal"] == "category"
-        assert len(result_data["plan"]["moves"]) == 1
+        assert result_data["plan"]["plan_id"] == "plan-2"
 
 
 class TestProcessRefactoringRequest:
@@ -887,48 +995,48 @@ class TestProcessRefactoringRequest:
         """Test processing reorganization refactoring request."""
         # Arrange
         with patch(
-            "cortex.tools.refactoring_operations.get_managers"
+            "cortex.tools.refactoring_operations.get_managers", new_callable=AsyncMock
         ) as mock_get_managers:
             with patch(
                 "cortex.tools.refactoring_operations.get_project_root",
                 return_value=Path(str(tmp_path)),
             ):
                 mock_planner = MagicMock()
-                mock_planner.create_reorganization_plan = AsyncMock(return_value={})
-
-                mock_reorg_mgr = MagicMock()
-                mock_reorg_mgr.get = AsyncMock(return_value=mock_planner)
-
-                mock_detector_mgr = MagicMock()
-                mock_detector_mgr.get = AsyncMock(return_value=MagicMock())
-
-                mock_split_mgr = MagicMock()
-                mock_split_mgr.get = AsyncMock(return_value=MagicMock())
+                mock_planner.create_reorganization_plan = AsyncMock(
+                    return_value=ReorganizationPlanModel(
+                        plan_id="plan-3",
+                        optimization_goal="category",
+                        estimated_impact=ReorganizationImpactModel(
+                            files_moved=0,
+                            categories_created=0,
+                            dependency_depth_reduction=0.0,
+                            complexity_reduction=0.0,
+                            maintainability_improvement=0.0,
+                            navigation_improvement=0.0,
+                            estimated_effort="low",
+                        ),
+                    )
+                )
 
                 mock_structure_analyzer = MagicMock()
                 mock_structure_analyzer.analyze_file_organization = AsyncMock(
-                    return_value={}
+                    return_value=FileOrganizationResult(status="analyzed", file_count=0)
                 )
                 mock_structure_analyzer.detect_anti_patterns = AsyncMock(
                     return_value=[]
                 )
                 mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-                    return_value={}
+                    return_value=ComplexityAnalysisResult(status="analyzed")
                 )
 
-                mock_structure_mgr = MagicMock()
-                mock_structure_mgr.get = AsyncMock(return_value=mock_structure_analyzer)
-
                 mock_graph = MagicMock()
-                mock_graph.to_dict.return_value = {}
+                mock_graph.to_dict.return_value = DependencyGraphDict()
 
-                mock_get_managers.return_value = {
-                    "consolidation_detector": mock_detector_mgr,
-                    "split_recommender": mock_split_mgr,
-                    "reorganization_planner": mock_reorg_mgr,
-                    "structure_analyzer": mock_structure_mgr,
-                    "graph": mock_graph,
-                }
+                mock_get_managers.return_value = make_test_managers(
+                    reorganization_planner=mock_planner,
+                    structure_analyzer=mock_structure_analyzer,
+                    graph=mock_graph,
+                )
 
                 # Act
                 result = await process_refactoring_request(

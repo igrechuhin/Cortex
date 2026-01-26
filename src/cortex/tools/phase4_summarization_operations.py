@@ -5,16 +5,17 @@ This module contains the implementation logic for the summarize_content tool.
 """
 
 import json
-from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.managers.manager_utils import get_manager
+from cortex.managers.types import ManagersDict
+from cortex.optimization.models import SummarizationResultModel
 from cortex.optimization.summarization_engine import SummarizationEngine
 
 
 async def summarize_content_impl(
-    mgrs: dict[str, object],
+    mgrs: ManagersDict,
     file_name: str | None,
     target_reduction: float,
     strategy: str,
@@ -37,8 +38,8 @@ async def summarize_content_impl(
     summarization_engine = await get_manager(
         mgrs, "summarization_engine", SummarizationEngine
     )
-    metadata_index = cast(MetadataIndex, mgrs["index"])
-    fs_manager = cast(FileSystemManager, mgrs["fs"])
+    metadata_index: MetadataIndex = mgrs.index
+    fs_manager: FileSystemManager = mgrs.fs
 
     files_to_summarize = await _get_files_to_summarize(file_name, metadata_index)
     results = await _summarize_files(
@@ -93,9 +94,9 @@ async def _summarize_files(
     fs_manager: FileSystemManager,
     target_reduction: float,
     strategy: str,
-) -> list[dict[str, object]]:
+) -> list[SummarizationResultModel]:
     """Summarize all files and return results."""
-    results: list[dict[str, object]] = []
+    results: list[SummarizationResultModel] = []
 
     for fname in files_to_summarize:
         try:
@@ -109,8 +110,7 @@ async def _summarize_files(
                 strategy=strategy,
             )
 
-            result_item = _extract_summary_result(fname, summary_result)
-            results.append(result_item)
+            results.append(SummarizationResultModel.model_validate(summary_result))
 
         except FileNotFoundError:
             continue
@@ -118,42 +118,12 @@ async def _summarize_files(
     return results
 
 
-def _extract_summary_result(
-    fname: str, summary_result: dict[str, object]
-) -> dict[str, object]:
-    """Extract and normalize summary result data."""
-    original_tokens = _safe_int(summary_result.get("original_tokens", 0))
-    summarized_tokens = _safe_int(summary_result.get("summarized_tokens", 0))
-    reduction = _safe_float(summary_result.get("reduction", 0.0))
-    cached = bool(summary_result.get("cached", False))
-    summary = str(summary_result.get("summary", ""))
-
-    return {
-        "file_name": fname,
-        "original_tokens": original_tokens,
-        "summarized_tokens": summarized_tokens,
-        "reduction": round(reduction, 2),
-        "cached": cached,
-        "summary": summary,
-    }
-
-
-def _safe_int(value: object) -> int:
-    """Safely convert value to int."""
-    return int(value) if isinstance(value, (int, float)) else 0
-
-
-def _safe_float(value: object) -> float:
-    """Safely convert value to float."""
-    return float(value) if isinstance(value, (int, float)) else 0.0
-
-
 def _build_summarize_response(
-    results: list[dict[str, object]], strategy: str, target_reduction: float
+    results: list[SummarizationResultModel], strategy: str, target_reduction: float
 ) -> str:
     """Build final JSON response with totals."""
-    total_original = sum(_safe_int(r.get("original_tokens")) for r in results)
-    total_summarized = sum(_safe_int(r.get("summarized_tokens")) for r in results)
+    total_original = sum(r.original_tokens for r in results)
+    total_summarized = sum(r.summary_tokens for r in results)
     total_reduction = (
         (total_original - total_summarized) / total_original
         if total_original > 0
@@ -169,7 +139,7 @@ def _build_summarize_response(
             "total_original_tokens": total_original,
             "total_summarized_tokens": total_summarized,
             "total_reduction": round(total_reduction, 2),
-            "results": results,
+            "results": [r.model_dump() for r in results],
         },
         indent=2,
     )

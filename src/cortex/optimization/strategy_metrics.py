@@ -6,7 +6,7 @@ and calculating metrics for different optimization strategies.
 """
 
 from .models import OptimizationMetadata
-from .optimization_types import OptimizationResult
+from .optimization_types import OptimizationResultModel as OptimizationResult
 
 
 def build_priority_result(

@@ -12,6 +12,13 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.async_file_utils import open_async_text_file
+from cortex.core.models import JsonValue, ModelDict
+from cortex.refactoring.models import (
+    NewSplitStructure,
+    SplitFileInfo,
+    SplitImpactMetrics,
+    SplitIndexFile,
+)
 
 from .split_analyzer import SplitAnalyzer
 
@@ -37,11 +44,11 @@ class SplitRecommendation:
     reason: str
     split_strategy: str  # "by_size", "by_sections", "by_topics", "by_dependencies"
     split_points: list[SplitPoint]
-    estimated_impact: dict[str, object]
-    new_structure: dict[str, object]  # Proposed new file structure
+    estimated_impact: ModelDict
+    new_structure: ModelDict  # Proposed new file structure
     maintain_dependencies: bool = True
 
-    def to_dict(self) -> dict[str, object]:
+    def to_dict(self) -> ModelDict:
         """Convert to dictionary"""
         return {
             "recommendation_id": self.recommendation_id,
@@ -102,7 +109,7 @@ class SplitRecommender:
 
         self.recommendation_counter: int = 0
 
-    def parse_file_structure(self, content: str) -> list[dict[str, object]]:
+    def parse_file_structure(self, content: str) -> list[ModelDict]:
         """
         Parse file into structured sections.
 
@@ -232,38 +239,32 @@ class SplitRecommender:
             logger.warning(f"Failed to read file {file_path}: {e}")
             return ""
 
-    def get_section_str(
-        self, section: dict[str, object], key: str, default: str = ""
-    ) -> str:
+    def get_section_str(self, section: ModelDict, key: str, default: str = "") -> str:
         """Extract string value from section dict with type checking."""
         value = section.get(key, default)
         return str(value) if value is not None else default
 
-    def get_section_int(
-        self, section: dict[str, object], key: str, default: int = 0
-    ) -> int:
+    def get_section_int(self, section: ModelDict, key: str, default: int = 0) -> int:
         """Extract int value from section dict with type checking."""
         value = section.get(key, default)
         if isinstance(value, (int, float)):
             return int(value)
         return default
 
-    def get_section_content(self, section: dict[str, object]) -> str:
+    def get_section_content(self, section: ModelDict) -> str:
         """Extract content from section dict with type checking."""
         content = section.get("content", "")
         if isinstance(content, str):
             return content
         if isinstance(content, (list, tuple)):
-            # Type checker can't infer item types from dict[str, object] values
-            content_list = cast(list[object], content)
-            return "\n".join(str(item) for item in content_list if item is not None)
+            return "\n".join(str(item) for item in content if item is not None)
         return str(content) if content is not None else ""
 
     async def _generate_split_by_topics(
         self,
         file_path: str,
         content: str,
-        sections: list[dict[str, object]],
+        sections: list[ModelDict],
     ) -> list[SplitPoint]:
         """Generate split points by top-level topics."""
         split_points: list[SplitPoint] = []
@@ -300,7 +301,7 @@ class SplitRecommender:
         self,
         file_path: str,
         content: str,
-        sections: list[dict[str, object]],
+        sections: list[ModelDict],
     ) -> list[SplitPoint]:
         """Generate split points by grouping related sections."""
         split_points: list[SplitPoint] = []
@@ -323,9 +324,9 @@ class SplitRecommender:
         self,
         file_path: str,
         content: str,
-        sections: list[dict[str, object]],
-        group_name: object,
-        group_sections: list[dict[str, object]],
+        sections: list[ModelDict],
+        group_name: str,
+        group_sections: list[ModelDict],
     ) -> SplitPoint | None:
         """Create split point from section group."""
         combined_content = "\n".join(
@@ -354,12 +355,12 @@ class SplitRecommender:
     async def _generate_split_by_size(
         self,
         file_path: str,
-        sections: list[dict[str, object]],
+        sections: list[ModelDict],
     ) -> list[SplitPoint]:
         """Generate split points by size, creating roughly equal chunks."""
         split_points: list[SplitPoint] = []
         target_chunk_size = self.max_file_size
-        current_chunk_sections: list[dict[str, object]] = []
+        current_chunk_sections: list[ModelDict] = []
         current_chunk_tokens = 0
 
         for section in sections:
@@ -394,7 +395,7 @@ class SplitRecommender:
     def _create_chunk_split_point(
         self,
         file_path: str,
-        chunk_sections: list[dict[str, object]],
+        chunk_sections: list[ModelDict],
         chunk_tokens: int,
     ) -> SplitPoint:
         """Create a split point for a size-based chunk."""
@@ -415,7 +416,7 @@ class SplitRecommender:
         self,
         file_path: str,
         content: str,
-        sections: list[dict[str, object]],
+        sections: list[ModelDict],
         strategy: str,
     ) -> list[SplitPoint]:
         """
@@ -445,58 +446,62 @@ class SplitRecommender:
 
     def calculate_split_impact(
         self, file_path: str, original_tokens: int, split_points: list[SplitPoint]
-    ) -> dict[str, object]:
+    ) -> SplitImpactMetrics:
         """Calculate the impact of applying a split"""
-        return {
-            "original_file_tokens": original_tokens,
-            "new_file_count": len(split_points) + 1,  # +1 for index/main file
-            "average_file_size": original_tokens // (len(split_points) + 1),
-            "complexity_reduction": 0.6 if len(split_points) > 2 else 0.3,
-            "maintainability_improvement": 0.7,
-            "context_loading_improvement": 0.5,
-            "benefits": [
+        new_file_count = len(split_points) + 1  # +1 for index/main file
+        return SplitImpactMetrics(
+            original_file_tokens=original_tokens,
+            new_file_count=new_file_count,
+            average_file_size=(
+                original_tokens // new_file_count if new_file_count > 0 else 0
+            ),
+            complexity_reduction=0.6 if len(split_points) > 2 else 0.3,
+            maintainability_improvement=0.7,
+            context_loading_improvement=0.5,
+            benefits=[
                 "Smaller, more focused files",
                 "Better context selection granularity",
                 "Easier to navigate and maintain",
                 "Reduced token usage for specific queries",
             ],
-            "considerations": [
+            considerations=[
                 "Will need to update links",
                 "May need index file for navigation",
                 "Dependency structure needs review",
             ],
-        }
+        )
 
     def generate_new_structure(
         self, file_path: str, split_points: list[SplitPoint]
-    ) -> dict[str, object]:
+    ) -> ModelDict:
         """Generate proposed new file structure"""
         original_path = Path(file_path)
 
-        new_files: list[dict[str, object]] = []
+        new_files: list[SplitFileInfo] = []
         for sp in split_points:
             new_files.append(
-                {
-                    "filename": sp.suggested_filename,
-                    "heading": sp.section_heading,
-                    "tokens": sp.token_count,
-                    "lines": f"{sp.start_line}-{sp.end_line}",
-                }
+                SplitFileInfo(
+                    filename=sp.suggested_filename,
+                    heading=sp.section_heading,
+                    tokens=sp.token_count,
+                    lines=f"{sp.start_line}-{sp.end_line}",
+                )
             )
 
         # Add index file
-        index_file = {
-            "filename": str(original_path),
-            "purpose": "Index file with links to split sections",
-            "tokens": 200,  # Estimated
-            "content_summary": "Overview with links to all split files",
-        }
+        index_file = SplitIndexFile(
+            filename=str(original_path),
+            purpose="Index file with links to split sections",
+            tokens=200,  # Estimated
+            content_summary="Overview with links to all split files",
+        )
 
-        return {
-            "index_file": index_file,
-            "split_files": new_files,
-            "total_files": len(new_files) + 1,
-        }
+        structure = NewSplitStructure(
+            index_file=index_file,
+            split_files=new_files,
+            total_files=len(new_files) + 1,
+        )
+        return cast(ModelDict, structure.model_dump(mode="json"))
 
 
 async def _read_and_validate_content(
@@ -548,6 +553,7 @@ def _build_recommendation(
     estimated_impact = recommender.calculate_split_impact(
         file_path, token_count, split_points
     )
+    estimated_impact_dict = cast(ModelDict, estimated_impact.model_dump(mode="json"))
     new_structure = recommender.generate_new_structure(file_path, split_points)
 
     return SplitRecommendation(
@@ -556,15 +562,15 @@ def _build_recommendation(
         reason=" | ".join(reasons),
         split_strategy=split_strategy,
         split_points=split_points,
-        estimated_impact=estimated_impact,
+        estimated_impact=estimated_impact_dict,
         new_structure=new_structure,
         maintain_dependencies=True,
     )
 
 
 def _normalize_group_sections(
-    group_sections_raw: object,
-) -> list[dict[str, object]]:
+    group_sections_raw: JsonValue | list[ModelDict],
+) -> list[ModelDict]:
     """Normalize group sections to a list of dictionaries.
 
     Args:
@@ -574,10 +580,10 @@ def _normalize_group_sections(
         Normalized list of section dictionaries
     """
     if isinstance(group_sections_raw, list):
-        return [
-            cast(dict[str, object], s)
-            for s in cast(list[object], group_sections_raw)
-            if isinstance(s, dict)
-        ]
+        return [cast(ModelDict, s) for s in group_sections_raw if isinstance(s, dict)]
     else:
-        return [group_sections_raw] if isinstance(group_sections_raw, dict) else []
+        return (
+            [cast(ModelDict, group_sections_raw)]
+            if isinstance(group_sections_raw, dict)
+            else []
+        )

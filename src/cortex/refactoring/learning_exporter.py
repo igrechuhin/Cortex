@@ -6,12 +6,14 @@ This module handles exporting learned patterns in various formats.
 
 from datetime import datetime
 
+from cortex.core.models import ModelDict
+
 from .learning_data_manager import LearnedPattern
 
 
 def export_learned_patterns(
     patterns: dict[str, LearnedPattern], format: str = "json"
-) -> dict[str, object]:
+) -> ModelDict:
     """
     Export learned patterns.
 
@@ -33,7 +35,7 @@ def export_learned_patterns(
         }
 
 
-def _export_patterns_json(patterns: dict[str, LearnedPattern]) -> dict[str, object]:
+def _export_patterns_json(patterns: dict[str, LearnedPattern]) -> ModelDict:
     """Export patterns in JSON format."""
     return {
         "patterns": {
@@ -43,7 +45,7 @@ def _export_patterns_json(patterns: dict[str, LearnedPattern]) -> dict[str, obje
     }
 
 
-def _export_patterns_text(patterns: dict[str, LearnedPattern]) -> dict[str, object]:
+def _export_patterns_text(patterns: dict[str, LearnedPattern]) -> ModelDict:
     """Export patterns in text format."""
     lines: list[str] = ["# Learned Patterns\n"]
     lines.append(f"Export Date: {datetime.now().isoformat()}\n\n")

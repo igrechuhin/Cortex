@@ -11,8 +11,11 @@ import ast
 import json
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Literal, TypedDict, cast
+from typing import Literal, cast
 
+from pydantic import BaseModel, ConfigDict, Field
+
+from cortex.core.models import JsonValue, ModelDict
 from cortex.managers.initialization import get_project_root
 from cortex.server import mcp
 from cortex.services.framework_adapters.base import CheckResult, TestResult
@@ -28,59 +31,87 @@ MAX_FILE_LINES = 400
 MAX_FUNCTION_LINES = 30
 
 
-class FileSizeViolation(TypedDict):
+class FileSizeViolation(BaseModel):
     """File size violation details."""
 
-    file: str
-    lines: int
-    max_lines: int
-    excess: int
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    file: str = Field(description="File path")
+    lines: int = Field(ge=0, description="Number of lines")
+    max_lines: int = Field(ge=0, description="Maximum allowed lines")
+    excess: int = Field(ge=0, description="Excess lines over limit")
 
 
-class FunctionLengthViolation(TypedDict):
+class FunctionLengthViolation(BaseModel):
     """Function length violation details."""
 
-    file: str
-    function: str
-    line: int
-    lines: int
-    max_lines: int
-    excess: int
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    file: str = Field(description="File path")
+    function: str = Field(description="Function name")
+    line: int = Field(ge=1, description="Line number")
+    lines: int = Field(ge=0, description="Number of lines")
+    max_lines: int = Field(ge=0, description="Maximum allowed lines")
+    excess: int = Field(ge=0, description="Excess lines over limit")
 
 
-class QualityCheckResult(TypedDict):
+class QualityCheckResult(BaseModel):
     """Result of quality check including file size and function length."""
 
-    check_type: str
-    success: bool
-    output: str
-    errors: list[str]
-    warnings: list[str]
-    files_modified: list[str]
-    file_size_violations: list[FileSizeViolation]
-    function_length_violations: list[FunctionLengthViolation]
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    check_type: str = Field(description="Type of check")
+    success: bool = Field(description="Whether check succeeded")
+    output: str = Field(description="Check output")
+    errors: list[str] = Field(default_factory=list, description="List of errors")
+    warnings: list[str] = Field(default_factory=list, description="List of warnings")
+    files_modified: list[str] = Field(
+        default_factory=list, description="List of modified files"
+    )
+    file_size_violations: list[FileSizeViolation] = Field(
+        default_factory=lambda: list[FileSizeViolation](),
+        description="File size violations",
+    )
+    function_length_violations: list[FunctionLengthViolation] = Field(
+        default_factory=lambda: list[FunctionLengthViolation](),
+        description="Function length violations",
+    )
 
 
-class PreCommitResult(TypedDict):
+class PreCommitResult(BaseModel):
     """Result of pre-commit checks execution."""
 
-    status: Literal["success", "error"]
-    language: str | None
-    checks_performed: list[str]
-    results: dict[str, CheckResult | TestResult | QualityCheckResult]
-    total_errors: int
-    total_warnings: int
-    files_modified: list[str]
-    success: bool
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    status: Literal["success", "error"] = Field(description="Operation status")
+    language: str | None = Field(default=None, description="Detected language")
+    checks_performed: list[str] = Field(
+        default_factory=list, description="List of checks performed"
+    )
+    results: dict[str, CheckResult | TestResult | QualityCheckResult] = Field(
+        default_factory=dict, description="Check results by check name"
+    )
+    total_errors: int = Field(ge=0, description="Total number of errors")
+    total_warnings: int = Field(ge=0, description="Total number of warnings")
+    files_modified: list[str] = Field(
+        default_factory=list, description="List of modified files"
+    )
+    success: bool = Field(description="Whether all checks passed")
 
 
-class CheckStats(TypedDict):
+class CheckStats(BaseModel):
     """Statistics for pre-commit checks."""
 
-    total_errors: int
-    total_warnings: int
-    files_modified: list[str]
-    checks_performed: list[str]
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    total_errors: int = Field(ge=0, description="Total number of errors")
+    total_warnings: int = Field(ge=0, description="Total number of warnings")
+    files_modified: list[str] = Field(
+        default_factory=list, description="List of modified files"
+    )
+    checks_performed: list[str] = Field(
+        default_factory=list, description="List of checks performed"
+    )
 
 
 def _get_adapter(
@@ -95,7 +126,7 @@ def _get_adapter(
     Returns:
         Framework adapter instance or None if not supported.
     """
-    if language_info["language"] == "python":
+    if language_info.language == "python":
         return PythonAdapter(project_root)
     # TODO: Add other language adapters as needed
     return None
@@ -248,7 +279,7 @@ async def execute_pre_commit_checks(
         adapter = _get_adapter(language_info, root_str)
         if adapter is None:
             return _create_error_result(
-                f"Language '{language_info['language']}' is not yet supported. "
+                f"Language '{language_info.language}' is not yet supported. "
                 + "Supported languages: python"
             )
 
@@ -257,7 +288,7 @@ async def execute_pre_commit_checks(
             adapter, checks_to_perform, strict_mode, timeout, coverage_threshold
         )
 
-        return _build_response(results, stats, language_info["language"])
+        return _build_response(results, stats, language_info.language)
 
     except Exception as e:
         return _create_error_result(str(e), type(e).__name__)
@@ -294,7 +325,12 @@ def _detect_or_use_language(language: str | None, root_str: str) -> LanguageInfo
 
 def _determine_checks_to_perform(checks: Sequence[str] | None) -> list[str]:
     """Determine which checks to perform."""
-    default_checks = ["fix_errors", "format", "type_check", "quality", "tests"]
+    # Default ordering is optimized for fast feedback:
+    # - fix_errors first (can resolve obvious failures cheaply)
+    # - quality early (file sizes / function lengths fail-fast before expensive steps)
+    # - formatting and type checking next
+    # - tests last (most expensive)
+    default_checks = ["fix_errors", "quality", "format", "type_check", "tests"]
     return list(checks) if checks else default_checks
 
 
@@ -307,17 +343,17 @@ def _execute_all_checks(
 ) -> tuple[dict[str, CheckResult | TestResult | QualityCheckResult], CheckStats]:
     """Execute all requested checks."""
     results: dict[str, CheckResult | TestResult | QualityCheckResult] = {}
-    stats: CheckStats = {
-        "total_errors": 0,
-        "total_warnings": 0,
-        "files_modified": [],
-        "checks_performed": [],
-    }
+    stats = CheckStats(
+        total_errors=0,
+        total_warnings=0,
+        files_modified=[],
+        checks_performed=[],
+    )
 
     _process_fix_errors_check(adapter, checks_to_perform, strict_mode, results, stats)
+    _process_quality_check(adapter, checks_to_perform, results, stats)
     _process_format_check(adapter, checks_to_perform, results, stats)
     _process_type_check(adapter, checks_to_perform, results, stats)
-    _process_quality_check(adapter, checks_to_perform, results, stats)
     _process_tests_check(
         adapter, checks_to_perform, timeout, coverage_threshold, results, stats
     )
@@ -336,10 +372,10 @@ def _process_fix_errors_check(
     if "fix_errors" in checks_to_perform:
         fix_result = _execute_fix_errors(adapter, strict_mode)
         results["fix_errors"] = fix_result
-        stats["checks_performed"].append("fix_errors")
-        stats["total_errors"] += len(fix_result["errors"])
-        stats["total_warnings"] += len(fix_result["warnings"])
-        stats["files_modified"].extend(fix_result["files_modified"])
+        stats.checks_performed.append("fix_errors")
+        stats.total_errors += len(fix_result.errors)
+        stats.total_warnings += len(fix_result.warnings)
+        stats.files_modified.extend(fix_result.files_modified)
 
 
 def _process_format_check(
@@ -352,9 +388,9 @@ def _process_format_check(
     if "format" in checks_to_perform:
         format_result = _execute_format(adapter)
         results["format"] = format_result
-        stats["checks_performed"].append("format")
-        stats["total_errors"] += len(format_result["errors"])
-        stats["files_modified"].extend(format_result["files_modified"])
+        stats.checks_performed.append("format")
+        stats.total_errors += len(format_result.errors)
+        stats.files_modified.extend(format_result.files_modified)
 
 
 def _process_type_check(
@@ -367,8 +403,8 @@ def _process_type_check(
     if "type_check" in checks_to_perform:
         type_result = _execute_type_check(adapter)
         results["type_check"] = type_result
-        stats["checks_performed"].append("type_check")
-        stats["total_errors"] += len(type_result["errors"])
+        stats.checks_performed.append("type_check")
+        stats.total_errors += len(type_result.errors)
 
 
 def _process_quality_check(
@@ -381,8 +417,8 @@ def _process_quality_check(
     if "quality" in checks_to_perform:
         quality_result = _execute_quality(adapter)
         results["quality"] = quality_result
-        stats["checks_performed"].append("quality")
-        stats["total_errors"] += len(quality_result["errors"])
+        stats.checks_performed.append("quality")
+        stats.total_errors += len(quality_result.errors)
 
 
 def _process_tests_check(
@@ -397,9 +433,9 @@ def _process_tests_check(
     if "tests" in checks_to_perform:
         test_result = _execute_tests(adapter, timeout, coverage_threshold)
         results["tests"] = test_result
-        stats["checks_performed"].append("tests")
-        if not test_result["success"]:
-            stats["total_errors"] += len(test_result["errors"])
+        stats.checks_performed.append("tests")
+        if not test_result.success:
+            stats.total_errors += len(test_result.errors)
 
 
 def _execute_fix_errors(
@@ -619,13 +655,13 @@ def _build_quality_errors(
     """Build error messages for quality check."""
     errors = list(lint_errors)
     for v in file_violations:
-        msg = f"File size violation: {v['file']} has {v['lines']} lines "
-        msg += f"(max: {v['max_lines']}, excess: {v['excess']})"
+        msg = f"File size violation: {v.file} has {v.lines} lines "
+        msg += f"(max: {v.max_lines}, excess: {v.excess})"
         errors.append(msg)
     for v in func_violations:
-        msg = f"Function length violation: {v['file']}:{v['function']}() at line "
-        msg += f"{v['line']} has {v['lines']} lines "
-        msg += f"(max: {v['max_lines']}, excess: {v['excess']})"
+        msg = f"Function length violation: {v.file}:{v.function}() at line "
+        msg += f"{v.line} has {v.lines} lines "
+        msg += f"(max: {v.max_lines}, excess: {v.excess})"
         errors.append(msg)
     return errors
 
@@ -657,16 +693,10 @@ def _execute_quality(adapter: PythonAdapter) -> QualityCheckResult:
     file_violations = _check_file_sizes(project_root)
     func_violations = _check_function_lengths(project_root)
 
-    errors = _build_quality_errors(
-        lint_result["errors"], file_violations, func_violations
-    )
-    output = _build_quality_output(
-        lint_result["output"], file_violations, func_violations
-    )
+    errors = _build_quality_errors(lint_result.errors, file_violations, func_violations)
+    output = _build_quality_output(lint_result.output, file_violations, func_violations)
     success = (
-        lint_result["success"]
-        and len(file_violations) == 0
-        and len(func_violations) == 0
+        lint_result.success and len(file_violations) == 0 and len(func_violations) == 0
     )
 
     return QualityCheckResult(
@@ -674,8 +704,8 @@ def _execute_quality(adapter: PythonAdapter) -> QualityCheckResult:
         success=success,
         output=output,
         errors=errors,
-        warnings=list(lint_result["warnings"]),
-        files_modified=list(lint_result["files_modified"]),
+        warnings=list(lint_result.warnings),
+        files_modified=list(lint_result.files_modified),
         file_size_violations=file_violations,
         function_length_violations=func_violations,
     )
@@ -700,65 +730,84 @@ def _build_response(
     detected_language: str,
 ) -> str:
     """Build JSON response."""
-    total_errors = stats["total_errors"]
+    total_errors = stats.total_errors
     success = total_errors == 0
-    response: PreCommitResult = {
-        "status": "success" if success else "error",
-        "language": detected_language,
-        "checks_performed": stats["checks_performed"],
-        "results": results,
-        "total_errors": total_errors,
-        "total_warnings": stats["total_warnings"],
-        "files_modified": list(set(stats["files_modified"])),
-        "success": success,
-    }
-    return json.dumps(response, indent=2)
+    response = PreCommitResult(
+        status="success" if success else "error",
+        language=detected_language,
+        checks_performed=stats.checks_performed,
+        results=results,
+        total_errors=total_errors,
+        total_warnings=stats.total_warnings,
+        files_modified=list(set(stats.files_modified)),
+        success=success,
+    )
+    return json.dumps(response.model_dump(), indent=2)
 
 
-class FixQualityResult(TypedDict):
+class FixQualityResult(BaseModel):
     """Result of fix_quality_issues operation."""
 
-    status: Literal["success", "error"]
-    errors_fixed: int
-    warnings_fixed: int
-    formatting_issues_fixed: int
-    markdown_issues_fixed: int
-    type_errors_fixed: int
-    files_modified: list[str]
-    remaining_issues: list[str]
-    error_message: str | None
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    status: Literal["success", "error"] = Field(description="Operation status")
+    errors_fixed: int = Field(ge=0, description="Number of errors fixed")
+    warnings_fixed: int = Field(ge=0, description="Number of warnings fixed")
+    formatting_issues_fixed: int = Field(
+        ge=0, description="Number of formatting issues fixed"
+    )
+    markdown_issues_fixed: int = Field(
+        ge=0, description="Number of markdown issues fixed"
+    )
+    type_errors_fixed: int = Field(ge=0, description="Number of type errors fixed")
+    files_modified: list[str] = Field(
+        default_factory=list, description="List of modified files"
+    )
+    remaining_issues: list[str] = Field(
+        default_factory=list, description="List of remaining issues"
+    )
+    error_message: str | None = Field(default=None, description="Error message if any")
 
 
 def _create_quality_error_response(error_message: str) -> str:
     """Create error response for quality fixes."""
-    return json.dumps(
-        {
-            "status": "error",
-            "errors_fixed": 0,
-            "warnings_fixed": 0,
-            "formatting_issues_fixed": 0,
-            "markdown_issues_fixed": 0,
-            "type_errors_fixed": 0,
-            "files_modified": [],
-            "remaining_issues": [],
-            "error_message": error_message,
-        },
-        indent=2,
+    result = FixQualityResult(
+        status="error",
+        errors_fixed=0,
+        warnings_fixed=0,
+        formatting_issues_fixed=0,
+        markdown_issues_fixed=0,
+        type_errors_fixed=0,
+        files_modified=[],
+        remaining_issues=[],
+        error_message=error_message,
     )
+    return json.dumps(result.model_dump(), indent=2)
 
 
-async def _run_quality_checks(root_str: str) -> dict[str, object] | str:
+async def _run_quality_checks(root_str: str) -> ModelDict | str:
     """Run quality checks and return result or error response."""
     fix_errors_result_json = await execute_pre_commit_checks(
         checks=["fix_errors", "format", "type_check"],
         project_root=root_str,
         strict_mode=False,
     )
-    fix_errors_result = json.loads(fix_errors_result_json)
+    fix_errors_result_raw: JsonValue = json.loads(fix_errors_result_json)
+    if not isinstance(fix_errors_result_raw, dict):
+        return _create_quality_error_response("Invalid quality check response")
+    fix_errors_result = cast(ModelDict, fix_errors_result_raw)
 
-    if fix_errors_result.get("status") == "error":
+    # `execute_pre_commit_checks()` uses `"status": "error"` both for:
+    # - genuine tool failures (exception paths), which include `error`/`error_type`
+    # - "checks ran, but errors remain" (normal outcome for this fixer)
+    #
+    # Only treat it as a tool failure if it contains the explicit error payload.
+    if fix_errors_result.get("status") == "error" and (
+        "error" in fix_errors_result or "error_type" in fix_errors_result
+    ):
+        error_obj = fix_errors_result.get("error")
         return _create_quality_error_response(
-            fix_errors_result.get("error", "Unknown error")
+            str(error_obj) if error_obj is not None else "Unknown error"
         )
 
     return fix_errors_result
@@ -773,30 +822,39 @@ async def _fix_markdown_and_update_files(
         include_untracked_markdown=include_untracked_markdown,
         dry_run=False,
     )
-    markdown_result = json.loads(markdown_result_json)
+    markdown_result_raw: JsonValue = json.loads(markdown_result_json)
+    if not isinstance(markdown_result_raw, dict):
+        return 0
+    markdown_result = cast(ModelDict, markdown_result_raw)
     return _process_markdown_results(markdown_result, files_modified)
 
 
 def _extract_dict_from_object(
-    obj: object, default: dict[str, object]
-) -> dict[str, object]:
+    obj: JsonValue, default: dict[str, JsonValue]
+) -> dict[str, JsonValue]:
     """Extract dict from object with type checking."""
-    return cast(dict[str, object], obj) if isinstance(obj, dict) else default
+    return cast(dict[str, JsonValue], obj) if isinstance(obj, dict) else default
 
 
-def _extract_list_from_object(obj: object, default: list[object]) -> list[object]:
-    """Extract list from object with type checking."""
-    return cast(list[object], obj) if isinstance(obj, list) else default
+def _extract_list_from_object(obj: JsonValue, default: list[str]) -> list[str]:
+    """Extract list from object with type checking.
+
+    Returns list of strings, filtering out non-string items.
+    """
+    if isinstance(obj, list):
+        obj_list = cast(list[JsonValue], obj)
+        return [str(item) for item in obj_list if isinstance(item, (str, int, float))]
+    return default
 
 
-def _extract_int_from_object(obj: object, default: int) -> int:
+def _extract_int_from_object(obj: JsonValue, default: int) -> int:
     """Extract int from object with type checking."""
     return int(obj) if isinstance(obj, (int, str)) else default
 
 
 def _extract_check_results(
-    results: dict[str, object],
-) -> tuple[dict[str, object], dict[str, object], dict[str, object]]:
+    results: dict[str, JsonValue],
+) -> tuple[dict[str, JsonValue], dict[str, JsonValue], dict[str, JsonValue]]:
     """Extract check result dicts from results."""
     fix_errors_check_obj = results.get("fix_errors", {})
     fix_errors_check = _extract_dict_from_object(fix_errors_check_obj, {})
@@ -808,7 +866,7 @@ def _extract_check_results(
 
 
 def _extract_fix_statistics(
-    fix_errors_result: dict[str, object],
+    fix_errors_result: dict[str, JsonValue],
 ) -> tuple[int, int, int, int, list[str]]:
     """Extract statistics from fix_errors result."""
     results_obj = fix_errors_result.get("results", {})
@@ -827,7 +885,7 @@ def _extract_fix_statistics(
     files_modified_list = _extract_list_from_object(
         fix_errors_result.get("files_modified", []), []
     )
-    files_modified = list(set(cast(list[str], files_modified_list)))
+    files_modified = list(set(files_modified_list))
 
     return (
         errors_fixed,
@@ -839,7 +897,7 @@ def _extract_fix_statistics(
 
 
 def _process_markdown_results(
-    markdown_result: dict[str, object], files_modified: list[str]
+    markdown_result: ModelDict, files_modified: list[str]
 ) -> int:
     """Process markdown fix results and update files_modified list."""
     markdown_issues_fixed = 0
@@ -851,10 +909,9 @@ def _process_markdown_results(
         )
         results_obj = markdown_result.get("results", [])
         if isinstance(results_obj, list):
-            results_list = cast(list[object], results_obj)
-            for item in results_list:
+            for item in cast(list[JsonValue], results_obj):
                 if isinstance(item, dict):
-                    file_result = cast(dict[str, object], item)
+                    file_result = cast(ModelDict, item)
                     fixed_obj = file_result.get("fixed")
                     if fixed_obj:
                         file_path_obj = file_result.get("file", "")
@@ -864,7 +921,7 @@ def _process_markdown_results(
     return markdown_issues_fixed
 
 
-def _collect_remaining_issues(fix_errors_result: dict[str, object]) -> list[str]:
+def _collect_remaining_issues(fix_errors_result: ModelDict) -> list[str]:
     """Collect remaining issues that couldn't be auto-fixed."""
     remaining_issues: list[str] = []
     total_errors_obj = fix_errors_result.get("total_errors", 0)
@@ -892,17 +949,17 @@ def _build_quality_response(
     remaining_issues: list[str],
 ) -> FixQualityResult:
     """Build quality fix response."""
-    return {
-        "status": "success",
-        "errors_fixed": errors_fixed,
-        "warnings_fixed": warnings_fixed,
-        "formatting_issues_fixed": formatting_issues_fixed,
-        "markdown_issues_fixed": markdown_issues_fixed,
-        "type_errors_fixed": type_errors_fixed,
-        "files_modified": files_modified,
-        "remaining_issues": remaining_issues,
-        "error_message": None,
-    }
+    return FixQualityResult(
+        status="success",
+        errors_fixed=errors_fixed,
+        warnings_fixed=warnings_fixed,
+        formatting_issues_fixed=formatting_issues_fixed,
+        markdown_issues_fixed=markdown_issues_fixed,
+        type_errors_fixed=type_errors_fixed,
+        files_modified=files_modified,
+        remaining_issues=remaining_issues,
+        error_message=None,
+    )
 
 
 def _build_quality_response_json(
@@ -924,7 +981,7 @@ def _build_quality_response_json(
         files_modified,
         remaining_issues,
     )
-    return json.dumps(response, indent=2)
+    return json.dumps(response.model_dump(), indent=2)
 
 
 @mcp.tool()

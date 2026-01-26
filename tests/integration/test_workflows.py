@@ -18,6 +18,7 @@ from cortex.core.version_manager import VersionManager
 from cortex.linking.link_parser import LinkParser
 from cortex.linking.link_validator import LinkValidator
 from cortex.linking.transclusion_engine import TransclusionEngine
+from cortex.optimization.models import FileMetadataForScoring
 from cortex.optimization.relevance_scorer import RelevanceScorer
 from cortex.validation.quality_metrics import QualityMetrics
 from cortex.validation.schema_validator import SchemaValidator
@@ -354,8 +355,8 @@ class TestPhase3Phase4Integration:
             "file2.md": file2_content,
         }
         files_metadata = {
-            "file1.md": await metadata_index.get_file_metadata("file1.md") or {},
-            "file2.md": await metadata_index.get_file_metadata("file2.md") or {},
+            "file1.md": FileMetadataForScoring(last_modified="2026-01-01T00:00:00Z"),
+            "file2.md": FileMetadataForScoring(last_modified="2026-01-01T00:00:00Z"),
         }
         scores = await relevance_scorer.score_files(
             query, files_content, files_metadata

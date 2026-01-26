@@ -11,23 +11,19 @@ This test module covers:
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
 
 import pytest
+from pytest_mock import MockerFixture
 
 from cortex.analysis.structure_analyzer import StructureAnalyzer
+from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.exceptions import MemoryBankError
-
-if TYPE_CHECKING:
-    from pytest_mock import MockerFixture
-
-    from cortex.core.dependency_graph import DependencyGraph
-    from cortex.core.file_system import FileSystemManager
-    from cortex.core.metadata_index import MetadataIndex
+from cortex.core.file_system import FileSystemManager
+from cortex.core.metadata_index import MetadataIndex
 
 
 @pytest.fixture
-def mocked_dependency_graph(mocker: "MockerFixture"):
+def mocked_dependency_graph(mocker: MockerFixture):
     """Create a properly mocked DependencyGraph for testing."""
     mock_graph = mocker.MagicMock()
     mock_graph.get_all_files = mocker.MagicMock(return_value=[])
@@ -42,9 +38,9 @@ class TestStructureAnalyzerInitialization:
     def test_initializes_with_managers(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test initialization with all required managers."""
         # Arrange & Act
@@ -68,9 +64,9 @@ class TestFileOrganizationAnalysis:
     @pytest.mark.asyncio
     async def test_raises_error_when_memory_bank_dir_missing(
         self,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ):
         """Test raises error when ".cortex" / "memory-bank" directory doesn't exist."""
@@ -90,9 +86,9 @@ class TestFileOrganizationAnalysis:
     async def test_handles_empty_memory_bank(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test handles empty memory bank directory."""
         # Arrange - temp_project_root already has ".cortex" / "memory-bank" dir, so it should be empty
@@ -107,26 +103,18 @@ class TestFileOrganizationAnalysis:
         result = await analyzer.analyze_file_organization()
 
         # Assert
-        assert isinstance(result, dict)
-        assert result.get("status") == "empty"
-        file_count = result.get("file_count")
-        assert isinstance(file_count, (int, float))
-        assert file_count == 0
-        issues: object | None = result.get("issues")
-        assert isinstance(issues, list)
-        issues_list: list[str] = cast(list[str], issues)
-        assert len(issues_list) > 0
-        first_issue: str = issues_list[0]
-        assert isinstance(first_issue, str)
-        assert "No files found" in first_issue
+        assert result.status == "empty"
+        assert result.file_count == 0
+        assert len(result.issues) > 0
+        assert "No files found" in result.issues[0]
 
     @pytest.mark.asyncio
     async def test_analyzes_file_organization(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test analyzes file organization."""
         # Arrange
@@ -148,31 +136,20 @@ class TestFileOrganizationAnalysis:
         result = await analyzer.analyze_file_organization()
 
         # Assert
-        assert isinstance(result, dict)
-        assert result.get("status") == "analyzed"
-        file_count = result.get("file_count")
-        assert isinstance(file_count, (int, float))
-        assert file_count == 3
-        total_size = result.get("total_size_bytes")
-        assert isinstance(total_size, (int, float))
-        assert total_size > 0
-        avg_size = result.get("avg_size_bytes")
-        assert isinstance(avg_size, (int, float))
-        assert avg_size > 0
-        largest_files = result.get("largest_files")
-        assert isinstance(largest_files, list)
-        assert len(cast(list[object], largest_files)) <= 5
-        smallest_files = result.get("smallest_files")
-        assert isinstance(smallest_files, list)
-        assert len(cast(list[object], smallest_files)) <= 5
+        assert result.status == "analyzed"
+        assert result.file_count == 3
+        assert result.total_size_bytes > 0
+        assert result.avg_size_bytes > 0
+        assert len(result.largest_files) <= 5
+        assert len(result.smallest_files) <= 5
 
     @pytest.mark.asyncio
     async def test_identifies_large_files_issue(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test identifies large files as an issue."""
         # Arrange
@@ -192,21 +169,15 @@ class TestFileOrganizationAnalysis:
         result = await analyzer.analyze_file_organization()
 
         # Assert
-        assert isinstance(result, dict)
-        issues = result.get("issues")
-        assert isinstance(issues, list)
-        assert any(
-            isinstance(issue, str) and "very large" in issue
-            for issue in cast(list[object], issues)
-        )
+        assert any("very large" in issue for issue in result.issues)
 
     @pytest.mark.asyncio
     async def test_identifies_small_files_issue(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test identifies small files as an issue."""
         # Arrange
@@ -226,13 +197,7 @@ class TestFileOrganizationAnalysis:
         result = await analyzer.analyze_file_organization()
 
         # Assert
-        assert isinstance(result, dict)
-        issues = result.get("issues")
-        assert isinstance(issues, list)
-        assert any(
-            isinstance(issue, str) and "very small" in issue
-            for issue in cast(list[object], issues)
-        )
+        assert any("very small" in issue for issue in result.issues)
 
 
 class TestAntiPatternDetection:
@@ -242,9 +207,9 @@ class TestAntiPatternDetection:
     async def test_detects_oversized_files(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test detects oversized files."""
         # Arrange
@@ -271,21 +236,18 @@ class TestAntiPatternDetection:
 
         # Assert
         assert isinstance(result, list)
-        oversized = [p for p in result if p.get("type") == "oversized_file"]
+        oversized = [p for p in result if p.type == "oversized_file"]
         assert len(oversized) > 0
-        assert isinstance(oversized[0], dict)
-        assert oversized[0].get("severity") == "high"
-        file_name = oversized[0].get("file")
-        assert isinstance(file_name, str)
-        assert "oversized.md" in file_name
+        assert oversized[0].severity == "high"
+        assert "oversized.md" in oversized[0].file
 
     @pytest.mark.asyncio
     async def test_detects_orphaned_files(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test detects orphaned files."""
         # Arrange
@@ -310,21 +272,18 @@ class TestAntiPatternDetection:
 
         # Assert
         assert isinstance(result, list)
-        orphaned = [p for p in result if p.get("type") == "orphaned_file"]
+        orphaned = [p for p in result if p.type == "orphaned_file"]
         assert len(orphaned) > 0
-        assert isinstance(orphaned[0], dict)
-        assert orphaned[0].get("severity") == "medium"
-        file_name = orphaned[0].get("file")
-        assert isinstance(file_name, str)
-        assert "orphan.md" in file_name
+        assert orphaned[0].severity == "medium"
+        assert "orphan.md" in orphaned[0].file
 
     @pytest.mark.asyncio
     async def test_detects_excessive_dependencies(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test detects files with excessive dependencies."""
         # Arrange
@@ -349,18 +308,18 @@ class TestAntiPatternDetection:
         result = await analyzer.detect_anti_patterns()
 
         # Assert
-        excessive = [p for p in result if p["type"] == "excessive_dependencies"]
+        excessive = [p for p in result if p.type == "excessive_dependencies"]
         assert len(excessive) > 0
-        assert excessive[0]["severity"] == "medium"
-        assert excessive[0]["dependency_count"] == 20
+        assert excessive[0].severity == "medium"
+        assert excessive[0].dependency_count == 20
 
     @pytest.mark.asyncio
     async def test_detects_excessive_dependents(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test detects files with excessive dependents."""
         # Arrange
@@ -385,18 +344,18 @@ class TestAntiPatternDetection:
         result = await analyzer.detect_anti_patterns()
 
         # Assert
-        excessive = [p for p in result if p["type"] == "excessive_dependents"]
+        excessive = [p for p in result if p.type == "excessive_dependents"]
         assert len(excessive) > 0
-        assert excessive[0]["severity"] == "low"
-        assert excessive[0]["dependent_count"] == 20
+        assert excessive[0].severity == "low"
+        assert excessive[0].dependent_count == 20
 
     @pytest.mark.asyncio
     async def test_detects_similar_filenames(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test detects similar file names."""
         # Arrange
@@ -431,9 +390,9 @@ class TestAntiPatternDetection:
     async def test_sorts_anti_patterns_by_severity(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test sorts anti-patterns by severity."""
         # Arrange
@@ -474,9 +433,9 @@ class TestComplexityMetrics:
     async def test_handles_no_files(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test handles case with no files."""
         # Arrange
@@ -499,9 +458,9 @@ class TestComplexityMetrics:
     async def test_calculates_dependency_depth(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test calculates maximum dependency depth."""
 
@@ -529,22 +488,16 @@ class TestComplexityMetrics:
         result = await analyzer.measure_complexity_metrics()
 
         # Assert
-        assert isinstance(result, dict)
-        assert result.get("status") == "analyzed"
-        metrics_raw: object = result.get("metrics")
-        assert isinstance(metrics_raw, dict)
-        metrics = cast(dict[str, object], metrics_raw)
-        max_depth: object | None = metrics.get("max_dependency_depth")
-        assert isinstance(max_depth, (int, float))
-        assert max_depth == 2
+        assert result.status == "analyzed"
+        assert result.metrics.max_dependency_depth == 2
 
     @pytest.mark.asyncio
     async def test_calculates_cyclomatic_complexity(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test calculates cyclomatic complexity."""
 
@@ -571,22 +524,17 @@ class TestComplexityMetrics:
         result = await analyzer.measure_complexity_metrics()
 
         # Assert
-        assert isinstance(result, dict)
-        metrics_raw: object = result.get("metrics")
-        assert isinstance(metrics_raw, dict)
-        metrics = cast(dict[str, object], metrics_raw)
-        assert "cyclomatic_complexity" in metrics
-        complexity: object | None = metrics.get("cyclomatic_complexity")
-        assert isinstance(complexity, (int, float))
-        assert complexity == 0  # edges - nodes + 1 = 2 - 3 + 1
+        assert (
+            result.metrics.cyclomatic_complexity == 0
+        )  # edges - nodes + 1 = 2 - 3 + 1
 
     @pytest.mark.asyncio
     async def test_calculates_fan_in_fan_out(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test calculates fan-in and fan-out metrics."""
 
@@ -614,24 +562,18 @@ class TestComplexityMetrics:
         result = await analyzer.measure_complexity_metrics()
 
         # Assert
-        assert isinstance(result, dict)
-        metrics_raw: object = result.get("metrics")
-        assert isinstance(metrics_raw, dict)
-        metrics = cast(dict[str, object], metrics_raw)
-        max_fan_out: object | None = metrics.get("max_fan_out")
-        assert isinstance(max_fan_out, (int, float))
-        assert max_fan_out == 2  # a.md depends on 2 files
-        max_fan_in: object | None = metrics.get("max_fan_in")
-        assert isinstance(max_fan_in, (int, float))
-        assert max_fan_in == 1  # b.md and c.md each depended on by 1 file
+        assert result.metrics.max_fan_out == 2  # a.md depends on 2 files
+        assert (
+            result.metrics.max_fan_in == 1
+        )  # b.md and c.md each depended on by 1 file
 
     @pytest.mark.asyncio
     async def test_identifies_complexity_hotspots(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test identifies complexity hotspots."""
 
@@ -662,26 +604,20 @@ class TestComplexityMetrics:
         result = await analyzer.measure_complexity_metrics()
 
         # Assert
-        assert isinstance(result, dict)
-        hotspots_raw: object = result.get("complexity_hotspots")
-        assert isinstance(hotspots_raw, list)
-        hotspots = cast(list[object], hotspots_raw)
+        hotspots = result.complexity_hotspots
+        assert isinstance(hotspots, list)
         assert len(hotspots) > 0
-        hotspot_raw: object = hotspots[0]
-        assert isinstance(hotspot_raw, dict)
-        hotspot = cast(dict[str, object], hotspot_raw)
-        assert hotspot.get("file") == "hub.md"
-        score: object | None = hotspot.get("complexity_score")
-        assert isinstance(score, (int, float))
-        assert score > 20
+        hotspot = hotspots[0]
+        assert hotspot.file == "hub.md"
+        assert hotspot.score > 20
 
     @pytest.mark.asyncio
     async def test_includes_assessment(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test includes complexity assessment."""
         # Arrange
@@ -700,13 +636,10 @@ class TestComplexityMetrics:
         result = await analyzer.measure_complexity_metrics()
 
         # Assert
-        assert isinstance(result, dict)
-        assert "assessment" in result
-        assessment = result.get("assessment")
-        assert isinstance(assessment, dict)
-        assert "score" in assessment
-        assert "grade" in assessment
-        assert "status" in assessment
+        assert result.assessment is not None
+        assert result.assessment.score >= 0
+        assert isinstance(result.assessment.grade, str)
+        assert isinstance(result.assessment.status, str)
 
 
 class TestComplexityAssessment:
@@ -715,9 +648,9 @@ class TestComplexityAssessment:
     def test_assess_excellent_complexity(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test assesses excellent complexity."""
         # Arrange
@@ -732,19 +665,16 @@ class TestComplexityAssessment:
         assessment = analyzer.assess_complexity(max_depth=3, cyclomatic=5, avg_deps=2.0)
 
         # Assert
-        assert isinstance(assessment, dict)
-        score = assessment.get("score")
-        assert isinstance(score, (int, float))
-        assert score >= 90
-        assert assessment.get("grade") == "A"
-        assert assessment.get("status") == "excellent"
+        assert assessment.score >= 90
+        assert assessment.grade == "A"
+        assert assessment.status == "excellent"
 
     def test_assess_poor_complexity(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test assesses poor complexity."""
         # Arrange
@@ -761,27 +691,18 @@ class TestComplexityAssessment:
         )
 
         # Assert
-        assert isinstance(assessment, dict)
-        score = assessment.get("score")
-        assert isinstance(score, (int, float))
-        assert score < 60
-        assert assessment.get("grade") == "F"
-        assert assessment.get("status") == "poor"
-        issues_raw: object = assessment.get("issues")
-        assert isinstance(issues_raw, list)
-        issues = cast(list[object], issues_raw)
-        assert len(issues) > 0
-        recommendations_raw: object = assessment.get("recommendations")
-        assert isinstance(recommendations_raw, list)
-        recommendations = cast(list[object], recommendations_raw)
-        assert len(recommendations) > 0
+        assert assessment.score < 60
+        assert assessment.grade == "F"
+        assert assessment.status == "poor"
+        assert len(assessment.issues) > 0
+        assert len(assessment.recommendations) > 0
 
     def test_assess_moderate_complexity(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test assesses moderate complexity."""
         # Arrange
@@ -798,16 +719,9 @@ class TestComplexityAssessment:
         )
 
         # Assert
-        assert isinstance(assessment, dict)
-        score = assessment.get("score")
-        assert isinstance(score, (int, float))
-        assert 60 <= score < 90
-        grade = assessment.get("grade")
-        assert isinstance(grade, str)
-        assert grade in ["B", "C", "D"]
-        status = assessment.get("status")
-        assert isinstance(status, str)
-        assert status in ["good", "acceptable", "needs_improvement"]
+        assert 60 <= assessment.score < 90
+        assert assessment.grade in ["B", "C", "D"]
+        assert assessment.status in ["good", "acceptable", "needs_improvement"]
 
 
 class TestDependencyChains:
@@ -817,9 +731,9 @@ class TestDependencyChains:
     async def test_finds_linear_chains(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test finds linear dependency chains."""
 
@@ -869,9 +783,9 @@ class TestDependencyChains:
     async def test_finds_circular_chains(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test finds circular dependency chains."""
 
@@ -906,9 +820,9 @@ class TestDependencyChains:
     async def test_respects_max_chain_length(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test respects maximum chain length parameter."""
 
@@ -961,9 +875,9 @@ class TestDependencyChains:
     async def test_sorts_chains_by_length(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test sorts chains by length (longest first)."""
 
@@ -1022,9 +936,9 @@ class TestDependencyChains:
     async def test_limits_results_to_top_20(
         self,
         temp_project_root: Path,
-        mocked_dependency_graph: "DependencyGraph",
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
+        mocked_dependency_graph: DependencyGraph,
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
     ):
         """Test limits results to top 20 chains."""
         # Arrange

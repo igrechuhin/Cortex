@@ -28,7 +28,7 @@ class TestRetryAsync:
         func = AsyncMock(return_value="success")
 
         # Act
-        result = await retry_async(func)
+        result = await retry_async(lambda: func())
 
         # Assert
         assert result == "success"
@@ -41,7 +41,7 @@ class TestRetryAsync:
         func = AsyncMock(side_effect=[OSError("transient"), "success"])
 
         # Act
-        result = await retry_async(func, max_retries=2)
+        result = await retry_async(lambda: func(), max_retries=2)
 
         # Assert
         assert result == "success"
@@ -56,7 +56,7 @@ class TestRetryAsync:
 
         # Act & Assert
         with pytest.raises(OSError):
-            await retry_async(func, max_retries=2)
+            await retry_async(lambda: func(), max_retries=2)
 
         # Should have tried max_retries + 1 times
         assert func.call_count == 3
@@ -68,7 +68,7 @@ class TestRetryAsync:
         func = AsyncMock(side_effect=[ValueError("error"), "success"])
 
         # Act
-        result = await retry_async(func, exceptions=(ValueError,))
+        result = await retry_async(lambda: func(), exceptions=(ValueError,))
 
         # Assert
         assert result == "success"
@@ -83,7 +83,7 @@ class TestRetryAsync:
 
         # Act & Assert
         with pytest.raises(ValueError):
-            await retry_async(func)
+            await retry_async(lambda: func())
 
         # Should only try once
         assert func.call_count == 1
@@ -96,7 +96,7 @@ class TestRetryAsync:
 
         # Act
         with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
-            result = await retry_async(func, base_delay=0.1, max_retries=1)
+            result = await retry_async(lambda: func(), base_delay=0.1, max_retries=1)
 
         # Assert
         assert result == "success"
@@ -114,7 +114,10 @@ class TestRetryAsync:
         # Act
         with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
             result = await retry_async(
-                func, base_delay=100.0, max_delay=1.0, max_retries=1
+                lambda: func(),
+                base_delay=100.0,
+                max_delay=1.0,
+                max_retries=1,
             )
 
         # Assert
@@ -126,12 +129,12 @@ class TestRetryAsync:
 
     @pytest.mark.asyncio
     async def test_retry_async_with_positional_args(self):
-        """Test retry_async passes positional arguments."""
+        """Test retry_async can wrap positional arguments."""
         # Arrange
         func = AsyncMock(return_value="result")
 
         # Act
-        result = await retry_async(func, "arg1", "arg2")
+        result = await retry_async(lambda: func("arg1", "arg2"))
 
         # Assert
         assert result == "result"
@@ -139,12 +142,12 @@ class TestRetryAsync:
 
     @pytest.mark.asyncio
     async def test_retry_async_with_keyword_args(self):
-        """Test retry_async passes keyword arguments."""
+        """Test retry_async can wrap keyword arguments."""
         # Arrange
         func = AsyncMock(return_value="result")
 
         # Act
-        result = await retry_async(func, key1="value1", key2="value2")
+        result = await retry_async(lambda: func(key1="value1", key2="value2"))
 
         # Assert
         assert result == "result"

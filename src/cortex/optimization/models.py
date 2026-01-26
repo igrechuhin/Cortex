@@ -2,7 +2,7 @@
 Pydantic models for optimization module.
 
 This module contains Pydantic models for optimization operations,
-migrated from dataclass and TypedDict definitions for better validation.
+migrated from dataclass and legacy dict-based shapes for better validation.
 """
 
 from typing import Literal
@@ -403,6 +403,10 @@ class DetectedContextModel(OptimizationBaseModel):
         default_factory=list, description="Detected frameworks"
     )
     task_type: str | None = Field(default=None, description="Detected task type")
+    categories_to_load: list[str] = Field(
+        default_factory=list,
+        description="Rule categories to load (including generic/language/task_type)",
+    )
 
 
 class RulesResultModel(OptimizationBaseModel):

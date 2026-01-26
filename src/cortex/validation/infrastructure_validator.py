@@ -11,34 +11,50 @@ Validates project infrastructure consistency, including:
 import re
 from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import TypedDict, cast
+from types import ModuleType
+from typing import cast
 
-try:
-    import yaml  # type: ignore[reportMissingModuleSource]
-except ImportError:
-    yaml = None  # type: ignore[assignment,unused-ignore]
+import yaml as _yaml
+from pydantic import BaseModel, ConfigDict, Field
+
+from cortex.core.models import JsonValue, ModelDict
+from cortex.validation.models import JobConfigModel
+
+# Exposed for tests (they patch `cortex.validation.infrastructure_validator.yaml`)
+yaml: ModuleType | None = _yaml
 
 
-class InfrastructureIssue(TypedDict):
+class InfrastructureIssue(BaseModel):
     """Infrastructure validation issue."""
 
-    type: str
-    severity: str
-    description: str
-    location: str
-    suggestion: str
-    ci_check: str | None
-    missing_in_commit: bool
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    type: str = Field(description="Issue type")
+    severity: str = Field(description="Issue severity")
+    description: str = Field(description="Issue description")
+    location: str = Field(description="Issue location")
+    suggestion: str = Field(description="Suggestion for fixing")
+    ci_check: str | None = Field(default=None, description="Related CI check")
+    missing_in_commit: bool = Field(description="Whether missing in commit prompt")
 
 
-class InfrastructureValidationResult(TypedDict):
+class InfrastructureValidationResult(BaseModel):
     """Infrastructure validation result."""
 
-    status: str
-    check_type: str
-    checks_performed: dict[str, bool]
-    issues_found: list[InfrastructureIssue]
-    recommendations: list[str]
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    status: str = Field(description="Validation status")
+    check_type: str = Field(description="Type of check performed")
+    checks_performed: dict[str, bool] = Field(
+        default_factory=dict, description="Checks performed and their status"
+    )
+    issues_found: list[InfrastructureIssue] = Field(
+        default_factory=lambda: list[InfrastructureIssue](),
+        description="List of issues found",
+    )
+    recommendations: list[str] = Field(
+        default_factory=list, description="Recommendations for fixing"
+    )
 
 
 class InfrastructureValidator:
@@ -90,13 +106,13 @@ class InfrastructureValidator:
                 check_name, check_func, issues, recommendations, checks_performed
             )
 
-        return {
-            "status": "success",
-            "check_type": "infrastructure",
-            "checks_performed": checks_performed,
-            "issues_found": issues,
-            "recommendations": recommendations,
-        }
+        return InfrastructureValidationResult(
+            status="success",
+            check_type="infrastructure",
+            checks_performed=checks_performed,
+            issues_found=issues,
+            recommendations=recommendations,
+        )
 
     def _get_checks_to_run(
         self,
@@ -202,25 +218,25 @@ class InfrastructureValidator:
             Issue if file is missing, None otherwise
         """
         if not self.ci_workflow_path.exists():
-            return {
-                "type": "missing_file",
-                "severity": "high",
-                "description": "CI workflow file not found",
-                "location": str(self.ci_workflow_path),
-                "suggestion": "Create CI workflow file",
-                "ci_check": None,
-                "missing_in_commit": False,
-            }
+            return InfrastructureIssue(
+                type="missing_file",
+                severity="high",
+                description="CI workflow file not found",
+                location=str(self.ci_workflow_path),
+                suggestion="Create CI workflow file",
+                ci_check=None,
+                missing_in_commit=False,
+            )
         if not self.commit_prompt_path.exists():
-            return {
-                "type": "missing_file",
-                "severity": "high",
-                "description": "Commit prompt file not found",
-                "location": str(self.commit_prompt_path),
-                "suggestion": "Create commit prompt file",
-                "ci_check": None,
-                "missing_in_commit": False,
-            }
+            return InfrastructureIssue(
+                type="missing_file",
+                severity="high",
+                description="Commit prompt file not found",
+                location=str(self.commit_prompt_path),
+                suggestion="Create commit prompt file",
+                ci_check=None,
+                missing_in_commit=False,
+            )
         return None
 
     def _create_missing_check_issue(self, check: dict[str, str]) -> InfrastructureIssue:
@@ -232,15 +248,15 @@ class InfrastructureValidator:
         Returns:
             Infrastructure issue dictionary
         """
-        return {
-            "type": "missing_check",
-            "severity": "high",
-            "description": f"Commit prompt missing check: {check['name']}",
-            "location": str(self.commit_prompt_path),
-            "suggestion": f"Add {check['name']} check step to commit prompt",
-            "ci_check": check["name"],
-            "missing_in_commit": True,
-        }
+        return InfrastructureIssue(
+            type="missing_check",
+            severity="high",
+            description=f"Commit prompt missing check: {check['name']}",
+            location=str(self.commit_prompt_path),
+            suggestion=f"Add {check['name']} check step to commit prompt",
+            ci_check=check["name"],
+            missing_in_commit=True,
+        )
 
     async def _extract_ci_checks(self) -> list[dict[str, str]]:
         """Extract check steps from CI workflow.
@@ -255,12 +271,17 @@ class InfrastructureValidator:
 
         try:
             content = self.ci_workflow_path.read_text()
-            workflow = yaml.safe_load(content)
+            workflow_raw = cast(JsonValue, yaml.safe_load(content))
+            workflow = (
+                cast(ModelDict, workflow_raw) if isinstance(workflow_raw, dict) else {}
+            )
+            jobs_raw = workflow.get("jobs", {})
+            jobs = cast(ModelDict, jobs_raw) if isinstance(jobs_raw, dict) else {}
 
-            if "jobs" not in workflow:
-                return checks
-
-            for _job_name, job_config in workflow["jobs"].items():
+            for _job_name, job_config_raw in jobs.items():
+                if not isinstance(job_config_raw, dict):
+                    continue
+                job_config = JobConfigModel.from_dict(cast(ModelDict, job_config_raw))
                 self._extract_checks_from_job(job_config, checks)
         except Exception:
             pass
@@ -268,32 +289,23 @@ class InfrastructureValidator:
         return checks
 
     def _extract_checks_from_job(
-        self, job_config: dict[str, object], checks: list[dict[str, str]]
+        self, job_config: JobConfigModel, checks: list[dict[str, str]]
     ) -> None:
         """Extract checks from a single job configuration.
 
         Args:
-            job_config: Job configuration dictionary
+            job_config: Job configuration model
             checks: List to append extracted checks to
         """
-        if "steps" not in job_config:
+        if not job_config.steps:
             return
 
-        steps_raw: object = job_config["steps"]
-        if not isinstance(steps_raw, list):
-            return
-
-        steps: list[object] = cast(list[object], steps_raw)
-        for step_item in steps:
-            if not isinstance(step_item, dict):
+        for step in job_config.steps:
+            if not step.name:
                 continue
 
-            step: dict[str, object] = cast(dict[str, object], step_item)
-            if "name" not in step:
-                continue
-
-            step_name: str = str(step["name"])
-            step_run: str = str(step.get("run", ""))
+            step_name: str = step.name
+            step_run: str = step.run or ""
 
             check_name = self._normalize_check_name(step_name)
             checks.append(
@@ -406,15 +418,15 @@ class InfrastructureValidator:
             script_path = scripts_dir / script_name
             if not script_path.exists():
                 issues.append(
-                    {
-                        "type": "missing_script",
-                        "severity": "medium",
-                        "description": f"Required script not found: {script_name}",
-                        "location": str(script_path),
-                        "suggestion": f"Create {script_name} script",
-                        "ci_check": None,
-                        "missing_in_commit": False,
-                    }
+                    InfrastructureIssue(
+                        type="missing_script",
+                        severity="medium",
+                        description=f"Required script not found: {script_name}",
+                        location=str(script_path),
+                        suggestion=f"Create {script_name} script",
+                        ci_check=None,
+                        missing_in_commit=False,
+                    )
                 )
 
         if issues:
@@ -438,15 +450,15 @@ class InfrastructureValidator:
         readme_path = self.project_root / "README.md"
         if not readme_path.exists():
             issues.append(
-                {
-                    "type": "missing_documentation",
-                    "severity": "low",
-                    "description": "README.md not found",
-                    "location": str(readme_path),
-                    "suggestion": "Create README.md with project documentation",
-                    "ci_check": None,
-                    "missing_in_commit": False,
-                }
+                InfrastructureIssue(
+                    type="missing_documentation",
+                    severity="low",
+                    description="README.md not found",
+                    location=str(readme_path),
+                    suggestion="Create README.md with project documentation",
+                    ci_check=None,
+                    missing_in_commit=False,
+                )
             )
 
         if issues:
@@ -475,15 +487,15 @@ class InfrastructureValidator:
             config_path = config_dir / config_name
             if not config_path.exists():
                 issues.append(
-                    {
-                        "type": "missing_config",
-                        "severity": "medium",
-                        "description": f"Configuration file not found: {config_name}",
-                        "location": str(config_path),
-                        "suggestion": f"Create {config_name} configuration file",
-                        "ci_check": None,
-                        "missing_in_commit": False,
-                    }
+                    InfrastructureIssue(
+                        type="missing_config",
+                        severity="medium",
+                        description=f"Configuration file not found: {config_name}",
+                        location=str(config_path),
+                        suggestion=f"Create {config_name} configuration file",
+                        ci_check=None,
+                        missing_in_commit=False,
+                    )
                 )
 
         if issues:

@@ -11,6 +11,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import cast
 
+from cortex.core.models import ModelDict
+from cortex.refactoring.models import (
+    FeedbackRecordResult,
+    LearningInsights,
+    ResetLearningResult,
+)
+
 from .learning_adjustments import ConfidenceAdjuster
 from .learning_data_manager import FeedbackRecord, LearningDataManager
 from .learning_exporter import export_learned_patterns
@@ -36,7 +43,7 @@ def _check_confidence_threshold(
 
 
 def _check_suggestion_type_preference(
-    suggestion: dict[str, object], data_manager: LearningDataManager
+    suggestion: ModelDict, data_manager: LearningDataManager
 ) -> tuple[bool, str]:
     """Check if suggestion type preference allows showing."""
     suggestion_type_val = suggestion.get("type")
@@ -46,8 +53,8 @@ def _check_suggestion_type_preference(
     pref_key = f"suggestion_type_{suggestion_type}"
 
     pref_val = data_manager.get_preference(pref_key)
-    pref: dict[str, object] | None = (
-        cast(dict[str, object], pref_val) if isinstance(pref_val, dict) else None
+    pref: ModelDict | None = (
+        cast(ModelDict, pref_val) if isinstance(pref_val, dict) else None
     )
     if pref is not None:
         pref_score_val = pref.get("preference_score", 0.5)
@@ -80,10 +87,10 @@ class LearningEngine:
     def __init__(
         self,
         memory_bank_dir: Path,
-        config: dict[str, object] | None = None,
+        config: ModelDict | None = None,
     ):
         self.memory_bank_dir: Path = Path(memory_bank_dir)
-        self.config: dict[str, object] = config or {}
+        self.config: ModelDict = config or {}
 
         # Learning data file
         learning_file = self.memory_bank_dir.parent / "learning.json"
@@ -107,8 +114,8 @@ class LearningEngine:
         suggestion_confidence: float = 0.5,
         was_approved: bool = False,
         was_applied: bool = False,
-        suggestion_details: dict[str, object] | None = None,
-    ) -> dict[str, object]:
+        suggestion_details: ModelDict | None = None,
+    ) -> FeedbackRecordResult:
         """
         Record user feedback on a suggestion.
 
@@ -175,14 +182,16 @@ class LearningEngine:
             was_applied=was_applied,
         )
 
-    def _build_feedback_response(self, feedback_id: str) -> dict[str, object]:
+    def _build_feedback_response(self, feedback_id: str) -> FeedbackRecordResult:
         """Build feedback response dictionary."""
-        return {
-            "feedback_id": feedback_id,
-            "status": "recorded",
-            "learning_enabled": bool(self.config.get("enabled", True)),
-            "message": "Feedback recorded and learning updated",
-        }
+        from cortex.refactoring.models import FeedbackRecordResult
+
+        return FeedbackRecordResult(
+            status="recorded",
+            feedback_id=feedback_id,
+            learning_enabled=bool(self.config.get("enabled", True)),
+            message="Feedback recorded and learning updated",
+        )
 
     async def _update_preferences(self, feedback: FeedbackRecord) -> None:
         """Update user preferences based on feedback."""
@@ -199,8 +208,8 @@ class LearningEngine:
 
     async def adjust_suggestion_confidence(
         self,
-        suggestion: dict[str, object],
-    ) -> tuple[float, dict[str, object]]:
+        suggestion: ModelDict,
+    ) -> tuple[float, ModelDict]:
         """
         Adjust suggestion confidence based on learned patterns.
 
@@ -214,7 +223,7 @@ class LearningEngine:
 
     async def should_show_suggestion(
         self,
-        suggestion: dict[str, object],
+        suggestion: ModelDict,
     ) -> tuple[bool, str]:
         """
         Determine if a suggestion should be shown to the user.
@@ -242,7 +251,7 @@ class LearningEngine:
 
         return True, "Suggestion meets confidence and preference criteria"
 
-    async def get_learning_insights(self) -> dict[str, object]:
+    async def get_learning_insights(self) -> LearningInsights:
         """
         Get insights about learning and adaptation.
 
@@ -265,27 +274,27 @@ class LearningEngine:
         approved = feedback_stats["approved"]
         rejected = feedback_stats["rejected"]
 
-        return {
-            "learning_enabled": bool(self.config.get("enabled", True)),
-            "total_feedback": total_feedback,
-            "approved": approved,
-            "rejected": rejected,
-            "approval_rate": (
+        return LearningInsights(
+            learning_enabled=bool(self.config.get("enabled", True)),
+            total_feedback=total_feedback,
+            approved=approved,
+            rejected=rejected,
+            approval_rate=(
                 float(approved) / float(total_feedback) if total_feedback > 0 else 0.0
             ),
-            "learned_patterns": len(self.data_manager.get_all_patterns()),
-            "pattern_statistics": pattern_stats,
-            "user_preferences": preference_summary,
-            "min_confidence_threshold": min_threshold,
-            "recommendations": self.preference_manager.get_learning_recommendations(),
-        }
+            learned_patterns=len(self.data_manager.get_all_patterns()),
+            pattern_statistics=pattern_stats,
+            user_preferences=preference_summary,
+            min_confidence_threshold=min_threshold,
+            recommendations=self.preference_manager.get_learning_recommendations(),
+        )
 
     async def reset_learning_data(
         self,
         reset_feedback: bool = True,
         reset_patterns: bool = True,
         reset_preferences: bool = True,
-    ) -> dict[str, object]:
+    ) -> ResetLearningResult:
         """
         Reset learning data.
 
@@ -303,13 +312,15 @@ class LearningEngine:
             reset_preferences=reset_preferences,
         )
 
-        return {
-            "status": "success",
-            "message": "Learning data reset",
-            "counts": counts,
-        }
+        return ResetLearningResult(
+            status="success",
+            message="Learning data reset",
+            feedback_reset=counts.get("feedback_reset", 0),
+            patterns_reset=counts.get("patterns_reset", 0),
+            preferences_reset=counts.get("preferences_reset", 0),
+        )
 
-    async def export_learned_patterns(self, format: str = "json") -> dict[str, object]:
+    async def export_learned_patterns(self, format: str = "json") -> ModelDict:
         """
         Export learned patterns.
 
@@ -324,24 +335,22 @@ class LearningEngine:
 
     # Backward compatibility methods for tests
     def extract_pattern_key(
-        self, feedback: FeedbackRecord, suggestion_details: dict[str, object]
+        self, feedback: FeedbackRecord, suggestion_details: ModelDict
     ) -> str | None:
         """Extract pattern key (delegates to pattern manager)."""
         return self.pattern_manager.extract_pattern_key(feedback, suggestion_details)
 
-    def extract_conditions(
-        self, suggestion_details: dict[str, object]
-    ) -> dict[str, object]:
+    def extract_conditions(self, suggestion_details: ModelDict) -> ModelDict:
         """Extract conditions (delegates to pattern manager)."""
         return self.pattern_manager.extract_conditions(suggestion_details)
 
     async def update_patterns(
-        self, feedback: FeedbackRecord, suggestion_details: dict[str, object]
+        self, feedback: FeedbackRecord, suggestion_details: ModelDict
     ) -> None:
         """Update patterns (delegates to pattern manager)."""
         await self.pattern_manager.update_patterns(feedback, suggestion_details)
 
-    def get_preference_recommendation(self, pref: dict[str, object]) -> str:
+    def get_preference_recommendation(self, pref: ModelDict) -> str:
         """Get preference recommendation (delegates to preference manager)."""
         return self.preference_manager.get_preference_recommendation(pref)
 

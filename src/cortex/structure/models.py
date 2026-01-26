@@ -9,6 +9,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.models import JsonDict
+
 # ============================================================================
 # Base Model
 # ============================================================================
@@ -218,7 +220,7 @@ class CursorIntegrationValidation(StructureBaseModel):
     """Result of cursor integration config validation."""
 
     model_config = ConfigDict(
-        extra="allow",  # Allow extra fields for backward compatibility
+        extra="allow",  # Allow extra fields for schema evolution
     )
 
     valid: bool = Field(..., description="Whether config is valid")
@@ -433,3 +435,51 @@ class InitialFilesResult(StructureBaseModel):
 
     generated: list[str] = Field(default_factory=list, description="Files generated")
     errors: list[str] = Field(default_factory=list, description="Errors encountered")
+
+
+# ============================================================================
+# Health Result Models
+# ============================================================================
+
+
+class HealthResult(StructureBaseModel):
+    """Health result with summary information."""
+
+    success: bool = Field(..., description="Whether operation succeeded")
+    health: JsonDict = Field(..., description="Health report from structure manager")
+    summary: str = Field(..., description="Summary message")
+    action_required: bool = Field(..., description="Whether action is required")
+
+
+# ============================================================================
+# Cleanup Report Models
+# ============================================================================
+
+
+class CleanupActionEntry(StructureBaseModel):
+    """Single cleanup action entry."""
+
+    action: str = Field(..., description="Action performed")
+    description: str = Field(..., description="Action description")
+    files_affected: list[str] = Field(
+        default_factory=list, description="Files affected by action"
+    )
+
+
+class CleanupReport(StructureBaseModel):
+    """Report of cleanup operations."""
+
+    dry_run: bool = Field(..., description="Whether this was a dry run")
+    actions_performed: list[CleanupActionEntry] = Field(
+        default_factory=lambda: list[CleanupActionEntry](),
+        description="Actions performed",
+    )
+    files_modified: list[str] = Field(
+        default_factory=list, description="Files modified"
+    )
+    recommendations: list[str] = Field(
+        default_factory=list, description="Recommendations"
+    )
+    post_cleanup_health: JsonDict | None = Field(
+        default=None, description="Health after cleanup"
+    )

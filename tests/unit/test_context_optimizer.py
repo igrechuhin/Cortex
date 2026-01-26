@@ -4,18 +4,16 @@ Tests for ContextOptimizer module.
 Tests context optimization with different strategies and coordination logic.
 """
 
-from typing import TYPE_CHECKING, cast
+from typing import cast
 from unittest.mock import AsyncMock
 
 import pytest
 
+from cortex.core.dependency_graph import DependencyGraph
+from cortex.core.token_counter import TokenCounter
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.optimization_strategies import OptimizationResult
-
-if TYPE_CHECKING:
-    from cortex.core.dependency_graph import DependencyGraph
-    from cortex.core.token_counter import TokenCounter
-    from cortex.optimization.relevance_scorer import RelevanceScorer
+from cortex.optimization.relevance_scorer import RelevanceScorer
 
 
 class TestContextOptimizerInitialization:
@@ -23,9 +21,9 @@ class TestContextOptimizerInitialization:
 
     def test_init_with_default_mandatory_files(
         self,
-        mock_token_counter: "TokenCounter",
-        mock_relevance_scorer: "RelevanceScorer",
-        mock_dependency_graph: "DependencyGraph",
+        mock_token_counter: TokenCounter,
+        mock_relevance_scorer: RelevanceScorer,
+        mock_dependency_graph: DependencyGraph,
     ):
         """Test initialization with default mandatory files."""
         optimizer = ContextOptimizer(
@@ -42,9 +40,9 @@ class TestContextOptimizerInitialization:
 
     def test_init_with_custom_mandatory_files(
         self,
-        mock_token_counter: "TokenCounter",
-        mock_relevance_scorer: "RelevanceScorer",
-        mock_dependency_graph: "DependencyGraph",
+        mock_token_counter: TokenCounter,
+        mock_relevance_scorer: RelevanceScorer,
+        mock_dependency_graph: DependencyGraph,
     ):
         """Test initialization with custom mandatory files."""
         custom_files = ["file1.md", "file2.md"]
@@ -59,9 +57,9 @@ class TestContextOptimizerInitialization:
 
     def test_init_creates_strategies_instance(
         self,
-        mock_token_counter: "TokenCounter",
-        mock_relevance_scorer: "RelevanceScorer",
-        mock_dependency_graph: "DependencyGraph",
+        mock_token_counter: TokenCounter,
+        mock_relevance_scorer: RelevanceScorer,
+        mock_dependency_graph: DependencyGraph,
     ):
         """Test that initialization creates strategies instance with correct parameters."""
         optimizer = ContextOptimizer(

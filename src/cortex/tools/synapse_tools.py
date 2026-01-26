@@ -15,62 +15,44 @@ Note: setup_synapse has been replaced by a prompt template in docs/prompts/
 """
 
 import json
-from pathlib import Path
-from typing import cast
+from collections.abc import Sequence
+from typing import Protocol
 
+from cortex.core.models import ModelDict
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
 from cortex.optimization.rules_manager import RulesManager
 from cortex.rules.synapse_manager import SynapseManager
 from cortex.server import mcp
+from cortex.tools.synapse_tools_helpers import (
+    extract_and_format_rules,
+    extract_rules_list,
+    format_language_rules_list,
+    format_rules_list,
+    format_rules_response,
+    parse_project_files,
+    validate_rules_manager,
+)
 
 
-def format_rules_list(rules: list[object]) -> list[dict[str, object]]:
-    """Format a list of rule objects into dictionaries."""
-    result: list[dict[str, object]] = []
-    for r in rules:
-        if isinstance(r, dict):
-            r_dict: dict[str, object] = cast(dict[str, object], r)
-            result.append(
-                {
-                    "file": r_dict.get("file"),
-                    "tokens": r_dict.get("tokens"),
-                    "priority": r_dict.get("priority"),
-                    "relevance_score": r_dict.get("relevance_score"),
-                }
-            )
-    return result
+class _ModelDumpable(Protocol):
+    def model_dump(self, *, mode: str) -> ModelDict: ...
 
 
-def format_language_rules_list(rules: list[object]) -> list[dict[str, object]]:
-    """Format a list of language rule objects into dictionaries."""
-    result: list[dict[str, object]] = []
-    for r in rules:
-        if isinstance(r, dict):
-            rule_dict: dict[str, object] = cast(dict[str, object], r)
-            result.append(
-                {
-                    "file": rule_dict.get("file"),
-                    "category": rule_dict.get("category"),
-                    "tokens": rule_dict.get("tokens"),
-                    "priority": rule_dict.get("priority"),
-                    "relevance_score": rule_dict.get("relevance_score"),
-                }
-            )
-    return result
-
-
-def format_prompts_list(prompts: list[dict[str, object]]) -> list[dict[str, object]]:
+def format_prompts_list(
+    prompts: Sequence[ModelDict] | Sequence[_ModelDumpable],
+) -> list[ModelDict]:
     """Format a list of prompt objects into dictionaries."""
-    result: list[dict[str, object]] = []
+    result: list[ModelDict] = []
     for p in prompts:
+        prompt_dict: ModelDict = p if isinstance(p, dict) else p.model_dump(mode="json")
         result.append(
             {
-                "file": p.get("file"),
-                "name": p.get("name"),
-                "category": p.get("category"),
-                "description": p.get("description"),
-                "keywords": p.get("keywords"),
+                "file": prompt_dict.get("file"),
+                "name": prompt_dict.get("name"),
+                "category": prompt_dict.get("category"),
+                "description": prompt_dict.get("description"),
+                "keywords": prompt_dict.get("keywords"),
             }
         )
     return result
@@ -150,7 +132,7 @@ async def sync_synapse(pull: bool = True, push: bool = False) -> str:
         project_root = get_project_root()
         managers = await get_managers(project_root)
 
-        if "synapse" not in managers:
+        if managers.synapse is None:
             return json.dumps(
                 {
                     "status": "error",
@@ -165,11 +147,11 @@ async def sync_synapse(pull: bool = True, push: bool = False) -> str:
         result = await synapse_manager.sync_synapse(pull=pull, push=push)
 
         # Trigger reindex if there were changes
-        if result.get("reindex_triggered") and "rules_manager" in managers:
+        if result.reindex_triggered and managers.rules_manager is not None:
             rules_manager = await get_manager(managers, "rules_manager", RulesManager)
             _ = await rules_manager.index_rules(force=True)
 
-        return json.dumps(result, indent=2)
+        return json.dumps(result.model_dump(mode="json"), indent=2)
 
     except Exception as e:
         return json.dumps(
@@ -244,7 +226,7 @@ async def update_synapse_rule(
         project_root = get_project_root()
         managers = await get_managers(project_root)
 
-        if "synapse" not in managers:
+        if managers.synapse is None:
             return json.dumps(
                 {
                     "status": "error",
@@ -396,6 +378,8 @@ async def get_synapse_rules(
         }
     """
     try:
+        from cortex.tools.synapse_tools_helpers import _execute_rules_with_context
+
         result = await _execute_rules_with_context(
             task_description,
             max_tokens,
@@ -404,7 +388,7 @@ async def get_synapse_rules(
             rule_priority,
             context_aware,
         )
-        return json.dumps(result, indent=2)
+        return json.dumps(result.model_dump(mode="json"), indent=2)
     except Exception as e:
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
@@ -413,7 +397,7 @@ async def get_synapse_rules(
 
 
 def _build_category_prompts_response(
-    category: str, prompts: list[dict[str, object]]
+    category: str, prompts: Sequence[ModelDict] | Sequence[_ModelDumpable]
 ) -> str:
     """Build JSON response for category-specific prompts."""
     return json.dumps(
@@ -428,7 +412,7 @@ def _build_category_prompts_response(
 
 
 def _build_all_prompts_response(
-    prompts: list[dict[str, object]], categories: list[str]
+    prompts: Sequence[ModelDict] | Sequence[_ModelDumpable], categories: list[str]
 ) -> str:
     """Build JSON response for all prompts."""
     return json.dumps(
@@ -517,7 +501,7 @@ async def get_synapse_prompts(category: str | None = None) -> str:
         project_root = get_project_root()
         managers = await get_managers(project_root)
 
-        if "synapse" not in managers:
+        if managers.synapse is None:
             return json.dumps(
                 {
                     "status": "error",
@@ -612,7 +596,7 @@ async def update_synapse_prompt(
         project_root = get_project_root()
         managers = await get_managers(project_root)
 
-        if "synapse" not in managers:
+        if managers.synapse is None:
             return json.dumps(
                 {
                     "status": "error",
@@ -635,144 +619,3 @@ async def update_synapse_prompt(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
-
-
-# ============================================================================
-# Helper Functions
-# ============================================================================
-
-
-async def _execute_rules_with_context(
-    task_description: str,
-    max_tokens: int,
-    min_relevance_score: float,
-    project_files: str | None,
-    rule_priority: str,
-    context_aware: bool,
-) -> dict[str, object]:
-    """Execute rules with context workflow.
-
-    Args:
-        task_description: Description of task
-        max_tokens: Maximum tokens
-        min_relevance_score: Minimum relevance score
-        project_files: Optional project files string
-        rule_priority: Rule priority setting
-        context_aware: Whether context aware
-
-    Returns:
-        Result dictionary (success or error)
-    """
-    project_root = get_project_root()
-    managers = await get_managers(project_root)
-
-    validation_error = validate_rules_manager(managers)
-    if validation_error:
-        return validation_error
-
-    rules_manager = await get_manager(managers, "rules_manager", RulesManager)
-    file_paths = parse_project_files(project_files)
-
-    result = await rules_manager.get_relevant_rules(
-        task_description=task_description,
-        max_tokens=max_tokens,
-        min_relevance_score=min_relevance_score,
-        project_files=file_paths,
-        rule_priority=rule_priority,
-        context_aware=context_aware,
-    )
-
-    return format_rules_response(result, task_description, max_tokens)
-
-
-def validate_rules_manager(managers: dict[str, object]) -> dict[str, object] | None:
-    """Validate rules manager exists.
-
-    Args:
-        managers: Managers dictionary
-
-    Returns:
-        Error dict if validation fails, None otherwise
-    """
-    if "rules_manager" not in managers:
-        return {
-            "status": "error",
-            "error": "Rules manager not initialized. Enable rules in configuration first.",
-        }
-    return None
-
-
-def parse_project_files(project_files: str | None) -> list[Path] | None:
-    """Parse project files string into list of paths.
-
-    Args:
-        project_files: Comma-separated file paths string
-
-    Returns:
-        List of Path objects or None
-    """
-    if not project_files:
-        return None
-    return [Path(f.strip()) for f in project_files.split(",") if f.strip()]
-
-
-def format_rules_response(
-    result: dict[str, object], task_description: str, max_tokens: int
-) -> dict[str, object]:
-    """Format rules response dictionary.
-
-    Args:
-        result: Rules result dictionary
-        task_description: Task description
-        max_tokens: Maximum tokens
-
-    Returns:
-        Formatted response dict
-    """
-    return {
-        "status": "success",
-        "task_description": task_description,
-        "context": result.get("context", {}),
-        "rules_loaded": {
-            "generic": extract_and_format_rules(result, "generic_rules"),
-            "language": format_language_rules_list(
-                extract_rules_list(result, "language_rules")
-            ),
-            "local": extract_and_format_rules(result, "local_rules"),
-        },
-        "total_tokens": result.get("total_tokens", 0),
-        "token_budget": max_tokens,
-        "source": result.get("source", "local_only"),
-    }
-
-
-def extract_rules_list(result: dict[str, object], key: str) -> list[object]:
-    """Extract rules list from result dictionary.
-
-    Args:
-        result: Result dictionary
-        key: Key for rules list
-
-    Returns:
-        Rules list
-    """
-    rules_raw = result.get(key, [])
-    if isinstance(rules_raw, list):
-        return cast(list[object], rules_raw)
-    return []
-
-
-def extract_and_format_rules(
-    result: dict[str, object], key: str
-) -> list[dict[str, object]]:
-    """Extract and format rules list.
-
-    Args:
-        result: Result dictionary
-        key: Key for rules list
-
-    Returns:
-        Formatted rules list
-    """
-    rules_list = extract_rules_list(result, key)
-    return format_rules_list(rules_list)

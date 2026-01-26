@@ -10,17 +10,16 @@ This module tests custom rules management functionality including:
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from cortex.core.file_system import FileSystemManager
+from cortex.core.metadata_index import MetadataIndex
+from cortex.core.token_counter import TokenCounter
+from cortex.optimization.models import ScoredRuleModel
 from cortex.optimization.rules_manager import RulesManager
-
-if TYPE_CHECKING:
-    from cortex.core.file_system import FileSystemManager
-    from cortex.core.metadata_index import MetadataIndex
-    from cortex.core.token_counter import TokenCounter
 
 
 class TestRulesManagerInitialization:
@@ -29,9 +28,9 @@ class TestRulesManagerInitialization:
     def test_initialization_with_default_settings(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test initialization with default settings."""
         # Arrange & Act
@@ -54,9 +53,9 @@ class TestRulesManagerInitialization:
     def test_initialization_with_custom_rules_folder(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test initialization with custom rules folder."""
         # Arrange & Act
@@ -74,9 +73,9 @@ class TestRulesManagerInitialization:
     def test_initialization_with_synapse_manager(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test initialization with synapse manager."""
         # Arrange
@@ -102,9 +101,9 @@ class TestInitialize:
     async def test_initialize_with_no_rules_folder(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test initialize when no rules folder is configured."""
         # Arrange
@@ -128,9 +127,9 @@ class TestInitialize:
     async def test_initialize_with_nonexistent_rules_folder(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test initialize when rules folder doesn't exist."""
         # Arrange
@@ -155,9 +154,9 @@ class TestInitialize:
     async def test_initialize_with_existing_rules_folder(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test initialize with existing rules folder."""
         # Arrange
@@ -187,9 +186,9 @@ class TestIndexRules:
     async def test_index_rules_with_no_rules_folder(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test index_rules when no rules folder is configured."""
         # Arrange
@@ -213,9 +212,9 @@ class TestIndexRules:
     async def test_index_rules_with_valid_folder(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test index_rules with valid rules folder."""
         # Arrange
@@ -242,9 +241,9 @@ class TestIndexRules:
     async def test_index_rules_with_force_flag(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test index_rules with force flag."""
         # Arrange
@@ -276,9 +275,9 @@ class TestGetRelevantRules:
     async def test_get_relevant_rules_local_only(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test getting relevant rules with local rules only."""
         # Arrange
@@ -311,9 +310,9 @@ class TestGetRelevantRules:
     async def test_get_relevant_rules_with_token_limit(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test get_relevant_rules respects token limit."""
         # Arrange
@@ -345,9 +344,9 @@ class TestGetRelevantRules:
     async def test_get_relevant_rules_with_min_relevance_score(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test get_relevant_rules filters by minimum relevance score."""
         # Arrange
@@ -385,9 +384,9 @@ class TestScoreRuleRelevance:
     def test_score_rule_relevance_high_match(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test scoring with high keyword match."""
         # Arrange
@@ -409,9 +408,9 @@ class TestScoreRuleRelevance:
     def test_score_rule_relevance_no_match(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test scoring with no keyword match."""
         # Arrange
@@ -431,9 +430,9 @@ class TestScoreRuleRelevance:
     def test_score_rule_relevance_removes_stop_words(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test that stop words are filtered out."""
         # Arrange
@@ -453,9 +452,9 @@ class TestScoreRuleRelevance:
     def test_score_rule_relevance_case_insensitive(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test that scoring is case-insensitive."""
         # Arrange
@@ -482,9 +481,9 @@ class TestGetLocalRules:
     async def test_get_local_rules_with_empty_index(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test get_local_rules when index is empty."""
         # Arrange
@@ -506,9 +505,9 @@ class TestGetLocalRules:
     async def test_get_local_rules_filters_by_score(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test that get_local_rules filters by minimum score."""
         # Arrange
@@ -545,9 +544,9 @@ class TestGetLocalRules:
     async def test_get_local_rules_sorted_by_score(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test that rules are sorted by relevance score."""
         # Arrange
@@ -574,13 +573,7 @@ class TestGetLocalRules:
             for i in range(len(rules) - 1):
                 rule1 = rules[i]
                 rule2 = rules[i + 1]
-                assert isinstance(rule1, dict) and isinstance(rule2, dict)
-                score1 = rule1.get("relevance_score")
-                score2 = rule2.get("relevance_score")
-                assert isinstance(score1, (int, float)) and isinstance(
-                    score2, (int, float)
-                )
-                assert score1 >= score2
+                assert rule1.relevance_score >= rule2.relevance_score
 
 
 class TestSelectWithinBudget:
@@ -590,9 +583,9 @@ class TestSelectWithinBudget:
     async def test_select_within_budget_respects_token_limit(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test that selection respects token budget."""
         # Arrange
@@ -603,10 +596,10 @@ class TestSelectWithinBudget:
             token_counter=mock_token_counter,
         )
 
-        rules: list[dict[str, object]] = [
-            {"content": "Rule 1 content", "tokens": 100, "relevance_score": 0.8},
-            {"content": "Rule 2 content", "tokens": 150, "relevance_score": 0.7},
-            {"content": "Rule 3 content", "tokens": 200, "relevance_score": 0.6},
+        rules = [
+            ScoredRuleModel(content="Rule 1 content", tokens=100, relevance_score=0.8),
+            ScoredRuleModel(content="Rule 2 content", tokens=150, relevance_score=0.7),
+            ScoredRuleModel(content="Rule 3 content", tokens=200, relevance_score=0.6),
         ]
 
         # Act
@@ -615,23 +608,16 @@ class TestSelectWithinBudget:
         )
 
         # Assert
-        token_values: list[int] = []
-        for rule in selected:
-            # rule is already dict[str, object] from select_within_budget return type
-            tokens = rule.get("tokens")
-            if isinstance(tokens, (int, float)):
-                token_values.append(int(tokens))
-        total_tokens = sum(token_values)
-        assert isinstance(total_tokens, int)
+        total_tokens = sum(rule.tokens for rule in selected)
         assert total_tokens <= 250
 
     @pytest.mark.asyncio
     async def test_select_within_budget_filters_by_score(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test that selection filters by minimum relevance score."""
         # Arrange
@@ -642,10 +628,10 @@ class TestSelectWithinBudget:
             token_counter=mock_token_counter,
         )
 
-        rules: list[dict[str, object]] = [
-            {"content": "Rule 1", "tokens": 100, "relevance_score": 0.8},
-            {"content": "Rule 2", "tokens": 100, "relevance_score": 0.3},
-            {"content": "Rule 3", "tokens": 100, "relevance_score": 0.1},
+        rules = [
+            ScoredRuleModel(content="Rule 1", tokens=100, relevance_score=0.8),
+            ScoredRuleModel(content="Rule 2", tokens=100, relevance_score=0.3),
+            ScoredRuleModel(content="Rule 3", tokens=100, relevance_score=0.1),
         ]
 
         # Act
@@ -655,18 +641,15 @@ class TestSelectWithinBudget:
 
         # Assert
         for rule in selected:
-            assert isinstance(rule, dict)
-            score = rule.get("relevance_score")
-            assert isinstance(score, (int, float))
-            assert score >= 0.5
+            assert rule.relevance_score >= 0.5
 
     @pytest.mark.asyncio
     async def test_select_within_budget_prioritizes_by_priority_and_score(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test that selection prioritizes by priority then relevance score."""
         # Arrange
@@ -677,19 +660,13 @@ class TestSelectWithinBudget:
             token_counter=mock_token_counter,
         )
 
-        rules: list[dict[str, object]] = [
-            {
-                "content": "Low priority",
-                "tokens": 100,
-                "relevance_score": 0.9,
-                "priority": 10,
-            },
-            {
-                "content": "High priority",
-                "tokens": 100,
-                "relevance_score": 0.7,
-                "priority": 90,
-            },
+        rules = [
+            ScoredRuleModel(
+                content="Low priority", tokens=100, relevance_score=0.9, priority=10
+            ),
+            ScoredRuleModel(
+                content="High priority", tokens=100, relevance_score=0.7, priority=90
+            ),
         ]
 
         # Act
@@ -700,7 +677,7 @@ class TestSelectWithinBudget:
         # Assert
         # High priority rule should be selected first
         if len(selected) == 1:
-            assert selected[0]["content"] == "High priority"
+            assert selected[0].content == "High priority"
 
 
 class TestGetAllRules:
@@ -710,9 +687,9 @@ class TestGetAllRules:
     async def test_get_all_rules_returns_index(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test that get_all_rules returns the rules index."""
         # Arrange
@@ -742,9 +719,9 @@ class TestGetStatus:
     def test_get_status_with_rules_folder(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test get_status when rules folder is configured."""
         # Arrange
@@ -766,9 +743,9 @@ class TestGetStatus:
     def test_get_status_without_rules_folder(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test get_status when no rules folder is configured."""
         # Arrange
@@ -794,9 +771,9 @@ class TestAutoReindex:
     async def test_stop_auto_reindex(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test stopping auto-reindex."""
         # Arrange
@@ -818,9 +795,9 @@ class TestSynapseManagerIntegration:
     async def test_merge_rules_with_synapse_manager(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test merging rules with Synapse manager."""
         # Arrange
@@ -894,9 +871,9 @@ class TestRuleIndexingWithCustomConfig:
     async def test_index_rules_with_custom_config(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test indexing rules with custom configuration."""
         # Arrange
@@ -928,9 +905,9 @@ class TestLoadRulesMissingFiles:
     async def test_load_rules_missing_files(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test loading rules when some files are missing."""
         # Arrange
@@ -962,9 +939,9 @@ class TestContextDetectionEdgeCases:
     async def test_context_detection_edge_cases(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test context detection with edge cases."""
         # Arrange
@@ -1005,9 +982,9 @@ class TestFilterRulesByCategory:
     async def test_filter_rules_by_category(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test filtering rules by category."""
         # Arrange
@@ -1048,9 +1025,9 @@ class TestRulePriorityHandling:
     async def test_rule_priority_handling(
         self,
         tmp_path: Path,
-        mock_file_system: "FileSystemManager",
-        mock_metadata_index: "MetadataIndex",
-        mock_token_counter: "TokenCounter",
+        mock_file_system: FileSystemManager,
+        mock_metadata_index: MetadataIndex,
+        mock_token_counter: TokenCounter,
     ):
         """Test rule priority handling in rule selection."""
         # Arrange

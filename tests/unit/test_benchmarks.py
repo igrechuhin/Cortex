@@ -60,7 +60,7 @@ def sample_benchmark_result() -> BenchmarkResult:
 
 
 @pytest.fixture
-def temp_output_dir() -> Generator[Path, None, None]:
+def temp_output_dir() -> Generator[Path]:
     """Create a temporary directory for benchmark outputs."""
     with tempfile.TemporaryDirectory() as tmpdir:
         yield Path(tmpdir)

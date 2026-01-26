@@ -15,8 +15,25 @@ from typing import cast
 
 from cortex.core.exceptions import MemoryBankError
 from cortex.core.file_system import FileSystemManager
+from cortex.core.models import JsonValue, ModelDict
 
 from .link_parser import LinkParser
+from .models import TransclusionOptions
+
+
+def _coerce_transclusion_options(
+    options: TransclusionOptions | ModelDict | None,
+) -> TransclusionOptions:
+    if options is None:
+        return TransclusionOptions()
+    if isinstance(options, TransclusionOptions):
+        return options
+
+    lines_raw = options.get("lines")
+    lines = int(lines_raw) if isinstance(lines_raw, int) else None
+    recursive_raw = options.get("recursive")
+    recursive = bool(recursive_raw) if isinstance(recursive_raw, bool) else True
+    return TransclusionOptions(lines=lines, recursive=recursive)
 
 
 class CircularDependencyError(MemoryBankError):
@@ -56,7 +73,7 @@ class TransclusionEngine:
         self.cache_enabled: bool = cache_enabled
 
         # Cache: key = (file, section, options_tuple), value = resolved content
-        self.cache: dict[tuple[str, str, tuple[tuple[str, object], ...]], str] = {}
+        self.cache: dict[tuple[str, str, tuple[tuple[str, JsonValue], ...]], str] = {}
         self.cache_hits: int = 0
         self.cache_misses: int = 0
 
@@ -86,15 +103,14 @@ class TransclusionEngine:
         if not self.parser.has_transclusions(content):
             return content
 
-        parsed = await self.parser.parse_file(content)
-        transclusions = parsed.get("transclusions", [])
-
-        if not transclusions:
+        parsed: ModelDict = await self.parser.parse_file(content)
+        transclusions_raw: JsonValue = parsed.get("transclusions", [])
+        if not isinstance(transclusions_raw, list) or not transclusions_raw:
             return content
 
         self._validate_depth_with_transclusions(depth, source_file)
         return await self._resolve_all_transclusions(
-            content, transclusions, depth, source_file
+            content, cast(list[ModelDict], transclusions_raw), depth, source_file
         )
 
     def _validate_depth(self, depth: int, source_file: str) -> None:
@@ -122,21 +138,20 @@ class TransclusionEngine:
     async def _resolve_all_transclusions(
         self,
         content: str,
-        transclusions: list[dict[str, object]],
+        transclusions: list[ModelDict],
         depth: int,
         source_file: str,
     ) -> str:
         """Resolve all transclusion directives in content."""
         resolved_content = content
         for trans in reversed(transclusions):  # Process from end to maintain positions
-            trans_dict: dict[str, object] = trans
             resolved_content = await self._resolve_single_transclusion(
-                resolved_content, trans_dict, depth, source_file
+                resolved_content, trans, depth, source_file
             )
         return resolved_content
 
     async def _resolve_single_transclusion(
-        self, content: str, trans: dict[str, object], depth: int, source_file: str
+        self, content: str, trans: ModelDict, depth: int, source_file: str
     ) -> str:
         """Resolve a single transclusion directive in content."""
         target_file, section, options = self._parse_transclusion_params(trans)
@@ -170,44 +185,45 @@ class TransclusionEngine:
             return self._replace_directive_with_error(content, trans, str(e))
 
     def _parse_transclusion_params(
-        self, trans: dict[str, object]
-    ) -> tuple[str | None, str | None, dict[str, object] | None]:
+        self, trans: ModelDict
+    ) -> tuple[str | None, str | None, ModelDict | None]:
         """Parse transclusion parameters from directive."""
-        target_file_raw: object = trans.get("target")
-        if not isinstance(target_file_raw, str):
-            return None, None, None
-
-        target_file: str = target_file_raw
-        section_raw: object = trans.get("section")
-        section: str | None = str(section_raw) if isinstance(section_raw, str) else None
-        options_raw: object = trans.get("options", {})
-        options: dict[str, object] | None = (
-            cast(dict[str, object], options_raw)
-            if isinstance(options_raw, dict)
-            else None
-        )
-        return target_file, section, options
+        target_raw = trans.get("target")
+        target_file = target_raw if isinstance(target_raw, str) else None
+        section_raw = trans.get("section")
+        section = section_raw if isinstance(section_raw, str) else None
+        options_raw = trans.get("options")
+        options = options_raw if isinstance(options_raw, dict) else None
+        return target_file, section, cast(ModelDict | None, options)
 
     def _replace_directive_with_content(
-        self, content: str, trans: dict[str, object], included_content: str
+        self, content: str, trans: ModelDict, included_content: str
     ) -> str:
         """Replace transclusion directive with resolved content."""
-        directive = self.build_directive_pattern(trans)
-        return re.sub(directive, included_content, content, count=1)
+        # Use full_syntax to match the exact directive
+        full_syntax_raw = trans.get("full_syntax")
+        if not isinstance(full_syntax_raw, str) or not full_syntax_raw:
+            return content
+        directive_pattern = re.escape(full_syntax_raw)
+        return re.sub(directive_pattern, included_content, content, count=1)
 
     def _replace_directive_with_error(
-        self, content: str, trans: dict[str, object], error: str
+        self, content: str, trans: ModelDict, error: str
     ) -> str:
         """Replace transclusion directive with error message."""
         error_msg = f"\n<!-- TRANSCLUSION ERROR: {error} -->\n"
-        directive = self.build_directive_pattern(trans)
-        return re.sub(directive, error_msg, content, count=1)
+        # Use full_syntax to match the exact directive
+        full_syntax_raw = trans.get("full_syntax")
+        if not isinstance(full_syntax_raw, str) or not full_syntax_raw:
+            return content
+        directive_pattern = re.escape(full_syntax_raw)
+        return re.sub(directive_pattern, error_msg, content, count=1)
 
     async def resolve_transclusion(
         self,
         target_file: str,
         section: str | None = None,
-        options: dict[str, object] | None = None,
+        options: TransclusionOptions | ModelDict | None = None,
         depth: int = 0,
         source_file: str = "",
     ) -> str:
@@ -228,10 +244,10 @@ class TransclusionEngine:
             CircularDependencyError: If circular dependency detected
             FileNotFoundError: If target file not found
         """
-        options = options or {}
+        options_model = _coerce_transclusion_options(options)
 
         # Check cache first
-        cached_result = self._check_cache(target_file, section, options)
+        cached_result = self._check_cache(target_file, section, options_model)
         if cached_result is not None:
             return cached_result
 
@@ -240,15 +256,15 @@ class TransclusionEngine:
 
         try:
             target_content = await self._read_and_process_target(
-                target_file, section, options, depth, source_file
+                target_file, section, options_model, depth, source_file
             )
-            self._cache_result(target_file, section, options, target_content)
+            self._cache_result(target_file, section, options_model, target_content)
             return target_content
         finally:
             _ = self.resolution_stack.pop()
 
     def _check_cache(
-        self, target_file: str, section: str | None, options: dict[str, object]
+        self, target_file: str, section: str | None, options: TransclusionOptions
     ) -> str | None:
         """Check cache for resolved transclusion."""
         cache_key = self.make_cache_key(target_file, section, options)
@@ -284,7 +300,7 @@ class TransclusionEngine:
         self,
         target_file: str,
         section: str | None,
-        options: dict[str, object],
+        options: TransclusionOptions,
         depth: int,
         source_file: str,
     ) -> str:
@@ -314,30 +330,24 @@ class TransclusionEngine:
         return target_content
 
     def _apply_section_filter(
-        self, content: str, section: str | None, options: dict[str, object]
+        self, content: str, section: str | None, options: TransclusionOptions
     ) -> str:
         """Apply section extraction or line limit."""
         if section:
-            lines_limit_raw = options.get("lines")
-            lines_limit: int | None = (
-                int(lines_limit_raw)
-                if isinstance(lines_limit_raw, (int, float))
-                else None
-            )
+            lines_limit = options.lines
             return self.extract_section(
                 content=content, section_heading=section, lines_limit=lines_limit
             )
-        elif "lines" in options:
+        elif options.lines is not None:
             lines = content.split("\n")
-            return "\n".join(lines[: options["lines"]])
+            return "\n".join(lines[: options.lines])
         return content
 
     async def _apply_recursive_resolution(
-        self, content: str, target_file: str, options: dict[str, object], depth: int
+        self, content: str, target_file: str, options: TransclusionOptions, depth: int
     ) -> str:
         """Apply recursive transclusion if enabled."""
-        recursive = options.get("recursive", True)
-        if recursive and depth < self.max_depth:
+        if options.recursive and depth < self.max_depth:
             return await self.resolve_content(
                 content=content, source_file=target_file, depth=depth + 1
             )
@@ -347,7 +357,7 @@ class TransclusionEngine:
         self,
         target_file: str,
         section: str | None,
-        options: dict[str, object],
+        options: TransclusionOptions,
         content: str,
     ) -> None:
         """Cache resolved content."""
@@ -491,39 +501,57 @@ class TransclusionEngine:
         }
 
     def make_cache_key(
-        self, target_file: str, section: str | None, options: dict[str, object] | None
-    ) -> tuple[str, str, tuple[tuple[str, object], ...]]:
+        self,
+        target_file: str,
+        section: str | None,
+        options: TransclusionOptions | ModelDict | None,
+    ) -> tuple[str, str, tuple[tuple[str, JsonValue], ...]]:
         """Create cache key from transclusion parameters."""
-        # Convert options dict to sorted tuple for hashability
+        # Convert options model to sorted tuple for hashability
         # Normalize None section to empty string for cache key consistency
         section_normalized = section if section is not None else ""
-        options_tuple = tuple(sorted(options.items())) if options else ()
+        if options is not None:
+            if isinstance(options, TransclusionOptions):
+                options_dict = cast(
+                    ModelDict, options.model_dump(exclude_none=True, mode="json")
+                )
+            else:
+                options_dict = dict(options)
+
+            options_filtered: ModelDict = {
+                str(k): v for k, v in options_dict.items() if v is not None
+            }
+            options_tuple = tuple(sorted(options_filtered.items()))
+        else:
+            options_tuple = ()
         return (target_file, section_normalized, options_tuple)
 
-    def build_directive_pattern(self, trans: dict[str, object]) -> str:
+    def build_directive_pattern(self, trans: ModelDict) -> str:
         """
         Build regex pattern to match the transclusion directive.
 
         Args:
-            trans: Transclusion dict from parser
+            trans: Transclusion model from parser
 
         Returns:
-            Regex pattern string
+            Regex pattern string (escaped full_syntax)
         """
-        target_raw = trans.get("target")
-        if not isinstance(target_raw, str):
-            raise ValueError("Transclusion target must be a string")
-        target = re.escape(target_raw)
-        section_raw = trans.get("section")
-        section: str | None = str(section_raw) if isinstance(section_raw, str) else None
+        # For dict inputs, synthesize a robust pattern.
+        full_syntax = str(trans.get("full_syntax", "") or "")
+        if full_syntax:
+            return re.escape(full_syntax)
 
+        target = str(trans.get("target", "") or "")
+        if not target:
+            return ""
+
+        section_raw = trans.get("section", None)
+        section = (
+            str(section_raw) if isinstance(section_raw, str) and section_raw else ""
+        )
+
+        pattern = r"\{\{include:\s*" + re.escape(target)
         if section:
-            section_escaped = re.escape(section)
-            pattern = rf"\{{\{{include:\s*{target}#{section_escaped}"
-        else:
-            pattern = rf"\{{\{{include:\s*{target}"
-
-        # Add optional options part
-        pattern += r"(?:\|[^}]+)?\}\}"
-
+            pattern += r"\#" + re.escape(section)
+        pattern += r"\s*\}\}"
         return pattern

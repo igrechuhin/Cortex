@@ -2,8 +2,28 @@
 
 from datetime import datetime
 from pathlib import Path
+from typing import Literal, cast
+
+from cortex.core.models import (
+    DiskUsageInfo,
+    FormattedVersionMetadata,
+    ModelDict,
+    VersionMetadata,
+)
 
 from .async_file_utils import open_async_text_file
+
+
+def _as_version_metadata(version_meta: VersionMetadata | ModelDict) -> VersionMetadata:
+    """Normalize VersionMetadata-like values to VersionMetadata."""
+    if isinstance(version_meta, VersionMetadata):
+        return version_meta
+    return VersionMetadata.model_validate(version_meta)
+
+
+def _short_content_hash(content_hash: str) -> str:
+    """Shorten a long content hash for display."""
+    return content_hash[:16] + "..." if len(content_hash) > 16 else content_hash
 
 
 class VersionManager:
@@ -34,10 +54,12 @@ class VersionManager:
         size_bytes: int,
         token_count: int,
         content_hash: str,
-        change_type: str = "modified",
+        change_type: Literal[
+            "created", "modified", "rollback", "manual_backup"
+        ] = "modified",
         changed_sections: list[str] | None = None,
         change_description: str | None = None,
-    ) -> dict[str, object]:
+    ) -> VersionMetadata:
         """
         Create a version snapshot for a file.
 
@@ -92,31 +114,25 @@ class VersionManager:
         content_hash: str,
         size_bytes: int,
         token_count: int,
-        change_type: str,
+        change_type: Literal["created", "modified", "rollback", "manual_backup"],
         snapshot_path: Path,
         changed_sections: list[str] | None,
         change_description: str | None,
-    ) -> dict[str, object]:
-        """Build version metadata dictionary."""
-        version_meta: dict[str, object] = {
-            "version": version,
-            "timestamp": datetime.now().isoformat(),
-            "content_hash": content_hash,
-            "size_bytes": size_bytes,
-            "token_count": token_count,
-            "change_type": change_type,
-            "snapshot_path": str(snapshot_path.relative_to(self.project_root)),
-        }
+    ) -> VersionMetadata:
+        """Build version metadata model."""
+        from cortex.core.models import VersionMetadata
 
-        if changed_sections:
-            version_meta["changed_sections"] = changed_sections
-
-        if change_description:
-            version_meta["change_description"] = change_description
-
-        return version_meta
-
-        return version_meta
+        return VersionMetadata(
+            version=version,
+            timestamp=datetime.now().isoformat(),
+            content_hash=content_hash,
+            size_bytes=size_bytes,
+            token_count=token_count,
+            change_type=change_type,
+            snapshot_path=str(snapshot_path.relative_to(self.project_root)),
+            changed_sections=changed_sections or [],
+            change_description=change_description,
+        )
 
     async def get_snapshot_content(self, snapshot_path: Path) -> str:
         """
@@ -143,25 +159,25 @@ class VersionManager:
 
     async def rollback_to_version(
         self,
-        file_name: str,
-        version_history: list[dict[str, object]],
-        target_version: int,  # noqa: ARG002
-    ) -> dict[str, object] | None:
+        file_name: str,  # noqa: ARG002
+        version_history: list[VersionMetadata],
+        target_version: int,
+    ) -> ModelDict | None:
         """
         Get snapshot content for rollback (does not modify files directly).
 
         Args:
             file_name: Name of file to rollback
-            version_history: List of version metadata dicts
+            version_history: List of version metadata
             target_version: Version number to rollback to
 
         Returns:
-            Dict with snapshot content and metadata, or None if version not found
+            Snapshot info with content and metadata, or None if version not found
         """
         # Find target version in history
-        target_version_meta = None
+        target_version_meta: VersionMetadata | None = None
         for v in version_history:
-            if v["version"] == target_version:
+            if v.version == target_version:
                 target_version_meta = v
                 break
 
@@ -169,16 +185,15 @@ class VersionManager:
             return None
 
         # Read snapshot content
-        snapshot_path_str: object = target_version_meta.get("snapshot_path")
-        if not isinstance(snapshot_path_str, str):
-            raise ValueError("snapshot_path must be a string")
-        snapshot_path = Path(snapshot_path_str)
+        snapshot_path_raw = target_version_meta.snapshot_path
+        if not snapshot_path_raw:
+            return None
+
+        snapshot_path = Path(snapshot_path_raw)
         try:
             content = await self.get_snapshot_content(snapshot_path)
-            return {
-                "content": content,
-                "metadata": target_version_meta,
-            }
+            metadata = cast(ModelDict, target_version_meta.model_dump(mode="json"))
+            return {"content": content, "metadata": metadata}
         except FileNotFoundError:
             return None
 
@@ -225,15 +240,15 @@ class VersionManager:
         snapshots = list(self.history_dir.glob(pattern))
         return len(snapshots)
 
-    async def get_disk_usage(self) -> dict[str, int]:
+    async def get_disk_usage(self) -> DiskUsageInfo:
         """
         Get disk space used by version history.
 
         Returns:
-            Dict with total size and file count
+            Disk usage information
         """
         if not self.history_dir.exists():
-            return {"total_bytes": 0, "file_count": 0}
+            return DiskUsageInfo(total_bytes=0, file_count=0)
 
         total_bytes = 0
         file_count = 0
@@ -246,7 +261,7 @@ class VersionManager:
                 # Snapshot inaccessible - skip
                 pass
 
-        return {"total_bytes": total_bytes, "file_count": file_count}
+        return DiskUsageInfo(total_bytes=total_bytes, file_count=file_count)
 
     async def cleanup_orphaned_snapshots(self, valid_files: list[str]):
         """
@@ -297,22 +312,44 @@ class VersionManager:
             pass
 
     async def export_version_history(
-        self, file_name: str, version_history: list[dict[str, object]], limit: int = 10
-    ) -> list[dict[str, object]]:
+        self,
+        file_name: str,
+        version_history: list[VersionMetadata | ModelDict],
+        limit: int = 10,
+    ) -> list[ModelDict]:
         """
         Export version history with human-readable formatting.
 
         Args:
             file_name: Name of file
-            version_history: List of version metadata dicts
+            version_history: List of version metadata
             limit: Maximum number of versions to return (most recent)
 
         Returns:
-            List of formatted version dicts
+            List of formatted version metadata
         """
-        sorted_history = sorted(version_history, key=_get_version_number, reverse=True)
+
+        sorted_history = sorted(
+            version_history, key=lambda v: _as_version_metadata(v).version, reverse=True
+        )
         limited_history = sorted_history[:limit]
-        return [_format_version_entry(version_meta) for version_meta in limited_history]
+
+        formatted: list[ModelDict] = []
+        for raw_meta in limited_history:
+            meta = _as_version_metadata(raw_meta)
+            entry = FormattedVersionMetadata(
+                version=meta.version,
+                timestamp=meta.timestamp,
+                change_type=meta.change_type,
+                size_bytes=meta.size_bytes,
+                token_count=meta.token_count,
+                content_hash=_short_content_hash(meta.content_hash),
+                changed_sections=list(meta.changed_sections),
+                description=meta.change_description,
+            )
+            formatted.append(entry.model_dump(mode="json"))
+
+        return formatted
 
     def get_snapshot_path(self, file_name: str, version: int) -> Path:
         """
@@ -328,43 +365,3 @@ class VersionManager:
         base_name = file_name.replace(".md", "")
         snapshot_name = f"{base_name}_v{version}.md"
         return self.history_dir / snapshot_name
-
-
-def _get_version_number(version_dict: dict[str, object]) -> int:
-    """Extract version number for sorting."""
-    version_raw = version_dict.get("version", 0)
-    if isinstance(version_raw, int):
-        return version_raw
-    if isinstance(version_raw, str):
-        try:
-            return int(version_raw)
-        except ValueError:
-            return 0
-    return 0
-
-
-def _format_version_entry(version_meta: dict[str, object]) -> dict[str, object]:
-    """Format a single version entry for export."""
-    content_hash_raw = version_meta.get("content_hash", "")
-    content_hash_str = (
-        str(content_hash_raw)[:16] + "..."
-        if isinstance(content_hash_raw, str) and len(content_hash_raw) > 16
-        else str(content_hash_raw)
-    )
-
-    formatted_entry: dict[str, object] = {
-        "version": version_meta.get("version"),
-        "timestamp": version_meta.get("timestamp"),
-        "change_type": version_meta.get("change_type"),
-        "size_bytes": version_meta.get("size_bytes"),
-        "token_count": version_meta.get("token_count"),
-        "content_hash": content_hash_str,
-    }
-
-    if "changed_sections" in version_meta:
-        formatted_entry["changed_sections"] = version_meta.get("changed_sections")
-
-    if "change_description" in version_meta:
-        formatted_entry["description"] = version_meta.get("change_description")
-
-    return formatted_entry

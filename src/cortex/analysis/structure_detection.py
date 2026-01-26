@@ -28,7 +28,7 @@ def detect_oversized_files(all_files: list[Path]) -> list[AntiPatternInfo]:
             if size > 100000:  # > 100KB
                 return AntiPatternInfo(
                     type="oversized_file",
-                    severity="error",
+                    severity="high",
                     file=file_path.name,
                     files=[],
                     description=f"File is very large ({round(size / 1024, 2)}KB)",
@@ -60,7 +60,7 @@ def detect_orphaned_files(
     patterns: list[AntiPatternInfo] = [
         AntiPatternInfo(
             type="orphaned_file",
-            severity="warning",
+            severity="medium",
             file=file_path.name,
             files=[],
             description="File has no dependencies or dependents",
@@ -93,7 +93,7 @@ def detect_excessive_dependencies(
     return [
         AntiPatternInfo(
             type="excessive_dependencies",
-            severity="warning",
+            severity="medium",
             file=file_name,
             files=[],
             description=f"File depends on {dep_count} other files",
@@ -118,7 +118,7 @@ def detect_excessive_dependents(
     return [
         AntiPatternInfo(
             type="excessive_dependents",
-            severity="info",
+            severity="low",
             file=file_name,
             files=[],
             description=f"File is depended upon by {dependent_count} other files",
@@ -163,7 +163,7 @@ def detect_similar_filenames(all_files: list[Path]) -> list[AntiPatternInfo]:
     return [
         AntiPatternInfo(
             type="similar_filenames",
-            severity="info",
+            severity="low",
             file=None,
             files=[f"{name1}.md", f"{name2}.md"],
             description="Files have similar names",
@@ -176,7 +176,7 @@ def detect_similar_filenames(all_files: list[Path]) -> list[AntiPatternInfo]:
 def sort_patterns_by_severity(
     patterns: list[AntiPatternInfo],
 ) -> list[AntiPatternInfo]:
-    """Sort anti-patterns by severity (error > warning > info).
+    """Sort anti-patterns by severity (high > medium > low).
 
     Args:
         patterns: List of anti-patterns to sort
@@ -184,10 +184,10 @@ def sort_patterns_by_severity(
     Returns:
         Sorted list of anti-patterns
     """
-    severity_order: dict[Literal["error", "warning", "info"], int] = {
-        "error": 0,
-        "warning": 1,
-        "info": 2,
+    severity_order: dict[Literal["high", "medium", "low"], int] = {
+        "high": 0,
+        "medium": 1,
+        "low": 2,
     }
 
     sorted_patterns = patterns.copy()

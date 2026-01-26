@@ -8,6 +8,7 @@ For new code, import directly from structure_lifecycle or structure_migration.
 
 from pathlib import Path
 
+from cortex.core.models import ModelDict
 from cortex.structure.structure_config import (
     DEFAULT_STRUCTURE,
     PLAN_TEMPLATES,
@@ -42,24 +43,28 @@ class StructureManager:
 
         # Expose config for backward compatibility
         self.structure_config_path = self._lifecycle.structure_config_path
-        self.structure_config = self._lifecycle.structure_config
+        self.structure_config: ModelDict = self._lifecycle.structure_config
 
     # Delegate lifecycle methods
-    async def create_structure(self, force: bool = False) -> dict[str, object]:
+    async def create_structure(self, force: bool = False) -> ModelDict:
         """Create the complete standardized structure."""
-        return await self._lifecycle.create_structure(force)
+        report = await self._lifecycle.create_structure(force)
+        return report.model_dump(mode="json")
 
-    def setup_cursor_integration(self) -> dict[str, object]:
+    def setup_cursor_integration(self) -> ModelDict:
         """Setup Cursor IDE integration via symlinks."""
-        return self._lifecycle.setup_cursor_integration()
+        report = self._lifecycle.setup_cursor_integration()
+        return report.model_dump(mode="json")
 
-    def check_structure_health(self) -> dict[str, object]:
+    def check_structure_health(self) -> ModelDict:
         """Check the health of the project structure."""
-        return self._lifecycle.check_structure_health()
+        health = self._lifecycle.check_structure_health()
+        return health.model_dump(mode="json")
 
-    def get_structure_info(self) -> dict[str, object]:
+    def get_structure_info(self) -> ModelDict:
         """Get current structure configuration and status."""
-        return self._lifecycle.get_structure_info()
+        info = self._lifecycle.get_structure_info()
+        return info.model_dump(mode="json")
 
     def generate_plans_readme(self) -> str:
         """Generate README content for plans directory."""
@@ -91,11 +96,12 @@ class StructureManager:
         legacy_type: str | None = None,
         backup: bool = True,
         archive: bool = True,
-    ) -> dict[str, object]:
+    ) -> ModelDict:
         """Migrate from legacy structure to standardized structure."""
-        return await self._migration.migrate_legacy_structure(
+        report = await self._migration.migrate_legacy_structure(
             legacy_type, backup, archive
         )
+        return report.model_dump(mode="json")
 
     # Delegate config methods
     async def save_structure_config(self) -> None:

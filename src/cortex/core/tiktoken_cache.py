@@ -7,10 +7,6 @@ as fallback when network access is unavailable (e.g., VPN restrictions).
 import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

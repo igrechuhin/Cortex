@@ -10,6 +10,9 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.async_file_utils import open_async_text_file
+from cortex.core.models import ModelDict
+
+from .models import CategoryInfo, LoadedRule, RuleMetadataEntry, RulesManifestModel
 
 
 class RulesLoader:
@@ -31,15 +34,15 @@ class RulesLoader:
             shared_rules_path: Path to shared rules folder
         """
         self.shared_rules_path: Path = shared_rules_path
-        self.manifest: dict[str, object] | None = None
-        self.manifest_cache: dict[str, object] | None = None
+        self.manifest: RulesManifestModel | None = None
+        self.manifest_cache: ModelDict | None = None
 
-    async def load_manifest(self) -> dict[str, object] | None:
+    async def load_manifest(self) -> RulesManifestModel | None:
         """
         Load and parse rules-manifest.json.
 
         Returns:
-            Parsed manifest dict or None if not found
+            Parsed manifest model or None if not found
         """
         try:
             manifest_path = self.shared_rules_path / "rules-manifest.json"
@@ -52,8 +55,8 @@ class RulesLoader:
                 content = await f.read()
                 manifest_data = json.loads(content)
                 if manifest_data and isinstance(manifest_data, dict):
-                    self.manifest = manifest_data
-                    self.manifest_cache = manifest_data.copy()
+                    self.manifest = RulesManifestModel.model_validate(manifest_data)
+                    self.manifest_cache = cast(ModelDict, manifest_data.copy())
                 else:
                     self.manifest = None
                     self.manifest_cache = None
@@ -76,13 +79,9 @@ class RulesLoader:
         if not self.manifest:
             return []
 
-        categories = self.manifest.get("categories")
-        if isinstance(categories, dict):
-            return list(cast(dict[str, object], categories).keys())
+        return list(self.manifest.categories.keys())
 
-        return []
-
-    async def load_category(self, category: str) -> list[dict[str, object]]:
+    async def load_category(self, category: str) -> list[LoadedRule]:
         """
         Load all rules from a specific category.
 
@@ -90,7 +89,7 @@ class RulesLoader:
             category: Category name (e.g., "python", "generic")
 
         Returns:
-            List of rule dicts with content and metadata
+            List of loaded rule models with content and metadata
         """
         if not self.manifest:
             _ = await self.load_manifest()
@@ -106,64 +105,41 @@ class RulesLoader:
         if not category_path.exists():
             return []
 
-        rules_list = self._extract_rules_list(category_info)
+        rules_list = category_info.rules
         return await self._load_rules_from_files(category, category_path, rules_list)
 
-    def _get_category_info(self, category: str) -> dict[str, object] | None:
+    def _get_category_info(self, category: str) -> CategoryInfo | None:
         """Get category info from manifest.
 
         Args:
             category: Category name
 
         Returns:
-            Category info dict or None if not found
+            Category info model or None if not found
         """
         if not self.manifest:
             return None
-        categories_raw: object = self.manifest.get("categories", {})
-        if not isinstance(categories_raw, dict):
+        if category not in self.manifest.categories:
             return None
-        categories: dict[str, object] = cast(dict[str, object], categories_raw)
-        if category not in categories:
-            return None
-        category_info_raw: object = categories[category]
-        if not isinstance(category_info_raw, dict):
-            return None
-        return cast(dict[str, object], category_info_raw)
-
-    def _extract_rules_list(
-        self, category_info: dict[str, object]
-    ) -> list[dict[str, object]]:
-        """Extract rules list from category info.
-
-        Args:
-            category_info: Category info dict
-
-        Returns:
-            List of rule info dicts
-        """
-        rules_list_value = category_info.get("rules", [])
-        if not isinstance(rules_list_value, list):
-            return []
-        return cast(list[dict[str, object]], rules_list_value)
+        return self.manifest.categories[category]
 
     async def _load_rules_from_files(
         self,
         category: str,
         category_path: Path,
-        rules_list: list[dict[str, object]],
-    ) -> list[dict[str, object]]:
+        rules_list: list[RuleMetadataEntry],
+    ) -> list[LoadedRule]:
         """Load rules from files in category.
 
         Args:
             category: Category name
             category_path: Path to category directory
-            rules_list: List of rule info dicts
+            rules_list: List of rule metadata entries
 
         Returns:
-            List of loaded rule dicts
+            List of loaded rule models
         """
-        rules: list[dict[str, object]] = []
+        rules: list[LoadedRule] = []
         for rule_info in rules_list:
             rule = await self._load_single_rule_file(category, category_path, rule_info)
             if rule:
@@ -174,14 +150,10 @@ class RulesLoader:
         self,
         category: str,
         category_path: Path,
-        rule_info: dict[str, object],
-    ) -> dict[str, object] | None:
+        rule_info: RuleMetadataEntry,
+    ) -> LoadedRule | None:
         """Load a single rule file."""
-        rule_file_name_value = rule_info.get("file")
-        if not isinstance(rule_file_name_value, str):
-            return None
-
-        rule_file = category_path / rule_file_name_value
+        rule_file = category_path / rule_info.file
         if not rule_file.exists():
             return None
 
@@ -189,33 +161,34 @@ class RulesLoader:
             async with open_async_text_file(rule_file, "r", "utf-8") as f:
                 content = await f.read()
 
-            return {
-                "category": category,
-                "file": rule_file_name_value,
-                "path": str(rule_file),
-                "content": content,
-                "priority": rule_info.get("priority", 50),
-                "keywords": rule_info.get("keywords", []),
-                "source": "shared",
-            }
+            return LoadedRule(
+                category=category,
+                file=rule_info.file,
+                path=str(rule_file),
+                content=content,
+                priority=rule_info.priority,
+                keywords=rule_info.keywords,
+                source="shared",
+            )
         except Exception as e:
             from cortex.core.logging_config import logger
 
             logger.warning(f"Failed to load shared rule {rule_file}: {e}")
             return None
 
-    async def save_manifest(self, manifest: dict[str, object]) -> None:
+    async def save_manifest(self, manifest: RulesManifestModel) -> None:
         """
         Save manifest to rules-manifest.json.
 
         Args:
-            manifest: Manifest data to save
+            manifest: Manifest model to save
         """
         manifest_path = self.shared_rules_path / "rules-manifest.json"
+        manifest_dict = manifest.model_dump(mode="json")
         async with open_async_text_file(manifest_path, "w", "utf-8") as f:
-            _ = await f.write(json.dumps(manifest, indent=2))
+            _ = await f.write(json.dumps(manifest_dict, indent=2))
         self.manifest = manifest
-        self.manifest_cache = manifest.copy()
+        self.manifest_cache = manifest_dict.copy()
 
     async def create_rule_file(
         self, category: str, filename: str, content: str

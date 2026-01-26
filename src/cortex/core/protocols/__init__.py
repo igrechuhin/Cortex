@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Protocol definitions for MCP Memory Bank.
 
-All protocols are re-exported from this module for backward compatibility.
+All protocols are re-exported from this module for convenience.
 Import structure:
     from cortex.core.protocols import FileSystemProtocol
 

@@ -15,7 +15,7 @@ This test suite provides comprehensive coverage for:
 import json
 from pathlib import Path
 from typing import cast
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -491,7 +491,11 @@ class TestRegisterSynapsePrompts:
     ):
         """Test handles case when categories is not a dict."""
         # Arrange
-        manifest = {"version": "1.0", "categories": "not a dict"}
+        manifest = MagicMock(
+            model_dump=MagicMock(
+                return_value={"version": "1.0", "categories": "not a dict"}
+            )
+        )
         with patch(
             "cortex.tools.synapse_prompts.get_synapse_prompts_path",
             return_value=prompts_dir,
@@ -508,10 +512,14 @@ class TestRegisterSynapsePrompts:
     ):
         """Test handles case when category_info is not a dict."""
         # Arrange
-        manifest = {
-            "version": "1.0",
-            "categories": {"general": "not a dict"},
-        }
+        manifest = MagicMock(
+            model_dump=MagicMock(
+                return_value={
+                    "version": "1.0",
+                    "categories": {"general": "not a dict"},
+                }
+            )
+        )
         with patch(
             "cortex.tools.synapse_prompts.get_synapse_prompts_path",
             return_value=prompts_dir,
@@ -528,10 +536,14 @@ class TestRegisterSynapsePrompts:
     ):
         """Test handles case when prompts is not a list."""
         # Arrange
-        manifest = {
-            "version": "1.0",
-            "categories": {"general": {"prompts": "not a list"}},
-        }
+        manifest = MagicMock(
+            model_dump=MagicMock(
+                return_value={
+                    "version": "1.0",
+                    "categories": {"general": {"prompts": "not a list"}},
+                }
+            )
+        )
         with patch(
             "cortex.tools.synapse_prompts.get_synapse_prompts_path",
             return_value=prompts_dir,
@@ -548,10 +560,14 @@ class TestRegisterSynapsePrompts:
     ):
         """Test handles case when prompt_info is not a dict."""
         # Arrange
-        manifest = {
-            "version": "1.0",
-            "categories": {"general": {"prompts": ["not a dict"]}},
-        }
+        manifest = MagicMock(
+            model_dump=MagicMock(
+                return_value={
+                    "version": "1.0",
+                    "categories": {"general": {"prompts": ["not a dict"]}},
+                }
+            )
+        )
         with patch(
             "cortex.tools.synapse_prompts.get_synapse_prompts_path",
             return_value=prompts_dir,

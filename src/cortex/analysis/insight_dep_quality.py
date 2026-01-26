@@ -3,9 +3,13 @@
 Generate insights from dependency structure and quality metrics.
 """
 
-from typing import cast
-
 from .insight_types import InsightDict
+from .models import (
+    AntiPatternInfo,
+    ComplexityAnalysisResult,
+    ComplexityAssessment,
+    ComplexityHotspot,
+)
 from .structure_analyzer import StructureAnalyzer
 
 
@@ -44,95 +48,59 @@ class DependencyQualityInsights:
         """Generate insight about dependency complexity."""
         complexity = await self.structure_analyzer.measure_complexity_metrics()
 
-        if str(complexity.get("status", "")) != "analyzed":
+        if complexity.status != "analyzed":
             return None
 
-        assessment = self._extract_assessment(complexity)
-        score_int = self._extract_complexity_score(assessment)
+        assessment = complexity.assessment
+        score_int: int = assessment.score
 
         if score_int >= 80:
             return None
 
         description = self._build_complexity_description(assessment)
         hotspots = self._extract_complexity_hotspots(complexity)
-        recommendations = self._extract_recommendations(assessment)
+        recommendations = assessment.recommendations
 
-        return InsightDict(
+        return InsightDict.model_validate(
             {
                 "id": "dependency_complexity",
                 "category": "dependencies",
-                "title": f"Dependency structure complexity: {str(assessment.get('grade', 'unknown'))}",
+                "title": f"Dependency structure complexity: {assessment.grade}",
                 "description": description,
                 "impact_score": 0.8,
                 "severity": "high" if score_int < 60 else "medium",
                 "evidence": {
                     "complexity_score": score_int,
-                    "grade": str(assessment.get("grade", "unknown")),
-                    "metrics": complexity.get("metrics", {}),
-                    "hotspots": hotspots,
+                    "grade": assessment.grade,
+                    "metrics": complexity.metrics.model_dump(mode="json"),
+                    "hotspots": [h.model_dump(mode="json") for h in hotspots],
                 },
                 "recommendations": recommendations,
                 "estimated_token_savings": int((100 - score_int) * 50),
+                "affected_files": [h.file for h in hotspots],
             }
         )
 
-    def _extract_assessment(self, complexity: dict[str, object]) -> dict[str, object]:
-        """Extract assessment dictionary from complexity metrics."""
-        assessment_raw: object = complexity.get("assessment", {})
-        if isinstance(assessment_raw, dict):
-            return cast(dict[str, object], assessment_raw)
-        return {}
-
-    def _extract_complexity_score(self, assessment: dict[str, object]) -> int:
-        """Extract complexity score as integer."""
-        score: object = assessment.get("score", 0)
-        return int(score) if isinstance(score, (int, float)) else 0
-
-    def _build_complexity_description(self, assessment: dict[str, object]) -> str:
+    def _build_complexity_description(self, assessment: ComplexityAssessment) -> str:
         """Build description from assessment issues."""
-        issues_raw: object = assessment.get("issues", [])
-        issue_strings: list[str] = []
-        if isinstance(issues_raw, list):
-            issues_list = cast(list[object], issues_raw)
-            issue_strings = [str(item) for item in issues_list]
-        return "; ".join(issue_strings)
+        return "; ".join(assessment.issues)
 
     def _extract_complexity_hotspots(
-        self, complexity: dict[str, object]
-    ) -> list[dict[str, object]]:
+        self, complexity: ComplexityAnalysisResult
+    ) -> list[ComplexityHotspot]:
         """Extract complexity hotspots from metrics."""
-        hotspots_raw: object = complexity.get("complexity_hotspots", [])
-        if not isinstance(hotspots_raw, list):
-            return []
-
-        hotspots_list = cast(list[object], hotspots_raw)
-        return [
-            cast(dict[str, object], item)
-            for item in hotspots_list[:3]
-            if isinstance(item, dict)
-        ]
-
-    def _extract_recommendations(self, assessment: dict[str, object]) -> list[str]:
-        """Extract recommendations from assessment."""
-        recommendations_raw: object = assessment.get("recommendations", [])
-        if not isinstance(recommendations_raw, list):
-            return []
-
-        recommendations_list = cast(list[object], recommendations_raw)
-        return [str(item) for item in recommendations_list if item is not None]
+        return complexity.complexity_hotspots[:3]
 
     def _generate_orphaned_files_insight(
-        self, anti_patterns: list[dict[str, object]]
+        self, anti_patterns: list[AntiPatternInfo]
     ) -> InsightDict | None:
         """Generate insight about orphaned files."""
-        orphaned = [
-            ap for ap in anti_patterns if str(ap.get("type", "")) == "orphaned_file"
-        ]
+        orphaned = [ap for ap in anti_patterns if ap.type == "orphaned_file"]
 
         if len(orphaned) < 2:
             return None
 
-        return InsightDict(
+        return InsightDict.model_validate(
             {
                 "id": "orphaned_files",
                 "category": "dependencies",
@@ -142,7 +110,9 @@ class DependencyQualityInsights:
                 "severity": "medium",
                 "evidence": {
                     "orphaned_count": len(orphaned),
-                    "examples": orphaned[:3],
+                    "example_patterns": [
+                        ap.model_dump(mode="json") for ap in orphaned[:3]
+                    ],
                 },
                 "recommendations": [
                     "Add links from main files to orphaned files",
@@ -150,23 +120,22 @@ class DependencyQualityInsights:
                     "Archive or remove truly unused files",
                 ],
                 "estimated_token_savings": len(orphaned) * 100,
+                "affected_files": [ap.file for ap in orphaned if ap.file],
             }
         )
 
     def _generate_excessive_dependencies_insight(
-        self, anti_patterns: list[dict[str, object]]
+        self, anti_patterns: list[AntiPatternInfo]
     ) -> InsightDict | None:
         """Generate insight about excessive dependencies."""
         excessive_deps = [
-            ap
-            for ap in anti_patterns
-            if str(ap.get("type", "")) == "excessive_dependencies"
+            ap for ap in anti_patterns if ap.type == "excessive_dependencies"
         ]
 
         if not excessive_deps:
             return None
 
-        return InsightDict(
+        return InsightDict.model_validate(
             {
                 "id": "excessive_dependencies",
                 "category": "dependencies",
@@ -176,7 +145,9 @@ class DependencyQualityInsights:
                 "severity": "medium",
                 "evidence": {
                     "excessive_count": len(excessive_deps),
-                    "examples": excessive_deps[:3],
+                    "example_patterns": [
+                        ap.model_dump(mode="json") for ap in excessive_deps[:3]
+                    ],
                 },
                 "recommendations": [
                     "Refactor to reduce number of dependencies",
@@ -184,6 +155,7 @@ class DependencyQualityInsights:
                     "Use transclusion to manage shared content",
                 ],
                 "estimated_token_savings": len(excessive_deps) * 400,
+                "affected_files": [ap.file for ap in excessive_deps if ap.file],
             }
         )
 
@@ -209,36 +181,19 @@ class DependencyQualityInsights:
         """
         complexity2 = await self.structure_analyzer.measure_complexity_metrics()
 
-        if str(complexity2.get("status", "")) != "analyzed":
+        if complexity2.status != "analyzed":
             return None
 
-        metrics = self._extract_complexity_metrics(complexity2)
-        max_depth = self._extract_max_depth(metrics)
+        max_depth = complexity2.metrics.max_dependency_depth
 
         if max_depth > 5:
             return self._create_deep_dependencies_insight(max_depth)
 
         return None
 
-    def _extract_complexity_metrics(
-        self, complexity2: dict[str, object]
-    ) -> dict[str, object]:
-        """Extract metrics from complexity analysis."""
-        metrics_raw: object = complexity2.get("metrics", {})
-        return (
-            cast(dict[str, object], metrics_raw)
-            if isinstance(metrics_raw, dict)
-            else {}
-        )
-
-    def _extract_max_depth(self, metrics: dict[str, object]) -> int:
-        """Extract max dependency depth from metrics."""
-        max_depth_raw: object = metrics.get("max_dependency_depth", 0)
-        return int(max_depth_raw) if isinstance(max_depth_raw, (int, float)) else 0
-
     def _create_deep_dependencies_insight(self, max_depth: int) -> InsightDict:
         """Create insight for deep dependencies."""
-        return InsightDict(
+        return InsightDict.model_validate(
             {
                 "id": "deep_dependencies",
                 "category": "quality",
@@ -246,10 +201,7 @@ class DependencyQualityInsights:
                 "description": f"Maximum depth is {max_depth}, recommended is ≤5",
                 "impact_score": 0.75,
                 "severity": "medium",
-                "evidence": {
-                    "max_depth": max_depth,
-                    "recommended_max": 5,
-                },
+                "evidence": {"max_depth": max_depth, "recommended_max": 5},
                 "recommendations": [
                     "Flatten dependency hierarchy where possible",
                     "Consider direct references instead of chains",
@@ -267,14 +219,13 @@ class DependencyQualityInsights:
         """
         org_analysis2 = await self.structure_analyzer.analyze_file_organization()
 
-        if str(org_analysis2.get("status", "")) != "analyzed":
+        if org_analysis2.status != "analyzed":
             return None
 
-        avg_size_raw: object = org_analysis2.get("avg_size_kb", 0)
-        avg_size = int(avg_size_raw) if isinstance(avg_size_raw, (int, float)) else 0
+        avg_size = int(org_analysis2.avg_size_kb)
 
         if avg_size > 20:
-            return InsightDict(
+            return InsightDict.model_validate(
                 {
                     "id": "large_average_size",
                     "category": "quality",

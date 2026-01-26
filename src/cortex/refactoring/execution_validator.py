@@ -4,33 +4,22 @@ Execution Validator - Validation logic for refactoring operations.
 This module provides validation logic for refactoring suggestions before execution.
 """
 
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import JsonValue, ModelDict
 
-
-@dataclass
-class RefactoringOperation:
-    """Single refactoring operation."""
-
-    operation_id: str
-    operation_type: (
-        str  # "move", "rename", "create", "delete", "modify", "consolidate", "split"
-    )
-    target_file: str
-    parameters: dict[str, object]
-    status: str = "pending"
-    error: str | None = None
-    created_at: str | None = None
-    completed_at: str | None = None
-
-    def __post_init__(self) -> None:
-        if self.created_at is None:
-            self.created_at = datetime.now().isoformat()
+from .models import (
+    OperationParameters,
+    RefactoringActionModel,
+    RefactoringOperationModel,
+    RefactoringStatus,
+    RefactoringSuggestionModel,
+    RefactoringValidationResult,
+)
 
 
 class ExecutionValidator:
@@ -56,11 +45,20 @@ class ExecutionValidator:
         self.fs_manager: FileSystemManager = fs_manager
         self.metadata_index: MetadataIndex = metadata_index
 
+    async def get_all_memory_bank_files(self) -> list[str]:
+        """Get list of all memory bank markdown files (relative paths)."""
+        files: list[str] = []
+        for file_path in self.memory_bank_dir.glob("**/*.md"):
+            if file_path.is_file():
+                rel_path = file_path.relative_to(self.memory_bank_dir)
+                files.append(str(rel_path))
+        return files
+
     async def validate_refactoring(
         self,
-        suggestion: dict[str, object],
+        suggestion: RefactoringSuggestionModel | ModelDict,
         dry_run: bool = True,
-    ) -> dict[str, object]:
+    ) -> RefactoringValidationResult:
         """
         Validate a refactoring suggestion before execution.
 
@@ -69,25 +67,28 @@ class ExecutionValidator:
             dry_run: If True, only simulate without making changes
 
         Returns:
-            Validation results with issues and warnings
+            RefactoringValidationResult with validation status
         """
         issues: list[str] = []
         warnings: list[str] = []
         operations = self.extract_operations(suggestion)
 
         await self._run_validation_checks(operations, issues, warnings, dry_run)
-        self._run_impact_checks(suggestion, warnings)
+        if isinstance(suggestion, RefactoringSuggestionModel):
+            self._run_impact_checks(suggestion, warnings)
+        else:
+            _run_legacy_impact_checks(suggestion, warnings)
 
-        return {
-            "valid": len(issues) == 0,
-            "issues": issues,
-            "warnings": warnings,
-            "operations_count": len(operations),
-            "dry_run": dry_run,
-        }
+        return RefactoringValidationResult(
+            valid=len(issues) == 0,
+            issues=issues,
+            warnings=warnings,
+            operations_count=len(operations),
+            dry_run=dry_run,
+        )
 
     async def _validate_file_existence(
-        self, operations: list[RefactoringOperation], issues: list[str]
+        self, operations: list[RefactoringOperationModel], issues: list[str]
     ) -> None:
         """Check file existence for all operations."""
         for op in operations:
@@ -108,24 +109,24 @@ class ExecutionValidator:
                     issues.append(f"Target file already exists: {op.target_file}")
 
     async def _check_uncommitted_changes(
-        self, operations: list[RefactoringOperation], warnings: list[str]
+        self, operations: list[RefactoringOperationModel], warnings: list[str]
     ) -> None:
         """Check for conflicts with uncommitted changes."""
         for op in operations:
             target_file = self.memory_bank_dir / op.target_file
             if target_file.exists():
                 # Check if file has been modified since last snapshot
-                metadata: dict[str, object] | None = (
-                    await self.metadata_index.get_file_metadata(op.target_file)
-                )
-                if metadata and metadata.get("modified_externally"):
+                metadata = await self.metadata_index.get_file_metadata(op.target_file)
+                # Note: modified_externally is not currently tracked in DetailedFileMetadata
+                # This check is a placeholder for future external change detection
+                if metadata:
                     warnings.append(
                         f"File has uncommitted changes: {op.target_file}. "
                         + "These may be overwritten."
                     )
 
     async def _check_dependency_integrity(
-        self, operations: list[RefactoringOperation], warnings: list[str]
+        self, operations: list[RefactoringOperationModel], warnings: list[str]
     ) -> None:
         """Check dependency integrity for delete/rename/move operations."""
         for op in operations:
@@ -165,15 +166,12 @@ class ExecutionValidator:
             )
 
     def _check_token_budget_impact(
-        self, suggestion: dict[str, object], warnings: list[str]
+        self,
+        suggestion: RefactoringSuggestionModel,
+        warnings: list[str],
     ) -> None:
         """Check token budget impact."""
-        estimated_impact: dict[str, object] = cast(
-            dict[str, object], suggestion.get("estimated_impact", {})
-        )
-        estimated_token_change: int = cast(
-            int, estimated_impact.get("token_savings", 0)
-        )
+        estimated_token_change = suggestion.estimated_impact.token_savings
         if estimated_token_change < -1000:
             warnings.append(
                 f"Refactoring may increase token usage by {-estimated_token_change} tokens"
@@ -181,7 +179,7 @@ class ExecutionValidator:
 
     async def _run_validation_checks(
         self,
-        operations: list[RefactoringOperation],
+        operations: list[RefactoringOperationModel],
         issues: list[str],
         warnings: list[str],
         dry_run: bool,
@@ -201,7 +199,9 @@ class ExecutionValidator:
             await self._check_dependency_integrity(operations, warnings)
 
     def _run_impact_checks(
-        self, suggestion: dict[str, object], warnings: list[str]
+        self,
+        suggestion: RefactoringSuggestionModel,
+        warnings: list[str],
     ) -> None:
         """Run impact checks on suggestion.
 
@@ -213,217 +213,388 @@ class ExecutionValidator:
         self._check_complexity_impact(suggestion, warnings)
 
     def _check_complexity_impact(
-        self, suggestion: dict[str, object], warnings: list[str]
+        self,
+        suggestion: RefactoringSuggestionModel,
+        warnings: list[str],
     ) -> None:
         """Check complexity impact."""
-        estimated_impact: dict[str, object] = cast(
-            dict[str, object], suggestion.get("estimated_impact", {})
-        )
-        estimated_complexity_change: float = cast(
-            float, estimated_impact.get("complexity_reduction", 0.0)
-        )
+        estimated_complexity_change = suggestion.estimated_impact.complexity_reduction
         if estimated_complexity_change < 0:
             warnings.append("Refactoring may increase complexity")
 
     def extract_operations(
-        self, suggestion: dict[str, object]
-    ) -> list[RefactoringOperation]:
+        self, suggestion: RefactoringSuggestionModel | ModelDict
+    ) -> list[RefactoringOperationModel]:
         """Extract refactoring operations from a suggestion."""
-        operations: list[RefactoringOperation] = []
-        suggestion_type: str | None = cast(str | None, suggestion.get("type"))
-        suggestion_id: str = cast(str, suggestion.get("suggestion_id", "unknown"))
+        operations: list[RefactoringOperationModel] = []
+        if isinstance(suggestion, dict):
+            return self._extract_operations_from_legacy_dict(suggestion)
+
+        suggestion_type = suggestion.refactoring_type.value
+        suggestion_id = suggestion.suggestion_id
 
         if suggestion_type == "consolidation":
             operations.extend(
-                self._extract_consolidation_operations(suggestion, suggestion_id)
+                _extract_consolidation_operations(suggestion, suggestion_id)
             )
         elif suggestion_type == "split":
-            operations.extend(self._extract_split_operations(suggestion, suggestion_id))
+            operations.extend(_extract_split_operations(suggestion, suggestion_id))
         elif suggestion_type == "reorganization":
             operations.extend(
-                self._extract_reorganization_operations(suggestion, suggestion_id)
+                _extract_reorganization_operations(suggestion, suggestion_id)
             )
 
         return operations
 
-    def _extract_consolidation_operations(
-        self, suggestion: dict[str, object], suggestion_id: str
-    ) -> list[RefactoringOperation]:
-        """Extract consolidation operations from suggestion.
+    def _extract_operations_from_legacy_dict(
+        self, suggestion: ModelDict
+    ) -> list[RefactoringOperationModel]:
+        """Extract operations from legacy dict-shaped suggestions (used by tests)."""
+        suggestion_type = str(suggestion.get("type", ""))
+        suggestion_id = str(suggestion.get("suggestion_id", "legacy"))
+        if suggestion_type == "consolidation":
+            return _extract_legacy_consolidation_operations(suggestion_id, suggestion)
+        if suggestion_type == "split":
+            return _extract_legacy_split_operations(suggestion_id, suggestion)
+        if suggestion_type == "reorganization":
+            return _extract_legacy_reorganization_operations(suggestion_id, suggestion)
+        return []
 
-        Args:
-            suggestion: Refactoring suggestion dictionary
-            suggestion_id: Suggestion identifier
 
-        Returns:
-            List of consolidation operations
-        """
-        operations: list[RefactoringOperation] = []
-        consolidate_target_file: str = cast(str, suggestion.get("target_file", ""))
-        if not consolidate_target_file:
-            return operations
+def _run_legacy_impact_checks(suggestion: ModelDict, warnings: list[str]) -> None:
+    impact_raw = suggestion.get("estimated_impact")
+    if not isinstance(impact_raw, dict):
+        return
+    impact = cast(dict[str, JsonValue], impact_raw)
+
+    token_savings_raw = impact.get("token_savings")
+    if isinstance(token_savings_raw, (int, float)):
+        token_savings = int(token_savings_raw)
+        if token_savings < -1000:
+            warnings.append(
+                f"Refactoring may increase token usage by {-token_savings} tokens"
+            )
+
+    complexity_raw = impact.get("complexity_reduction")
+    if isinstance(complexity_raw, (int, float)):
+        complexity_reduction = float(complexity_raw)
+        if complexity_reduction < 0:
+            warnings.append("Refactoring may increase complexity")
+
+
+def _extract_legacy_str_list(value: JsonValue) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    items = cast(list[JsonValue], value)
+    return [str(item) for item in items if isinstance(item, (str, int, float))]
+
+
+def _extract_legacy_consolidation_operations(
+    suggestion_id: str, suggestion: ModelDict
+) -> list[RefactoringOperationModel]:
+    target_file = suggestion.get("target_file")
+    if not isinstance(target_file, str) or not target_file:
+        return []
+    files = _extract_legacy_str_list(suggestion.get("files", []))
+    sections = _extract_legacy_str_list(suggestion.get("sections", []))
+    return [
+        RefactoringOperationModel(
+            operation_id=f"{suggestion_id}-consolidate",
+            operation_type="consolidate",
+            target_file=target_file,
+            parameters=OperationParameters(
+                source_file=files[0] if files else None,
+                source_files=files,
+                destination_file=target_file,
+                sections=sections,
+            ),
+            status=RefactoringStatus.PENDING,
+            created_at=datetime.now().isoformat(),
+        )
+    ]
+
+
+def _extract_legacy_split_operations(
+    suggestion_id: str, suggestion: ModelDict
+) -> list[RefactoringOperationModel]:
+    source_file = suggestion.get("file")
+    if not isinstance(source_file, str) or not source_file:
+        return []
+    split_points_raw = suggestion.get("split_points", [])
+    if not isinstance(split_points_raw, list):
+        return []
+    split_points = cast(list[JsonValue], split_points_raw)
+    operations: list[RefactoringOperationModel] = []
+    for idx, split_point_raw in enumerate(split_points):
+        if not isinstance(split_point_raw, dict):
+            continue
+        split_point = cast(dict[str, JsonValue], split_point_raw)
+        op = _build_split_operation(suggestion_id, idx, source_file, split_point)
+        if op:
+            operations.append(op)
+    return operations
+
+
+def _build_split_operation(
+    suggestion_id: str,
+    idx: int,
+    source_file: str,
+    split_point: dict[str, JsonValue],
+) -> RefactoringOperationModel | None:
+    """Build a split operation from split point."""
+    new_file = split_point.get("new_file")
+    if not isinstance(new_file, str) or not new_file:
+        return None
+    content_raw = split_point.get("content", "")
+    content = str(content_raw) if content_raw is not None else ""
+    sections = _extract_legacy_str_list(split_point.get("sections", []))
+    return RefactoringOperationModel(
+        operation_id=f"{suggestion_id}-split-{idx}",
+        operation_type="split",
+        target_file=source_file,
+        parameters=OperationParameters(
+            source_file=source_file,
+            destination_file=new_file,
+            content=content,
+            sections=sections,
+        ),
+        status=RefactoringStatus.PENDING,
+        created_at=datetime.now().isoformat(),
+    )
+
+
+def _create_category_operation(
+    suggestion_id: str, idx: int, name: str
+) -> RefactoringOperationModel:
+    """Create a category operation."""
+    return RefactoringOperationModel(
+        operation_id=f"{suggestion_id}-create-{idx}",
+        operation_type="create",
+        target_file=name,
+        parameters=OperationParameters(is_directory=True),
+        status=RefactoringStatus.PENDING,
+        created_at=datetime.now().isoformat(),
+    )
+
+
+def _create_move_operation(
+    suggestion_id: str, idx: int, target_file: str, destination: str
+) -> RefactoringOperationModel:
+    """Create a move operation."""
+    return RefactoringOperationModel(
+        operation_id=f"{suggestion_id}-move-{idx}",
+        operation_type="move",
+        target_file=target_file,
+        parameters=OperationParameters(
+            source_file=target_file, destination_file=destination
+        ),
+        status=RefactoringStatus.PENDING,
+        created_at=datetime.now().isoformat(),
+    )
+
+
+def _create_rename_operation(
+    suggestion_id: str, idx: int, target_file: str, new_name: str
+) -> RefactoringOperationModel:
+    """Create a rename operation."""
+    return RefactoringOperationModel(
+        operation_id=f"{suggestion_id}-rename-{idx}",
+        operation_type="rename",
+        target_file=target_file,
+        parameters=OperationParameters(source_file=target_file, new_name=new_name),
+        status=RefactoringStatus.PENDING,
+        created_at=datetime.now().isoformat(),
+    )
+
+
+def _extract_legacy_reorganization_operations(
+    suggestion_id: str, suggestion: ModelDict
+) -> list[RefactoringOperationModel]:
+    actions_raw = suggestion.get("actions", [])
+    if not isinstance(actions_raw, list):
+        return []
+    operations: list[RefactoringOperationModel] = []
+    actions = cast(list[JsonValue], actions_raw)
+    for idx, action_raw in enumerate(actions):
+        if not isinstance(action_raw, dict):
+            continue
+        action = cast(dict[str, JsonValue], action_raw)
+        op = _extract_single_reorganization_operation(suggestion_id, idx, action)
+        if op:
+            operations.append(op)
+    return operations
+
+
+def _extract_single_reorganization_operation(
+    suggestion_id: str, idx: int, action: dict[str, JsonValue]
+) -> RefactoringOperationModel | None:
+    """Extract a single reorganization operation from action dict."""
+    action_type = str(action.get("action", ""))
+    if action_type == "create_category":
+        name = action.get("name")
+        if isinstance(name, str) and name:
+            return _create_category_operation(suggestion_id, idx, name)
+        return None
+
+    target_file = action.get("file")
+    if not isinstance(target_file, str) or not target_file:
+        return None
+    if action_type == "move":
+        destination = action.get("destination")
+        if isinstance(destination, str) and destination:
+            return _create_move_operation(suggestion_id, idx, target_file, destination)
+    elif action_type == "rename":
+        new_name = action.get("new_name")
+        if isinstance(new_name, str) and new_name:
+            return _create_rename_operation(suggestion_id, idx, target_file, new_name)
+    return None
+
+
+def _extract_consolidation_operations(
+    suggestion: RefactoringSuggestionModel, suggestion_id: str
+) -> list[RefactoringOperationModel]:
+    """Extract consolidation operations from suggestion."""
+    operations: list[RefactoringOperationModel] = []
+    target_file: str | None = None
+    for action in suggestion.actions:
+        if action.details.destination_file:
+            target_file = action.details.destination_file
+            break
+
+    if not target_file:
+        return operations
+
+    files = suggestion.affected_files
+    sections: list[str] = []
+    for action in suggestion.actions:
+        if action.details.sections:
+            sections.extend(action.details.sections or [])
+
+    operations.append(
+        RefactoringOperationModel(
+            operation_id=f"{suggestion_id}-consolidate",
+            operation_type="consolidate",
+            target_file=target_file,
+            parameters=OperationParameters(
+                source_file=files[0] if files else None,
+                destination_file=target_file,
+                sections=sections,
+            ),
+            status=RefactoringStatus.PENDING,
+            created_at=datetime.now().isoformat(),
+        )
+    )
+    return operations
+
+
+def _extract_split_operations(
+    suggestion: RefactoringSuggestionModel, suggestion_id: str
+) -> list[RefactoringOperationModel]:
+    """Extract split operations from suggestion."""
+    operations: list[RefactoringOperationModel] = []
+    if not suggestion.affected_files:
+        return operations
+
+    original_file = suggestion.affected_files[0]
+    for idx, action in enumerate(suggestion.actions):
+        if action.action_type not in {"split", "create"}:
+            continue
+        new_file = action.details.destination_file or action.target_file
+        sections = action.details.sections or []
+        content = action.details.content or ""
 
         operations.append(
-            RefactoringOperation(
-                operation_id=f"{suggestion_id}-consolidate",
-                operation_type="consolidate",
-                target_file=consolidate_target_file,
-                parameters={
-                    "files": suggestion.get("files", []),
-                    "sections": suggestion.get("sections", []),
-                    "extraction_target": suggestion.get("extraction_target"),
-                },
+            RefactoringOperationModel(
+                operation_id=f"{suggestion_id}-split-{idx}",
+                operation_type="split",
+                target_file=original_file,
+                parameters=OperationParameters(
+                    source_file=original_file,
+                    destination_file=new_file,
+                    sections=sections,
+                    content=content,
+                ),
+                status=RefactoringStatus.PENDING,
+                created_at=datetime.now().isoformat(),
             )
         )
-        return operations
+    return operations
 
-    def _extract_split_operations(
-        self, suggestion: dict[str, object], suggestion_id: str
-    ) -> list[RefactoringOperation]:
-        """Extract split operations from suggestion.
 
-        Args:
-            suggestion: Refactoring suggestion dictionary
-            suggestion_id: Suggestion identifier
+def _extract_reorganization_operations(
+    suggestion: RefactoringSuggestionModel, suggestion_id: str
+) -> list[RefactoringOperationModel]:
+    """Extract reorganization operations from suggestion."""
+    operations: list[RefactoringOperationModel] = []
+    action_handlers = {
+        "move": _create_move_operation,
+        "rename": _create_rename_operation,
+        "create_category": _create_category_operation,
+    }
 
-        Returns:
-            List of split operations
-        """
-        operations: list[RefactoringOperation] = []
-        original_file: str | None = cast(str | None, suggestion.get("file"))
-        split_points: list[dict[str, object]] = cast(
-            list[dict[str, object]], suggestion.get("split_points", [])
-        )
+    for action in suggestion.actions:
+        handler = action_handlers.get(action.action_type)
+        if handler is None:
+            continue
+        operation = handler(action, suggestion_id)
+        if operation is not None:
+            operations.append(operation)
 
-        if original_file:
-            for idx, split_point in enumerate(split_points):
-                operations.append(
-                    RefactoringOperation(
-                        operation_id=f"{suggestion_id}-split-{idx}",
-                        operation_type="split",
-                        target_file=original_file,
-                        parameters={
-                            "new_file": split_point.get("new_file"),
-                            "sections": split_point.get("sections", []),
-                            "content": split_point.get("content", ""),
-                        },
-                    )
-                )
-        return operations
+    return operations
 
-    def _extract_reorganization_operations(
-        self, suggestion: dict[str, object], suggestion_id: str
-    ) -> list[RefactoringOperation]:
-        """Extract reorganization operations from suggestion.
 
-        Uses dispatch table for action type routing.
+def _create_move_operation(
+    action: RefactoringActionModel, suggestion_id: str
+) -> RefactoringOperationModel | None:
+    if not action.target_file:
+        return None
 
-        Args:
-            suggestion: Refactoring suggestion dictionary
-            suggestion_id: Suggestion identifier
+    return RefactoringOperationModel(
+        operation_id=f"{suggestion_id}-move-{action.target_file}",
+        operation_type="move",
+        target_file=action.target_file,
+        parameters=OperationParameters(
+            source_file=action.target_file,
+            destination_file=action.details.destination_file,
+        ),
+        status=RefactoringStatus.PENDING,
+        created_at=datetime.now().isoformat(),
+    )
 
-        Returns:
-            List of reorganization operations
-        """
-        operations: list[RefactoringOperation] = []
-        actions: list[dict[str, object]] = cast(
-            list[dict[str, object]], suggestion.get("actions", [])
-        )
 
-        # Action handlers dispatch table
-        action_handlers = {
-            "move": self._create_move_operation,
-            "rename": self._create_rename_operation,
-            "create_category": self._create_category_operation,
-        }
+def _create_rename_operation(
+    action: RefactoringActionModel, suggestion_id: str
+) -> RefactoringOperationModel | None:
+    if not action.target_file:
+        return None
 
-        for action in actions:
-            action_type = cast(str | None, action.get("action"))
-            if not action_type:
-                continue
+    return RefactoringOperationModel(
+        operation_id=f"{suggestion_id}-rename-{action.target_file}",
+        operation_type="rename",
+        target_file=action.target_file,
+        parameters=OperationParameters(
+            source_file=action.target_file,
+            new_name=action.details.destination_file,
+        ),
+        status=RefactoringStatus.PENDING,
+        created_at=datetime.now().isoformat(),
+    )
 
-            handler = action_handlers.get(action_type)
-            if handler:
-                operation = handler(action, suggestion_id)
-                if operation:
-                    operations.append(operation)
 
-        return operations
+def _create_category_operation(
+    action: RefactoringActionModel, suggestion_id: str
+) -> RefactoringOperationModel | None:
+    if not action.target_file:
+        return None
 
-    def _create_move_operation(
-        self, action: dict[str, object], suggestion_id: str
-    ) -> RefactoringOperation | None:
-        """Create move operation from action.
-
-        Args:
-            action: Action dictionary
-            suggestion_id: Suggestion identifier
-
-        Returns:
-            Move operation or None
-        """
-        target_file_val: str | None = cast(str | None, action.get("file"))
-        if not target_file_val:
-            return None
-
-        return RefactoringOperation(
-            operation_id=f"{suggestion_id}-move-{target_file_val}",
-            operation_type="move",
-            target_file=target_file_val,
-            parameters={"destination": action.get("destination")},
-        )
-
-    def _create_rename_operation(
-        self, action: dict[str, object], suggestion_id: str
-    ) -> RefactoringOperation | None:
-        """Create rename operation from action.
-
-        Args:
-            action: Action dictionary
-            suggestion_id: Suggestion identifier
-
-        Returns:
-            Rename operation or None
-        """
-        target_file_val = cast(str | None, action.get("file"))
-        if not isinstance(target_file_val, str):
-            return None
-
-        return RefactoringOperation(
-            operation_id=f"{suggestion_id}-rename-{target_file_val}",
-            operation_type="rename",
-            target_file=target_file_val,
-            parameters={"new_name": action.get("new_name")},
-        )
-
-    def _create_category_operation(
-        self, action: dict[str, object], suggestion_id: str
-    ) -> RefactoringOperation | None:
-        """Create category operation from action.
-
-        Args:
-            action: Action dictionary
-            suggestion_id: Suggestion identifier
-
-        Returns:
-            Create category operation or None
-        """
-        name_val: str | None = cast(str | None, action.get("name"))
-        if not name_val:
-            return None
-
-        return RefactoringOperation(
-            operation_id=f"{suggestion_id}-create-{name_val}",
-            operation_type="create",
-            target_file=name_val,
-            parameters={"type": "directory"},
-        )
-
-    async def get_all_memory_bank_files(self) -> list[str]:
-        """Get list of all memory bank files."""
-        files: list[str] = []
-        for file_path in self.memory_bank_dir.glob("**/*.md"):
-            if file_path.is_file():
-                rel_path = file_path.relative_to(self.memory_bank_dir)
-                files.append(str(rel_path))
-        return files
+    return RefactoringOperationModel(
+        operation_id=f"{suggestion_id}-create-{action.target_file}",
+        operation_type="create",
+        target_file=action.target_file,
+        parameters=OperationParameters(
+            destination_file=action.target_file,
+            is_directory=True,
+        ),
+        status=RefactoringStatus.PENDING,
+        created_at=datetime.now().isoformat(),
+    )

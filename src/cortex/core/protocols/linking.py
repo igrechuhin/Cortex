@@ -9,13 +9,15 @@ abstraction and reduced circular dependencies.
 from pathlib import Path
 from typing import Protocol
 
+from cortex.linking.models import LinkValidationResult
+
 
 class LinkParserProtocol(Protocol):
     r"""Protocol for link parsing operations using structural subtyping (PEP 544).
 
     This protocol defines the interface for extracting markdown links and
     transclusion syntax from content. Link parsing is essential for building
-    dependency graphs and validating references. Any class implementing these
+    dependency graphs and validating references. A class implementing these
     methods automatically satisfies this protocol.
 
     Used by:
@@ -92,7 +94,7 @@ class TransclusionEngineProtocol(Protocol):
     This protocol defines the interface for resolving transclusion syntax
     ({{include:path}}) by recursively including content from other files.
     Transclusion enables DRY (Don't Repeat Yourself) principles in documentation.
-    Any class implementing these methods automatically satisfies this protocol.
+    A class implementing these methods automatically satisfies this protocol.
 
     Used by:
         - TransclusionEngine: Recursive transclusion resolver with cycle detection
@@ -167,7 +169,7 @@ class LinkValidatorProtocol(Protocol):
 
     This protocol defines the interface for validating markdown links and
     transclusions, ensuring all references point to existing files or valid
-    URLs. Any class implementing these methods automatically satisfies this
+    URLs. A class implementing these methods automatically satisfies this
     protocol.
 
     Used by:
@@ -185,33 +187,45 @@ class LinkValidatorProtocol(Protocol):
 
             async def validate_file_links(
                 self, file_path: Path, memory_bank_path: Path
-            ) -> dict[str, object]:
+            ) -> LinkValidationResult:
+                from cortex.linking.models import BrokenLinkInfo
                 content, _ = await self.file_system.read_file(file_path)
                 links = self.link_parser.parse_markdown_links(content)
                 transclusions = self.link_parser.parse_transclusions(content)
 
                 broken_links = []
                 for link in links:
-                    if link["target"].startswith("http"):
-                        # Validate URL
-                        pass
-                    else:
+                    target_str = link.get("target", "")
+                    if not target_str.startswith("http"):
                         # Validate internal link
-                        target = memory_bank_path / link["target"]
+                        target = memory_bank_path / target_str
                         if not await self.file_system.file_exists(target):
-                            broken_links.append(link)
+                            broken_links.append(BrokenLinkInfo(
+                                target=target_str,
+                                line_number=int(link.get("line_number", "0")) or 1,
+                                link_type="markdown",
+                                error="Target file does not exist",
+                            ))
 
                 broken_transclusions = []
                 for trans in transclusions:
-                    target = memory_bank_path / trans["target"]
+                    target_str = trans.get("target", "")
+                    target = memory_bank_path / target_str
                     if not await self.file_system.file_exists(target):
-                        broken_transclusions.append(trans)
+                        broken_transclusions.append(BrokenLinkInfo(
+                            target=target_str,
+                            line_number=int(trans.get("line_number", "0")) or 1,
+                            link_type="transclusion",
+                            error="Target file does not exist",
+                        ))
 
-                return {
-                    "valid": len(broken_links) == 0 and len(broken_transclusions) == 0,
-                    "broken_links": broken_links,
-                    "broken_transclusions": broken_transclusions,
-                }
+                return LinkValidationResult(
+                    valid=len(broken_links) == 0 and len(broken_transclusions) == 0,
+                    total_links=len(links) + len(transclusions),
+                    valid_links=len(links) + len(transclusions) - len(broken_links) - len(broken_transclusions),
+                    broken_links=broken_links,
+                    broken_transclusions=broken_transclusions,
+                )
 
         # SimpleLinkValidator automatically satisfies LinkValidatorProtocol
         ```
@@ -224,7 +238,7 @@ class LinkValidatorProtocol(Protocol):
 
     async def validate_file_links(
         self, file_path: Path, memory_bank_path: Path
-    ) -> dict[str, object]:
+    ) -> LinkValidationResult:
         """Validate all links in a file.
 
         Args:
@@ -232,7 +246,7 @@ class LinkValidatorProtocol(Protocol):
             memory_bank_path: Path to memory bank directory
 
         Returns:
-            Validation result dictionary
+            Link validation result model
         """
         ...
 

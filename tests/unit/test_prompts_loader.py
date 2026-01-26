@@ -83,8 +83,8 @@ class TestLoadManifest:
         assert result is not None
         assert loader.manifest is not None
         assert loader.manifest_cache is not None
-        assert loader.manifest["version"] == "1.0"
-        assert "categories" in loader.manifest
+        assert loader.manifest.version == "1.0"
+        assert isinstance(loader.manifest.categories, dict)
 
     @pytest.mark.asyncio
     async def test_load_manifest_missing_file(self, tmp_path: Path):
@@ -273,11 +273,10 @@ class TestLoadCategory:
         assert isinstance(prompts, list)
         assert len(prompts) == 1
         prompt = prompts[0]
-        assert isinstance(prompt, dict)
-        assert prompt["category"] == "python"
-        assert prompt["file"] == "test.md"
-        assert prompt["name"] == "Test Prompt"
-        assert "content" in prompt
+        assert prompt.category == "python"
+        assert prompt.file == "test.md"
+        assert prompt.name == "Test Prompt"
+        assert isinstance(prompt.content, str) and prompt.content
 
     @pytest.mark.asyncio
     async def test_load_category_invalid_category(self, tmp_path: Path):
@@ -400,9 +399,9 @@ class TestLoadPrompt:
         # Assert
         assert len(prompts) == 1
         prompt = prompts[0]
-        assert prompt["content"] == prompt_content
-        assert prompt["path"] == str(prompt_file)
-        assert prompt["source"] == "synapse"
+        assert prompt.content == prompt_content
+        assert prompt.path == str(prompt_file)
+        assert prompt.source == "synapse"
 
     @pytest.mark.asyncio
     async def test_load_prompt_invalid_name(self, tmp_path: Path):
@@ -502,6 +501,8 @@ class TestSaveManifest:
     @pytest.mark.asyncio
     async def test_save_manifest_success(self, tmp_path: Path):
         """Test saving manifest successfully."""
+        from cortex.rules.models import PromptsManifestModel
+
         # Arrange
         prompts_path = tmp_path / "prompts"
         prompts_path.mkdir()
@@ -515,10 +516,12 @@ class TestSaveManifest:
         loader = PromptsLoader(prompts_path)
 
         # Act
-        await loader.save_manifest(manifest_data)
+        manifest_model = PromptsManifestModel.model_validate(manifest_data)
+        await loader.save_manifest(manifest_model)
 
         # Assert
-        assert loader.manifest == manifest_data
+        assert loader.manifest is not None
+        assert loader.manifest.version == "1.0"
         assert loader.manifest_cache is not None
         assert manifest_path.exists()
         saved_data = json.loads(manifest_path.read_text())
@@ -617,6 +620,6 @@ class TestGetAllPrompts:
         # Assert
         assert isinstance(all_prompts, list)
         assert len(all_prompts) == 2
-        categories = {prompt["category"] for prompt in all_prompts}
+        categories = {prompt.category for prompt in all_prompts}
         assert "python" in categories
         assert "general" in categories

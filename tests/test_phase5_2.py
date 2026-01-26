@@ -17,18 +17,19 @@ from cortex.refactoring.consolidation_detector import (
     ConsolidationDetector,
     ConsolidationOpportunity,
 )
-from cortex.refactoring.refactoring_engine import (
-    RefactoringAction,
-    RefactoringEngine,
+from cortex.refactoring.models import (
+    DependencyGraphInput,
+    MemoryBankStructureData,
+    RefactoringActionModel,
     RefactoringPriority,
-    RefactoringSuggestion,
+    RefactoringSuggestionModel,
     RefactoringType,
+    ReorganizationActionModel,
+    ReorganizationImpactModel,
+    ReorganizationPlanModel,
 )
-from cortex.refactoring.reorganization_planner import (
-    ReorganizationAction,
-    ReorganizationPlan,
-    ReorganizationPlanner,
-)
+from cortex.refactoring.refactoring_engine import RefactoringEngine
+from cortex.refactoring.reorganization_planner import ReorganizationPlanner
 from cortex.refactoring.split_recommender import SplitRecommender
 
 
@@ -145,7 +146,7 @@ async def test_refactoring_engine_preview(temp_memory_bank: Path):
     engine = RefactoringEngine(memory_bank_path=temp_memory_bank)
 
     # Create a test suggestion
-    suggestion = RefactoringSuggestion(
+    suggestion = RefactoringSuggestionModel(
         suggestion_id="TEST-001",
         refactoring_type=RefactoringType.CONSOLIDATION,
         priority=RefactoringPriority.HIGH,
@@ -154,7 +155,7 @@ async def test_refactoring_engine_preview(temp_memory_bank: Path):
         reasoning="Test reasoning",
         affected_files=["file1.md", "file2.md"],
         actions=[
-            RefactoringAction(
+            RefactoringActionModel(
                 action_type="create",
                 target_file="shared.md",
                 description="Create shared file",
@@ -182,7 +183,7 @@ async def test_refactoring_engine_export(temp_memory_bank: Path):
     engine = RefactoringEngine(memory_bank_path=temp_memory_bank)
 
     # Add a test suggestion
-    suggestion = RefactoringSuggestion(
+    suggestion = RefactoringSuggestionModel(
         suggestion_id="TEST-001",
         refactoring_type=RefactoringType.SPLIT,
         priority=RefactoringPriority.MEDIUM,
@@ -386,14 +387,14 @@ async def test_reorganization_planner_analyze_structure(temp_memory_bank: Path):
     """Test analyzing current structure"""
     planner = ReorganizationPlanner(memory_bank_path=temp_memory_bank)
 
-    structure = await planner.analyze_current_structure({}, {})
+    structure = await planner.analyze_current_structure(
+        MemoryBankStructureData(),
+        DependencyGraphInput(),
+    )
 
-    assert "total_files" in structure
-    total_files = structure.get("total_files", 0)
-    assert isinstance(total_files, (int, float))
-    assert total_files >= 3
-    assert "organization" in structure
-    assert "categories" in structure
+    assert structure.total_files >= 3
+    assert structure.organization
+    assert isinstance(structure.categories, dict)
 
 
 @pytest.mark.asyncio
@@ -446,20 +447,28 @@ async def test_reorganization_planner_preview(temp_memory_bank: Path):
     planner = ReorganizationPlanner(memory_bank_path=temp_memory_bank)
 
     # Create a test plan
-    plan = ReorganizationPlan(
+    plan = ReorganizationPlanModel(
         plan_id="REORG-0001",
         optimization_goal="category_based",
-        current_structure={"organization": "flat"},
-        proposed_structure={"organization": "category_based"},
+        current_structure=MemoryBankStructureData(organization="flat"),
+        proposed_structure=MemoryBankStructureData(organization="category_based"),
         actions=[
-            ReorganizationAction(
+            ReorganizationActionModel(
                 action_type="move",
                 source="file1.md",
                 target="context/file1.md",
                 reason="Categorize",
             )
         ],
-        estimated_impact={"files_moved": 1},
+        estimated_impact=ReorganizationImpactModel(
+            files_moved=1,
+            categories_created=1,
+            dependency_depth_reduction=0.0,
+            complexity_reduction=0.0,
+            maintainability_improvement=0.0,
+            navigation_improvement=0.0,
+            estimated_effort="low",
+        ),
         risks=["May break links"],
         benefits=["Better organization"],
     )

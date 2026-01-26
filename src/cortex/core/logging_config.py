@@ -39,6 +39,13 @@ def setup_logging(level: str | None = None) -> logging.Logger:
 
     logger = logging.getLogger("cortex")
     logger.setLevel(getattr(logging, level.upper()))
+    # Prevent propagation to the root logger.
+    #
+    # The root logger may be configured by third-party libraries (e.g. RichHandler)
+    # that write to stdout. Stdout is reserved for the MCP protocol, so any extra
+    # output can break the connection and cause Cursor to mark the MCP server as
+    # errored (tool descriptors disappear, "tool not found", etc.).
+    logger.propagate = False
 
     # Avoid adding multiple handlers if already configured
     if logger.handlers:

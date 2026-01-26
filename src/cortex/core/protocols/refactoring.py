@@ -7,13 +7,25 @@ generation and analysis operations.
 
 from typing import Protocol
 
+from cortex.refactoring.models import (
+    AnalysisDataModel,
+    ConsolidationOpportunityModel,
+    InsightDataModel,
+    RefactoringImpactMetrics,
+    RefactoringSuggestionModel,
+    ReorganizationPlanModel,
+    ReorganizationPreviewResult,
+    SplitFileAnalysisResult,
+    SplitRecommendationModel,
+)
+
 
 class RefactoringEngineProtocol(Protocol):
     """Protocol for refactoring operations using structural subtyping (PEP 544).
 
     This protocol defines the interface for generating and exporting refactoring
     suggestions based on pattern analysis and structural insights. Refactoring
-    suggestions help improve Memory Bank organization and maintainability. Any
+    suggestions help improve Memory Bank organization and maintainability. A
     class implementing these methods automatically satisfies this protocol.
 
     Used by:
@@ -27,36 +39,45 @@ class RefactoringEngineProtocol(Protocol):
         class SimpleRefactoringEngine:
             async def generate_suggestions(
                 self,
-                insight_data: dict[str, object],
-                analysis_data: dict[str, object],
+                insight_data: InsightDataModel,
+                analysis_data: AnalysisDataModel,
                 max_suggestions: int | None = None,
-            ) -> list[dict[str, object]]:
+            ) -> list[RefactoringSuggestionModel]:
                 suggestions = []
 
                 # Consolidation suggestions
-                if "duplicated_content" in insight_data:
-                    for dup in insight_data["duplicated_content"]:
-                        suggestions.append({
-                            "type": "consolidate",
-                            "files": dup["files"],
-                            "reason": "Duplicated content",
-                            "confidence": 0.8,
-                        })
+                if insight_data.duplicated_content:
+                    for dup in insight_data.duplicated_content:
+                        suggestions.append(RefactoringSuggestionModel(
+                            suggestion_id=f"consolidate-{len(suggestions)}",
+                            refactoring_type="consolidation",
+                            priority="medium",
+                            title="Consolidate duplicated content",
+                            description="Duplicated content",
+                            reasoning="Duplicated content",
+                            affected_files=dup["files"],
+                            confidence_score=0.8,
+                        ))
 
                 # Split suggestions
-                if "large_files" in analysis_data:
-                    for large_file in analysis_data["large_files"]:
-                        suggestions.append({
-                            "type": "split",
-                            "file": large_file["name"],
-                            "reason": f"File too large",
-                            "confidence": 0.7,
-                        })
+                if analysis_data.file_sizes:
+                    for file_name, size in analysis_data.file_sizes.items():
+                        if size > 10000:  # Large file threshold
+                        suggestions.append(RefactoringSuggestionModel(
+                            suggestion_id=f"split-{len(suggestions)}",
+                            refactoring_type="split",
+                            priority="medium",
+                            title="Split large file",
+                            description=f"File too large: {file_name}",
+                            reasoning="File too large",
+                            affected_files=[file_name],
+                            confidence_score=0.7,
+                        ))
 
                 return suggestions[:max_suggestions] if max_suggestions else suggestions
 
             async def export_suggestions(
-                self, suggestions: list[dict[str, object]], format: str = "json"
+                self, suggestions: list[RefactoringSuggestionModel], format: str = "json"
             ) -> str:
                 if format == "json":
                     return json.dumps(suggestions, indent=2)
@@ -75,10 +96,10 @@ class RefactoringEngineProtocol(Protocol):
 
     async def generate_suggestions(
         self,
-        insight_data: dict[str, object],
-        analysis_data: dict[str, object],
+        insight_data: InsightDataModel,
+        analysis_data: AnalysisDataModel,
         max_suggestions: int | None = None,
-    ) -> list[dict[str, object]]:
+    ) -> list[RefactoringSuggestionModel]:
         """Generate refactoring suggestions.
 
         Args:
@@ -87,12 +108,12 @@ class RefactoringEngineProtocol(Protocol):
             max_suggestions: Maximum suggestions to generate
 
         Returns:
-            List of refactoring suggestions
+            List of refactoring suggestion models
         """
         ...
 
     async def export_suggestions(
-        self, suggestions: list[dict[str, object]], format: str = "json"
+        self, suggestions: list[RefactoringSuggestionModel], format: str = "json"
     ) -> str:
         """Export suggestions in specified format.
 
@@ -111,7 +132,7 @@ class ConsolidationDetectorProtocol(Protocol):
 
     This protocol defines the interface for detecting opportunities to consolidate
     duplicated content across files using transclusion. Consolidation reduces
-    duplication and maintenance burden. Any class implementing these methods
+    duplication and maintenance burden. A class implementing these methods
     automatically satisfies this protocol.
 
     Used by:
@@ -127,29 +148,38 @@ class ConsolidationDetectorProtocol(Protocol):
                 self,
                 files: list[str] | None = None,
                 suggest_transclusion: bool = True,
-            ) -> list[dict[str, object]]:
+            ) -> list[ConsolidationOpportunityModel]:
                 opportunities = []
                 # Find duplicated content
                 for file1, file2 in itertools.combinations(files or [], 2):
                     common = self._find_common_content(file1, file2)
                     if len(common) > 50:
-                        opportunities.append({
-                            "files": [file1, file2],
-                            "duplicated_content": common,
-                            "suggestion": "Use transclusion" if suggest_transclusion else None,
-                        })
+                        opportunities.append(ConsolidationOpportunityModel(
+                            opportunity_id=f"opp-{len(opportunities)}",
+                            opportunity_type="similar_content",
+                            affected_files=[file1, file2],
+                            common_content=common,
+                            similarity_score=0.85,
+                            token_savings=len(common) * (2 - 1),
+                            suggested_action="Use transclusion" if suggest_transclusion else "Extract to shared file",
+                            extraction_target="shared-content.md",
+                            transclusion_syntax=[
+                                f"{{{{include:shared-content.md}}}}" if suggest_transclusion else ""
+                            ],
+                        ))
                 return opportunities
 
             async def analyze_consolidation_impact(
-                self, opportunity: dict[str, object]
-            ) -> dict[str, object]:
-                files = opportunity["files"]
-                content_length = len(opportunity["duplicated_content"])
-                return {
-                    "files_affected": len(files),
-                    "estimated_savings": content_length * (len(files) - 1),
-                    "maintenance_improvement": "High" if len(files) > 2 else "Medium",
-                }
+                self, opportunity: ConsolidationOpportunityModel
+            ) -> RefactoringImpactMetrics:
+                from cortex.refactoring.models import RefactoringImpactMetrics
+                files = opportunity.affected_files
+                content_length = len(opportunity.common_content)
+                return RefactoringImpactMetrics(
+                    token_savings=content_length * (len(files) - 1),
+                    files_affected=len(files),
+                    maintainability_improvement=0.8 if len(files) > 2 else 0.5,
+                )
 
         # SimpleConsolidationDetector automatically satisfies ConsolidationDetectorProtocol
         ```
@@ -164,7 +194,7 @@ class ConsolidationDetectorProtocol(Protocol):
         self,
         files: list[str] | None = None,
         suggest_transclusion: bool = True,
-    ) -> list[dict[str, object]]:
+    ) -> list[ConsolidationOpportunityModel]:
         """Detect consolidation opportunities across files.
 
         Args:
@@ -172,20 +202,20 @@ class ConsolidationDetectorProtocol(Protocol):
             suggest_transclusion: Whether to suggest transclusion syntax
 
         Returns:
-            List of consolidation opportunity dictionaries
+            List of consolidation opportunity models
         """
         ...
 
     async def analyze_consolidation_impact(
-        self, opportunity: dict[str, object]
-    ) -> dict[str, object]:
+        self, opportunity: ConsolidationOpportunityModel
+    ) -> RefactoringImpactMetrics:
         """Analyze impact of a consolidation opportunity.
 
         Args:
-            opportunity: Consolidation opportunity dictionary
+            opportunity: Consolidation opportunity model
 
         Returns:
-            Impact analysis dictionary
+            Impact analysis metrics model
         """
         ...
 
@@ -195,7 +225,7 @@ class SplitRecommenderProtocol(Protocol):
 
     This protocol defines the interface for suggesting file splitting opportunities
     based on size, complexity, and cohesion metrics. File splitting improves
-    maintainability and navigability. Any class implementing these methods
+    maintainability and navigability. A class implementing these methods
     automatically satisfies this protocol.
 
     Used by:
@@ -211,29 +241,52 @@ class SplitRecommenderProtocol(Protocol):
                 self,
                 files: list[str] | None = None,
                 strategies: list[str] | None = None,
-            ) -> list[dict[str, object]]:
+            ) -> list[SplitRecommendationModel]:
                 suggestions = []
                 for file_path in (files or []):
                     analysis = await self.analyze_file(file_path)
-                    if analysis["should_split"]:
-                        suggestions.append({
-                            "file": file_path,
-                            "reason": analysis["reason"],
-                            "suggested_splits": analysis["split_points"],
-                        })
+                    if analysis.should_split:
+                        from cortex.refactoring.models import SplitPointModel
+                        suggestions.append(SplitRecommendationModel(
+                            recommendation_id=f"split-{len(suggestions)}",
+                            file_path=file_path,
+                            reason=analysis.reason,
+                            split_strategy="by_sections",
+                            split_points=[
+                                SplitPointModel(
+                                    split_id=f"sp-{i}",
+                                    section_title=sp.get("title", ""),
+                                    line_number=sp.get("line", 0),
+                                )
+                                for i, sp in enumerate(analysis.split_points)
+                            ],
+                        ))
                 return suggestions
 
-            async def analyze_file(self, file_path: str) -> dict[str, object]:
+            async def analyze_file(self, file_path: str) -> SplitFileAnalysisResult:
                 size = await self._get_file_size(file_path)
                 sections = await self._parse_sections(file_path)
                 should_split = size > 10000 or len(sections) > 10
-                return {
-                    "file": file_path,
-                    "size": size,
-                    "should_split": should_split,
-                    "reason": "File too large" if size > 10000 else "Too many sections",
-                    "split_points": sections[len(sections)//2:] if should_split else [],
-                }
+                return SplitFileAnalysisResult(
+                    file=file_path,
+                    size=size,
+                    should_split=should_split,
+                    reason="File too large" if size > 10000 else "Too many sections",
+                    split_points=[
+                        SplitPointModel(
+                            section_heading=s.get("title", ""),
+                            start_line=s.get("line", 0),
+                            end_line=s.get("line", 0),
+                            token_count=0,
+                            independence_score=0.5,
+                            suggested_filename=f"{file_path}.part{i}",
+                            split_id=f"sp-{i}",
+                            section_title=s.get("title", ""),
+                            line_number=s.get("line", 0),
+                        )
+                        for i, s in enumerate(sections[len(sections)//2:] if should_split else [])
+                    ],
+                )
 
         # SimpleSplitRecommender automatically satisfies SplitRecommenderProtocol
         ```
@@ -248,7 +301,7 @@ class SplitRecommenderProtocol(Protocol):
         self,
         files: list[str] | None = None,
         strategies: list[str] | None = None,
-    ) -> list[dict[str, object]]:
+    ) -> list[SplitRecommendationModel]:
         """Suggest file splitting opportunities.
 
         Args:
@@ -256,18 +309,18 @@ class SplitRecommenderProtocol(Protocol):
             strategies: List of strategies to use (all if None)
 
         Returns:
-            List of split suggestion dictionaries
+            List of split recommendation models
         """
         ...
 
-    async def analyze_file(self, file_path: str) -> dict[str, object]:
+    async def analyze_file(self, file_path: str) -> SplitFileAnalysisResult:
         """Analyze a single file for splitting opportunities.
 
         Args:
             file_path: Path to file to analyze
 
         Returns:
-            File analysis dictionary
+            File analysis result model
         """
         ...
 
@@ -277,7 +330,7 @@ class ReorganizationPlannerProtocol(Protocol):
 
     This protocol defines the interface for creating comprehensive reorganization
     plans that optimize Memory Bank structure based on dependencies, access
-    patterns, and other metrics. Any class implementing these methods automatically
+    patterns, and other metrics. A class implementing these methods automatically
     satisfies this protocol.
 
     Used by:
@@ -293,7 +346,7 @@ class ReorganizationPlannerProtocol(Protocol):
                 self,
                 optimization_goal: str = "dependency_depth",
                 max_depth: int | None = None,
-            ) -> dict[str, object]:
+            ) -> ReorganizationPlanModel:
                 # Analyze current structure
                 current_structure = await self._analyze_current_structure()
 
@@ -304,22 +357,29 @@ class ReorganizationPlannerProtocol(Protocol):
                     for file, depth in current_structure["file_depths"].items():
                         if max_depth and depth > max_depth:
                             new_path = self._calculate_optimal_path(file, max_depth)
-                            moves.append({"from": file, "to": new_path})
+                            moves.append(ReorganizationActionModel(
+                                action_type="move",
+                                from_path=file,
+                                to_path=new_path,
+                                reason=f"Reduce depth from {depth} to {max_depth}",
+                            ))
 
-                return {
-                    "goal": optimization_goal,
-                    "moves": moves,
-                    "estimated_improvement": len(moves) * 0.1,
-                }
+                return ReorganizationPlanModel(
+                    plan_id=f"plan-{optimization_goal}",
+                    optimization_goal=optimization_goal,
+                    current_structure=MemoryBankStructureData(),
+                    proposed_structure=MemoryBankStructureData(),
+                    actions=moves,
+                )
 
             async def preview_reorganization(
-                self, plan: dict[str, object]
-            ) -> dict[str, object]:
-                return {
-                    "files_to_move": len(plan["moves"]),
-                    "estimated_improvement": plan["estimated_improvement"],
-                    "risks": self._assess_risks(plan),
-                }
+                self, plan: ReorganizationPlanModel
+            ) -> ReorganizationPreviewResult:
+                return ReorganizationPreviewResult(
+                    files_to_move=len(plan.actions),
+                    estimated_improvement=plan.estimated_impact.complexity_reduction,
+                    risks=self._assess_risks(plan),
+                )
 
         # SimpleReorganizationPlanner automatically satisfies ReorganizationPlannerProtocol
         ```
@@ -334,7 +394,7 @@ class ReorganizationPlannerProtocol(Protocol):
         self,
         optimization_goal: str = "dependency_depth",
         max_depth: int | None = None,
-    ) -> dict[str, object]:
+    ) -> ReorganizationPlanModel:
         """Create a reorganization plan.
 
         Args:
@@ -342,20 +402,20 @@ class ReorganizationPlannerProtocol(Protocol):
             max_depth: Maximum dependency depth (None = no limit)
 
         Returns:
-            Reorganization plan dictionary
+            Reorganization plan model
         """
         ...
 
     async def preview_reorganization(
-        self, plan: dict[str, object]
-    ) -> dict[str, object]:
+        self, plan: ReorganizationPlanModel
+    ) -> ReorganizationPreviewResult:
         """Preview impact of reorganization plan.
 
         Args:
-            plan: Reorganization plan
+            plan: Reorganization plan model
 
         Returns:
-            Preview results dictionary
+            Preview results model
         """
         ...
 

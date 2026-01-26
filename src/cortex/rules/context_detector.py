@@ -8,6 +8,9 @@ based on task descriptions and project files.
 from pathlib import Path
 from typing import cast
 
+from cortex.core.models import ModelDict
+from cortex.rules.models import DetectedContext
+
 
 class ContextDetector:
     """
@@ -28,7 +31,7 @@ class ContextDetector:
 
     def detect_context(
         self, task_description: str, project_files: list[Path] | None = None
-    ) -> dict[str, object]:
+    ) -> DetectedContext:
         """
         Detect context for intelligent rule loading.
 
@@ -37,59 +40,43 @@ class ContextDetector:
             project_files: List of project files for extension detection
 
         Returns:
-            Dict with detected context information
+            Detected context model
         """
-        context: dict[str, object] = {
-            "languages": set(),
-            "frameworks": set(),
-            "task_type": None,
-            "categories_to_load": set(),
-        }
-
-        self._detect_from_description(task_description, context, project_files)
-
+        languages, frameworks = self._detect_from_description(task_description)
         if project_files:
-            self._detect_from_files(project_files, context)
+            self._detect_from_files(project_files, languages)
 
-        self._build_categories_to_load(context)
+        task_type = self._detect_task_type(task_description.lower(), project_files)
+        categories_to_load = self._build_categories_to_load(
+            languages, frameworks, task_type
+        )
 
-        return {
-            "detected_languages": list(cast(set[str], context["languages"])),
-            "detected_frameworks": list(cast(set[str], context["frameworks"])),
-            "task_type": cast(str | None, context["task_type"]),
-            "categories_to_load": list(cast(set[str], context["categories_to_load"])),
-        }
+        return DetectedContext(
+            detected_languages=list(languages),
+            detected_frameworks=list(frameworks),
+            task_type=task_type,
+            categories_to_load=list(categories_to_load),
+        )
 
     def _detect_from_description(
-        self,
-        task_description: str,
-        context: dict[str, object],
-        project_files: list[Path] | None = None,
-    ) -> None:
-        """
-        Detect languages and frameworks from task description.
-
-        Args:
-            task_description: Task description text
-            context: Context dict to update
-            project_files: Optional project files for context
-        """
+        self, task_description: str
+    ) -> tuple[set[str], set[str]]:
+        """Detect languages and frameworks from task description."""
         task_lower = task_description.lower()
 
         # Language detection
-        languages_set = cast(set[str], context["languages"])
+        languages_set: set[str] = set()
         for lang, keywords in self.language_keywords.items():
             if any(keyword in task_lower for keyword in keywords):
                 languages_set.add(lang)
 
         # Framework detection
-        frameworks_set = cast(set[str], context["frameworks"])
+        frameworks_set: set[str] = set()
         for framework, keywords in self.framework_keywords.items():
             if any(keyword in task_lower for keyword in keywords):
                 frameworks_set.add(framework)
 
-        # Task type detection
-        context["task_type"] = self._detect_task_type(task_lower, project_files)
+        return languages_set, frameworks_set
 
     def _detect_task_type(
         self, task_lower: str, project_files: list[Path] | None = None
@@ -158,55 +145,52 @@ class ContextDetector:
         return None
 
     def _detect_from_files(
-        self, project_files: list[Path], context: dict[str, object]
+        self, project_files: list[Path], languages: set[str]
     ) -> None:
         """
         Detect languages from project file extensions.
 
         Args:
             project_files: List of project file paths
-            context: Context dict to update
+            languages: Languages set to update
         """
-        languages_set = cast(set[str], context["languages"])
         for file_path in project_files:
             suffix = file_path.suffix.lower()
             if suffix in self.extension_map:
-                languages_set.add(self.extension_map[suffix])
+                languages.add(self.extension_map[suffix])
 
-    def _build_categories_to_load(self, context: dict[str, object]) -> None:
-        """Build categories to load based on detected context.
+    def _build_categories_to_load(
+        self, languages: set[str], frameworks: set[str], task_type: str | None
+    ) -> set[str]:
+        """Build categories to load based on detected context."""
+        categories: set[str] = {"generic"}
+        categories.update(languages)
+        categories.update(frameworks)
+        if task_type:
+            categories.add(task_type)
+        return categories
 
-        Args:
-            context: Context dict to update
-        """
-        categories_set = cast(set[str], context["categories_to_load"])
-
-        # Always include generic
-        categories_set.add("generic")
-
-        # Add detected languages
-        languages_set = cast(set[str], context["languages"])
-        categories_set.update(languages_set)
-
-        # Add detected frameworks
-        frameworks_set = cast(set[str], context["frameworks"])
-        categories_set.update(frameworks_set)
-
-        # Add task type if present
-        task_type = context.get("task_type")
-        if task_type and isinstance(task_type, str):
-            categories_set.add(task_type)
-
-    def get_relevant_categories(self, context: dict[str, object]) -> list[str]:
+    def get_relevant_categories(
+        self, context: DetectedContext | ModelDict
+    ) -> list[str]:
         """
         Get relevant rule categories based on detected context.
 
         Args:
-            context: Context dict from detect_context()
+            context: Detected context model or dict from detect_context()
 
         Returns:
             List of category names to load
         """
+        if isinstance(context, DetectedContext):
+            categories = set(context.categories_to_load)
+            categories.add("generic")
+            categories.update(context.detected_languages)
+            if context.task_type:
+                categories.add(context.task_type)
+            return list(categories)
+
+        # Legacy dict support
         categories = set(
             cast(list[str], context.get("categories_to_load", ["generic"]))
         )

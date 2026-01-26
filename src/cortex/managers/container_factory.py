@@ -17,6 +17,7 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.file_watcher import FileWatcherManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.migration import MigrationManager
+from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
@@ -505,7 +506,7 @@ def _create_refactoring_executor(
         version_manager=version_manager,
         link_validator=link_validator,
         metadata_index=metadata_index,
-        config=optimization_config.config,
+        config=None,
     )
 
 
@@ -514,9 +515,7 @@ def _create_approval_manager(
     optimization_config: OptimizationConfig,
 ) -> ApprovalManager:
     """Create approval manager."""
-    return ApprovalManager(
-        memory_bank_dir=memory_bank_path, config=optimization_config.config
-    )
+    return ApprovalManager(memory_bank_dir=memory_bank_path, config=None)
 
 
 def _create_rollback_manager(
@@ -532,7 +531,7 @@ def _create_rollback_manager(
         fs_manager=file_system,
         version_manager=version_manager,
         metadata_index=metadata_index,
-        config=optimization_config.config,
+        config=None,
     )
 
 
@@ -544,7 +543,7 @@ def _create_learning_engine(
     return LearningEngine(
         memory_bank_dir=memory_bank_path,
         config=cast(
-            dict[str, object] | None,
+            ModelDict | None,
             optimization_config.get("self_evolution.learning", {}),
         ),
     )
@@ -554,7 +553,10 @@ def _create_adaptation_config(
     optimization_config: OptimizationConfig,
 ) -> AdaptationConfig:
     """Create adaptation config."""
-    return AdaptationConfig(base_config=optimization_config.config)
+    # AdaptationConfig expects its own self-evolution schema (learning/feedback/etc.),
+    # which is distinct from OptimizationConfig's `self_evolution` section.
+    # Use defaults unless a dedicated adaptation config source is introduced.
+    return AdaptationConfig(base_config=None)
 
 
 def _create_refactoring_engine(

@@ -11,16 +11,25 @@ This test module covers:
 """
 
 import json
-from typing import TYPE_CHECKING, cast
+from typing import cast
 from unittest.mock import AsyncMock
 
 import pytest
-
-if TYPE_CHECKING:
-    import pytest_mock
+import pytest_mock
 
 from cortex.analysis.insight_engine import InsightDict, InsightEngine
+from cortex.analysis.insight_types import InsightsResultDict
+from cortex.analysis.models import (
+    AntiPatternInfo,
+    CoAccessPattern,
+    ComplexityAnalysisResult,
+    ComplexityAssessment,
+    ComplexityHotspot,
+    ComplexityMetrics,
+)
+from cortex.analysis.pattern_types import UnusedFileEntry
 from cortex.core.exceptions import MemoryBankError
+from cortex.core.models import FileOrganizationResult, FileSizeEntry
 
 
 class TestInsightEngineInitialization:
@@ -45,7 +54,7 @@ class TestInsightGeneration:
 
     @pytest.mark.asyncio
     async def test_generates_empty_insights_when_no_issues(
-        self, mocker: "pytest_mock.MockerFixture"
+        self, mocker: pytest_mock.MockerFixture
     ):
         """Test generates empty insights when no issues detected."""
         # Arrange
@@ -55,32 +64,31 @@ class TestInsightGeneration:
 
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
-            return_value={"status": "empty", "file_count": 0, "issues": []}
+            return_value=FileOrganizationResult(status="empty", file_count=0, issues=[])
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value={
-                "status": "analyzed",
-                "metrics": {"max_dependency_depth": 3},
-                "assessment": {"score": 95, "grade": "A", "status": "excellent"},
-            }
+            return_value=ComplexityAnalysisResult(
+                status="analyzed",
+                metrics=ComplexityMetrics(max_dependency_depth=3),
+                assessment=ComplexityAssessment(
+                    score=95, grade="A", status="excellent"
+                ),
+            )
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
 
         # Act
-        result = await engine.generate_insights()
+        result_model = await engine.generate_insights()
+        result = result_model.model_dump(mode="json")
 
         # Assert
         assert result["total_insights"] == 0
         assert result["high_impact_count"] == 0
         assert result["medium_impact_count"] == 0
         assert result["low_impact_count"] == 0
-        insights_raw = result["insights"]
-        assert isinstance(insights_raw, list)
-        insights: list[dict[str, object]] = cast(list[dict[str, object]], insights_raw)
-        assert len(insights) == 0
-        assert "summary" in result
+        assert result["insights"] == []
         summary_raw = result["summary"]
         assert isinstance(summary_raw, dict)
         summary: dict[str, object] = cast(dict[str, object], summary_raw)
@@ -88,65 +96,85 @@ class TestInsightGeneration:
 
     @pytest.mark.asyncio
     async def test_generates_insights_with_all_categories(
-        self, mocker: "pytest_mock.MockerFixture"
+        self, mocker: pytest_mock.MockerFixture
     ):
         """Test generates insights across all categories."""
         # Arrange
         mock_pattern = mocker.MagicMock()
         mock_pattern.get_unused_files = AsyncMock(
             return_value=[
-                {"file": "unused1.md", "status": "stale"},
-                {"file": "unused2.md", "status": "stale"},
-                {"file": "unused3.md", "status": "never_accessed"},
+                UnusedFileEntry(
+                    file="unused1.md",
+                    status="stale",
+                    total_accesses=0,
+                    last_access=None,
+                ),
+                UnusedFileEntry(
+                    file="unused2.md",
+                    status="stale",
+                    total_accesses=0,
+                    last_access=None,
+                ),
+                UnusedFileEntry(
+                    file="unused3.md",
+                    status="never_accessed",
+                    total_accesses=0,
+                    last_access=None,
+                ),
             ]
         )
         mock_pattern.get_co_access_patterns = AsyncMock(return_value=[])
 
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
-            return_value={
-                "status": "analyzed",
-                "file_count": 5,
-                "issues": ["3 files very large"],
-                "largest_files": [
-                    {"file": "large1.md", "size_bytes": 100000},
-                    {"file": "large2.md", "size_bytes": 90000},
+            return_value=FileOrganizationResult(
+                status="analyzed",
+                file_count=5,
+                issues=["3 files very large"],
+                largest_files=[
+                    FileSizeEntry(file="large1.md", size_bytes=100000, tokens=0),
+                    FileSizeEntry(file="large2.md", size_bytes=90000, tokens=0),
                 ],
-                "smallest_files": [],
-            }
+                smallest_files=[],
+            )
         )
         mock_structure.detect_anti_patterns = AsyncMock(
             return_value=[
-                {
-                    "type": "similar_filenames",
-                    "file": "test1.md",
-                    "similar_to": "test2.md",
-                },
-                {
-                    "type": "similar_filenames",
-                    "file": "doc1.md",
-                    "similar_to": "doc2.md",
-                },
+                AntiPatternInfo(
+                    type="similar_filenames",
+                    file="test1.md",
+                    files=["test1.md", "test2.md"],
+                    severity="medium",
+                    description="Similar filenames detected",
+                ),
+                AntiPatternInfo(
+                    type="similar_filenames",
+                    file="doc1.md",
+                    files=["doc1.md", "doc2.md"],
+                    severity="medium",
+                    description="Similar filenames detected",
+                ),
             ]
         )
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value={
-                "status": "analyzed",
-                "metrics": {"max_dependency_depth": 8},
-                "assessment": {
-                    "score": 55,
-                    "grade": "D",
-                    "status": "poor",
-                    "issues": ["High complexity"],
-                    "recommendations": ["Reduce dependencies"],
-                },
-            }
+            return_value=ComplexityAnalysisResult(
+                status="analyzed",
+                metrics=ComplexityMetrics(max_dependency_depth=8),
+                assessment=ComplexityAssessment(
+                    score=55,
+                    grade="D",
+                    status="poor",
+                    issues=["High complexity"],
+                    recommendations=["Reduce dependencies"],
+                ),
+            )
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
 
         # Act
-        result = await engine.generate_insights(min_impact_score=0.5)
+        result_model = await engine.generate_insights(min_impact_score=0.5)
+        result = result_model.model_dump(mode="json")
 
         # Assert
         assert result["total_insights"] > 0
@@ -169,33 +197,42 @@ class TestInsightGeneration:
 
     @pytest.mark.asyncio
     async def test_filters_insights_by_impact_score(
-        self, mocker: "pytest_mock.MockerFixture"
+        self, mocker: pytest_mock.MockerFixture
     ):
         """Test filters insights by minimum impact score."""
         # Arrange
         mock_pattern = mocker.MagicMock()
         mock_pattern.get_unused_files = AsyncMock(
             return_value=[
-                {"file": f"unused{i}.md", "status": "stale"} for i in range(5)
+                UnusedFileEntry(
+                    file=f"unused{i}.md",
+                    status="stale",
+                    total_accesses=0,
+                    last_access=None,
+                )
+                for i in range(5)
             ]
         )
         mock_pattern.get_co_access_patterns = AsyncMock(
-            return_value=[{"file_1": "a.md", "file_2": "b.md"} for _ in range(5)]
+            return_value=[
+                CoAccessPattern(file_1="a.md", file_2="b.md") for _ in range(5)
+            ]
         )
 
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
-            return_value={"status": "empty"}
+            return_value=FileOrganizationResult(status="empty", file_count=0)
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value={"status": "no_files"}
+            return_value=ComplexityAnalysisResult(status="no_files")
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
 
         # Act - request only high impact (>0.8)
-        result = await engine.generate_insights(min_impact_score=0.8)
+        result_model = await engine.generate_insights(min_impact_score=0.8)
+        result = result_model.model_dump(mode="json")
 
         # Assert - should only include insights with impact >= 0.8
         insights_raw = result["insights"]
@@ -208,31 +245,38 @@ class TestInsightGeneration:
 
     @pytest.mark.asyncio
     async def test_filters_insights_by_categories(
-        self, mocker: "pytest_mock.MockerFixture"
+        self, mocker: pytest_mock.MockerFixture
     ):
         """Test filters insights by selected categories."""
         # Arrange
         mock_pattern = mocker.MagicMock()
         mock_pattern.get_unused_files = AsyncMock(
             return_value=[
-                {"file": f"unused{i}.md", "status": "stale"} for i in range(5)
+                UnusedFileEntry(
+                    file=f"unused{i}.md",
+                    status="stale",
+                    total_accesses=0,
+                    last_access=None,
+                )
+                for i in range(5)
             ]
         )
         mock_pattern.get_co_access_patterns = AsyncMock(return_value=[])
 
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
-            return_value={"status": "empty"}
+            return_value=FileOrganizationResult(status="empty", file_count=0)
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value={"status": "no_files"}
+            return_value=ComplexityAnalysisResult(status="no_files")
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
 
         # Act - request only usage category
-        result = await engine.generate_insights(categories=["usage"])
+        result_model = await engine.generate_insights(categories=["usage"])
+        result = result_model.model_dump(mode="json")
 
         # Assert - should only include usage insights
         insights_raw = result["insights"]
@@ -245,33 +289,42 @@ class TestInsightGeneration:
 
     @pytest.mark.asyncio
     async def test_sorts_insights_by_impact_score(
-        self, mocker: "pytest_mock.MockerFixture"
+        self, mocker: pytest_mock.MockerFixture
     ):
         """Test sorts insights by impact score descending."""
         # Arrange
         mock_pattern = mocker.MagicMock()
         mock_pattern.get_unused_files = AsyncMock(
             return_value=[
-                {"file": f"unused{i}.md", "status": "stale"} for i in range(5)
+                UnusedFileEntry(
+                    file=f"unused{i}.md",
+                    status="stale",
+                    total_accesses=0,
+                    last_access=None,
+                )
+                for i in range(5)
             ]
         )
         mock_pattern.get_co_access_patterns = AsyncMock(
-            return_value=[{"file_1": "a.md", "file_2": "b.md"} for _ in range(5)]
+            return_value=[
+                CoAccessPattern(file_1="a.md", file_2="b.md") for _ in range(5)
+            ]
         )
 
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
-            return_value={"status": "empty"}
+            return_value=FileOrganizationResult(status="empty", file_count=0)
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value={"status": "no_files"}
+            return_value=ComplexityAnalysisResult(status="no_files")
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
 
         # Act
-        result = await engine.generate_insights(min_impact_score=0.0)
+        result_model = await engine.generate_insights(min_impact_score=0.0)
+        result = result_model.model_dump(mode="json")
 
         # Assert - insights should be sorted by impact score (highest first)
         insights_raw = result["insights"]
@@ -290,33 +343,49 @@ class TestUsageInsights:
 
     @pytest.mark.asyncio
     async def test_detects_unused_files_insight(
-        self, mocker: "pytest_mock.MockerFixture"
+        self, mocker: pytest_mock.MockerFixture
     ):
         """Test generates insight for unused files."""
         # Arrange
         mock_pattern = mocker.MagicMock()
         mock_pattern.get_unused_files = AsyncMock(
             return_value=[
-                {"file": "unused1.md", "status": "stale"},
-                {"file": "unused2.md", "status": "stale"},
-                {"file": "unused3.md", "status": "never_accessed"},
+                UnusedFileEntry(
+                    file="unused1.md",
+                    status="stale",
+                    total_accesses=0,
+                    last_access=None,
+                ),
+                UnusedFileEntry(
+                    file="unused2.md",
+                    status="stale",
+                    total_accesses=0,
+                    last_access=None,
+                ),
+                UnusedFileEntry(
+                    file="unused3.md",
+                    status="never_accessed",
+                    total_accesses=0,
+                    last_access=None,
+                ),
             ]
         )
         mock_pattern.get_co_access_patterns = AsyncMock(return_value=[])
 
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
-            return_value={"status": "empty"}
+            return_value=FileOrganizationResult(status="empty", file_count=0)
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value={"status": "no_files"}
+            return_value=ComplexityAnalysisResult(status="no_files")
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
 
         # Act
-        result = await engine.generate_insights(categories=["usage"])
+        result_model = await engine.generate_insights(categories=["usage"])
+        result = result_model.model_dump(mode="json")
 
         # Assert
         insights_raw = result["insights"]
@@ -333,7 +402,7 @@ class TestUsageInsights:
 
     @pytest.mark.asyncio
     async def test_detects_co_access_patterns_insight(
-        self, mocker: "pytest_mock.MockerFixture"
+        self, mocker: pytest_mock.MockerFixture
     ):
         """Test generates insight for co-access patterns."""
         # Arrange
@@ -341,23 +410,25 @@ class TestUsageInsights:
         mock_pattern.get_unused_files = AsyncMock(return_value=[])
         mock_pattern.get_co_access_patterns = AsyncMock(
             return_value=[
-                {"file_1": f"file{i}.md", "file_2": f"file{i + 1}.md"} for i in range(5)
+                CoAccessPattern(file_1=f"file{i}.md", file_2=f"file{i + 1}.md")
+                for i in range(5)
             ]
         )
 
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
-            return_value={"status": "empty"}
+            return_value=FileOrganizationResult(status="empty", file_count=0)
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value={"status": "no_files"}
+            return_value=ComplexityAnalysisResult(status="no_files")
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
 
         # Act
-        result = await engine.generate_insights(categories=["usage"])
+        result_model = await engine.generate_insights(categories=["usage"])
+        result = result_model.model_dump(mode="json")
 
         # Assert
         insights_raw = result["insights"]
@@ -377,9 +448,7 @@ class TestOrganizationInsights:
     """Tests for organization insights."""
 
     @pytest.mark.asyncio
-    async def test_detects_large_files_insight(
-        self, mocker: "pytest_mock.MockerFixture"
-    ):
+    async def test_detects_large_files_insight(self, mocker: pytest_mock.MockerFixture):
         """Test generates insight for large files."""
         # Arrange
         mock_pattern = mocker.MagicMock()
@@ -388,26 +457,28 @@ class TestOrganizationInsights:
 
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
-            return_value={
-                "status": "analyzed",
-                "issues": ["3 files very large"],
-                "largest_files": [
-                    {"file": "large1.md", "size_bytes": 100000},
-                    {"file": "large2.md", "size_bytes": 90000},
-                    {"file": "large3.md", "size_bytes": 80000},
+            return_value=FileOrganizationResult(
+                status="analyzed",
+                file_count=3,
+                issues=["3 files very large"],
+                largest_files=[
+                    FileSizeEntry(file="large1.md", size_bytes=100000, tokens=0),
+                    FileSizeEntry(file="large2.md", size_bytes=90000, tokens=0),
+                    FileSizeEntry(file="large3.md", size_bytes=80000, tokens=0),
                 ],
-                "smallest_files": [],
-            }
+                smallest_files=[],
+            )
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value={"status": "no_files"}
+            return_value=ComplexityAnalysisResult(status="no_files")
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
 
         # Act
-        result = await engine.generate_insights(categories=["organization"])
+        result_model = await engine.generate_insights(categories=["organization"])
+        result = result_model.model_dump(mode="json")
 
         # Assert
         insights_raw = result["insights"]
@@ -421,9 +492,7 @@ class TestOrganizationInsights:
         assert "large" in str(insight["title"]).lower()
 
     @pytest.mark.asyncio
-    async def test_detects_small_files_insight(
-        self, mocker: "pytest_mock.MockerFixture"
-    ):
+    async def test_detects_small_files_insight(self, mocker: pytest_mock.MockerFixture):
         """Test generates insight for small files."""
         # Arrange
         mock_pattern = mocker.MagicMock()
@@ -432,24 +501,27 @@ class TestOrganizationInsights:
 
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
-            return_value={
-                "status": "analyzed",
-                "issues": ["5 files very small"],
-                "largest_files": [],
-                "smallest_files": [
-                    {"file": f"small{i}.md", "size_bytes": 300} for i in range(5)
+            return_value=FileOrganizationResult(
+                status="analyzed",
+                file_count=5,
+                issues=["5 files very small"],
+                largest_files=[],
+                smallest_files=[
+                    FileSizeEntry(file=f"small{i}.md", size_bytes=300, tokens=0)
+                    for i in range(5)
                 ],
-            }
+            )
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value={"status": "no_files"}
+            return_value=ComplexityAnalysisResult(status="no_files")
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
 
         # Act
-        result = await engine.generate_insights(categories=["organization"])
+        result_model = await engine.generate_insights(categories=["organization"])
+        result = result_model.model_dump(mode="json")
 
         # Assert
         insights_raw = result["insights"]
@@ -468,7 +540,7 @@ class TestRedundancyInsights:
 
     @pytest.mark.asyncio
     async def test_detects_similar_filenames_insight(
-        self, mocker: "pytest_mock.MockerFixture"
+        self, mocker: pytest_mock.MockerFixture
     ):
         """Test generates insight for similar filenames."""
         # Arrange
@@ -478,30 +550,35 @@ class TestRedundancyInsights:
 
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
-            return_value={"status": "empty"}
+            return_value=FileOrganizationResult(status="empty", file_count=0)
         )
         mock_structure.detect_anti_patterns = AsyncMock(
             return_value=[
-                {
-                    "type": "similar_filenames",
-                    "file": "test1.md",
-                    "similar_to": "test2.md",
-                },
-                {
-                    "type": "similar_filenames",
-                    "file": "doc1.md",
-                    "similar_to": "doc2.md",
-                },
+                AntiPatternInfo(
+                    type="similar_filenames",
+                    file="test1.md",
+                    files=["test1.md", "test2.md"],
+                    severity="medium",
+                    description="Similar filenames detected",
+                ),
+                AntiPatternInfo(
+                    type="similar_filenames",
+                    file="doc1.md",
+                    files=["doc1.md", "doc2.md"],
+                    severity="medium",
+                    description="Similar filenames detected",
+                ),
             ]
         )
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value={"status": "no_files"}
+            return_value=ComplexityAnalysisResult(status="no_files")
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
 
         # Act
-        result = await engine.generate_insights(categories=["redundancy"])
+        result_model = await engine.generate_insights(categories=["redundancy"])
+        result = result_model.model_dump(mode="json")
 
         # Assert
         insights_raw = result["insights"]
@@ -519,9 +596,7 @@ class TestDependencyInsights:
     """Tests for dependency insights."""
 
     @pytest.mark.asyncio
-    async def test_detects_complexity_insight(
-        self, mocker: "pytest_mock.MockerFixture"
-    ):
+    async def test_detects_complexity_insight(self, mocker: pytest_mock.MockerFixture):
         """Test generates insight for dependency complexity."""
         # Arrange
         mock_pattern = mocker.MagicMock()
@@ -530,28 +605,29 @@ class TestDependencyInsights:
 
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
-            return_value={"status": "empty"}
+            return_value=FileOrganizationResult(status="empty", file_count=0)
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value={
-                "status": "analyzed",
-                "metrics": {"max_dependency_depth": 8},
-                "complexity_hotspots": [{"file": "complex.md", "complexity_score": 50}],
-                "assessment": {
-                    "score": 55,
-                    "grade": "D",
-                    "status": "poor",
-                    "issues": ["High complexity"],
-                    "recommendations": ["Reduce dependencies"],
-                },
-            }
+            return_value=ComplexityAnalysisResult(
+                status="analyzed",
+                metrics=ComplexityMetrics(max_dependency_depth=8),
+                complexity_hotspots=[ComplexityHotspot(file="complex.md", score=50.0)],
+                assessment=ComplexityAssessment(
+                    score=55,
+                    grade="D",
+                    status="poor",
+                    issues=["High complexity"],
+                    recommendations=["Reduce dependencies"],
+                ),
+            )
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
 
         # Act
-        result = await engine.generate_insights(categories=["dependencies"])
+        result_model = await engine.generate_insights(categories=["dependencies"])
+        result = result_model.model_dump(mode="json")
 
         # Assert
         insights_raw = result["insights"]
@@ -568,7 +644,7 @@ class TestDependencyInsights:
 
     @pytest.mark.asyncio
     async def test_detects_orphaned_files_insight(
-        self, mocker: "pytest_mock.MockerFixture"
+        self, mocker: pytest_mock.MockerFixture
     ):
         """Test generates insight for orphaned files."""
         # Arrange
@@ -578,22 +654,35 @@ class TestDependencyInsights:
 
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
-            return_value={"status": "empty"}
+            return_value=FileOrganizationResult(status="empty", file_count=0)
         )
         mock_structure.detect_anti_patterns = AsyncMock(
             return_value=[
-                {"type": "orphaned_file", "file": "orphan1.md"},
-                {"type": "orphaned_file", "file": "orphan2.md"},
+                AntiPatternInfo(
+                    type="orphaned_file",
+                    file="orphan1.md",
+                    files=["orphan1.md"],
+                    severity="medium",
+                    description="Orphaned file detected",
+                ),
+                AntiPatternInfo(
+                    type="orphaned_file",
+                    file="orphan2.md",
+                    files=["orphan2.md"],
+                    severity="medium",
+                    description="Orphaned file detected",
+                ),
             ]
         )
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value={"status": "no_files"}
+            return_value=ComplexityAnalysisResult(status="no_files")
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
 
         # Act
-        result = await engine.generate_insights(categories=["dependencies"])
+        result_model = await engine.generate_insights(categories=["dependencies"])
+        result = result_model.model_dump(mode="json")
 
         # Assert
         insights_raw = result["insights"]
@@ -612,7 +701,7 @@ class TestQualityInsights:
 
     @pytest.mark.asyncio
     async def test_detects_deep_dependencies_insight(
-        self, mocker: "pytest_mock.MockerFixture"
+        self, mocker: pytest_mock.MockerFixture
     ):
         """Test generates insight for deep dependency chains."""
         # Arrange
@@ -622,21 +711,22 @@ class TestQualityInsights:
 
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
-            return_value={"status": "empty"}
+            return_value=FileOrganizationResult(status="empty", file_count=0)
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value={
-                "status": "analyzed",
-                "metrics": {"max_dependency_depth": 8},
-                "assessment": {"score": 85},
-            }
+            return_value=ComplexityAnalysisResult(
+                status="analyzed",
+                metrics=ComplexityMetrics(max_dependency_depth=8),
+                assessment=ComplexityAssessment(score=85),
+            )
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
 
         # Act
-        result = await engine.generate_insights(categories=["quality"])
+        result_model = await engine.generate_insights(categories=["quality"])
+        result = result_model.model_dump(mode="json")
 
         # Assert
         insights_raw = result["insights"]
@@ -657,7 +747,7 @@ class TestSummaryGeneration:
     """Tests for summary generation."""
 
     def test_generates_excellent_summary_with_no_insights(
-        self, mocker: "pytest_mock.MockerFixture"
+        self, mocker: pytest_mock.MockerFixture
     ):
         """Test generates excellent status when no insights."""
         # Arrange
@@ -666,7 +756,7 @@ class TestSummaryGeneration:
         engine = InsightEngine(mock_pattern, mock_structure)
 
         # Act
-        summary = engine.generate_summary([])
+        summary = engine.generate_summary([]).model_dump(mode="json")
 
         # Assert
         assert summary.get("status") == "excellent"
@@ -674,7 +764,7 @@ class TestSummaryGeneration:
         assert summary.get("top_recommendations", []) == []
 
     def test_generates_needs_attention_with_high_severity(
-        self, mocker: "pytest_mock.MockerFixture"
+        self, mocker: pytest_mock.MockerFixture
     ):
         """Test generates needs_attention status with high severity."""
         # Arrange
@@ -683,17 +773,23 @@ class TestSummaryGeneration:
         engine = InsightEngine(mock_pattern, mock_structure)
 
         insights = [
-            {
-                "id": "test1",
-                "severity": "high",
-                "impact_score": 0.9,
-                "title": "Critical issue",
-                "recommendations": ["Fix this"],
-            }
+            InsightDict.model_validate(
+                {
+                    "id": "test1",
+                    "category": "quality",
+                    "title": "Critical issue",
+                    "description": "Critical issue description",
+                    "impact_score": 0.9,
+                    "severity": "high",
+                    "recommendations": ["Fix this"],
+                    "estimated_token_savings": 0,
+                    "affected_files": [],
+                }
+            )
         ]
 
         # Act
-        summary = engine.generate_summary(cast(list[InsightDict], insights))
+        summary = engine.generate_summary(insights).model_dump(mode="json")
 
         # Assert
         assert summary.get("status") == "needs_attention"
@@ -701,7 +797,7 @@ class TestSummaryGeneration:
         assert summary.get("high_severity_count") == 1
 
     def test_generates_could_improve_with_multiple_medium(
-        self, mocker: "pytest_mock.MockerFixture"
+        self, mocker: pytest_mock.MockerFixture
     ):
         """Test generates could_improve status with multiple medium severity."""
         # Arrange
@@ -710,18 +806,24 @@ class TestSummaryGeneration:
         engine = InsightEngine(mock_pattern, mock_structure)
 
         insights = [
-            {
-                "id": f"test{i}",
-                "severity": "medium",
-                "impact_score": 0.6,
-                "title": f"Issue {i}",
-                "recommendations": ["Improve this"],
-            }
+            InsightDict.model_validate(
+                {
+                    "id": f"test{i}",
+                    "category": "quality",
+                    "title": f"Issue {i}",
+                    "description": f"Issue {i} description",
+                    "impact_score": 0.6,
+                    "severity": "medium",
+                    "recommendations": ["Improve this"],
+                    "estimated_token_savings": 0,
+                    "affected_files": [],
+                }
+            )
             for i in range(4)
         ]
 
         # Act
-        summary = engine.generate_summary(cast(list[InsightDict], insights))
+        summary = engine.generate_summary(insights).model_dump(mode="json")
 
         # Assert
         assert summary.get("status") == "could_improve"
@@ -733,26 +835,30 @@ class TestInsightDetails:
     """Tests for getting insight details."""
 
     @pytest.mark.asyncio
-    async def test_gets_insight_details_by_id(
-        self, mocker: "pytest_mock.MockerFixture"
-    ):
+    async def test_gets_insight_details_by_id(self, mocker: pytest_mock.MockerFixture):
         """Test retrieves specific insight by ID."""
         # Arrange
         mock_pattern = mocker.MagicMock()
         mock_pattern.get_unused_files = AsyncMock(
             return_value=[
-                {"file": f"unused{i}.md", "status": "stale"} for i in range(5)
+                UnusedFileEntry(
+                    file=f"unused{i}.md",
+                    status="stale",
+                    total_accesses=0,
+                    last_access=None,
+                )
+                for i in range(5)
             ]
         )
         mock_pattern.get_co_access_patterns = AsyncMock(return_value=[])
 
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
-            return_value={"status": "empty"}
+            return_value=FileOrganizationResult(status="empty", file_count=0)
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value={"status": "no_files"}
+            return_value=ComplexityAnalysisResult(status="no_files")
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
@@ -762,12 +868,12 @@ class TestInsightDetails:
 
         # Assert
         assert insight is not None
-        assert insight["id"] == "unused_files"
-        assert insight["category"] == "usage"
+        assert insight.id == "unused_files"
+        assert insight.category == "usage"
 
     @pytest.mark.asyncio
     async def test_returns_none_for_unknown_insight(
-        self, mocker: "pytest_mock.MockerFixture"
+        self, mocker: pytest_mock.MockerFixture
     ):
         """Test returns None for unknown insight ID."""
         # Arrange
@@ -777,11 +883,11 @@ class TestInsightDetails:
 
         mock_structure = mocker.MagicMock()
         mock_structure.analyze_file_organization = AsyncMock(
-            return_value={"status": "empty"}
+            return_value=FileOrganizationResult(status="empty", file_count=0)
         )
         mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         mock_structure.measure_complexity_metrics = AsyncMock(
-            return_value={"status": "no_files"}
+            return_value=ComplexityAnalysisResult(status="no_files")
         )
 
         engine = InsightEngine(mock_pattern, mock_structure)
@@ -804,16 +910,40 @@ class TestExportFormats:
         mock_structure = mocker.MagicMock()
         engine = InsightEngine(mock_pattern, mock_structure)
 
-        insights_data = {
-            "generated_at": "2025-01-01T12:00:00Z",
-            "total_insights": 1,
-            "insights": [{"id": "test", "title": "Test Insight"}],
-        }
+        insights_data = InsightsResultDict.model_validate(
+            {
+                "generated_at": "2025-01-01T12:00:00Z",
+                "total_insights": 1,
+                "high_impact_count": 1,
+                "medium_impact_count": 0,
+                "low_impact_count": 0,
+                "estimated_total_token_savings": 0,
+                "insights": [
+                    {
+                        "id": "test",
+                        "category": "quality",
+                        "title": "Test Insight",
+                        "description": "Test description",
+                        "impact_score": 0.9,
+                        "severity": "high",
+                        "recommendations": [],
+                        "estimated_token_savings": 0,
+                        "affected_files": [],
+                    }
+                ],
+                "summary": {
+                    "status": "good",
+                    "message": "Test summary",
+                    "high_severity_count": 1,
+                    "medium_severity_count": 0,
+                    "low_severity_count": 0,
+                    "top_recommendations": [],
+                },
+            }
+        )
 
         # Act
-        result = await engine.export_insights(
-            cast(dict[str, object], insights_data), format="json"
-        )
+        result = await engine.export_insights(insights_data, format="json")
 
         # Assert
         assert isinstance(result, str)
@@ -823,7 +953,7 @@ class TestExportFormats:
 
     @pytest.mark.asyncio
     async def test_exports_insights_as_markdown(
-        self, mocker: "pytest_mock.MockerFixture"
+        self, mocker: pytest_mock.MockerFixture
     ):
         """Test exports insights in Markdown format."""
         # Arrange
@@ -831,30 +961,40 @@ class TestExportFormats:
         mock_structure = mocker.MagicMock()
         engine = InsightEngine(mock_pattern, mock_structure)
 
-        insights_data = {
-            "generated_at": "2025-01-01T12:00:00Z",
-            "total_insights": 1,
-            "high_impact_count": 1,
-            "medium_impact_count": 0,
-            "low_impact_count": 0,
-            "estimated_total_token_savings": 500,
-            "insights": [
-                {
-                    "id": "test",
-                    "title": "Test Insight",
-                    "impact_score": 0.8,
-                    "severity": "high",
-                    "description": "Test description",
-                    "recommendations": ["Do this", "Do that"],
-                }
-            ],
-            "summary": {"message": "Test summary"},
-        }
+        insights_data = InsightsResultDict.model_validate(
+            {
+                "generated_at": "2025-01-01T12:00:00Z",
+                "total_insights": 1,
+                "high_impact_count": 1,
+                "medium_impact_count": 0,
+                "low_impact_count": 0,
+                "estimated_total_token_savings": 500,
+                "insights": [
+                    {
+                        "id": "test",
+                        "category": "quality",
+                        "title": "Test Insight",
+                        "description": "Test description",
+                        "impact_score": 0.8,
+                        "severity": "high",
+                        "recommendations": ["Do this", "Do that"],
+                        "estimated_token_savings": 500,
+                        "affected_files": [],
+                    }
+                ],
+                "summary": {
+                    "status": "good",
+                    "message": "Test summary",
+                    "high_severity_count": 1,
+                    "medium_severity_count": 0,
+                    "low_severity_count": 0,
+                    "top_recommendations": [],
+                },
+            }
+        )
 
         # Act
-        result = await engine.export_insights(
-            cast(dict[str, object], insights_data), format="markdown"
-        )
+        result = await engine.export_insights(insights_data, format="markdown")
 
         # Assert
         assert isinstance(result, str)
@@ -871,26 +1011,40 @@ class TestExportFormats:
         mock_structure = mocker.MagicMock()
         engine = InsightEngine(mock_pattern, mock_structure)
 
-        insights_data = {
-            "generated_at": "2025-01-01T12:00:00Z",
-            "total_insights": 1,
-            "estimated_total_token_savings": 500,
-            "insights": [
-                {
-                    "id": "test",
-                    "title": "Test Insight",
-                    "impact_score": 0.8,
-                    "severity": "high",
-                    "description": "Test description",
-                }
-            ],
-            "summary": {"message": "Test summary"},
-        }
+        insights_data = InsightsResultDict.model_validate(
+            {
+                "generated_at": "2025-01-01T12:00:00Z",
+                "total_insights": 1,
+                "high_impact_count": 1,
+                "medium_impact_count": 0,
+                "low_impact_count": 0,
+                "estimated_total_token_savings": 500,
+                "insights": [
+                    {
+                        "id": "test",
+                        "category": "quality",
+                        "title": "Test Insight",
+                        "description": "Test description",
+                        "impact_score": 0.8,
+                        "severity": "high",
+                        "recommendations": [],
+                        "estimated_token_savings": 500,
+                        "affected_files": [],
+                    }
+                ],
+                "summary": {
+                    "status": "good",
+                    "message": "Test summary",
+                    "high_severity_count": 1,
+                    "medium_severity_count": 0,
+                    "low_severity_count": 0,
+                    "top_recommendations": [],
+                },
+            }
+        )
 
         # Act
-        result = await engine.export_insights(
-            cast(dict[str, object], insights_data), format="text"
-        )
+        result = await engine.export_insights(insights_data, format="text")
 
         # Assert
         assert isinstance(result, str)
@@ -900,7 +1054,7 @@ class TestExportFormats:
 
     @pytest.mark.asyncio
     async def test_raises_error_for_invalid_format(
-        self, mocker: "pytest_mock.MockerFixture"
+        self, mocker: pytest_mock.MockerFixture
     ):
         """Test raises error for invalid export format."""
         # Arrange
@@ -908,7 +1062,25 @@ class TestExportFormats:
         mock_structure = mocker.MagicMock()
         engine = InsightEngine(mock_pattern, mock_structure)
 
-        insights_data: dict[str, object] = {"total_insights": 0}
+        insights_data = InsightsResultDict.model_validate(
+            {
+                "generated_at": "2025-01-01T12:00:00Z",
+                "total_insights": 0,
+                "high_impact_count": 0,
+                "medium_impact_count": 0,
+                "low_impact_count": 0,
+                "estimated_total_token_savings": 0,
+                "insights": [],
+                "summary": {
+                    "status": "excellent",
+                    "message": "No issues",
+                    "high_severity_count": 0,
+                    "medium_severity_count": 0,
+                    "low_severity_count": 0,
+                    "top_recommendations": [],
+                },
+            }
+        )
 
         # Act & Assert
         with pytest.raises(MemoryBankError, match="Unsupported export format"):

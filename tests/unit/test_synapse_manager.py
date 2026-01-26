@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 from cortex.rules.context_detector import ContextDetector
+from cortex.rules.models import GitCommandResult
 from cortex.rules.synapse_manager import SynapseManager
 
 
@@ -57,7 +58,9 @@ class TestInitializeSharedRules:
 
         # Mock git command
         manager.run_git_command = AsyncMock(
-            return_value={"success": True, "stdout": "", "stderr": ""}
+            return_value=GitCommandResult(
+                success=True, stdout="", stderr="", returncode=0, error=None
+            )
         )
 
         # Create rules directory and manifest
@@ -96,7 +99,9 @@ class TestInitializeSharedRules:
 
         # Mock git command
         manager.run_git_command = AsyncMock(
-            return_value={"success": True, "stdout": "", "stderr": ""}
+            return_value=GitCommandResult(
+                success=True, stdout="", stderr="", returncode=0, error=None
+            )
         )
 
         # Act
@@ -122,7 +127,9 @@ class TestInitializeSharedRules:
 
         # Mock git commands
         manager.run_git_command = AsyncMock(
-            return_value={"success": True, "stdout": "", "stderr": ""}
+            return_value=GitCommandResult(
+                success=True, stdout="", stderr="", returncode=0, error=None
+            )
         )
 
         # Create manifest in rules directory
@@ -144,12 +151,13 @@ class TestInitializeSharedRules:
 
         # Mock git command failure
         manager.run_git_command = AsyncMock(
-            return_value={
-                "success": False,
-                "error": "Repository not found",
-                "stdout": "",
-                "stderr": "",
-            }
+            return_value=GitCommandResult(
+                success=False,
+                error="Repository not found",
+                stdout="",
+                stderr="",
+                returncode=1,
+            )
         )
 
         # Act
@@ -180,7 +188,9 @@ class TestSyncSharedRules:
 
         # Mock git commands
         manager.run_git_command = AsyncMock(
-            return_value={"success": True, "stdout": "", "stderr": ""}
+            return_value=GitCommandResult(
+                success=True, stdout="", stderr="", returncode=0, error=None
+            )
         )
 
         # Act
@@ -204,7 +214,9 @@ class TestSyncSharedRules:
 
         # Mock git commands
         manager.run_git_command = AsyncMock(
-            return_value={"success": True, "stdout": "", "stderr": ""}
+            return_value=GitCommandResult(
+                success=True, stdout="", stderr="", returncode=0, error=None
+            )
         )
 
         # Act
@@ -229,12 +241,16 @@ class TestSyncSharedRules:
         diff_output = "A\tpython/style.md\nM\tgeneric/best-practices.md\nD\told-file.md"
         manager.run_git_command = AsyncMock(
             side_effect=[
-                {"success": True, "stdout": "", "stderr": ""},  # submodule update
-                {
-                    "success": True,
-                    "stdout": diff_output,
-                    "stderr": "",
-                },  # diff
+                GitCommandResult(  # submodule update
+                    success=True, stdout="", stderr="", returncode=0, error=None
+                ),
+                GitCommandResult(  # diff
+                    success=True,
+                    stdout=diff_output,
+                    stderr="",
+                    returncode=0,
+                    error=None,
+                ),
             ]
         )
 
@@ -608,7 +624,9 @@ class TestUpdateSharedRule:
 
         # Mock git commands
         manager.run_git_command = AsyncMock(
-            return_value={"success": True, "stdout": "", "stderr": ""}
+            return_value=GitCommandResult(
+                success=True, stdout="", stderr="", returncode=0, error=None
+            )
         )
 
         # Act
@@ -638,7 +656,9 @@ class TestUpdateSharedRule:
 
         # Mock git commands
         manager.run_git_command = AsyncMock(
-            return_value={"success": True, "stdout": "", "stderr": ""}
+            return_value=GitCommandResult(
+                success=True, stdout="", stderr="", returncode=0, error=None
+            )
         )
 
         # Act
@@ -668,9 +688,11 @@ class TestUpdateSharedRule:
         # Mock git commands
         git_calls: list[list[str]] = []
 
-        async def mock_git_command(cmd: list[str]) -> dict[str, object]:
+        async def mock_git_command(cmd: list[str]) -> GitCommandResult:
             git_calls.append(cmd)
-            return {"success": True, "stdout": "", "stderr": ""}
+            return GitCommandResult(
+                success=True, stdout="", stderr="", returncode=0, error=None
+            )
 
         manager.run_git_command = mock_git_command
 
@@ -717,7 +739,9 @@ class TestCreateSharedRule:
 
         # Mock git commands
         manager.run_git_command = AsyncMock(
-            return_value={"success": True, "stdout": "", "stderr": ""}
+            return_value=GitCommandResult(
+                success=True, stdout="", stderr="", returncode=0, error=None
+            )
         )
 
         # Act
@@ -838,9 +862,15 @@ class TestEdgeCases:
         # Mock git commands with empty diff
         manager.run_git_command = AsyncMock(
             side_effect=[
-                {"success": True, "stdout": "", "stderr": ""},  # submodule update
-                {"success": True, "stdout": "", "stderr": ""},  # pull
-                {"success": True, "stdout": "", "stderr": ""},  # diff (empty)
+                GitCommandResult(  # submodule update
+                    success=True, stdout="", stderr="", returncode=0, error=None
+                ),
+                GitCommandResult(  # pull
+                    success=True, stdout="", stderr="", returncode=0, error=None
+                ),
+                GitCommandResult(  # diff (empty)
+                    success=True, stdout="", stderr="", returncode=0, error=None
+                ),
             ]
         )
 

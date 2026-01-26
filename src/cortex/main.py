@@ -9,12 +9,16 @@ All tool implementations are in the tools/ package.
 import logging
 import sys
 from builtins import BaseExceptionGroup  # Python 3.11+
+from typing import cast
 
 import anyio
 
 # Import tools package to register all @mcp.tool() decorators
-import cortex.tools  # noqa: F401  # pyright: ignore[reportUnusedImport]
+import cortex.tools  # noqa: F401
 from cortex.server import mcp
+
+# Explicitly reference cortex.tools to satisfy type checker (imported for side effects)
+_ = cortex.tools
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +35,8 @@ def _is_connection_error(exc: BaseException) -> bool:
         return True
     # Handle nested exception groups recursively
     if isinstance(exc, BaseExceptionGroup):
-        # pyright has issues with BaseExceptionGroup generic type parameter
-        # BaseExceptionGroup.exceptions is tuple[BaseException, ...] at runtime
-        nested_excs: tuple[BaseException, ...] = exc.exceptions  # type: ignore[assignment]
-        for nested in nested_excs:
+        exc_group = cast(BaseExceptionGroup[BaseException], exc)
+        for nested in exc_group.exceptions:
             if _is_connection_error(nested):
                 return True
     return False

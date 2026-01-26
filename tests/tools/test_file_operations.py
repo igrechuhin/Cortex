@@ -26,6 +26,7 @@ from cortex.tools.file_operations import (
     update_file_metadata,
     validate_write_content,
 )
+from tests.helpers.managers import make_test_managers
 
 
 @pytest.mark.asyncio
@@ -49,7 +50,7 @@ class TestManageFileEdgeCases:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -80,7 +81,7 @@ class TestManageFileEdgeCases:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -122,7 +123,7 @@ class TestManageFileEdgeCases:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -166,7 +167,7 @@ class TestManageFileEdgeCases:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -196,6 +197,7 @@ class TestManageFileEdgeCases:
 
         mock_fs = AsyncMock()
         mock_fs.construct_safe_path = MagicMock(return_value=mock_path)
+        mock_fs.read_file = AsyncMock(return_value=("Existing content", "old_hash"))
         mock_fs.write_file = AsyncMock(
             side_effect=FileConflictError("test.md", "expected_hash", "actual_hash")
         )
@@ -218,7 +220,7 @@ class TestManageFileEdgeCases:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -249,6 +251,7 @@ class TestManageFileEdgeCases:
 
         mock_fs = AsyncMock()
         mock_fs.construct_safe_path = MagicMock(return_value=mock_path)
+        mock_fs.read_file = AsyncMock(return_value=("Existing content", "old_hash"))
         mock_fs.write_file = AsyncMock(side_effect=FileLockTimeoutError("test.md", 10))
         mock_fs.compute_hash = MagicMock(return_value="hash123")
 
@@ -269,7 +272,7 @@ class TestManageFileEdgeCases:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -300,6 +303,7 @@ class TestManageFileEdgeCases:
 
         mock_fs = AsyncMock()
         mock_fs.construct_safe_path = MagicMock(return_value=mock_path)
+        mock_fs.read_file = AsyncMock(return_value=("Existing content", "old_hash"))
         mock_fs.write_file = AsyncMock(side_effect=GitConflictError("test.md"))
         mock_fs.compute_hash = MagicMock(return_value="hash123")
 
@@ -320,7 +324,7 @@ class TestManageFileEdgeCases:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -353,7 +357,7 @@ class TestManageFileEdgeCases:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -386,7 +390,7 @@ class TestManageFileEdgeCases:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -535,7 +539,9 @@ Final section
             "token_count": 25,
             "content_hash": "hash123",
         }
-        version_info = {"version": 6, "snapshot_path": "/tmp/snapshots/test.md.v6"}
+        version_info = MagicMock()
+        version_info.version = 6
+        version_info.snapshot_path = "/tmp/snapshots/test.md.v6"
 
         mock_metadata_index = AsyncMock()
         mock_metadata_index.update_file_metadata = AsyncMock()
@@ -548,7 +554,7 @@ Final section
             content,
             cast(dict[str, object], file_metrics),
             mock_metadata_index,
-            cast(dict[str, object], version_info),
+            version_info,
         )
 
         # Assert
@@ -561,10 +567,9 @@ Final section
         """Test write response builder."""
         # Arrange
         file_name = "test.md"
-        version_info = {
-            "version": 6,
-            "snapshot_path": "/tmp/snapshots/test.md.v6",
-        }
+        version_info = MagicMock()
+        version_info.version = 6
+        version_info.snapshot_path = "/tmp/snapshots/test.md.v6"
         content = "Test content"
 
         mock_tokens = MagicMock()
@@ -572,7 +577,7 @@ Final section
 
         # Act
         response_str = build_write_response(
-            file_name, cast(dict[str, object], version_info), mock_tokens, content
+            file_name, version_info, mock_tokens, content
         )
 
         # Assert
@@ -686,7 +691,7 @@ class TestEdgeCasesForCoverage:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -728,7 +733,7 @@ class TestEdgeCasesForCoverage:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -768,7 +773,7 @@ class TestEdgeCasesForCoverage:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -807,7 +812,7 @@ class TestEdgeCasesForCoverage:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -849,7 +854,7 @@ class TestEdgeCasesForCoverage:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -879,12 +884,13 @@ class TestEdgeCasesForCoverage:
 
         mock_fs = AsyncMock()
         mock_fs.construct_safe_path = MagicMock(return_value=mock_path)
+        mock_fs.read_file = AsyncMock(return_value=("Existing content", "disk_hash"))
         mock_fs.write_file = AsyncMock(return_value="new_hash")
         mock_fs.compute_hash = MagicMock(return_value="new_hash")
 
         mock_index = AsyncMock()
         mock_index.get_file_metadata = AsyncMock(
-            return_value={"content_hash": "old_hash"}
+            return_value={"content_hash": "stale_hash"}
         )
         mock_index.update_file_metadata = AsyncMock()
         mock_index.add_version_to_history = AsyncMock()
@@ -894,12 +900,10 @@ class TestEdgeCasesForCoverage:
 
         mock_versions = AsyncMock()
         mock_versions.get_version_count = AsyncMock(return_value=1)
-        mock_versions.create_snapshot = AsyncMock(
-            return_value={
-                "version": 2,
-                "snapshot_path": "/tmp/snapshots/test.md.v2",
-            }
-        )
+        version_info = MagicMock()
+        version_info.version = 2
+        version_info.snapshot_path = "/tmp/snapshots/test.md.v2"
+        mock_versions.create_snapshot = AsyncMock(return_value=version_info)
 
         mock_managers_dict = {
             "fs": mock_fs,
@@ -910,7 +914,7 @@ class TestEdgeCasesForCoverage:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",
@@ -933,10 +937,15 @@ class TestEdgeCasesForCoverage:
                 assert result["tokens"] == 25
 
                 # Verify all helper functions were called
-                mock_fs.write_file.assert_called_once()
+                mock_fs.write_file.assert_called_once_with(
+                    mock_path,
+                    content,
+                    expected_hash="disk_hash",
+                )
                 mock_versions.create_snapshot.assert_called_once()
                 mock_index.update_file_metadata.assert_called_once()
                 mock_index.add_version_to_history.assert_called_once()
+                mock_index.get_file_metadata.assert_not_awaited()
 
     async def test_manage_file_invalid_operation_dispatch(self):
         """Test invalid operation in dispatcher (line 600)."""
@@ -956,7 +965,7 @@ class TestEdgeCasesForCoverage:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=mock_managers_dict,
+            return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",

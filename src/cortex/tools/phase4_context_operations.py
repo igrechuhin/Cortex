@@ -10,15 +10,17 @@ from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import JsonValue, ModelDict
 from cortex.core.session_logger import log_load_context_call
 from cortex.managers.manager_utils import get_manager
+from cortex.managers.types import ManagersDict
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.optimization_strategies import OptimizationResult
 
 
 async def load_context_impl(
-    mgrs: dict[str, object],
+    mgrs: ManagersDict,
     task_description: str,
     token_budget: int | None,
     strategy: str,
@@ -68,7 +70,7 @@ async def load_context_impl(
 
 
 async def _setup_optimization_managers(
-    mgrs: dict[str, object],
+    mgrs: ManagersDict,
 ) -> tuple[OptimizationConfig, ContextOptimizer, MetadataIndex, FileSystemManager]:
     """Setup managers for context optimization.
 
@@ -82,15 +84,15 @@ async def _setup_optimization_managers(
         mgrs, "optimization_config", OptimizationConfig
     )
     context_optimizer = await get_manager(mgrs, "context_optimizer", ContextOptimizer)
-    metadata_index = cast(MetadataIndex, mgrs["index"])
-    fs_manager = cast(FileSystemManager, mgrs["fs"])
+    metadata_index: MetadataIndex = mgrs.index
+    fs_manager: FileSystemManager = mgrs.fs
     return optimization_config, context_optimizer, metadata_index, fs_manager
 
 
 async def _read_all_files_for_context_loading(
     metadata_index: MetadataIndex,
     fs_manager: FileSystemManager,
-) -> tuple[dict[str, str], dict[str, dict[str, object]]]:
+) -> tuple[dict[str, str], dict[str, ModelDict]]:
     """Read all files and their metadata for context loading.
 
     Args:
@@ -102,7 +104,7 @@ async def _read_all_files_for_context_loading(
     """
     all_files = await metadata_index.list_all_files()
     files_content: dict[str, str] = {}
-    files_metadata: dict[str, dict[str, object]] = {}
+    files_metadata: dict[str, ModelDict] = {}
 
     for file_name in all_files:
         try:
@@ -110,9 +112,9 @@ async def _read_all_files_for_context_loading(
             content, _ = await fs_manager.read_file(file_path)
             files_content[file_name] = content
 
-            metadata = await metadata_index.get_file_metadata(file_name)
-            if metadata:
-                files_metadata[file_name] = metadata
+            metadata_raw = await metadata_index.get_file_metadata(file_name)
+            if metadata_raw:
+                files_metadata[file_name] = metadata_raw
         except FileNotFoundError:
             continue
 
@@ -135,11 +137,11 @@ def _log_context_call(
         strategy: Strategy used
         result: Context loading result
     """
-    raw_scores: object = result.metadata.get("relevance_scores", {})
+    raw_scores: JsonValue = result.metadata.get("relevance_scores", {})
     # Ensure relevance_scores is dict[str, float]
     scores: dict[str, float] = {}
     if isinstance(raw_scores, dict):
-        typed_scores = cast(dict[str, object], raw_scores)
+        typed_scores = cast(ModelDict, raw_scores)
         for file_name, score_value in typed_scores.items():
             if isinstance(score_value, (int, float)):
                 scores[file_name] = float(score_value)

@@ -2,11 +2,14 @@
 
 import json
 from pathlib import Path
+from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import DetailedFileMetadata, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.validation.duplication_detector import DuplicationDetector
+from cortex.validation.models import FileMetadataForQuality
 from cortex.validation.quality_metrics import QualityMetrics
 
 
@@ -38,7 +41,7 @@ async def validate_quality_single_file(
             "status": "success",
             "check_type": "quality",
             "file_name": file_name,
-            "score": score,
+            "score": score.model_dump(mode="json"),
         },
         indent=2,
     )
@@ -54,24 +57,27 @@ async def validate_quality_all_files(
     """Calculate overall quality score for all files."""
     memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     all_files_content: dict[str, str] = {}
-    files_metadata: dict[str, dict[str, object]] = {}
+    files_metadata: dict[
+        str, DetailedFileMetadata | FileMetadataForQuality | ModelDict
+    ] = {}
     for md_file in memory_bank_dir.glob("*.md"):
         if md_file.is_file():
             content, _ = await fs_manager.read_file(md_file)
             all_files_content[md_file.name] = content
             file_meta = await metadata_index.get_file_metadata(md_file.name)
-            files_metadata[md_file.name] = file_meta or {}
-    duplication_data = await duplication_detector.scan_all_files(all_files_content)
+            if isinstance(file_meta, dict):
+                files_metadata[md_file.name] = file_meta
+    duplication_scan = await duplication_detector.scan_all_files(all_files_content)
+    duplication_data = cast(ModelDict, duplication_scan.model_dump(mode="json"))
     overall_score = await quality_metrics.calculate_overall_score(
         all_files_content, files_metadata, duplication_data
     )
-    result: dict[str, object] = {"status": "success", "check_type": "quality"}
-    for key, value in overall_score.items():
-        if key != "status":
-            result[key] = value
-        else:
-            result["health_status"] = value
-    return json.dumps(result, indent=2)
+    response = cast(ModelDict, overall_score.model_dump(mode="json", exclude_none=True))
+    health_status = response.pop("status", None)
+    response["status"] = "success"
+    response["check_type"] = "quality"
+    response["health_status"] = health_status
+    return json.dumps(response, indent=2)
 
 
 async def handle_quality_validation(

@@ -5,18 +5,19 @@ This module contains the implementation logic for the load_progressive_context t
 """
 
 import json
-from typing import cast
 
 from cortex.managers.manager_utils import get_manager
+from cortex.managers.types import ManagersDict
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.progressive_loader import (
     LoadedContent,
     ProgressiveLoader,
 )
+from cortex.tools.models import LoadedFileInfo, LoadProgressiveContextResult
 
 
 async def load_progressive_context_impl(
-    mgrs: dict[str, object],
+    mgrs: ManagersDict,
     task_description: str,
     token_budget: int | None,
     loading_strategy: str,
@@ -47,14 +48,14 @@ async def load_progressive_context_impl(
     if isinstance(loaded, str):
         return loaded
 
-    loaded_data = _convert_loaded_items_to_dict(loaded)
+    loaded_files = _convert_loaded_items_to_file_info(loaded)
     return _build_progressive_context_response(
-        task_description, loading_strategy, token_budget, loaded_data
+        task_description, loading_strategy, token_budget, loaded_files
     )
 
 
 async def _get_progressive_managers(
-    mgrs: dict[str, object],
+    mgrs: ManagersDict,
 ) -> tuple[OptimizationConfig, ProgressiveLoader]:
     """Get optimization config and progressive loader managers."""
     optimization_config = await get_manager(
@@ -72,7 +73,7 @@ async def _load_by_strategy(
     loading_strategy: str,
     task_description: str,
     token_budget: int,
-) -> list[object] | str:
+) -> list[LoadedContent] | str:
     """Load context using specified strategy.
 
     Args:
@@ -106,40 +107,37 @@ async def _load_by_priority_strategy(
     optimization_config: OptimizationConfig,
     task_description: str,
     token_budget: int,
-) -> list[object]:
+) -> list[LoadedContent]:
     """Load by priority strategy."""
     priority_order = optimization_config.get_priority_order()
-    result = await progressive_loader.load_by_priority(
+    return await progressive_loader.load_by_priority(
         task_description=task_description,
         token_budget=token_budget,
         priority_order=priority_order,
     )
-    return cast(list[object], result)
 
 
 async def _load_by_dependencies_strategy(
     progressive_loader: ProgressiveLoader,
     optimization_config: OptimizationConfig,
     token_budget: int,
-) -> list[object]:
+) -> list[LoadedContent]:
     """Load by dependencies strategy."""
     mandatory_files = optimization_config.get_mandatory_files()
-    result = await progressive_loader.load_by_dependencies(
+    return await progressive_loader.load_by_dependencies(
         entry_files=mandatory_files, token_budget=token_budget
     )
-    return cast(list[object], result)
 
 
 async def _load_by_relevance_strategy(
     progressive_loader: ProgressiveLoader,
     task_description: str,
     token_budget: int,
-) -> list[object]:
+) -> list[LoadedContent]:
     """Load by relevance strategy."""
-    result = await progressive_loader.load_by_relevance(
+    return await progressive_loader.load_by_relevance(
         task_description=task_description, token_budget=token_budget
     )
-    return cast(list[object], result)
 
 
 def _build_invalid_strategy_error(loading_strategy: str) -> str:
@@ -156,37 +154,37 @@ def _build_invalid_strategy_error(loading_strategy: str) -> str:
     )
 
 
-def _convert_loaded_items_to_dict(loaded: list[object]) -> list[dict[str, object]]:
-    """Convert loaded items to dictionary format.
+def _convert_loaded_items_to_file_info(
+    loaded: list[LoadedContent],
+) -> list[LoadedFileInfo]:
+    """Convert loaded items to LoadedFileInfo models for response.
 
     Args:
         loaded: List of loaded items
 
     Returns:
-        List of dictionaries
+        List of LoadedFileInfo instances
     """
-    loaded_data: list[dict[str, object]] = []
+    loaded_files: list[LoadedFileInfo] = []
     for item in loaded:
-        # Cast item to LoadedContent to access attributes
-        loaded_item = cast(LoadedContent, item)
-        loaded_data.append(
-            {
-                "file_name": loaded_item.file_name,
-                "tokens": loaded_item.tokens,
-                "cumulative_tokens": loaded_item.cumulative_tokens,
-                "priority": loaded_item.priority,
-                "relevance_score": round(loaded_item.relevance_score, 3),
-                "more_available": loaded_item.more_available,
-            }
+        loaded_files.append(
+            LoadedFileInfo(
+                file_name=item.file_name,
+                tokens=item.tokens,
+                cumulative_tokens=item.cumulative_tokens,
+                priority=item.priority,
+                relevance_score=round(item.relevance_score, 3),
+                more_available=item.more_available,
+            )
         )
-    return loaded_data
+    return loaded_files
 
 
 def _build_progressive_context_response(
     task_description: str,
     loading_strategy: str,
     token_budget: int,
-    loaded_data: list[dict[str, object]],
+    loaded_files: list[LoadedFileInfo],
 ) -> str:
     """Build progressive context response.
 
@@ -194,22 +192,21 @@ def _build_progressive_context_response(
         task_description: Task description
         loading_strategy: Loading strategy
         token_budget: Token budget
-        loaded_data: Loaded data
+        loaded_files: List of LoadedFileInfo models
 
     Returns:
         JSON response string
     """
+    result = LoadProgressiveContextResult(
+        task_description=task_description,
+        loading_strategy=loading_strategy,
+        token_budget=token_budget,
+        files_loaded=len(loaded_files),
+        total_tokens=(loaded_files[-1].cumulative_tokens if loaded_files else 0),
+        loaded_files=loaded_files,
+    )
+
     return json.dumps(
-        {
-            "status": "success",
-            "task_description": task_description,
-            "loading_strategy": loading_strategy,
-            "token_budget": token_budget,
-            "files_loaded": len(loaded_data),
-            "total_tokens": (
-                loaded_data[-1]["cumulative_tokens"] if loaded_data else 0
-            ),
-            "loaded_files": loaded_data,
-        },
+        result.model_dump(exclude_none=True),
         indent=2,
     )

@@ -1,0 +1,30 @@
+{
+  "session_id": "7c3cf13a62dd",
+  "session_start": "2026-01-22T13:27",
+  "load_context_calls": [
+    {
+      "timestamp": "2026-01-22T13:27",
+      "task_description": "Identify the next pending roadmap step to implement. Check for any uncompleted items or the next planned phase that should be started.",
+      "token_budget": 50000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "roadmap.md",
+        "activeContext.md",
+        "progress.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "projectBrief.md",
+        "productContext.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 26512,
+      "utilization": 0.53024,
+      "excluded_files": [],
+      "relevance_scores": {
+        "activeContext.md": 0.685,
+        "progress.md": 0.507,
+        "roadmap.md": 0.557
+      }
+    }
+  ]
+}

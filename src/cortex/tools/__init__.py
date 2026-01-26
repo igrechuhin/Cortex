@@ -47,10 +47,13 @@ from . import (
     prompts,  # noqa: F401
     refactoring_operations,  # noqa: F401
     rules_operations,  # noqa: F401
-    synapse_prompts,  # noqa: F401  # pyright: ignore[reportUnusedImport]  # Dynamic Synapse prompts registration
+    synapse_prompts,  # noqa: F401  # Dynamic Synapse prompts registration
     synapse_tools,  # noqa: F401
     validation_operations,  # noqa: F401
 )
+
+# Explicitly reference synapse_prompts to satisfy type checker (imported for side effects)
+_ = synapse_prompts
 
 __all__ = [
     "analysis_operations",
@@ -74,5 +77,6 @@ __all__ = [
     "prompts",
     "refactoring_operations",
     "rules_operations",
+    "synapse_prompts",
     "validation_operations",
 ]

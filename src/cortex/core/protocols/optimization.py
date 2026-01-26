@@ -7,13 +7,20 @@ relevance scoring, progressive loading, and content summarization.
 
 from typing import Protocol
 
+from cortex.optimization.models import (
+    FileMetadataForScoring,
+    FileRelevanceScoreModel,
+    OptimizationResultModel,
+    SectionScoreModel,
+)
+
 
 class RelevanceScorerProtocol(Protocol):
     """Protocol for relevance scoring operations using structural subtyping (PEP 544).
 
     This protocol defines the interface for scoring files and sections by their
     relevance to a given task description. Relevance scoring enables intelligent
-    context selection and prioritization. Any class implementing these methods
+    context selection and prioritization. A class implementing these methods
     automatically satisfies this protocol.
 
     Used by:
@@ -31,9 +38,10 @@ class RelevanceScorerProtocol(Protocol):
                 self,
                 task_description: str,
                 files_content: dict[str, str],
-                files_metadata: dict[str, dict[str, object]],
+                files_metadata: dict[str, FileMetadataForScoring],
                 quality_scores: dict[str, float] | None = None,
-            ) -> dict[str, dict[str, float | str]]:
+            ) -> dict[str, FileRelevanceScoreModel]:
+                from cortex.optimization.models import FileRelevanceScoreModel
                 vectorizer = TfidfVectorizer()
                 corpus = [task_description] + list(files_content.values())
                 tfidf_matrix = vectorizer.fit_transform(corpus)
@@ -43,29 +51,31 @@ class RelevanceScorerProtocol(Protocol):
                 for idx, (file_name, _) in enumerate(files_content.items(), 1):
                     similarity = cosine_similarity(tfidf_matrix[0], tfidf_matrix[idx])[0][0]
                     quality = quality_scores.get(file_name, 1.0) if quality_scores else 1.0
-                    scores[file_name] = {
-                        "relevance_score": similarity * quality,
-                        "tfidf_score": similarity,
-                        "quality_boost": quality,
-                    }
+                    scores[file_name] = FileRelevanceScoreModel(
+                        file_name=file_name,
+                        relevance_score=similarity * quality,
+                        total_score=similarity * quality,
+                        keyword_score=similarity,
+                        quality_boost=quality,
+                    )
                 return scores
 
             async def score_sections(
                 self, task_description: str, file_name: str, content: str
-            ) -> list[dict[str, object]]:
+            ) -> list[SectionScoreModel]:
                 # Parse and score sections
                 sections = self._parse_sections(content)
                 return sorted(
                     [
-                        {
-                            "title": s["title"],
-                            "score": self._score_section(task_description, s),
-                            "start_line": s["start_line"],
-                            "end_line": s["end_line"],
-                        }
+                        SectionScoreModel(
+                            title=s["title"],
+                            score=self._score_section(task_description, s),
+                            start_line=s["start_line"],
+                            end_line=s.get("end_line", s["start_line"]),
+                        )
                         for s in sections
                     ],
-                    key=lambda x: x["score"],
+                    key=lambda x: x.score,
                     reverse=True,
                 )
 
@@ -82,9 +92,9 @@ class RelevanceScorerProtocol(Protocol):
         self,
         task_description: str,
         files_content: dict[str, str],
-        files_metadata: dict[str, dict[str, object]],
+        files_metadata: dict[str, FileMetadataForScoring],
         quality_scores: dict[str, float] | None = None,
-    ) -> dict[str, dict[str, float | str]]:
+    ) -> dict[str, FileRelevanceScoreModel]:
         """Score files by relevance to task.
 
         Args:
@@ -94,13 +104,13 @@ class RelevanceScorerProtocol(Protocol):
             quality_scores: Optional dict mapping file names to quality scores
 
         Returns:
-            Dict mapping file names to score breakdown
+            Dict mapping file names to relevance score models
         """
         ...
 
     async def score_sections(
         self, task_description: str, file_name: str, content: str
-    ) -> list[dict[str, object]]:
+    ) -> list[SectionScoreModel]:
         """Score sections within a file.
 
         Args:
@@ -109,7 +119,7 @@ class RelevanceScorerProtocol(Protocol):
             content: File content
 
         Returns:
-            List of section score dictionaries
+            List of section score models
         """
         ...
 
@@ -120,7 +130,7 @@ class ContextOptimizerProtocol(Protocol):
     This protocol defines the interface for optimizing context selection within
     token budgets using various strategies (relevance-based, dependency-based,
     or hybrid). Context optimization ensures the most valuable information fits
-    within model context limits. Any class implementing these methods
+    within model context limits. A class implementing these methods
     automatically satisfies this protocol.
 
     Used by:
@@ -136,14 +146,14 @@ class ContextOptimizerProtocol(Protocol):
                 self,
                 task_description: str,
                 files_content: dict[str, str],
-                files_metadata: dict[str, dict[str, object]],
+                files_metadata: dict[str, FileMetadataForScoring],
                 strategy: str = "hybrid",
                 token_budget: int | None = None,
                 mandatory_files: list[str] | None = None,
-            ) -> dict[str, object]:
+            ) -> OptimizationResultModel:
                 # Score files by relevance
                 scored = await self.scorer.score_files(task_description, files_content, files_metadata)
-                sorted_files = sorted(scored.items(), key=lambda x: x[1]["relevance_score"], reverse=True)
+                sorted_files = sorted(scored.items(), key=lambda x: x[1].relevance_score, reverse=True)
 
                 # Select files within budget
                 selected = {}
@@ -164,7 +174,13 @@ class ContextOptimizerProtocol(Protocol):
                     selected[fname] = files_content[fname]
                     total_tokens += tokens
 
-                return {"selected_files": selected, "total_tokens": total_tokens}
+                return OptimizationResultModel(
+                    selected_files=list(selected.keys()),
+                    total_tokens=total_tokens,
+                    utilization=total_tokens / token_budget if token_budget else 0.0,
+                    excluded_files=[f for f in files_content if f not in selected],
+                    strategy_used=strategy,
+                )
 
         # SimpleContextOptimizer automatically satisfies ContextOptimizerProtocol
         ```
@@ -179,11 +195,11 @@ class ContextOptimizerProtocol(Protocol):
         self,
         task_description: str,
         files_content: dict[str, str],
-        files_metadata: dict[str, dict[str, object]],
+        files_metadata: dict[str, FileMetadataForScoring],
         strategy: str = "hybrid",
         token_budget: int | None = None,
         mandatory_files: list[str] | None = None,
-    ) -> dict[str, object]:
+    ) -> OptimizationResultModel:
         """Optimize context within token budget.
 
         Args:
@@ -195,7 +211,7 @@ class ContextOptimizerProtocol(Protocol):
             mandatory_files: Files that must be included
 
         Returns:
-            Optimization result dictionary
+            Optimization result model
         """
         ...
 

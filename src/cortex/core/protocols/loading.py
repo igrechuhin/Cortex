@@ -8,13 +8,18 @@ and summarization operations.
 from pathlib import Path
 from typing import Protocol
 
+from cortex.optimization.models import (
+    ProgressiveLoadResult,
+    SummarizationResultModel,
+)
+
 
 class ProgressiveLoaderProtocol(Protocol):
     """Protocol for progressive context loading operations using structural subtyping (PEP 544).
 
     This protocol defines the interface for loading Memory Bank context progressively
     based on priority, dependencies, or relevance. Progressive loading enables
-    efficient context management within token budgets. Any class implementing these
+    efficient context management within token budgets. A class implementing these
     methods automatically satisfies this protocol.
 
     Used by:
@@ -31,10 +36,11 @@ class ProgressiveLoaderProtocol(Protocol):
                 memory_bank_path: Path,
                 priority_order: list[str] | None = None,
                 token_budget: int | None = None,
-            ) -> dict[str, object]:
+            ) -> ProgressiveLoadResult:
                 priority = priority_order or ["projectBrief.md", "activeContext.md"]
                 loaded = {}
                 total_tokens = 0
+                loading_order = []
 
                 for file_name in priority:
                     file_path = memory_bank_path / file_name
@@ -45,15 +51,23 @@ class ProgressiveLoaderProtocol(Protocol):
                             break
                         loaded[file_name] = content
                         total_tokens += tokens
+                        loading_order.append(file_name)
 
-                return {"loaded_files": loaded, "total_tokens": total_tokens}
+                return ProgressiveLoadResult(
+                    loaded_files=loaded,
+                    total_tokens=total_tokens,
+                    files_count=len(loaded),
+                    budget_remaining=token_budget - total_tokens if token_budget else None,
+                    truncated=token_budget is not None and total_tokens >= token_budget,
+                    loading_order=loading_order,
+                )
 
             async def load_by_dependencies(
                 self,
                 memory_bank_path: Path,
                 start_files: list[str] | None = None,
                 token_budget: int | None = None,
-            ) -> dict[str, object]:
+            ) -> ProgressiveLoadResult:
                 loading_order = self.dependency_graph.compute_loading_order(start_files)
                 return await self._load_files_in_order(loading_order, memory_bank_path, token_budget)
 
@@ -62,7 +76,7 @@ class ProgressiveLoaderProtocol(Protocol):
                 memory_bank_path: Path,
                 task_description: str,
                 token_budget: int | None = None,
-            ) -> dict[str, object]:
+            ) -> ProgressiveLoadResult:
                 scores = await self.scorer.score_files(task_description, self._get_all_files(memory_bank_path))
                 sorted_files = sorted(scores.items(), key=lambda x: x[1]["relevance_score"], reverse=True)
                 return await self._load_files_in_order([f[0] for f in sorted_files], memory_bank_path, token_budget)
@@ -81,7 +95,7 @@ class ProgressiveLoaderProtocol(Protocol):
         memory_bank_path: Path,
         priority_order: list[str] | None = None,
         token_budget: int | None = None,
-    ) -> dict[str, object]:
+    ) -> ProgressiveLoadResult:
         """Load context progressively by priority.
 
         Args:
@@ -90,7 +104,7 @@ class ProgressiveLoaderProtocol(Protocol):
             token_budget: Maximum tokens to load (no limit if None)
 
         Returns:
-            Loading result dictionary
+            Progressive load result model
         """
         ...
 
@@ -99,7 +113,7 @@ class ProgressiveLoaderProtocol(Protocol):
         memory_bank_path: Path,
         start_files: list[str] | None = None,
         token_budget: int | None = None,
-    ) -> dict[str, object]:
+    ) -> ProgressiveLoadResult:
         """Load context progressively by dependencies.
 
         Args:
@@ -108,7 +122,7 @@ class ProgressiveLoaderProtocol(Protocol):
             token_budget: Maximum tokens to load (no limit if None)
 
         Returns:
-            Loading result dictionary
+            Progressive load result model
         """
         ...
 
@@ -117,7 +131,7 @@ class ProgressiveLoaderProtocol(Protocol):
         memory_bank_path: Path,
         task_description: str,
         token_budget: int | None = None,
-    ) -> dict[str, object]:
+    ) -> ProgressiveLoadResult:
         """Load context progressively by relevance.
 
         Args:
@@ -126,7 +140,7 @@ class ProgressiveLoaderProtocol(Protocol):
             token_budget: Maximum tokens to load (no limit if None)
 
         Returns:
-            Loading result dictionary
+            Progressive load result model
         """
         ...
 
@@ -136,7 +150,7 @@ class SummarizationEngineProtocol(Protocol):
 
     This protocol defines the interface for summarizing file content when full
     content exceeds token budgets. Summarization enables including more files
-    within context limits. Any class implementing these methods automatically
+    within context limits. A class implementing these methods automatically
     satisfies this protocol.
 
     Used by:
@@ -153,7 +167,7 @@ class SummarizationEngineProtocol(Protocol):
                 file_path: Path,
                 strategy: str = "key_sections",
                 target_reduction: float = 0.5,
-            ) -> dict[str, object]:
+            ) -> SummarizationResultModel:
                 content = await self._read_file(file_path)
                 original_tokens = self.token_counter.count_tokens(content)
                 target_tokens = int(original_tokens * (1 - target_reduction))
@@ -165,12 +179,13 @@ class SummarizationEngineProtocol(Protocol):
 
                 summary_tokens = self.token_counter.count_tokens(summarized)
 
-                return {
-                    "original_tokens": original_tokens,
-                    "summary_tokens": summary_tokens,
-                    "reduction": (original_tokens - summary_tokens) / original_tokens,
-                    "summary": summarized,
-                }
+                return SummarizationResultModel(
+                    original_tokens=original_tokens,
+                    summary_tokens=summary_tokens,
+                    reduction=(original_tokens - summary_tokens) / original_tokens if original_tokens > 0 else 0.0,
+                    summary=summarized,
+                    strategy=strategy,
+                )
 
             async def extract_key_sections(self, content: str, target_tokens: int) -> str:
                 sections = self._parse_sections(content)
@@ -202,7 +217,7 @@ class SummarizationEngineProtocol(Protocol):
         file_path: Path,
         strategy: str = "key_sections",
         target_reduction: float = 0.5,
-    ) -> dict[str, object]:
+    ) -> SummarizationResultModel:
         """Summarize a file's content.
 
         Args:
@@ -211,7 +226,7 @@ class SummarizationEngineProtocol(Protocol):
             target_reduction: Target reduction percentage (0-1)
 
         Returns:
-            Summarization result dictionary
+            Summarization result model
         """
         ...
 

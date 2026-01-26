@@ -8,11 +8,15 @@ Memory Bank files and suggests refactoring opportunities.
 import difflib
 import hashlib
 import re
-from typing import cast
 
 from cortex.core.constants import (
     MIN_SECTION_LENGTH_CHARS,
     SIMILARITY_THRESHOLD_DUPLICATE,
+)
+from cortex.validation.models import (
+    DuplicateEntry,
+    DuplicationScanResult,
+    HashMapEntry,
 )
 
 
@@ -39,7 +43,9 @@ class DuplicationDetector:
         self.threshold: float = similarity_threshold
         self.min_length: int = min_content_length
 
-    async def scan_all_files(self, files_content: dict[str, str]) -> dict[str, object]:
+    async def scan_all_files(
+        self, files_content: dict[str, str]
+    ) -> DuplicationScanResult:
         """
         Scan all files for duplications.
 
@@ -47,11 +53,7 @@ class DuplicationDetector:
             files_content: Dict mapping file names to their content
 
         Returns:
-            {
-                "duplicates_found": int,
-                "exact_duplicates": [...],
-                "similar_content": [...]
-            }
+            DuplicationScanResult with duplicates found
         """
         # Extract sections from all files
         all_sections: dict[str, list[tuple[str, str]]] = {}
@@ -67,11 +69,11 @@ class DuplicationDetector:
 
         total_duplicates = len(exact_duplicates) + len(similar_content)
 
-        return {
-            "duplicates_found": total_duplicates,
-            "exact_duplicates": exact_duplicates,
-            "similar_content": similar_content,
-        }
+        return DuplicationScanResult(
+            duplicates_found=total_duplicates,
+            exact_duplicates=exact_duplicates,
+            similar_content=similar_content,
+        )
 
     def compare_sections(self, content1: str, content2: str) -> float:
         """
@@ -150,7 +152,7 @@ class DuplicationDetector:
 
     def find_exact_duplicates(
         self, all_sections: dict[str, list[tuple[str, str]]]
-    ) -> list[dict[str, object]]:
+    ) -> list[DuplicateEntry]:
         """
         Find sections with identical content.
 
@@ -158,16 +160,16 @@ class DuplicationDetector:
             all_sections: Dict mapping file names to their sections
 
         Returns:
-            List of exact duplicate info
+            List of exact duplicate entries
         """
         hash_map = self._build_content_hash_map(all_sections)
         return self._extract_duplicates_from_hash_map(hash_map)
 
     def _build_content_hash_map(
         self, all_sections: dict[str, list[tuple[str, str]]]
-    ) -> dict[str, list[dict[str, object]]]:
+    ) -> dict[str, list[HashMapEntry]]:
         """Build hash map of content to sections."""
-        hash_map: dict[str, list[dict[str, object]]] = {}
+        hash_map: dict[str, list[HashMapEntry]] = {}
 
         for file_name, sections in all_sections.items():
             for section_name, content in sections:
@@ -179,14 +181,14 @@ class DuplicationDetector:
                     hash_map[content_hash] = []
 
                 hash_map[content_hash].append(
-                    {"file": file_name, "section": section_name, "content": content}
+                    HashMapEntry(file=file_name, section=section_name, content=content)
                 )
 
         return hash_map
 
     def _extract_duplicates_from_hash_map(
-        self, hash_map: dict[str, list[dict[str, object]]]
-    ) -> list[dict[str, object]]:
+        self, hash_map: dict[str, list[HashMapEntry]]
+    ) -> list[DuplicateEntry]:
         """Extract duplicate pairs from hash map."""
         from itertools import combinations
 
@@ -194,7 +196,7 @@ class DuplicationDetector:
         # This is inherent to the algorithm - we must accumulate duplicate pairs
         # as we discover them during hash map traversal.
         # Pre-calculation is not possible as results depend on hash map contents.
-        duplicates: list[dict[str, object]] = []
+        duplicates: list[DuplicateEntry] = []
 
         for _content_hash, entries in hash_map.items():
             if len(entries) > 1:
@@ -207,29 +209,29 @@ class DuplicationDetector:
         return duplicates
 
     def _create_duplicate_entry(
-        self, entry1: dict[str, object], entry2: dict[str, object]
-    ) -> dict[str, object]:
+        self, entry1: HashMapEntry, entry2: HashMapEntry
+    ) -> DuplicateEntry:
         """Create duplicate entry for a pair."""
-        file1 = str(entry1["file"])
-        section1 = str(entry1["section"])
-        file2 = str(entry2["file"])
-        section2 = str(entry2["section"])
+        file1 = entry1.file
+        section1 = entry1.section
+        file2 = entry2.file
+        section2 = entry2.section
 
-        return {
-            "file1": file1,
-            "section1": section1,
-            "file2": file2,
-            "section2": section2,
-            "similarity": 1.0,
-            "type": "exact",
-            "suggestion": self.generate_refactoring_suggestion(
+        return DuplicateEntry(
+            file1=file1,
+            section1=section1,
+            file2=file2,
+            section2=section2,
+            similarity=1.0,
+            type="exact",
+            suggestion=self.generate_refactoring_suggestion(
                 file1, section1, file2, section2
             ),
-        }
+        )
 
     def find_similar_content(
         self, all_sections: dict[str, list[tuple[str, str]]]
-    ) -> list[dict[str, object]]:
+    ) -> list[DuplicateEntry]:
         """
         Find sections with high similarity scores using hash-based grouping.
 
@@ -239,11 +241,11 @@ class DuplicationDetector:
             all_sections: Dict mapping file names to their sections
 
         Returns:
-            List of similar content info
+            List of similar content entries
         """
         signature_groups = self._build_signature_groups(all_sections)
         similar = self._compare_within_groups(signature_groups)
-        similar.sort(key=lambda x: cast(float, x["similarity"]), reverse=True)
+        similar.sort(key=lambda x: x.similarity, reverse=True)
         return similar
 
     def _build_signature_groups(
@@ -265,7 +267,7 @@ class DuplicationDetector:
 
     def _compare_within_groups(
         self, signature_groups: dict[str, list[tuple[str, str, str]]]
-    ) -> list[dict[str, object]]:
+    ) -> list[DuplicateEntry]:
         """Compare sections within signature groups."""
         from itertools import combinations
 
@@ -273,18 +275,18 @@ class DuplicationDetector:
         # This is inherent to the algorithm - we must accumulate similar pairs
         # as we discover them during signature group comparison.
         # Pre-calculation is not possible as similarity scores depend on pairwise comparisons.
-        similar: list[dict[str, object]] = [
-            {
-                "file1": file1,
-                "section1": section1_name,
-                "file2": file2,
-                "section2": section2_name,
-                "similarity": similarity,
-                "type": "similar",
-                "suggestion": self.generate_refactoring_suggestion(
+        similar: list[DuplicateEntry] = [
+            DuplicateEntry(
+                file1=file1,
+                section1=section1_name,
+                file2=file2,
+                section2=section2_name,
+                similarity=similarity,
+                type="similar",
+                suggestion=self.generate_refactoring_suggestion(
                     file1, section1_name, file2, section2_name
                 ),
-            }
+            )
             for group_sections in signature_groups.values()
             if len(group_sections) > 1
             for (file1, section1_name, content1), (

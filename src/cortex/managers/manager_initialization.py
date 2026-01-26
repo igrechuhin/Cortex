@@ -1,23 +1,20 @@
 #!/usr/bin/env python3
+# ruff: noqa: I001
 """Manager factory functions for creating and registering managers."""
 
 import collections.abc
-from collections.abc import Mapping
 from pathlib import Path
 from typing import cast
 
 from cortex.analysis.insight_engine import InsightEngine
 from cortex.analysis.pattern_analyzer import PatternAnalyzer
 from cortex.analysis.structure_analyzer import StructureAnalyzer
-from cortex.core.dependency_graph import DependencyGraph
-from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.core.token_counter import TokenCounter
-from cortex.core.version_manager import VersionManager
 from cortex.linking.link_parser import LinkParser
 from cortex.linking.link_validator import LinkValidator
 from cortex.linking.transclusion_engine import TransclusionEngine
+from cortex.managers.builder_types import ManagersBuilder
 from cortex.managers.lazy_manager import LazyManager
 from cortex.managers.types import CoreManagersDict
 from cortex.optimization.context_optimizer import ContextOptimizer
@@ -41,24 +38,9 @@ from cortex.validation.quality_metrics import QualityMetrics
 from cortex.validation.schema_validator import SchemaValidator
 from cortex.validation.validation_config import ValidationConfig
 
-# Type alias for managers dict that can be mutated during initialization.
-# This dict starts empty and is populated with manager instances.
-#
-# DESIGN NOTE: We use dict[str, object] here intentionally because:
-# 1. During initialization, we add heterogeneous types: Protocol implementations,
-#    concrete classes, and LazyManager[T] wrappers - there's no common base type
-# 2. The final dict is cast to ManagersDict (TypedDict) for type-safe access
-# 3. This is a polymorphic container at initialization boundary, not a domain model
-# 4. Alternative (Union of all 30+ manager types) would be unmaintainable
-#
-# For type-safe access, consumers should use:
-# - managers.types.ManagersDict (TypedDict with all manager types)
-# - managers.manager_utils.get_manager() for safe extraction with type checking
-ManagersBuilder = dict[str, object]
-
 
 def _make_synapse_factory(
-    proj_root: Path, mgrs: Mapping[str, object]
+    proj_root: Path, mgrs: ManagersBuilder
 ) -> collections.abc.Callable[[], collections.abc.Awaitable[SynapseManager]]:
     """Create factory function for SynapseManager.
 
@@ -249,10 +231,10 @@ async def _create_transclusion_engine(
     core_managers: CoreManagersDict,
 ) -> TransclusionEngine:
     """Create TransclusionEngine instance."""
-    fs_manager = core_managers["fs"]
+    fs_manager = core_managers.fs
     link_parser = LinkParser()
     return TransclusionEngine(
-        file_system=cast(FileSystemManager, fs_manager),
+        file_system=fs_manager,
         link_parser=link_parser,
         max_depth=5,
         cache_enabled=True,
@@ -261,11 +243,9 @@ async def _create_transclusion_engine(
 
 async def _create_link_validator(core_managers: CoreManagersDict) -> LinkValidator:
     """Create LinkValidator instance."""
-    fs_manager = core_managers["fs"]
+    fs_manager = core_managers.fs
     link_parser = LinkParser()
-    return LinkValidator(
-        file_system=cast(FileSystemManager, fs_manager), link_parser=link_parser
-    )
+    return LinkValidator(file_system=fs_manager, link_parser=link_parser)
 
 
 async def _create_optimization_config(project_root: Path) -> OptimizationConfig:
@@ -274,13 +254,13 @@ async def _create_optimization_config(project_root: Path) -> OptimizationConfig:
 
 
 async def _create_relevance_scorer(
-    core_managers: CoreManagersDict, managers: Mapping[str, object]
+    core_managers: CoreManagersDict, managers: ManagersBuilder
 ) -> RelevanceScorer:
     """Create RelevanceScorer instance."""
     from cortex.managers.manager_utils import get_manager
 
-    dep_graph = cast(DependencyGraph, core_managers["graph"])
-    metadata_index = cast(MetadataIndex, core_managers["index"])
+    dep_graph = core_managers.graph
+    metadata_index = core_managers.index
     optimization_config = await get_manager(
         managers, "optimization_config", OptimizationConfig
     )
@@ -293,13 +273,13 @@ async def _create_relevance_scorer(
 
 
 async def _create_context_optimizer(
-    core_managers: CoreManagersDict, managers: Mapping[str, object]
+    core_managers: CoreManagersDict, managers: ManagersBuilder
 ) -> ContextOptimizer:
     """Create ContextOptimizer instance."""
     from cortex.managers.manager_utils import get_manager
 
-    token_counter = cast(TokenCounter, core_managers["tokens"])
-    dep_graph = cast(DependencyGraph, core_managers["graph"])
+    token_counter = core_managers.tokens
+    dep_graph = core_managers.graph
     relevance_scorer = await get_manager(managers, "relevance_scorer", RelevanceScorer)
     optimization_config = await get_manager(
         managers, "optimization_config", OptimizationConfig
@@ -314,13 +294,13 @@ async def _create_context_optimizer(
 
 
 async def _create_progressive_loader(
-    core_managers: CoreManagersDict, managers: Mapping[str, object]
+    core_managers: CoreManagersDict, managers: ManagersBuilder
 ) -> ProgressiveLoader:
     """Create ProgressiveLoader instance."""
     from cortex.managers.manager_utils import get_manager
 
-    fs_manager = cast(FileSystemManager, core_managers["fs"])
-    metadata_index = cast(MetadataIndex, core_managers["index"])
+    fs_manager = core_managers.fs
+    metadata_index = core_managers.index
     context_optimizer = await get_manager(
         managers, "context_optimizer", ContextOptimizer
     )
@@ -336,8 +316,8 @@ async def _create_summarization_engine(
     core_managers: CoreManagersDict,
 ) -> SummarizationEngine:
     """Create SummarizationEngine instance."""
-    token_counter = cast(TokenCounter, core_managers["tokens"])
-    metadata_index = cast(MetadataIndex, core_managers["index"])
+    token_counter = core_managers.tokens
+    metadata_index = core_managers.index
 
     return SummarizationEngine(
         token_counter=token_counter, metadata_index=metadata_index
@@ -345,14 +325,14 @@ async def _create_summarization_engine(
 
 
 async def _create_rules_manager(
-    project_root: Path, core_managers: CoreManagersDict, managers: Mapping[str, object]
+    project_root: Path, core_managers: CoreManagersDict, managers: ManagersBuilder
 ) -> RulesManager:
     """Create RulesManager instance."""
     from cortex.managers.manager_utils import get_manager
 
-    fs_manager = cast(FileSystemManager, core_managers["fs"])
-    metadata_index = cast(MetadataIndex, core_managers["index"])
-    token_counter = cast(TokenCounter, core_managers["tokens"])
+    fs_manager = core_managers.fs
+    metadata_index = core_managers.index
+    token_counter = core_managers.tokens
     optimization_config = await get_manager(
         managers, "optimization_config", OptimizationConfig
     )
@@ -372,7 +352,7 @@ async def _create_rules_manager(
 
 
 async def _create_synapse_manager(
-    project_root: Path, managers: Mapping[str, object]
+    project_root: Path, managers: ManagersBuilder
 ) -> SynapseManager:
     """Create SynapseManager instance."""
     from cortex.managers.manager_utils import get_manager
@@ -398,9 +378,9 @@ async def _create_structure_analyzer(
     project_root: Path, core_managers: CoreManagersDict
 ) -> StructureAnalyzer:
     """Create StructureAnalyzer instance."""
-    dep_graph = cast(DependencyGraph, core_managers["graph"])
-    fs_manager = cast(FileSystemManager, core_managers["fs"])
-    metadata_index = cast(MetadataIndex, core_managers["index"])
+    dep_graph = core_managers.graph
+    fs_manager = core_managers.fs
+    metadata_index = core_managers.index
 
     return StructureAnalyzer(
         project_root=project_root,
@@ -410,7 +390,7 @@ async def _create_structure_analyzer(
     )
 
 
-async def _create_insight_engine(managers: Mapping[str, object]) -> InsightEngine:
+async def _create_insight_engine(managers: ManagersBuilder) -> InsightEngine:
     """Create InsightEngine instance."""
     from cortex.managers.manager_utils import get_manager
 
@@ -425,7 +405,7 @@ async def _create_insight_engine(managers: Mapping[str, object]) -> InsightEngin
 
 
 async def _create_refactoring_engine(
-    project_root: Path, managers: Mapping[str, object]
+    project_root: Path, managers: ManagersBuilder
 ) -> RefactoringEngine:
     """Create RefactoringEngine instance."""
     from cortex.managers.manager_utils import get_manager
@@ -487,14 +467,14 @@ async def _create_reorganization_planner(
 
 
 async def _create_refactoring_executor(
-    project_root: Path, core_managers: CoreManagersDict, managers: Mapping[str, object]
+    project_root: Path, core_managers: CoreManagersDict, managers: ManagersBuilder
 ) -> RefactoringExecutor:
     """Create RefactoringExecutor instance."""
     from cortex.managers.manager_utils import get_manager
 
-    fs_manager = cast(FileSystemManager, core_managers["fs"])
-    metadata_index = cast(MetadataIndex, core_managers["index"])
-    version_manager = cast(VersionManager, core_managers["versions"])
+    fs_manager = core_managers.fs
+    metadata_index = core_managers.index
+    version_manager = core_managers.versions
     link_validator = await get_manager(managers, "link_validator", LinkValidator)
     memory_bank_path = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
 
@@ -510,7 +490,7 @@ async def _create_refactoring_executor(
 
 
 async def _create_approval_manager(
-    project_root: Path, managers: Mapping[str, object]
+    project_root: Path, managers: ManagersBuilder
 ) -> ApprovalManager:
     """Create ApprovalManager instance."""
     _ = managers  # Not needed, kept for API compatibility
@@ -521,13 +501,13 @@ async def _create_approval_manager(
 
 
 async def _create_rollback_manager(
-    project_root: Path, core_managers: CoreManagersDict, managers: Mapping[str, object]
+    project_root: Path, core_managers: CoreManagersDict, managers: ManagersBuilder
 ) -> RollbackManager:
     """Create RollbackManager instance."""
     _ = managers  # Not needed, kept for API compatibility
-    fs_manager = cast(FileSystemManager, core_managers["fs"])
-    version_manager = cast(VersionManager, core_managers["versions"])
-    metadata_index = cast(MetadataIndex, core_managers["index"])
+    fs_manager = core_managers.fs
+    version_manager = core_managers.versions
+    metadata_index = core_managers.index
     memory_bank_path = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
 
     return RollbackManager(
@@ -539,7 +519,7 @@ async def _create_rollback_manager(
 
 
 async def _create_learning_engine(
-    project_root: Path, managers: Mapping[str, object]
+    project_root: Path, managers: ManagersBuilder
 ) -> LearningEngine:
     """Create LearningEngine instance."""
     from cortex.managers.manager_utils import get_manager
@@ -563,7 +543,7 @@ async def _create_validation_config(project_root: Path) -> ValidationConfig:
 
 
 async def _create_schema_validator(
-    project_root: Path, managers: Mapping[str, object]
+    project_root: Path, managers: ManagersBuilder
 ) -> SchemaValidator:
     """Create SchemaValidator instance."""
     _ = managers  # Kept for API compatibility
@@ -575,7 +555,7 @@ async def _create_duplication_detector() -> DuplicationDetector:
     return DuplicationDetector()
 
 
-async def _create_quality_metrics(managers: Mapping[str, object]) -> QualityMetrics:
+async def _create_quality_metrics(managers: ManagersBuilder) -> QualityMetrics:
     """Create QualityMetrics instance."""
     from cortex.managers.manager_utils import get_manager
 
@@ -586,7 +566,7 @@ async def _create_quality_metrics(managers: Mapping[str, object]) -> QualityMetr
     )
 
 
-async def _create_adaptation_config(managers: Mapping[str, object]) -> AdaptationConfig:
+async def _create_adaptation_config(managers: ManagersBuilder) -> AdaptationConfig:
     """Create AdaptationConfig instance.
 
     Note: AdaptationConfig now uses its own Pydantic models for defaults.

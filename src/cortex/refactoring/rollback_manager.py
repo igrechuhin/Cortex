@@ -1,3 +1,4 @@
+# ruff: noqa: I001
 """
 Rollback Manager - Phase 5.3
 
@@ -6,7 +7,6 @@ Handle rollback of refactoring executions with conflict detection.
 
 import json
 from collections.abc import Iterable
-from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import cast
@@ -15,32 +15,23 @@ from cortex.core.async_file_utils import open_async_text_file
 from cortex.core.exceptions import FileOperationError
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import JsonValue, ModelDict, VersionMetadata
 from cortex.core.version_manager import VersionManager
 
+from .models import (
+    RefactoringStatus,
+    RollbackFileData,
+    RollbackHistoryResult,
+    RollbackManagerConfig,
+    RollbackRecordModel,
+    RollbackRefactoringResult,
+)
+from .rollback_analysis import FileRollbackAnalysis
 
-@dataclass
-class RollbackRecord:
-    """Record of a rollback operation."""
 
-    rollback_id: str
-    execution_id: str
-    created_at: str
-    completed_at: str | None = None
-    status: str = "pending"  # "pending", "completed", "failed"
-    files_restored: list[str] | None = None
-    conflicts_detected: list[str] | None = None
-    preserve_manual_edits: bool = True
-    error: str | None = None
-
-    def __post_init__(self):
-        if self.files_restored is None:
-            self.files_restored = []
-        if self.conflicts_detected is None:
-            self.conflicts_detected = []
-
-    def to_dict(self) -> dict[str, object]:
-        """Convert to dictionary."""
-        return asdict(self)
+# RollbackRecord is now replaced by RollbackRecordModel from models.py
+# This alias is kept for backward compatibility during migration
+RollbackRecord = RollbackRecordModel
 
 
 class RollbackManager:
@@ -61,13 +52,16 @@ class RollbackManager:
         fs_manager: FileSystemManager,
         version_manager: VersionManager,
         metadata_index: MetadataIndex,
-        config: dict[str, object] | None = None,
+        config: RollbackManagerConfig | None = None,
     ):
         self.memory_bank_dir: Path = Path(memory_bank_dir)
         self.fs_manager: FileSystemManager = fs_manager
         self.version_manager: VersionManager = version_manager
         self.metadata_index: MetadataIndex = metadata_index
-        self.config: dict[str, object] = config or {}
+        if config is None:
+            self.config = RollbackManagerConfig()
+        else:
+            self.config = config
 
         # Rollback history file
         self.rollback_file: Path = self.memory_bank_dir.parent / "rollbacks.json"
@@ -88,68 +82,49 @@ class RollbackManager:
             return
 
         try:
-            rollbacks_dict = self._read_rollback_file()
-            self.rollbacks = self._parse_rollbacks_dict(rollbacks_dict)
+            rollback_file_data = self._read_rollback_file()
+            self.rollbacks = self._parse_rollbacks_dict(rollback_file_data)
         except Exception as e:
             self._handle_corrupted_history(e)
 
-    def _read_rollback_file(self) -> dict[str, object]:
-        """Read and extract rollbacks dictionary from file.
+    def _read_rollback_file(self) -> RollbackFileData:
+        """Read and parse rollback file.
 
         Returns:
-            Dictionary of rollback data
+            RollbackFileData model with rollback records
         """
+        if not self.rollback_file.exists():
+            return RollbackFileData(last_updated="", rollbacks={})
+
         with open(self.rollback_file) as f:
-            data: dict[str, object] = cast(dict[str, object], json.load(f))
-            return cast(dict[str, object], data.get("rollbacks", {}))
+            raw = json.load(f)
+            if not isinstance(raw, dict):
+                return RollbackFileData(last_updated="", rollbacks={})
+
+            data = cast(ModelDict, raw)
+            try:
+                if "rollbacks" in data and "last_updated" not in data:
+                    legacy: ModelDict = dict(data)
+                    legacy["last_updated"] = ""
+                    return RollbackFileData.model_validate(legacy)
+
+                return RollbackFileData.model_validate(data)
+            except Exception:
+                # If validation fails, return empty data
+                return RollbackFileData(last_updated="", rollbacks={})
 
     def _parse_rollbacks_dict(
-        self, rollbacks_dict: dict[str, object]
-    ) -> dict[str, RollbackRecord]:
-        """Parse rollbacks dictionary into RollbackRecord objects.
+        self, rollback_file_data: RollbackFileData
+    ) -> dict[str, RollbackRecordModel]:
+        """Extract rollbacks dictionary from RollbackFileData.
 
         Args:
-            rollbacks_dict: Dictionary of rollback data
+            rollback_file_data: RollbackFileData model
 
         Returns:
-            Dictionary mapping rollback IDs to RollbackRecord objects
+            Dictionary mapping rollback IDs to RollbackRecordModel objects
         """
-        rollbacks: dict[str, RollbackRecord] = {}
-        for rollback_id, rollback_data in rollbacks_dict.items():
-            rollback_data_dict: dict[str, object] = cast(
-                dict[str, object], rollback_data
-            )
-            rollbacks[str(rollback_id)] = self._create_rollback_from_dict(
-                rollback_data_dict
-            )
-        return rollbacks
-
-    def _create_rollback_from_dict(
-        self, rollback_data: dict[str, object]
-    ) -> RollbackRecord:
-        """Create RollbackRecord from dictionary data.
-
-        Args:
-            rollback_data: Dictionary containing rollback field data
-
-        Returns:
-            RollbackRecord instance
-        """
-        return RollbackRecord(
-            rollback_id=cast(str, rollback_data.get("rollback_id", "")),
-            execution_id=cast(str, rollback_data.get("execution_id", "")),
-            created_at=cast(str, rollback_data.get("created_at", "")),
-            completed_at=cast(str | None, rollback_data.get("completed_at")),
-            status=cast(str, rollback_data.get("status", "pending")),
-            files_restored=cast(list[str] | None, rollback_data.get("files_restored")),
-            conflicts_detected=cast(
-                list[str] | None, rollback_data.get("conflicts_detected")
-            ),
-            preserve_manual_edits=cast(
-                bool, rollback_data.get("preserve_manual_edits", True)
-            ),
-            error=cast(str | None, rollback_data.get("error")),
-        )
+        return rollback_file_data.rollbacks
 
     def _handle_corrupted_history(self, error: Exception) -> None:
         """Handle corrupted rollback history by starting fresh.
@@ -165,15 +140,12 @@ class RollbackManager:
     async def save_rollbacks(self):
         """Save rollback history to disk."""
         try:
-            data = {
-                "last_updated": datetime.now().isoformat(),
-                "rollbacks": {
-                    rollback_id: rollback.to_dict()
-                    for rollback_id, rollback in self.rollbacks.items()
-                },
-            }
+            data = RollbackFileData(
+                last_updated=datetime.now().isoformat(),
+                rollbacks=self.rollbacks,
+            )
             async with open_async_text_file(self.rollback_file, "w", "utf-8") as f:
-                _ = await f.write(json.dumps(data, indent=2))
+                _ = await f.write(data.model_dump_json(indent=2))
         except Exception as e:
             raise FileOperationError(f"Failed to save rollback history: {e}") from e
 
@@ -183,7 +155,7 @@ class RollbackManager:
         restore_snapshot: bool = True,
         preserve_manual_changes: bool = True,
         dry_run: bool = False,
-    ) -> dict[str, object]:
+    ) -> RollbackRefactoringResult:
         """
         Rollback a refactoring execution.
 
@@ -227,7 +199,7 @@ class RollbackManager:
         dry_run: bool,
         rollback_id: str,
         rollback_record: RollbackRecord,
-    ) -> dict[str, object]:
+    ) -> RollbackRefactoringResult:
         """Execute the rollback workflow.
 
         Args:
@@ -325,7 +297,7 @@ class RollbackManager:
         snapshot_id = self.find_snapshot_for_execution(execution_id)
 
         if not snapshot_id and restore_snapshot:
-            rollback_record.status = "failed"
+            rollback_record.status = RefactoringStatus.FAILED
             rollback_record.error = f"No snapshot found for execution {execution_id}"
             self.rollbacks[rollback_id] = rollback_record
             await self.save_rollbacks()
@@ -338,7 +310,7 @@ class RollbackManager:
 
     def _build_failed_response(
         self, rollback_id: str, rollback_record: RollbackRecord
-    ) -> dict[str, object]:
+    ) -> RollbackRefactoringResult:
         """Build failed rollback response.
 
         Args:
@@ -346,13 +318,14 @@ class RollbackManager:
             rollback_record: Rollback record
 
         Returns:
-            Failed response dictionary
+            RollbackRefactoringResult with failure status
         """
-        return {
-            "status": "failed",
-            "rollback_id": rollback_id,
-            "error": rollback_record.error or "No snapshot ID found for execution",
-        }
+        return RollbackRefactoringResult(
+            status="failed",
+            rollback_id=rollback_id,
+            execution_id=rollback_record.execution_id,
+            error=rollback_record.error or "No snapshot ID found for execution",
+        )
 
     async def _detect_rollback_conflicts(
         self,
@@ -411,7 +384,7 @@ class RollbackManager:
         rollback_record: RollbackRecord,
         conflicts: list[str],
         dry_run: bool,
-    ) -> dict[str, object]:
+    ) -> RollbackRefactoringResult:
         """Finalize rollback and return success response.
 
         Args:
@@ -422,31 +395,27 @@ class RollbackManager:
             dry_run: Whether it was a dry run
 
         Returns:
-            Success response dictionary
+            RollbackRefactoringResult with success status
         """
-        rollback_record.status = "completed"
+        rollback_record.status = RefactoringStatus.COMPLETED
         rollback_record.completed_at = datetime.now().isoformat()
 
         self.rollbacks[rollback_id] = rollback_record
         await self.save_rollbacks()
 
-        return {
-            "status": "success",
-            "rollback_id": rollback_id,
-            "execution_id": execution_id,
-            "files_restored": (
-                len(rollback_record.files_restored)
-                if rollback_record.files_restored is not None
-                else 0
-            ),
-            "conflicts_detected": len(conflicts),
-            "conflicts": conflicts,
-            "dry_run": dry_run,
-        }
+        return RollbackRefactoringResult(
+            status="success",
+            rollback_id=rollback_id,
+            execution_id=execution_id,
+            files_restored=(len(rollback_record.files_restored)),
+            conflicts_detected=len(conflicts),
+            conflicts=conflicts,
+            dry_run=dry_run,
+        )
 
     async def _handle_rollback_error(
         self, rollback_id: str, rollback_record: RollbackRecord, error: Exception
-    ) -> dict[str, object]:
+    ) -> RollbackRefactoringResult:
         """Handle rollback error.
 
         Args:
@@ -457,18 +426,19 @@ class RollbackManager:
         Returns:
             Error response dictionary
         """
-        rollback_record.status = "failed"
+        rollback_record.status = RefactoringStatus.FAILED
         rollback_record.error = str(error)
         rollback_record.completed_at = datetime.now().isoformat()
 
         self.rollbacks[rollback_id] = rollback_record
         await self.save_rollbacks()
 
-        return {
-            "status": "failed",
-            "rollback_id": rollback_id,
-            "error": str(error),
-        }
+        return RollbackRefactoringResult(
+            status="failed",
+            rollback_id=rollback_id,
+            execution_id=rollback_record.execution_id,
+            error=str(error),
+        )
 
     def find_snapshot_for_execution(self, execution_id: str) -> str | None:
         """Find snapshot ID for an execution."""
@@ -506,23 +476,12 @@ class RollbackManager:
         """Check if file has snapshot with matching ID."""
         file_meta = await self.metadata_index.get_file_metadata(rel_path)
 
-        if not isinstance(file_meta, dict):
+        version_history = _extract_version_history(file_meta)
+        if version_history is None:
             return False
 
-        versions_raw = file_meta.get("version_history", [])
-        if not isinstance(versions_raw, list):
-            return False
-
-        versions_list: list[dict[str, object]] = cast(
-            list[dict[str, object]], versions_raw
-        )
-        for version in versions_list:
-            change_description_raw = version.get("change_description", "")
-            change_description = (
-                str(change_description_raw)
-                if change_description_raw is not None
-                else ""
-            )
+        for version_entry in version_history:
+            change_description = version_entry.change_description or ""
             if change_description.startswith(
                 f"Pre-refactoring snapshot: {snapshot_id}"
             ):
@@ -558,7 +517,7 @@ class RollbackManager:
             # Get metadata to check for external modifications
             metadata = await self.metadata_index.get_file_metadata(file_path)
             if metadata:
-                stored_hash = metadata.get("content_hash")
+                stored_hash = _extract_content_hash(metadata)
                 if stored_hash and stored_hash != current_hash:
                     conflicts.append(f"{file_path} - File has been manually edited")
 
@@ -660,7 +619,7 @@ class RollbackManager:
 
     async def _get_version_history(
         self, file_path: str
-    ) -> list[dict[str, object]] | None:
+    ) -> list[VersionMetadata] | None:
         """
         Get version history for a file.
 
@@ -668,55 +627,40 @@ class RollbackManager:
             file_path: Path to file
 
         Returns:
-            Version history list or None if not found
+            Version history list (Pydantic models) or None if not found
         """
         file_meta = await self.metadata_index.get_file_metadata(file_path)
-        if not isinstance(file_meta, dict):
-            return None
-
-        version_history_raw = file_meta.get("version_history", [])
-        if not isinstance(version_history_raw, list):
-            return None
-
-        return cast(list[dict[str, object]], version_history_raw)
+        return _extract_version_history(file_meta)
 
     def _find_snapshot_version(
-        self, version_history: list[dict[str, object]], snapshot_id: str
+        self, version_history: list[VersionMetadata], snapshot_id: str
     ) -> int | None:
         """
         Find version number for a snapshot.
 
         Args:
-            version_history: Version history list
+            version_history: Version history list (Pydantic models)
             snapshot_id: Snapshot to find
 
         Returns:
             Version number or None if not found
         """
-        for version in version_history:
-            change_description_raw = version.get("change_description", "")
-            change_description = (
-                str(change_description_raw)
-                if change_description_raw is not None
-                else ""
-            )
-
-            if change_description.startswith(
+        for version_entry in version_history:
+            change_description = version_entry.change_description or ""
+            if not change_description.startswith(
                 f"Pre-refactoring snapshot: {snapshot_id}"
             ):
-                version_num_raw = version.get("version")
-                version_num: int | float | None = (
-                    version_num_raw
-                    if isinstance(version_num_raw, (int, float))
-                    else None
-                )
-                if version_num is not None:
-                    return int(version_num)
+                continue
+
+            return version_entry.version
 
         return None
 
     async def _rollback_file_to_version(
-        self, file_path: str, version_history: list[dict[str, object]], version: int
+        self,
+        file_path: str,
+        version_history: list[VersionMetadata],
+        version: int,
     ) -> bool:
         """
         Execute rollback to a specific version.
@@ -732,7 +676,7 @@ class RollbackManager:
         result = await self.version_manager.rollback_to_version(
             file_path, version_history, version
         )
-        return bool(result and result.get("status") == "success")
+        return result is not None
 
     async def backup_current_version(self, file_path: str):
         """Backup current version before rollback."""
@@ -748,13 +692,9 @@ class RollbackManager:
             # Get current version count
             file_meta = await self.metadata_index.get_file_metadata(file_path)
             version_count = 0
-            if file_meta:
-                version_history_raw = file_meta.get("version_history", [])
-                if isinstance(version_history_raw, list):
-                    version_history: list[object] = cast(
-                        list[object], version_history_raw
-                    )
-                    version_count = len(version_history)
+            version_history = _extract_version_history(file_meta)
+            if version_history is not None:
+                version_count = len(version_history)
 
             _ = await self.version_manager.create_snapshot(
                 full_path,
@@ -775,7 +715,7 @@ class RollbackManager:
     async def get_rollback_history(
         self,
         time_range_days: int = 90,
-    ) -> dict[str, object]:
+    ) -> RollbackHistoryResult:
         """
         Get rollback history.
 
@@ -796,17 +736,18 @@ class RollbackManager:
             time_range_days, filtered_rollbacks, stats
         )
 
-    async def get_rollback(self, rollback_id: str) -> dict[str, object] | None:
-        """Get a specific rollback by ID."""
-        rollback = self.rollbacks.get(rollback_id)
-        if rollback:
-            return rollback.to_dict()
-        return None
+    async def get_rollback(self, rollback_id: str) -> RollbackRecordModel | None:
+        """Get a specific rollback by ID.
+
+        Returns:
+            RollbackRecordModel or None if not found
+        """
+        return self.rollbacks.get(rollback_id)
 
     async def analyze_rollback_impact(
         self,
         execution_id: str,
-    ) -> dict[str, object]:
+    ) -> ModelDict:
         """
         Analyze the impact of rolling back an execution.
 
@@ -814,85 +755,149 @@ class RollbackManager:
             execution_id: ID of the execution to analyze
 
         Returns:
-            Impact analysis
+            RollbackImpactResult with impact analysis
         """
         snapshot_id = self.find_snapshot_for_execution(execution_id)
         if not snapshot_id:
             return {
                 "status": "error",
+                "execution_id": execution_id,
+                "total_files": 0,
+                "conflicts": 0,
+                "conflicts_count": 0,
+                "can_rollback_all": False,
+                "affected_files": [],
+                "conflicts_list": [],
                 "message": f"No snapshot found for execution {execution_id}",
+                "error": f"No snapshot found for execution {execution_id}",
             }
 
         affected_files = await self.get_affected_files(execution_id, snapshot_id)
         conflicts = await self.detect_conflicts(affected_files, snapshot_id)
-        file_analysis = await self._analyze_files_for_rollback(
-            affected_files, conflicts
+        return self._build_rollback_impact_result(
+            execution_id, affected_files, conflicts
         )
 
+    def _build_rollback_impact_result(
+        self,
+        execution_id: str,
+        affected_files: list[ModelDict],
+        conflicts: list[ModelDict],
+    ) -> ModelDict:
+        """Build rollback impact result dictionary."""
+        affected_files_json = cast(list[JsonValue], affected_files)
+        conflicts_json = cast(list[JsonValue], conflicts)
         return {
             "status": "success",
             "execution_id": execution_id,
-            "snapshot_id": snapshot_id,
             "total_files": len(affected_files),
             "conflicts": len(conflicts),
+            "conflicts_count": len(conflicts),
             "can_rollback_all": len(conflicts) == 0,
-            "files": file_analysis,
-            "conflicts_detail": conflicts,
+            "affected_files": affected_files_json,
+            "conflicts_list": conflicts_json,
+            "message": None,
+            "error": None,
         }
+
+
+def _extract_version_history(file_meta: JsonValue) -> list[VersionMetadata] | None:
+    if file_meta is None:
+        return None
+
+    if isinstance(file_meta, dict):
+        file_meta_dict = cast(ModelDict, file_meta)
+        history_raw = file_meta_dict.get("version_history")
+        if not isinstance(history_raw, list):
+            return None
+        history_list: list[VersionMetadata] = []
+        for item in cast(list[JsonValue], history_raw):
+            if isinstance(item, dict):
+                history_list.append(VersionMetadata.model_validate(item))
+        return history_list
+
+    version_history_attr = getattr(file_meta, "version_history", None)
+    if not isinstance(version_history_attr, list):
+        return None
+
+    history_list: list[VersionMetadata] = []
+    for item in cast(list[JsonValue], version_history_attr):
+        if isinstance(item, VersionMetadata):
+            history_list.append(item)
+        elif isinstance(item, dict):
+            history_list.append(VersionMetadata.model_validate(item))
+    return history_list
+
+
+def _extract_content_hash(file_meta: JsonValue) -> str | None:
+    if file_meta is None:
+        return None
+    if isinstance(file_meta, dict):
+        return _extract_hash_from_dict(cast(ModelDict, file_meta))
+    return _extract_hash_from_object(file_meta)
+
+
+def _extract_hash_from_dict(file_meta_dict: ModelDict) -> str | None:
+    """Extract content hash from dictionary."""
+    content_hash = file_meta_dict.get("content_hash")
+    return str(content_hash) if isinstance(content_hash, str) else None
+
+
+def _extract_hash_from_object(file_meta: JsonValue) -> str | None:
+    """Extract content hash from object."""
+    content_hash_attr = getattr(file_meta, "content_hash", None)
+    return str(content_hash_attr) if isinstance(content_hash_attr, str) else None
 
     async def _analyze_files_for_rollback(
         self, affected_files: list[str], conflicts: list[str]
-    ) -> list[dict[str, object]]:
+    ) -> list[FileRollbackAnalysis]:
         """Analyze each file for rollback impact."""
-        file_analysis: list[dict[str, object]] = []
-        for file_path in affected_files:
-            analysis = self._analyze_single_file_rollback(file_path, conflicts)
-            file_analysis.append(analysis)
-        return file_analysis
+        return [
+            self._analyze_single_file_rollback(file_path, conflicts)
+            for file_path in affected_files
+        ]
 
     def _analyze_single_file_rollback(
         self, file_path: str, conflicts: list[str]
-    ) -> dict[str, object]:
+    ) -> FileRollbackAnalysis:
         """Analyze a single file for rollback."""
         full_path = self.memory_bank_dir / file_path
         has_conflict = any(file_path in conflict for conflict in conflicts)
 
-        analysis: dict[str, object] = {
-            "file": file_path,
-            "exists": full_path.exists(),
-            "has_conflict": has_conflict,
-            "can_restore": True,
-        }
+        can_restore = not has_conflict
+        reason = "File has been manually edited" if has_conflict else None
 
-        if has_conflict:
-            analysis["can_restore"] = False
-            analysis["reason"] = "File has been manually edited"
-
-        return analysis
+        return FileRollbackAnalysis(
+            file=file_path,
+            exists=full_path.exists(),
+            has_conflict=has_conflict,
+            can_restore=can_restore,
+            reason=reason,
+        )
 
 
 def _filter_rollbacks_by_date(
-    rollbacks: Iterable[RollbackRecord], cutoff_date: datetime
-) -> list[dict[str, object]]:
+    rollbacks: Iterable[RollbackRecordModel], cutoff_date: datetime
+) -> list[RollbackRecordModel]:
     """Filter rollbacks by date cutoff."""
-    filtered: list[dict[str, object]] = []
+    filtered: list[RollbackRecordModel] = []
     for rollback in rollbacks:
         rollback_date = datetime.fromisoformat(rollback.created_at)
         if rollback_date >= cutoff_date:
-            filtered.append(rollback.to_dict())
+            filtered.append(rollback)
     return filtered
 
 
 def _calculate_rollback_statistics(
-    filtered_rollbacks: list[dict[str, object]],
+    filtered_rollbacks: list[RollbackRecordModel],
 ) -> dict[str, int | float]:
     """Calculate rollback statistics."""
     total = len(filtered_rollbacks)
     successful = len(
-        [r for r in filtered_rollbacks if cast(str, r.get("status", "")) == "completed"]
+        [r for r in filtered_rollbacks if r.status == RefactoringStatus.COMPLETED]
     )
     failed = len(
-        [r for r in filtered_rollbacks if cast(str, r.get("status", "")) == "failed"]
+        [r for r in filtered_rollbacks if r.status == RefactoringStatus.FAILED]
     )
     return {
         "total": total,
@@ -904,25 +909,22 @@ def _calculate_rollback_statistics(
 
 def _build_rollback_history_result(
     time_range_days: int,
-    filtered_rollbacks: list[dict[str, object]],
+    filtered_rollbacks: list[RollbackRecordModel],
     stats: dict[str, int | float],
-) -> dict[str, object]:
-    """Build rollback history result dictionary."""
+) -> RollbackHistoryResult:
+    """Build rollback history result model."""
 
-    def get_created_at(r: dict[str, object]) -> str:
-        """Extract created_at from rollback dict."""
-        created_at_raw = r.get("created_at", "")
-        return str(created_at_raw) if created_at_raw is not None else ""
+    # Sort by created_at descending (newest first)
+    sorted_rollbacks = sorted(
+        filtered_rollbacks,
+        key=lambda r: r.created_at,
+        reverse=True,
+    )
 
-    return {
-        "time_range_days": time_range_days,
-        "total_rollbacks": stats["total"],
-        "successful": stats["successful"],
-        "failed": stats["failed"],
-        "success_rate": stats["success_rate"],
-        "rollbacks": sorted(
-            filtered_rollbacks,
-            key=get_created_at,
-            reverse=True,
-        ),
-    }
+    return RollbackHistoryResult(
+        time_range_days=time_range_days,
+        total_rollbacks=int(stats["total"]),
+        successful=int(stats["successful"]),
+        failed=int(stats["failed"]),
+        rollbacks=sorted_rollbacks,
+    )

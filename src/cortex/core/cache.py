@@ -8,9 +8,10 @@ to improve performance for frequently accessed data.
 import time
 
 from cortex.core.constants import CACHE_MAX_SIZE, CACHE_TTL_SECONDS
+from cortex.core.models import JsonValue
 
 
-class TTLCache:
+class TTLCache[T = JsonValue]:
     """Time-based cache with configurable TTL (Time To Live)."""
 
     def __init__(self, ttl_seconds: int = CACHE_TTL_SECONDS):
@@ -27,9 +28,9 @@ class TTLCache:
             ttl_seconds: Time to live for cache entries in seconds (default: 5 minutes)
         """
         self.ttl: int = ttl_seconds
-        self._cache: dict[str, tuple[float, object]] = {}
+        self._cache: dict[str, tuple[float, T]] = {}
 
-    def get(self, key: str) -> object | None:
+    def get(self, key: str) -> T | None:
         """
         Get value from cache if not expired.
 
@@ -47,7 +48,7 @@ class TTLCache:
             del self._cache[key]
         return None
 
-    def set(self, key: str, value: object) -> None:
+    def set(self, key: str, value: T) -> None:
         """
         Set value in cache with current timestamp.
 
@@ -94,7 +95,7 @@ class TTLCache:
         return len(expired_keys)
 
 
-class LRUCache:
+class LRUCache[T = JsonValue]:
     """Least Recently Used (LRU) cache with size limit."""
 
     def __init__(self, max_size: int = CACHE_MAX_SIZE):
@@ -111,10 +112,10 @@ class LRUCache:
             max_size: Maximum number of entries to cache
         """
         self.max_size: int = max_size
-        self._cache: dict[str, object] = {}
+        self._cache: dict[str, T] = {}
         self._access_order: list[str] = []
 
-    def get(self, key: str) -> object | None:
+    def get(self, key: str) -> T | None:
         """
         Get value from cache and update access order.
 
@@ -131,7 +132,7 @@ class LRUCache:
             return self._cache[key]
         return None
 
-    def set(self, key: str, value: object) -> None:
+    def set(self, key: str, value: T) -> None:
         """
         Set value in cache, evicting LRU entry if at capacity.
 

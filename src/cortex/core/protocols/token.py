@@ -9,7 +9,10 @@ abstraction and reduced circular dependencies.
 from pathlib import Path
 from typing import Protocol
 
+from cortex.core.models import DependencyGraphDict
+
 from .file_system import FileSystemProtocol
+from .linking import LinkParserProtocol
 
 
 class TokenCounterProtocol(Protocol):
@@ -17,7 +20,7 @@ class TokenCounterProtocol(Protocol):
 
     This protocol defines the interface for counting tokens in text using
     tiktoken encoding. Token counting is essential for context optimization
-    and staying within model context limits. Any class implementing these
+    and staying within model context limits. A class implementing these
     methods automatically satisfies this protocol.
 
     Used by:
@@ -106,7 +109,7 @@ class DependencyGraphProtocol(Protocol):
     This protocol defines the interface for managing file dependencies, computing
     optimal loading orders, and detecting circular dependencies. The dependency
     graph tracks both static (transclusion) and dynamic (discovered) dependencies.
-    Any class implementing these methods automatically satisfies this protocol.
+    A class implementing these methods automatically satisfies this protocol.
 
     Used by:
         - DependencyGraph: Graph-based dependency tracking with cycle detection
@@ -143,13 +146,18 @@ class DependencyGraphProtocol(Protocol):
                 # Detect cycles using DFS
                 return self._find_cycles()
 
-            def to_dict(self) -> dict[str, object]:
-                return {"graph": self.graph, "reverse": self.reverse_graph}
+            def to_dict(self) -> DependencyGraphDict:
+                return DependencyGraphDict(
+                    graph=self.graph,
+                    reverse=self.reverse_graph,
+                    loading_order=[],
+                    cycles=[]
+                )
 
             async def build_from_links(
                 self,
                 file_system: FileSystemProtocol,
-                link_parser: object,
+                link_parser: LinkParserProtocol,
                 memory_bank_path: Path,
             ):
                 # Build graph from file links
@@ -222,18 +230,18 @@ class DependencyGraphProtocol(Protocol):
         """
         ...
 
-    def to_dict(self) -> dict[str, object]:
+    def to_dict(self) -> DependencyGraphDict:
         """Export graph to dictionary format.
 
         Returns:
-            Dictionary representation
+            Dependency graph dictionary model
         """
         ...
 
     async def build_from_links(
         self,
         file_system: FileSystemProtocol,
-        link_parser: object,
+        link_parser: LinkParserProtocol,
         memory_bank_path: Path,
     ) -> None:
         """Build dynamic dependencies from actual file links.

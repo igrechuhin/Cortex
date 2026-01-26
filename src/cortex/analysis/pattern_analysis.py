@@ -6,7 +6,8 @@ unused file detection, and access frequency calculations.
 """
 
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from typing import cast
 
 from cortex.analysis.pattern_types import (
@@ -16,6 +17,16 @@ from cortex.analysis.pattern_types import (
     UnusedFileEntry,
 )
 from cortex.core.constants import ACCESS_LOG_MAX_ENTRIES
+
+AccessFrequencyEntry = dict[str, int | float | str | None]
+AccessFrequencyResult = dict[str, AccessFrequencyEntry]
+
+
+@dataclass(slots=True)
+class _AccessStats:
+    count: int = 0
+    last_access: str | None = None
+    tasks: set[str] = field(default_factory=lambda: set[str]())
 
 
 def calculate_cutoff_date(time_range_days: int) -> str:
@@ -27,13 +38,13 @@ def calculate_cutoff_date(time_range_days: int) -> str:
     Returns:
         ISO format cutoff date string
     """
-    cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_range_days)
+    cutoff_date = datetime.now(UTC) - timedelta(days=time_range_days)
     return cutoff_date.isoformat()
 
 
 def count_accesses_in_range(
     accesses: list[AccessRecord], cutoff_str: str
-) -> dict[str, dict[str, object]]:
+) -> dict[str, _AccessStats]:
     """Count file accesses within time range.
 
     Args:
@@ -43,58 +54,35 @@ def count_accesses_in_range(
     Returns:
         Dictionary mapping file paths to access statistics
     """
-
-    def default_stats() -> dict[str, object]:
-        """Create default stats dict."""
-        return {"count": 0, "last_access": None, "task_count": 0, "tasks": set()}
-
-    access_counts: dict[str, dict[str, object]] = defaultdict(default_stats)
+    access_counts: dict[str, _AccessStats] = defaultdict(_AccessStats)
 
     for access in accesses:
-        access_timestamp = access["timestamp"]
-        if access_timestamp >= cutoff_str:
-            file_path = access["file"]
-            if file_path:
-                update_access_stats(access_counts[file_path], access)
+        if access.timestamp >= cutoff_str and access.file:
+            update_access_stats(access_counts[access.file], access)
 
     return access_counts
 
 
-def update_access_stats(stats: dict[str, object], access: AccessRecord) -> None:
+def update_access_stats(stats: _AccessStats, access: AccessRecord) -> None:
     """Update access statistics for a single access record.
 
     Args:
         stats: Statistics dictionary to update
         access: Access record to process
     """
-    count_raw_val: object = stats.get("count", 0)
-    count = int(count_raw_val) if isinstance(count_raw_val, (int, float)) else 0
-    stats["count"] = count + 1
-    stats["last_access"] = access["timestamp"]
+    stats.count += 1
+    stats.last_access = access.timestamp
 
-    task_id = access["task_id"]
+    task_id = access.task_id
     if task_id:
-        tasks_raw_val: object = stats.get("tasks")
-        if isinstance(tasks_raw_val, set):
-            tasks: set[str] = cast(set[str], tasks_raw_val)
-            tasks.add(task_id)
-        else:
-            stats["tasks"] = {task_id}
-
-
-def _get_task_count(tasks_raw: object) -> int:
-    """Extract task count from tasks collection."""
-    if isinstance(tasks_raw, (set, list)):
-        tasks_collection: set[str] | list[str] = cast(set[str] | list[str], tasks_raw)
-        return len(tasks_collection)
-    return 0
+        stats.tasks.add(task_id)
 
 
 def format_access_results(
-    access_counts: dict[str, dict[str, object]],
+    access_counts: dict[str, _AccessStats],
     min_access_count: int,
     time_range_days: int,
-) -> dict[str, dict[str, object]]:
+) -> AccessFrequencyResult:
     """Filter and format access results.
 
     Args:
@@ -105,18 +93,14 @@ def format_access_results(
     Returns:
         Formatted result dictionary
     """
-    result: dict[str, dict[str, object]] = {}
+    result: AccessFrequencyResult = {}
     for file_path, stats in access_counts.items():
-        count_raw: object = stats.get("count", 0)
-        count = int(count_raw) if isinstance(count_raw, (int, float)) else 0
-        if count >= min_access_count:
-            tasks_raw: object = stats.get("tasks", set[str]())
-            task_count = _get_task_count(tasks_raw)
+        if stats.count >= min_access_count:
             result[file_path] = {
-                "access_count": count,
-                "last_access": stats.get("last_access"),
-                "task_count": task_count,
-                "avg_accesses_per_day": count / time_range_days,
+                "access_count": stats.count,
+                "last_access": stats.last_access,
+                "task_count": len(stats.tasks),
+                "avg_accesses_per_day": stats.count / time_range_days,
             }
     return result
 
@@ -125,7 +109,7 @@ def get_access_frequency(
     accesses: list[AccessRecord],
     time_range_days: int = 30,
     min_access_count: int = 1,
-) -> dict[str, dict[str, object]]:
+) -> AccessFrequencyResult:
     """Get file access frequency within a time range.
 
     Performance optimization: Only processes the most recent ACCESS_LOG_MAX_ENTRIES
@@ -154,53 +138,44 @@ def get_access_frequency(
 
 def calculate_cutoff_date_str(time_range_days: int) -> str:
     """Calculate cutoff date string for unused file detection."""
-    cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_range_days)
+    cutoff_date = datetime.now(UTC) - timedelta(days=time_range_days)
     return cutoff_date.isoformat()
 
 
 def is_file_unused(stats: FileStatsEntry, cutoff_str: str) -> bool:
     """Check if a file is unused based on stats and cutoff date."""
-    last_access_raw = stats.get("last_access")
-    last_access_str = last_access_raw if isinstance(last_access_raw, str) else ""
-    return not last_access_str or last_access_str < cutoff_str
+    return not stats.last_access or stats.last_access < cutoff_str
 
 
 def build_unused_file_entry(
     file_path: str, stats: FileStatsEntry, cutoff_str: str
 ) -> UnusedFileEntry:
     """Build unused file entry dictionary."""
-    last_access_raw = stats.get("last_access")
-    last_access_str = last_access_raw if isinstance(last_access_raw, str) else ""
+    last_access_str = stats.last_access
 
     days_since_access: int | None = None
     if last_access_str:
         try:
             last_access_dt = datetime.fromisoformat(last_access_str)
-            days_since_access = (datetime.now(timezone.utc) - last_access_dt).days
+            days_since_access = (datetime.now(UTC) - last_access_dt).days
         except (ValueError, TypeError):
             days_since_access = None
 
-    total_accesses_raw: object = stats.get("total_accesses", 0)
-    total_accesses_int = (
-        int(total_accesses_raw) if isinstance(total_accesses_raw, (int, float)) else 0
+    return UnusedFileEntry(
+        file=file_path,
+        last_access=last_access_str if last_access_str else None,
+        days_since_access=days_since_access,
+        total_accesses=stats.total_accesses,
+        status="never_accessed" if not last_access_str else "stale",
     )
-
-    return {
-        "file": file_path,
-        "last_access": last_access_str if last_access_str else None,
-        "days_since_access": days_since_access,
-        "total_accesses": total_accesses_int,
-        "status": ("never_accessed" if not last_access_str else "stale"),
-    }
 
 
 def sort_unused_files(unused: list[UnusedFileEntry]) -> list[UnusedFileEntry]:
     """Sort unused files by days since access (most stale first)."""
 
     def get_days_since_access(x: UnusedFileEntry) -> float:
-        days_val = x["days_since_access"]
-        if days_val is not None:
-            return float(days_val)
+        if x.days_since_access is not None:
+            return float(x.days_since_access)
         return float("inf")
 
     unused.sort(key=get_days_since_access, reverse=True)
@@ -233,7 +208,7 @@ def get_unused_files(
 
 def calculate_temporal_cutoff(time_range_days: int) -> str:
     """Calculate cutoff date string for temporal analysis."""
-    cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_range_days)
+    cutoff_date = datetime.now(UTC) - timedelta(days=time_range_days)
     return cutoff_date.isoformat()
 
 
@@ -246,9 +221,8 @@ def collect_temporal_data(
     weekly: defaultdict[str, int] = defaultdict(int)
 
     for access in accesses:
-        timestamp_raw: object = access.get("timestamp", "")
-        timestamp_str = str(timestamp_raw) if timestamp_raw else ""
-        if timestamp_str >= cutoff_str:
+        timestamp_str = access.timestamp
+        if timestamp_str and timestamp_str >= cutoff_str:
             try:
                 dt = datetime.fromisoformat(timestamp_str)
                 hourly[dt.hour] += 1
@@ -271,7 +245,7 @@ def calculate_peak_times(
     hourly = temporal_data["hourly"]
     weekly = temporal_data["weekly"]
 
-    def get_count(x: tuple[object, int]) -> int:
+    def get_count(x: tuple[int | str, int]) -> int:
         return x[1]
 
     peak_hour_raw = max(hourly.items(), key=get_count)[0] if hourly else None
@@ -326,16 +300,16 @@ def build_temporal_result(
     total_accesses = sum(hourly_dict.values())
     avg_accesses = total_accesses / max(len(daily_dict), 1)
 
-    return {
-        "time_range_days": time_range_days,
-        "total_accesses": total_accesses,
-        "hourly_distribution": hourly_dict,
-        "daily_distribution": daily_dict,
-        "weekly_distribution": weekly_dict,
-        "peak_hour": peak_hour,
-        "peak_day": peak_day,
-        "avg_accesses_per_day": avg_accesses,
-    }
+    return TemporalPatternsResult(
+        time_range_days=time_range_days,
+        total_accesses=total_accesses,
+        hourly_distribution=hourly_dict,
+        daily_distribution=daily_dict,
+        weekly_distribution=weekly_dict,
+        peak_hour=peak_hour,
+        peak_day=peak_day,
+        avg_accesses_per_day=avg_accesses,
+    )
 
 
 def get_temporal_patterns(

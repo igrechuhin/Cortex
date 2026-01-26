@@ -32,4 +32,4 @@ async def handle_infrastructure_validation(
         check_documentation_consistency=check_documentation_consistency,
         check_config_consistency=check_config_consistency,
     )
-    return json.dumps(result, indent=2)
+    return json.dumps(result.model_dump(mode="json"), indent=2)

@@ -7,34 +7,47 @@ references remain valid.
 
 import re
 from pathlib import Path
-from typing import TypedDict
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class TodoItem(TypedDict):
+class TodoItem(BaseModel):
     """Represents a TODO item found in the codebase."""
 
-    file_path: str
-    line: int
-    snippet: str
-    category: str
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    file_path: str = Field(description="Path to file containing TODO")
+    line: int = Field(ge=1, description="Line number of TODO")
+    snippet: str = Field(description="Code snippet containing TODO")
+    category: str = Field(description="Category of TODO")
 
 
-class RoadmapReference(TypedDict):
+class RoadmapReference(BaseModel):
     """Represents a file reference found in the roadmap."""
 
-    file_path: str
-    line: int | None
-    context: str
-    phase: str | None
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    file_path: str = Field(description="Path to referenced file")
+    line: int | None = Field(default=None, ge=1, description="Line number if specified")
+    context: str = Field(description="Context of reference")
+    phase: str | None = Field(default=None, description="Phase if specified")
 
 
-class SyncValidationResult(TypedDict):
+class SyncValidationResult(BaseModel):
     """Result of roadmap synchronization validation."""
 
-    valid: bool
-    missing_roadmap_entries: list[TodoItem]
-    invalid_references: list[RoadmapReference]
-    warnings: list[str]
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    valid: bool = Field(description="Whether validation passed")
+    missing_roadmap_entries: list[TodoItem] = Field(
+        default_factory=lambda: list[TodoItem](),
+        description="TODOs not tracked in roadmap",
+    )
+    invalid_references: list[RoadmapReference] = Field(
+        default_factory=lambda: list[RoadmapReference](),
+        description="Invalid file references in roadmap",
+    )
+    warnings: list[str] = Field(default_factory=list, description="Validation warnings")
 
 
 # Production directories to scan for TODOs
@@ -178,7 +191,7 @@ def _check_todos_in_roadmap(
     missing_entries: list[TodoItem] = []
     roadmap_lower = roadmap_content.lower()
     for todo in todos:
-        todo_file = todo["file_path"].lower()
+        todo_file = todo.file_path.lower()
         if todo_file not in roadmap_lower:
             missing_entries.append(todo)
     return missing_entries
@@ -200,23 +213,23 @@ def _validate_roadmap_references(
     warnings: list[str] = []
 
     for ref in references:
-        file_path = project_root / ref["file_path"]
+        file_path = project_root / ref.file_path
         if not file_path.exists():
             invalid_refs.append(ref)
             continue
 
-        if ref["line"] is not None:
+        if ref.line is not None:
             try:
                 content = file_path.read_text(encoding="utf-8")
                 total_lines = len(content.splitlines())
-                if ref["line"] > total_lines:
+                if ref.line > total_lines:
                     warning_msg = (
-                        f"Reference to {ref['file_path']}:{ref['line']} "
+                        f"Reference to {ref.file_path}:{ref.line} "
                         f"exceeds file length ({total_lines} lines)"
                     )
                     warnings.append(warning_msg)
             except (UnicodeDecodeError, PermissionError):
-                warnings.append(f"Cannot verify line reference in {ref['file_path']}")
+                warnings.append(f"Cannot verify line reference in {ref.file_path}")
 
     return invalid_refs, warnings
 

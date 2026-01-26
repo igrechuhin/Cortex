@@ -6,7 +6,11 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from cortex.core.dependency_graph import STATIC_DEPENDENCIES, DependencyGraph
+from cortex.core.dependency_graph import (
+    STATIC_DEPENDENCIES,
+    DependencyGraph,
+    FileDependencyInfo,
+)
 
 
 class TestDependencyGraphInitialization:
@@ -414,11 +418,9 @@ class TestCircularDependencyDetection:
         graph.add_dynamic_dependency("file2.md", "file3.md")
         graph.add_dynamic_dependency("file3.md", "file1.md")
         # Add to static deps so they're checked
-        graph.static_deps["file1.md"] = {
-            "depends_on": [],
-            "priority": 10,
-            "category": "test",
-        }
+        graph.static_deps["file1.md"] = FileDependencyInfo(
+            depends_on=[], priority=10, category="test"
+        )
 
         # Act
         has_cycle = graph.has_circular_dependency()
@@ -489,16 +491,12 @@ class TestToDictExport:
         # Arrange
         graph = DependencyGraph()
         graph.add_dynamic_dependency("file1.md", "file2.md")
-        graph.static_deps["file1.md"] = {
-            "depends_on": [],
-            "priority": 10,
-            "category": "test",
-        }
-        graph.static_deps["file2.md"] = {
-            "depends_on": [],
-            "priority": 11,
-            "category": "test",
-        }
+        graph.static_deps["file1.md"] = FileDependencyInfo(
+            depends_on=[], priority=10, category="test"
+        )
+        graph.static_deps["file2.md"] = FileDependencyInfo(
+            depends_on=[], priority=11, category="test"
+        )
 
         # Act
         result = graph.to_dict()
@@ -645,21 +643,15 @@ class TestGetTransclusionOrder:
         # Create chain: file1 includes file2 includes file3
         graph.add_link_dependency("file1.md", "file2.md", "transclusion")
         graph.add_link_dependency("file2.md", "file3.md", "transclusion")
-        graph.static_deps["file1.md"] = {
-            "depends_on": [],
-            "priority": 1,
-            "category": "test",
-        }
-        graph.static_deps["file2.md"] = {
-            "depends_on": [],
-            "priority": 2,
-            "category": "test",
-        }
-        graph.static_deps["file3.md"] = {
-            "depends_on": [],
-            "priority": 3,
-            "category": "test",
-        }
+        graph.static_deps["file1.md"] = FileDependencyInfo(
+            depends_on=[], priority=1, category="test"
+        )
+        graph.static_deps["file2.md"] = FileDependencyInfo(
+            depends_on=[], priority=2, category="test"
+        )
+        graph.static_deps["file3.md"] = FileDependencyInfo(
+            depends_on=[], priority=3, category="test"
+        )
 
         # Act
         order = graph.get_transclusion_order("file1.md")
@@ -706,16 +698,12 @@ class TestDetectCycles:
         # Create cycle
         graph.add_dynamic_dependency("file1.md", "file2.md")
         graph.add_dynamic_dependency("file2.md", "file1.md")
-        graph.static_deps["file1.md"] = {
-            "depends_on": [],
-            "priority": 1,
-            "category": "test",
-        }
-        graph.static_deps["file2.md"] = {
-            "depends_on": [],
-            "priority": 2,
-            "category": "test",
-        }
+        graph.static_deps["file1.md"] = FileDependencyInfo(
+            depends_on=[], priority=1, category="test"
+        )
+        graph.static_deps["file2.md"] = FileDependencyInfo(
+            depends_on=[], priority=2, category="test"
+        )
 
         # Act
         cycles = graph.detect_cycles()

@@ -2,7 +2,7 @@
 Pydantic models for services module.
 
 This module contains Pydantic models for service operations,
-migrated from TypedDict definitions for better validation.
+migrated from legacy dict-based shapes for better validation.
 """
 
 from pydantic import BaseModel, ConfigDict, Field

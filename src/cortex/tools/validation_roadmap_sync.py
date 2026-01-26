@@ -37,18 +37,21 @@ def _build_roadmap_sync_success_response(
     Returns:
         JSON string with success response
     """
+    missing_entries = [item.model_dump() for item in result.missing_roadmap_entries]
+    invalid_refs = [ref.model_dump() for ref in result.invalid_references]
+    warnings = list(result.warnings)
     return json.dumps(
         {
             "status": "success",
             "check_type": "roadmap_sync",
-            "valid": result["valid"],
-            "missing_roadmap_entries": result["missing_roadmap_entries"],
-            "invalid_references": result["invalid_references"],
-            "warnings": result["warnings"],
+            "valid": result.valid,
+            "missing_roadmap_entries": missing_entries,
+            "invalid_references": invalid_refs,
+            "warnings": warnings,
             "summary": {
-                "missing_entries_count": len(result["missing_roadmap_entries"]),
-                "invalid_references_count": len(result["invalid_references"]),
-                "warnings_count": len(result["warnings"]),
+                "missing_entries_count": len(missing_entries),
+                "invalid_references_count": len(invalid_refs),
+                "warnings_count": len(warnings),
             },
         },
         indent=2,

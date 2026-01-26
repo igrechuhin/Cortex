@@ -17,10 +17,12 @@ import json
 from datetime import datetime
 from pathlib import Path
 from typing import cast
+from unittest.mock import MagicMock
 
 import pytest
 
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import SectionMetadata
 
 
 class TestMetadataIndexInitialization:
@@ -257,6 +259,9 @@ class TestFileMetadataUpdates:
         _ = await index.load()
 
         # Act
+        sections = [
+            SectionMetadata(title="Introduction", line_start=1, line_end=10),
+        ]
         await index.update_file_metadata(
             file_name="test.md",
             path=temp_project_root / "memory-bank/test.md",
@@ -264,7 +269,7 @@ class TestFileMetadataUpdates:
             size_bytes=1024,
             token_count=256,
             content_hash="abc123",
-            sections=[{"title": "Introduction", "line_start": 1, "line_end": 10}],
+            sections=sections,
             change_source="internal",
         )
 
@@ -364,9 +369,9 @@ class TestFileMetadataUpdates:
         # Arrange
         index = MetadataIndex(temp_project_root)
         _ = await index.load()
-        sections: list[dict[str, object]] = [
-            {"title": "Intro", "line_start": 1, "line_end": 5},
-            {"title": "Body", "line_start": 6, "line_end": 20},
+        sections = [
+            SectionMetadata(title="Intro", line_start=1, line_end=5),
+            SectionMetadata(title="Body", line_start=6, line_end=20),
         ]
 
         # Act
@@ -386,7 +391,9 @@ class TestFileMetadataUpdates:
         assert data is not None
         files = cast(dict[str, object], data["files"])
         file_meta = cast(dict[str, object], files["test.md"])
-        assert cast(list[dict[str, object]], file_meta["sections"]) == sections
+        assert cast(list[dict[str, object]], file_meta["sections"]) == [
+            section.model_dump() for section in sections
+        ]
 
     @pytest.mark.asyncio
     async def test_update_file_metadata_recalculates_totals(
@@ -439,11 +446,14 @@ class TestVersionHistory:
             [],
         )
 
-        version_meta: dict[str, object] = {
+        version_meta_dict: dict[str, object] = {
             "version": 1,
             "timestamp": datetime.now().isoformat(),
             "content_hash": "hash1",
         }
+        version_meta = MagicMock()
+        version_meta.version = 1
+        version_meta.model_dump = MagicMock(return_value=version_meta_dict)
 
         # Act
         await index.add_version_to_history("test.md", version_meta)
@@ -456,7 +466,7 @@ class TestVersionHistory:
         assert cast(int, file_meta["current_version"]) == 1
         version_history = cast(list[dict[str, object]], file_meta["version_history"])
         assert len(version_history) == 1
-        assert version_history[0] == version_meta
+        assert version_history[0] == version_meta_dict
 
     @pytest.mark.asyncio
     async def test_add_version_to_history_updates_version_number(
@@ -477,7 +487,13 @@ class TestVersionHistory:
         )
 
         # Act
-        version_meta: dict[str, object] = {"version": 5, "timestamp": "2025-01-01"}
+        version_meta_dict: dict[str, object] = {
+            "version": 5,
+            "timestamp": "2025-01-01",
+        }
+        version_meta = MagicMock()
+        version_meta.version = 5
+        version_meta.model_dump = MagicMock(return_value=version_meta_dict)
         await index.add_version_to_history("test.md", version_meta)
 
         # Assert

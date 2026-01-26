@@ -17,10 +17,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.core.dependency_graph import FileDependencyInfo
+from cortex.managers.types import ManagersDict
 from cortex.tools.phase1_foundation_dependency import get_dependency_graph
 from cortex.tools.phase1_foundation_rollback import rollback_file_version
 from cortex.tools.phase1_foundation_stats import get_memory_bank_stats
 from cortex.tools.phase1_foundation_version import get_version_history
+from tests.helpers.managers import make_test_managers
 
 # ============================================================================
 # Fixtures
@@ -40,8 +42,16 @@ def mock_dependency_graph() -> MagicMock:
     """Create mock DependencyGraph."""
     mock = MagicMock()
     mock.static_deps = {
-        "projectBrief.md": {"priority": 1, "depends_on": set()},
-        "activeContext.md": {"priority": 2, "depends_on": {"projectBrief.md"}},
+        "projectBrief.md": FileDependencyInfo(
+            depends_on=[],
+            priority=1,
+            category="foundation",
+        ),
+        "activeContext.md": FileDependencyInfo(
+            depends_on=["projectBrief.md"],
+            priority=2,
+            category="context",
+        ),
     }
     mock.compute_loading_order = MagicMock(
         return_value=["projectBrief.md", "activeContext.md"]
@@ -164,15 +174,15 @@ def mock_managers(
     mock_version_manager: MagicMock,
     mock_file_system_manager: MagicMock,
     mock_token_counter: MagicMock,
-) -> dict[str, Any]:
-    """Create mock managers dictionary."""
-    return {
-        "graph": mock_dependency_graph,
-        "index": mock_metadata_index,
-        "versions": mock_version_manager,
-        "fs": mock_file_system_manager,
-        "tokens": mock_token_counter,
-    }
+) -> ManagersDict:
+    """Create typed mock managers container."""
+    return make_test_managers(
+        graph=mock_dependency_graph,
+        index=mock_metadata_index,
+        versions=mock_version_manager,
+        fs=mock_file_system_manager,
+        tokens=mock_token_counter,
+    )
 
 
 # ============================================================================
@@ -505,11 +515,11 @@ async def test_rollback_file_version_success(
 
 @pytest.mark.asyncio
 async def test_rollback_file_version_invalid_file_name(
-    mock_project_root: Path, mock_managers: dict[str, Any]
+    mock_project_root: Path, mock_managers: ManagersDict
 ):
     """Test rollback_file_version handles invalid file name."""
     # Arrange
-    mock_managers["fs"].construct_safe_path = MagicMock(
+    mock_managers.fs.construct_safe_path = MagicMock(
         side_effect=ValueError("Invalid file name")
     )
     with patch(
@@ -535,12 +545,12 @@ async def test_rollback_file_version_invalid_file_name(
 
 @pytest.mark.asyncio
 async def test_rollback_file_version_snapshot_not_found(
-    mock_project_root: Path, mock_managers: dict[str, Any]
+    mock_project_root: Path, mock_managers: ManagersDict
 ):
     """Test rollback_file_version handles missing snapshot."""
     # Arrange
     nonexistent_path = mock_project_root / ".memory-bank-history/test.md/v99.md"
-    mock_managers["versions"].get_snapshot_path.return_value = nonexistent_path
+    mock_managers.versions.get_snapshot_path.return_value = nonexistent_path
 
     with patch(
         "cortex.managers.initialization.get_project_root",
@@ -588,7 +598,7 @@ async def test_rollback_file_version_error_handling(mock_project_root: Path):
 
 @pytest.mark.asyncio
 async def test_get_memory_bank_stats_success_basic(
-    mock_project_root: Path, mock_managers: dict[str, Any]
+    mock_project_root: Path, mock_managers: ManagersDict
 ):
     """Test get_memory_bank_stats returns basic statistics."""
     # Arrange
@@ -620,7 +630,7 @@ async def test_get_memory_bank_stats_success_basic(
     ):
         with patch(
             "cortex.tools.phase1_foundation_stats._add_optional_stats",
-            new=AsyncMock(),
+            new=AsyncMock(return_value=None),
         ):
             # Act
             result = await get_memory_bank_stats(
@@ -786,11 +796,11 @@ async def test_get_memory_bank_stats_error_handling(mock_project_root: Path):
 
 @pytest.mark.asyncio
 async def test_get_memory_bank_stats_empty_metadata(
-    mock_project_root: Path, mock_managers: dict[str, Any]
+    mock_project_root: Path, mock_managers: ManagersDict
 ):
     """Test get_memory_bank_stats handles empty metadata."""
     # Arrange
-    mock_managers["index"].get_all_files_metadata = AsyncMock(return_value={})
+    mock_managers.index.get_all_files_metadata = AsyncMock(return_value={})
     with patch(
         "cortex.managers.initialization.get_project_root",
         return_value=mock_project_root,
@@ -822,12 +832,12 @@ def test_build_graph_data_with_dependencies():
     from cortex.tools.phase1_foundation_dependency import build_graph_data
 
     static_deps: dict[str, FileDependencyInfo] = {
-        "projectBrief.md": {"priority": 1, "depends_on": [], "category": "core"},
-        "activeContext.md": {
-            "priority": 2,
-            "depends_on": ["projectBrief.md"],
-            "category": "context",
-        },
+        "projectBrief.md": FileDependencyInfo(
+            priority=1, depends_on=[], category="core"
+        ),
+        "activeContext.md": FileDependencyInfo(
+            priority=2, depends_on=["projectBrief.md"], category="context"
+        ),
     }
 
     # Act

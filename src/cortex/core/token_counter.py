@@ -3,13 +3,27 @@
 import hashlib
 import logging
 from pathlib import Path
-from typing import TypeAlias, cast
+from typing import Protocol, cast
 
+from cortex.core.models import (
+    ContextSizeEstimate,
+    ModelDict,
+    ParsedMarkdownSection,
+    SectionMetadata,
+    SectionTokenCount,
+    TokenCountSectionsResult,
+)
 from cortex.core.tiktoken_cache import setup_tiktoken_cache
 
-Encoding: TypeAlias = object  # Placeholder for tiktoken.Encoding when unavailable
-
 logger = logging.getLogger(__name__)
+
+
+class _Encoding(Protocol):
+    def encode(self, text: str) -> list[int]: ...
+
+
+class _TiktokenModule(Protocol):
+    def get_encoding(self, name: str) -> _Encoding: ...
 
 
 class TokenCounter:
@@ -20,7 +34,7 @@ class TokenCounter:
     """
 
     model: str
-    encoding_impl: object | None
+    encoding_impl: _Encoding | None
     _cache: dict[str, int]
     _tiktoken_available: bool
 
@@ -56,7 +70,7 @@ class TokenCounter:
         return importlib.util.find_spec("tiktoken") is not None
 
     @property
-    def encoding(self) -> object:
+    def encoding(self) -> _Encoding | None:
         """Lazy load encoding to avoid blocking on initialization."""
         if not self._tiktoken_available:
             return None
@@ -92,8 +106,8 @@ class TokenCounter:
         )
 
     def _try_load_encoding_with_timeout(
-        self, tiktoken: object, timeout_seconds: float
-    ) -> object | None:
+        self, tiktoken: _TiktokenModule, timeout_seconds: float
+    ) -> _Encoding | None:
         """Attempt to load encoding with timeout.
 
         Args:
@@ -106,12 +120,9 @@ class TokenCounter:
         import concurrent.futures
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(tiktoken.get_encoding, self.model)  # type: ignore
+            future = executor.submit(tiktoken.get_encoding, self.model)
             try:
-                result: Encoding | None = cast(
-                    Encoding | None, future.result(timeout=timeout_seconds)
-                )
-                return result
+                return future.result(timeout=timeout_seconds)
             except concurrent.futures.TimeoutError:
                 return None
 
@@ -221,11 +232,11 @@ class TokenCounter:
 
     def _handle_encoding_attempt(
         self,
-        tiktoken: object,
+        tiktoken: _TiktokenModule,
         attempt: int,
         max_retries: int,
         timeout_seconds: float,
-    ) -> tuple[object | None, bool]:
+    ) -> tuple[_Encoding | None, bool]:
         """Handle a single encoding load attempt.
 
         Args:
@@ -267,7 +278,7 @@ class TokenCounter:
 
     def _load_tiktoken_with_timeout(
         self, timeout_seconds: float = 30.0, max_retries: int = 2
-    ) -> object | None:
+    ) -> _Encoding | None:
         """Load tiktoken encoding with cache-first strategy and graceful fallback.
 
         Tiktoken automatically uses cached encoding files if available.
@@ -292,22 +303,16 @@ class TokenCounter:
             self._tiktoken_available = False
             return None
 
-        last_error: Exception | None = None
+        tiktoken_mod = cast(_TiktokenModule, tiktoken)
         for attempt in range(max_retries + 1):
             encoding, should_continue = self._handle_encoding_attempt(
-                tiktoken, attempt, max_retries, timeout_seconds
+                tiktoken_mod, attempt, max_retries, timeout_seconds
             )
             if encoding is not None:
                 return encoding
             if not should_continue:
                 self._tiktoken_available = False
                 return None
-
-        if last_error:
-            logger.warning(
-                f"Tiktoken encoding '{self.model}' failed to load: {last_error}. "
-                + "Falling back to word-based estimation."
-            )
         self._tiktoken_available = False
         return None
 
@@ -348,9 +353,10 @@ class TokenCounter:
             return 0
 
         # Try tiktoken first
-        if self._tiktoken_available and self.encoding is not None:
+        encoding = self.encoding if self._tiktoken_available else None
+        if encoding is not None:
             try:
-                return len(self.encoding.encode(text))  # type: ignore
+                return len(encoding.encode(text))
             except Exception as e:
                 logger.warning(
                     f"tiktoken encoding failed: {e}. Falling back to word-based estimation."
@@ -379,59 +385,52 @@ class TokenCounter:
         return token_count
 
     def count_tokens_sections(
-        self, content: str, sections: list[dict[str, object]]
-    ) -> dict[str, object]:
+        self, content: str, sections: list[SectionMetadata | ModelDict]
+    ) -> TokenCountSectionsResult:
         """
         Count tokens per section and total.
 
         Args:
             content: Full file content
             sections: List of section metadata with line ranges
-                Format: [{"heading": "## Name", "line_start": 1, "line_end": 10}, ...]
 
         Returns:
-            Dict with per-section and total token counts
-            {
-                "total_tokens": int,
-                "sections": [
-                    {
-                        "heading": "## Name",
-                        "token_count": int,
-                        "percentage": float
-                    }
-                ]
-            }
+            TokenCountSectionsResult with per-section and total token counts
         """
         lines = content.split("\n")
         total_tokens = self.count_tokens(content)
 
-        def _process_section(section: dict[str, object]) -> dict[str, object]:
+        def _normalize_section(section: SectionMetadata | ModelDict) -> SectionMetadata:
+            if isinstance(section, SectionMetadata):
+                return section
+            return SectionMetadata.model_validate(section)
+
+        def _process_section(section: SectionMetadata | ModelDict) -> SectionTokenCount:
             """Process a single section and return token count data."""
-            start_idx = max(0, cast(int, section["line_start"]) - 1)
-            end_idx = min(len(lines), cast(int, section["line_end"]))
+            normalized = _normalize_section(section)
+            start_idx = max(0, normalized.line_start - 1)
+            end_idx = min(len(lines), normalized.line_end)
             section_text = "\n".join(lines[start_idx:end_idx])
             section_tokens = self.count_tokens(section_text)
             percentage = (
                 (section_tokens / total_tokens * 100) if total_tokens > 0 else 0
             )
-            return {
-                "heading": section["heading"],
-                "token_count": section_tokens,
-                "percentage": round(percentage, 2),
-            }
+            return SectionTokenCount(
+                heading=normalized.title,
+                token_count=section_tokens,
+                percentage=round(percentage, 2),
+            )
 
-        sections_list: list[dict[str, object]] = [
+        sections_list: list[SectionTokenCount] = [
             _process_section(section) for section in sections
         ]
 
-        results: dict[str, object] = {
-            "total_tokens": total_tokens,
-            "sections": sections_list,
-        }
+        return TokenCountSectionsResult(
+            total_tokens=total_tokens,
+            sections=sections_list,
+        )
 
-        return results
-
-    def estimate_context_size(self, file_tokens: dict[str, int]) -> dict[str, object]:
+    def estimate_context_size(self, file_tokens: dict[str, int]) -> ContextSizeEstimate:
         """
         Estimate total context size for loading all files.
 
@@ -440,11 +439,7 @@ class TokenCounter:
                 {"file1.md": 500, "file2.md": 800}
 
         Returns:
-            {
-                "total_tokens": int,
-                "estimated_cost_gpt4": float,
-                "warnings": list[str]
-            }
+            ContextSizeEstimate with total tokens, cost estimate, and warnings
         """
         total = sum(file_tokens.values())
 
@@ -466,12 +461,12 @@ class TokenCounter:
                 "Exceeds most model context windows - immediate action required"
             )
 
-        return {
-            "total_tokens": total,
-            "estimated_cost_gpt4": round(estimated_cost, 4),
-            "warnings": warnings,
-            "breakdown": file_tokens,
-        }
+        return ContextSizeEstimate(
+            total_tokens=total,
+            estimated_cost_gpt4=round(estimated_cost, 4),
+            warnings=warnings,
+            breakdown=file_tokens,
+        )
 
     def clear_cache(self):
         """Clear the token count cache."""
@@ -500,7 +495,9 @@ class TokenCounter:
         content = file_path.read_text(encoding="utf-8")
         return self.count_tokens(content)
 
-    def parse_markdown_sections(self, content: str | None) -> list[dict[str, object]]:
+    def parse_markdown_sections(
+        self, content: str | None
+    ) -> list[ParsedMarkdownSection]:
         """
         Parse markdown content to extract sections with headings.
 
@@ -508,10 +505,7 @@ class TokenCounter:
             content: Markdown content to parse
 
         Returns:
-            List of section dictionaries with:
-            - title: Heading text
-            - level: Heading level (1-6)
-            - start_line: Line number where section starts (1-indexed)
+            List of ParsedMarkdownSection with title, level, and start_line
 
         Raises:
             TypeError: If content is None
@@ -523,7 +517,7 @@ class TokenCounter:
 
         lines = content.split("\n")
 
-        def _parse_section(line_num: int, line: str) -> dict[str, object] | None:
+        def _parse_section(line_num: int, line: str) -> ParsedMarkdownSection | None:
             """Parse a single line to extract section info if it's a header."""
             stripped = line.lstrip()
             if not stripped.startswith("#"):
@@ -535,13 +529,13 @@ class TokenCounter:
             level = len(hash_section) - len(hash_section.lstrip("#"))
             if not (1 <= level <= 6):
                 return None
-            return {
-                "title": stripped.lstrip("#").strip(),
-                "level": level,
-                "start_line": line_num,
-            }
+            return ParsedMarkdownSection(
+                title=stripped.lstrip("#").strip(),
+                level=level,
+                start_line=line_num,
+            )
 
-        sections: list[dict[str, object]] = [
+        sections: list[ParsedMarkdownSection] = [
             section
             for line_num, line in enumerate(lines, start=1)
             if (section := _parse_section(line_num, line)) is not None

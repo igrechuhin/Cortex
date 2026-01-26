@@ -12,9 +12,11 @@ import json
 from pathlib import Path
 from typing import cast
 
-from cortex.server import (
-    mcp,  # noqa: F401  # pyright: ignore[reportUnusedImport]  # Used in exec() string
-)
+from cortex.core.models import JsonDict, JsonValue, ModelDict
+from cortex.server import mcp
+
+# Explicitly reference mcp to satisfy type checker (used in exec() string)
+_ = mcp
 
 
 def get_prompts_paths() -> list[Path]:
@@ -67,7 +69,7 @@ def get_synapse_prompts_path() -> Path | None:
     return paths[0] if paths else None
 
 
-def load_prompts_manifest(prompts_path: Path) -> dict[str, object] | None:
+def load_prompts_manifest(prompts_path: Path) -> JsonDict | None:
     """Load prompts manifest synchronously."""
     manifest_path = prompts_path / "prompts-manifest.json"
     if not manifest_path.exists():
@@ -75,7 +77,8 @@ def load_prompts_manifest(prompts_path: Path) -> dict[str, object] | None:
 
     try:
         with open(manifest_path, encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+            return JsonDict.from_dict(data)
     except Exception:
         return None
 
@@ -118,7 +121,7 @@ def {name}() -> str:
 
 
 def process_prompt_info(
-    prompt_info: dict[str, object], prompts_path: Path, category_name: str
+    prompt_info: ModelDict, prompts_path: Path, category_name: str
 ) -> int:
     """Process a single prompt info and register it.
 
@@ -181,23 +184,23 @@ def register_prompts_from_path(prompts_path: Path) -> int:
     if not manifest:
         return 0
 
-    categories = manifest.get("categories")
+    manifest_dict = cast(ModelDict, manifest.model_dump(mode="json"))
+    categories = manifest_dict.get("categories")
     if not isinstance(categories, dict):
         return 0
 
     registered_count = 0
-    for category_name, category_info in cast(dict[str, object], categories).items():
+    for category_name, category_info in cast(ModelDict, categories).items():
         if not isinstance(category_info, dict):
             continue
 
-        prompts_list_raw = cast(dict[str, object], category_info).get("prompts", [])
+        prompts_list_raw: JsonValue = cast(ModelDict, category_info).get("prompts", [])
         if not isinstance(prompts_list_raw, list):
             continue
 
-        prompts_list = cast(list[object], prompts_list_raw)
-        for prompt_info_raw in prompts_list:
+        for prompt_info_raw in cast(list[JsonValue], prompts_list_raw):
             if isinstance(prompt_info_raw, dict):
-                prompt_info = cast(dict[str, object], prompt_info_raw)
+                prompt_info = cast(ModelDict, prompt_info_raw)
                 registered_count += process_prompt_info(
                     prompt_info, prompts_path, category_name
                 )

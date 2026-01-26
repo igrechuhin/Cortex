@@ -557,7 +557,6 @@ class TestCalculateScore:
     @pytest.mark.asyncio
     async def test_calculate_score_with_errors(self):
         """Test score calculation with errors."""
-        from typing import cast
 
         from cortex.validation.schema_validator import ValidationError
 
@@ -575,7 +574,6 @@ class TestCalculateScore:
     @pytest.mark.asyncio
     async def test_calculate_score_with_warnings(self):
         """Test score calculation with warnings."""
-        from typing import cast
 
         from cortex.validation.schema_validator import ValidationError
 
@@ -593,7 +591,6 @@ class TestCalculateScore:
     @pytest.mark.asyncio
     async def test_calculate_score_with_both(self):
         """Test score calculation with errors and warnings."""
-        from typing import cast
 
         from cortex.validation.schema_validator import ValidationError
 
@@ -612,7 +609,6 @@ class TestCalculateScore:
     @pytest.mark.asyncio
     async def test_calculate_score_minimum_zero(self):
         """Test score calculation doesn't go below zero."""
-        from typing import cast
 
         from cortex.validation.schema_validator import ValidationError
 
@@ -652,14 +648,9 @@ class TestLoadCustomSchemas:
         assert len(schemas) == 2
         assert "custom1.md" in schemas
         assert "custom2.md" in schemas
-        custom1_schema = schemas.get("custom1.md", {})
-        assert isinstance(custom1_schema, dict)
-        required: list[str] = []
-        required_raw: object = custom1_schema.get("required_sections", [])  # type: ignore[assignment]
-        if isinstance(required_raw, list):
-            required_list = cast(list[object], required_raw)
-            required = [str(item) for item in required_list if isinstance(item, str)]
-        assert required == ["Section A", "Section B"]
+        custom1_schema = schemas["custom1.md"]
+        required_sections = custom1_schema.get("required_sections", [])
+        assert required_sections == ["Section A", "Section B"]
 
     @pytest.mark.asyncio
     async def test_load_custom_schemas_invalid_json(self, tmp_path: Path) -> None:

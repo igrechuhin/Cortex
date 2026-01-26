@@ -41,7 +41,7 @@ async def analyze_context_effectiveness(
             result = analyze_session_logs(root)
         else:
             result = analyze_current_session(root)
-        return json.dumps(result, indent=2)
+        return json.dumps(result.model_dump(mode="json"), indent=2)
     except Exception as e:
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
@@ -68,7 +68,7 @@ async def get_context_usage_statistics(
     try:
         root = phase4_opt.get_project_root(project_root)
         result = get_context_statistics(root)
-        return json.dumps(result, indent=2)
+        return json.dumps(result.model_dump(mode="json"), indent=2)
     except Exception as e:
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},

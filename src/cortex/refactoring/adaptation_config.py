@@ -4,14 +4,62 @@ Adaptation Configuration - Phase 5.4
 Configuration for learning and adaptation behavior.
 """
 
-from __future__ import annotations
+from typing import cast
 
-from typing import TypeGuard, cast
+from pydantic import BaseModel
+
+from cortex.core.models import JsonValue, ModelDict
+from cortex.refactoring.models import (
+    AdaptationConfigModel,
+    AdaptationSummary,
+    AdaptationValidationResult,
+)
+
+_SELF_EVOLUTION_KEY_PREFIX = "self_evolution."
 
 
-def _is_str_dict(value: object) -> TypeGuard[dict[str, object]]:
-    """Type guard to check if value is a dict[str, object]."""
-    return isinstance(value, dict)
+def _normalize_key(key: str) -> str:
+    if key.startswith(_SELF_EVOLUTION_KEY_PREFIX):
+        return key
+    return f"{_SELF_EVOLUTION_KEY_PREFIX}{key}"
+
+
+def _try_get_nested_value(
+    root: JsonValue | BaseModel, keys: list[str]
+) -> JsonValue | None:
+    current: JsonValue | BaseModel = root
+    for part in keys:
+        if isinstance(current, BaseModel):
+            if not hasattr(current, part):
+                return None
+            current = getattr(current, part)
+            continue
+        if isinstance(current, dict):
+            if part not in current:
+                return None
+            current = current[part]
+            continue
+        return None
+    if isinstance(current, BaseModel):
+        return cast(JsonValue, cast(ModelDict, current.model_dump(mode="json")))
+    return current
+
+
+def _deep_set(target: dict[str, JsonValue], keys: list[str], value: JsonValue) -> None:
+    if not keys:
+        raise ValueError("keys cannot be empty")
+
+    current: dict[str, JsonValue] = target
+    for part in keys[:-1]:
+        existing = current.get(part)
+        if not isinstance(existing, dict):
+            new_dict: dict[str, JsonValue] = {}
+            current[part] = new_dict
+            current = new_dict
+        else:
+            current = existing
+
+    current[keys[-1]] = value
 
 
 class AdaptationConfig:
@@ -21,27 +69,22 @@ class AdaptationConfig:
     Integrates with OptimizationConfig for self-evolution settings.
     """
 
-    def __init__(self, base_config: dict[str, object] | None = None):
+    def __init__(self, base_config: ModelDict | None = None):
         """
         Initialize adaptation configuration.
 
         Args:
-            base_config: Base configuration dictionary
-                (usually from optimization_config)
+            base_config: Base configuration dictionary (usually from OptimizationConfig.config)
         """
-        self.config: dict[str, object] = base_config or {}
-        self._init_defaults()
+        if base_config is None:
+            self._model = AdaptationConfigModel()
+            return
 
-    def _init_defaults(self) -> None:
-        """Initialize default configuration values."""
-        se_config = self._ensure_self_evolution_config()
-        self._init_learning_defaults(se_config)
-        self._init_feedback_defaults(se_config)
-        self._init_pattern_recognition_defaults(se_config)
-        self._init_adaptation_defaults(se_config)
-        self._init_suggestion_filtering_defaults(se_config)
+        raw_se = base_config.get("self_evolution")
+        se_dict: dict[str, JsonValue] = raw_se if isinstance(raw_se, dict) else {}
+        self._model = AdaptationConfigModel.model_validate({"self_evolution": se_dict})
 
-    def get(self, key: str, default: object = None) -> object:
+    def get(self, key: str, default: JsonValue | None = None) -> JsonValue:
         """
         Get configuration value using dot notation.
 
@@ -52,21 +95,12 @@ class AdaptationConfig:
         Returns:
             Configuration value
         """
-        keys: list[str] = key.split(".")
-        value: object = self.config
+        normalized = _normalize_key(key)
+        keys = normalized.split(".")
+        result = _try_get_nested_value(self._model, keys)
+        return default if result is None else result
 
-        for k in keys:
-            if _is_str_dict(value):
-                if k in value:
-                    value = value[k]
-                else:
-                    return default
-            else:
-                return default
-
-        return value
-
-    def set(self, key: str, value: object) -> None:
+    def set(self, key: str, value: JsonValue) -> None:
         """
         Set configuration value using dot notation.
 
@@ -74,155 +108,109 @@ class AdaptationConfig:
             key: Configuration key (e.g., "learning.enabled")
             value: Value to set
         """
-        keys: list[str] = key.split(".")
-        config: dict[str, object] = self.config
-
-        # Navigate to the parent dict
-        for k in keys[:-1]:
-            if k not in config:
-                config[k] = {}
-            config = cast(dict[str, object], config[k])
-
-        # Set the value
-        config[keys[-1]] = value
+        normalized = _normalize_key(key)
+        keys = normalized.split(".")
+        data = cast(dict[str, JsonValue], self._model.model_dump(mode="python"))
+        _deep_set(data, keys, value)
+        self._model = AdaptationConfigModel.model_validate(data)
 
     def is_learning_enabled(self) -> bool:
         """Check if learning is enabled."""
-        return cast(bool, self.get("self_evolution.learning.enabled", True))
+        return self._model.self_evolution.learning.enabled
 
     def get_learning_rate(self) -> str:
         """Get learning rate setting."""
-        return cast(
-            str, self.get("self_evolution.learning.learning_rate", "conservative")
-        )
+        return self._model.self_evolution.learning.learning_rate
 
     def should_remember_rejections(self) -> bool:
         """Check if rejections should be remembered."""
-        return cast(bool, self.get("self_evolution.learning.remember_rejections", True))
+        return self._model.self_evolution.learning.remember_rejections
 
     def should_adapt_suggestions(self) -> bool:
         """Check if suggestions should be adapted based on learning."""
-        return cast(bool, self.get("self_evolution.learning.adapt_suggestions", True))
+        return self._model.self_evolution.learning.adapt_suggestions
 
     def get_min_feedback_count(self) -> int:
         """Get minimum feedback count before adapting."""
-        return cast(int, self.get("self_evolution.learning.min_feedback_count", 5))
+        return self._model.self_evolution.learning.min_feedback_count
 
     def get_confidence_adjustment_limit(self) -> float:
         """Get maximum confidence adjustment."""
-        return cast(
-            float, self.get("self_evolution.learning.confidence_adjustment_limit", 0.2)
-        )
+        return self._model.self_evolution.learning.confidence_adjustment_limit
 
     def should_collect_feedback(self) -> bool:
         """Check if feedback should be collected."""
-        return cast(bool, self.get("self_evolution.feedback.collect_feedback", True))
+        return self._model.self_evolution.feedback.collect_feedback
 
     def should_prompt_for_feedback(self) -> bool:
         """Check if user should be prompted for feedback."""
-        return cast(
-            bool, self.get("self_evolution.feedback.prompt_for_feedback", False)
-        )
+        return self._model.self_evolution.feedback.prompt_for_feedback
 
     def get_feedback_types(self) -> list[str]:
         """Get available feedback types."""
-        result: object = self.get(
-            "self_evolution.feedback.feedback_types",
-            ["helpful", "not_helpful", "incorrect"],
-        )
-        return cast(list[str], result)
+        return self._model.self_evolution.feedback.feedback_types
 
     def should_allow_comments(self) -> bool:
         """Check if comments are allowed with feedback."""
-        return cast(bool, self.get("self_evolution.feedback.allow_comments", True))
+        return self._model.self_evolution.feedback.allow_comments
 
     def is_pattern_recognition_enabled(self) -> bool:
         """Check if pattern recognition is enabled."""
-        return cast(bool, self.get("self_evolution.pattern_recognition.enabled", True))
+        return self._model.self_evolution.pattern_recognition.enabled
 
     def get_min_pattern_occurrences(self) -> int:
         """Get minimum pattern occurrences."""
-        return cast(
-            int,
-            self.get("self_evolution.pattern_recognition.min_pattern_occurrences", 3),
-        )
+        return self._model.self_evolution.pattern_recognition.min_pattern_occurrences
 
     def get_pattern_confidence_threshold(self) -> float:
         """Get pattern confidence threshold."""
-        return cast(
-            float,
-            self.get(
-                "self_evolution.pattern_recognition.pattern_confidence_threshold", 0.7
-            ),
+        return (
+            self._model.self_evolution.pattern_recognition.pattern_confidence_threshold
         )
 
     def get_forget_old_patterns_days(self) -> int:
         """Get number of days before forgetting old patterns."""
-        return cast(
-            int,
-            self.get("self_evolution.pattern_recognition.forget_old_patterns_days", 90),
-        )
+        return self._model.self_evolution.pattern_recognition.forget_old_patterns_days
 
     def should_auto_adjust_thresholds(self) -> bool:
         """Check if thresholds should be auto-adjusted."""
-        return cast(
-            bool, self.get("self_evolution.adaptation.auto_adjust_thresholds", True)
-        )
+        return self._model.self_evolution.adaptation.auto_adjust_thresholds
 
     def get_min_confidence_threshold(self) -> float:
         """Get minimum confidence threshold."""
-        return cast(
-            float, self.get("self_evolution.adaptation.min_confidence_threshold", 0.5)
-        )
+        return self._model.self_evolution.adaptation.min_confidence_threshold
 
     def get_max_confidence_threshold(self) -> float:
         """Get maximum confidence threshold."""
-        return cast(
-            float, self.get("self_evolution.adaptation.max_confidence_threshold", 0.9)
-        )
+        return self._model.self_evolution.adaptation.max_confidence_threshold
 
     def get_threshold_adjustment_step(self) -> float:
         """Get threshold adjustment step size."""
-        return cast(
-            float, self.get("self_evolution.adaptation.threshold_adjustment_step", 0.05)
-        )
+        return self._model.self_evolution.adaptation.threshold_adjustment_step
 
     def should_adapt_to_user_style(self) -> bool:
         """Check if system should adapt to user style."""
-        return cast(
-            bool, self.get("self_evolution.adaptation.adapt_to_user_style", True)
-        )
+        return self._model.self_evolution.adaptation.adapt_to_user_style
 
     def should_filter_by_learned_patterns(self) -> bool:
         """Check if suggestions should be filtered by learned patterns."""
-        return cast(
-            bool,
-            self.get(
-                "self_evolution.suggestion_filtering.filter_by_learned_patterns", True
-            ),
+        return (
+            self._model.self_evolution.suggestion_filtering.filter_by_learned_patterns
         )
 
     def should_filter_by_user_preferences(self) -> bool:
         """Check if suggestions should be filtered by user preferences."""
-        return cast(
-            bool,
-            self.get(
-                "self_evolution.suggestion_filtering.filter_by_user_preferences", True
-            ),
+        return (
+            self._model.self_evolution.suggestion_filtering.filter_by_user_preferences
         )
 
     def should_show_filtered_count(self) -> bool:
         """Check if filtered count should be shown."""
-        return cast(
-            bool,
-            self.get("self_evolution.suggestion_filtering.show_filtered_count", True),
-        )
+        return self._model.self_evolution.suggestion_filtering.show_filtered_count
 
     def should_allow_override(self) -> bool:
         """Check if users can override filtering."""
-        return cast(
-            bool, self.get("self_evolution.suggestion_filtering.allow_override", True)
-        )
+        return self._model.self_evolution.suggestion_filtering.allow_override
 
     def get_learning_rate_multiplier(self) -> float:
         """
@@ -242,86 +230,24 @@ class AdaptationConfig:
         else:
             return 1.0
 
-    def to_dict(self) -> dict[str, object]:
-        """Export configuration as dictionary."""
-        result: object = self.config.get("self_evolution", {})
-        return cast(dict[str, object], result)
+    def to_dict(self) -> ModelDict:
+        """Export self_evolution configuration as JSON-serializable dict."""
+        data = cast(ModelDict, self._model.model_dump(mode="json"))
+        se = data.get("self_evolution")
+        return cast(ModelDict, se if isinstance(se, dict) else {})
 
-    def update(self, updates: dict[str, object]) -> None:
-        """
-        Update configuration with new values.
-
-        Args:
-            updates: Dictionary of updates
-        """
-        if "self_evolution" not in self.config:
-            self.config["self_evolution"] = {}
-
-        se_config: dict[str, object] = cast(
-            dict[str, object], self.config["self_evolution"]
-        )
-        self._deep_update(se_config, updates)
-
-    def _deep_update(
-        self, target: dict[str, object], updates: dict[str, object]
-    ) -> None:
-        """
-        Deep update dictionary.
-
-        Args:
-            target: Target dictionary to update
-            updates: Updates to apply
-        """
-        for key, value in updates.items():
-            if (
-                key in target
-                and isinstance(target[key], dict)
-                and isinstance(value, dict)
-            ):
-                target_dict: dict[str, object] = cast(dict[str, object], target[key])
-                updates_dict: dict[str, object] = cast(dict[str, object], value)
-                self._deep_update(target_dict, updates_dict)
-            else:
-                target[key] = value
+    def update(self, updates: ModelDict) -> None:
+        """Update configuration with new values (expects self_evolution-shaped dict)."""
+        data = cast(dict[str, JsonValue], self._model.model_dump(mode="python"))
+        _deep_set(data, ["self_evolution"], updates)
+        self._model = AdaptationConfigModel.model_validate(data)
 
     def reset_to_defaults(self) -> None:
         """Reset configuration to defaults."""
-        if "self_evolution" in self.config:
-            del self.config["self_evolution"]
-        self._init_defaults()
-
-    def validate(self) -> dict[str, object]:
-        """
-        Validate configuration.
-
-        Returns:
-            Validation results with any issues
-        """
-        issues: list[str] = []
-        warnings: list[str] = []
-
-        self._validate_learning_rate(issues)
-        self._validate_thresholds(issues)
-        self._validate_feedback_count(issues)
-        self._validate_adjustment_limit(warnings)
-        self._validate_pattern_settings(issues)
-        self._validate_learning_status(warnings)
-
-        return cast(
-            dict[str, object],
-            {
-                "valid": len(issues) == 0,
-                "issues": issues,
-                "warnings": warnings,
-            },
-        )
+        self._model = AdaptationConfigModel()
 
     def _validate_learning_rate(self, issues: list[str]) -> None:
-        """Validate learning rate setting.
-
-        Args:
-            issues: List to append validation issues to
-        """
+        """Validate learning rate setting."""
         learning_rate = self.get_learning_rate()
         if learning_rate not in ["aggressive", "moderate", "conservative"]:
             issues.append(
@@ -329,62 +255,41 @@ class AdaptationConfig:
                 + "Must be 'aggressive', 'moderate', or 'conservative'."
             )
 
-    def _validate_thresholds(self, issues: list[str]) -> None:
-        """Validate confidence thresholds.
-
-        Args:
-            issues: List to append validation issues to
-        """
+    def _validate_confidence_thresholds(self, issues: list[str]) -> None:
+        """Validate confidence threshold settings."""
         min_threshold = self.get_min_confidence_threshold()
         max_threshold = self.get_max_confidence_threshold()
-
-        if min_threshold < 0 or min_threshold > 1:
+        if not (0.0 <= min_threshold <= 1.0):
             issues.append(
                 "min_confidence_threshold must be between 0 and 1 "
                 + f"(got {min_threshold})"
             )
-
-        if max_threshold < 0 or max_threshold > 1:
+        if not (0.0 <= max_threshold <= 1.0):
             issues.append(
                 "max_confidence_threshold must be between 0 and 1 "
                 + f"(got {max_threshold})"
             )
-
         if min_threshold >= max_threshold:
             issues.append(
                 f"min_confidence_threshold ({min_threshold}) must be less than "
                 + f"max_confidence_threshold ({max_threshold})"
             )
 
-    def _validate_feedback_count(self, issues: list[str]) -> None:
-        """Validate feedback count settings.
-
-        Args:
-            issues: List to append validation issues to
-        """
+    def _validate_feedback_and_patterns(
+        self, issues: list[str], warnings: list[str]
+    ) -> None:
+        """Validate feedback and pattern settings."""
         min_feedback = self.get_min_feedback_count()
         if min_feedback < 1:
             issues.append(f"min_feedback_count must be at least 1 (got {min_feedback})")
 
-    def _validate_adjustment_limit(self, warnings: list[str]) -> None:
-        """Validate confidence adjustment limit.
-
-        Args:
-            warnings: List to append validation warnings to
-        """
         adjustment_limit = self.get_confidence_adjustment_limit()
-        if adjustment_limit < 0 or adjustment_limit > 1:
+        if not (0.0 <= adjustment_limit <= 1.0):
             warnings.append(
                 f"confidence_adjustment_limit is {adjustment_limit}. "
                 + "Recommended range is 0.1-0.3."
             )
 
-    def _validate_pattern_settings(self, issues: list[str]) -> None:
-        """Validate pattern recognition settings.
-
-        Args:
-            issues: List to append validation issues to
-        """
         min_occurrences = self.get_min_pattern_occurrences()
         if min_occurrences < 1:
             issues.append(
@@ -392,18 +297,14 @@ class AdaptationConfig:
             )
 
         pattern_threshold = self.get_pattern_confidence_threshold()
-        if pattern_threshold < 0 or pattern_threshold > 1:
+        if not (0.0 <= pattern_threshold <= 1.0):
             issues.append(
                 "pattern_confidence_threshold must be between 0 and 1 "
                 + f"(got {pattern_threshold})"
             )
 
-    def _validate_learning_status(self, warnings: list[str]) -> None:
-        """Validate learning status and generate warnings.
-
-        Args:
-            warnings: List to append validation warnings to
-        """
+    def _validate_learning_flags(self, warnings: list[str]) -> None:
+        """Validate learning feature flags."""
         if not self.is_learning_enabled():
             warnings.append(
                 "Learning is disabled. The system will not adapt to user feedback."
@@ -416,85 +317,31 @@ class AdaptationConfig:
                 + "improve suggestions."
             )
 
-    def get_summary(self) -> dict[str, object]:
-        """
-        Get configuration summary.
+    def validate(self) -> AdaptationValidationResult:
+        """Validate current configuration and return structured result."""
+        issues: list[str] = []
+        warnings: list[str] = []
 
-        Returns:
-            Summary of current configuration
-        """
-        return cast(
-            dict[str, object],
-            {
-                "learning_enabled": self.is_learning_enabled(),
-                "learning_rate": self.get_learning_rate(),
-                "min_confidence_threshold": self.get_min_confidence_threshold(),
-                "max_confidence_threshold": self.get_max_confidence_threshold(),
-                "pattern_recognition_enabled": self.is_pattern_recognition_enabled(),
-                "feedback_collection_enabled": self.should_collect_feedback(),
-                "auto_adjust_thresholds": self.should_auto_adjust_thresholds(),
-                "adapt_to_user_style": self.should_adapt_to_user_style(),
-                "filter_by_learned_patterns": self.should_filter_by_learned_patterns(),
-                "filter_by_user_preferences": self.should_filter_by_user_preferences(),
-            },
+        self._validate_learning_rate(issues)
+        self._validate_confidence_thresholds(issues)
+        self._validate_feedback_and_patterns(issues, warnings)
+        self._validate_learning_flags(warnings)
+
+        return AdaptationValidationResult(
+            valid=not issues, issues=issues, warnings=warnings
         )
 
-    def _ensure_self_evolution_config(self) -> dict[str, object]:
-        """Ensure self_evolution config section exists."""
-        if "self_evolution" not in self.config:
-            self.config["self_evolution"] = {}
-        return cast(dict[str, object], self.config["self_evolution"])
-
-    def _init_learning_defaults(self, se_config: dict[str, object]) -> None:
-        """Initialize learning configuration defaults."""
-        if "learning" not in se_config:
-            se_config["learning"] = {
-                "enabled": True,
-                "learning_rate": "conservative",
-                "remember_rejections": True,
-                "adapt_suggestions": True,
-                "export_patterns": False,
-                "min_feedback_count": 5,
-                "confidence_adjustment_limit": 0.2,
-            }
-
-    def _init_feedback_defaults(self, se_config: dict[str, object]) -> None:
-        """Initialize feedback collection defaults."""
-        if "feedback" not in se_config:
-            se_config["feedback"] = {
-                "collect_feedback": True,
-                "prompt_for_feedback": False,
-                "feedback_types": ["helpful", "not_helpful", "incorrect"],
-                "allow_comments": True,
-            }
-
-    def _init_pattern_recognition_defaults(self, se_config: dict[str, object]) -> None:
-        """Initialize pattern recognition defaults."""
-        if "pattern_recognition" not in se_config:
-            se_config["pattern_recognition"] = {
-                "enabled": True,
-                "min_pattern_occurrences": 3,
-                "pattern_confidence_threshold": 0.7,
-                "forget_old_patterns_days": 90,
-            }
-
-    def _init_adaptation_defaults(self, se_config: dict[str, object]) -> None:
-        """Initialize adaptation behavior defaults."""
-        if "adaptation" not in se_config:
-            se_config["adaptation"] = {
-                "auto_adjust_thresholds": True,
-                "min_confidence_threshold": 0.5,
-                "max_confidence_threshold": 0.9,
-                "threshold_adjustment_step": 0.05,
-                "adapt_to_user_style": True,
-            }
-
-    def _init_suggestion_filtering_defaults(self, se_config: dict[str, object]) -> None:
-        """Initialize suggestion filtering defaults."""
-        if "suggestion_filtering" not in se_config:
-            se_config["suggestion_filtering"] = {
-                "filter_by_learned_patterns": True,
-                "filter_by_user_preferences": True,
-                "show_filtered_count": True,
-                "allow_override": True,
-            }
+    def get_summary(self) -> AdaptationSummary:
+        """Get a typed summary of current configuration."""
+        return AdaptationSummary(
+            learning_enabled=self.is_learning_enabled(),
+            learning_rate=self.get_learning_rate(),
+            min_confidence_threshold=self.get_min_confidence_threshold(),
+            max_confidence_threshold=self.get_max_confidence_threshold(),
+            pattern_recognition_enabled=self.is_pattern_recognition_enabled(),
+            feedback_collection_enabled=self.should_collect_feedback(),
+            auto_adjust_thresholds=self.should_auto_adjust_thresholds(),
+            adapt_to_user_style=self.should_adapt_to_user_style(),
+            filter_by_learned_patterns=self.should_filter_by_learned_patterns(),
+            filter_by_user_preferences=self.should_filter_by_user_preferences(),
+        )

@@ -10,15 +10,14 @@ This module tests content summarization functionality including:
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING
 from unittest.mock import Mock
 
 import pytest
 
+from cortex.core.cache_utils import CacheType
+from cortex.core.metadata_index import MetadataIndex
+from cortex.core.path_resolver import get_cache_path
 from cortex.optimization.summarization_engine import SummarizationEngine
-
-if TYPE_CHECKING:
-    from cortex.core.metadata_index import MetadataIndex
 
 
 class TestSummarizationEngineInitialization:
@@ -27,7 +26,7 @@ class TestSummarizationEngineInitialization:
     def test_initialization_with_default_cache_dir(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test initialization with default cache directory."""
@@ -43,13 +42,13 @@ class TestSummarizationEngineInitialization:
         # Assert
         assert engine.token_counter == mock_token_counter
         assert engine.metadata_index == mock_metadata_index
-        assert engine.cache_dir == tmp_path / ".cortex/summaries"
+        assert engine.cache_dir == get_cache_path(tmp_path, CacheType.SUMMARIES.value)
         assert engine.cache_dir.exists()
 
     def test_initialization_with_custom_cache_dir(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test initialization with custom cache directory."""
@@ -73,7 +72,7 @@ class TestSummarizeFile:
     async def test_summarize_empty_content(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test summarizing empty content returns zero tokens."""
@@ -98,7 +97,7 @@ class TestSummarizeFile:
     async def test_summarize_with_extract_key_sections_strategy(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test summarize with extract_key_sections strategy."""
@@ -135,7 +134,7 @@ This section has detailed information that might be less important.
     async def test_summarize_with_compress_verbose_strategy(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test summarize with compress_verbose strategy."""
@@ -176,7 +175,7 @@ def example():
     async def test_summarize_with_headers_only_strategy(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test summarize with headers_only strategy."""
@@ -216,7 +215,7 @@ First paragraph of section two.
     async def test_summarize_with_invalid_strategy_defaults_to_key_sections(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that invalid strategy defaults to extract_key_sections."""
@@ -239,7 +238,7 @@ First paragraph of section two.
     async def test_summarize_uses_cache_when_available(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that summarization uses cached results when available."""
@@ -272,7 +271,7 @@ class TestExtractKeySections:
     async def test_extract_key_sections_with_no_sections(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test extract_key_sections with content that has no sections."""
@@ -294,7 +293,7 @@ class TestExtractKeySections:
     async def test_extract_key_sections_selects_highest_scoring_sections(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that key sections selection prioritizes high-scoring sections."""
@@ -328,7 +327,7 @@ Detailed information.
     async def test_extract_key_sections_includes_at_least_one_section(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that at least one section is included even if it exceeds target."""
@@ -355,7 +354,7 @@ class TestCompressVerboseContent:
     async def test_compress_removes_examples(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that compress_verbose removes example sections."""
@@ -386,7 +385,7 @@ More content.
     async def test_compress_truncates_large_code_blocks(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that large code blocks are compressed."""
@@ -413,7 +412,7 @@ More content.
     async def test_compress_preserves_small_code_blocks(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that small code blocks are preserved."""
@@ -439,7 +438,7 @@ def small():
     async def test_compress_truncates_very_long_lines(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that very long lines are truncated."""
@@ -465,7 +464,7 @@ class TestExtractHeadersOnly:
     async def test_extract_headers_includes_section_headers(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that headers are extracted correctly."""
@@ -493,7 +492,7 @@ Another paragraph.
     async def test_extract_headers_limits_content_per_section(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that only first few lines per section are kept."""
@@ -524,7 +523,7 @@ Line 8
     async def test_extract_headers_handles_empty_sections(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test handling of sections with no content."""
@@ -552,7 +551,7 @@ class TestParseSections:
     def test_parse_sections_with_multiple_headings(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test parsing content with multiple sections."""
@@ -582,7 +581,7 @@ Content for section two.
     def test_parse_sections_with_preamble(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test parsing content with preamble before first heading."""
@@ -607,7 +606,7 @@ Section content.
     def test_parse_sections_with_no_headings(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test parsing content with no headings."""
@@ -631,7 +630,7 @@ class TestScoreSectionImportance:
     def test_score_increases_for_important_keywords(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that important keywords increase section score."""
@@ -650,7 +649,7 @@ class TestScoreSectionImportance:
     def test_score_decreases_for_low_value_keywords(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that low-value keywords decrease section score."""
@@ -669,7 +668,7 @@ class TestScoreSectionImportance:
     def test_score_adjusts_for_content_length(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that content length affects section score."""
@@ -690,7 +689,7 @@ class TestScoreSectionImportance:
     def test_score_bounded_between_zero_and_one(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that scores are bounded between 0.0 and 1.0."""
@@ -712,7 +711,7 @@ class TestCaching:
     def test_compute_hash_returns_consistent_hash(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that hash computation is consistent."""
@@ -733,7 +732,7 @@ class TestCaching:
     def test_compute_hash_differs_for_different_content(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that different content produces different hashes."""
@@ -753,7 +752,7 @@ class TestCaching:
     async def test_cache_summary_creates_cache_file(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that cache_summary creates a cache file."""
@@ -780,7 +779,7 @@ class TestCaching:
     async def test_get_cached_summary_returns_cached_content(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that get_cached_summary retrieves cached summaries."""
@@ -801,7 +800,7 @@ class TestCaching:
     def test_get_cached_summary_returns_none_when_not_cached(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that get_cached_summary returns None when cache doesn't exist."""
@@ -821,7 +820,7 @@ class TestCaching:
     def test_get_cached_summary_handles_corrupted_cache(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that corrupted cache files are handled gracefully."""
@@ -842,7 +841,7 @@ class TestCaching:
     async def test_cache_summary_handles_write_errors_silently(
         self,
         mock_token_counter: Mock,
-        mock_metadata_index: "MetadataIndex",
+        mock_metadata_index: MetadataIndex,
         tmp_path: Path,
     ) -> None:
         """Test that cache write errors are handled silently."""

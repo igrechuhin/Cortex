@@ -2,7 +2,7 @@
 Pydantic models for analysis module.
 
 This module contains Pydantic models for pattern analysis and insight types,
-migrated from TypedDict definitions for better validation and IDE support.
+migrated from legacy dict-based shapes for better validation and IDE support.
 """
 
 from typing import Literal
@@ -145,6 +145,20 @@ class FileAccessStats(AnalysisBaseModel):
     last_access: str | None = Field(
         default=None, description="ISO timestamp of last access"
     )
+    count: int | None = Field(default=None, ge=0, description="Access count (alias)")
+    task_count: int | None = Field(default=None, ge=0, description="Task count")
+    tasks: set[str] | None = Field(default=None, description="Set of task IDs")
+
+
+class InsightStatistics(AnalysisBaseModel):
+    """Statistics for insights summary."""
+
+    total_potential_savings: int = Field(
+        ..., ge=0, description="Total potential token savings"
+    )
+    high_impact: int = Field(..., ge=0, description="High impact insight count")
+    medium_impact: int = Field(..., ge=0, description="Medium impact insight count")
+    low_impact: int = Field(..., ge=0, description="Low impact insight count")
     task_count: int = Field(default=0, ge=0, description="Number of unique tasks")
     avg_accesses_per_day: float = Field(
         default=0.0, ge=0.0, description="Average accesses per day"
@@ -159,13 +173,15 @@ class FileAccessStats(AnalysisBaseModel):
 class InsightEvidence(AnalysisBaseModel):
     """Evidence supporting an insight."""
 
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
+
     files_analyzed: list[str] = Field(
         default_factory=list, description="Files analyzed"
     )
     patterns_found: list[str] = Field(
         default_factory=list, description="Patterns found"
     )
-    metrics: dict[str, float] = Field(
+    metrics: dict[str, float | int] = Field(
         default_factory=dict, description="Relevant metrics"
     )
     examples: list[str] = Field(default_factory=list, description="Example snippets")
@@ -378,10 +394,16 @@ class AntiPatternInfo(AnalysisBaseModel):
     type: str = Field(..., description="Anti-pattern type")
     file: str | None = Field(default=None, description="Affected file")
     files: list[str] = Field(default_factory=list, description="Affected files")
-    severity: Literal["error", "warning", "info"] = Field(
+    severity: Literal["high", "medium", "low"] = Field(
         ..., description="Severity level"
     )
     description: str = Field(..., description="Description of the anti-pattern")
+    dependency_count: int | None = Field(
+        default=None, ge=0, description="Dependency count (when applicable)"
+    )
+    dependent_count: int | None = Field(
+        default=None, ge=0, description="Dependent count (when applicable)"
+    )
     recommendation: str | None = Field(
         default=None, description="Recommendation to fix"
     )
@@ -454,19 +476,6 @@ class DependencyChain(AnalysisBaseModel):
     length: int = Field(default=0, ge=0, description="Chain length")
     start_file: str = Field(default="", description="Starting file")
     end_file: str = Field(default="", description="Ending file")
-
-
-class InsightStatistics(AnalysisBaseModel):
-    """Statistics about generated insights."""
-
-    total_potential_savings: int = Field(
-        default=0, ge=0, description="Total potential token savings"
-    )
-    high_impact: int = Field(default=0, ge=0, description="High impact insight count")
-    medium_impact: int = Field(
-        default=0, ge=0, description="Medium impact insight count"
-    )
-    low_impact: int = Field(default=0, ge=0, description="Low impact insight count")
 
 
 # ============================================================================

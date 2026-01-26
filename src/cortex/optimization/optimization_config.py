@@ -5,12 +5,14 @@ This module provides functionality to manage optimization settings
 through a JSON configuration file.
 """
 
+import copy
 import json
-from copy import deepcopy
 from pathlib import Path
 from typing import cast
 
 from cortex.core.async_file_utils import open_async_text_file
+from cortex.core.models import JsonValue, ModelDict
+from cortex.optimization.models import OptimizationConfigModel
 
 DEFAULT_OPTIMIZATION_CONFIG = {
     "enabled": True,
@@ -127,22 +129,24 @@ class OptimizationConfig:
         """
         self.project_root: Path = Path(project_root)
         self.config_path: Path = self.project_root / ".cortex" / "optimization.json"
-        self.config: dict[str, object] = self._load_config()
+        self.config: ModelDict = self._load_config()
 
-    def _load_config(self) -> dict[str, object]:
+    def _load_config(self) -> ModelDict:
         """
         Load configuration from file or create default.
 
         Returns:
-            Configuration dictionary
+            Dictionary with configuration values
 
         Note:
             This method uses synchronous I/O during initialization for simplicity.
             For performance-critical paths, consider using async alternatives.
         """
-        # Early return if config file doesn't exist
+        default_config = cast(ModelDict, copy.deepcopy(DEFAULT_OPTIMIZATION_CONFIG))
+
+        # Early return if config file doesn't exist - use defaults
         if not self.config_path.exists():
-            return cast(dict[str, object], deepcopy(DEFAULT_OPTIMIZATION_CONFIG))
+            return default_config
 
         try:
             with open(self.config_path) as f:
@@ -151,35 +155,33 @@ class OptimizationConfig:
             from cortex.core.logging_config import logger
 
             logger.warning(f"Failed to load optimization config: {e}")
-            return cast(dict[str, object], deepcopy(DEFAULT_OPTIMIZATION_CONFIG))
+            return default_config
 
-        # Validate config type
+        # Validate config type and parse with Pydantic
         if not isinstance(user_config_raw, dict):
-            return cast(dict[str, object], DEFAULT_OPTIMIZATION_CONFIG)
+            return default_config
 
-        user_config: dict[str, object] = cast(dict[str, object], user_config_raw)
-
-        # Merge with defaults
+        # Merge raw config with defaults (validation is handled by validate())
         return self.merge_configs(
-            cast(dict[str, object], DEFAULT_OPTIMIZATION_CONFIG),
-            user_config,
+            default_config,
+            cast(ModelDict, user_config_raw),
         )
 
-    def merge_configs(
-        self, default: dict[str, object], user: dict[str, object]
-    ) -> dict[str, object]:
+    def merge_configs(self, default: ModelDict, user: ModelDict) -> ModelDict:
         """
-        Recursively merge user config with defaults.
+        Recursively merge user config dict with defaults.
 
         Args:
-            default: Default configuration
-            user: User configuration
+            default: Default configuration dict
+            user: User configuration dict
 
         Returns:
-            Merged configuration
+            Merged configuration dict
+
+        Note: This method works with ModelDict for flexibility during config
+        loading, but the result is validated into OptimizationConfigModel.
         """
-        # Use deepcopy to avoid sharing references with DEFAULT_OPTIMIZATION_CONFIG
-        result = deepcopy(default)
+        result = default.copy()
 
         for key, value in user.items():
             if (
@@ -188,7 +190,8 @@ class OptimizationConfig:
                 and isinstance(value, dict)
             ):
                 result[key] = self.merge_configs(
-                    cast(dict[str, object], result[key]), cast(dict[str, object], value)
+                    cast(ModelDict, result[key]),
+                    cast(ModelDict, value),
                 )
             else:
                 result[key] = value
@@ -203,6 +206,7 @@ class OptimizationConfig:
             True if saved successfully
         """
         try:
+            self.config_path.parent.mkdir(parents=True, exist_ok=True)
             async with open_async_text_file(self.config_path, "w", "utf-8") as f:
                 _ = await f.write(json.dumps(self.config, indent=2))
             return True
@@ -213,7 +217,7 @@ class OptimizationConfig:
             logger.error(f"Failed to save optimization config: {e}")
             return False
 
-    def get(self, key_path: str, default: object = None) -> object:
+    def get(self, key_path: str, default: JsonValue | None = None) -> JsonValue:
         """
         Get configuration value using dot notation.
 
@@ -225,7 +229,7 @@ class OptimizationConfig:
             Configuration value
         """
         keys = key_path.split(".")
-        value = self.config
+        value: JsonValue = self.config
 
         for key in keys:
             if isinstance(value, dict) and key in value:
@@ -235,7 +239,7 @@ class OptimizationConfig:
 
         return value
 
-    def set(self, key_path: str, value: object) -> bool:
+    def set(self, key_path: str, value: JsonValue) -> bool:
         """
         Set configuration value using dot notation.
 
@@ -251,22 +255,15 @@ class OptimizationConfig:
         if not keys:
             return False
 
-        # Navigate to parent
-        current: dict[str, object] = self.config
+        current: ModelDict = self.config
         for key in keys[:-1]:
             if key not in current:
-                # Create new dict entry
-                new_dict: dict[str, object] = {}
-                current[key] = new_dict
-                current = new_dict
-            else:
-                # Check if existing value is a dict
-                next_value = current[key]
-                if not isinstance(next_value, dict):
-                    return False
-                current = cast(dict[str, object], next_value)
+                current[key] = {}
+            if not isinstance(current[key], dict):
+                return False
+            current = cast(ModelDict, current[key])
 
-        # Set value - current is guaranteed to be a dict here
+        # Set value
         current[keys[-1]] = value
         return True
 
@@ -275,58 +272,54 @@ class OptimizationConfig:
         # Delete config file if it exists to ensure clean reset
         if self.config_path.exists():
             self.config_path.unlink()
-        # Reset to defaults directly (ensures clean state)
-        self.config = cast(dict[str, object], deepcopy(DEFAULT_OPTIMIZATION_CONFIG))
+        self.config = cast(ModelDict, copy.deepcopy(DEFAULT_OPTIMIZATION_CONFIG))
         _ = await self.save_config()
 
     def get_token_budget(self) -> int:
         """Get default token budget."""
-        return cast(int, self.get("token_budget.default_budget", 80000))
+        value = self.get("token_budget.default_budget", 80000)
+        return int(value) if isinstance(value, int) else 80000
 
     def get_max_token_budget(self) -> int:
         """Get maximum token budget."""
-        return cast(int, self.get("token_budget.max_budget", 100000))
+        value = self.get("token_budget.max_budget", 100000)
+        return int(value) if isinstance(value, int) else 100000
 
     def get_loading_strategy(self) -> str:
         """Get default loading strategy."""
-        return cast(str, self.get("loading_strategy.default", "dependency_aware"))
+        value = self.get("loading_strategy.default", "dependency_aware")
+        return str(value) if isinstance(value, str) else "dependency_aware"
 
     def get_mandatory_files(self) -> list[str]:
         """Get list of mandatory files."""
-        return cast(
-            list[str],
-            self.get("loading_strategy.mandatory_files", ["memorybankinstructions.md"]),
-        )
+        value = self.get("loading_strategy.mandatory_files", [])
+        if not isinstance(value, list):
+            return []
+        items = cast(list[JsonValue], value)
+        return [str(item) for item in items if isinstance(item, str)]
 
     def get_priority_order(self) -> list[str]:
         """Get file priority order."""
-        return cast(
-            list[str],
-            self.get(
-                "loading_strategy.priority_order",
-                [
-                    "memorybankinstructions.md",
-                    "projectBrief.md",
-                    "activeContext.md",
-                    "systemPatterns.md",
-                    "techContext.md",
-                    "productContext.md",
-                    "progress.md",
-                ],
-            ),
-        )
+        value = self.get("loading_strategy.priority_order", [])
+        if not isinstance(value, list):
+            return []
+        items = cast(list[JsonValue], value)
+        return [str(item) for item in items if isinstance(item, str)]
 
     def is_summarization_enabled(self) -> bool:
         """Check if summarization is enabled."""
-        return cast(bool, self.get("summarization.enabled", True))
+        value = self.get("summarization.enabled", True)
+        return bool(value) if isinstance(value, bool) else True
 
     def get_summarization_strategy(self) -> str:
         """Get summarization strategy."""
-        return cast(str, self.get("summarization.strategy", "extract_key_sections"))
+        value = self.get("summarization.strategy", "extract_key_sections")
+        return str(value) if isinstance(value, str) else "extract_key_sections"
 
     def get_summarization_target_reduction(self) -> float:
         """Get target reduction for summarization."""
-        return cast(float, self.get("summarization.target_reduction", 0.5))
+        value = self.get("summarization.target_reduction", 0.5)
+        return float(value) if isinstance(value, (int, float)) else 0.5
 
     def get_relevance_weights(self) -> dict[str, float]:
         """
@@ -335,106 +328,135 @@ class OptimizationConfig:
         Returns:
             Dict with keyword_weight, dependency_weight, recency_weight, quality_weight
         """
+        keyword = self.get("relevance.keyword_weight", 0.4)
+        dep = self.get("relevance.dependency_weight", 0.3)
+        rec = self.get("relevance.recency_weight", 0.2)
+        qual = self.get("relevance.quality_weight", 0.1)
         return {
-            "keyword_weight": cast(float, self.get("relevance.keyword_weight", 0.4)),
-            "dependency_weight": cast(
-                float, self.get("relevance.dependency_weight", 0.3)
+            "keyword_weight": (
+                float(keyword) if isinstance(keyword, (int, float)) else 0.4
             ),
-            "recency_weight": cast(float, self.get("relevance.recency_weight", 0.2)),
-            "quality_weight": cast(float, self.get("relevance.quality_weight", 0.1)),
+            "dependency_weight": float(dep) if isinstance(dep, (int, float)) else 0.3,
+            "recency_weight": float(rec) if isinstance(rec, (int, float)) else 0.2,
+            "quality_weight": float(qual) if isinstance(qual, (int, float)) else 0.1,
         }
 
     def is_cache_enabled(self) -> bool:
         """Check if caching is enabled."""
-        return cast(bool, self.get("performance.cache_enabled", True))
+        value = self.get("performance.cache_enabled", True)
+        return bool(value) if isinstance(value, bool) else True
 
     def get_cache_ttl(self) -> int:
         """Get cache TTL in seconds."""
-        return cast(int, self.get("performance.cache_ttl_seconds", 3600))
+        value = self.get("performance.cache_ttl_seconds", 3600)
+        return int(value) if isinstance(value, int) else 3600
 
     def is_rules_enabled(self) -> bool:
         """Check if rules indexing is enabled."""
-        return cast(bool, self.get("rules.enabled", False))
+        value = self.get("rules.enabled", False)
+        return bool(value) if isinstance(value, bool) else False
 
     def get_rules_folder(self) -> str | None:
         """Get rules folder path."""
-        return cast(str | None, self.get("rules.rules_folder", ".cursorrules"))
+        value = self.get("rules.rules_folder", None)
+        return str(value) if isinstance(value, str) else None
 
     def get_rules_reindex_interval(self) -> int:
         """Get rules reindex interval in minutes."""
-        return cast(int, self.get("rules.reindex_interval_minutes", 30))
+        value = self.get("rules.reindex_interval_minutes", 30)
+        return int(value) if isinstance(value, int) else 30
 
     def is_rules_auto_include(self) -> bool:
         """Check if rules should be auto-included in context."""
-        return cast(bool, self.get("rules.auto_include_in_context", True))
+        value = self.get("rules.auto_include_in_context", True)
+        return bool(value) if isinstance(value, bool) else True
 
     def get_rules_max_tokens(self) -> int:
         """Get maximum tokens for rules."""
-        return cast(int, self.get("rules.max_rules_tokens", 5000))
+        value = self.get("rules.max_rules_tokens", 5000)
+        return int(value) if isinstance(value, int) else 5000
 
     def get_rules_min_relevance(self) -> float:
         """Get minimum relevance score for rules."""
-        return cast(float, self.get("rules.min_relevance_score", 0.3))
+        value = self.get("rules.min_relevance_score", 0.3)
+        return float(value) if isinstance(value, (int, float)) else 0.3
 
     def is_synapse_enabled(self) -> bool:
         """Check if Synapse is enabled."""
-        return cast(bool, self.get("synapse.enabled", False))
+        value = self.get("synapse.enabled", False)
+        return bool(value) if isinstance(value, bool) else False
 
     def get_synapse_folder(self) -> str:
         """Get Synapse folder path."""
-        return cast(str, self.get("synapse.synapse_folder", ".cortex/synapse"))
+        value = self.get("synapse.synapse_folder", ".cortex/synapse")
+        return str(value) if isinstance(value, str) else ".cortex/synapse"
 
     def get_synapse_repo(self) -> str:
         """Get Synapse repository URL."""
-        return cast(str, self.get("synapse.synapse_repo", ""))
+        value = self.get("synapse.synapse_repo", "")
+        return str(value) if isinstance(value, str) else ""
 
     def is_synapse_auto_sync(self) -> bool:
         """Check if Synapse auto-sync is enabled."""
-        return cast(bool, self.get("synapse.auto_sync", True))
+        value = self.get("synapse.auto_sync", True)
+        return bool(value) if isinstance(value, bool) else True
 
     def get_synapse_sync_interval(self) -> int:
         """Get Synapse sync interval in minutes."""
-        return cast(int, self.get("synapse.sync_interval_minutes", 60))
+        value = self.get("synapse.sync_interval_minutes", 60)
+        return int(value) if isinstance(value, int) else 60
 
     def is_self_evolution_enabled(self) -> bool:
         """Check if self-evolution is enabled."""
-        return cast(bool, self.get("self_evolution.enabled", True))
+        value = self.get("self_evolution.enabled", True)
+        return bool(value) if isinstance(value, bool) else True
 
     def is_usage_tracking_enabled(self) -> bool:
         """Check if usage pattern tracking is enabled."""
-        return cast(
-            bool, self.get("self_evolution.analysis.track_usage_patterns", True)
-        )
+        value = self.get("self_evolution.analysis.track_usage_patterns", True)
+        return bool(value) if isinstance(value, bool) else True
 
     def get_pattern_window_days(self) -> int:
         """Get pattern analysis window in days."""
-        return cast(int, self.get("self_evolution.analysis.pattern_window_days", 30))
+        value = self.get("self_evolution.analysis.pattern_window_days", 30)
+        return int(value) if isinstance(value, int) else 30
 
     def get_min_access_count(self) -> int:
         """Get minimum access count for pattern analysis."""
-        return cast(int, self.get("self_evolution.analysis.min_access_count", 5))
+        value = self.get("self_evolution.analysis.min_access_count", 5)
+        return int(value) if isinstance(value, int) else 5
 
     def is_task_tracking_enabled(self) -> bool:
         """Check if task pattern tracking is enabled."""
-        return cast(bool, self.get("self_evolution.analysis.track_task_patterns", True))
+        value = self.get("self_evolution.analysis.track_task_patterns", True)
+        return bool(value) if isinstance(value, bool) else True
 
     def is_auto_insights_enabled(self) -> bool:
         """Check if insights should be auto-generated."""
-        return cast(bool, self.get("self_evolution.insights.auto_generate", False))
+        value = self.get("self_evolution.insights.auto_generate", False)
+        return bool(value) if isinstance(value, bool) else False
 
     def get_min_impact_score(self) -> float:
         """Get minimum impact score for insights."""
-        return cast(float, self.get("self_evolution.insights.min_impact_score", 0.5))
+        value = self.get("self_evolution.insights.min_impact_score", 0.5)
+        return float(value) if isinstance(value, (int, float)) else 0.5
 
     def get_insight_categories(self) -> list[str]:
         """Get insight categories to analyze."""
-        return cast(
-            list[str],
-            self.get(
-                "self_evolution.insights.categories",
-                ["usage", "organization", "redundancy", "dependencies", "quality"],
-            ),
+        value = self.get(
+            "self_evolution.insights.categories",
+            [
+                "usage",
+                "organization",
+                "redundancy",
+                "dependencies",
+                "quality",
+            ],
         )
+        if not isinstance(value, list):
+            return []
+        items = cast(list[JsonValue], value)
+        return [str(item) for item in items if isinstance(item, str)]
 
     def validate(self) -> tuple[bool, str | None]:
         """
@@ -443,35 +465,30 @@ class OptimizationConfig:
         Returns:
             Tuple of (is_valid, error_message)
         """
-        # Check token budgets
         default_budget = self.get("token_budget.default_budget")
         max_budget = self.get("token_budget.max_budget")
 
         if not isinstance(default_budget, int) or default_budget <= 0:
             return False, "token_budget.default_budget must be a positive integer"
-
         if not isinstance(max_budget, int) or max_budget <= 0:
             return False, "token_budget.max_budget must be a positive integer"
-
         if default_budget > max_budget:
             return False, "token_budget.default_budget cannot exceed max_budget"
 
-        # Check loading strategy
-        strategy = self.get("loading_strategy.default")
+        strategy = self.get("loading_strategy.default", "dependency_aware")
         valid_strategies = ["priority", "dependency_aware", "section_level", "hybrid"]
 
-        if strategy not in valid_strategies:
+        if not isinstance(strategy, str) or strategy not in valid_strategies:
             return (
                 False,
                 f"loading_strategy.default must be one of: {', '.join(valid_strategies)}",
             )
 
         # Check summarization
-        target_reduction = self.get("summarization.target_reduction")
-
+        target_reduction = self.get("summarization.target_reduction", 0.5)
         if (
             not isinstance(target_reduction, (int, float))
-            or not 0 < target_reduction < 1
+            or not 0 < float(target_reduction) < 1
         ):
             return (
                 False,
@@ -487,14 +504,15 @@ class OptimizationConfig:
 
         return True, None
 
-    def to_dict(self) -> dict[str, object]:
-        """
-        Get configuration as dictionary.
+    def to_dict(self) -> ModelDict:
+        """Return a defensive copy of current config."""
+        return copy.deepcopy(self.config)
 
-        Returns:
-            Configuration dictionary
-        """
-        return self.config.copy()
+    def to_model(self) -> OptimizationConfigModel:
+        """Return validated config model (strict, raises on invalid config)."""
+        default_config = cast(ModelDict, copy.deepcopy(DEFAULT_OPTIMIZATION_CONFIG))
+        merged = self.merge_configs(default_config, self.config)
+        return OptimizationConfigModel.model_validate(merged)
 
     def __repr__(self) -> str:
         """String representation."""

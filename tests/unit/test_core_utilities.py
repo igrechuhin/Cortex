@@ -18,6 +18,7 @@ import pytest
 
 from cortex.core.manager_registry import ManagerRegistry
 from cortex.core.responses import error_response, success_response
+from tests.helpers.managers import make_test_managers
 
 
 class TestResponses:
@@ -118,7 +119,7 @@ class TestManagerRegistry:
         """Test getting managers for a project."""
         # Arrange
         registry = ManagerRegistry()
-        mock_managers = {"fs": MagicMock(), "meta": MagicMock()}
+        mock_managers = make_test_managers(fs=MagicMock())
 
         with patch(
             "cortex.managers.initialization.initialize_managers",
@@ -137,7 +138,7 @@ class TestManagerRegistry:
         """Test that managers are cached."""
         # Arrange
         registry = ManagerRegistry()
-        mock_managers = {"fs": MagicMock()}
+        mock_managers = make_test_managers(fs=MagicMock())
 
         with patch(
             "cortex.managers.initialization.initialize_managers",
@@ -155,8 +156,8 @@ class TestManagerRegistry:
         """Test clearing all cached managers."""
         # Arrange
         registry = ManagerRegistry()
-        registry._managers[str(tmp_path)] = {"fs": MagicMock()}
-        registry._managers["/other/path"] = {"fs": MagicMock()}
+        registry._managers[str(tmp_path)] = make_test_managers(fs=MagicMock())
+        registry._managers["/other/path"] = make_test_managers(fs=MagicMock())
 
         # Act
         registry.clear_cache()
@@ -168,8 +169,8 @@ class TestManagerRegistry:
         """Test clearing specific project cache."""
         # Arrange
         registry = ManagerRegistry()
-        registry._managers[str(tmp_path)] = {"fs": MagicMock()}
-        registry._managers["/other/path"] = {"fs": MagicMock()}
+        registry._managers[str(tmp_path)] = make_test_managers(fs=MagicMock())
+        registry._managers["/other/path"] = make_test_managers(fs=MagicMock())
 
         # Act
         registry.clear_cache(tmp_path)

@@ -8,14 +8,19 @@ This module handles:
 - Memory bank file validation
 """
 
-from typing import cast
+from typing import Literal, cast
 
+from cortex.core.models import ModelDict
+from cortex.structure.models import HealthCheckResult
 from cortex.structure.structure_config import StructureConfig
 
 
 def _determine_health_grade_and_status(
     score: int,
-) -> tuple[str, str]:
+) -> tuple[
+    Literal["A", "B", "C", "D", "F"],
+    Literal["healthy", "good", "fair", "warning", "critical"],
+]:
     """Determine grade and status from health score.
 
     Args:
@@ -47,98 +52,51 @@ class StructureHealthChecker:
         """
         self.config = config
 
-    def check_structure_health(self) -> dict[str, object]:
+    def check_structure_health(self) -> HealthCheckResult:
         """Check the health of the project structure.
 
         Returns:
             Health report with score and recommendations
         """
-        health: dict[str, object] = {
-            "score": 100,
-            "grade": "A",
-            "status": "healthy",
-            "checks": [],
-            "issues": [],
-            "recommendations": [],
-        }
+        checks: list[str] = []
+        issues: list[str] = []
+        recommendations: list[str] = []
+        score = 100
 
-        score = self._check_required_directories(health)
-        score = self._check_symlinks_validity(health, score)
-        score = self._check_config_file(health, score)
-        score = self._check_memory_bank_files(health, score)
+        score = self._check_required_directories(checks, issues, recommendations, score)
+        score = self._check_symlinks_validity(checks, issues, recommendations, score)
+        score = self._check_config_file(checks, issues, recommendations, score)
+        score = self._check_memory_bank_files(checks, issues, recommendations, score)
 
-        health["score"] = score
         grade, status = _determine_health_grade_and_status(score)
-        health["grade"] = grade
-        health["status"] = status
 
-        return health
-
-    def _extract_health_lists(
-        self, health: dict[str, object]
-    ) -> tuple[list[str], list[str], list[str], int]:
-        """Extract typed lists from health dictionary.
-
-        Args:
-            health: Health report dictionary
-
-        Returns:
-            Tuple of (checks_list, issues_list, recommendations_list, score)
-        """
-        score_val = health.get("score", 100)
-        score = int(score_val) if isinstance(score_val, (int, float)) else 100
-
-        checks_val = health.get("checks", [])
-        checks_list: list[str] = (
-            cast(list[str], checks_val) if isinstance(checks_val, list) else []
+        return HealthCheckResult(
+            score=score,
+            grade=grade,
+            status=status,
+            checks=checks,
+            issues=issues,
+            recommendations=recommendations,
         )
 
-        issues_val = health.get("issues", [])
-        issues_list: list[str] = (
-            cast(list[str], issues_val) if isinstance(issues_val, list) else []
-        )
-
-        recommendations_val = health.get("recommendations", [])
-        recommendations_list: list[str] = (
-            cast(list[str], recommendations_val)
-            if isinstance(recommendations_val, list)
-            else []
-        )
-
-        return checks_list, issues_list, recommendations_list, score
-
-    def _update_health_dict(
+    def _check_required_directories(
         self,
-        health: dict[str, object],
         checks_list: list[str],
         issues_list: list[str],
         recommendations_list: list[str],
-    ) -> None:
-        """Update health dictionary with typed lists.
-
-        Args:
-            health: Health report dictionary to update
-            checks_list: List of check messages
-            issues_list: List of issue messages
-            recommendations_list: List of recommendation messages
-        """
-        health["checks"] = checks_list
-        health["issues"] = issues_list
-        health["recommendations"] = recommendations_list
-
-    def _check_required_directories(self, health: dict[str, object]) -> int:
+        score: int,
+    ) -> int:
         """Check that all required directories exist.
 
         Args:
-            health: Health report dictionary to update
+            checks_list: List of check messages to update
+            issues_list: List of issue messages to update
+            recommendations_list: List of recommendation messages to update
+            score: Current health score
 
         Returns:
             Updated score after directory check
         """
-        checks_list, issues_list, recommendations_list, score = (
-            self._extract_health_lists(health)
-        )
-
         required_dirs = ["root", "memory_bank", "rules", "plans", "config"]
         missing_dirs = self._find_missing_directories(required_dirs)
         score = self._update_score_for_missing_dirs(missing_dirs, score)
@@ -149,8 +107,6 @@ class StructureHealthChecker:
             )
         else:
             checks_list.append("✓ All required directories exist")
-
-        self._update_health_dict(health, checks_list, issues_list, recommendations_list)
 
         return score
 
@@ -203,27 +159,29 @@ class StructureHealthChecker:
             "Run setup_project_structure() to create missing directories"
         )
 
-    def _check_symlinks_validity(self, health: dict[str, object], score: int) -> int:
+    def _check_symlinks_validity(
+        self,
+        checks_list: list[str],
+        issues_list: list[str],
+        recommendations_list: list[str],
+        score: int,
+    ) -> int:
         """Check that Cursor symlinks are valid.
 
         Args:
-            health: Health report dictionary to update
+            checks_list: List of check messages to update
+            issues_list: List of issue messages to update
+            recommendations_list: List of recommendation messages to update
             score: Current health score
 
         Returns:
             Updated score after symlink check
         """
-        checks_list, issues_list, recommendations_list, _ = self._extract_health_lists(
-            health
-        )
-
         symlink_location = self._get_symlink_location()
         if symlink_location:
             score = self._validate_symlinks(
                 symlink_location, score, checks_list, issues_list, recommendations_list
             )
-
-        self._update_health_dict(health, checks_list, issues_list, recommendations_list)
 
         return score
 
@@ -237,7 +195,7 @@ class StructureHealthChecker:
         if not isinstance(cursor_integration_val, dict):
             return None
 
-        cursor_integration = cast(dict[str, object], cursor_integration_val)
+        cursor_integration = cast(ModelDict, cursor_integration_val)
         enabled_val = cursor_integration.get("enabled")
         if not isinstance(enabled_val, bool) or not enabled_val:
             return None
@@ -308,20 +266,24 @@ class StructureHealthChecker:
 
         return broken_symlinks, score
 
-    def _check_config_file(self, health: dict[str, object], score: int) -> int:
+    def _check_config_file(
+        self,
+        checks_list: list[str],
+        issues_list: list[str],
+        recommendations_list: list[str],
+        score: int,
+    ) -> int:
         """Check that configuration file exists and is valid.
 
         Args:
-            health: Health report dictionary to update
+            checks_list: List of check messages to update
+            issues_list: List of issue messages to update
+            recommendations_list: List of recommendation messages to update
             score: Current health score
 
         Returns:
             Updated score after config file check
         """
-        checks_list, issues_list, recommendations_list, _ = self._extract_health_lists(
-            health
-        )
-
         if not self.config.structure_config_path.exists():
             score -= 10
             issues_list.append("Configuration file missing")
@@ -329,24 +291,26 @@ class StructureHealthChecker:
         else:
             checks_list.append("✓ Configuration file exists")
 
-        self._update_health_dict(health, checks_list, issues_list, recommendations_list)
-
         return score
 
-    def _check_memory_bank_files(self, health: dict[str, object], score: int) -> int:
+    def _check_memory_bank_files(
+        self,
+        checks_list: list[str],
+        issues_list: list[str],
+        recommendations_list: list[str],
+        score: int,
+    ) -> int:
         """Check memory bank files organization.
 
         Args:
-            health: Health report dictionary to update
+            checks_list: List of check messages to update
+            issues_list: List of issue messages to update
+            recommendations_list: List of recommendation messages to update
             score: Current health score
 
         Returns:
             Updated score after memory bank files check
         """
-        checks_list, issues_list, recommendations_list, _ = self._extract_health_lists(
-            health
-        )
-
         memory_bank_dir = self.config.get_path("memory_bank")
         if memory_bank_dir.exists():
             memory_bank_files = list(memory_bank_dir.glob("*.md"))
@@ -360,7 +324,5 @@ class StructureHealthChecker:
                 checks_list.append(
                     f"✓ Found {len(memory_bank_files)} memory bank files"
                 )
-
-        self._update_health_dict(health, checks_list, issues_list, recommendations_list)
 
         return score

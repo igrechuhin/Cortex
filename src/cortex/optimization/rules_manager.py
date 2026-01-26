@@ -8,17 +8,23 @@ to RulesIndexer.
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import ModelDict
 from cortex.core.token_counter import TokenCounter
+from cortex.rules.synapse_manager import SynapseManager
 
+from .models import (
+    DetectedContextModel,
+    IndexedRuleModel,
+    RuleSectionModel,
+    RulesManagerStatusModel,
+    RulesResultModel,
+    ScoredRuleModel,
+)
 from .rules_indexer import RulesIndexer
-
-# Import with TYPE_CHECKING to avoid circular imports
-if TYPE_CHECKING:
-    from cortex.rules.synapse_manager import SynapseManager
 
 
 class RulesManager:
@@ -37,7 +43,7 @@ class RulesManager:
         token_counter: TokenCounter,
         rules_folder: str | None = None,
         reindex_interval_minutes: int = 30,
-        synapse_manager: "SynapseManager | None" = None,
+        synapse_manager: SynapseManager | None = None,
     ):
         """
         Initialize rules manager.
@@ -65,23 +71,21 @@ class RulesManager:
             reindex_interval_minutes=reindex_interval_minutes,
         )
 
-    async def initialize(self) -> dict[str, object]:
+    async def initialize(self) -> ModelDict:
         """
         Initialize rules manager and perform initial indexing.
 
         Returns:
-            Status information about initialization
+            RulesIndexingResultModel with initialization status
         """
         if not self.rules_folder:
-            return {"status": "disabled", "message": "No rules folder configured"}
+            message = "No rules folder configured"
+            return {"status": "disabled", "message": message}
 
         rules_path = self.project_root / self.rules_folder
         if not rules_path.exists():
-            return {
-                "status": "not_found",
-                "message": f"Rules folder not found: {self.rules_folder}",
-                "path": str(rules_path),
-            }
+            message = f"Rules folder not found: {self.rules_folder}"
+            return {"status": "not_found", "message": message}
 
         # Perform initial indexing
         result = await self.index_rules()
@@ -91,7 +95,7 @@ class RulesManager:
 
         return result
 
-    async def index_rules(self, force: bool = False) -> dict[str, object]:
+    async def index_rules(self, force: bool = False) -> ModelDict:
         """
         Index all rules files from the configured folder.
 
@@ -101,10 +105,11 @@ class RulesManager:
             force: Force reindexing even if recently indexed
 
         Returns:
-            Indexing results
+            RulesIndexingResultModel with indexing results
         """
         if not self.rules_folder:
-            return {"status": "error", "error": "No rules folder configured"}
+            error = "No rules folder configured"
+            return {"status": "error", "error": error, "message": error}
 
         return await self.indexer.index_rules(self.rules_folder, force)
 
@@ -116,7 +121,7 @@ class RulesManager:
         project_files: list[Path] | None = None,
         rule_priority: str = "local_overrides_shared",
         context_aware: bool = True,
-    ) -> dict[str, object]:
+    ) -> ModelDict:
         """
         Get rules relevant to a task description.
 
@@ -131,12 +136,12 @@ class RulesManager:
             context_aware: Enable intelligent context detection
 
         Returns:
-            Dict with categorized rules and context information
+            RulesResultModel with categorized rules and context information
         """
         result = self._initialize_result_structure()
 
         if self.synapse_manager and context_aware:
-            return await self._get_hybrid_rules(
+            model = await self._get_hybrid_rules(
                 result,
                 task_description,
                 max_tokens,
@@ -144,31 +149,37 @@ class RulesManager:
                 project_files,
                 rule_priority,
             )
+            return cast(ModelDict, model.model_dump(mode="json"))
         else:
-            return await self._get_local_only_rules(
+            model = await self._get_local_only_rules(
                 result, task_description, max_tokens, min_relevance_score
             )
+            return cast(ModelDict, model.model_dump(mode="json"))
 
-    def _initialize_result_structure(self) -> dict[str, object]:
-        """Initialize result structure with default values."""
-        return {
-            "generic_rules": [],
-            "language_rules": [],
-            "local_rules": [],
-            "total_tokens": 0,
-            "context": {},
-            "source": "local_only",
-        }
+    def _initialize_result_structure(self) -> RulesResultModel:
+        """Initialize result structure with default values.
+
+        Returns:
+            RulesResultModel with empty structure
+        """
+        return RulesResultModel(
+            generic_rules=[],
+            language_rules=[],
+            local_rules=[],
+            total_tokens=0,
+            context=DetectedContextModel(),
+            source="local_only",
+        )
 
     async def _get_hybrid_rules(
         self,
-        result: dict[str, object],
+        result: RulesResultModel,
         task_description: str,
         max_tokens: int,
         min_relevance_score: float,
         project_files: list[Path] | None,
         rule_priority: str,
-    ) -> dict[str, object]:
+    ) -> RulesResultModel:
         """Get rules using hybrid (shared + local) approach."""
         # Detect context
         context = await self._detect_and_load_context(
@@ -184,23 +195,35 @@ class RulesManager:
         self._categorize_rules(result, selected_rules, context)
 
         # Calculate total tokens
-        result["total_tokens"] = self._calculate_total_tokens(selected_rules)
+        result.total_tokens = self._calculate_total_tokens(selected_rules)
 
         return result
 
     async def _detect_and_load_context(
         self,
-        result: dict[str, object],
+        result: RulesResultModel,
         task_description: str,
         project_files: list[Path] | None,
-    ) -> dict[str, object]:
+    ) -> DetectedContextModel:
         """Detect context and update result structure."""
         assert self.synapse_manager is not None  # Already checked in caller
-        context = await self.synapse_manager.detect_context(
+        context_dict = await self.synapse_manager.detect_context(
             task_description, project_files
         )
-        result["context"] = context
-        result["source"] = "hybrid"
+        # Convert dict to model
+        if isinstance(context_dict, dict):
+            normalized: ModelDict = dict(context_dict)
+            # Some legacy callers/tests use `frameworks` instead of `detected_frameworks`.
+            if "frameworks" in normalized and "detected_frameworks" not in normalized:
+                normalized["detected_frameworks"] = normalized.get("frameworks", [])
+            _ = normalized.pop("frameworks", None)
+            context = DetectedContextModel.model_validate(normalized)
+        else:
+            context = DetectedContextModel.model_validate(
+                cast(ModelDict, context_dict.model_dump(mode="json"))
+            )
+        result.context = context
+        result.source = "hybrid"
         return context
 
     async def _load_and_merge_rules(
@@ -209,8 +232,8 @@ class RulesManager:
         max_tokens: int,
         min_relevance_score: float,
         rule_priority: str,
-        context: dict[str, object],
-    ) -> list[dict[str, object]]:
+        context: DetectedContextModel,
+    ) -> list[ScoredRuleModel]:
         """Load shared and local rules, merge them, and select within budget."""
         # Load shared rules
         shared_rules = await self._load_shared_rules(context)
@@ -222,64 +245,89 @@ class RulesManager:
 
         # Merge rules
         assert self.synapse_manager is not None  # Already checked in caller
-        merged_rules = await self.synapse_manager.merge_rules(
-            shared_rules=shared_rules,
-            local_rules=local_rules,
+        shared_rules_dicts: list[ModelDict] = [
+            cast(ModelDict, rule.model_dump(mode="json")) for rule in shared_rules
+        ]
+        local_rules_dicts: list[ModelDict] = [
+            cast(ModelDict, rule.model_dump(mode="json")) for rule in local_rules
+        ]
+        merged_rule_dicts = await self.synapse_manager.merge_rules(
+            shared_rules=shared_rules_dicts,
+            local_rules=local_rules_dicts,
             priority=rule_priority,
         )
+        merged_rules = [
+            ScoredRuleModel.model_validate(rule) for rule in merged_rule_dicts
+        ]
 
         # Select within token budget
-        return await self.select_within_budget(
+        return await self._select_within_budget_models(
             merged_rules, task_description, max_tokens, min_relevance_score
         )
 
     async def _load_shared_rules(
-        self, context: dict[str, object]
-    ) -> list[dict[str, object]]:
+        self, context: DetectedContextModel
+    ) -> list[ScoredRuleModel]:
         """Load shared rules based on detected context."""
         assert self.synapse_manager is not None  # Already checked in caller
-        categories = await self.synapse_manager.get_relevant_categories(context)
+        categories = await self.synapse_manager.get_relevant_categories(
+            cast(ModelDict, context.model_dump(mode="json"))
+        )
 
-        shared_rules: list[dict[str, object]] = []
+        shared_rules: list[ScoredRuleModel] = []
         for category in categories:
             category_rules = await self.synapse_manager.load_category(category)
-            shared_rules.extend(category_rules)
-
-        # Tag rules with source
-        for rule in shared_rules:
-            rule["source"] = "shared"
+            # Convert LoadedRule models to ScoredRuleModel
+            for loaded_rule in category_rules:
+                try:
+                    # Calculate tokens for the rule content
+                    tokens = self.token_counter.count_tokens(loaded_rule.content)
+                    shared_rules.append(
+                        ScoredRuleModel(
+                            file=loaded_rule.file,
+                            name=loaded_rule.file,
+                            content=loaded_rule.content,
+                            tokens=tokens,
+                            relevance_score=0.0,  # Will be calculated later
+                            sections=[],
+                            source="shared",
+                            priority=loaded_rule.priority,
+                            category=loaded_rule.category,
+                        )
+                    )
+                except Exception:
+                    # Skip invalid rules
+                    continue
 
         return shared_rules
 
     async def _get_tagged_local_rules(
         self, task_description: str, min_relevance_score: float
-    ) -> list[dict[str, object]]:
+    ) -> list[ScoredRuleModel]:
         """Get local rules and tag them with source."""
-        local_rules = await self.get_local_rules(task_description, min_relevance_score)
+        local_rules = self._get_local_rules_models(
+            task_description, min_relevance_score
+        )
 
-        # Tag rules with source
+        # Tag rules with source - update models
         for rule in local_rules:
-            rule["source"] = "local"
+            rule.source = "local"
 
         return local_rules
 
     def _categorize_rules(
         self,
-        result: dict[str, object],
-        selected_rules: list[dict[str, object]],
-        context: dict[str, object],
+        result: RulesResultModel,
+        selected_rules: list[ScoredRuleModel],
+        context: DetectedContextModel,
     ) -> None:
         """Categorize selected rules into generic, language, and local categories."""
-        generic_rules_raw: object = result["generic_rules"]
-        language_rules_raw: object = result["language_rules"]
-        local_rules_raw: object = result["local_rules"]
-
-        generic_rules = self._cast_to_rule_list(generic_rules_raw)
-        language_rules = self._cast_to_rule_list(language_rules_raw)
-        local_rules = self._cast_to_rule_list(local_rules_raw)
+        generic_rules: list[ScoredRuleModel] = []
+        language_rules: list[ScoredRuleModel] = []
+        local_rules: list[ScoredRuleModel] = []
 
         for rule in selected_rules:
-            if rule.get("category") == "generic":
+            if rule.category == "generic":
                 generic_rules.append(rule)
                 continue
 
@@ -287,87 +335,70 @@ class RulesManager:
                 rule, context, language_rules, local_rules
             )
 
-        result["generic_rules"] = generic_rules
-        result["language_rules"] = language_rules
-        result["local_rules"] = local_rules
+        result.generic_rules = generic_rules
+        result.language_rules = language_rules
+        result.local_rules = local_rules
 
     def _categorize_non_generic_rule(
         self,
-        rule: dict[str, object],
-        context: dict[str, object],
-        language_rules: list[dict[str, object]],
-        local_rules: list[dict[str, object]],
+        rule: ScoredRuleModel,
+        context: DetectedContextModel,
+        language_rules: list[ScoredRuleModel],
+        local_rules: list[ScoredRuleModel],
     ) -> None:
         """Categorize a non-generic rule into language or local categories.
 
         Args:
-            rule: Rule dictionary to categorize
-            context: Context dictionary with detected languages
+            rule: Rule model to categorize
+            context: Context model with detected languages
             language_rules: List to append language rules to
             local_rules: List to append local rules to
         """
-        detected_languages: object = context.get("detected_languages", [])
-        if isinstance(detected_languages, list):
-            rule_category = rule.get("category")
-            if rule_category in detected_languages:
-                language_rules.append(rule)
+        if rule.category in context.detected_languages:
+            language_rules.append(rule)
 
-        if rule.get("source") == "local":
+        if rule.source == "local":
             local_rules.append(rule)
 
-    def _cast_to_rule_list(self, raw_value: object) -> list[dict[str, object]]:
-        """Cast raw value to rule list."""
-        return (
-            cast(list[dict[str, object]], raw_value)
-            if isinstance(raw_value, list)
-            else []
-        )
-
-    def _calculate_total_tokens(self, rules: list[dict[str, object]]) -> int:
+    def _calculate_total_tokens(self, rules: list[ScoredRuleModel]) -> int:
         """Calculate total tokens from rules."""
-        return sum(
-            (
-                int(tokens)
-                if isinstance(tokens := rule.get("tokens"), (int, float))
-                else 0
-            )
-            for rule in rules
-        )
+        return sum(rule.tokens for rule in rules)
+
+    # _build_rules_result is no longer needed - result is already a RulesResultModel
 
     async def _get_local_only_rules(
         self,
-        result: dict[str, object],
+        result: RulesResultModel,
         task_description: str,
         max_tokens: int,
         min_relevance_score: float,
-    ) -> dict[str, object]:
+    ) -> RulesResultModel:
         """Get rules using local-only (legacy) approach."""
-        local_rules = await self.get_local_rules(task_description, min_relevance_score)
+        local_rules = self._get_local_rules_models(
+            task_description, min_relevance_score
+        )
 
         # Select within token budget
-        selected_rules: list[dict[str, object]] = []
+        selected_rules: list[ScoredRuleModel] = []
         total_tokens = 0
 
         for rule in local_rules:
-            tokens_value = rule.get("tokens", 0)
-            rule_tokens = (
-                int(tokens_value) if isinstance(tokens_value, (int, float)) else 0
-            )
+            rule_tokens = rule.tokens
             if total_tokens + rule_tokens <= max_tokens:
                 selected_rules.append(rule)
                 total_tokens += rule_tokens
             else:
                 break
 
-        result["local_rules"] = selected_rules
-        result["total_tokens"] = total_tokens
-        result["source"] = "local_only"
+        result.local_rules = selected_rules
+        result.total_tokens = total_tokens
+        result.source = "local_only"
 
         return result
 
     async def get_local_rules(
         self, task_description: str, min_relevance_score: float = 0.3
-    ) -> list[dict[str, object]]:
+    ) -> list[ModelDict]:
         """
         Get local rules with relevance scoring.
 
@@ -378,52 +409,60 @@ class RulesManager:
         Returns:
             List of scored local rules
         """
-        # Get rules from indexer
-        rules_index = self.indexer.get_index()
+        scored_rules = self._get_local_rules_models(
+            task_description, min_relevance_score
+        )
+        return [cast(ModelDict, r.model_dump(mode="json")) for r in scored_rules]
 
+    def _create_scored_rule(
+        self, file_key: str, indexed_rule: IndexedRuleModel, score: float
+    ) -> ScoredRuleModel:
+        """Create a scored rule model."""
+        return ScoredRuleModel(
+            file=file_key,
+            name=file_key,
+            content=indexed_rule.content,
+            tokens=indexed_rule.token_count,
+            relevance_score=score,
+            sections=indexed_rule.sections,
+            source="local",
+            priority=50,
+            category="",
+        )
+
+    def _get_local_rules_models(
+        self, task_description: str, min_relevance_score: float
+    ) -> list[ScoredRuleModel]:
+        """Internal local rules helper returning typed models."""
+        rules_index = self.indexer.get_index()
         if not rules_index:
             return []
 
-        # Score rules by relevance
-        scored_rules = []
-
+        scored_rules: list[ScoredRuleModel] = []
         for file_key, rule_data in rules_index.items():
-            # rule_data is already dict[str, object] from get_index() return type
-            rule_content = str(rule_data.get("content", ""))
-            score = self.score_rule_relevance(task_description, rule_content)
-
-            if score >= min_relevance_score:
-                cast(list[dict[str, object]], scored_rules).append(
-                    {
-                        "file": file_key,
-                        "content": rule_data["content"],
-                        "tokens": rule_data["token_count"],
-                        "relevance_score": score,
-                        "sections": rule_data["sections"],
-                        "source": "local",
-                        "priority": 50,  # Default priority for local rules
-                    }
+            try:
+                indexed_rule = IndexedRuleModel.model_validate(rule_data)
+                score = self.score_rule_relevance(
+                    task_description, indexed_rule.content
                 )
+                if score < min_relevance_score:
+                    continue
+                scored_rules.append(
+                    self._create_scored_rule(file_key, indexed_rule, score)
+                )
+            except Exception:
+                continue
 
-        # Sort by score
-        def get_score(rule: dict[str, object]) -> float:
-            """Extract relevance score from rule dict."""
-            relevance_score = rule.get("relevance_score", 0.0)
-            if isinstance(relevance_score, (int, float)):
-                return float(relevance_score)
-            return 0.0
-
-        cast(list[dict[str, object]], scored_rules).sort(key=get_score, reverse=True)
-
-        return cast(list[dict[str, object]], scored_rules)
+        scored_rules.sort(key=lambda r: r.relevance_score, reverse=True)
+        return scored_rules
 
     async def select_within_budget(
         self,
-        rules: list[dict[str, object]],
+        rules: list[ScoredRuleModel],
         task_description: str,
         max_tokens: int,
         min_relevance_score: float,
-    ) -> list[dict[str, object]]:
+    ) -> list[ScoredRuleModel]:
         """
         Select rules within token budget with relevance scoring.
 
@@ -436,20 +475,32 @@ class RulesManager:
         Returns:
             Selected rules within budget
         """
+        return await self._select_within_budget_models(
+            rules, task_description, max_tokens, min_relevance_score
+        )
+
+    async def _select_within_budget_models(
+        self,
+        rules: list[ScoredRuleModel],
+        task_description: str,
+        max_tokens: int,
+        min_relevance_score: float,
+    ) -> list[ScoredRuleModel]:
+        """Select rules within budget returning typed models (internal)."""
         _score_rules_if_needed(self, rules, task_description)
         filtered_rules = _filter_rules_by_score(rules, min_relevance_score)
         filtered_rules.sort(
-            key=lambda x: (x.get("priority", 50), x.get("relevance_score", 0)),
+            key=lambda x: (x.priority, x.relevance_score),
             reverse=True,
         )
         return _select_rules_within_budget(self, filtered_rules, max_tokens)
 
-    async def get_all_rules(self) -> dict[str, dict[str, object]]:
+    async def get_all_rules(self) -> dict[str, IndexedRuleModel]:
         """
         Get all indexed rules.
 
         Returns:
-            Dictionary of all rules
+            Dictionary mapping file keys to indexed rule models
         """
         return self.indexer.get_index()
 
@@ -516,7 +567,7 @@ class RulesManager:
         """
         return self.indexer.find_rule_files(rules_path)
 
-    def parse_rule_sections(self, content: str) -> list[dict[str, object]]:
+    def parse_rule_sections(self, content: str) -> list[RuleSectionModel]:
         """
         Parse sections from rule content.
 
@@ -526,75 +577,69 @@ class RulesManager:
             content: Rule file content
 
         Returns:
-            List of sections with metadata (name, content, line_count)
+            List of RuleSectionModel with metadata
         """
         return self.indexer.parse_rule_sections(content)
 
-    def get_status(self) -> dict[str, object]:
+    def get_status(self) -> RulesManagerStatusModel:
         """
         Get status information about rules manager.
 
         Returns:
-            Status dictionary
+            RulesManagerStatusModel with manager status
         """
         indexer_status = self.indexer.get_status()
 
-        return {
-            "enabled": self.rules_folder is not None,
-            "rules_folder": self.rules_folder,
-            **indexer_status,
-        }
+        # Combine indexer status with manager-specific fields
+        return RulesManagerStatusModel(
+            enabled=self.rules_folder is not None,
+            rules_folder=self.rules_folder,
+            indexed_files=indexer_status.indexed_files,
+            last_indexed=indexer_status.last_indexed,
+            auto_reindex_enabled=indexer_status.auto_reindex_enabled,
+            reindex_interval_minutes=indexer_status.reindex_interval_minutes,
+            total_tokens=indexer_status.total_tokens,
+        )
 
 
 def _score_rules_if_needed(
-    manager: RulesManager, rules: list[dict[str, object]], task_description: str
+    manager: RulesManager, rules: list[ScoredRuleModel], task_description: str
 ) -> None:
     """Score rules if they don't have a score yet."""
     for rule in rules:
-        if "relevance_score" not in rule:
-            rule["relevance_score"] = manager.score_rule_relevance(
-                task_description, cast(str, rule.get("content", ""))
+        if rule.relevance_score == 0.0:
+            rule.relevance_score = manager.score_rule_relevance(
+                task_description, rule.content
             )
 
 
 def _filter_rules_by_score(
-    rules: list[dict[str, object]], min_relevance_score: float
-) -> list[dict[str, object]]:
+    rules: list[ScoredRuleModel], min_relevance_score: float
+) -> list[ScoredRuleModel]:
     """Filter rules by minimum relevance score."""
-    filtered: list[dict[str, object]] = []
-    for r in rules:
-        relevance_score = r.get("relevance_score", 0)
-        score_value = (
-            float(relevance_score) if isinstance(relevance_score, (int, float)) else 0.0
-        )
-        if score_value >= min_relevance_score:
-            filtered.append(r)
-    return filtered
+    return [r for r in rules if r.relevance_score >= min_relevance_score]
 
 
 def _select_rules_within_budget(
     manager: RulesManager,
-    filtered_rules: list[dict[str, object]],
+    filtered_rules: list[ScoredRuleModel],
     max_tokens: int,
-) -> list[dict[str, object]]:
+) -> list[ScoredRuleModel]:
     """Select rules within token budget."""
-    selected_rules = []
+    selected_rules: list[ScoredRuleModel] = []
     total_tokens = 0
 
     for rule in filtered_rules:
-        rule_tokens = rule.get("tokens", 0)
+        rule_tokens = rule.tokens
 
-        if rule_tokens == 0 and "content" in rule:
-            rule_tokens = manager.token_counter.count_tokens(cast(str, rule["content"]))
-            rule["tokens"] = rule_tokens
+        if rule_tokens == 0:
+            rule_tokens = manager.token_counter.count_tokens(rule.content)
+            rule.tokens = rule_tokens
 
-        rule_tokens_int = (
-            int(rule_tokens) if isinstance(rule_tokens, (int, float)) else 0
-        )
-        if total_tokens + rule_tokens_int <= max_tokens:
-            cast(list[dict[str, object]], selected_rules).append(rule)
-            total_tokens = total_tokens + rule_tokens_int
+        if total_tokens + rule_tokens <= max_tokens:
+            selected_rules.append(rule)
+            total_tokens += rule_tokens
         else:
             break
 
-    return cast(list[dict[str, object]], selected_rules)
+    return selected_rules

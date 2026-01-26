@@ -22,6 +22,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.managers.types import ManagersDict
+from cortex.optimization.models import RulesManagerStatusModel
 from cortex.tools.rules_operations import (
     build_get_relevant_response,
     calculate_total_tokens,
@@ -34,6 +36,22 @@ from cortex.tools.rules_operations import (
     rules,
     validate_get_relevant_params,
 )
+from tests.helpers.managers import make_test_managers
+
+
+def _get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object:
+    """Helper function to get manager by field name."""
+    return getattr(mgrs, key)
+
+
+@pytest.fixture(autouse=True)
+def _patch_get_manager() -> object:
+    """Patch strict get_manager() to allow MagicMocks in tool tests."""
+    with patch(
+        "cortex.tools.rules_operations.get_manager", side_effect=_get_manager_helper
+    ):
+        yield
+
 
 # ============================================================================
 # Fixtures
@@ -111,34 +129,36 @@ def mock_rules_manager() -> MagicMock:
             "source": "indexed",
         }
     )
-    manager.get_status.return_value = {
-        "indexed_count": 42,
-        "last_indexed": "2026-01-04T10:30:00Z",
-        "rules_folder": ".cursor/rules",
-    }
+    manager.get_status.return_value = RulesManagerStatusModel(
+        enabled=True,
+        rules_folder=".cursor/rules",
+        indexed_files=42,
+        last_indexed="2026-01-04T10:30:00Z",
+        total_tokens=15234,
+    )
     return manager
 
 
 @pytest.fixture
 def mock_managers_enabled(
     mock_optimization_config_enabled: MagicMock, mock_rules_manager: MagicMock
-) -> dict[str, Any]:
-    """Create mock managers dictionary with rules enabled."""
-    return {
-        "optimization_config": mock_optimization_config_enabled,
-        "rules_manager": mock_rules_manager,
-    }
+) -> ManagersDict:
+    """Create typed mock managers container with rules enabled."""
+    return make_test_managers(
+        optimization_config=mock_optimization_config_enabled,
+        rules_manager=mock_rules_manager,
+    )
 
 
 @pytest.fixture
 def mock_managers_disabled(
     mock_optimization_config_disabled: MagicMock, mock_rules_manager: MagicMock
-) -> dict[str, Any]:
-    """Create mock managers dictionary with rules disabled."""
-    return {
-        "optimization_config": mock_optimization_config_disabled,
-        "rules_manager": mock_rules_manager,
-    }
+) -> ManagersDict:
+    """Create typed mock managers container with rules disabled."""
+    return make_test_managers(
+        optimization_config=mock_optimization_config_disabled,
+        rules_manager=mock_rules_manager,
+    )
 
 
 # ============================================================================
@@ -520,7 +540,13 @@ def test_build_get_relevant_response() -> None:
         {"file": "test1.mdc", "tokens": 500},
         {"file": "test2.mdc", "tokens": 700},
     ]
-    status = {"indexed_count": 42}
+    status = RulesManagerStatusModel(
+        enabled=True,
+        rules_folder=".cursor/rules",
+        indexed_files=42,
+        last_indexed="2026-01-04T10:30:00Z",
+        total_tokens=15234,
+    )
     relevant_rules_dict = {
         "context": {"filtered_count": 5},
         "source": "indexed",
@@ -533,7 +559,7 @@ def test_build_get_relevant_response() -> None:
         0.7,
         cast(list[dict[str, object]], all_rules),
         1200,
-        cast(dict[str, object], status),
+        status,
         cast(dict[str, object], relevant_rules_dict),
     )
 
@@ -547,7 +573,7 @@ def test_build_get_relevant_response() -> None:
     assert result_dict["rules_count"] == 2
     assert result_dict["total_tokens"] == 1200
     assert result_dict["rules"] == all_rules
-    assert result_dict["rules_manager_status"] == status
+    assert result_dict["rules_manager_status"]["indexed_files"] == 42
     assert result_dict["rules_context"] == {"filtered_count": 5}
     assert result_dict["rules_source"] == "indexed"
 
@@ -706,8 +732,7 @@ async def test_rules_index_operation_force(
         # Assert
         result_dict = json.loads(result)
         assert result_dict["status"] == "success"
-        rules_manager = mock_managers_enabled["rules_manager"]
-        rules_manager.index_rules.assert_called_with(force=True)
+        mock_managers_enabled.rules_manager.index_rules.assert_called_with(force=True)
 
 
 @pytest.mark.asyncio

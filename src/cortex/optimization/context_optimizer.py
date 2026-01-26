@@ -9,7 +9,9 @@ Delegates strategy implementations to OptimizationStrategies.
 from collections.abc import Awaitable, Callable
 
 from cortex.core.dependency_graph import DependencyGraph
+from cortex.core.models import ModelDict
 from cortex.core.token_counter import TokenCounter
+from cortex.optimization.models import FileMetadataForScoring
 
 from .optimization_strategies import OptimizationResult, OptimizationStrategies
 from .relevance_scorer import RelevanceScorer
@@ -61,7 +63,7 @@ class ContextOptimizer:
         self,
         task_description: str,
         files_content: dict[str, str],
-        files_metadata: dict[str, dict[str, object]],
+        files_metadata: dict[str, ModelDict],
         token_budget: int,
         strategy: str = "dependency_aware",
         quality_scores: dict[str, float] | None = None,
@@ -150,7 +152,7 @@ async def _score_files_for_optimization(
     relevance_scorer: RelevanceScorer,
     task_description: str,
     files_content: dict[str, str],
-    files_metadata: dict[str, dict[str, object]],
+    files_metadata: dict[str, ModelDict],
     quality_scores: dict[str, float] | None,
 ) -> dict[str, float]:
     """Score files by relevance and extract total scores.
@@ -165,9 +167,16 @@ async def _score_files_for_optimization(
     Returns:
         Dictionary mapping file names to total relevance scores
     """
+    metadata_models: dict[str, FileMetadataForScoring] = {
+        file_name: FileMetadataForScoring.model_validate(meta)
+        for file_name, meta in files_metadata.items()
+    }
     relevance_results: dict[str, dict[str, float | str]] = (
         await relevance_scorer.score_files(
-            task_description, files_content, files_metadata, quality_scores or {}
+            task_description,
+            files_content,
+            metadata_models,
+            quality_scores or {},
         )
     )
     return _extract_relevance_scores(relevance_results)
@@ -286,7 +295,7 @@ def _update_result_metadata(
         Updated OptimizationResult
     """
     result.strategy_used = strategy
-    metadata_dict: dict[str, object] = dict(result.metadata) if result.metadata else {}
+    metadata_dict: ModelDict = dict(result.metadata) if result.metadata else {}
     metadata_dict["relevance_scores"] = {
         file_name: round(float(score), 3)
         for file_name, score in relevance_scores.items()

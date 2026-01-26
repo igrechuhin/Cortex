@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from cortex.services.framework_adapters.base import CheckResult, TestResult
 from cortex.tools.pre_commit_tools import (
     MAX_FILE_LINES,
     MAX_FUNCTION_LINES,
@@ -61,15 +62,14 @@ class TestExecutePreCommitChecks:
                 mock_adapter = MagicMock()
                 mock_adapter_class.return_value = mock_adapter
 
-                mock_fix_result: dict[str, str | bool | list[str]] = {
-                    "check_type": "fix_errors",
-                    "success": True,
-                    "output": "Fixed errors",
-                    "errors": [],
-                    "warnings": [],
-                    "files_modified": [],
-                }
-                mock_adapter.fix_errors.return_value = mock_fix_result
+                mock_adapter.fix_errors.return_value = CheckResult(
+                    check_type="fix_errors",
+                    success=True,
+                    output="Fixed errors",
+                    errors=[],
+                    warnings=[],
+                    files_modified=[],
+                )
 
                 result_json = await execute_pre_commit_checks(
                     checks=["fix_errors"],
@@ -96,28 +96,28 @@ class TestExecutePreCommitChecks:
                 mock_adapter = MagicMock()
                 mock_adapter_class.return_value = mock_adapter
 
-                mock_result: dict[str, str | bool | list[str]] = {
-                    "check_type": "test",
-                    "success": True,
-                    "output": "Success",
-                    "errors": [],
-                    "warnings": [],
-                    "files_modified": [],
-                }
+                mock_result = CheckResult(
+                    check_type="test",
+                    success=True,
+                    output="Success",
+                    errors=[],
+                    warnings=[],
+                    files_modified=[],
+                )
                 mock_adapter.fix_errors.return_value = mock_result
                 mock_adapter.format_code.return_value = mock_result
                 mock_adapter.type_check.return_value = mock_result
                 mock_adapter.lint_code.return_value = mock_result
-                mock_adapter.run_tests.return_value = {
-                    "success": True,
-                    "tests_run": 10,
-                    "tests_passed": 10,
-                    "tests_failed": 0,
-                    "pass_rate": 100.0,
-                    "coverage": 0.95,
-                    "output": "All tests passed",
-                    "errors": [],
-                }
+                mock_adapter.run_tests.return_value = TestResult(
+                    success=True,
+                    tests_run=10,
+                    tests_passed=10,
+                    tests_failed=0,
+                    pass_rate=1.0,
+                    coverage=0.95,
+                    output="All tests passed",
+                    errors=[],
+                )
 
                 result_json = await execute_pre_commit_checks(
                     checks=None,
@@ -171,6 +171,53 @@ class TestFixQualityIssues:
                 assert result["error_message"] == "Test error"
                 assert result["errors_fixed"] == 0
                 assert result["files_modified"] == []
+
+    @pytest.mark.asyncio
+    async def test_fix_quality_issues_success_when_checks_report_errors(self) -> None:
+        """Test non-exceptional 'status=error' from checks is still handled as success."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            (project_root / ".venv").mkdir()
+
+            with (
+                patch(
+                    "cortex.tools.pre_commit_tools.execute_pre_commit_checks"
+                ) as mock_execute,
+                patch(
+                    "cortex.tools.pre_commit_tools.fix_markdown_lint"
+                ) as mock_markdown,
+            ):
+                mock_execute.return_value = json.dumps(
+                    {
+                        "status": "error",
+                        "checks_performed": ["fix_errors", "format", "type_check"],
+                        "files_modified": ["file1.py"],
+                        "total_errors": 1,
+                        "total_warnings": 0,
+                        "success": False,
+                        "results": {
+                            "fix_errors": {
+                                "errors": ["E1"],
+                                "warnings": [],
+                                "files_modified": ["file1.py"],
+                            },
+                            "format": {"files_formatted": 0},
+                            "type_check": {"errors": [], "warnings": []},
+                        },
+                    }
+                )
+                mock_markdown.return_value = json.dumps(
+                    {"success": True, "files_fixed": 0, "files_processed": 0}
+                )
+
+                result_json = await fix_quality_issues(project_root=str(project_root))
+                result = json.loads(result_json)
+
+                assert result["status"] == "success"
+                assert result["error_message"] is None
+                assert result["errors_fixed"] == 1
+                assert "1 errors remain after auto-fix" in result["remaining_issues"]
 
     @pytest.mark.asyncio
     async def test_fix_quality_issues_exception_handling(self) -> None:
@@ -323,9 +370,9 @@ class TestCheckFileSizes:
 
             violations = _check_file_sizes(project_root)
             assert len(violations) == 1
-            assert violations[0]["file"] == "src/large.py"
-            assert violations[0]["lines"] > MAX_FILE_LINES
-            assert violations[0]["excess"] > 0
+            assert violations[0].file == "src/large.py"
+            assert violations[0].lines > MAX_FILE_LINES
+            assert violations[0].excess > 0
 
     def test_skips_test_files(self) -> None:
         """Test that test files are skipped."""
@@ -386,8 +433,8 @@ def short_func():
 
             violations = _check_function_lengths(project_root)
             assert len(violations) == 1
-            assert violations[0]["function"] == "long_func"
-            assert violations[0]["lines"] > MAX_FUNCTION_LINES
+            assert violations[0].function == "long_func"
+            assert violations[0].lines > MAX_FUNCTION_LINES
 
     def test_check_function_lengths_in_file_syntax_error(self) -> None:
         """Test handling of syntax errors in file."""
@@ -440,7 +487,7 @@ def short_func():
 
             violations = _check_function_lengths(project_root)
             assert len(violations) == 1
-            assert violations[0]["function"] == "long_async_func"
+            assert violations[0].function == "long_async_func"
 
 
 class TestQualityCheckIntegration:
@@ -466,15 +513,14 @@ class TestQualityCheckIntegration:
                 mock_adapter_class.return_value = mock_adapter
                 mock_adapter.project_root = project_root
 
-                mock_lint_result: dict[str, str | bool | list[str]] = {
-                    "check_type": "lint",
-                    "success": True,
-                    "output": "All good",
-                    "errors": [],
-                    "warnings": [],
-                    "files_modified": [],
-                }
-                mock_adapter.lint_code.return_value = mock_lint_result
+                mock_adapter.lint_code.return_value = CheckResult(
+                    check_type="lint",
+                    success=True,
+                    output="All good",
+                    errors=[],
+                    warnings=[],
+                    files_modified=[],
+                )
 
                 result_json = await execute_pre_commit_checks(
                     checks=["quality"],

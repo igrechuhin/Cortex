@@ -6,20 +6,31 @@ at import time. Used for conditional prompt registration.
 """
 
 from pathlib import Path
-from typing import TypedDict
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.tiktoken_cache import ensure_bundled_cache_available
 from cortex.managers.initialization import get_project_root
 
 
-class ProjectConfigStatus(TypedDict):
+class ProjectConfigStatus(BaseModel):
     """Project configuration status flags."""
 
-    memory_bank_initialized: bool
-    structure_configured: bool
-    cursor_integration_configured: bool
-    migration_needed: bool
-    tiktoken_cache_available: bool
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    memory_bank_initialized: bool = Field(
+        description="Whether memory bank is initialized"
+    )
+    structure_configured: bool = Field(
+        description="Whether project structure is configured"
+    )
+    cursor_integration_configured: bool = Field(
+        description="Whether Cursor integration is configured"
+    )
+    migration_needed: bool = Field(description="Whether migration is needed")
+    tiktoken_cache_available: bool = Field(
+        description="Whether tiktoken cache is available"
+    )
 
 
 def _check_memory_bank_initialized(memory_bank_dir: Path) -> bool:

@@ -8,10 +8,23 @@ complexity metrics, and anti-patterns.
 from pathlib import Path
 from typing import cast
 
+from cortex.analysis.models import (
+    AntiPatternInfo,
+    ComplexityAnalysisResult,
+    ComplexityAssessment,
+    ComplexityHotspot,
+    ComplexityMetrics,
+)
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.exceptions import MemoryBankError
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import (
+    FileOrganizationResult,
+    FileSizeEntry,
+    JsonValue,
+    ModelDict,
+)
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 
@@ -48,12 +61,12 @@ class StructureAnalyzer:
         self.file_system: FileSystemManager = file_system
         self.metadata_index: MetadataIndex = metadata_index
 
-    async def analyze_file_organization(self) -> dict[str, object]:
+    async def analyze_file_organization(self) -> FileOrganizationResult:
         """
         Analyze the overall file organization.
 
         Returns:
-            Dictionary with organization analysis
+            File organization analysis result model
         """
         memory_bank_dir = get_cortex_path(
             self.project_root, CortexResourceType.MEMORY_BANK
@@ -76,18 +89,18 @@ class StructureAnalyzer:
             file_count, stats, file_sizes, issues
         )
 
-    def _collect_file_sizes(self, all_files: list[Path]) -> list[dict[str, object]]:
+    def _collect_file_sizes(self, all_files: list[Path]) -> list[FileSizeEntry]:
         """Collect file size information for all files."""
 
-        def _get_file_size(file_path: Path) -> dict[str, object] | None:
+        def _get_file_size(file_path: Path) -> FileSizeEntry | None:
             """Get file size info, returning None on error."""
             try:
                 size = file_path.stat().st_size
-                return {
-                    "file": file_path.name,
-                    "size_bytes": size,
-                    "size_kb": round(size / 1024, 2),
-                }
+                return FileSizeEntry(
+                    file=file_path.name,
+                    size_bytes=size,
+                    tokens=0,  # Will be populated if needed
+                )
             except OSError:
                 return None
 
@@ -96,10 +109,10 @@ class StructureAnalyzer:
             for file_path in all_files
             if (size_info := _get_file_size(file_path)) is not None
         ]
-        file_sizes.sort(key=_get_size_bytes_for_sort, reverse=True)
+        file_sizes.sort(key=lambda x: x.size_bytes, reverse=True)
         return file_sizes
 
-    def _detect_oversized_files(self, all_files: list[Path]) -> list[dict[str, object]]:
+    def _detect_oversized_files(self, all_files: list[Path]) -> list[AntiPatternInfo]:
         """
         Detect oversized files (>100KB).
 
@@ -110,19 +123,18 @@ class StructureAnalyzer:
             List of oversized file anti-patterns
         """
 
-        def _check_oversized(file_path: Path) -> dict[str, object] | None:
-            """Check if file is oversized, returning pattern dict or None."""
+        def _check_oversized(file_path: Path) -> AntiPatternInfo | None:
+            """Check if file is oversized, returning pattern model or None."""
             try:
                 size = file_path.stat().st_size
                 if size > 100000:  # > 100KB
-                    return {
-                        "type": "oversized_file",
-                        "severity": "high",
-                        "file": file_path.name,
-                        "description": f"File is very large ({round(size / 1024, 2)}KB)",
-                        "recommendation": "Consider splitting into multiple smaller files",
-                        "size_bytes": size,
-                    }
+                    return AntiPatternInfo(
+                        type="oversized_file",
+                        severity="high",
+                        file=file_path.name,
+                        description=f"File is very large ({round(size / 1024, 2)}KB)",
+                        recommendation="Consider splitting into multiple smaller files",
+                    )
             except OSError:
                 pass
             return None
@@ -153,7 +165,7 @@ class StructureAnalyzer:
 
     def _detect_orphaned_files(
         self, all_files: list[Path], graph: dict[str, dict[str, list[str]]]
-    ) -> list[dict[str, object]]:
+    ) -> list[AntiPatternInfo]:
         """
         Detect orphaned files (no dependencies or dependents).
 
@@ -164,14 +176,16 @@ class StructureAnalyzer:
         Returns:
             List of orphaned file anti-patterns
         """
-        patterns: list[dict[str, object]] = [
-            {
-                "type": "orphaned_file",
-                "severity": "medium",
-                "file": file_path.name,
-                "description": "File has no dependencies or dependents",
-                "recommendation": "Link to other files or consider if it's still needed",
-            }
+        from cortex.analysis.models import AntiPatternInfo
+
+        patterns: list[AntiPatternInfo] = [
+            AntiPatternInfo(
+                type="orphaned_file",
+                severity="medium",
+                file=file_path.name,
+                description="File has no dependencies or dependents",
+                recommendation="Link to other files or consider if it's still needed",
+            )
             for file_path in all_files
             if not (
                 file_path.name in graph
@@ -186,7 +200,7 @@ class StructureAnalyzer:
 
     def _detect_excessive_dependencies(
         self, graph: dict[str, dict[str, list[str]]]
-    ) -> list[dict[str, object]]:
+    ) -> list[AntiPatternInfo]:
         """
         Detect files with excessive dependencies (>15).
 
@@ -196,22 +210,24 @@ class StructureAnalyzer:
         Returns:
             List of excessive dependency anti-patterns
         """
+        from cortex.analysis.models import AntiPatternInfo
+
         return [
-            {
-                "type": "excessive_dependencies",
-                "severity": "medium",
-                "file": file_name,
-                "description": f"File depends on {dep_count} other files",
-                "recommendation": "Consider reducing dependencies or splitting file",
-                "dependency_count": dep_count,
-            }
+            AntiPatternInfo(
+                type="excessive_dependencies",
+                severity="medium",
+                file=file_name,
+                dependency_count=dep_count,
+                description=f"File depends on {dep_count} other files",
+                recommendation="Consider reducing dependencies or splitting file",
+            )
             for file_name, file_data in graph.items()
             if (dep_count := len(file_data.get("dependencies", []))) > 15
         ]
 
     def _detect_excessive_dependents(
         self, graph: dict[str, dict[str, list[str]]]
-    ) -> list[dict[str, object]]:
+    ) -> list[AntiPatternInfo]:
         """
         Detect files with excessive dependents (>15).
 
@@ -221,22 +237,22 @@ class StructureAnalyzer:
         Returns:
             List of excessive dependent anti-patterns
         """
+        from cortex.analysis.models import AntiPatternInfo
+
         return [
-            {
-                "type": "excessive_dependents",
-                "severity": "low",
-                "file": file_name,
-                "description": f"File is depended upon by {dependent_count} other files",
-                "recommendation": "This is a central file - ensure it's stable and well-maintained",
-                "dependent_count": dependent_count,
-            }
+            AntiPatternInfo(
+                type="excessive_dependents",
+                severity="low",
+                file=file_name,
+                dependent_count=dependent_count,
+                description=f"File is depended upon by {dependent_count} other files",
+                recommendation="This is a central file - ensure it's stable and well-maintained",
+            )
             for file_name, file_data in graph.items()
             if (dependent_count := len(file_data.get("dependents", []))) > 15
         ]
 
-    def _detect_similar_filenames(
-        self, all_files: list[Path]
-    ) -> list[dict[str, object]]:
+    def _detect_similar_filenames(self, all_files: list[Path]) -> list[AntiPatternInfo]:
         """
         Detect files with similar names (potential duplication).
 
@@ -246,7 +262,8 @@ class StructureAnalyzer:
         Returns:
             List of similar filename anti-patterns
         """
-        patterns: list[dict[str, object]] = []
+        from cortex.analysis.models import AntiPatternInfo
+
         file_names: list[str] = [f.stem for f in all_files]
 
         # Optimize: Sort names and use sorted order to reduce comparisons
@@ -269,22 +286,22 @@ class StructureAnalyzer:
             )
         ]
 
-        patterns = [
-            {
-                "type": "similar_filenames",
-                "severity": "low",
-                "files": [f"{name1}.md", f"{name2}.md"],
-                "description": "Files have similar names",
-                "recommendation": "Check if content is duplicated or could be consolidated",
-            }
+        patterns: list[AntiPatternInfo] = [
+            AntiPatternInfo(
+                type="similar_filenames",
+                severity="low",
+                files=[f"{name1}.md", f"{name2}.md"],
+                description="Files have similar names",
+                recommendation="Check if content is duplicated or could be consolidated",
+            )
             for name1, name2 in similar_names
         ]
 
         return patterns
 
     def _sort_patterns_by_severity(
-        self, patterns: list[dict[str, object]]
-    ) -> list[dict[str, object]]:
+        self, patterns: list[AntiPatternInfo]
+    ) -> list[AntiPatternInfo]:
         """
         Sort anti-patterns by severity (high > medium > low).
 
@@ -296,24 +313,23 @@ class StructureAnalyzer:
         """
         severity_order = {"high": 0, "medium": 1, "low": 2}
 
-        def get_severity_order(pattern: dict[str, object]) -> int:
+        def get_severity_order(pattern: AntiPatternInfo) -> int:
             """Extract severity order for sorting."""
-            severity = pattern.get("severity", "low")
-            if isinstance(severity, str):
-                return severity_order.get(severity, 2)
-            return 2
+            return severity_order.get(pattern.severity, 2)
 
         sorted_patterns = patterns.copy()
         sorted_patterns.sort(key=get_severity_order)
         return sorted_patterns
 
-    async def detect_anti_patterns(self) -> list[dict[str, object]]:
+    async def detect_anti_patterns(self) -> list[AntiPatternInfo]:
         """
         Detect organizational anti-patterns.
 
         Returns:
             List of detected anti-patterns with details
         """
+        from cortex.analysis.models import AntiPatternInfo
+
         memory_bank_dir = get_cortex_path(
             self.project_root, CortexResourceType.MEMORY_BANK
         )
@@ -321,7 +337,7 @@ class StructureAnalyzer:
 
         graph = self._build_dependency_graph()
 
-        anti_patterns: list[dict[str, object]] = []
+        anti_patterns: list[AntiPatternInfo] = []
         anti_patterns.extend(self._detect_oversized_files(all_files))
         anti_patterns.extend(self._detect_orphaned_files(all_files, graph))
         anti_patterns.extend(self._detect_excessive_dependencies(graph))
@@ -330,16 +346,16 @@ class StructureAnalyzer:
 
         return self._sort_patterns_by_severity(anti_patterns)
 
-    async def measure_complexity_metrics(self) -> dict[str, object]:
+    async def measure_complexity_metrics(self) -> ComplexityAnalysisResult:
         """
         Measure structural complexity metrics.
 
         Returns:
-            Dictionary with complexity metrics
+            ComplexityAnalysisResult model with complexity metrics
         """
         graph = self._build_complexity_graph()
         if not graph:
-            return {"status": "no_files", "metrics": {}}
+            return ComplexityAnalysisResult(status="no_files")
 
         depth_map, max_depth = self._calculate_dependency_depths(graph)
         edge_count, node_count, cyclomatic_complexity, avg_dependencies = (
@@ -349,25 +365,60 @@ class StructureAnalyzer:
             self._calculate_fan_metrics(graph)
         )
         hotspots = self._identify_complexity_hotspots(graph, depth_map, fan_in, fan_out)
+        metrics = self._build_complexity_metrics(
+            max_depth,
+            cyclomatic_complexity,
+            avg_dependencies,
+            max_fan_in,
+            max_fan_out,
+            avg_fan_in,
+            avg_fan_out,
+            edge_count,
+            node_count,
+        )
+        assessment = self._assess_complexity_model(
+            max_depth, cyclomatic_complexity, avg_dependencies
+        )
+        return self._build_complexity_result(metrics, hotspots, assessment)
 
-        return {
-            "status": "analyzed",
-            "metrics": {
-                "max_dependency_depth": max_depth,
-                "cyclomatic_complexity": cyclomatic_complexity,
-                "avg_dependencies_per_file": round(avg_dependencies, 2),
-                "max_fan_in": max_fan_in,
-                "max_fan_out": max_fan_out,
-                "avg_fan_in": round(avg_fan_in, 2),
-                "avg_fan_out": round(avg_fan_out, 2),
-                "total_edges": edge_count,
-                "total_nodes": node_count,
-            },
-            "complexity_hotspots": hotspots[:10],
-            "assessment": self.assess_complexity(
-                max_depth, cyclomatic_complexity, avg_dependencies
-            ),
-        }
+    def _build_complexity_result(
+        self,
+        metrics: ComplexityMetrics,
+        hotspots: list[ComplexityHotspot],
+        assessment: ComplexityAssessment,
+    ) -> ComplexityAnalysisResult:
+        """Build complexity analysis result."""
+        return ComplexityAnalysisResult(
+            status="analyzed",
+            metrics=metrics,
+            complexity_hotspots=hotspots[:10],
+            assessment=assessment,
+        )
+
+    def _build_complexity_metrics(
+        self,
+        max_depth: int,
+        cyclomatic_complexity: float,
+        avg_dependencies: float,
+        max_fan_in: int,
+        max_fan_out: int,
+        avg_fan_in: float,
+        avg_fan_out: float,
+        edge_count: int,
+        node_count: int,
+    ) -> ComplexityMetrics:
+        """Build ComplexityMetrics from calculated values."""
+        return ComplexityMetrics(
+            max_dependency_depth=max_depth,
+            cyclomatic_complexity=cyclomatic_complexity,
+            avg_dependencies_per_file=round(avg_dependencies, 2),
+            max_fan_in=max_fan_in,
+            max_fan_out=max_fan_out,
+            avg_fan_in=round(avg_fan_in, 2),
+            avg_fan_out=round(avg_fan_out, 2),
+            total_edges=edge_count,
+            total_nodes=node_count,
+        )
 
     def _build_complexity_graph(self) -> dict[str, dict[str, list[str]]]:
         """Build graph from dependency graph for complexity analysis.
@@ -473,7 +524,7 @@ class StructureAnalyzer:
         depth_map: dict[str, int],
         fan_in: dict[str, int],
         fan_out: dict[str, int],
-    ) -> list[dict[str, object]]:
+    ) -> list[ComplexityHotspot]:
         """Identify complexity hotspots.
 
         Args:
@@ -483,16 +534,16 @@ class StructureAnalyzer:
             fan_out: Map of file names to fan-out counts
 
         Returns:
-            List of complexity hotspot dictionaries, sorted by score
+            List of ComplexityHotspot models, sorted by score
         """
-        hotspots: list[dict[str, object]] = [
-            {
-                "file": file_name,
-                "complexity_score": complexity_score,
-                "depth": depth_map.get(file_name, 0),
-                "fan_in": fan_in.get(file_name, 0),
-                "fan_out": fan_out.get(file_name, 0),
-            }
+        hotspots: list[ComplexityHotspot] = [
+            ComplexityHotspot(
+                file=file_name,
+                score=float(complexity_score),
+                depth=depth_map.get(file_name, 0),
+                fan_in=fan_in.get(file_name, 0),
+                fan_out=fan_out.get(file_name, 0),
+            )
             for file_name in graph.keys()
             if (
                 complexity_score := (
@@ -504,17 +555,12 @@ class StructureAnalyzer:
             > 20
         ]
 
-        def get_complexity_score(hotspot: dict[str, object]) -> int:
-            """Extract complexity score for sorting."""
-            score = hotspot.get("complexity_score", 0)
-            return int(score) if isinstance(score, (int, float)) else 0
-
-        hotspots.sort(key=get_complexity_score, reverse=True)
+        hotspots.sort(key=lambda h: h.score, reverse=True)
         return hotspots
 
-    def assess_complexity(
+    def _assess_complexity_model(
         self, max_depth: int, cyclomatic: int, avg_deps: float
-    ) -> dict[str, object]:
+    ) -> ComplexityAssessment:
         """
         Assess overall complexity and provide recommendations.
 
@@ -524,7 +570,7 @@ class StructureAnalyzer:
             avg_deps: Average dependencies per file
 
         Returns:
-            Assessment with score and recommendations
+            ComplexityAssessment model with score and recommendations
         """
         issues: list[str] = []
         score = 100  # Start with perfect score
@@ -538,15 +584,23 @@ class StructureAnalyzer:
             max_depth, cyclomatic, avg_deps
         )
 
-        return {
-            "score": score,
-            "grade": grade,
-            "status": status,
-            "issues": issues if issues else ["No major issues detected"],
-            "recommendations": (
+        return ComplexityAssessment(
+            score=score,
+            grade=grade,
+            status=status,
+            issues=issues if issues else ["No major issues detected"],
+            recommendations=(
                 recommendations if recommendations else ["Structure looks good"]
             ),
-        }
+        )
+
+    def assess_complexity(
+        self, max_depth: int, cyclomatic: int, avg_deps: float
+    ) -> ComplexityAssessment:
+        """Assess complexity and return a typed model."""
+        return self._assess_complexity_model(
+            max_depth=max_depth, cyclomatic=cyclomatic, avg_deps=avg_deps
+        )
 
     def _assess_depth_complexity(
         self, max_depth: int, score: int, issues: list[str]
@@ -654,7 +708,7 @@ class StructureAnalyzer:
 
     async def find_dependency_chains(
         self, max_chain_length: int = 10
-    ) -> list[dict[str, object]]:
+    ) -> list[ModelDict]:
         """
         Find long dependency chains.
 
@@ -671,7 +725,7 @@ class StructureAnalyzer:
 
     def _find_all_chains(
         self, graph: dict[str, dict[str, list[str]]], max_chain_length: int
-    ) -> list[dict[str, object]]:
+    ) -> list[ModelDict]:
         """Find all dependency chains in the graph.
 
         Args:
@@ -681,7 +735,7 @@ class StructureAnalyzer:
         Returns:
             List of found chains
         """
-        chains: list[dict[str, object]] = []
+        chains: list[ModelDict] = []
 
         def find_chains_from_file(
             start_file: str, current_path: list[str], visited: set[str]
@@ -710,9 +764,7 @@ class StructureAnalyzer:
 
         return chains
 
-    def _deduplicate_and_sort_chains(
-        self, chains: list[dict[str, object]]
-    ) -> list[dict[str, object]]:
+    def _deduplicate_and_sort_chains(self, chains: list[ModelDict]) -> list[ModelDict]:
         """Remove duplicate chains and sort by length.
 
         Args:
@@ -723,99 +775,89 @@ class StructureAnalyzer:
         """
         seen: set[tuple[str, ...]] = set()
 
-        def _is_unique_chain(chain: dict[str, object]) -> bool:
+        def _is_unique_chain(chain: ModelDict) -> bool:
             """Check if chain is unique and add to seen set."""
-            chain_list_raw = chain.get("chain", [])
-            if not isinstance(chain_list_raw, list):
+            chain_list = chain.get("chain", [])
+            if not isinstance(chain_list, list):
                 return False
-
-            chain_list: list[str] = [
-                str(part)
-                for part in cast(list[object], chain_list_raw)
-                if part is not None
+            chain_list_values = cast(list[JsonValue], chain_list)
+            chain_items = [
+                str(item)
+                for item in chain_list_values
+                if isinstance(item, (str, int, float))
             ]
-            chain_key = tuple(chain_list)
+            chain_key = tuple(chain_items)
             if chain_key and chain_key not in seen:
                 seen.add(chain_key)
                 return True
             return False
 
-        unique_chains: list[dict[str, object]] = [
+        unique_chains: list[ModelDict] = [
             chain for chain in chains if _is_unique_chain(chain)
         ]
 
-        def get_chain_length(chain: dict[str, object]) -> int:
-            """Extract chain length for sorting."""
-            length = chain.get("length", 0)
-            return int(length) if isinstance(length, (int, float)) else 0
+        def _chain_length(chain: ModelDict) -> int:
+            raw_length = chain.get("length", 0)
+            return int(raw_length) if isinstance(raw_length, (int, float, str)) else 0
 
-        unique_chains.sort(key=get_chain_length, reverse=True)
+        unique_chains.sort(key=_chain_length, reverse=True)
         return unique_chains
 
 
-def _get_size_bytes_for_sort(file_info: dict[str, object]) -> int:
-    """Extract size_bytes as int for sorting."""
-    size_raw = file_info.get("size_bytes", 0)
-    return int(size_raw) if isinstance(size_raw, (int, float)) else 0
-
-
-def _build_empty_organization_result() -> dict[str, object]:
+def _build_empty_organization_result() -> FileOrganizationResult:
     """Build result for empty memory bank.
 
     Returns:
-        Empty organization result dictionary
+        Empty organization result model
     """
-    return {
-        "status": "empty",
-        "file_count": 0,
-        "issues": ["No files found in memory bank"],
-    }
+    return FileOrganizationResult(
+        status="empty",
+        file_count=0,
+        issues=["No files found in memory bank"],
+    )
 
 
 def _build_organization_analysis_result(
     file_count: int,
     stats: dict[str, int],
-    file_sizes: list[dict[str, object]],
+    file_sizes: list[FileSizeEntry],
     issues: list[str],
-) -> dict[str, object]:
-    """Build organization analysis result dictionary.
+) -> FileOrganizationResult:
+    """Build organization analysis result model.
 
     Args:
         file_count: Total number of files
         stats: Size statistics dictionary
-        file_sizes: List of file size dictionaries
+        file_sizes: List of file size entries
         issues: List of identified issues
 
     Returns:
-        Organization analysis result dictionary
+        Organization analysis result model
     """
-    return {
-        "status": "analyzed",
-        "file_count": file_count,
-        "total_size_bytes": stats["total_size"],
-        "total_size_kb": round(stats["total_size"] / 1024, 2),
-        "avg_size_bytes": round(stats["avg_size"]),
-        "avg_size_kb": round(stats["avg_size"] / 1024, 2),
-        "max_size_bytes": stats["max_size"],
-        "min_size_bytes": stats["min_size"],
-        "largest_files": file_sizes[:5],
-        "smallest_files": file_sizes[-5:],
-        "issues": issues if issues else None,
-    }
+    return FileOrganizationResult(
+        status="analyzed",
+        file_count=file_count,
+        total_size_bytes=stats["total_size"],
+        total_size_kb=round(stats["total_size"] / 1024, 2),
+        avg_size_bytes=round(stats["avg_size"]),
+        avg_size_kb=round(stats["avg_size"] / 1024, 2),
+        max_size_bytes=stats["max_size"],
+        min_size_bytes=stats["min_size"],
+        largest_files=file_sizes[:5],
+        smallest_files=file_sizes[-5:],
+        issues=issues if issues else None,
+    )
 
 
 def _calculate_size_statistics(
-    file_sizes: list[dict[str, object]], file_count: int
+    file_sizes: list[FileSizeEntry], file_count: int
 ) -> dict[str, int]:
     """Calculate size statistics from file sizes."""
-    total_size = sum(_get_size_bytes_for_sort(f) for f in file_sizes)
+    total_size = sum(f.size_bytes for f in file_sizes)
     avg_size = total_size // file_count if file_count > 0 else 0
 
-    max_size_raw = file_sizes[0].get("size_bytes", 0) if file_sizes else 0
-    max_size = int(max_size_raw) if isinstance(max_size_raw, (int, float)) else 0
-
-    min_size_raw = file_sizes[-1].get("size_bytes", 0) if file_sizes else 0
-    min_size = int(min_size_raw) if isinstance(min_size_raw, (int, float)) else 0
+    max_size = file_sizes[0].size_bytes if file_sizes else 0
+    min_size = file_sizes[-1].size_bytes if file_sizes else 0
 
     return {
         "total_size": total_size,
@@ -825,51 +867,54 @@ def _calculate_size_statistics(
     }
 
 
-def _identify_size_issues(file_sizes: list[dict[str, object]]) -> list[str]:
+def _identify_size_issues(file_sizes: list[FileSizeEntry]) -> list[str]:
     """Identify size-related issues in files."""
     issues: list[str] = []
 
-    large_files = [f for f in file_sizes if _get_size_bytes_for_sort(f) > 50000]
+    large_files = [f for f in file_sizes if f.size_bytes > 50000]
     if large_files:
         issues.append(f"{len(large_files)} files are very large (>50KB)")
 
-    small_files = [f for f in file_sizes if _get_size_bytes_for_sort(f) < 500]
+    small_files = [f for f in file_sizes if f.size_bytes < 500]
     if small_files:
         issues.append(f"{len(small_files)} files are very small (<500 bytes)")
 
     return issues
 
 
-def _create_circular_chain_dict(
-    current_path: list[str], start_file: str
-) -> dict[str, object]:
-    """Create a circular chain dictionary.
+def _create_circular_chain_dict(current_path: list[str], start_file: str) -> ModelDict:
+    """Create a circular chain dict.
 
     Args:
         current_path: Current path in the chain
         start_file: Starting file that creates the cycle
 
     Returns:
-        Chain dictionary
+        Chain dict
     """
+    full_chain = current_path + [start_file]
+    full_chain_json = cast(list[JsonValue], full_chain)
     return {
         "type": "circular",
-        "chain": current_path + [start_file],
-        "length": len(current_path),
+        "chain": full_chain_json,
+        "length": len(full_chain),
+        "is_linear": False,
     }
 
 
-def _create_linear_chain_dict(current_path: list[str]) -> dict[str, object]:
-    """Create a linear chain dictionary.
+def _create_linear_chain_dict(current_path: list[str]) -> ModelDict:
+    """Create a linear chain dict.
 
     Args:
         current_path: Current path in the chain
 
     Returns:
-        Chain dictionary
+        Chain dict
     """
+    current_path_json = cast(list[JsonValue], current_path)
     return {
         "type": "linear",
-        "chain": current_path,
+        "chain": current_path_json,
         "length": len(current_path),
+        "is_linear": True,
     }

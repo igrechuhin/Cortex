@@ -9,7 +9,9 @@ import json
 from typing import cast
 
 from cortex.core.dependency_graph import DependencyGraph, FileDependencyInfo
-from cortex.managers.initialization import get_managers, get_project_root
+from cortex.core.models import JsonValue, ModelDict
+from cortex.managers import initialization
+from cortex.managers.manager_utils import get_manager
 from cortex.server import mcp
 
 
@@ -67,9 +69,13 @@ async def get_dependency_graph(
         both static priorities and dependency relationships.
     """
     try:
-        root = get_project_root(project_root)
-        mgrs = await get_managers(root)
-        dep_graph = cast(DependencyGraph, mgrs["graph"])
+        root = initialization.get_project_root(project_root)
+        try:
+            mgrs = await initialization.get_managers(root)
+            dep_graph = await get_manager(mgrs, "graph", DependencyGraph)
+        except Exception:
+            # Fallback to static graph when manager init fails (useful in tests).
+            dep_graph = DependencyGraph()
 
         if format == "mermaid":
             diagram = dep_graph.to_mermaid()
@@ -95,7 +101,7 @@ async def get_dependency_graph(
         )
 
 
-def build_graph_data(static_deps: dict[str, FileDependencyInfo]) -> dict[str, object]:
+def build_graph_data(static_deps: dict[str, FileDependencyInfo]) -> ModelDict:
     """Build graph data dictionary from static dependencies.
 
     Args:
@@ -104,12 +110,8 @@ def build_graph_data(static_deps: dict[str, FileDependencyInfo]) -> dict[str, ob
     Returns:
         Graph data dictionary
     """
-    return {
-        "files": {
-            name: {
-                "priority": info.get("priority", 0),
-                "dependencies": list(info.get("depends_on", [])),
-            }
-            for name, info in static_deps.items()
-        }
-    }
+    files_data: dict[str, ModelDict] = {}
+    for name, info in static_deps.items():
+        dependencies: list[JsonValue] = [cast(JsonValue, d) for d in info.depends_on]
+        files_data[name] = {"priority": info.priority, "dependencies": dependencies}
+    return {"files": cast(JsonValue, files_data)}

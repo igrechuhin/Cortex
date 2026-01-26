@@ -22,15 +22,17 @@ Design principles:
 - Documentation: All fields have descriptions for schema generation
 """
 
-from __future__ import annotations
-
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.core.models import HealthMetrics, IndexStats
+from cortex.core.file_system import FileSystemManager
+from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import HealthMetrics, IndexStats, JsonDict
+from cortex.core.token_counter import TokenCounter
+from cortex.core.version_manager import VersionManager
 
-# Re-export ManagersDict from managers.types for backward compatibility
+# Re-export ManagersDict for convenience
 from cortex.managers.types import ManagersDict
 from cortex.refactoring.models import RefactoringImpactMetrics
 from cortex.validation.models import (
@@ -64,7 +66,10 @@ __all__ = ["ManagersDict"]
 # 4. This is a serialization boundary where `object` is acceptable
 ConfigValuePrimitive = str | int | float | bool | None
 ConfigValueList = list[str] | list[int] | list[float] | list[bool]
-ConfigValueDict = dict[str, object]  # Supports arbitrary nesting
+# ConfigValueDict replaced with JsonDict for type safety
+# ConfigValueDict replaced with JsonDict for type safety
+# Note: JsonDict supports arbitrary nesting via extra="allow"
+ConfigValueDict = JsonDict
 ConfigValue = ConfigValuePrimitive | ConfigValueList | ConfigValueDict
 
 
@@ -106,10 +111,6 @@ class ToolResultBase(StrictBaseModel):
     - Enum values used directly (use_enum_values = True)
     """
 
-    status: Literal["success", "error", "warning"] = Field(
-        ..., description="Operation status"
-    )
-
     model_config = ConfigDict(
         # Prevent extra fields to catch typos and enforce strict contracts
         extra="forbid",
@@ -134,7 +135,7 @@ class ToolResultBase(StrictBaseModel):
 class ErrorResultBase(ToolResultBase):
     """Base class for error responses."""
 
-    status: Literal["error"] = Field(default="error")  # type: ignore[assignment]
+    status: Literal["error"] = Field(default="error")
     error: str = Field(..., min_length=1, description="Error message")
     error_type: str | None = Field(
         default=None, description="Type/class name of the error"
@@ -191,7 +192,7 @@ class FileMetadata(StrictBaseModel):
 class ManageFileReadResult(ToolResultBase):
     """Result of manage_file read operation."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     file_name: str = Field(..., min_length=1, description="Name of the file")
     content: str = Field(..., description="File content")
     metadata: FileMetadata | None = Field(None, description="Optional file metadata")
@@ -200,7 +201,7 @@ class ManageFileReadResult(ToolResultBase):
 class ManageFileWriteResult(ToolResultBase):
     """Result of manage_file write operation."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     file_name: str = Field(..., min_length=1, description="Name of the file")
     message: str = Field(..., min_length=1, description="Operation message")
     snapshot_id: str | None = Field(None, description="Snapshot ID if created")
@@ -211,7 +212,7 @@ class ManageFileWriteResult(ToolResultBase):
 class ManageFileMetadataResult(ToolResultBase):
     """Result of manage_file metadata operation."""
 
-    status: Literal["success", "warning"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success", "warning"] = Field(default="success")
     file_name: str
     metadata: FileMetadata | None = None
     message: str | None = None  # Only for warning status
@@ -271,7 +272,7 @@ class SchemaValidationResult(StrictBaseModel):
 class ValidateSchemaSingleResult(ToolResultBase):
     """Result of validate schema check for single file."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     check_type: Literal["schema"] = "schema"
     file_name: str
     validation: SchemaValidationResult
@@ -280,7 +281,7 @@ class ValidateSchemaSingleResult(ToolResultBase):
 class ValidateSchemaAllResult(ToolResultBase):
     """Result of validate schema check for all files."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     check_type: Literal["schema"] = "schema"
     results: dict[str, SchemaValidationResult]
 
@@ -321,7 +322,7 @@ class DuplicationFixSuggestion(StrictBaseModel):
 class ValidateDuplicationsResult(ToolResultBase):
     """Result of validate duplications check."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     check_type: Literal["duplications"] = "duplications"
     threshold: float
     duplicates_found: int
@@ -349,7 +350,7 @@ class QualityScore(StrictBaseModel):
 class ValidateQualitySingleResult(ToolResultBase):
     """Result of validate quality check for single file."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     check_type: Literal["quality"] = "quality"
     file_name: str
     score: QualityScore
@@ -371,7 +372,7 @@ class QualityMetricsBreakdown(StrictBaseModel):
 class ValidateQualityAllResult(ToolResultBase):
     """Result of validate quality check for all files."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     check_type: Literal["quality"] = "quality"
     overall_score: float
     health_status: Literal["healthy", "good", "fair", "warning", "critical"]
@@ -394,7 +395,7 @@ class InfrastructureIssue(StrictBaseModel):
 class ValidateInfrastructureResult(ToolResultBase):
     """Result of validate infrastructure check."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     check_type: Literal["infrastructure"] = "infrastructure"
     checks_performed: dict[str, bool] = Field(default_factory=dict)
     issues_found: list[InfrastructureIssue] = Field(
@@ -427,7 +428,7 @@ class FileTimestampResult(StrictBaseModel):
 class ValidateTimestampsResult(ToolResultBase):
     """Result of validate timestamps check."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     check_type: Literal["timestamps"] = "timestamps"
     total_valid: int
     total_invalid_format: int
@@ -467,7 +468,7 @@ class RoadmapSyncSummary(StrictBaseModel):
 class ValidateRoadmapSyncResult(ToolResultBase):
     """Result of validate roadmap_sync check."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     check_type: Literal["roadmap_sync"] = "roadmap_sync"
     valid: bool
     missing_roadmap_entries: list[RoadmapEntry] = Field(
@@ -649,7 +650,7 @@ class InsightsData(StrictBaseModel):
 class AnalyzeUsagePatternsResult(ToolResultBase):
     """Result of analyze usage_patterns target."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     target: Literal["usage_patterns"] = "usage_patterns"
     time_window_days: int
     patterns: AccessFrequencyPattern
@@ -658,7 +659,7 @@ class AnalyzeUsagePatternsResult(ToolResultBase):
 class AnalyzeStructureResult(ToolResultBase):
     """Result of analyze structure target."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     target: Literal["structure"] = "structure"
     analysis: StructureAnalysis
 
@@ -666,7 +667,7 @@ class AnalyzeStructureResult(ToolResultBase):
 class AnalyzeInsightsResult(ToolResultBase):
     """Result of analyze insights target."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     target: Literal["insights"] = "insights"
     format: str
     insights: (
@@ -710,7 +711,7 @@ class ConsolidationOpportunity(StrictBaseModel):
 class SuggestRefactoringConsolidationResult(ToolResultBase):
     """Result of suggest_refactoring consolidation type."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     type: Literal["consolidation"] = "consolidation"
     min_similarity: float
     opportunities: list[ConsolidationOpportunity] = Field(
@@ -752,7 +753,7 @@ class SplitRecommendation(StrictBaseModel):
 class SuggestRefactoringSplitsResult(ToolResultBase):
     """Result of suggest_refactoring splits type."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     type: Literal["splits"] = "splits"
     size_threshold: int
     recommendations: list[SplitRecommendation] = Field(
@@ -825,7 +826,7 @@ class ReorganizationPlan(StrictBaseModel):
 class SuggestRefactoringReorganizationResult(ToolResultBase):
     """Result of suggest_refactoring reorganization type."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     type: Literal["reorganization"] = "reorganization"
     goal: str
     plan: ReorganizationPlan
@@ -834,7 +835,7 @@ class SuggestRefactoringReorganizationResult(ToolResultBase):
 class SuggestRefactoringPreviewResult(ToolResultBase):
     """Result of suggest_refactoring preview mode."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     preview_mode: bool = True
     suggestion_id: str
     message: str
@@ -865,7 +866,7 @@ SuggestRefactoringResult = (
 class LoadContextResult(ToolResultBase):
     """Result of load_context operation."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     task_description: str
     token_budget: int
     strategy: str
@@ -897,38 +898,36 @@ LoadContextResultUnion = LoadContextResult | LoadContextErrorResult
 class ConfigureViewResult(ToolResultBase):
     """Result of configure view action."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     component: Literal["validation", "optimization", "learning"]
     # Configuration can have arbitrarily nested dicts (e.g., schemas.custom_schemas,
-    # quality.weights), so we use dict[str, object] to accept any JSON structure
-    configuration: dict[str, object] = Field(default_factory=dict)
-    learned_patterns: dict[str, object] | None = None  # Only for learning component
+    # quality.weights), so we use JsonDict to accept any JSON structure
+    configuration: JsonDict = Field(default_factory=lambda: JsonDict.from_dict({}))
+    learned_patterns: JsonDict | None = None  # Only for learning component
 
 
 class ConfigureUpdateResult(ToolResultBase):
     """Result of configure update action."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     component: Literal["validation", "optimization", "learning"]
     message: str
-    # Configuration can have arbitrarily nested dicts, so we use dict[str, object]
-    configuration: dict[str, object] = Field(default_factory=dict)
+    # Configuration can have arbitrarily nested dicts, so we use JsonDict
+    configuration: JsonDict = Field(default_factory=lambda: JsonDict.from_dict({}))
     action: str | None = (
         None  # Optional action field for special operations like export_patterns
     )
-    patterns: dict[str, object] | None = (
-        None  # Optional patterns field for export_patterns
-    )
+    patterns: JsonDict | None = None  # Optional patterns field for export_patterns
 
 
 class ConfigureResetResult(ToolResultBase):
     """Result of configure reset action."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     message: str
     component: Literal["validation", "optimization", "learning"]
-    # Configuration can have arbitrarily nested dicts, so we use dict[str, object]
-    configuration: dict[str, object] = Field(default_factory=dict)
+    # Configuration can have arbitrarily nested dicts, so we use JsonDict
+    configuration: JsonDict = Field(default_factory=lambda: JsonDict.from_dict({}))
 
 
 class ConfigureErrorResult(ErrorResultBase):
@@ -999,7 +998,7 @@ class RefactoringHistory(StrictBaseModel):
 class GetMemoryBankStatsResult(ToolResultBase):
     """Result of get_memory_bank_stats operation."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     project_root: str
     summary: MemoryBankSummary
     last_updated: str | None = None
@@ -1037,7 +1036,7 @@ class VersionHistoryEntry(StrictBaseModel):
 class GetVersionHistoryResult(ToolResultBase):
     """Result of get_version_history operation."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     file_name: str
     total_versions: int
     versions: list[VersionHistoryEntry] = Field(
@@ -1076,7 +1075,7 @@ class DependencyGraphData(StrictBaseModel):
 class GetDependencyGraphJsonResult(ToolResultBase):
     """Result of get_dependency_graph operation (JSON format)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     format: Literal["json"] = "json"
     graph: DependencyGraphData
     loading_order: list[str] = Field(default_factory=list)
@@ -1085,7 +1084,7 @@ class GetDependencyGraphJsonResult(ToolResultBase):
 class GetDependencyGraphMermaidResult(ToolResultBase):
     """Result of get_dependency_graph operation (Mermaid format)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     format: Literal["mermaid"] = "mermaid"
     diagram: str
 
@@ -1120,7 +1119,7 @@ class CacheStats(StrictBaseModel):
 class ResolveTransclusionsResult(ToolResultBase):
     """Result of resolve_transclusions operation (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     file: str
     original_content: str
     resolved_content: str
@@ -1175,7 +1174,7 @@ class ValidationWarning(StrictBaseModel):
 class ValidateLinksSingleFileResult(ToolResultBase):
     """Result of validate_links operation for single file (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     mode: Literal["single_file"] = "single_file"
     file: str
     files_checked: int = 1
@@ -1190,7 +1189,7 @@ class ValidateLinksSingleFileResult(ToolResultBase):
 class ValidateLinksAllFilesResult(ToolResultBase):
     """Result of validate_links operation for all files (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     mode: Literal["all_files"] = "all_files"
     files_checked: int
     total_links: int
@@ -1253,7 +1252,7 @@ class LinkGraphSummary(StrictBaseModel):
 class GetLinkGraphJsonResult(ToolResultBase):
     """Result of get_link_graph operation in JSON format (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     format: Literal["json"] = "json"
     nodes: list[LinkGraphNode]
     edges: list[LinkGraphEdge]
@@ -1264,7 +1263,7 @@ class GetLinkGraphJsonResult(ToolResultBase):
 class GetLinkGraphMermaidResult(ToolResultBase):
     """Result of get_link_graph operation in Mermaid format (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     format: Literal["mermaid"] = "mermaid"
     diagram: str
     cycles: list[list[str]]
@@ -1301,7 +1300,7 @@ class LoadedFileInfo(StrictBaseModel):
 class LoadProgressiveContextResult(ToolResultBase):
     """Result of load_progressive_context operation (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     task_description: str
     loading_strategy: str
     token_budget: int
@@ -1350,7 +1349,7 @@ class SectionRelevanceScore(StrictBaseModel):
 class GetRelevanceScoresResult(ToolResultBase):
     """Result of get_relevance_scores operation (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     task_description: str
     files_scored: int
     file_scores: dict[str, FileRelevanceScore]
@@ -1386,7 +1385,7 @@ class SummarizationResult(StrictBaseModel):
 class SummarizeContentResult(ToolResultBase):
     """Result of summarize_content operation (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     strategy: str
     target_reduction: float
     files_summarized: int
@@ -1415,7 +1414,7 @@ SummarizeContentResultUnion = SummarizeContentResult | SummarizeContentErrorResu
 class ApplyRefactoringApproveResult(ToolResultBase):
     """Result of apply_refactoring approve action (success)."""
 
-    status: Literal["approved"] = Field(default="approved")  # type: ignore[assignment]
+    status: Literal["approved"] = Field(default="approved")
     approval_id: str
     suggestion_id: str
     auto_apply: bool
@@ -1425,7 +1424,7 @@ class ApplyRefactoringApproveResult(ToolResultBase):
 class ApplyRefactoringApplySuccessResult(ToolResultBase):
     """Result of apply_refactoring apply action (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     execution_id: str
     operations_completed: int
     snapshot_id: str | None = None
@@ -1436,7 +1435,7 @@ class ApplyRefactoringApplySuccessResult(ToolResultBase):
 class ApplyRefactoringApplyFailureResult(ToolResultBase):
     """Result of apply_refactoring apply action (validation/execution failure)."""
 
-    status: Literal["failed"] = Field(default="failed")  # type: ignore[assignment]
+    status: Literal["failed"] = Field(default="failed")
     execution_id: str
     error: str
     operations_completed: int
@@ -1446,7 +1445,7 @@ class ApplyRefactoringApplyFailureResult(ToolResultBase):
 class ApplyRefactoringRollbackSuccessResult(ToolResultBase):
     """Result of apply_refactoring rollback action (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     rollback_id: str
     execution_id: str
     files_restored: int
@@ -1458,7 +1457,7 @@ class ApplyRefactoringRollbackSuccessResult(ToolResultBase):
 class ApplyRefactoringRollbackFailureResult(ToolResultBase):
     """Result of apply_refactoring rollback action (failure)."""
 
-    status: Literal["failed"] = Field(default="failed")  # type: ignore[assignment]
+    status: Literal["failed"] = Field(default="failed")
     rollback_id: str
     error: str
 
@@ -1490,7 +1489,7 @@ ApplyRefactoringResultUnion = (
 class RollbackFileVersionResult(ToolResultBase):
     """Result of rollback_file_version operation (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     file_name: str
     rolled_back_from_version: int
     new_version: int
@@ -1577,7 +1576,7 @@ class CleanupInfo(StrictBaseModel):
 class CheckStructureHealthResult(ToolResultBase):
     """Result of check_structure_health operation (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     health: HealthInfo
     summary: str
     action_required: bool
@@ -1678,7 +1677,7 @@ class StructureInfo(StrictBaseModel):
 class GetStructureInfoResult(ToolResultBase):
     """Result of get_structure_info operation (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     structure_info: StructureInfo
     message: str
 
@@ -1710,7 +1709,7 @@ class RulesIndexResult(StrictBaseModel):
 class RulesIndexOperationResult(ToolResultBase):
     """Result of rules index operation (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     operation: Literal["index"]
     result: RulesIndexResult
 
@@ -1752,7 +1751,7 @@ class RulesContext(StrictBaseModel):
 class RulesGetRelevantResult(ToolResultBase):
     """Result of rules get_relevant operation (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     operation: Literal["get_relevant"]
     task_description: str
     max_tokens: int
@@ -1768,7 +1767,7 @@ class RulesGetRelevantResult(ToolResultBase):
 class RulesDisabledResult(ToolResultBase):
     """Result when rules indexing is disabled."""
 
-    status: Literal["disabled"] = Field(default="disabled")  # type: ignore[assignment]
+    status: Literal["disabled"] = Field(default="disabled")
     message: str
 
 
@@ -1819,7 +1818,7 @@ class CheckStats(StrictBaseModel):
 class ExecutePreCommitChecksResult(ToolResultBase):
     """Result of execute_pre_commit_checks operation (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     language: str
     checks: dict[str, CheckResult] = Field(default_factory=dict)
     stats: CheckStats
@@ -1845,7 +1844,7 @@ ExecutePreCommitChecksResultUnion = (
 class FixQualityIssuesResult(ToolResultBase):
     """Result of fix_quality_issues operation (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     errors_fixed: int
     warnings_fixed: int
     formatting_issues_fixed: int
@@ -1881,7 +1880,7 @@ FixQualityIssuesResultUnion = FixQualityIssuesResult | FixQualityIssuesErrorResu
 class CleanupMetadataIndexResult(ToolResultBase):
     """Result of cleanup_metadata_index operation (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     dry_run: bool
     stale_files_found: int
     stale_files: list[str] = Field(default_factory=list)
@@ -1915,7 +1914,7 @@ class LearningSummary(StrictBaseModel):
 class ProvideFeedbackResult(ToolResultBase):
     """Result of provide_feedback operation (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     feedback_id: str
     learning_enabled: bool
     message: str
@@ -1951,7 +1950,7 @@ class PromptInfo(StrictBaseModel):
 class GetSynapsePromptsResult(ToolResultBase):
     """Result of get_synapse_prompts operation (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     category: str | None = None
     categories: list[str] = Field(default_factory=list)
     prompts: list[PromptInfo] = Field(default_factory=lambda: list[PromptInfo]())
@@ -1969,7 +1968,7 @@ GetSynapsePromptsResultUnion = GetSynapsePromptsResult | GetSynapsePromptsErrorR
 class UpdateSynapsePromptResult(ToolResultBase):
     """Result of update_synapse_prompt operation (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     category: str
     file: str
     message: str
@@ -2013,7 +2012,7 @@ class CorruptionMatch(StrictBaseModel):
 class FixRoadmapCorruptionResult(ToolResultBase):
     """Result of fix_roadmap_corruption operation (success)."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     file_name: str
     corruption_count: int
     fixes_applied: list[CorruptionMatch] = Field(
@@ -2055,7 +2054,7 @@ class SynapseChanges(StrictBaseModel):
 class SyncSynapseResult(ToolResultBase):
     """Result of sync_synapse operation."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     pulled: bool
     pushed: bool
     changes: SynapseChanges
@@ -2100,7 +2099,7 @@ class RulesLoaded(StrictBaseModel):
 class GetSynapseRulesResult(ToolResultBase):
     """Result of get_synapse_rules operation."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     task_description: str
     context: ContextInfo
     rules_loaded: RulesLoaded
@@ -2121,7 +2120,7 @@ GetSynapseRulesResultUnion = GetSynapseRulesResult | GetSynapseRulesErrorResult
 class UpdateSynapseRuleResult(ToolResultBase):
     """Result of update_synapse_rule operation."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     category: str
     file: str
     message: str
@@ -2153,7 +2152,7 @@ class FileResult(StrictBaseModel):
 class FixMarkdownLintResult(ToolResultBase):
     """Result of markdown lint fixing operation."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     files_processed: int
     files_fixed: int
     files_unchanged: int
@@ -2178,7 +2177,7 @@ FixMarkdownLintResultUnion = FixMarkdownLintResult | FixMarkdownLintErrorResult
 class ConnectionHealthResult(ToolResultBase):
     """Result of connection health check."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     health: HealthMetrics
 
 
@@ -2233,7 +2232,7 @@ class ParsedTransclusion(StrictBaseModel):
 class ParseFileLinksResult(ToolResultBase):
     """Result of parse_file_links operation."""
 
-    status: Literal["success"] = Field(default="success")  # type: ignore[assignment]
+    status: Literal["success"] = Field(default="success")
     file: str
     summary: LinkSummary
     markdown_links: list[ParsedMarkdownLink] = Field(
@@ -2431,8 +2430,9 @@ class ContextUsageStatistics(StrictBaseModel):
     insights: ContextInsights | None = Field(
         None, description="Actionable insights derived from statistics"
     )
-    entries: list[ContextUsageEntry] = Field(  # type: ignore[reportUnknownVariableType]
-        default_factory=list, description="Individual context usage entries"
+    entries: list[ContextUsageEntry] = Field(
+        default_factory=lambda: list[ContextUsageEntry](),
+        description="Individual context usage entries",
     )
 
 
@@ -2449,4 +2449,159 @@ class SessionStats(StrictBaseModel):
     )
     task_patterns: dict[str, int] = Field(
         default_factory=dict, description="Task patterns and their counts"
+    )
+
+
+# ============================================================================
+# Cleanup Report Models (for phase8_structure.py)
+# ============================================================================
+
+
+class CleanupReport(StrictBaseModel):
+    """Complete cleanup operation report."""
+
+    dry_run: bool = Field(description="Whether this was a dry run")
+    actions_performed: list[CleanupActionResult] = Field(
+        default_factory=lambda: list[CleanupActionResult](),
+        description="List of actions performed",
+    )
+    files_modified: list[str] = Field(
+        default_factory=list, description="List of files modified"
+    )
+    recommendations: list[str] = Field(
+        default_factory=list, description="Recommendations for further cleanup"
+    )
+    post_cleanup_health: JsonDict = Field(
+        description="Health check result after cleanup"
+    )
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+
+# ============================================================================
+# Context Analysis Result Models (for context_analysis_operations.py)
+# ============================================================================
+
+
+class CurrentSessionAnalysisResult(StrictBaseModel):
+    """Result of analyzing current session's context usage."""
+
+    status: Literal["success", "no_data"] = Field(description="Analysis status")
+    session_id: str | None = Field(None, description="Current session ID")
+    current_session: JsonDict | None = Field(
+        None, description="Current session data (calls, statistics, entries)"
+    )
+    global_statistics_updated: bool | None = Field(
+        None, description="Whether global statistics were updated"
+    )
+    new_entries_added: int | None = Field(
+        None, ge=0, description="Number of new entries added"
+    )
+    total_sessions: int | None = Field(
+        None, ge=0, description="Total sessions analyzed"
+    )
+    total_entries: int | None = Field(None, ge=0, description="Total entries")
+    insights: JsonDict | None = Field(None, description="Context insights")
+    message: str | None = Field(None, description="Status message for no_data case")
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+
+class SessionLogsAnalysisResult(StrictBaseModel):
+    """Result of analyzing session logs."""
+
+    status: Literal["success", "no_data"] = Field(description="Analysis status")
+    new_sessions_analyzed: int | None = Field(
+        None, ge=0, description="Number of new sessions analyzed"
+    )
+    new_entries_added: int | None = Field(
+        None, ge=0, description="Number of new entries added"
+    )
+    total_sessions: int | None = Field(
+        None, ge=0, description="Total sessions analyzed"
+    )
+    total_entries: int | None = Field(None, ge=0, description="Total entries")
+    statistics: JsonDict | None = Field(
+        None, description="Aggregated statistics (avg_token_utilization, etc.)"
+    )
+    insights: JsonDict | None = Field(None, description="Context insights")
+    message: str | None = Field(None, description="Status message for no_data case")
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+
+class ContextStatisticsResult(StrictBaseModel):
+    """Result of getting context usage statistics."""
+
+    status: Literal["success", "no_data"] = Field(description="Status")
+    last_updated: str | None = Field(None, description="Last update timestamp")
+    total_sessions: int | None = Field(None, ge=0, description="Total sessions")
+    total_calls: int | None = Field(None, ge=0, description="Total load_context calls")
+    statistics: JsonDict | None = Field(
+        None, description="Aggregated statistics (avg_token_utilization, etc.)"
+    )
+    insights: JsonDict | None = Field(None, description="Context insights")
+    recent_entries: list[JsonDict] | None = Field(
+        None, description="Last 10 context usage entries"
+    )
+    message: str | None = Field(None, description="Status message for no_data case")
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+
+# ============================================================================
+# Rules Execution Models (for synapse_tools.py)
+# ============================================================================
+
+
+class RulesExecutionResult(StrictBaseModel):
+    """Result of executing rules with context."""
+
+    status: Literal["success", "error"] = Field(description="Execution status")
+    task_description: str | None = Field(None, description="Task description")
+    context: JsonDict | None = Field(None, description="Context information")
+    rules_loaded: JsonDict | None = Field(
+        None, description="Rules loaded (generic, language, local)"
+    )
+    total_tokens: int | None = Field(None, ge=0, description="Total tokens used")
+    token_budget: int | None = Field(None, ge=0, description="Token budget")
+    source: str | None = Field(None, description="Rules source")
+    error: str | None = Field(None, description="Error message if status is error")
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+
+# ============================================================================
+# Learned Patterns Models (for configuration_operations.py)
+# ============================================================================
+
+
+class LearnedPatternsResult(StrictBaseModel):
+    """Result containing learned patterns dictionary."""
+
+    patterns: dict[str, JsonDict] = Field(
+        default_factory=dict, description="Dictionary of pattern_id -> pattern data"
+    )
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+
+# ============================================================================
+# Manager Initialization Models (for file_operations.py)
+# ============================================================================
+
+
+class ManagersInitResult(StrictBaseModel):
+    """Result of initializing managers for file operations."""
+
+    root: str = Field(description="Project root path")
+    fs: FileSystemManager = Field(description="FileSystemManager instance")
+    index: MetadataIndex = Field(description="MetadataIndex instance")
+    tokens: TokenCounter = Field(description="TokenCounter instance")
+    versions: VersionManager = Field(description="VersionManager instance")
+
+    model_config = ConfigDict(
+        extra="forbid",
+        validate_assignment=True,
+        arbitrary_types_allowed=True,
     )

@@ -13,6 +13,7 @@ from typing import cast
 from cortex.core.mcp_failure_handler import (
     MCPToolFailureHandler,
 )
+from cortex.core.models import JsonValue, ModelDict
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ def _is_test_context() -> bool:
 
 
 def validate_mcp_tool_response(
-    response: object,
+    response: JsonValue,
     tool_name: str,
     step_name: str,
     project_root: str | None = None,
@@ -55,7 +56,7 @@ def validate_mcp_tool_response(
 
 
 def _validate_none_response(
-    response: object, tool_name: str, step_name: str, handler: MCPToolFailureHandler
+    response: JsonValue, tool_name: str, step_name: str, handler: MCPToolFailureHandler
 ) -> None:
     """Validate response is not None."""
     if response is None:
@@ -64,7 +65,7 @@ def _validate_none_response(
 
 
 def _validate_string_response(
-    response: object, tool_name: str, step_name: str, handler: MCPToolFailureHandler
+    response: JsonValue, tool_name: str, step_name: str, handler: MCPToolFailureHandler
 ) -> None:
     """Validate response is not a JSON string (double-encoding)."""
     if not isinstance(response, str):
@@ -82,11 +83,11 @@ def _validate_string_response(
         pass  # Not JSON, might be valid string response
 
 
-def _validate_dict_response(response: object, tool_name: str) -> None:
+def _validate_dict_response(response: JsonValue, tool_name: str) -> None:
     """Validate dict response has expected structure."""
     if not isinstance(response, dict):
         return
-    response_dict = cast(dict[str, object], response)
+    response_dict = cast(ModelDict, response)
     if "status" not in response_dict:
         response_preview = str(response_dict)[:200]
         logger.warning(

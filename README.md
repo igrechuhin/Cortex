@@ -240,6 +240,11 @@ Cortex stores all data in `.cortex/` directory:
 - `.cortex/plans/` - Development plans and roadmaps
 - `.cortex/config/` - Configuration files
 - `.cortex/history/` - Version history
+- `.cortex/.cache/` - Unified cache directory for all Cortex tools
+  - `.cortex/.cache/summaries/` - Summary cache files
+  - `.cortex/.cache/relevance/` - Future: Relevance scoring cache
+  - `.cortex/.cache/patterns/` - Future: Pattern analysis cache
+  - `.cortex/.cache/refactoring/` - Future: Refactoring suggestions cache
 - `.cortex/index.json` - Metadata index
 
 **IDE Integration**: `.cursor/` - Contains symlinks for IDE compatibility

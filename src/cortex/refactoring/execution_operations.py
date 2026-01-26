@@ -5,12 +5,12 @@ This module contains the execution logic for different types of refactoring oper
 
 from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import cast
 
 from cortex.core.exceptions import ValidationError
 from cortex.core.file_system import FileSystemManager
+from cortex.core.models import SectionMetadata
 
-from .execution_validator import RefactoringOperation
+from .models import RefactoringOperationModel
 
 
 class ExecutionOperations:
@@ -33,7 +33,7 @@ class ExecutionOperations:
 
         # Operation dispatch table for reduced complexity
         self._operation_handlers: dict[
-            str, Callable[[RefactoringOperation], Awaitable[None]]
+            str, Callable[[RefactoringOperationModel], Awaitable[None]]
         ] = {
             "consolidate": self.execute_consolidation,
             "split": self.execute_split,
@@ -44,7 +44,7 @@ class ExecutionOperations:
             "modify": self._execute_modify,
         }
 
-    async def execute_operation(self, operation: RefactoringOperation) -> None:
+    async def execute_operation(self, operation: RefactoringOperationModel) -> None:
         """Execute a single refactoring operation.
 
         Uses dispatch table to route to appropriate handler based on operation type.
@@ -66,7 +66,7 @@ class ExecutionOperations:
 
         await handler(operation)
 
-    async def execute_consolidation(self, operation: RefactoringOperation) -> None:
+    async def execute_consolidation(self, operation: RefactoringOperationModel) -> None:
         """Execute content consolidation."""
         extraction_target, files, sections = self._validate_consolidation_params(
             operation
@@ -80,39 +80,30 @@ class ExecutionOperations:
         )
 
     def _validate_consolidation_params(
-        self, operation: RefactoringOperation
-    ) -> tuple[str, list[str], list[dict[str, object]]]:
+        self, operation: RefactoringOperationModel
+    ) -> tuple[str, list[str], list[str]]:
         """Validate and extract consolidation parameters."""
-        extraction_target_raw = operation.parameters.get("extraction_target")
-        if not isinstance(extraction_target_raw, str):
-            raise ValidationError("extraction_target must be a string")
-        extraction_target: str = extraction_target_raw
+        extraction_target = operation.parameters.destination_file or ""
 
-        files_raw = operation.parameters.get("files", [])
-        if not isinstance(files_raw, list):
-            raise ValidationError("files must be a list")
-        files_list: list[object] = cast(list[object], files_raw)
-        files: list[str] = [str(f) for f in files_list if isinstance(f, str)]
+        files = []
+        if operation.parameters.source_file:
+            files = [operation.parameters.source_file]
 
-        sections_raw = operation.parameters.get("sections", [])
-        if not isinstance(sections_raw, list):
-            raise ValidationError("sections must be a list")
-        sections_list: list[object] = cast(list[object], sections_raw)
-        sections: list[dict[str, object]] = [
-            cast(dict[str, object], s) for s in sections_list if isinstance(s, dict)
-        ]
+        sections = []
+        if operation.parameters.sections:
+            sections = operation.parameters.sections
 
         return extraction_target, files, sections
 
     def _build_consolidated_content(
-        self, extraction_target: str, sections: list[dict[str, object]]
+        self, extraction_target: str, sections: list[str]
     ) -> str:
         """Build consolidated content from sections."""
         consolidated_content = f"# {extraction_target}\n\n"
+        # Sections are now just section names, not dicts with content
+        # Content will be extracted from files during execution
         for section in sections:
-            content_raw = section.get("content", "")
-            content_str = str(content_raw) if content_raw is not None else ""
-            consolidated_content += f"{content_str}\n\n"
+            consolidated_content += f"## {section}\n\n"
         return consolidated_content
 
     async def _write_consolidated_file(
@@ -126,7 +117,7 @@ class ExecutionOperations:
         self,
         extraction_target: str,
         files: list[str],
-        sections: list[dict[str, object]],
+        sections: list[str],
     ) -> None:
         """Update source files to use transclusion syntax."""
         for file_path in files:
@@ -139,15 +130,9 @@ class ExecutionOperations:
 
             parsed_sections = self.fs_manager.parse_sections(content)
 
-            for section in sections:
-                section_file = section.get("file")
-                if section_file != file_path:
-                    continue
-
-                section_title_raw = section.get("section", "")
-                section_title = (
-                    str(section_title_raw) if section_title_raw is not None else ""
-                )
+            for section_title in sections:
+                # For consolidation, sections are just section names
+                # All sections in the list belong to the current file
                 transclusion = f"{{{{include: {extraction_target}#{section_title}}}}}"
 
                 content = self._replace_section_with_transclusion(
@@ -159,7 +144,7 @@ class ExecutionOperations:
     def _replace_section_with_transclusion(
         self,
         content: str,
-        parsed_sections: list[dict[str, str | int]],
+        parsed_sections: list[SectionMetadata],
         section_title: str,
         transclusion: str,
     ) -> str:
@@ -177,15 +162,14 @@ class ExecutionOperations:
         lines = content.split("\n")
 
         for section in parsed_sections:
-            heading = str(section.get("heading", ""))
-            heading_title = heading.lstrip("#").strip()
+            heading_title = section.title.lstrip("#").strip()
 
             if heading_title == section_title:
-                line_start = int(section.get("line_start", 0))
-                line_end = int(section.get("line_end", 0))
+                line_start = section.line_start
+                line_end = section.line_end
 
                 if line_start > 0 and line_end > line_start:
-                    before = lines[:line_start]
+                    before = lines[: line_start - 1]
                     replacement = [lines[line_start - 1], "", transclusion, ""]
                     after = lines[line_end:] if line_end < len(lines) else []
 
@@ -194,24 +178,15 @@ class ExecutionOperations:
 
         return "\n".join(lines)
 
-    async def execute_split(self, operation: RefactoringOperation) -> None:
+    async def execute_split(self, operation: RefactoringOperationModel) -> None:
         """Execute file split."""
         original_file = self.memory_bank_dir / operation.target_file
-        new_file_name_raw = operation.parameters.get("new_file")
-        if not isinstance(new_file_name_raw, str):
-            raise ValidationError("new_file parameter must be a string")
-        new_file_name: str = new_file_name_raw
+        new_file_name = operation.parameters.destination_file or ""
+        if not new_file_name:
+            raise ValidationError("destination_file parameter must be provided")
 
-        sections_raw = operation.parameters.get("sections", [])
-        if not isinstance(sections_raw, list):
-            sections: list[str] = []
-        else:
-            sections_list: list[object] = cast(list[object], sections_raw)
-            sections = [
-                str(s) for s in sections_list if isinstance(s, (str, int, float))
-            ]
-        content_raw = operation.parameters.get("content", "")
-        content = str(content_raw) if content_raw is not None else ""
+        sections = operation.parameters.sections or []
+        content = operation.parameters.content or ""
 
         new_file_path = self.memory_bank_dir / new_file_name
         _ = await self.fs_manager.write_file(new_file_path, content)
@@ -231,7 +206,7 @@ class ExecutionOperations:
     def _remove_sections(
         self,
         content: str,
-        parsed_sections: list[dict[str, str | int]],
+        parsed_sections: list[SectionMetadata],
         section_titles: list[str],
     ) -> str:
         """Remove specified sections from content.
@@ -248,14 +223,13 @@ class ExecutionOperations:
         lines_to_remove: set[int] = set()
 
         for section in parsed_sections:
-            heading = str(section.get("heading", ""))
-            heading_title = heading.lstrip("#").strip()
+            heading_title = section.title.lstrip("#").strip()
 
             if heading_title not in section_titles:
                 continue
 
-            line_start = int(section.get("line_start", 0))
-            line_end = int(section.get("line_end", 0))
+            line_start = section.line_start
+            line_end = section.line_end
 
             if line_start <= 0 or line_end < line_start:
                 continue
@@ -269,42 +243,40 @@ class ExecutionOperations:
 
         return "\n".join(remaining_lines)
 
-    async def _execute_move(self, operation: RefactoringOperation) -> None:
+    async def _execute_move(self, operation: RefactoringOperationModel) -> None:
         """Execute file move."""
         source = self.memory_bank_dir / operation.target_file
-        destination_raw = operation.parameters.get("destination")
-        if not isinstance(destination_raw, str):
-            raise ValidationError("destination parameter must be a string")
-        destination: Path = self.memory_bank_dir / destination_raw
+        destination_file = operation.parameters.destination_file
+        if not destination_file:
+            raise ValidationError("destination_file parameter must be provided")
+        destination: Path = self.memory_bank_dir / destination_file
 
         if source.exists():
             destination.parent.mkdir(parents=True, exist_ok=True)
             _ = source.rename(destination)
 
-    async def _execute_rename(self, operation: RefactoringOperation) -> None:
+    async def _execute_rename(self, operation: RefactoringOperationModel) -> None:
         """Execute file rename."""
         old_path = self.memory_bank_dir / operation.target_file
-        new_name_raw = operation.parameters.get("new_name")
-        if not isinstance(new_name_raw, str):
-            raise ValidationError("new_name parameter must be a string")
-        new_name: str = new_name_raw
+        new_name = operation.parameters.new_name
+        if not new_name:
+            raise ValidationError("new_name parameter must be provided")
         new_path: Path = old_path.parent / new_name
 
         if old_path.exists():
             _ = old_path.rename(new_path)
 
-    async def execute_create(self, operation: RefactoringOperation) -> None:
+    async def execute_create(self, operation: RefactoringOperationModel) -> None:
         """Execute file/directory creation."""
         target = self.memory_bank_dir / operation.target_file
 
-        if operation.parameters.get("type") == "directory":
+        if operation.parameters.is_directory:
             target.mkdir(parents=True, exist_ok=True)
         else:
-            content_raw = operation.parameters.get("content", "")
-            content = str(content_raw) if content_raw is not None else ""
+            content = operation.parameters.content or ""
             _ = await self.fs_manager.write_file(target, content)
 
-    async def _execute_delete(self, operation: RefactoringOperation) -> None:
+    async def _execute_delete(self, operation: RefactoringOperationModel) -> None:
         """Execute file deletion."""
         target = self.memory_bank_dir / operation.target_file
 
@@ -316,10 +288,8 @@ class ExecutionOperations:
 
                 shutil.rmtree(target)
 
-    async def _execute_modify(self, operation: RefactoringOperation) -> None:
+    async def _execute_modify(self, operation: RefactoringOperationModel) -> None:
         """Execute file modification."""
         target = self.memory_bank_dir / operation.target_file
-        content_raw = operation.parameters.get("content", "")
-        content = str(content_raw) if content_raw is not None else ""
-
+        content = operation.parameters.content or ""
         _ = await self.fs_manager.write_file(target, content)

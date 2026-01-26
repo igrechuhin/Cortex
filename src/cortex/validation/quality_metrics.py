@@ -7,7 +7,7 @@ Memory Bank files to assess overall data quality.
 
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, cast
+from typing import Literal, cast
 
 from cortex.core.constants import (
     QUALITY_WEIGHT_COMPLETENESS,
@@ -16,11 +16,68 @@ from cortex.core.constants import (
     QUALITY_WEIGHT_FRESHNESS,
     QUALITY_WEIGHT_STRUCTURE,
 )
+from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import DetailedFileMetadata, ModelDict
 
+from .models import (
+    CategoryBreakdown,
+    DuplicationDataModel,
+    FileMetadataForQuality,
+    FileQualityScore,
+    LinkValidationDataModel,
+    QualityScoreResult,
+)
 from .schema_validator import SchemaValidator
 
-if TYPE_CHECKING:
-    from cortex.core.metadata_index import MetadataIndex
+
+def _coerce_file_metadata(
+    metadata: DetailedFileMetadata | FileMetadataForQuality | ModelDict,
+) -> FileMetadataForQuality:
+    if isinstance(metadata, FileMetadataForQuality):
+        return metadata
+    if isinstance(metadata, DetailedFileMetadata):
+        return FileMetadataForQuality(
+            last_modified=metadata.last_modified,
+            token_count=metadata.token_count,
+            size_bytes=metadata.size_bytes,
+            read_count=metadata.read_count,
+            write_count=metadata.write_count,
+        )
+    return FileMetadataForQuality.model_validate(metadata)
+
+
+def _coerce_files_metadata_map(
+    files_metadata: dict[
+        str, DetailedFileMetadata | FileMetadataForQuality | ModelDict
+    ],
+) -> dict[str, FileMetadataForQuality]:
+    coerced: dict[str, FileMetadataForQuality] = {}
+    for file_name, meta in files_metadata.items():
+        coerced[file_name] = _coerce_file_metadata(meta)
+    return coerced
+
+
+def _coerce_duplication_data(
+    duplication_data: DuplicationDataModel | ModelDict,
+) -> DuplicationDataModel:
+    if isinstance(duplication_data, DuplicationDataModel):
+        return duplication_data
+    dup_count_raw = duplication_data.get("duplicates_found", 0)
+    dup_count = int(dup_count_raw) if isinstance(dup_count_raw, (int, float)) else 0
+    return DuplicationDataModel(duplicates_found=dup_count)
+
+
+def _coerce_link_validation_data(
+    link_validation: LinkValidationDataModel | ModelDict | None,
+) -> LinkValidationDataModel | None:
+    if link_validation is None or isinstance(link_validation, LinkValidationDataModel):
+        return link_validation
+    broken_raw = link_validation.get("broken_links", 0)
+    if isinstance(broken_raw, list):
+        broken = len(broken_raw)
+    else:
+        broken = int(broken_raw) if isinstance(broken_raw, (int, float)) else 0
+    return LinkValidationDataModel(broken_links=broken)
 
 
 class QualityMetrics:
@@ -29,7 +86,7 @@ class QualityMetrics:
     def __init__(
         self,
         schema_validator: SchemaValidator,
-        metadata_index: "MetadataIndex | None" = None,
+        metadata_index: MetadataIndex | None = None,
     ):
         """
         Initialize with schema validator and optional metadata index.
@@ -46,10 +103,12 @@ class QualityMetrics:
     async def calculate_overall_score(
         self,
         files_content: dict[str, str],
-        files_metadata: dict[str, dict[str, object]],
-        duplication_data: dict[str, object],
-        link_validation: dict[str, object] | None = None,
-    ) -> dict[str, object]:
+        files_metadata: dict[
+            str, DetailedFileMetadata | FileMetadataForQuality | ModelDict
+        ],
+        duplication_data: DuplicationDataModel | ModelDict,
+        link_validation: LinkValidationDataModel | ModelDict | None = None,
+    ) -> QualityScoreResult:
         """
         Calculate overall Memory Bank quality score.
 
@@ -69,12 +128,16 @@ class QualityMetrics:
                 "recommendations": [...]
             }
         """
+        metadata_map = _coerce_files_metadata_map(files_metadata)
+        duplication = _coerce_duplication_data(duplication_data)
+        link_validation_model = _coerce_link_validation_data(link_validation)
+
         category_scores = await self._calculate_category_scores(
-            files_content, files_metadata, duplication_data, link_validation
+            files_content, metadata_map, duplication, link_validation_model
         )
         overall_score = self._calculate_weighted_score(category_scores)
         grade, status = self._determine_grade_and_status(overall_score)
-        issues = self._collect_all_issues(category_scores, duplication_data)
+        issues = self._collect_all_issues(category_scores, duplication)
         recommendations = self._generate_all_recommendations(category_scores, issues)
 
         return self._build_score_result(
@@ -82,8 +145,11 @@ class QualityMetrics:
         )
 
     async def calculate_file_score(
-        self, file_name: str, content: str, metadata: dict[str, object]
-    ) -> dict[str, object]:
+        self,
+        file_name: str,
+        content: str,
+        metadata: DetailedFileMetadata | FileMetadataForQuality | ModelDict,
+    ) -> FileQualityScore:
         """
         Calculate quality score for individual file.
 
@@ -93,7 +159,7 @@ class QualityMetrics:
             metadata: File metadata
 
         Returns:
-            File quality score and details
+            FileQualityScore model with file quality details
         """
         # Validate against schema
         validation_result = await self.schema_validator.validate_file(
@@ -101,24 +167,24 @@ class QualityMetrics:
         )
 
         # Calculate freshness for this file
-        freshness = self.calculate_file_freshness(metadata)
+        freshness = self.calculate_file_freshness(_coerce_file_metadata(metadata))
 
         # Calculate structure score
         structure = self.calculate_file_structure(content)
 
         # Overall file score
         file_score = int(
-            validation_result["score"] * 0.5 + freshness * 0.25 + structure * 0.25
+            validation_result.score * 0.5 + freshness * 0.25 + structure * 0.25
         )
 
-        return {
-            "file_name": file_name,
-            "score": file_score,
-            "grade": self.get_grade(file_score),
-            "validation": validation_result,
-            "freshness": int(freshness),
-            "structure": int(structure),
-        }
+        return FileQualityScore(
+            file_name=file_name,
+            score=file_score,
+            grade=self.get_grade(file_score),
+            validation=validation_result,
+            freshness=int(freshness),
+            structure=int(structure),
+        )
 
     async def calculate_completeness(self, files_content: dict[str, str]) -> float:
         """
@@ -136,14 +202,14 @@ class QualityMetrics:
         total_score = 0
         for file_name, content in files_content.items():
             validation = await self.schema_validator.validate_file(file_name, content)
-            total_score += validation["score"]
+            total_score += validation.score
 
         return total_score / len(files_content)
 
     def calculate_consistency(
         self,
-        duplication_data: dict[str, object],
-        link_validation: dict[str, object] | None = None,
+        duplication_data: DuplicationDataModel | ModelDict,
+        link_validation: LinkValidationDataModel | ModelDict | None = None,
     ) -> float:
         """
         Score based on duplication and link integrity.
@@ -155,47 +221,24 @@ class QualityMetrics:
         Returns:
             Consistency score 0-100
         """
+        duplication_model = _coerce_duplication_data(duplication_data)
+        link_model = _coerce_link_validation_data(link_validation)
         score = 100.0
 
         # Deduct for duplications
-        duplicates_found_raw = duplication_data.get("duplicates_found", 0)
-        duplicates_found = (
-            int(duplicates_found_raw)
-            if isinstance(duplicates_found_raw, (int, float))
-            else 0
-        )
-        score -= duplicates_found * 5  # 5 points per duplication
+        score -= duplication_model.duplicates_found * 5  # 5 points per duplication
 
         # Deduct for broken links if provided
-        if link_validation:
-            broken_links = self._extract_broken_links(link_validation)
-            score -= len(broken_links) * 3  # 3 points per broken link
+        if link_model:
+            score -= link_model.broken_links * 3  # 3 points per broken link
 
         return max(0.0, score)
 
-    def _extract_broken_links(self, link_validation: dict[str, object]) -> list[str]:
-        """Extract broken links from validation data.
-
-        Args:
-            link_validation: Link validation results
-
-        Returns:
-            List of broken link strings
-        """
-        broken_links_raw: object = link_validation.get("broken_links", [])
-        if not isinstance(broken_links_raw, list):
-            return []
-
-        broken_links: list[str] = []
-        broken_links_list = cast(list[object], broken_links_raw)
-        for item_obj in broken_links_list:
-            if item_obj is not None:
-                broken_links.append(str(item_obj))
-
-        return broken_links
-
     def calculate_freshness(
-        self, files_metadata: dict[str, dict[str, object]]
+        self,
+        files_metadata: dict[
+            str, FileMetadataForQuality | DetailedFileMetadata | ModelDict
+        ],
     ) -> float:
         """
         Score based on last modified times.
@@ -209,27 +252,26 @@ class QualityMetrics:
         if not files_metadata:
             return 50.0
 
+        metadata_map = _coerce_files_metadata_map(files_metadata)
         now = datetime.now()
         scores: list[float] = []
 
-        for metadata in files_metadata.values():
+        for metadata in metadata_map.values():
             score = self._calculate_file_freshness_score(metadata, now)
             scores.append(score)
 
         return sum(scores) / len(scores) if scores else 50.0
 
     def _calculate_file_freshness_score(
-        self, metadata: dict[str, object], now: datetime
+        self, metadata: FileMetadataForQuality, now: datetime
     ) -> float:
         """Calculate freshness score for a single file."""
-        last_modified_raw: object = metadata.get("last_modified")
-        if not last_modified_raw:
+        if not metadata.last_modified:
             return 50.0
 
         try:
-            last_modified_str = str(last_modified_raw)
             last_mod_dt = datetime.fromisoformat(
-                last_modified_str.replace("Z", "+00:00")
+                metadata.last_modified.replace("Z", "+00:00")
             )
             days_old = (now - last_mod_dt).days
             return self._score_by_age(days_old)
@@ -256,18 +298,20 @@ class QualityMetrics:
             return 40.0
         return 20.0
 
-    def calculate_file_freshness(self, metadata: dict[str, object]) -> float:
+    def calculate_file_freshness(
+        self, metadata: FileMetadataForQuality | DetailedFileMetadata | ModelDict
+    ) -> float:
         """Calculate freshness for a single file.
 
         Reduced nesting: Extracted date parsing and scoring to helper methods.
         Nesting: 2 levels (down from 5 levels)
         """
-        last_modified_raw: object = metadata.get("last_modified")
-        if not last_modified_raw:
+        meta = _coerce_file_metadata(metadata)
+        if not meta.last_modified:
             return 50.0
 
         try:
-            days_old = self._parse_last_modified_date(last_modified_raw)
+            days_old = self._parse_last_modified_date(meta.last_modified)
             return self._score_by_age(days_old)
         except Exception as e:
             from cortex.core.logging_config import logger
@@ -275,17 +319,16 @@ class QualityMetrics:
             logger.warning(f"Failed to parse last_modified date: {e}")
             return 50.0
 
-    def _parse_last_modified_date(self, last_modified_raw: object) -> int:
+    def _parse_last_modified_date(self, last_modified: str) -> int:
         """Parse last modified date and calculate days old.
 
         Args:
-            last_modified_raw: Raw last modified timestamp
+            last_modified: ISO timestamp string
 
         Returns:
             Number of days since last modification
         """
-        last_modified_str = str(last_modified_raw)
-        last_mod_dt = datetime.fromisoformat(last_modified_str.replace("Z", "+00:00"))
+        last_mod_dt = datetime.fromisoformat(last_modified.replace("Z", "+00:00"))
         return (datetime.now() - last_mod_dt).days
 
     def calculate_structure(self, files_content: dict[str, str]) -> float:
@@ -331,7 +374,10 @@ class QualityMetrics:
         return max(0.0, score)
 
     def calculate_token_efficiency(
-        self, files_metadata: dict[str, dict[str, object]]
+        self,
+        files_metadata: dict[
+            str, FileMetadataForQuality | DetailedFileMetadata | ModelDict
+        ],
     ) -> float:
         """
         Score based on token usage efficiency.
@@ -345,11 +391,8 @@ class QualityMetrics:
         if not files_metadata:
             return 100.0
 
-        total_tokens = 0
-        for m in files_metadata.values():
-            token_count_raw: object = m.get("token_count", 0)
-            if isinstance(token_count_raw, (int, float)):
-                total_tokens += int(token_count_raw)
+        metadata_map = _coerce_files_metadata_map(files_metadata)
+        total_tokens = sum(meta.token_count for meta in metadata_map.values())
 
         # Ideal range: 20k-80k tokens total
         # Too few: probably incomplete
@@ -367,7 +410,7 @@ class QualityMetrics:
             penalty = min(50, (excess / 1000) * 2)
             return max(50.0, 100 - penalty)
 
-    def get_grade(self, score: float) -> str:
+    def get_grade(self, score: float) -> Literal["A", "B", "C", "D", "F"]:
         """
         Convert score to letter grade.
 
@@ -388,7 +431,7 @@ class QualityMetrics:
             return "D"
         return "F"
 
-    def get_status(self, score: float) -> str:
+    def get_status(self, score: float) -> Literal["healthy", "warning", "critical"]:
         """
         Get health status based on score.
 
@@ -412,13 +455,15 @@ class QualityMetrics:
         freshness: float,
         structure: float,
         token_efficiency: float,
-        duplication_data: dict[str, object],
+        duplication_data: DuplicationDataModel | ModelDict,
     ) -> list[str]:
         """Collect issues based on scores."""
         issues: list[str] = []
 
         self._add_completeness_issue(issues, completeness)
-        self._add_consistency_issue(issues, consistency, duplication_data)
+        self._add_consistency_issue(
+            issues, consistency, _coerce_duplication_data(duplication_data)
+        )
         self._add_freshness_issue(issues, freshness)
         self._add_structure_issue(issues, structure)
         self._add_token_efficiency_issue(issues, token_efficiency)
@@ -503,19 +548,27 @@ class QualityMetrics:
     async def _calculate_category_scores(
         self,
         files_content: dict[str, str],
-        files_metadata: dict[str, dict[str, object]],
-        duplication_data: dict[str, object],
-        link_validation: dict[str, object] | None,
+        files_metadata: dict[str, FileMetadataForQuality],
+        duplication_data: DuplicationDataModel,
+        link_validation: LinkValidationDataModel | None,
     ) -> dict[str, float]:
         """Calculate all individual category scores."""
+        files_metadata_wide: dict[
+            str, FileMetadataForQuality | DetailedFileMetadata | ModelDict
+        ] = {
+            file_name: cast(
+                FileMetadataForQuality | DetailedFileMetadata | ModelDict, meta
+            )
+            for file_name, meta in files_metadata.items()
+        }
         return {
             "completeness": await self.calculate_completeness(files_content),
             "consistency": self.calculate_consistency(
                 duplication_data, link_validation
             ),
-            "freshness": self.calculate_freshness(files_metadata),
+            "freshness": self.calculate_freshness(files_metadata_wide),
             "structure": self.calculate_structure(files_content),
-            "token_efficiency": self.calculate_token_efficiency(files_metadata),
+            "token_efficiency": self.calculate_token_efficiency(files_metadata_wide),
         }
 
     def _calculate_weighted_score(self, category_scores: dict[str, float]) -> int:
@@ -550,14 +603,18 @@ class QualityMetrics:
             + category_scores["token_efficiency"] * weights["token_efficiency"]
         )
 
-    def _determine_grade_and_status(self, overall_score: int) -> tuple[str, str]:
+    def _determine_grade_and_status(
+        self, overall_score: int
+    ) -> tuple[
+        Literal["A", "B", "C", "D", "F"], Literal["healthy", "warning", "critical"]
+    ]:
         """Determine grade and status from overall score."""
         return (self.get_grade(overall_score), self.get_status(overall_score))
 
     def _collect_all_issues(
         self,
         category_scores: dict[str, float],
-        duplication_data: dict[str, object],
+        duplication_data: DuplicationDataModel,
     ) -> list[str]:
         """Collect all issues from category scores."""
         return self.collect_issues(
@@ -586,26 +643,26 @@ class QualityMetrics:
         self,
         overall_score: int,
         category_scores: dict[str, float],
-        grade: str,
-        status: str,
+        grade: Literal["A", "B", "C", "D", "F"],
+        status: Literal["healthy", "warning", "critical"],
         issues: list[str],
         recommendations: list[str],
-    ) -> dict[str, object]:
-        """Build final score result dictionary."""
-        return {
-            "overall_score": overall_score,
-            "breakdown": {
-                "completeness": int(category_scores["completeness"]),
-                "consistency": int(category_scores["consistency"]),
-                "freshness": int(category_scores["freshness"]),
-                "structure": int(category_scores["structure"]),
-                "token_efficiency": int(category_scores["token_efficiency"]),
-            },
-            "grade": grade,
-            "status": status,
-            "issues": issues,
-            "recommendations": recommendations,
-        }
+    ) -> QualityScoreResult:
+        """Build final score result model."""
+        return QualityScoreResult(
+            overall_score=overall_score,
+            breakdown=CategoryBreakdown(
+                completeness=int(category_scores["completeness"]),
+                consistency=int(category_scores["consistency"]),
+                freshness=int(category_scores["freshness"]),
+                structure=int(category_scores["structure"]),
+                token_efficiency=int(category_scores["token_efficiency"]),
+            ),
+            grade=grade,
+            status=status,
+            issues=issues,
+            recommendations=recommendations,
+        )
 
     def _add_completeness_issue(self, issues: list[str], completeness: float) -> None:
         """Add completeness issue if score is low."""
@@ -619,17 +676,13 @@ class QualityMetrics:
         self,
         issues: list[str],
         consistency: float,
-        duplication_data: dict[str, object],
+        duplication_data: DuplicationDataModel,
     ) -> None:
         """Add consistency issue if duplicates found."""
         if consistency < 80:
-            duplicates_raw: object = duplication_data.get("duplicates_found", 0)
-            duplicates = (
-                int(duplicates_raw) if isinstance(duplicates_raw, (int, float)) else 0
-            )
-            if duplicates > 0:
+            if duplication_data.duplicates_found > 0:
                 issues.append(
-                    f"Found {duplicates} duplicate or similar content sections"
+                    f"Found {duplication_data.duplicates_found} duplicate or similar content sections"
                 )
 
     def _add_freshness_issue(self, issues: list[str], freshness: float) -> None:

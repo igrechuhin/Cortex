@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from cortex.optimization.models import SectionScoreModel
 from cortex.optimization.optimization_strategies import (
     OptimizationResult,
     OptimizationStrategies,
@@ -422,8 +423,8 @@ class TestOptimizeWithSections:
         mock_scorer = MagicMock()
         mock_scorer.score_sections = AsyncMock(
             return_value=[
-                {"section": "Section 1", "score": 0.8},
-                {"section": "Section 2", "score": 0.6},
+                SectionScoreModel(section="Section 1", score=0.8),
+                SectionScoreModel(section="Section 2", score=0.6),
             ]
         )
 
@@ -453,8 +454,8 @@ class TestOptimizeWithSections:
         mock_scorer = MagicMock()
         mock_scorer.score_sections = AsyncMock(
             return_value=[
-                {"section": "Good Section", "score": 0.8},
-                {"section": "Bad Section", "score": 0.2},
+                SectionScoreModel(section="Good Section", score=0.8),
+                SectionScoreModel(section="Bad Section", score=0.2),
             ]
         )
 
@@ -486,7 +487,7 @@ class TestOptimizeWithSections:
 
         mock_scorer = MagicMock()
         mock_scorer.score_sections = AsyncMock(
-            return_value=[{"section": "Section", "score": 0.8}]
+            return_value=[SectionScoreModel(section="Section", score=0.8)]
         )
 
         strategies = OptimizationStrategies(
@@ -547,7 +548,7 @@ class TestOptimizeHybrid:
 
         mock_scorer = MagicMock()
         mock_scorer.score_sections = AsyncMock(
-            return_value=[{"section": "Section", "score": 0.6}]
+            return_value=[SectionScoreModel(section="Section", score=0.6)]
         )
 
         mock_graph = MagicMock()

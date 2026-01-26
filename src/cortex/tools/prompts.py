@@ -149,7 +149,7 @@ Expected output format:
 
 
 # Conditionally register initialize_memory_bank only if memory bank not initialized
-if not _config_status["memory_bank_initialized"]:
+if not _config_status.memory_bank_initialized:
 
     @mcp.prompt()
     def initialize_memory_bank() -> str:
@@ -171,7 +171,7 @@ if not _config_status["memory_bank_initialized"]:
 
 
 # Conditionally register setup_project_structure only if structure not configured
-if not _config_status["structure_configured"]:
+if not _config_status.structure_configured:
 
     @mcp.prompt()
     def setup_project_structure() -> str:
@@ -191,7 +191,7 @@ if not _config_status["structure_configured"]:
 
 
 # Conditionally register setup_cursor_integration only if Cursor integration not configured
-if not _config_status["cursor_integration_configured"]:
+if not _config_status.cursor_integration_configured:
 
     @mcp.prompt()
     def setup_cursor_integration() -> str:
@@ -283,7 +283,7 @@ If download fails:
 
 
 # Conditionally register populate_tiktoken_cache only if cache not available
-if not _config_status["tiktoken_cache_available"]:
+if not _config_status.tiktoken_cache_available:
 
     @mcp.prompt()
     def populate_tiktoken_cache() -> str:
@@ -343,7 +343,7 @@ Expected output format (not initialized):
 
 
 # Conditionally register migration prompts only if migration needed
-if _config_status["migration_needed"]:
+if _config_status.migration_needed:
 
     @mcp.prompt()
     def check_migration_status() -> str:
@@ -394,7 +394,7 @@ Expected output format:
 
 
 # Conditionally register migrate_memory_bank only if migration needed
-if _config_status["migration_needed"]:
+if _config_status.migration_needed:
 
     @mcp.prompt()
     def migrate_memory_bank() -> str:
@@ -458,7 +458,7 @@ Expected output format:
 
 
 # Conditionally register migrate_project_structure only if migration needed
-if _config_status["migration_needed"]:
+if _config_status.migration_needed:
 
     @mcp.prompt()
     def migrate_project_structure() -> str:

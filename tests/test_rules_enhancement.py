@@ -6,9 +6,10 @@ Tests the RulesManager and related functionality for custom rules integration.
 
 from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import TypedDict, cast
+from typing import cast
 
 import pytest
+from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
@@ -17,13 +18,15 @@ from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.rules_manager import RulesManager
 
 
-class FullSetup(TypedDict):
+class FullSetup(BaseModel):
     """Typed mapping for full rules integration setup."""
 
-    rules_manager: RulesManager
-    config: OptimizationConfig
-    fs_manager: FileSystemManager
-    metadata_index: MetadataIndex
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+
+    rules_manager: RulesManager = Field(description="Rules manager instance")
+    config: OptimizationConfig = Field(description="Optimization config")
+    fs_manager: FileSystemManager = Field(description="File system manager")
+    metadata_index: MetadataIndex = Field(description="Metadata index")
 
 
 class TestRulesManager:
@@ -66,7 +69,7 @@ class TestRulesManager:
         total_files = result.get("total_files", 0)
         assert isinstance(total_files, (int, float))
         assert total_files >= 0
-        assert "indexed_at" in result
+        assert "message" in result
 
     @pytest.mark.asyncio
     async def test_get_relevant_rules(self, rules_manager: RulesManager) -> None:
@@ -238,7 +241,7 @@ class TestRulesIntegration:
         temp_project_root: Path,
         sample_rules_folder: Path,
         sample_memory_bank_files: dict[str, Path],
-    ) -> AsyncGenerator[FullSetup, None]:
+    ) -> AsyncGenerator[FullSetup]:
         """Setup full environment with rules and memory bank."""
         fs_manager = FileSystemManager(temp_project_root)
         metadata_index = MetadataIndex(temp_project_root)
@@ -271,7 +274,7 @@ class TestRulesIntegration:
     @pytest.mark.asyncio
     async def test_full_workflow(self, full_setup: FullSetup) -> None:
         """Test complete workflow with rules."""
-        rules_manager = full_setup["rules_manager"]
+        rules_manager = full_setup.rules_manager
 
         # Index rules
         index_result = await rules_manager.index_rules(force=True)

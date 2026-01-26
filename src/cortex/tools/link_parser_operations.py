@@ -9,10 +9,12 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.file_system import FileSystemManager
+from cortex.core.models import JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.linking.link_parser import LinkParser
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
+from cortex.managers.types import ManagersDict
 from cortex.server import mcp
 
 
@@ -115,27 +117,24 @@ async def parse_file_links(file_name: str, project_root: str | None = None) -> s
     try:
         root = get_project_root(project_root)
         mgrs = await get_managers(root)
-        fs_manager = cast(FileSystemManager, mgrs["fs"])
-        link_parser = await get_manager(mgrs, "link_parser", LinkParser)
-
-        memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
-        file_path, error_response = _validate_and_get_file_path(
-            fs_manager, memory_bank_dir, file_name
+        file_path, error_response = await _get_validated_file_path(
+            mgrs, root, file_name
         )
         if error_response or file_path is None:
             return error_response or json.dumps(
                 {"status": "error", "error": "File path validation failed"}, indent=2
             )
 
-        content, _ = await fs_manager.read_file(file_path)
-        parsed, summary = await _parse_and_count_links(link_parser, content)
+        parsed, summary = await _parse_file_content(mgrs, file_path)
 
         return json.dumps(
             {
                 "status": "success",
                 "file": file_name,
-                "markdown_links": parsed["markdown_links"],
-                "transclusions": parsed["transclusions"],
+                "markdown_links": cast(
+                    list[JsonValue], parsed.get("markdown_links", [])
+                ),
+                "transclusions": cast(list[JsonValue], parsed.get("transclusions", [])),
                 "summary": summary,
             },
             indent=2,
@@ -150,7 +149,7 @@ async def parse_file_links(file_name: str, project_root: str | None = None) -> s
 
 async def _parse_and_count_links(
     link_parser: LinkParser, content: str
-) -> tuple[dict[str, object], dict[str, int]]:
+) -> tuple[ModelDict, dict[str, int]]:
     """Parse links and count them.
 
     Args:
@@ -161,18 +160,23 @@ async def _parse_and_count_links(
         Tuple of (parsed result, summary dictionary)
     """
     parsed = await link_parser.parse_file(content)
-    markdown_links: list[dict[str, object]] = parsed.get("markdown_links", [])
-    transclusions: list[dict[str, object]] = parsed.get("transclusions", [])
+
+    markdown_links_raw: JsonValue = parsed.get("markdown_links", [])
+    transclusions_raw: JsonValue = parsed.get("transclusions", [])
+    markdown_links = markdown_links_raw if isinstance(markdown_links_raw, list) else []
+    transclusions = transclusions_raw if isinstance(transclusions_raw, list) else []
 
     unique_files: set[str] = set()
     for link in markdown_links:
-        target = link.get("target", "")
-        if isinstance(target, str) and target:
-            unique_files.add(target)
+        if isinstance(link, dict):
+            target = link.get("target")
+            if isinstance(target, str) and target:
+                unique_files.add(target)
     for trans in transclusions:
-        target = trans.get("target", "")
-        if isinstance(target, str) and target:
-            unique_files.add(target)
+        if isinstance(trans, dict):
+            target = trans.get("target")
+            if isinstance(target, str) and target:
+                unique_files.add(target)
 
     summary = {
         "markdown_links": len(markdown_links),
@@ -181,7 +185,26 @@ async def _parse_and_count_links(
         "unique_files": len(unique_files),
     }
 
-    return cast(dict[str, object], parsed), summary
+    return parsed, summary
+
+
+async def _parse_file_content(
+    mgrs: ManagersDict, file_path: Path
+) -> tuple[ModelDict, ModelDict]:
+    """Parse file content and extract links."""
+    link_parser = await get_manager(mgrs, "link_parser", LinkParser)
+    fs_manager = await get_manager(mgrs, "fs", FileSystemManager)
+    content, _ = await fs_manager.read_file(file_path)
+    return await _parse_and_count_links(link_parser, content)
+
+
+async def _get_validated_file_path(
+    mgrs: ManagersDict, root: Path, file_name: str
+) -> tuple[Path | None, str | None]:
+    """Get validated file path for parsing."""
+    fs_manager = await get_manager(mgrs, "fs", FileSystemManager)
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+    return _validate_and_get_file_path(fs_manager, memory_bank_dir, file_name)
 
 
 def _validate_and_get_file_path(

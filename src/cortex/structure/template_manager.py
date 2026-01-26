@@ -8,6 +8,9 @@ Provides interactive setup and template generation.
 
 from datetime import datetime
 from pathlib import Path
+from typing import cast
+
+from cortex.core.models import JsonValue, ModelDict
 
 
 class TemplateManager:
@@ -536,7 +539,7 @@ def test1():
 
         return template
 
-    def create_plan_templates(self, plans_dir: Path) -> dict[str, object]:
+    def create_plan_templates(self, plans_dir: Path) -> ModelDict:
         """Create plan template files.
 
         Args:
@@ -551,10 +554,13 @@ def test1():
         created_list: list[str] = []
         skipped_list: list[str] = []
         errors_list: list[str] = []
-        report: dict[str, object] = {
-            "created": created_list,
-            "skipped": skipped_list,
-            "errors": errors_list,
+        created_json = cast(list[JsonValue], created_list)
+        skipped_json = cast(list[JsonValue], skipped_list)
+        errors_json = cast(list[JsonValue], errors_list)
+        report: ModelDict = {
+            "created": created_json,
+            "skipped": skipped_json,
+            "errors": errors_json,
         }
 
         for template_name, template_content in self.PLAN_TEMPLATES.items():
@@ -572,21 +578,22 @@ def test1():
 
         return report
 
-    def interactive_project_setup(self) -> dict[str, object]:
+    def interactive_project_setup(self) -> ModelDict:
         """Interactive interview for project setup.
 
         Returns:
             Collected project information
         """
-        questions: list[dict[str, object]] = []
+        questions: list[ModelDict] = []
         questions.extend(self._build_basic_info_questions())
         questions.extend(self._build_technical_questions())
         questions.extend(self._build_team_process_questions())
         questions.extend(self._build_configuration_questions())
 
-        return {"questions": questions}
+        questions_json: list[JsonValue] = [cast(JsonValue, q) for q in questions]
+        return {"questions": questions_json}
 
-    def _build_basic_info_questions(self) -> list[dict[str, object]]:
+    def _build_basic_info_questions(self) -> list[ModelDict]:
         """Build basic project information questions.
 
         Returns:
@@ -605,19 +612,19 @@ def test1():
             },
         ]
 
-    def _build_technical_questions(self) -> list[dict[str, object]]:
+    def _build_technical_questions(self) -> list[ModelDict]:
         """Build technical questions.
 
         Returns:
             List of question dictionaries
         """
-        questions: list[dict[str, object]] = []
+        questions: list[ModelDict] = []
         questions.append(self._build_project_type_question())
         questions.append(self._build_language_question())
         questions.append(self._build_frameworks_question())
         return questions
 
-    def _build_project_type_question(self) -> dict[str, object]:
+    def _build_project_type_question(self) -> ModelDict:
         """Build project type question.
 
         Returns:
@@ -637,7 +644,7 @@ def test1():
             ],
         }
 
-    def _build_language_question(self) -> dict[str, object]:
+    def _build_language_question(self) -> ModelDict:
         """Build primary language question.
 
         Returns:
@@ -660,7 +667,7 @@ def test1():
             ],
         }
 
-    def _build_frameworks_question(self) -> dict[str, object]:
+    def _build_frameworks_question(self) -> ModelDict:
         """Build frameworks question.
 
         Returns:
@@ -672,7 +679,7 @@ def test1():
             "type": "text",
         }
 
-    def _build_team_process_questions(self) -> list[dict[str, object]]:
+    def _build_team_process_questions(self) -> list[ModelDict]:
         """Build team and process questions.
 
         Returns:
@@ -699,7 +706,7 @@ def test1():
             },
         ]
 
-    def _build_configuration_questions(self) -> list[dict[str, object]]:
+    def _build_configuration_questions(self) -> list[ModelDict]:
         """Build configuration questions.
 
         Returns:
@@ -716,9 +723,9 @@ def test1():
     def generate_initial_files(
         self,
         knowledge_dir: Path,
-        project_info: dict[str, object],
+        project_info: ModelDict,
         templates: dict[str, str],
-    ) -> dict[str, object]:
+    ) -> ModelDict:
         """Generate initial memory bank files from project information.
 
         Args:
@@ -731,7 +738,9 @@ def test1():
         """
         generated_list: list[str] = []
         errors_list: list[str] = []
-        report: dict[str, object] = {"generated": generated_list, "errors": errors_list}
+        generated_json = cast(list[JsonValue], generated_list)
+        errors_json = cast(list[JsonValue], errors_list)
+        report: ModelDict = {"generated": generated_json, "errors": errors_json}
 
         self._generate_projectBrief_file(
             knowledge_dir, project_info, templates, generated_list, errors_list
@@ -748,7 +757,7 @@ def test1():
     def _generate_projectBrief_file(
         self,
         knowledge_dir: Path,
-        project_info: dict[str, object],
+        project_info: ModelDict,
         templates: dict[str, str],
         generated_list: list[str],
         errors_list: list[str],
@@ -767,7 +776,7 @@ def test1():
     def _generate_tech_context_file(
         self,
         knowledge_dir: Path,
-        project_info: dict[str, object],
+        project_info: ModelDict,
         generated_list: list[str],
         errors_list: list[str],
     ) -> None:
@@ -783,7 +792,7 @@ def test1():
     def _generate_instructions_file(
         self,
         knowledge_dir: Path,
-        project_info: dict[str, object],
+        project_info: ModelDict,
         templates: dict[str, str],
         generated_list: list[str],
         errors_list: list[str],
@@ -799,7 +808,7 @@ def test1():
         except Exception as e:
             errors_list.append(f"Failed to generate memorybankinstructions.md: {e}")
 
-    def customize_template(self, template: str, project_info: dict[str, object]) -> str:
+    def customize_template(self, template: str, project_info: ModelDict) -> str:
         """Customize a template with project information.
 
         Args:
@@ -817,7 +826,7 @@ def test1():
                 content = content.replace(placeholder, str(value))
         return content
 
-    def generate_tech_context(self, project_info: dict[str, object]) -> str:
+    def generate_tech_context(self, project_info: ModelDict) -> str:
         """Generate techContext.md from project information.
 
         Args:

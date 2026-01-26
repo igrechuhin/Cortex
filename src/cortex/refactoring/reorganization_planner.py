@@ -5,9 +5,24 @@ This module plans structural reorganization of Memory Bank files to improve
 dependency structure, reduce complexity, and optimize file organization.
 """
 
-from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
+from cortex.core.models import (
+    EstimatedImpactMetrics,
+    ModelDict,
+    ReorganizationActionPreview,
+    ReorganizationPreview,
+    StructureComparison,
+    StructureMetrics,
+)
+from cortex.refactoring.models import (
+    DependencyGraphInput,
+    MemoryBankStructureData,
+    ReorganizationActionModel,
+    ReorganizationImpactModel,
+    ReorganizationPlanModel,
+)
 from cortex.refactoring.reorganization.analyzer import ReorganizationAnalyzer
 from cortex.refactoring.reorganization.executor import (
     ReorganizationAction,
@@ -17,50 +32,10 @@ from cortex.refactoring.reorganization.strategies import (
     ReorganizationStrategies,
 )
 
-# Re-export for backward compatibility
 __all__ = [
     "ReorganizationPlanner",
-    "ReorganizationPlan",
-    "ReorganizationAction",
+    "ReorganizationPlanModel",
 ]
-
-
-@dataclass
-class ReorganizationPlan:
-    """Represents a complete reorganization plan"""
-
-    plan_id: str
-    optimization_goal: str  # "dependency_depth", "category_based", "complexity"
-    current_structure: dict[str, object]
-    proposed_structure: dict[str, object]
-    actions: list[ReorganizationAction]
-    estimated_impact: dict[str, object]
-    risks: list[str]
-    benefits: list[str]
-    preserve_history: bool = True
-
-    def to_dict(self) -> dict[str, object]:
-        """Convert to dictionary"""
-        return {
-            "plan_id": self.plan_id,
-            "optimization_goal": self.optimization_goal,
-            "current_structure": self.current_structure,
-            "proposed_structure": self.proposed_structure,
-            "actions": [
-                {
-                    "type": a.action_type,
-                    "source": a.source,
-                    "target": a.target,
-                    "reason": a.reason,
-                    "dependencies_affected": len(a.dependencies_affected),
-                }
-                for a in self.actions
-            ],
-            "estimated_impact": self.estimated_impact,
-            "risks": self.risks,
-            "benefits": self.benefits,
-            "preserve_history": self.preserve_history,
-        }
 
 
 class ReorganizationPlanner:
@@ -109,9 +84,9 @@ class ReorganizationPlanner:
     async def create_reorganization_plan(
         self,
         optimize_for: str = "dependency_depth",
-        structure_data: dict[str, object] | None = None,
-        dependency_graph: dict[str, object] | None = None,
-    ) -> ReorganizationPlan | None:
+        structure_data: MemoryBankStructureData | ModelDict | None = None,
+        dependency_graph: DependencyGraphInput | ModelDict | None = None,
+    ) -> ReorganizationPlanModel | None:
         """
         Create a reorganization plan.
 
@@ -128,24 +103,58 @@ class ReorganizationPlanner:
 
         assert dependency_graph is not None
         assert structure_data is not None
-        current_structure = await self.analyzer.analyze_current_structure(
+
+        structure_model, graph_model = self._normalize_inputs(
             structure_data, dependency_graph
         )
-
-        if not self._should_reorganize(current_structure, optimize_for):
+        structure_dict = cast(ModelDict, structure_model.model_dump(mode="json"))
+        graph_dict = cast(ModelDict, graph_model.model_dump(mode="json"))
+        current_structure = await self.analyzer.analyze_current_structure(
+            structure_dict, graph_dict
+        )
+        if not self._needs_reorganization(current_structure, optimize_for):
             return None
-
         proposed_structure = await self.strategies.generate_proposed_structure(
-            current_structure, optimize_for, dependency_graph
+            current_structure, optimize_for, graph_dict
+        )
+        current_model = MemoryBankStructureData.model_validate(current_structure)
+        proposed_model = MemoryBankStructureData.model_validate(proposed_structure)
+        return await self._build_reorganization_plan(
+            current_model, proposed_model, optimize_for, graph_dict
         )
 
-        return await self._build_reorganization_plan(
-            current_structure, proposed_structure, optimize_for
+    def _normalize_inputs(
+        self,
+        structure_data: MemoryBankStructureData | ModelDict | None,
+        dependency_graph: DependencyGraphInput | ModelDict | None,
+    ) -> tuple[MemoryBankStructureData, DependencyGraphInput]:
+        """Normalize structure and graph inputs."""
+        structure_model = (
+            structure_data
+            if isinstance(structure_data, MemoryBankStructureData)
+            else MemoryBankStructureData.model_validate(
+                self._normalize_structure_data_input(structure_data)
+            )
         )
+        graph_model = (
+            dependency_graph
+            if isinstance(dependency_graph, DependencyGraphInput)
+            else DependencyGraphInput.model_validate(dependency_graph)
+        )
+        return structure_model, graph_model
+
+    def _needs_reorganization(
+        self, current_structure: ModelDict, optimize_for: str
+    ) -> bool:
+        """Check if reorganization is needed."""
+        needs_reorg, _reasons = self.analyzer.needs_reorganization(
+            current_structure, optimize_for
+        )
+        return needs_reorg
 
     async def preview_reorganization(
-        self, plan: ReorganizationPlan, show_details: bool = True
-    ) -> dict[str, object]:
+        self, plan: ReorganizationPlanModel, show_details: bool = True
+    ) -> ReorganizationPreview:
         """
         Preview the impact of a reorganization plan.
 
@@ -154,175 +163,241 @@ class ReorganizationPlanner:
             show_details: Whether to include detailed action breakdown
 
         Returns:
-            Preview information
+            ReorganizationPreview with plan impact information
         """
-        from typing import cast
+        impact = plan.estimated_impact
+        estimated_impact = EstimatedImpactMetrics(
+            token_savings=0,
+            files_affected=impact.files_moved,
+            complexity_reduction=impact.complexity_reduction,
+            dependency_depth_reduction=0,
+        )
 
-        preview: dict[str, object] = {
-            "plan_id": plan.plan_id,
-            "optimization_goal": plan.optimization_goal,
-            "actions_count": len(plan.actions),
-            "estimated_impact": plan.estimated_impact,
-            "risks": plan.risks,
-            "benefits": plan.benefits,
-        }
+        actions, structure_comparison = self._build_preview_details(plan, show_details)
 
-        if show_details:
-            actions_list: list[dict[str, object]] = [
-                {
-                    "type": a.action_type,
-                    "description": f"{a.action_type.upper()}: {Path(a.source).name if a.source else 'N/A'} -> {Path(a.target).name}",
-                    "reason": a.reason,
-                }
-                for a in plan.actions
-            ]
-            preview["actions"] = cast(list[object], actions_list)
-
-            preview["structure_comparison"] = {
-                "current": plan.current_structure.get("organization"),
-                "proposed": plan.proposed_structure.get("organization"),
-            }
-
-        return preview
+        return ReorganizationPreview(
+            plan_id=plan.plan_id,
+            optimization_goal=plan.optimization_goal,
+            actions_count=len(plan.actions),
+            estimated_impact=estimated_impact,
+            risks=plan.risks,
+            benefits=plan.benefits,
+            actions=actions,
+            structure_comparison=structure_comparison,
+        )
 
     def _validate_reorganization_inputs(
         self,
-        structure_data: dict[str, object] | None,
-        dependency_graph: dict[str, object] | None,
+        structure_data: MemoryBankStructureData | ModelDict | None,
+        dependency_graph: DependencyGraphInput | ModelDict | None,
     ) -> bool:
         """Validate inputs for reorganization plan creation."""
         return structure_data is not None and dependency_graph is not None
 
+    @staticmethod
+    def _normalize_structure_data_input(structure_data: ModelDict) -> ModelDict:
+        """Normalize legacy structure_data shapes for model validation."""
+        organization = structure_data.get("organization")
+        if isinstance(organization, dict):
+            org_type = organization.get("type")
+            if isinstance(org_type, str):
+                normalized = dict(structure_data)
+                normalized["organization"] = org_type
+                return normalized
+        return structure_data
+
+    def needs_reorganization(
+        self, current_structure: MemoryBankStructureData, optimize_for: str
+    ) -> tuple[bool, list[str]]:
+        """Check whether reorganization is needed for the given goal."""
+        current_dict = cast(ModelDict, current_structure.model_dump(mode="json"))
+        return self.analyzer.needs_reorganization(current_dict, optimize_for)
+
+    def optimize_dependency_order(
+        self,
+        current_structure: MemoryBankStructureData,
+        dependency_graph: DependencyGraphInput,
+    ) -> list[str]:
+        """Compute an optimized dependency order for current structure."""
+        current_dict = cast(ModelDict, current_structure.model_dump(mode="json"))
+        graph_dict = cast(ModelDict, dependency_graph.model_dump(mode="json"))
+        return self.strategies.optimize_dependency_order(current_dict, graph_dict)
+
+    def infer_categories(self, files: list[str]) -> dict[str, list[str]]:
+        """Infer file categories based on names."""
+        return self.analyzer.infer_categories(files)
+
+    def propose_category_structure(
+        self, current_structure: MemoryBankStructureData
+    ) -> dict[str, list[str]]:
+        """Propose category structure mapping."""
+        current_dict = cast(ModelDict, current_structure.model_dump(mode="json"))
+        return self.strategies.propose_category_structure(current_dict)
+
+    def propose_simplified_structure(
+        self, current_structure: MemoryBankStructureData
+    ) -> dict[str, list[str]]:
+        """Propose simplified structure mapping."""
+        current_dict = cast(ModelDict, current_structure.model_dump(mode="json"))
+        return self.strategies.propose_simplified_structure(current_dict)
+
+    async def get_all_markdown_files(self) -> list[str]:
+        """List all markdown files in the memory bank path."""
+        return await self.analyzer.get_all_markdown_files()
+
+    async def analyze_current_structure(
+        self,
+        structure_data: MemoryBankStructureData,
+        dependency_graph: DependencyGraphInput,
+    ) -> MemoryBankStructureData:
+        """Analyze and enrich current structure using the dependency graph."""
+        structure_dict = cast(ModelDict, structure_data.model_dump(mode="json"))
+        graph_dict = cast(ModelDict, dependency_graph.model_dump(mode="json"))
+        analyzed = await self.analyzer.analyze_current_structure(
+            structure_dict, graph_dict
+        )
+        return MemoryBankStructureData.model_validate(analyzed)
+
+    async def generate_proposed_structure(
+        self,
+        current_structure: MemoryBankStructureData,
+        optimize_for: str,
+        dependency_graph: DependencyGraphInput,
+    ) -> MemoryBankStructureData:
+        """Generate proposed structure model for the given optimization goal."""
+        current_dict = cast(ModelDict, current_structure.model_dump(mode="json"))
+        graph_dict = cast(ModelDict, dependency_graph.model_dump(mode="json"))
+        proposed = await self.strategies.generate_proposed_structure(
+            current_dict, optimize_for, graph_dict
+        )
+        return MemoryBankStructureData.model_validate(proposed)
+
+    async def generate_actions(
+        self,
+        current_structure: MemoryBankStructureData,
+        proposed_structure: MemoryBankStructureData,
+        optimize_for: str,
+    ) -> list[ReorganizationActionModel]:
+        """Generate reorganization actions for the given structures."""
+        current_dict = cast(ModelDict, current_structure.model_dump(mode="json"))
+        proposed_dict = cast(ModelDict, proposed_structure.model_dump(mode="json"))
+        actions = await self.executor.generate_actions(
+            current_dict, proposed_dict, optimize_for
+        )
+        return [
+            ReorganizationActionModel(
+                action_type=a.action_type,
+                source=a.source,
+                target=a.target,
+                reason=a.reason,
+                dependencies_affected=a.dependencies_affected,
+            )
+            for a in actions
+        ]
+
+    def calculate_impact(
+        self,
+        current_structure: MemoryBankStructureData,
+        proposed_structure: MemoryBankStructureData,
+        actions: list[ReorganizationActionModel],
+    ) -> ReorganizationImpactModel:
+        """Calculate impact metrics for a set of actions."""
+        current_dict = cast(ModelDict, current_structure.model_dump(mode="json"))
+        proposed_dict = cast(ModelDict, proposed_structure.model_dump(mode="json"))
+        action_dataclasses = [
+            ReorganizationAction(
+                action_type=a.action_type,
+                source=a.source,
+                target=a.target,
+                reason=a.reason,
+                dependencies_affected=a.dependencies_affected,
+            )
+            for a in actions
+        ]
+        return self.executor.calculate_impact(
+            current_dict, proposed_dict, action_dataclasses
+        )
+
+    def identify_risks(
+        self,
+        actions: list[ReorganizationActionModel],
+        current_structure: MemoryBankStructureData,
+    ) -> list[str]:
+        """Identify risks for the given actions and current structure."""
+        current_dict = cast(ModelDict, current_structure.model_dump(mode="json"))
+        action_dataclasses = [
+            ReorganizationAction(
+                action_type=a.action_type,
+                source=a.source,
+                target=a.target,
+                reason=a.reason,
+                dependencies_affected=a.dependencies_affected,
+            )
+            for a in actions
+        ]
+        return self.executor.identify_risks(action_dataclasses, current_dict)
+
+    def identify_benefits(
+        self,
+        proposed_structure: MemoryBankStructureData,
+        current_structure: MemoryBankStructureData,
+    ) -> list[str]:
+        """Identify benefits of the proposed structure."""
+        proposed_dict = cast(ModelDict, proposed_structure.model_dump(mode="json"))
+        current_dict = cast(ModelDict, current_structure.model_dump(mode="json"))
+        return self.executor.identify_benefits(proposed_dict, current_dict)
+
     def _should_reorganize(
-        self, current_structure: dict[str, object], optimize_for: str
+        self, current_structure: MemoryBankStructureData, optimize_for: str
     ) -> bool:
         """Check if reorganization is needed."""
-        needs_reorg, _reasons = self.analyzer.needs_reorganization(
+        needs_reorg, _reasons = self.needs_reorganization(
             current_structure, optimize_for
         )
         return needs_reorg
 
     async def _build_reorganization_plan(
         self,
-        current_structure: dict[str, object],
-        proposed_structure: dict[str, object],
+        current_structure: MemoryBankStructureData,
+        proposed_structure: MemoryBankStructureData,
         optimize_for: str,
-    ) -> ReorganizationPlan | None:
+        dependency_graph: ModelDict,
+    ) -> ReorganizationPlanModel | None:
         """Build the reorganization plan from structures."""
+        current_dict = cast(ModelDict, current_structure.model_dump(mode="json"))
+        proposed_dict = cast(ModelDict, proposed_structure.model_dump(mode="json"))
         actions = await self.executor.generate_actions(
-            current_structure, proposed_structure, optimize_for
+            current_dict, proposed_dict, optimize_for
         )
-
         if not actions:
             return None
-
-        estimated_impact = self.executor.calculate_impact(
-            current_structure, proposed_structure, actions
-        )
-        risks = self.executor.identify_risks(actions, current_structure)
-        benefits = self.executor.identify_benefits(
-            proposed_structure, current_structure
-        )
-
-        return ReorganizationPlan(
+        impact = self.executor.calculate_impact(current_dict, proposed_dict, actions)
+        risks = self.executor.identify_risks(actions, current_dict)
+        benefits = self.executor.identify_benefits(proposed_dict, current_dict)
+        action_models = self._convert_actions_to_models(actions)
+        return ReorganizationPlanModel(
             plan_id=self.generate_plan_id(),
             optimization_goal=optimize_for,
             current_structure=current_structure,
             proposed_structure=proposed_structure,
-            actions=actions,
-            estimated_impact=estimated_impact,
+            actions=action_models,
+            estimated_impact=impact,
             risks=risks,
             benefits=benefits,
             preserve_history=True,
         )
 
-    # Backward compatibility delegation methods
-
-    def infer_categories(self, files: list[str]) -> dict[str, list[str]]:
-        """Delegate to analyzer for backward compatibility."""
-        return self.analyzer.infer_categories(files)
-
-    def needs_reorganization(
-        self, current_structure: dict[str, object], optimize_for: str
-    ) -> tuple[bool, list[str]]:
-        """Delegate to analyzer for backward compatibility."""
-        return self.analyzer.needs_reorganization(current_structure, optimize_for)
-
-    def optimize_dependency_order(
-        self, current_structure: dict[str, object], dependency_graph: dict[str, object]
-    ) -> list[str]:
-        """Delegate to strategies for backward compatibility."""
-        return self.strategies.optimize_dependency_order(
-            current_structure, dependency_graph
-        )
-
-    def propose_category_structure(
-        self, current_structure: dict[str, object]
-    ) -> dict[str, list[str]]:
-        """Delegate to strategies for backward compatibility."""
-        return self.strategies.propose_category_structure(current_structure)
-
-    def propose_simplified_structure(
-        self, current_structure: dict[str, object]
-    ) -> dict[str, list[str]]:
-        """Delegate to strategies for backward compatibility."""
-        return self.strategies.propose_simplified_structure(current_structure)
-
-    async def get_all_markdown_files(self) -> list[str]:
-        """Delegate to analyzer for backward compatibility."""
-        return await self.analyzer.get_all_markdown_files()
-
-    async def analyze_current_structure(
-        self, structure_data: dict[str, object], dependency_graph: dict[str, object]
-    ) -> dict[str, object]:
-        """Delegate to analyzer for backward compatibility."""
-        return await self.analyzer.analyze_current_structure(
-            structure_data, dependency_graph
-        )
-
-    async def generate_proposed_structure(
-        self,
-        current_structure: dict[str, object],
-        optimize_for: str,
-        dependency_graph: dict[str, object],
-    ) -> dict[str, object]:
-        """Delegate to strategies for backward compatibility."""
-        return await self.strategies.generate_proposed_structure(
-            current_structure, optimize_for, dependency_graph
-        )
-
-    async def generate_actions(
-        self,
-        current_structure: dict[str, object],
-        proposed_structure: dict[str, object],
-        optimize_for: str,
-    ) -> list[ReorganizationAction]:
-        """Delegate to executor for backward compatibility."""
-        return await self.executor.generate_actions(
-            current_structure, proposed_structure, optimize_for
-        )
-
-    def calculate_impact(
-        self,
-        current_structure: dict[str, object],
-        proposed_structure: dict[str, object],
-        actions: list[ReorganizationAction],
-    ) -> dict[str, object]:
-        """Delegate to executor for backward compatibility."""
-        return self.executor.calculate_impact(
-            current_structure, proposed_structure, actions
-        )
-
-    def identify_risks(
-        self, actions: list[ReorganizationAction], current_structure: dict[str, object]
-    ) -> list[str]:
-        """Delegate to executor for backward compatibility."""
-        return self.executor.identify_risks(actions, current_structure)
-
-    def identify_benefits(
-        self,
-        proposed_structure: dict[str, object],
-        current_structure: dict[str, object],
-    ) -> list[str]:
-        """Delegate to executor for backward compatibility."""
-        return self.executor.identify_benefits(proposed_structure, current_structure)
+    def _convert_actions_to_models(
+        self, actions: list[ReorganizationAction]
+    ) -> list[ReorganizationActionModel]:
+        """Convert actions to action models."""
+        return [
+            ReorganizationActionModel(
+                action_type=a.action_type,
+                source=a.source,
+                target=a.target,
+                reason=a.reason,
+                dependencies_affected=a.dependencies_affected,
+            )
+            for a in actions
+        ]

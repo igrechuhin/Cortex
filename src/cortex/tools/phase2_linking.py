@@ -10,7 +10,7 @@ Total: 4 tools
 - get_link_graph
 
 This module re-exports MCP tools from specialized operation modules
-to maintain backward compatibility.
+to provide a stable import path.
 """
 
 from cortex.tools.link_graph_operations import get_link_graph

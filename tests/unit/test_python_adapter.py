@@ -128,3 +128,34 @@ class TestPythonAdapter:
 
             assert result["check_type"] == "fix_errors"
             assert result["success"] is True
+
+    def test_parse_lint_errors_ignores_ruff_summary_lines(self) -> None:
+        """Ensure ruff summary lines don't count as remaining errors."""
+        # Arrange
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            output = "Found 5 errors (5 fixed, 0 remaining).\n"
+
+            # Act
+            errors = adapter._parse_lint_errors(output)
+
+            # Assert
+            assert errors == []
+
+    def test_parse_lint_errors_collects_diagnostic_lines(self) -> None:
+        """Ensure ruff diagnostic lines are captured."""
+        # Arrange
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            output = "\n".join(
+                [
+                    "src/foo.py:1:1: F401 `os` imported but unused",
+                    "Found 1 error (1 fixed, 0 remaining).",
+                ]
+            )
+
+            # Act
+            errors = adapter._parse_lint_errors(output)
+
+            # Assert
+            assert errors == ["src/foo.py:1:1: F401 `os` imported but unused"]

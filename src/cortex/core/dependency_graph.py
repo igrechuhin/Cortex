@@ -2,60 +2,80 @@
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, TypedDict
+from typing import cast
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from cortex.core.models import ModelDict
+from cortex.linking.link_parser import LinkParser
 
 from .async_file_utils import open_async_text_file
 from .graph_algorithms import GraphAlgorithms
+from .models import (
+    DependencyEdge,
+    DependencyNode,
+    FileDependencyDetail,
+    GraphDict,
+    ReferenceEdge,
+    ReferenceGraph,
+    TransclusionEdge,
+    TransclusionGraph,
+    TransclusionNode,
+)
+from .models import (
+    DependencyGraph as DependencyGraphExport,
+)
 
-if TYPE_CHECKING:
-    from cortex.linking.link_parser import LinkParser
 
-
-class FileDependencyInfo(TypedDict):
+class FileDependencyInfo(BaseModel):
     """Type definition for file dependency information."""
 
-    depends_on: list[str]
-    priority: int
-    category: str
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    depends_on: list[str] = Field(
+        default_factory=list, description="List of files this file depends on"
+    )
+    priority: int = Field(ge=0, description="Loading priority (0 = highest)")
+    category: str = Field(description="File category")
 
 
 # Static dependency hierarchy based on template structure
 STATIC_DEPENDENCIES: dict[str, FileDependencyInfo] = {
-    "memorybankinstructions.md": {
-        "depends_on": [],
-        "priority": 0,  # Always load first
-        "category": "meta",
-    },
-    "projectBrief.md": {
-        "depends_on": [],
-        "priority": 1,  # Foundation
-        "category": "foundation",
-    },
-    "productContext.md": {
-        "depends_on": ["projectBrief.md"],
-        "priority": 2,  # Context layer
-        "category": "context",
-    },
-    "systemPatterns.md": {
-        "depends_on": ["projectBrief.md"],
-        "priority": 2,
-        "category": "context",
-    },
-    "techContext.md": {
-        "depends_on": ["projectBrief.md"],
-        "priority": 2,
-        "category": "context",
-    },
-    "activeContext.md": {
-        "depends_on": ["productContext.md", "systemPatterns.md", "techContext.md"],
-        "priority": 3,  # Active work
-        "category": "active",
-    },
-    "progress.md": {
-        "depends_on": ["activeContext.md"],
-        "priority": 4,  # Status
-        "category": "status",
-    },
+    "memorybankinstructions.md": FileDependencyInfo(
+        depends_on=[],
+        priority=0,  # Always load first
+        category="meta",
+    ),
+    "projectBrief.md": FileDependencyInfo(
+        depends_on=[],
+        priority=1,  # Foundation
+        category="foundation",
+    ),
+    "productContext.md": FileDependencyInfo(
+        depends_on=["projectBrief.md"],
+        priority=2,  # Context layer
+        category="context",
+    ),
+    "systemPatterns.md": FileDependencyInfo(
+        depends_on=["projectBrief.md"],
+        priority=2,
+        category="context",
+    ),
+    "techContext.md": FileDependencyInfo(
+        depends_on=["projectBrief.md"],
+        priority=2,
+        category="context",
+    ),
+    "activeContext.md": FileDependencyInfo(
+        depends_on=["productContext.md", "systemPatterns.md", "techContext.md"],
+        priority=3,  # Active work
+        category="active",
+    ),
+    "progress.md": FileDependencyInfo(
+        depends_on=["activeContext.md"],
+        priority=4,  # Status
+        category="status",
+    ),
 }
 
 
@@ -106,13 +126,12 @@ class DependencyGraph:
                 logger.debug(f"Topological sort failed, using priority sort: {e}")
 
         # Sort by priority, then alphabetically for stability
-        sorted_files = sorted(
-            files,
-            key=lambda f: (
-                self.static_deps.get(f, {}).get("priority", 999),
-                f,
-            ),
-        )
+        def _sort_key(file_name: str) -> tuple[int, str]:
+            file_info = self.static_deps.get(file_name)
+            priority = file_info.priority if file_info else 999
+            return (priority, file_name)
+
+        sorted_files = sorted(files, key=_sort_key)
 
         return sorted_files
 
@@ -128,7 +147,7 @@ class DependencyGraph:
         """
         # Static dependencies
         file_info = self.static_deps.get(file_name)
-        static = file_info.get("depends_on", []) if file_info else []
+        static = file_info.depends_on if file_info else []
 
         # Dynamic dependencies (Phase 2+)
         dynamic = self.dynamic_deps.get(file_name, [])
@@ -150,7 +169,7 @@ class DependencyGraph:
         static_dependents = [
             fname
             for fname, info in self.static_deps.items()
-            if file_name in info["depends_on"]
+            if file_name in info.depends_on
         ]
 
         # Check dynamic dependencies (Phase 2+)
@@ -194,7 +213,7 @@ class DependencyGraph:
             Category: meta, foundation, context, active, or status
         """
         file_info = self.static_deps.get(file_name)
-        return file_info["category"] if file_info else "unknown"
+        return file_info.category if file_info else "unknown"
 
     def get_file_priority(self, file_name: str) -> int:
         """
@@ -207,7 +226,7 @@ class DependencyGraph:
             Priority number (0 = highest priority)
         """
         file_info = self.static_deps.get(file_name)
-        return file_info["priority"] if file_info else 999
+        return file_info.priority if file_info else 999
 
     def get_files_by_category(self, category: str) -> list[str]:
         """
@@ -222,7 +241,7 @@ class DependencyGraph:
         return [
             fname
             for fname, info in self.static_deps.items()
-            if info["category"] == category
+            if info.category == category
         ]
 
     def add_dynamic_dependency(self, from_file: str, to_file: str):
@@ -283,12 +302,12 @@ class DependencyGraph:
 
         return False
 
-    def to_dict(self) -> dict[str, object]:
+    def to_dict(self) -> DependencyGraphExport:
         """
         Export dependency graph as dictionary (for metadata index).
 
         Returns:
-            Dict representation of graph with nodes and edges
+            DependencyGraph model with nodes and edges
         """
         nodes = _build_dependency_nodes(self.static_deps)
 
@@ -299,7 +318,7 @@ class DependencyGraph:
         }
 
         # Build edges using pre-computed dependencies
-        edges: list[dict[str, object]] = [
+        edges = [
             _create_dependency_edge(
                 file_name, dep, self.dynamic_deps, self.get_file_priority
             )
@@ -307,11 +326,11 @@ class DependencyGraph:
             for dep in deps
         ]
 
-        return {
-            "nodes": nodes,
-            "edges": edges,
-            "progressive_loading_order": self.compute_loading_order(),
-        }
+        return DependencyGraphExport(
+            nodes=nodes,
+            edges=edges,
+            progressive_loading_order=self.compute_loading_order(),
+        )
 
     def to_mermaid(self) -> str:
         """
@@ -341,7 +360,7 @@ class DependencyGraph:
             return style_map.get(category, f'    {node_id}["{label}"]')
 
         node_lines = [
-            _format_node(file_name, info["category"])
+            _format_node(file_name, info.category)
             for file_name, info in self.static_deps.items()
         ]
         lines.extend(node_lines)
@@ -375,7 +394,7 @@ class DependencyGraph:
     async def build_from_links(
         self,
         memory_bank_dir: Path,
-        link_parser: "LinkParser",
+        link_parser: LinkParser,
     ) -> None:
         """
         Build dynamic dependency graph from actual links in files.
@@ -394,34 +413,51 @@ class DependencyGraph:
             await self._process_file_links(file_path, link_parser)
 
     async def _process_file_links(
-        self, file_path: Path, link_parser: "LinkParser"
+        self, file_path: Path, link_parser: LinkParser
     ) -> None:
         """Process links in a single file."""
         try:
             async with open_async_text_file(file_path, "r", "utf-8") as f:
                 content = await f.read()
-            parsed: dict[str, list[dict[str, object]]] = await link_parser.parse_file(
-                content
-            )
-            markdown_links = parsed.get("markdown_links", [])
-            transclusions = parsed.get("transclusions", [])
-            for link in markdown_links:
-                target_raw: object = link.get("target")
-                if target_raw and isinstance(target_raw, str):
-                    self.add_link_dependency(
-                        file_path.name, target_raw, link_type="reference"
-                    )
-            for trans in transclusions:
-                trans_target_raw: object = trans.get("target")
-                if trans_target_raw and isinstance(trans_target_raw, str):
-                    self.add_link_dependency(
-                        file_path.name, trans_target_raw, link_type="transclusion"
-                    )
+            parsed = await link_parser.parse_file(content)
+            self._process_markdown_links(parsed, file_path.name)
+            self._process_transclusions(parsed, file_path.name)
         except Exception as e:
-            # Skip files that can't be processed
             from cortex.core.logging_config import logger
 
             logger.warning(f"Failed to parse links from {file_path}: {e}")
+
+    def _process_markdown_links(self, parsed: ModelDict, file_name: str) -> None:
+        """Process markdown links from parsed content."""
+        markdown_links_raw = parsed.get("markdown_links", [])
+        if isinstance(markdown_links_raw, list):
+            for link_obj in markdown_links_raw:
+                if not isinstance(link_obj, dict):
+                    continue
+                link = cast(ModelDict, link_obj)
+                if not isinstance(link.get("target"), str):
+                    continue
+                self.add_link_dependency(
+                    file_name,
+                    cast(str, link["target"]),
+                    link_type="reference",
+                )
+
+    def _process_transclusions(self, parsed: ModelDict, file_name: str) -> None:
+        """Process transclusions from parsed content."""
+        transclusions_raw = parsed.get("transclusions", [])
+        if isinstance(transclusions_raw, list):
+            for trans_obj in transclusions_raw:
+                if not isinstance(trans_obj, dict):
+                    continue
+                trans = cast(ModelDict, trans_obj)
+                if not isinstance(trans.get("target"), str):
+                    continue
+                self.add_link_dependency(
+                    file_name,
+                    cast(str, trans["target"]),
+                    link_type="transclusion",
+                )
 
     def add_link_dependency(
         self, source_file: str, target_file: str, link_type: str = "reference"
@@ -509,90 +545,102 @@ class DependencyGraph:
         """
         return list(set(self.static_deps.keys()) | set(self.dynamic_deps.keys()))
 
-    def get_transclusion_graph(self) -> dict[str, object]:
+    def get_transclusion_graph(self) -> TransclusionGraph:
         """
         Get a graph containing only transclusion links.
 
         Returns:
-            Dict with nodes and edges for transclusion relationships
+            TransclusionGraph model with nodes and edges for transclusion relationships
         """
         all_files = self.get_all_files()
 
         # Optimize: Build nodes list in one pass
-        nodes: list[dict[str, object]] = [{"file": file} for file in all_files]
+        nodes = [TransclusionNode(file=file) for file in all_files]
 
         # Optimize: Build edges list using list comprehension
-        edges: list[dict[str, object]] = [
-            {"from": target_file, "to": source_file, "type": "transclusion"}
+        edges = [
+            TransclusionEdge(
+                **{
+                    "from": target_file,
+                    "to": source_file,
+                    "type": "transclusion",
+                }
+            )
             for source_file in all_files
             if source_file in self.link_types
             for target_file, link_type in self.link_types[source_file].items()
             if link_type == "transclusion"
         ]
 
-        return {"nodes": nodes, "edges": edges}
+        return TransclusionGraph(nodes=nodes, edges=edges)
 
-    def get_reference_graph(self) -> dict[str, object]:
+    def get_reference_graph(self) -> ReferenceGraph:
         """
         Get a graph containing only reference links.
 
         Returns:
-            Dict with nodes and edges for reference relationships
+            ReferenceGraph model with nodes and edges for reference relationships
         """
         all_files = self.get_all_files()
 
         # Optimize: Build nodes list in one pass
-        nodes: list[dict[str, object]] = [{"file": file} for file in all_files]
+        nodes = [TransclusionNode(file=file) for file in all_files]
 
         # Optimize: Build edges list using list comprehension
-        edges: list[dict[str, object]] = [
-            {"from": source_file, "to": target_file, "type": "reference"}
+        edges = [
+            ReferenceEdge(
+                **{
+                    "from": source_file,
+                    "to": target_file,
+                    "type": "reference",
+                }
+            )
             for source_file in all_files
             if source_file in self.link_types
             for target_file, link_type in self.link_types[source_file].items()
             if link_type == "reference"
         ]
 
-        return {"nodes": nodes, "edges": edges}
+        return ReferenceGraph(nodes=nodes, edges=edges)
 
-    def get_graph_dict(self) -> dict[str, object]:
+    def get_graph_dict(self) -> GraphDict:
         """
         Get dependency graph in format expected by reorganization planner.
 
         Returns:
-            Dict with "dependencies" key containing file dependency information
+            GraphDict model with dependencies key containing file dependency information
         """
-        dependencies: dict[str, dict[str, object]] = {}
+        dependencies: dict[str, FileDependencyDetail] = {}
         all_files = self.get_all_files()
 
         for file_name in all_files:
             deps = self.get_dependencies(file_name)
             dependents = self.get_dependents(file_name)
-            dependencies[file_name] = {
-                "depends_on": deps,
-                "dependents": dependents,
-            }
+            dependencies[file_name] = FileDependencyDetail(
+                depends_on=deps,
+                dependents=dependents,
+            )
 
-        return {"dependencies": dependencies}
+        return GraphDict(dependencies=dependencies)
 
 
 def _build_dependency_nodes(
     static_deps: dict[str, FileDependencyInfo],
-) -> list[dict[str, object]]:
+) -> list[DependencyNode]:
     """Build node list from static dependencies.
 
     Args:
         static_deps: Static dependencies dictionary
 
     Returns:
-        List of node dictionaries
+        List of DependencyNode models
     """
     return [
-        {
-            "file": file_name,
-            "priority": info["priority"],
-            "category": info["category"],
-        }
+        DependencyNode(
+            file=file_name,
+            priority=info.priority,
+            category=info.category,
+        )
         for file_name, info in static_deps.items()
     ]
 
@@ -602,7 +650,7 @@ def _create_dependency_edge(
     dep: str,
     dynamic_deps: dict[str, list[str]],
     get_file_priority: Callable[[str], int],
-) -> dict[str, object]:
+) -> DependencyEdge:
     """Create a single dependency edge dictionary.
 
     Args:
@@ -612,7 +660,7 @@ def _create_dependency_edge(
         get_file_priority: Function to get priority for a file
 
     Returns:
-        Edge dictionary
+        DependencyEdge model
     """
     is_dynamic = dep in dynamic_deps.get(file_name, [])
     edge_type = "links" if is_dynamic else "informs"
@@ -621,9 +669,11 @@ def _create_dependency_edge(
     to_priority = get_file_priority(dep)
     strength = "strong" if abs(from_priority - to_priority) == 1 else "medium"
 
-    return {
-        "from": dep,
-        "to": file_name,
-        "type": edge_type,
-        "strength": strength,
-    }
+    return DependencyEdge(
+        **{
+            "from": dep,
+            "to": file_name,
+            "type": edge_type,
+            "strength": strength,
+        }
+    )

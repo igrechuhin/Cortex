@@ -5,8 +5,6 @@ This module provides the cleanup_metadata_index tool for cleaning up
 stale entries from the metadata index.
 """
 
-from typing import cast
-
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
@@ -51,7 +49,7 @@ async def cleanup_metadata_index(
     try:
         root = get_project_root(project_root)
         mgrs = await get_managers(root)
-        metadata_index = cast(MetadataIndex, mgrs["index"])
+        metadata_index: MetadataIndex = mgrs.index
         stale_files = await metadata_index.validate_index_consistency()
         if not stale_files:
             return CleanupMetadataIndexResult(

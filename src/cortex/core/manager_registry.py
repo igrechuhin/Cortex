@@ -8,6 +8,8 @@ proper dependency injection patterns.
 
 from pathlib import Path
 
+from cortex.managers.types import ManagersDict
+
 
 class ManagerRegistry:
     """Registry for manager instances with project-scoped caching.
@@ -24,9 +26,9 @@ class ManagerRegistry:
 
     def __init__(self) -> None:
         """Initialize an empty manager registry."""
-        self._managers: dict[str, dict[str, object]] = {}
+        self._managers: dict[str, ManagersDict] = {}
 
-    async def get_managers(self, project_root: Path) -> dict[str, object]:
+    async def get_managers(self, project_root: Path) -> ManagersDict:
         """Get or initialize managers for a project with lazy loading.
 
         Core managers (priority 1) are initialized immediately for reliability.
@@ -36,7 +38,7 @@ class ManagerRegistry:
             project_root: Project root directory
 
         Returns:
-            Dictionary of manager instances (or LazyManager wrappers)
+            Managers dictionary with type-safe access
         """
         from cortex.managers.initialization import initialize_managers
 
@@ -44,7 +46,11 @@ class ManagerRegistry:
 
         if root_str not in self._managers:
             managers = await initialize_managers(project_root)
-            self._managers[root_str] = managers
+            # Convert to ManagersDict if needed
+            if isinstance(managers, dict):
+                self._managers[root_str] = ManagersDict.model_validate(managers)
+            else:
+                self._managers[root_str] = managers
 
         return self._managers[root_str]
 

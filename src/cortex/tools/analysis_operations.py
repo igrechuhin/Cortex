@@ -8,14 +8,32 @@ Total: 1 tool
 """
 
 import json
-from typing import Literal, cast
+from pathlib import Path
 
 from cortex.analysis.insight_engine import InsightEngine
 from cortex.analysis.pattern_analyzer import PatternAnalyzer
 from cortex.analysis.structure_analyzer import StructureAnalyzer
-from cortex.managers.initialization import get_managers, get_project_root
-from cortex.managers.lazy_manager import LazyManager
+from cortex.managers.manager_utils import get_manager
+from cortex.managers.types import ManagersDict
 from cortex.server import mcp
+
+
+async def get_managers(root: Path) -> ManagersDict:
+    """Runtime indirection for test patching.
+
+    Some tests patch `cortex.tools.file_operations.get_managers`, others patch
+    `cortex.tools.analysis_operations.get_managers`. This wrapper lets both work.
+    """
+    from cortex.tools import file_operations
+
+    return await file_operations.get_managers(root)
+
+
+def get_project_root(project_root: str | None) -> Path:
+    """Runtime indirection for test patching (see `get_managers`)."""
+    from cortex.tools import file_operations
+
+    return file_operations.get_project_root(project_root)
 
 
 async def analyze_usage_patterns(
@@ -60,9 +78,9 @@ async def analyze_structure(structure_analyzer: StructureAnalyzer) -> str:
     complexity = await structure_analyzer.measure_complexity_metrics()
 
     analysis = {
-        "organization": organization,
-        "anti_patterns": anti_patterns,
-        "complexity_metrics": complexity,
+        "organization": organization.model_dump(mode="json"),
+        "anti_patterns": [p.model_dump(mode="json") for p in anti_patterns],
+        "complexity_metrics": complexity.model_dump(mode="json"),
     }
 
     return json.dumps(
@@ -77,18 +95,13 @@ async def analyze_insights(
     insights = await insight_engine.generate_insights(
         min_impact_score=0.5, categories=categories
     )
-
     # Export in requested format
     if export_format == "markdown":
-        exported = await insight_engine.export_insights(
-            cast(dict[str, object], insights), format="markdown"
-        )
+        exported = await insight_engine.export_insights(insights, format="markdown")
     elif export_format == "text":
-        exported = await insight_engine.export_insights(
-            cast(dict[str, object], insights), format="text"
-        )
+        exported = await insight_engine.export_insights(insights, format="text")
     else:
-        exported = cast(dict[str, object], insights)
+        exported = insights.model_dump(mode="json")
 
     return json.dumps(
         {
@@ -102,25 +115,20 @@ async def analyze_insights(
 
 
 async def get_analysis_managers(
-    mgrs: dict[str, object],
+    mgrs: ManagersDict,
 ) -> tuple[PatternAnalyzer, StructureAnalyzer, InsightEngine]:
     """Unwrap and return analysis managers."""
-    pattern_analyzer_mgr = cast(LazyManager[PatternAnalyzer], mgrs["pattern_analyzer"])
-    structure_analyzer_mgr = cast(
-        LazyManager[StructureAnalyzer], mgrs["structure_analyzer"]
+    pattern_analyzer = await get_manager(mgrs, "pattern_analyzer", PatternAnalyzer)
+    structure_analyzer = await get_manager(
+        mgrs, "structure_analyzer", StructureAnalyzer
     )
-    insight_engine_mgr = cast(LazyManager[InsightEngine], mgrs["insight_engine"])
-
-    pattern_analyzer = await pattern_analyzer_mgr.get()
-    structure_analyzer = await structure_analyzer_mgr.get()
-    insight_engine = await insight_engine_mgr.get()
-
+    insight_engine = await get_manager(mgrs, "insight_engine", InsightEngine)
     return pattern_analyzer, structure_analyzer, insight_engine
 
 
 @mcp.tool()
 async def analyze(
-    target: Literal["usage_patterns", "structure", "insights"],
+    target: str,
     project_root: str | None = None,
     time_window_days: int | None = None,
     export_format: str = "json",

@@ -10,8 +10,11 @@ import re
 from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 from pathlib import Path
+from typing import cast
 
 from cortex.core.async_file_utils import open_async_text_file
+from cortex.core.models import JsonValue, ModelDict
+from cortex.refactoring.models import ConsolidationImpactModel
 
 
 @dataclass
@@ -27,14 +30,16 @@ class ConsolidationOpportunity:
     suggested_action: str
     extraction_target: str  # Where to extract the common content
     transclusion_syntax: list[str]  # Transclusion syntax for each file
-    details: dict[str, object] = field(default_factory=lambda: {})
+    details: ModelDict = field(default_factory=lambda: {})
 
-    def to_dict(self) -> dict[str, object]:
+    def to_dict(self) -> ModelDict:
         """Convert to dictionary"""
+        affected_files_json = cast(list[JsonValue], self.affected_files)
+        transclusion_syntax_json = cast(list[JsonValue], self.transclusion_syntax)
         return {
             "opportunity_id": self.opportunity_id,
             "opportunity_type": self.opportunity_type,
-            "affected_files": self.affected_files,
+            "affected_files": affected_files_json,
             "common_content_preview": (
                 self.common_content[:200] + "..."
                 if len(self.common_content) > 200
@@ -44,7 +49,7 @@ class ConsolidationOpportunity:
             "token_savings": self.token_savings,
             "suggested_action": self.suggested_action,
             "extraction_target": self.extraction_target,
-            "transclusion_syntax": self.transclusion_syntax,
+            "transclusion_syntax": transclusion_syntax_json,
             "details": self.details,
         }
 
@@ -265,6 +270,19 @@ class ConsolidationDetector:
             transclusion_syntax,
         )
 
+    def _build_consolidation_details(
+        self, heading1: str, heading2: str, content1: str, content2: str
+    ) -> ModelDict:
+        """Build consolidation opportunity details."""
+        differences_json = cast(
+            list[JsonValue], self.get_differences(content1, content2)
+        )
+        return {
+            "heading1": heading1,
+            "heading2": heading2,
+            "differences": differences_json,
+        }
+
     def _create_consolidation_opportunity(
         self,
         file1: str,
@@ -290,11 +308,9 @@ class ConsolidationDetector:
             suggested_action="Consolidate similar sections and use transclusion",
             extraction_target=extraction_target,
             transclusion_syntax=transclusion_syntax,
-            details={
-                "heading1": heading1,
-                "heading2": heading2,
-                "differences": self.get_differences(content1, content2),
-            },
+            details=self._build_consolidation_details(
+                heading1, heading2, content1, content2
+            ),
         )
 
     def _build_transclusion_syntax(
@@ -658,7 +674,7 @@ class ConsolidationDetector:
 
     async def analyze_consolidation_impact(
         self, opportunity: ConsolidationOpportunity
-    ) -> dict[str, object]:
+    ) -> ConsolidationImpactModel:
         """
         Analyze the impact of applying a consolidation.
 
@@ -668,30 +684,34 @@ class ConsolidationDetector:
         Returns:
             Impact analysis including token savings and risks
         """
-        return {
-            "opportunity_id": opportunity.opportunity_id,
-            "token_savings": opportunity.token_savings,
-            "files_affected": len(opportunity.affected_files),
-            "extraction_required": True,
-            "transclusion_count": len(opportunity.transclusion_syntax),
-            "similarity_score": opportunity.similarity_score,
-            "risk_level": "low" if opportunity.similarity_score > 0.95 else "medium",
-            "benefits": [
-                f"Save ~{opportunity.token_savings} tokens",
-                f"Reduce duplication across {len(opportunity.affected_files)} files",
-                "Single source of truth for shared content",
-                "Easier maintenance and updates",
-            ],
-            "risks": (
-                [
-                    "Requires understanding of transclusion syntax",
-                    "May break if shared file is deleted",
-                    "Circular dependencies if not careful",
-                ]
-                if opportunity.similarity_score < 0.95
-                else ["Low risk - exact duplicates found"]
-            ),
-        }
+        risk_level: str = "low" if opportunity.similarity_score > 0.95 else "medium"
+        benefits = [
+            f"Save ~{opportunity.token_savings} tokens",
+            f"Reduce duplication across {len(opportunity.affected_files)} files",
+            "Single source of truth for shared content",
+            "Easier maintenance and updates",
+        ]
+        risks = (
+            [
+                "Requires understanding of transclusion syntax",
+                "May break if shared file is deleted",
+                "Circular dependencies if not careful",
+            ]
+            if opportunity.similarity_score < 0.95
+            else ["Low risk - exact duplicates found"]
+        )
+
+        return ConsolidationImpactModel(
+            opportunity_id=opportunity.opportunity_id,
+            token_savings=opportunity.token_savings,
+            files_affected=len(opportunity.affected_files),
+            extraction_required=True,
+            transclusion_count=len(opportunity.transclusion_syntax),
+            similarity_score=opportunity.similarity_score,
+            risk_level=risk_level,
+            benefits=benefits,
+            risks=risks,
+        )
 
     def _parse_all_files_into_sections(
         self, file_contents: dict[str, str]

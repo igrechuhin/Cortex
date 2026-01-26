@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from typing import cast
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -301,10 +302,19 @@ class TestRollbackToVersion:
         content = "# Version 2 Content"
         _ = snapshot_path.write_text(content)
 
-        version_history: list[dict[str, object]] = [
-            {"version": 1, "snapshot_path": ".cortex/history/test_v1.md"},
-            {"version": 2, "snapshot_path": ".cortex/history/test_v2.md"},
-            {"version": 3, "snapshot_path": ".cortex/history/test_v3.md"},
+        def make_version(version: int, snapshot: Path) -> MagicMock:
+            meta = MagicMock()
+            meta.version = version
+            meta.snapshot_path = str(snapshot)
+            meta.model_dump = MagicMock(
+                return_value={"version": version, "snapshot_path": str(snapshot)}
+            )
+            return meta
+
+        version_history = [
+            make_version(1, manager.history_dir / "test_v1.md"),
+            make_version(2, snapshot_path),
+            make_version(3, manager.history_dir / "test_v3.md"),
         ]
 
         # Act
@@ -320,10 +330,20 @@ class TestRollbackToVersion:
         """Test returns None when target version not in history."""
         # Arrange
         manager = VersionManager(tmp_path)
-        version_history: list[dict[str, object]] = [
-            {"version": 1, "snapshot_path": ".cortex/history/test_v1.md"},
-            {"version": 2, "snapshot_path": ".cortex/history/test_v2.md"},
-        ]
+
+        def make_version(version: int) -> MagicMock:
+            meta = MagicMock()
+            meta.version = version
+            meta.snapshot_path = f".cortex/history/test_v{version}.md"
+            meta.model_dump = MagicMock(
+                return_value={
+                    "version": version,
+                    "snapshot_path": f".cortex/history/test_v{version}.md",
+                }
+            )
+            return meta
+
+        version_history = [make_version(1), make_version(2)]
 
         # Act
         result = await manager.rollback_to_version("test.md", version_history, 5)
@@ -337,9 +357,16 @@ class TestRollbackToVersion:
         """Test returns None when snapshot file doesn't exist."""
         # Arrange
         manager = VersionManager(tmp_path)
-        version_history: list[dict[str, object]] = [
-            {"version": 1, "snapshot_path": ".cortex/history/missing_v1.md"}
-        ]
+        version_meta = MagicMock()
+        version_meta.version = 1
+        version_meta.snapshot_path = str(tmp_path / ".cortex/history/missing_v1.md")
+        version_meta.model_dump = MagicMock(
+            return_value={
+                "version": 1,
+                "snapshot_path": str(tmp_path / ".cortex/history/missing_v1.md"),
+            }
+        )
+        version_history = [version_meta]
 
         # Act
         result = await manager.rollback_to_version("missing.md", version_history, 1)

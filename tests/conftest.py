@@ -12,27 +12,81 @@ This module provides comprehensive fixtures for:
 import asyncio
 import json
 import tempfile
-from collections.abc import Generator
+from collections.abc import Generator, ItemsView, KeysView, ValuesView
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import pytest
 
+from cortex.core.dependency_graph import DependencyGraph
+from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import JsonValue, ModelDict
+from cortex.core.token_counter import TokenCounter
+from cortex.managers.types import ManagersDict
+from cortex.optimization.relevance_scorer import RelevanceScorer
 from tests.helpers.path_helpers import (
     ensure_test_cortex_structure,
     get_test_memory_bank_dir,
 )
 
-if TYPE_CHECKING:
-    from cortex.core.dependency_graph import DependencyGraph
-    from cortex.core.metadata_index import MetadataIndex
-    from cortex.core.token_counter import TokenCounter
-    from cortex.optimization.relevance_scorer import RelevanceScorer
-
 # ============================================================================
 # Global Mocking for Integration Tests
 # ============================================================================
+
+
+@pytest.fixture(autouse=True, scope="session")
+def make_pydantic_models_dict_like():
+    """Make Pydantic models behave dict-like in tests.
+
+    A large portion of the historical test suite treats return values as plain dicts.
+    During the Phase 53 type-safety cleanup, many APIs were migrated to Pydantic
+    models. To keep tests focused on semantics (not container type), we provide
+    a thin dict-like shim for `pydantic.BaseModel` in the test runtime:
+    - `model["key"]`
+    - `"key" in model`
+    - `model.get("key", default)`
+    - `model.keys()/items()/values()`
+    """
+    from pydantic import BaseModel
+
+    if not hasattr(BaseModel, "__getitem__"):
+
+        def __getitem__(self: BaseModel, key: str) -> JsonValue:
+            data: ModelDict = self.model_dump(mode="python", by_alias=True)
+            return data[key]
+
+        def get(
+            self: BaseModel, key: str, default: JsonValue | None = None
+        ) -> JsonValue | None:
+            data: ModelDict = self.model_dump(mode="python", by_alias=True)
+            return data.get(key, default)
+
+        def __contains__(self: BaseModel, key: object) -> bool:
+            if not isinstance(key, str):
+                return False
+            data: ModelDict = self.model_dump(mode="python", by_alias=True)
+            return key in data
+
+        def keys(self: BaseModel) -> KeysView[str]:
+            data: ModelDict = self.model_dump(mode="python", by_alias=True)
+            return data.keys()
+
+        def items(self: BaseModel) -> ItemsView[str, JsonValue]:
+            data: ModelDict = self.model_dump(mode="python", by_alias=True)
+            return data.items()
+
+        def values(self: BaseModel) -> ValuesView[JsonValue]:
+            data: ModelDict = self.model_dump(mode="python", by_alias=True)
+            return data.values()
+
+        BaseModel.__getitem__ = __getitem__  # type: ignore[method-assign]
+        BaseModel.get = get  # type: ignore[method-assign]
+        BaseModel.__contains__ = __contains__  # type: ignore[method-assign]
+        BaseModel.keys = keys  # type: ignore[method-assign]
+        BaseModel.items = items  # type: ignore[method-assign]
+        BaseModel.values = values  # type: ignore[method-assign]
+
+    yield
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -73,7 +127,7 @@ def mock_tiktoken_globally():
 
 
 @pytest.fixture
-def temp_project_root() -> Generator[Path, None, None]:
+def temp_project_root() -> Generator[Path]:
     """
     Create a temporary project root directory for testing.
 
@@ -821,14 +875,16 @@ def temp_memory_bank(temp_project_root: Path) -> Path:
 
 
 @pytest.fixture
-def mock_managers() -> dict[str, object]:
+def mock_managers() -> ManagersDict:
     """
     Provide mock managers for testing tools.
 
     Returns:
-        dict[str, object]: Empty dict (individual tests should populate with mocks)
+        ManagersDict: Typed manager container with MagicMock defaults
     """
-    return {}
+    from tests.helpers.managers import make_test_managers
+
+    return make_test_managers()
 
 
 @pytest.fixture

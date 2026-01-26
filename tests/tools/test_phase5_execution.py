@@ -14,8 +14,37 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cortex.refactoring.refactoring_engine import RefactoringSuggestion
+from cortex.managers.types import ManagersDict
+from cortex.refactoring.models import (
+    ApprovalModel,
+    ApprovalStatus,
+    ApproveResult,
+    ExecutionResult,
+    FeedbackRecordResult,
+    LearningInsights,
+    RefactoringActionModel,
+    RefactoringPriority,
+    RefactoringSuggestionModel,
+    RefactoringType,
+    RollbackRefactoringResult,
+)
 from cortex.tools.phase5_execution import apply_refactoring, provide_feedback
+from tests.helpers.managers import make_test_managers
+
+
+def _get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object:
+    """Helper function to get manager by field name."""
+    return getattr(mgrs, key)
+
+
+@pytest.fixture(autouse=True)
+def _patch_get_manager() -> object:
+    """Patch strict get_manager() to allow MagicMocks in tool tests."""
+    with patch(
+        "cortex.tools.phase5_execution.get_manager", side_effect=_get_manager_helper
+    ):
+        yield
+
 
 # ============================================================================
 # Fixtures
@@ -30,45 +59,55 @@ def mock_project_root(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def mock_refactoring_suggestion():
-    """Create mock refactoring suggestion."""
-    suggestion = MagicMock()
-    suggestion.to_dict.return_value = {
-        "suggestion_id": "test-123",
-        "refactoring_type": "consolidation",
-        "confidence_score": 0.85,
-        "files_affected": ["file1.py", "file2.py"],
-        "description": "Test refactoring",
-    }
-    suggestion.refactoring_type.value = "consolidation"
-    suggestion.confidence_score = 0.85
-    return suggestion
+    """Create a realistic refactoring suggestion model."""
+    return RefactoringSuggestionModel(
+        suggestion_id="test-123",
+        refactoring_type=RefactoringType.CONSOLIDATION,
+        priority=RefactoringPriority.HIGH,
+        title="Test refactoring",
+        description="Test refactoring",
+        reasoning="Test reasoning",
+        affected_files=["file1.py", "file2.py"],
+        actions=[
+            RefactoringActionModel(
+                action_type="modify",
+                target_file="file1.py",
+                description="Modify file1",
+            )
+        ],
+        estimated_impact={"token_savings": 0, "files_affected": 2},
+        confidence_score=0.85,
+    )
 
 
 @pytest.fixture
 def mock_managers(
-    mock_refactoring_suggestion: RefactoringSuggestion,
-) -> dict[str, Any]:
-    """Create mock managers dictionary."""
+    mock_refactoring_suggestion: RefactoringSuggestionModel,
+) -> ManagersDict:
+    """Create typed mock managers container."""
     approval_manager = MagicMock()
     approval_manager.approve_suggestion = AsyncMock(
-        return_value={
-            "status": "success",
-            "approval_id": "approval-123",
-            "message": "Approved successfully",
-        }
+        return_value=ApproveResult(
+            approval_id="approval-123",
+            status="approved",
+            suggestion_id="test-123",
+            auto_apply=False,
+            message="Approved successfully",
+        )
     )
     approval_manager.get_approvals_for_suggestion = AsyncMock(
         return_value=[
-            {
-                "approval_id": "approval-123",
-                "status": "approved",
-                "timestamp": "2026-01-04T12:00:00",
-            }
+            ApprovalModel(
+                approval_id="approval-123",
+                suggestion_id="test-123",
+                suggestion_type="consolidation",
+                status=ApprovalStatus.APPROVED,
+                created_at="2026-01-04T12:00:00",
+                approved_at="2026-01-04T12:00:00",
+            )
         ]
     )
-    approval_manager.mark_as_applied = AsyncMock(
-        return_value={"status": "success", "marked": True}
-    )
+    approval_manager.mark_as_applied = AsyncMock(return_value=None)
 
     refactoring_engine = MagicMock()
     refactoring_engine.get_suggestion = AsyncMock(
@@ -77,48 +116,53 @@ def mock_managers(
 
     refactoring_executor = MagicMock()
     refactoring_executor.execute_refactoring = AsyncMock(
-        return_value={
-            "status": "success",
-            "execution_id": "exec-123",
-            "files_modified": ["file1.py"],
-            "changes_applied": 5,
-        }
+        return_value=ExecutionResult(
+            status="success",
+            execution_id="exec-123",
+            suggestion_id="test-123",
+            approval_id="approval-123",
+            operations_completed=5,
+            dry_run=False,
+        )
     )
 
     rollback_manager = MagicMock()
     rollback_manager.rollback_refactoring = AsyncMock(
-        return_value={
-            "status": "success",
-            "execution_id": "exec-123",
-            "files_restored": ["file1.py"],
-            "snapshot_restored": True,
-        }
+        return_value=RollbackRefactoringResult(
+            status="success",
+            rollback_id="rollback-123",
+            execution_id="exec-123",
+            files_restored=1,
+            conflicts_detected=0,
+            conflicts=[],
+            dry_run=False,
+        )
     )
 
     learning_engine = MagicMock()
     learning_engine.record_feedback = AsyncMock(
-        return_value={
-            "status": "success",
-            "feedback_recorded": True,
-            "confidence_adjusted": 0.87,
-        }
+        return_value=FeedbackRecordResult(
+            status="recorded",
+            feedback_id="feedback-123",
+            learning_enabled=True,
+            message="Feedback recorded",
+        )
     )
     learning_engine.get_learning_insights = AsyncMock(
-        return_value={
-            "total_feedback": 100,
-            "approval_rate": 0.85,
-            "min_confidence_threshold": 0.6,
-            "total_suggestions": 120,
-        }
+        return_value=LearningInsights(
+            total_feedback=100,
+            approval_rate=0.85,
+            min_confidence_threshold=0.6,
+        )
     )
 
-    return {
-        "approval_manager": approval_manager,
-        "refactoring_engine": refactoring_engine,
-        "refactoring_executor": refactoring_executor,
-        "rollback_manager": rollback_manager,
-        "learning_engine": learning_engine,
-    }
+    return make_test_managers(
+        approval_manager=approval_manager,
+        refactoring_engine=refactoring_engine,
+        refactoring_executor=refactoring_executor,
+        rollback_manager=rollback_manager,
+        learning_engine=learning_engine,
+    )
 
 
 # ============================================================================
@@ -151,9 +195,9 @@ class TestApplyRefactoringApprove:
             result = json.loads(result_str)
 
             # Assert
-            assert result["status"] == "success"
+            assert result["status"] == "approved"
             assert result["approval_id"] == "approval-123"
-            mock_managers["approval_manager"].approve_suggestion.assert_called_once()
+            mock_managers.approval_manager.approve_suggestion.assert_called_once()
 
     async def test_approve_with_auto_apply(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
@@ -177,10 +221,8 @@ class TestApplyRefactoringApprove:
             result = json.loads(result_str)
 
             # Assert
-            assert result["status"] == "success"
-            mock_managers[
-                "approval_manager"
-            ].approve_suggestion.assert_called_once_with(
+            assert result["status"] == "approved"
+            mock_managers.approval_manager.approve_suggestion.assert_called_once_with(
                 suggestion_id="test-123", user_comment=None, auto_apply=True
             )
 
@@ -208,7 +250,7 @@ class TestApplyRefactoringApprove:
             result = json.loads(result_str)
 
             # Assert
-            assert result["status"] == "success"
+            assert result["status"] == "approved"
 
     async def test_approve_missing_suggestion_id(self, mock_project_root: Path) -> None:
         """Test approval without suggestion_id."""
@@ -258,9 +300,7 @@ class TestApplyRefactoringApply:
             # Assert
             assert result["status"] == "success"
             assert result["execution_id"] == "exec-123"
-            mock_managers[
-                "refactoring_executor"
-            ].execute_refactoring.assert_called_once()
+            mock_managers.refactoring_executor.execute_refactoring.assert_called_once()
 
     async def test_apply_with_approval_id(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
@@ -291,13 +331,14 @@ class TestApplyRefactoringApply:
     ) -> None:
         """Test application in dry-run mode."""
         # Arrange
-        mock_managers["refactoring_executor"].execute_refactoring = AsyncMock(
-            return_value={
-                "status": "success",
-                "execution_id": "exec-dry-123",
-                "dry_run": True,
-                "would_modify": ["file1.py"],
-            }
+        mock_managers.refactoring_executor.execute_refactoring = AsyncMock(
+            return_value=ExecutionResult(
+                status="success",
+                execution_id="exec-dry-123",
+                suggestion_id="test-123",
+                approval_id="approval-123",
+                dry_run=True,
+            )
         )
 
         with (
@@ -318,18 +359,14 @@ class TestApplyRefactoringApply:
 
             # Assert
             assert result["status"] == "success"
-            mock_managers[
-                "approval_manager"
-            ].mark_as_applied.assert_not_called()  # No marking in dry-run
+            mock_managers.approval_manager.mark_as_applied.assert_not_called()
 
     async def test_apply_suggestion_not_found(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:
         """Test application when suggestion not found."""
         # Arrange
-        mock_managers["refactoring_engine"].get_suggestion = AsyncMock(
-            return_value=None
-        )
+        mock_managers.refactoring_engine.get_suggestion = AsyncMock(return_value=None)
 
         with (
             patch(
@@ -348,7 +385,7 @@ class TestApplyRefactoringApply:
             result = json.loads(result_str)
 
             # Assert
-            assert result["status"] == "error"
+            assert result["status"] == "validation_failed"
             assert "not found" in result["error"]
 
     async def test_apply_no_approval(
@@ -356,7 +393,7 @@ class TestApplyRefactoringApply:
     ) -> None:
         """Test application when no approval exists."""
         # Arrange
-        mock_managers["approval_manager"].get_approvals_for_suggestion = AsyncMock(
+        mock_managers.approval_manager.get_approvals_for_suggestion = AsyncMock(
             return_value=[]
         )
 
@@ -377,7 +414,7 @@ class TestApplyRefactoringApply:
             result = json.loads(result_str)
 
             # Assert
-            assert result["status"] == "error"
+            assert result["status"] == "validation_failed"
             assert "No approval found" in result["error"]
 
     async def test_apply_missing_suggestion_id(self, mock_project_root: Path) -> None:
@@ -428,7 +465,7 @@ class TestApplyRefactoringRollback:
             # Assert
             assert result["status"] == "success"
             assert result["execution_id"] == "exec-123"
-            mock_managers["rollback_manager"].rollback_refactoring.assert_called_once()
+            mock_managers.rollback_manager.rollback_refactoring.assert_called_once()
 
     async def test_rollback_with_options(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
@@ -456,9 +493,7 @@ class TestApplyRefactoringRollback:
 
             # Assert
             assert result["status"] == "success"
-            mock_managers[
-                "rollback_manager"
-            ].rollback_refactoring.assert_called_once_with(
+            mock_managers.rollback_manager.rollback_refactoring.assert_called_once_with(
                 execution_id="exec-123",
                 restore_snapshot=True,
                 preserve_manual_changes=False,
@@ -470,12 +505,16 @@ class TestApplyRefactoringRollback:
     ) -> None:
         """Test rollback in dry-run mode."""
         # Arrange
-        mock_managers["rollback_manager"].rollback_refactoring = AsyncMock(
-            return_value={
-                "status": "success",
-                "dry_run": True,
-                "would_restore": ["file1.py"],
-            }
+        mock_managers.rollback_manager.rollback_refactoring = AsyncMock(
+            return_value=RollbackRefactoringResult(
+                status="success",
+                rollback_id="rollback-dry-123",
+                execution_id="exec-123",
+                files_restored=0,
+                conflicts_detected=0,
+                conflicts=[],
+                dry_run=True,
+            )
         )
 
         with (
@@ -578,7 +617,7 @@ class TestProvideFeedback:
         self,
         mock_project_root: Path,
         mock_managers: dict[str, Any],
-        mock_refactoring_suggestion: RefactoringSuggestion,
+        mock_refactoring_suggestion: RefactoringSuggestionModel,
     ) -> None:
         """Test providing helpful feedback."""
         # Arrange
@@ -601,14 +640,10 @@ class TestProvideFeedback:
             result = json.loads(result_str)
 
             # Assert
-            assert result["status"] == "success"
-            assert result["feedback_recorded"] is True
+            assert result["status"] == "recorded"
+            assert result["feedback_id"] is not None
             assert "learning_summary" in result
-            learning_engine = mock_managers.get("learning_engine")
-            if learning_engine is not None and hasattr(
-                learning_engine, "record_feedback"
-            ):
-                learning_engine.record_feedback.assert_called_once()
+            mock_managers.learning_engine.record_feedback.assert_called_once()
 
     async def test_provide_feedback_not_helpful(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
@@ -634,7 +669,7 @@ class TestProvideFeedback:
             result = json.loads(result_str)
 
             # Assert
-            assert result["status"] == "success"
+            assert result["status"] == "recorded"
 
     async def test_provide_feedback_incorrect(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
@@ -660,7 +695,7 @@ class TestProvideFeedback:
             result = json.loads(result_str)
 
             # Assert
-            assert result["status"] == "success"
+            assert result["status"] == "recorded"
 
     async def test_provide_feedback_without_comment(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
@@ -684,18 +719,14 @@ class TestProvideFeedback:
             result = json.loads(result_str)
 
             # Assert
-            assert result["status"] == "success"
+            assert result["status"] == "recorded"
 
     async def test_provide_feedback_suggestion_not_found(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:
         """Test feedback for non-existent suggestion."""
         # Arrange
-        refactoring_engine = mock_managers.get("refactoring_engine")
-        if refactoring_engine is not None and hasattr(
-            refactoring_engine, "get_suggestion"
-        ):
-            refactoring_engine.get_suggestion = AsyncMock(return_value=None)
+        mock_managers.refactoring_engine.get_suggestion = AsyncMock(return_value=None)
 
         with (
             patch(
@@ -722,19 +753,19 @@ class TestProvideFeedback:
     ) -> None:
         """Test feedback for already applied suggestion."""
         # Arrange
-        approval_manager = mock_managers.get("approval_manager")
-        if approval_manager is not None and hasattr(
-            approval_manager, "get_approvals_for_suggestion"
-        ):
-            approval_manager.get_approvals_for_suggestion = AsyncMock(
-                return_value=[
-                    {
-                        "approval_id": "approval-123",
-                        "status": "applied",
-                        "timestamp": "2026-01-04T12:00:00",
-                    }
-                ]
-            )
+        mock_managers.approval_manager.get_approvals_for_suggestion = AsyncMock(
+            return_value=[
+                ApprovalModel(
+                    approval_id="approval-123",
+                    suggestion_id="test-123",
+                    suggestion_type="consolidation",
+                    status=ApprovalStatus.APPLIED,
+                    created_at="2026-01-04T12:00:00",
+                    approved_at="2026-01-04T12:00:00",
+                    applied_at="2026-01-04T12:05:00",
+                )
+            ]
+        )
 
         with (
             patch(
@@ -753,7 +784,7 @@ class TestProvideFeedback:
             result = json.loads(result_str)
 
             # Assert
-            assert result["status"] == "success"
+            assert result["status"] == "recorded"
             assert "learning_summary" in result
 
     async def test_provide_feedback_exception_handling(
@@ -806,7 +837,7 @@ class TestIntegration:
             approve_data = json.loads(approve_result)
 
             # Assert 1
-            assert approve_data["status"] == "success"
+            assert approve_data["status"] == "approved"
 
             # Act 2: Apply refactoring
             apply_result = await apply_refactoring(
@@ -824,7 +855,7 @@ class TestIntegration:
             feedback_data = json.loads(feedback_result)
 
             # Assert 3
-            assert feedback_data["status"] == "success"
+            assert feedback_data["status"] == "recorded"
 
     async def test_rollback_workflow(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
@@ -869,19 +900,13 @@ class TestIntegration:
 class TestHelperFunctions:
     """Tests for helper functions and edge cases."""
 
-    async def test_apply_invalid_approval_id_type(
+    async def test_apply_invalid_approval_id_returns_validation_failed(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:
-        """Test application when approval_id has invalid type."""
-        # Arrange - approval has non-string approval_id
-        mock_managers["approval_manager"].get_approvals_for_suggestion = AsyncMock(
-            return_value=[
-                {
-                    "approval_id": 12345,  # Invalid type - should be string
-                    "status": "approved",
-                    "timestamp": "2026-01-04T12:00:00",
-                }
-            ]
+        """Test application when approval_id is invalid."""
+        # Arrange - approval has empty approval_id
+        mock_managers.approval_manager.get_approvals_for_suggestion = AsyncMock(
+            return_value=[MagicMock(approval_id="", status=ApprovalStatus.APPROVED)]
         )
 
         with (
@@ -901,21 +926,21 @@ class TestHelperFunctions:
             result = json.loads(result_str)
 
             # Assert
-            assert result["status"] == "error"
-            assert "Invalid approval_id type" in result["error"]
+            assert result["status"] == "validation_failed"
+            assert "Invalid approval_id" in result["error"]
 
     async def test_apply_execution_id_not_string(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:
         """Test application when execution_id is not a string (edge case)."""
-        # Arrange - execution result has non-string execution_id
-        mock_managers["refactoring_executor"].execute_refactoring = AsyncMock(
-            return_value={
-                "status": "success",
-                "execution_id": None,  # Not a string - should skip mark_as_applied
-                "files_modified": ["file1.py"],
-                "changes_applied": 5,
-            }
+        # Arrange - empty execution_id should skip mark_as_applied
+        mock_managers.refactoring_executor.execute_refactoring = AsyncMock(
+            return_value=ExecutionResult(
+                status="success",
+                execution_id="",
+                suggestion_id="test-123",
+                approval_id="approval-123",
+            )
         )
 
         with (
@@ -937,4 +962,4 @@ class TestHelperFunctions:
             # Assert
             assert result["status"] == "success"
             # Mark as applied should NOT have been called (execution_id is not string)
-            mock_managers["approval_manager"].mark_as_applied.assert_not_called()
+            mock_managers.approval_manager.mark_as_applied.assert_not_called()

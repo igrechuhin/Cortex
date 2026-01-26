@@ -10,8 +10,10 @@ Total: 1 tool
 import json
 from typing import Literal, cast
 
+from cortex.core.models import ModelDict
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
+from cortex.optimization.models import RulesManagerStatusModel
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.rules_manager import RulesManager
 from cortex.server import mcp
@@ -50,8 +52,10 @@ async def handle_index_operation(rules_manager: RulesManager, force: bool) -> st
         JSON string with index result
     """
     result = await rules_manager.index_rules(force=force)
+    result_payload: ModelDict = result
     return json.dumps(
-        {"status": "success", "operation": "index", "result": result}, indent=2
+        {"status": "success", "operation": "index", "result": result_payload},
+        indent=2,
     )
 
 
@@ -104,55 +108,53 @@ def resolve_config_defaults(
 
 
 def extract_all_rules(
-    relevant_rules_dict: dict[str, object],
-) -> list[dict[str, object]]:
-    """Extract all rules from the relevant rules dictionary.
+    relevant_rules: ModelDict,
+) -> list[ModelDict]:
+    """Extract all rules from the relevant rules payload.
 
     Args:
-        relevant_rules_dict: Dictionary containing rules by category
+        relevant_rules: Rules result model containing rules by category
 
     Returns:
         List of all rules combined from all categories
     """
-    all_rules: list[dict[str, object]] = []
-    generic_rules = relevant_rules_dict.get("generic_rules", [])
-    language_rules = relevant_rules_dict.get("language_rules", [])
-    local_rules = relevant_rules_dict.get("local_rules", [])
-
+    all_rules: list[ModelDict] = []
+    generic_rules = relevant_rules.get("generic_rules", [])
+    language_rules = relevant_rules.get("language_rules", [])
+    local_rules = relevant_rules.get("local_rules", [])
     if isinstance(generic_rules, list):
-        all_rules.extend(cast(list[dict[str, object]], generic_rules))
+        all_rules.extend([r for r in generic_rules if isinstance(r, dict)])
     if isinstance(language_rules, list):
-        all_rules.extend(cast(list[dict[str, object]], language_rules))
+        all_rules.extend([r for r in language_rules if isinstance(r, dict)])
     if isinstance(local_rules, list):
-        all_rules.extend(cast(list[dict[str, object]], local_rules))
-
+        all_rules.extend([r for r in local_rules if isinstance(r, dict)])
     return all_rules
 
 
 def calculate_total_tokens(
-    relevant_rules_dict: dict[str, object], all_rules: list[dict[str, object]]
+    relevant_rules: ModelDict, all_rules: list[ModelDict]
 ) -> int:
     """Calculate total tokens from rules.
 
     Args:
-        relevant_rules_dict: Dictionary containing total_tokens key
+        relevant_rules: Rules result model containing total_tokens
         all_rules: List of all rules
 
     Returns:
         Total tokens count
     """
-    total_tokens_value = relevant_rules_dict.get("total_tokens", 0)
-    if isinstance(total_tokens_value, (int, float)):
-        return int(total_tokens_value)
+    total_tokens = relevant_rules.get("total_tokens")
+    if isinstance(total_tokens, int) and total_tokens > 0:
+        return total_tokens
 
-    return sum(
-        (
-            int(token_val)
-            if isinstance(token_val := r.get("tokens"), (int, float))
-            else 0
-        )
-        for r in all_rules
-    )
+    computed = 0
+    for rule in all_rules:
+        tokens = rule.get("tokens")
+        if isinstance(tokens, int):
+            computed += tokens
+        elif isinstance(tokens, float):
+            computed += int(tokens)
+    return computed
 
 
 async def handle_get_relevant_operation(
@@ -178,11 +180,12 @@ async def handle_get_relevant_operation(
         optimization_config, max_tokens, min_relevance_score
     )
 
-    relevant_rules_dict = await rules_manager.get_relevant_rules(
+    relevant_rules = await rules_manager.get_relevant_rules(
         task_description=task_description,
         max_tokens=resolved_max_tokens,
         min_relevance_score=resolved_min_score,
     )
+    relevant_rules_dict: ModelDict = relevant_rules
 
     all_rules = extract_all_rules(relevant_rules_dict)
     total_tokens = calculate_total_tokens(relevant_rules_dict, all_rules)
@@ -202,12 +205,13 @@ def build_get_relevant_response(
     task_description: str,
     max_tokens: int,
     min_score: float,
-    all_rules: list[dict[str, object]],
+    all_rules: list[ModelDict],
     total_tokens: int,
-    status: dict[str, object],
-    relevant_rules_dict: dict[str, object],
+    status: RulesManagerStatusModel,
+    relevant_rules: ModelDict,
 ) -> str:
     """Build response for get_relevant operation."""
+    status_payload = cast(ModelDict, status.model_dump(mode="json"))
     return json.dumps(
         {
             "status": "success",
@@ -218,9 +222,9 @@ def build_get_relevant_response(
             "rules_count": len(all_rules),
             "total_tokens": total_tokens,
             "rules": all_rules,
-            "rules_manager_status": status,
-            "rules_context": relevant_rules_dict.get("context", {}),
-            "rules_source": relevant_rules_dict.get("source", "unknown"),
+            "rules_manager_status": status_payload,
+            "rules_context": relevant_rules.get("context"),
+            "rules_source": relevant_rules.get("source"),
         },
         indent=2,
     )
@@ -255,11 +259,12 @@ async def dispatch_operation(
         # Validate parameters
         if error_msg := await validate_get_relevant_params(task_description):
             return error_msg
+        assert task_description is not None
         # Handle operation
         return await handle_get_relevant_operation(
             rules_manager,
             optimization_config,
-            task_description,  # type: ignore[arg-type]
+            task_description,
             max_tokens,
             min_relevance_score,
         )

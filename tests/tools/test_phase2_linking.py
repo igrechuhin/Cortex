@@ -20,12 +20,14 @@ from cortex.linking.transclusion_engine import (
     CircularDependencyError,
     MaxDepthExceededError,
 )
+from cortex.managers.types import ManagersDict
 from cortex.tools.phase2_linking import (
     get_link_graph,
     parse_file_links,
     resolve_transclusions,
     validate_links,
 )
+from tests.helpers.managers import make_test_managers
 from tests.helpers.path_helpers import get_test_memory_bank_dir
 
 # ============================================================================
@@ -33,9 +35,9 @@ from tests.helpers.path_helpers import get_test_memory_bank_dir
 # ============================================================================
 
 
-def _get_manager_helper(mgrs: dict[str, Any], key: str, _: object) -> Any:
-    """Helper function to get manager from dictionary."""
-    return mgrs[key]
+def _get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object:
+    """Helper function to get manager by field name."""
+    return getattr(mgrs, key)
 
 
 # ============================================================================
@@ -69,8 +71,8 @@ def mock_parsed_links() -> dict[str, list[dict[str, Any]]]:
 @pytest.fixture
 def mock_managers(
     mock_parsed_links: dict[str, list[dict[str, Any]]],
-) -> dict[str, Any]:
-    """Create mock managers dictionary."""
+) -> ManagersDict:
+    """Create typed mock managers container."""
     fs_manager = MagicMock()
     fs_manager.read_file = AsyncMock(return_value=("Test content", None))
     fs_manager.construct_safe_path = MagicMock(
@@ -115,10 +117,16 @@ def mock_managers(
     dependency_graph.build_from_links = AsyncMock()
     dependency_graph.detect_cycles = MagicMock(return_value=[])
     dependency_graph.to_dict = MagicMock(
-        return_value={"nodes": ["file1.md", "file2.md"], "edges": []}
+        return_value=MagicMock(
+            model_dump=MagicMock(
+                return_value={"nodes": ["file1.md", "file2.md"], "edges": []}
+            )
+        )
     )
     dependency_graph.get_reference_graph = MagicMock(
-        return_value={"nodes": ["file1.md"], "edges": []}
+        return_value=MagicMock(
+            model_dump=MagicMock(return_value={"nodes": ["file1.md"], "edges": []})
+        )
     )
     dependency_graph.to_mermaid = MagicMock(return_value="graph TD\nA-->B")
     dependency_graph.get_all_files = MagicMock(return_value=["file1.md", "file2.md"])
@@ -127,13 +135,13 @@ def mock_managers(
         "file2.md": {"file3.md": "transclusion"},
     }
 
-    return {
-        "fs": fs_manager,
-        "link_parser": link_parser,
-        "transclusion": transclusion_engine,
-        "link_validator": link_validator,
-        "graph": dependency_graph,
-    }
+    return make_test_managers(
+        fs=fs_manager,
+        graph=dependency_graph,
+        link_parser=link_parser,
+        transclusion=transclusion_engine,
+        link_validator=link_validator,
+    )
 
 
 # ============================================================================
@@ -151,7 +159,7 @@ class TestParseFileLinks:
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
-        mock_managers["fs"].construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path
 
         with (
             patch(
@@ -185,7 +193,7 @@ class TestParseFileLinks:
     ) -> None:
         """Test parsing with invalid file path."""
         # Arrange
-        mock_managers["fs"].construct_safe_path.side_effect = ValueError("Invalid path")
+        mock_managers.fs.construct_safe_path.side_effect = ValueError("Invalid path")
 
         with (
             patch(
@@ -211,7 +219,7 @@ class TestParseFileLinks:
         """Test parsing when file doesn't exist."""
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "nonexistent.md"
-        mock_managers["fs"].construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path
 
         with (
             patch(
@@ -263,7 +271,7 @@ class TestResolveTransclusions:
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
-        mock_managers["fs"].construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path
 
         with (
             patch(
@@ -298,8 +306,8 @@ class TestResolveTransclusions:
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
-        mock_managers["fs"].construct_safe_path.return_value = file_path
-        mock_managers["link_parser"].has_transclusions.return_value = False
+        mock_managers.fs.construct_safe_path.return_value = file_path
+        mock_managers.link_parser.has_transclusions.return_value = False
 
         with (
             patch(
@@ -331,8 +339,8 @@ class TestResolveTransclusions:
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
-        mock_managers["fs"].construct_safe_path.return_value = file_path
-        mock_managers["transclusion"].resolve_content.side_effect = (
+        mock_managers.fs.construct_safe_path.return_value = file_path
+        mock_managers.transclusion.resolve_content.side_effect = (
             CircularDependencyError(
                 "Circular dependency detected: a.md -> b.md -> a.md"
             )
@@ -368,9 +376,9 @@ class TestResolveTransclusions:
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
-        mock_managers["fs"].construct_safe_path.return_value = file_path
-        mock_managers["transclusion"].resolve_content.side_effect = (
-            MaxDepthExceededError("Maximum transclusion depth (5) exceeded")
+        mock_managers.fs.construct_safe_path.return_value = file_path
+        mock_managers.transclusion.resolve_content.side_effect = MaxDepthExceededError(
+            "Maximum transclusion depth (5) exceeded"
         )
 
         with (
@@ -403,7 +411,7 @@ class TestResolveTransclusions:
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
-        mock_managers["fs"].construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path
 
         with (
             patch(
@@ -426,14 +434,14 @@ class TestResolveTransclusions:
             # Assert
             assert result["status"] == "success"
             # Verify max_depth was set
-            assert mock_managers["transclusion"].max_depth == 10
+            assert mock_managers.transclusion.max_depth == 10
 
     async def test_resolve_transclusions_invalid_file(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:
         """Test resolution with invalid file name."""
         # Arrange
-        mock_managers["fs"].construct_safe_path.side_effect = ValueError("Invalid path")
+        mock_managers.fs.construct_safe_path.side_effect = ValueError("Invalid path")
 
         with (
             patch(
@@ -459,7 +467,7 @@ class TestResolveTransclusions:
         """Test resolution when file doesn't exist."""
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "nonexistent.md"
-        mock_managers["fs"].construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path
 
         with (
             patch(
@@ -495,7 +503,7 @@ class TestValidateLinks:
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
-        mock_managers["fs"].construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path
 
         with (
             patch(
@@ -556,7 +564,7 @@ class TestValidateLinks:
     ) -> None:
         """Test validation with invalid file path."""
         # Arrange
-        mock_managers["fs"].construct_safe_path.side_effect = ValueError("Invalid path")
+        mock_managers.fs.construct_safe_path.side_effect = ValueError("Invalid path")
 
         with (
             patch(
@@ -582,7 +590,7 @@ class TestValidateLinks:
         """Test validation when file doesn't exist."""
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "nonexistent.md"
-        mock_managers["fs"].construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path
 
         with (
             patch(
@@ -640,6 +648,10 @@ class TestGetLinkGraph:
                 "cortex.tools.link_graph_operations.get_managers",
                 return_value=mock_managers,
             ),
+            patch(
+                "cortex.tools.link_graph_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
         ):
             # Act
             result_str = await get_link_graph(format="json")
@@ -668,6 +680,10 @@ class TestGetLinkGraph:
                 "cortex.tools.link_graph_operations.get_managers",
                 return_value=mock_managers,
             ),
+            patch(
+                "cortex.tools.link_graph_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
         ):
             # Act
             result_str = await get_link_graph(format="mermaid")
@@ -694,6 +710,10 @@ class TestGetLinkGraph:
                 "cortex.tools.link_graph_operations.get_managers",
                 return_value=mock_managers,
             ),
+            patch(
+                "cortex.tools.link_graph_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
         ):
             # Act
             result_str = await get_link_graph(include_transclusions=False)
@@ -702,14 +722,14 @@ class TestGetLinkGraph:
             # Assert
             assert result["status"] == "success"
             # Verify get_reference_graph was called instead of to_dict
-            mock_managers["graph"].get_reference_graph.assert_called_once()
+            mock_managers.graph.get_reference_graph.assert_called_once()
 
     async def test_get_link_graph_with_cycles(
         self, mock_project_root: Path, mock_managers: dict[str, Any]
     ) -> None:
         """Test link graph with circular dependencies."""
         # Arrange
-        mock_managers["graph"].detect_cycles.return_value = [
+        mock_managers.graph.detect_cycles.return_value = [
             ["file1.md", "file2.md", "file1.md"]
         ]
 
@@ -721,6 +741,10 @@ class TestGetLinkGraph:
             patch(
                 "cortex.tools.link_graph_operations.get_managers",
                 return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.link_graph_operations.get_manager",
+                side_effect=_get_manager_helper,
             ),
         ):
             # Act
@@ -746,6 +770,10 @@ class TestGetLinkGraph:
             patch(
                 "cortex.tools.link_graph_operations.get_managers",
                 return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.link_graph_operations.get_manager",
+                side_effect=_get_manager_helper,
             ),
         ):
             # Act
@@ -792,7 +820,7 @@ class TestIntegration:
         """Test complete workflow: parse -> resolve -> validate -> graph."""
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
-        mock_managers["fs"].construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path
 
         with (
             patch(
@@ -839,6 +867,10 @@ class TestIntegration:
                 "cortex.tools.link_graph_operations.get_managers",
                 return_value=mock_managers,
             ),
+            patch(
+                "cortex.tools.link_graph_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
         ):
             # Act 1: Parse links
             parse_result = await parse_file_links(file_name="test.md")
@@ -877,7 +909,7 @@ class TestIntegration:
         """Test error handling across multiple operations."""
         # Arrange - simulate file not found
         file_path = get_test_memory_bank_dir(mock_project_root) / "missing.md"
-        mock_managers["fs"].construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path
 
         with (
             patch(

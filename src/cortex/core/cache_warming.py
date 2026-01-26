@@ -9,27 +9,33 @@ This module provides strategies to pre-populate caches based on:
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import TypedDict
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.advanced_cache import AdvancedCacheManager
+from cortex.core.models import JsonValue, ModelDict
 
 
-class WarmingStrategy(TypedDict):
+class WarmingStrategy(BaseModel):
     """Cache warming strategy configuration."""
 
-    name: str
-    enabled: bool
-    priority: int
-    max_items: int
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    name: str = Field(description="Strategy name")
+    enabled: bool = Field(description="Whether strategy is enabled")
+    priority: int = Field(ge=0, description="Priority (higher = more important)")
+    max_items: int = Field(ge=0, description="Maximum items to warm")
 
 
-class CacheWarmingResult(TypedDict):
+class CacheWarmingResult(BaseModel):
     """Result of cache warming operation."""
 
-    strategy: str
-    items_warmed: int
-    time_ms: float
-    success: bool
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    strategy: str = Field(description="Strategy name")
+    items_warmed: int = Field(ge=0, description="Number of items warmed")
+    time_ms: float = Field(ge=0.0, description="Time taken in milliseconds")
+    success: bool = Field(description="Whether operation succeeded")
 
 
 class CacheWarmer:
@@ -70,40 +76,40 @@ class CacheWarmer:
     def _build_default_strategies(self) -> dict[str, WarmingStrategy]:
         """Build default warming strategies."""
         return {
-            "hot_path": {
-                "name": "Hot Path Warming",
-                "enabled": True,
-                "priority": 1,
-                "max_items": 20,
-            },
-            "dependency": {
-                "name": "Dependency Warming",
-                "enabled": True,
-                "priority": 2,
-                "max_items": 15,
-            },
-            "recent": {
-                "name": "Recent Access Warming",
-                "enabled": True,
-                "priority": 3,
-                "max_items": 10,
-            },
-            "mandatory": {
-                "name": "Mandatory Files Warming",
-                "enabled": True,
-                "priority": 0,
-                "max_items": 5,
-            },
+            "hot_path": WarmingStrategy(
+                name="Hot Path Warming",
+                enabled=True,
+                priority=1,
+                max_items=20,
+            ),
+            "dependency": WarmingStrategy(
+                name="Dependency Warming",
+                enabled=True,
+                priority=2,
+                max_items=15,
+            ),
+            "recent": WarmingStrategy(
+                name="Recent Access Warming",
+                enabled=True,
+                priority=3,
+                max_items=10,
+            ),
+            "mandatory": WarmingStrategy(
+                name="Mandatory Files Warming",
+                enabled=True,
+                priority=0,
+                max_items=5,
+            ),
         }
 
     async def warm_all(
-        self, loader: Callable[[str], object]
+        self, loader: Callable[[str], JsonValue]
     ) -> list[CacheWarmingResult]:
         """
         Execute all enabled warming strategies in priority order.
 
         Args:
-            loader: Async function to load value for a key
+            loader: Sync function that loads a value for a key (run in a thread)
 
         Returns:
             List of warming results for each strategy
@@ -111,12 +117,10 @@ class CacheWarmer:
         results: list[CacheWarmingResult] = []
 
         # Sort strategies by priority
-        sorted_strategies = sorted(
-            self.strategies.items(), key=lambda x: x[1]["priority"]
-        )
+        sorted_strategies = sorted(self.strategies.items(), key=lambda x: x[1].priority)
 
         for strategy_name, strategy in sorted_strategies:
-            if not strategy["enabled"]:
+            if not strategy.enabled:
                 continue
 
             result = await self._warm_strategy(strategy_name, strategy, loader)
@@ -128,7 +132,7 @@ class CacheWarmer:
         self,
         strategy_name: str,
         strategy: WarmingStrategy,
-        loader: Callable[[str], object],
+        loader: Callable[[str], JsonValue],
     ) -> CacheWarmingResult:
         """
         Execute a single warming strategy.
@@ -139,7 +143,7 @@ class CacheWarmer:
         Args:
             strategy_name: Name of the strategy
             strategy: Strategy configuration
-            loader: Async function to load value for a key
+            loader: Sync function that loads a value for a key (run in a thread)
 
         Returns:
             Warming result
@@ -149,25 +153,25 @@ class CacheWarmer:
         start_time = time.time()
 
         try:
-            keys = self._get_strategy_keys(strategy_name, strategy["max_items"])
+            keys = self._get_strategy_keys(strategy_name, strategy.max_items)
             items_warmed = await self.cache_manager.warm_cache(keys, loader)
             time_ms = (time.time() - start_time) * 1000
 
-            return {
-                "strategy": strategy["name"],
-                "items_warmed": items_warmed,
-                "time_ms": time_ms,
-                "success": True,
-            }
+            return CacheWarmingResult(
+                strategy=strategy.name,
+                items_warmed=items_warmed,
+                time_ms=time_ms,
+                success=True,
+            )
 
         except Exception:
             time_ms = (time.time() - start_time) * 1000
-            return {
-                "strategy": strategy["name"],
-                "items_warmed": 0,
-                "time_ms": time_ms,
-                "success": False,
-            }
+            return CacheWarmingResult(
+                strategy=strategy.name,
+                items_warmed=0,
+                time_ms=time_ms,
+                success=False,
+            )
 
     def _get_strategy_keys(self, strategy_name: str, max_items: int) -> list[str]:
         """
@@ -247,20 +251,29 @@ class CacheWarmer:
 
         return mandatory_files[:max_items]
 
-    def configure_strategy(self, strategy_name: str, config: dict[str, object]) -> None:
+    def configure_strategy(
+        self, strategy_name: str, config: WarmingStrategy | ModelDict
+    ) -> None:
         """
         Configure a warming strategy.
 
         Args:
             strategy_name: Name of the strategy to configure
-            config: Configuration updates
+            config: Configuration updates as a WarmingStrategy model or dict
         """
         if strategy_name in self.strategies:
             strategy = self.strategies[strategy_name]
-            # Update strategy with config, filtering to valid WarmingStrategy keys
-            for key, value in config.items():
-                if key in strategy:
-                    strategy[key] = value  # type: ignore[literal-required]
+            config_dict = (
+                config.model_dump() if isinstance(config, WarmingStrategy) else config
+            )
+            # Update strategy, ignoring unknown keys
+            strategy_dict = strategy.model_dump()
+            strategy_dict.update(
+                {k: v for k, v in config_dict.items() if k in strategy_dict}
+            )
+            self.strategies[strategy_name] = WarmingStrategy.model_validate(
+                strategy_dict
+            )
 
     def disable_strategy(self, strategy_name: str) -> None:
         """
@@ -270,7 +283,10 @@ class CacheWarmer:
             strategy_name: Name of the strategy to disable
         """
         if strategy_name in self.strategies:
-            self.strategies[strategy_name]["enabled"] = False
+            strategy = self.strategies[strategy_name]
+            self.strategies[strategy_name] = WarmingStrategy.model_validate(
+                {**strategy.model_dump(), "enabled": False}
+            )
 
     def enable_strategy(self, strategy_name: str) -> None:
         """
@@ -280,13 +296,16 @@ class CacheWarmer:
             strategy_name: Name of the strategy to enable
         """
         if strategy_name in self.strategies:
-            self.strategies[strategy_name]["enabled"] = True
+            strategy = self.strategies[strategy_name]
+            self.strategies[strategy_name] = WarmingStrategy.model_validate(
+                {**strategy.model_dump(), "enabled": True}
+            )
 
 
 async def warm_cache_on_startup(
     cache_manager: AdvancedCacheManager,
     project_root: Path,
-    loader: Callable[[str], object],
+    loader: Callable[[str], JsonValue],
 ) -> list[CacheWarmingResult]:
     """
     Convenience function to warm cache on application startup.
@@ -294,7 +313,7 @@ async def warm_cache_on_startup(
     Args:
         cache_manager: Advanced cache manager instance
         project_root: Root directory of the project
-        loader: Async function to load value for a key
+        loader: Sync function that loads a value for a key (run in a thread)
 
     Returns:
         List of warming results

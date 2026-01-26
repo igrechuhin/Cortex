@@ -16,21 +16,23 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.managers.types import ManagersDict
 from cortex.tools.phase4_optimization import (
     get_relevance_scores,
     load_context,
     load_progressive_context,
     summarize_content,
 )
+from tests.helpers.managers import make_test_managers
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
 
 
-def _get_manager_helper(mgrs: dict[str, Any], key: str, _: object) -> Any:
-    """Helper function to get manager from dictionary."""
-    return mgrs[key]
+def _get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object:
+    """Helper function to get manager by field name."""
+    return getattr(mgrs, key)
 
 
 # ============================================================================
@@ -86,8 +88,8 @@ def mock_loaded_content() -> list[Any]:
 @pytest.fixture
 def mock_managers(
     mock_optimization_result: MagicMock, mock_loaded_content: list[Any]
-) -> dict[str, Any]:
-    """Create mock managers dictionary."""
+) -> ManagersDict:
+    """Create typed mock managers container."""
     optimization_config = MagicMock()
     optimization_config.get_token_budget.return_value = 10000
     optimization_config.get_priority_order.return_value = ["file1.md", "file2.md"]
@@ -109,10 +111,12 @@ def mock_managers(
     summarization_engine.summarize_file = AsyncMock(
         return_value={
             "original_tokens": 1000,
-            "summarized_tokens": 500,
+            "summary_tokens": 500,
             "reduction": 0.5,
-            "cached": False,
             "summary": "Test summary",
+            "strategy": "extract_key_sections",
+            "sections_kept": 0,
+            "sections_removed": 0,
         }
     )
 
@@ -124,7 +128,10 @@ def mock_managers(
         }
     )
     relevance_scorer.score_sections = AsyncMock(
-        return_value={"Section 1": 0.9, "Section 2": 0.8}
+        return_value=[
+            MagicMock(section="Section 1", title=None, score=0.9, reason="match"),
+            MagicMock(section="Section 2", title=None, score=0.8, reason="match"),
+        ]
     )
 
     metadata_index = MagicMock()
@@ -137,15 +144,15 @@ def mock_managers(
     fs_manager = MagicMock()
     fs_manager.read_file = AsyncMock(return_value=("Test content", None))
 
-    return {
-        "optimization_config": optimization_config,
-        "context_optimizer": context_optimizer,
-        "progressive_loader": progressive_loader,
-        "summarization_engine": summarization_engine,
-        "relevance_scorer": relevance_scorer,
-        "index": metadata_index,
-        "fs": fs_manager,
-    }
+    return make_test_managers(
+        optimization_config=optimization_config,
+        context_optimizer=context_optimizer,
+        progressive_loader=progressive_loader,
+        summarization_engine=summarization_engine,
+        relevance_scorer=relevance_scorer,
+        index=metadata_index,
+        fs=fs_manager,
+    )
 
 
 # ============================================================================
@@ -171,7 +178,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_manager",
+                "cortex.tools.phase4_context_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -204,7 +211,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_manager",
+                "cortex.tools.phase4_context_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -231,7 +238,7 @@ class TestLoadContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_manager",
+                "cortex.tools.phase4_context_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -287,7 +294,7 @@ class TestLoadProgressiveContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_manager",
+                "cortex.tools.phase4_progressive_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -318,7 +325,7 @@ class TestLoadProgressiveContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_manager",
+                "cortex.tools.phase4_progressive_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -347,7 +354,7 @@ class TestLoadProgressiveContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_manager",
+                "cortex.tools.phase4_progressive_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -376,7 +383,7 @@ class TestLoadProgressiveContext:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_manager",
+                "cortex.tools.phase4_progressive_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -429,7 +436,7 @@ class TestSummarizeContent:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_manager",
+                "cortex.tools.phase4_summarization_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -459,7 +466,7 @@ class TestSummarizeContent:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_manager",
+                "cortex.tools.phase4_summarization_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -486,7 +493,7 @@ class TestSummarizeContent:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_manager",
+                "cortex.tools.phase4_summarization_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -573,7 +580,7 @@ class TestGetRelevanceScores:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_manager",
+                "cortex.tools.phase4_relevance_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -604,7 +611,7 @@ class TestGetRelevanceScores:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_manager",
+                "cortex.tools.phase4_relevance_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -635,7 +642,7 @@ class TestGetRelevanceScores:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_manager",
+                "cortex.tools.phase4_relevance_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -690,7 +697,15 @@ class TestIntegration:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_manager",
+                "cortex.tools.phase4_context_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+            patch(
+                "cortex.tools.phase4_relevance_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+            patch(
+                "cortex.tools.phase4_summarization_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):
@@ -729,7 +744,7 @@ class TestIntegration:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.phase4_optimization.get_manager",
+                "cortex.tools.phase4_progressive_operations.get_manager",
                 side_effect=_get_manager_helper,
             ),
         ):

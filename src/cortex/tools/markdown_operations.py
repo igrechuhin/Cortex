@@ -12,49 +12,57 @@ import asyncio
 import json
 import re
 from pathlib import Path
-from typing import TypedDict
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_SECONDS
 from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.core.models import GitCommandResult
 from cortex.managers.initialization import get_project_root
 from cortex.server import mcp
 
 
-class FileResult(TypedDict):
+class FileResult(BaseModel):
     """Result for a single file processing."""
 
-    file: str
-    fixed: bool
-    errors: list[str]
-    error_message: str | None
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    file: str = Field(description="File path")
+    fixed: bool = Field(description="Whether file was fixed")
+    errors: list[str] = Field(default_factory=list, description="List of errors")
+    error_message: str | None = Field(default=None, description="Error message if any")
 
 
-class FixMarkdownLintResult(TypedDict):
+class FixMarkdownLintResult(BaseModel):
     """Result of markdown lint fixing operation."""
 
-    success: bool
-    files_processed: int
-    files_fixed: int
-    files_unchanged: int
-    files_with_errors: int
-    results: list[FileResult]
-    error_message: str | None
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    success: bool = Field(description="Whether operation succeeded")
+    files_processed: int = Field(ge=0, description="Number of files processed")
+    files_fixed: int = Field(ge=0, description="Number of files fixed")
+    files_unchanged: int = Field(ge=0, description="Number of files unchanged")
+    files_with_errors: int = Field(ge=0, description="Number of files with errors")
+    results: list[FileResult] = Field(
+        default_factory=lambda: list[FileResult](), description="File results"
+    )
+    error_message: str | None = Field(default=None, description="Error message if any")
 
 
-def _create_error_result(error: str) -> dict[str, object]:
-    """Create error result dict."""
-    return {
-        "success": False,
-        "error": error,
-        "stdout": "",
-        "stderr": "",
-        "returncode": -1,
-    }
+def _create_error_result(error: str) -> GitCommandResult:
+    """Create error result."""
+    return GitCommandResult(
+        success=False,
+        error=error,
+        stdout="",
+        stderr="",
+        returncode=-1,
+    )
 
 
 async def _run_command(
     cmd: list[str], cwd: Path | None = None, timeout: int = 30
-) -> dict[str, object]:
+) -> GitCommandResult:
     """Run a command asynchronously with timeout.
 
     Args:
@@ -63,7 +71,7 @@ async def _run_command(
         timeout: Timeout in seconds (default: 30)
 
     Returns:
-        Dict with success status, stdout, stderr, returncode
+        GitCommandResult with success status, stdout, stderr, returncode
     """
     try:
         async with asyncio.timeout(timeout):
@@ -74,16 +82,36 @@ async def _run_command(
                 stderr=asyncio.subprocess.PIPE,
             )
             stdout, stderr = await process.communicate()
-            return {
-                "success": process.returncode == 0,
-                "stdout": stdout.decode("utf-8", errors="replace"),
-                "stderr": stderr.decode("utf-8", errors="replace"),
-                "returncode": process.returncode,
-            }
+            return GitCommandResult(
+                success=process.returncode == 0,
+                stdout=stdout.decode("utf-8", errors="replace"),
+                stderr=stderr.decode("utf-8", errors="replace"),
+                returncode=process.returncode,
+            )
     except TimeoutError:
         return _create_error_result(f"Command timed out after {timeout}s")
     except Exception as e:
         return _create_error_result(str(e))
+
+
+def _result_success(result: GitCommandResult) -> bool:
+    return result.success
+
+
+def _result_stdout(result: GitCommandResult) -> str:
+    return result.stdout
+
+
+def _result_stderr(result: GitCommandResult) -> str:
+    return result.stderr
+
+
+def _result_returncode(result: GitCommandResult) -> int | None:
+    return result.returncode
+
+
+def _result_error(result: GitCommandResult) -> str | None:
+    return result.error
 
 
 def _parse_git_output(stdout: str, project_root: Path, files: list[Path]) -> None:
@@ -153,25 +181,23 @@ async def _get_modified_markdown_files(
 
     # Get staged and unstaged modified files
     diff_result = await _run_command(["git", "diff", "--name-only"], cwd=project_root)
-    if diff_result["success"]:
-        _parse_git_output(str(diff_result.get("stdout", "")), project_root, files)
+    if _result_success(diff_result):
+        _parse_git_output(_result_stdout(diff_result), project_root, files)
 
     # Get staged files
     cached_result = await _run_command(
         ["git", "diff", "--cached", "--name-only"], cwd=project_root
     )
-    if cached_result["success"]:
-        _parse_git_output(str(cached_result.get("stdout", "")), project_root, files)
+    if _result_success(cached_result):
+        _parse_git_output(_result_stdout(cached_result), project_root, files)
 
     # Optionally include untracked files
     if include_untracked:
         status_result = await _run_command(
             ["git", "status", "--porcelain"], cwd=project_root
         )
-        if status_result["success"]:
-            _parse_untracked_files(
-                str(status_result.get("stdout", "")), project_root, files
-            )
+        if _result_success(status_result):
+            _parse_untracked_files(_result_stdout(status_result), project_root, files)
 
     return sorted(set(files))
 
@@ -187,12 +213,12 @@ async def _find_markdownlint_command() -> list[str] | None:
     """
     # Try direct command first
     result = await _run_command(["markdownlint-cli2", "--version"])
-    if result.get("success", False):
+    if _result_success(result):
         return ["markdownlint-cli2"]
 
     # Try npx as fallback (doesn't require global installation)
     result = await _run_command(["npx", "--yes", "markdownlint-cli2", "--version"])
-    if result.get("success", False):
+    if _result_success(result):
         return ["npx", "--yes", "markdownlint-cli2"]
 
     return None
@@ -217,27 +243,30 @@ def _parse_markdownlint_output(stdout: str) -> list[str]:
 
 
 def _build_error_result(
-    relative_path: str, errors: list[str], return_code: int, error_msg: str | None
+    relative_path: str,
+    errors: list[str],
+    return_code: int | None,
+    error_msg: str | None,
 ) -> FileResult:
     """Build error result for markdownlint fix."""
     if return_code == 0 and errors:
-        return {
-            "file": relative_path,
-            "fixed": True,
-            "errors": errors,
-            "error_message": None,
-        }
+        return FileResult(
+            file=relative_path,
+            fixed=True,
+            errors=errors,
+            error_message=None,
+        )
 
     error_message = error_msg if isinstance(error_msg, str) else "Unknown error"
     if not error_message and errors:
         error_message = "; ".join(errors[:3])
 
-    return {
-        "file": relative_path,
-        "fixed": False,
-        "errors": errors,
-        "error_message": error_message,
-    }
+    return FileResult(
+        file=relative_path,
+        fixed=False,
+        errors=errors,
+        error_message=error_message,
+    )
 
 
 async def _run_markdownlint_fix(
@@ -265,28 +294,22 @@ async def _run_markdownlint_fix(
 
     result = await _run_command(cmd, cwd=project_root, timeout=60)
 
-    if not result["success"]:
-        error_msg_obj = result.get("error")
-        error_msg = str(error_msg_obj) if error_msg_obj is not None else None
-        stderr = str(result.get("stderr", ""))
-        returncode_obj = result.get("returncode", -1)
-        return_code = (
-            int(returncode_obj) if isinstance(returncode_obj, (int, str)) else -1
-        )
-        errors = _parse_markdownlint_errors(stderr)
+    if not _result_success(result):
+        error_msg = _result_error(result)
+        return_code = _result_returncode(result)
+        errors = _parse_markdownlint_errors(_result_stderr(result))
         return _build_error_result(str(relative_path), errors, return_code, error_msg)
 
     # Success - check if file was actually modified
-    stdout = str(result.get("stdout", ""))
-    errors = _parse_markdownlint_output(stdout)
+    errors = _parse_markdownlint_output(_result_stdout(result))
     fixed = bool(errors) and not dry_run
 
-    return {
-        "file": str(relative_path),
-        "fixed": fixed,
-        "errors": errors,
-        "error_message": None,
-    }
+    return FileResult(
+        file=str(relative_path),
+        fixed=fixed,
+        errors=errors,
+        error_message=None,
+    )
 
 
 def _create_error_response(error_message: str) -> str:
@@ -331,7 +354,7 @@ async def _validate_markdown_prerequisites(
         If error_response is not None, markdownlint_command will be None.
     """
     git_check = await _run_command(["git", "rev-parse", "--git-dir"], cwd=root_path)
-    if not git_check["success"]:
+    if not _result_success(git_check):
         return _create_error_response("Not in a git repository"), None
 
     markdownlint_cmd = await _find_markdownlint_command()
@@ -402,12 +425,12 @@ def _filter_batch_results(
         if result is None:
             continue
         if isinstance(result, BaseException):
-            error_result: FileResult = {
-                "file": "unknown",
-                "fixed": False,
-                "errors": [str(result)],
-                "error_message": str(result),
-            }
+            error_result = FileResult(
+                file="unknown",
+                fixed=False,
+                errors=[str(result)],
+                error_message=str(result),
+            )
             results.append(error_result)
         else:
             results.append(result)
@@ -416,8 +439,8 @@ def _filter_batch_results(
 
 def _calculate_statistics(results: list[FileResult]) -> tuple[int, int, int]:
     """Calculate statistics from file results."""
-    files_fixed = sum(1 for r in results if r["fixed"])
-    files_with_errors = sum(1 for r in results if r["error_message"] is not None)
+    files_fixed = sum(1 for r in results if r.fixed)
+    files_with_errors = sum(1 for r in results if r.error_message is not None)
     files_unchanged = len(results) - files_fixed - files_with_errors
     return files_fixed, files_with_errors, files_unchanged
 
@@ -425,16 +448,16 @@ def _calculate_statistics(results: list[FileResult]) -> tuple[int, int, int]:
 def _build_fix_response(results: list[FileResult]) -> str:
     """Build JSON response from file results."""
     files_fixed, files_with_errors, files_unchanged = _calculate_statistics(results)
-    script_result: FixMarkdownLintResult = {
-        "success": files_with_errors == 0,
-        "files_processed": len(results),
-        "files_fixed": files_fixed,
-        "files_unchanged": files_unchanged,
-        "files_with_errors": files_with_errors,
-        "results": results,
-        "error_message": None,
-    }
-    return json.dumps(script_result, indent=2)
+    script_result = FixMarkdownLintResult(
+        success=files_with_errors == 0,
+        files_processed=len(results),
+        files_fixed=files_fixed,
+        files_unchanged=files_unchanged,
+        files_with_errors=files_with_errors,
+        results=results,
+        error_message=None,
+    )
+    return json.dumps(script_result.model_dump(), indent=2)
 
 
 @mcp.tool()
@@ -553,23 +576,30 @@ async def fix_markdown_lint(
         return _create_error_response(str(e))
 
 
-class CorruptionMatch(TypedDict):
+class CorruptionMatch(BaseModel):
     """A detected corruption match."""
 
-    line_num: int
-    original: str
-    fixed: str
-    pattern: str
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    line_num: int = Field(ge=1, description="Line number")
+    original: str = Field(description="Original corrupted text")
+    fixed: str = Field(description="Fixed text")
+    pattern: str = Field(description="Pattern that matched")
 
 
-class FixRoadmapCorruptionResult(TypedDict):
+class FixRoadmapCorruptionResult(BaseModel):
     """Result of roadmap corruption fixing operation."""
 
-    success: bool
-    file_name: str
-    corruption_count: int
-    fixes_applied: list[CorruptionMatch]
-    error_message: str | None
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    success: bool = Field(description="Whether operation succeeded")
+    file_name: str = Field(description="File name")
+    corruption_count: int = Field(ge=0, description="Number of corruptions found")
+    fixes_applied: list[CorruptionMatch] = Field(
+        default_factory=lambda: list[CorruptionMatch](),
+        description="List of fixes applied",
+    )
+    error_message: str | None = Field(default=None, description="Error message if any")
 
 
 def _detect_pattern1(lines: list[str], matches: list[CorruptionMatch]) -> None:
@@ -640,9 +670,11 @@ def _detect_completion_date_secondary(
     p11 = re.compile(r"(Target completion:)(\d{4}-\d{2}-\d{2})([^ -])")
     for i, line in enumerate(lines, 1):
         for m in p11.finditer(line):
-            if not any(
-                e["line_num"] == i and m.group(0) in e["original"] for e in matches
-            ):
+            already_added = any(
+                existing.line_num == i and existing.original == m.group(0)
+                for existing in matches
+            )
+            if not already_added:
                 matches.append(
                     CorruptionMatch(
                         line_num=i,
@@ -799,18 +831,18 @@ def _apply_roadmap_fixes(content: str, matches: list[CorruptionMatch]) -> str:
         return content
 
     # Sort matches by line number (descending) to avoid offset issues
-    matches_sorted = sorted(matches, key=lambda m: m["line_num"], reverse=True)
+    matches_sorted = sorted(matches, key=lambda m: m.line_num, reverse=True)
 
     lines = content.split("\n")
     for match in matches_sorted:
-        line_idx = match["line_num"] - 1
+        line_idx = match.line_num - 1
         if line_idx < len(lines):
             line = lines[line_idx]
             # Replace the corrupted pattern
-            if "\n" in match["fixed"]:
+            if "\n" in match.fixed:
                 # Handle newline insertion - split the fix
-                parts = match["fixed"].split("\n", 1)
-                lines[line_idx] = line.replace(match["original"], parts[0])
+                parts = match.fixed.split("\n", 1)
+                lines[line_idx] = line.replace(match.original, parts[0])
                 if len(parts) > 1 and line_idx + 1 < len(lines):
                     # Insert new line or prepend to next line
                     if parts[1].startswith("- "):
@@ -818,35 +850,33 @@ def _apply_roadmap_fixes(content: str, matches: list[CorruptionMatch]) -> str:
                     else:
                         lines[line_idx + 1] = parts[1] + lines[line_idx + 1]
             else:
-                lines[line_idx] = line.replace(match["original"], match["fixed"])
+                lines[line_idx] = line.replace(match.original, match.fixed)
 
     return "\n".join(lines)
 
 
 def _create_roadmap_error_response(error_msg: str) -> str:
     """Create error response for roadmap corruption."""
-    return json.dumps(
-        {
-            "success": False,
-            "file_name": "roadmap.md",
-            "corruption_count": 0,
-            "fixes_applied": [],
-            "error_message": error_msg,
-        },
-        indent=2,
+    result = FixRoadmapCorruptionResult(
+        success=False,
+        file_name="roadmap.md",
+        corruption_count=0,
+        fixes_applied=[],
+        error_message=error_msg,
     )
+    return json.dumps(result.model_dump(), indent=2)
 
 
 def _create_roadmap_success_response(matches: list[CorruptionMatch]) -> str:
     """Create success response for roadmap corruption."""
-    result: FixRoadmapCorruptionResult = {
-        "success": True,
-        "file_name": "roadmap.md",
-        "corruption_count": len(matches),
-        "fixes_applied": matches,
-        "error_message": None,
-    }
-    return json.dumps(result, indent=2)
+    result = FixRoadmapCorruptionResult(
+        success=True,
+        file_name="roadmap.md",
+        corruption_count=len(matches),
+        fixes_applied=matches,
+        error_message=None,
+    )
+    return json.dumps(result.model_dump(), indent=2)
 
 
 @mcp.tool()

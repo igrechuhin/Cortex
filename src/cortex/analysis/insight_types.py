@@ -4,43 +4,65 @@ This module contains shared type definitions used across the insight
 analysis modules to avoid circular imports.
 """
 
-from typing import TypedDict
+from pydantic import BaseModel, ConfigDict, Field
+
+from cortex.analysis.models import InsightEvidence, RecommendationEntry
 
 
-class InsightDict(TypedDict, total=False):
+class InsightDict(BaseModel):
     """Type definition for insight dictionary."""
 
-    id: str
-    category: str
-    title: str
-    description: str
-    impact_score: float
-    severity: str
-    evidence: dict[str, object]
-    recommendations: list[str]
-    estimated_token_savings: int
-    affected_files: list[str]
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    id: str = Field(description="Insight identifier")
+    category: str = Field(description="Insight category")
+    title: str = Field(description="Insight title")
+    description: str = Field(description="Insight description")
+    impact_score: float = Field(ge=0.0, le=1.0, description="Impact score (0-1)")
+    severity: str = Field(description="Severity level")
+    evidence: InsightEvidence | None = Field(
+        default=None, description="Supporting evidence"
+    )
+    recommendations: list[str] = Field(
+        default_factory=list, description="Recommendations"
+    )
+    estimated_token_savings: int = Field(ge=0, description="Estimated token savings")
+    affected_files: list[str] = Field(
+        default_factory=list, description="Affected file paths"
+    )
 
 
-class SummaryDict(TypedDict, total=False):
+class SummaryDict(BaseModel):
     """Type definition for summary dictionary."""
 
-    status: str
-    message: str
-    high_severity_count: int
-    medium_severity_count: int
-    low_severity_count: int
-    top_recommendations: list[dict[str, object]]
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    status: str = Field(description="Summary status")
+    message: str = Field(description="Summary message")
+    high_severity_count: int = Field(ge=0, description="High severity count")
+    medium_severity_count: int = Field(ge=0, description="Medium severity count")
+    low_severity_count: int = Field(ge=0, description="Low severity count")
+    top_recommendations: list[RecommendationEntry] = Field(
+        default_factory=lambda: list[RecommendationEntry](),
+        description="Top recommendations",
+    )
 
 
-class InsightsResultDict(TypedDict):
+class InsightsResultDict(BaseModel):
     """Type definition for generate_insights return value."""
 
-    generated_at: str
-    total_insights: int
-    high_impact_count: int
-    medium_impact_count: int
-    low_impact_count: int
-    estimated_total_token_savings: int
-    insights: list[InsightDict]
-    summary: SummaryDict
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    generated_at: str = Field(description="Generation timestamp")
+    total_insights: int = Field(ge=0, description="Total number of insights")
+    high_impact_count: int = Field(ge=0, description="High impact count")
+    medium_impact_count: int = Field(ge=0, description="Medium impact count")
+    low_impact_count: int = Field(ge=0, description="Low impact count")
+    estimated_total_token_savings: int = Field(
+        ge=0, description="Total estimated token savings"
+    )
+    insights: list[InsightDict] = Field(
+        default_factory=lambda: list[InsightDict](),
+        description="List of insights",
+    )
+    summary: SummaryDict = Field(description="Summary information")

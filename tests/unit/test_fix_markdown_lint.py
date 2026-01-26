@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 # pyright: reportPrivateUsage=false
+from cortex.core.models import GitCommandResult
 from cortex.tools.markdown_operations import (
     _find_markdownlint_command,
     _get_modified_markdown_files,
@@ -42,10 +43,10 @@ class TestRunCommand:
             result = await _run_command(["test", "command"])
 
             # Assert
-            assert result["success"] is True
-            assert result["stdout"] == "output"
-            assert result["stderr"] == ""
-            assert result["returncode"] == 0
+            assert result.success is True
+            assert result.stdout == "output"
+            assert result.stderr == ""
+            assert result.returncode == 0
 
     @pytest.mark.asyncio
     async def test_run_command_failure(self):
@@ -67,10 +68,10 @@ class TestRunCommand:
             result = await _run_command(["test", "command"])
 
             # Assert
-            assert result["success"] is False
-            assert result["stdout"] == ""
-            assert result["stderr"] == "error message"
-            assert result["returncode"] == 1
+            assert result.success is False
+            assert result.stdout == ""
+            assert result.stderr == "error message"
+            assert result.returncode == 1
 
     @pytest.mark.asyncio
     async def test_run_command_timeout(self):
@@ -89,26 +90,27 @@ class TestRunCommand:
             result = await _run_command(["test", "command"], timeout=5)
 
             # Assert
-            assert result["success"] is False
-            error_msg = str(result.get("error", ""))
-            assert "timed out" in error_msg
-            assert result["returncode"] == -1
+            assert result.success is False
+            assert result.error is not None
+            assert "timed out" in result.error
+            assert result.returncode == -1
 
     @pytest.mark.asyncio
     async def test_run_command_exception(self):
         """Test command execution exception handling."""
         # Arrange
         with patch(
-            "asyncio.create_subprocess_exec", side_effect=Exception("Test error")
+            "cortex.tools.markdown_operations.asyncio.create_subprocess_exec",
+            side_effect=Exception("Test error"),
         ):
             # Act
             result = await _run_command(["test", "command"])
 
             # Assert
-            assert result["success"] is False
-            error_msg = str(result.get("error", ""))
-            assert "Test error" in error_msg
-            assert result["returncode"] == -1
+            assert result.success is False
+            assert result.error is not None
+            assert "Test error" in result.error
+            assert result.returncode == -1
 
 
 class TestGetModifiedMarkdownFiles:
@@ -126,9 +128,11 @@ class TestGetModifiedMarkdownFiles:
             new_callable=AsyncMock,
         ) as mock_run:
             mock_run.side_effect = [
-                {"success": True, "stdout": diff_output, "stderr": ""},
-                {"success": True, "stdout": "", "stderr": ""},
-                {"success": True, "stdout": "", "stderr": ""},
+                GitCommandResult(
+                    success=True, stdout=diff_output, stderr="", returncode=0
+                ),
+                GitCommandResult(success=True, stdout="", stderr="", returncode=0),
+                GitCommandResult(success=True, stdout="", stderr="", returncode=0),
             ]
 
             # Act
@@ -152,9 +156,11 @@ class TestGetModifiedMarkdownFiles:
             new_callable=AsyncMock,
         ) as mock_run:
             mock_run.side_effect = [
-                {"success": True, "stdout": "", "stderr": ""},
-                {"success": True, "stdout": cached_output, "stderr": ""},
-                {"success": True, "stdout": "", "stderr": ""},
+                GitCommandResult(success=True, stdout="", stderr="", returncode=0),
+                GitCommandResult(
+                    success=True, stdout=cached_output, stderr="", returncode=0
+                ),
+                GitCommandResult(success=True, stdout="", stderr="", returncode=0),
             ]
 
             # Act
@@ -177,9 +183,11 @@ class TestGetModifiedMarkdownFiles:
             new_callable=AsyncMock,
         ) as mock_run:
             mock_run.side_effect = [
-                {"success": True, "stdout": "", "stderr": ""},
-                {"success": True, "stdout": "", "stderr": ""},
-                {"success": True, "stdout": status_output, "stderr": ""},
+                GitCommandResult(success=True, stdout="", stderr="", returncode=0),
+                GitCommandResult(success=True, stdout="", stderr="", returncode=0),
+                GitCommandResult(
+                    success=True, stdout=status_output, stderr="", returncode=0
+                ),
             ]
 
             # Act
@@ -203,9 +211,9 @@ class TestGetModifiedMarkdownFiles:
             new_callable=AsyncMock,
         ) as mock_run:
             mock_run.side_effect = [
-                {"success": True, "stdout": "", "stderr": ""},
-                {"success": True, "stdout": "", "stderr": ""},
-                {"success": True, "stdout": "", "stderr": ""},
+                GitCommandResult(success=True, stdout="", stderr="", returncode=0),
+                GitCommandResult(success=True, stdout="", stderr="", returncode=0),
+                GitCommandResult(success=True, stdout="", stderr="", returncode=0),
             ]
 
             # Act
@@ -227,9 +235,13 @@ class TestGetModifiedMarkdownFiles:
             new_callable=AsyncMock,
         ) as mock_run:
             mock_run.side_effect = [
-                {"success": True, "stdout": diff_output, "stderr": ""},
-                {"success": True, "stdout": cached_output, "stderr": ""},
-                {"success": True, "stdout": "", "stderr": ""},
+                GitCommandResult(
+                    success=True, stdout=diff_output, stderr="", returncode=0
+                ),
+                GitCommandResult(
+                    success=True, stdout=cached_output, stderr="", returncode=0
+                ),
+                GitCommandResult(success=True, stdout="", stderr="", returncode=0),
             ]
 
             # Act
@@ -251,11 +263,12 @@ class TestCheckMarkdownlintAvailable:
             "cortex.tools.markdown_operations._run_command",
             new_callable=AsyncMock,
         ) as mock_run:
-            mock_run.return_value = {
-                "success": True,
-                "stdout": "markdownlint-cli2 version 1.0.0",
-                "stderr": "",
-            }
+            mock_run.return_value = GitCommandResult(
+                success=True,
+                stdout="markdownlint-cli2 version 1.0.0",
+                stderr="",
+                returncode=0,
+            )
 
             # Act
             result = await _find_markdownlint_command()
@@ -274,16 +287,19 @@ class TestCheckMarkdownlintAvailable:
         ) as mock_run:
             # First call fails (not in PATH), second succeeds (npx)
             mock_run.side_effect = [
-                {
-                    "success": False,
-                    "stdout": "",
-                    "stderr": "command not found",
-                },
-                {
-                    "success": True,
-                    "stdout": "markdownlint-cli2 version 1.0.0",
-                    "stderr": "",
-                },
+                GitCommandResult(
+                    success=False,
+                    stdout="",
+                    stderr="command not found",
+                    returncode=127,
+                    error="command not found",
+                ),
+                GitCommandResult(
+                    success=True,
+                    stdout="markdownlint-cli2 version 1.0.0",
+                    stderr="",
+                    returncode=0,
+                ),
             ]
 
             # Act
@@ -302,11 +318,13 @@ class TestCheckMarkdownlintAvailable:
             new_callable=AsyncMock,
         ) as mock_run:
             # Both calls fail
-            mock_run.return_value = {
-                "success": False,
-                "stdout": "",
-                "stderr": "command not found",
-            }
+            mock_run.return_value = GitCommandResult(
+                success=False,
+                stdout="",
+                stderr="command not found",
+                returncode=127,
+                error="command not found",
+            )
 
             # Act
             result = await _find_markdownlint_command()
@@ -331,12 +349,9 @@ class TestRunMarkdownlintFix:
             "cortex.tools.markdown_operations._run_command",
             new_callable=AsyncMock,
         ) as mock_run:
-            mock_run.return_value = {
-                "success": True,
-                "stdout": "Fixed: test.md",
-                "stderr": "",
-                "returncode": 0,
-            }
+            mock_run.return_value = GitCommandResult(
+                success=True, stdout="Fixed: test.md", stderr="", returncode=0
+            )
 
             # Act
             result = await _run_markdownlint_fix(
@@ -344,9 +359,9 @@ class TestRunMarkdownlintFix:
             )
 
             # Assert
-            assert result["fixed"] is True
-            assert result["file"] == "test.md"
-            assert result["error_message"] is None
+            assert result.fixed is True
+            assert result.file == "test.md"
+            assert result.error_message is None
             mock_run.assert_called_once()
 
     @pytest.mark.asyncio
@@ -361,12 +376,12 @@ class TestRunMarkdownlintFix:
             "cortex.tools.markdown_operations._run_command",
             new_callable=AsyncMock,
         ) as mock_run:
-            mock_run.return_value = {
-                "success": True,
-                "stdout": "test.md: 5:1 MD022/blanks-around-headings",
-                "stderr": "",
-                "returncode": 0,
-            }
+            mock_run.return_value = GitCommandResult(
+                success=True,
+                stdout="test.md: 5:1 MD022/blanks-around-headings",
+                stderr="",
+                returncode=0,
+            )
 
             # Act
             result = await _run_markdownlint_fix(
@@ -374,9 +389,9 @@ class TestRunMarkdownlintFix:
             )
 
             # Assert
-            assert result["fixed"] is False  # Dry run doesn't fix
-            assert result["file"] == "test.md"
-            assert len(result["errors"]) > 0
+            assert result.fixed is False  # Dry run doesn't fix
+            assert result.file == "test.md"
+            assert len(result.errors) > 0
             mock_run.assert_called_once()
             # Verify --fix was not included in command
             call_args = mock_run.call_args[0][0]
@@ -394,12 +409,13 @@ class TestRunMarkdownlintFix:
             "cortex.tools.markdown_operations._run_command",
             new_callable=AsyncMock,
         ) as mock_run:
-            mock_run.return_value = {
-                "success": False,
-                "stdout": "",
-                "stderr": "test.md: 1:1 MD036/no-emphasis-as-heading",
-                "returncode": 1,
-            }
+            mock_run.return_value = GitCommandResult(
+                success=False,
+                stdout="",
+                stderr="test.md: 1:1 MD036/no-emphasis-as-heading",
+                returncode=1,
+                error="markdownlint failed",
+            )
 
             # Act
             result = await _run_markdownlint_fix(
@@ -407,10 +423,10 @@ class TestRunMarkdownlintFix:
             )
 
             # Assert
-            assert result["fixed"] is False
-            assert result["file"] == "test.md"
-            assert result["error_message"] is not None
-            assert len(result["errors"]) > 0
+            assert result.fixed is False
+            assert result.file == "test.md"
+            assert result.error_message is not None
+            assert len(result.errors) > 0
 
     @pytest.mark.asyncio
     async def test_run_markdownlint_fix_timeout(self, tmp_path: Path):
@@ -424,13 +440,13 @@ class TestRunMarkdownlintFix:
             "cortex.tools.markdown_operations._run_command",
             new_callable=AsyncMock,
         ) as mock_run:
-            mock_run.return_value = {
-                "success": False,
-                "error": "Command timed out after 60s",
-                "stdout": "",
-                "stderr": "",
-                "returncode": -1,
-            }
+            mock_run.return_value = GitCommandResult(
+                success=False,
+                error="Command timed out after 60s",
+                stdout="",
+                stderr="",
+                returncode=-1,
+            )
 
             # Act
             result = await _run_markdownlint_fix(
@@ -438,9 +454,9 @@ class TestRunMarkdownlintFix:
             )
 
             # Assert
-            assert result["fixed"] is False
-            assert result["error_message"] is not None
-            assert "timed out" in result["error_message"]
+            assert result.fixed is False
+            assert result.error_message is not None
+            assert "timed out" in result.error_message
 
     @pytest.mark.asyncio
     async def test_run_markdownlint_fix_parses_errors(self, tmp_path: Path):
@@ -459,12 +475,13 @@ class TestRunMarkdownlintFix:
             "cortex.tools.markdown_operations._run_command",
             new_callable=AsyncMock,
         ) as mock_run:
-            mock_run.return_value = {
-                "success": False,
-                "stdout": "",
-                "stderr": stderr_output,
-                "returncode": 1,
-            }
+            mock_run.return_value = GitCommandResult(
+                success=False,
+                stdout="",
+                stderr=stderr_output,
+                returncode=1,
+                error="markdownlint failed",
+            )
 
             # Act
             result = await _run_markdownlint_fix(
@@ -472,9 +489,9 @@ class TestRunMarkdownlintFix:
             )
 
             # Assert
-            assert len(result["errors"]) == 2
-            assert any("MD022" in e for e in result["errors"])
-            assert any("MD032" in e for e in result["errors"])
+            assert len(result.errors) == 2
+            assert any("MD022" in e for e in result.errors)
+            assert any("MD032" in e for e in result.errors)
 
 
 class TestFixMarkdownLintTool:
@@ -505,15 +522,18 @@ class TestFixMarkdownLintTool:
             ),
         ):
             mock_run.side_effect = [
-                {"success": True, "stdout": "", "stderr": ""},  # git check
-                {"success": True, "stdout": "test.md", "stderr": ""},  # git diff
-                {"success": True, "stdout": "", "stderr": ""},  # git diff cached
-                {
-                    "success": True,
-                    "stdout": "Fixed",
-                    "stderr": "",
-                    "returncode": 0,
-                },  # markdownlint
+                GitCommandResult(
+                    success=True, stdout="", stderr="", returncode=0
+                ),  # git check
+                GitCommandResult(
+                    success=True, stdout="test.md", stderr="", returncode=0
+                ),  # git diff
+                GitCommandResult(
+                    success=True, stdout="", stderr="", returncode=0
+                ),  # git diff cached
+                GitCommandResult(
+                    success=True, stdout="Fixed", stderr="", returncode=0
+                ),  # markdownlint
             ]
 
             # Act
@@ -539,7 +559,13 @@ class TestFixMarkdownLintTool:
             patch(
                 "cortex.tools.markdown_operations._run_command",
                 new_callable=AsyncMock,
-                return_value={"success": False, "stdout": "", "stderr": ""},
+                return_value=GitCommandResult(
+                    success=False,
+                    stdout="",
+                    stderr="",
+                    returncode=128,
+                    error="not a git repository",
+                ),
             ),
         ):
             # Act
@@ -572,7 +598,9 @@ class TestFixMarkdownLintTool:
             ),
         ):
             mock_run.side_effect = [
-                {"success": True, "stdout": "", "stderr": ""},  # git check
+                GitCommandResult(
+                    success=True, stdout="", stderr="", returncode=0
+                ),  # git check
             ]
 
             # Act
@@ -609,7 +637,9 @@ class TestFixMarkdownLintTool:
                 return_value=[],
             ),
         ):
-            mock_run.return_value = {"success": True, "stdout": "", "stderr": ""}
+            mock_run.return_value = GitCommandResult(
+                success=True, stdout="", stderr="", returncode=0
+            )
 
             # Act
             result_str = await fix_markdown_lint(project_root=str(tmp_path))
@@ -703,14 +733,9 @@ class TestHelperFunctions:
         )
 
         results: list[FileResult] = [
-            {"file": "file1.md", "fixed": True, "errors": [], "error_message": None},
-            {"file": "file2.md", "fixed": False, "errors": [], "error_message": None},
-            {
-                "file": "file3.md",
-                "fixed": False,
-                "errors": [],
-                "error_message": "Error",
-            },
+            FileResult(file="file1.md", fixed=True, errors=[], error_message=None),
+            FileResult(file="file2.md", fixed=False, errors=[], error_message=None),
+            FileResult(file="file3.md", fixed=False, errors=[], error_message="Error"),
         ]
 
         files_fixed, files_with_errors, files_unchanged = _calculate_statistics(results)

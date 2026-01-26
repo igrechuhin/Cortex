@@ -2,7 +2,6 @@
 """File change handlers and health monitoring for manager initialization."""
 
 from pathlib import Path
-from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
@@ -27,9 +26,9 @@ async def handle_file_change(file_path: Path, event_type: str) -> None:
 
         file_name = file_path.name
         # Core managers are marked as Required in ManagersDict
-        metadata_index = cast(MetadataIndex, mgrs["index"])
-        fs_manager = cast(FileSystemManager, mgrs["fs"])
-        token_counter = cast(TokenCounter, mgrs["tokens"])
+        metadata_index = mgrs.index
+        fs_manager = mgrs.fs
+        token_counter = mgrs.tokens
 
         if event_type == "deleted":
             await _handle_deleted_file(metadata_index, file_name, file_path)

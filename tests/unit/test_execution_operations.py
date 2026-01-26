@@ -9,20 +9,23 @@ import pytest
 
 from cortex.core.exceptions import ValidationError
 from cortex.refactoring.execution_operations import ExecutionOperations
-from cortex.refactoring.execution_validator import RefactoringOperation
+from cortex.refactoring.models import (
+    OperationParameters,
+    RefactoringOperationModel,
+)
 
 
 def make_operation(
     op_type: str,
     target_file: str,
     **params: object,
-) -> RefactoringOperation:
-    """Helper to create RefactoringOperation with correct signature."""
-    return RefactoringOperation(
+) -> RefactoringOperationModel:
+    """Helper to create RefactoringOperationModel with correct signature."""
+    return RefactoringOperationModel(
         operation_id=f"op-{op_type}-001",
         operation_type=op_type,
         target_file=target_file,
-        parameters=dict(params),
+        parameters=OperationParameters(**params),
     )
 
 
@@ -115,7 +118,7 @@ class TestExecutionOperations:
         _ = source_file.write_text("# Content")
 
         operation = make_operation(
-            "move", "old_location.md", destination="new_location.md"
+            "move", "old_location.md", destination_file="new_location.md"
         )
 
         # Act
@@ -148,9 +151,9 @@ class TestExecutionOperations:
         operation = make_operation(
             "consolidate",
             "source.md",
-            extraction_target="consolidated.md",
-            files=["a.md", "b.md"],
-            sections=[{"content": "# Consolidated Content"}],
+            destination_file="consolidated.md",
+            source_file="a.md",
+            sections=["Section1"],
         )
 
         # Act
@@ -168,7 +171,7 @@ class TestExecutionOperations:
         operation = make_operation(
             "split",
             "large.md",
-            new_file="part1.md",
+            destination_file="part1.md",
             sections=["Section A"],
             content="# Part 1 Content",
         )

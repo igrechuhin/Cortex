@@ -19,6 +19,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from cortex.core.models import VersionMetadata
 from cortex.refactoring.models import RefactoringStatus, RollbackRecordModel
 
 
@@ -358,6 +359,22 @@ class TestRollbackAnalysis:
 class TestVersionSnapshots:
     """Tests for version_snapshots module."""
 
+    def _make_version_metadata(
+        self, *, version: int, change_description: str
+    ) -> VersionMetadata:
+        """Build a valid VersionMetadata instance for snapshot tests."""
+        return VersionMetadata(
+            version=version,
+            timestamp="2026-01-20T12:30:45",
+            content_hash="hash",
+            size_bytes=0,
+            token_count=0,
+            change_type="created",
+            snapshot_path=f".cortex/history/snapshots/v{version}.md",
+            changed_sections=[],
+            change_description=change_description,
+        )
+
     @pytest.mark.asyncio
     async def test_find_snapshot_for_execution_valid(self) -> None:
         """Test finding snapshot for valid execution ID."""
@@ -397,10 +414,12 @@ class TestVersionSnapshots:
         from cortex.refactoring.version_snapshots import find_snapshot_version
 
         # Arrange
-        version_history: list[dict[str, object]] = [
-            {"version": 1, "change_description": "Initial"},
-            {"version": 2, "change_description": "Pre-refactoring snapshot: snap-123"},
-            {"version": 3, "change_description": "Update"},
+        version_history = [
+            self._make_version_metadata(version=1, change_description="Initial"),
+            self._make_version_metadata(
+                version=2, change_description="Pre-refactoring snapshot: snap-123"
+            ),
+            self._make_version_metadata(version=3, change_description="Update"),
         ]
 
         # Act
@@ -414,8 +433,8 @@ class TestVersionSnapshots:
         from cortex.refactoring.version_snapshots import find_snapshot_version
 
         # Arrange
-        version_history: list[dict[str, object]] = [
-            {"version": 1, "change_description": "Initial"},
+        version_history = [
+            self._make_version_metadata(version=1, change_description="Initial"),
         ]
 
         # Act
@@ -425,22 +444,25 @@ class TestVersionSnapshots:
         assert result is None
 
     def test_find_snapshot_version_invalid_version(self) -> None:
-        """Test when version number is not an int."""
+        """Test behavior with invalid version history entry.
+
+        Note: `find_snapshot_version()` takes `list[VersionMetadata]` and should
+        never receive non-int versions at runtime.
+        """
         from cortex.refactoring.version_snapshots import find_snapshot_version
 
         # Arrange
-        version_history: list[dict[str, object]] = [
-            {
-                "version": "not-int",
-                "change_description": "Pre-refactoring snapshot: snap-123",
-            },
+        version_history = [
+            self._make_version_metadata(
+                version=1, change_description="Pre-refactoring snapshot: snap-123"
+            )
         ]
 
         # Act
         result = find_snapshot_version(version_history, "snap-123")
 
-        # Assert - version is string, not int
-        assert result is None
+        # Assert
+        assert result == 1
 
     @pytest.mark.asyncio
     async def test_get_version_history(self) -> None:
@@ -452,8 +474,10 @@ class TestVersionSnapshots:
         mock_index.get_file_metadata = AsyncMock(
             return_value={
                 "version_history": [
-                    {"version": 1, "change_description": "Initial"},
-                    {"version": 2, "change_description": "Update"},
+                    self._make_version_metadata(
+                        version=1, change_description="Initial"
+                    ),
+                    self._make_version_metadata(version=2, change_description="Update"),
                 ]
             }
         )
@@ -525,10 +549,10 @@ class TestVersionSnapshots:
         mock_index.get_file_metadata = AsyncMock(
             return_value={
                 "version_history": [
-                    {
-                        "version": 1,
-                        "change_description": "Pre-refactoring snapshot: snap-123",
-                    },
+                    self._make_version_metadata(
+                        version=1,
+                        change_description="Pre-refactoring snapshot: snap-123",
+                    )
                 ]
             }
         )

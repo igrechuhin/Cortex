@@ -8,6 +8,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast
 
+from cortex.core.models import ModelDict
+from cortex.refactoring.models import ReorganizationImpactModel
+
 
 @dataclass
 class ReorganizationAction:
@@ -41,8 +44,8 @@ class ReorganizationExecutor:
 
     async def generate_actions(
         self,
-        current_structure: dict[str, object],
-        proposed_structure: dict[str, object],
+        current_structure: ModelDict,
+        proposed_structure: ModelDict,
         optimize_for: str,
     ) -> list[ReorganizationAction]:
         """
@@ -69,10 +72,10 @@ class ReorganizationExecutor:
 
     def calculate_impact(
         self,
-        current_structure: dict[str, object],
-        proposed_structure: dict[str, object],
+        current_structure: ModelDict,
+        proposed_structure: ModelDict,
         actions: list[ReorganizationAction],
-    ) -> dict[str, object]:
+    ) -> ReorganizationImpactModel:
         """
         Calculate estimated impact of reorganization.
 
@@ -82,23 +85,23 @@ class ReorganizationExecutor:
             actions: List of reorganization actions
 
         Returns:
-            Dictionary containing impact metrics
+            Impact metrics model
         """
         move_actions = [a for a in actions if a.action_type == "move"]
         create_actions = [a for a in actions if a.action_type == "create_category"]
 
-        return {
-            "files_moved": len(move_actions),
-            "categories_created": len(create_actions),
-            "dependency_depth_reduction": 0.3,  # Estimated
-            "complexity_reduction": 0.4,
-            "maintainability_improvement": 0.6,
-            "navigation_improvement": 0.7,
-            "estimated_effort": "medium" if len(actions) > 10 else "low",
-        }
+        return ReorganizationImpactModel(
+            files_moved=len(move_actions),
+            categories_created=len(create_actions),
+            dependency_depth_reduction=0.3,  # Estimated
+            complexity_reduction=0.4,
+            maintainability_improvement=0.6,
+            navigation_improvement=0.7,
+            estimated_effort="medium" if len(actions) > 10 else "low",
+        )
 
     def identify_risks(
-        self, actions: list[ReorganizationAction], current_structure: dict[str, object]
+        self, actions: list[ReorganizationAction], current_structure: ModelDict
     ) -> list[str]:
         """
         Identify risks of reorganization.
@@ -136,8 +139,8 @@ class ReorganizationExecutor:
 
     def identify_benefits(
         self,
-        proposed_structure: dict[str, object],
-        current_structure: dict[str, object],
+        proposed_structure: ModelDict,
+        current_structure: ModelDict,
     ) -> list[str]:
         """
         Identify benefits of reorganization.
@@ -174,7 +177,7 @@ class ReorganizationExecutor:
         return benefits
 
     def _generate_category_based_actions(
-        self, proposed_structure: dict[str, object]
+        self, proposed_structure: ModelDict
     ) -> list[ReorganizationAction]:
         """
         Generate actions for category-based organization.
@@ -208,7 +211,7 @@ class ReorganizationExecutor:
         return actions
 
     def _generate_dependency_depth_actions(
-        self, proposed_structure: dict[str, object]
+        self, proposed_structure: ModelDict
     ) -> list[ReorganizationAction]:
         """
         Generate actions for dependency depth optimization.
@@ -241,7 +244,7 @@ class ReorganizationExecutor:
         return actions
 
     def _generate_complexity_actions(
-        self, proposed_structure: dict[str, object]
+        self, proposed_structure: ModelDict
     ) -> list[ReorganizationAction]:
         """
         Generate actions for complexity reduction.
@@ -278,8 +281,8 @@ class ReorganizationExecutor:
 
 
 def _extract_categories(
-    proposed_structure: dict[str, object],
-) -> dict[str, object]:
+    proposed_structure: ModelDict,
+) -> ModelDict:
     """
     Extract categories from proposed structure.
 
@@ -291,7 +294,7 @@ def _extract_categories(
     """
     proposed_categories_raw = proposed_structure.get("categories", {})
     return (
-        cast(dict[str, object], proposed_categories_raw)
+        cast(ModelDict, proposed_categories_raw)
         if isinstance(proposed_categories_raw, dict)
         else {}
     )

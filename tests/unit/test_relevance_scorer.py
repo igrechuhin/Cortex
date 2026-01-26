@@ -12,6 +12,7 @@ import pytest
 
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.metadata_index import MetadataIndex
+from cortex.optimization.models import FileMetadataForScoring
 from cortex.optimization.relevance_scorer import RelevanceScorer
 
 
@@ -351,10 +352,7 @@ class TestRecencyScoring:
         """Test _calculate_recency_score gives high score to recent files."""
         # Arrange
         scorer = RelevanceScorer(sample_dependency_graph, sample_metadata_index)
-        metadata = cast(
-            dict[str, object],
-            {"last_modified": datetime.now().isoformat()},
-        )
+        metadata = FileMetadataForScoring(last_modified=datetime.now().isoformat())
 
         # Act
         score = scorer.calculate_recency_score(
@@ -372,10 +370,7 @@ class TestRecencyScoring:
         # Arrange
         scorer = RelevanceScorer(sample_dependency_graph, sample_metadata_index)
         old_date = (datetime.now() - timedelta(days=180)).isoformat()
-        metadata = cast(
-            dict[str, object],
-            {"last_modified": old_date},
-        )
+        metadata = FileMetadataForScoring(last_modified=old_date)
 
         # Act
         score = scorer.calculate_recency_score(
@@ -392,7 +387,7 @@ class TestRecencyScoring:
         """Test _calculate_recency_score returns 0.5 when no timestamp."""
         # Arrange
         scorer = RelevanceScorer(sample_dependency_graph, sample_metadata_index)
-        metadata = cast(dict[str, object], {})  # No last_modified
+        metadata = FileMetadataForScoring()  # No last_modified
 
         # Act
         score = scorer.calculate_recency_score(
@@ -409,10 +404,7 @@ class TestRecencyScoring:
         """Test _calculate_recency_score handles invalid timestamp gracefully."""
         # Arrange
         scorer = RelevanceScorer(sample_dependency_graph, sample_metadata_index)
-        metadata = cast(
-            dict[str, object],
-            {"last_modified": "invalid-date"},
-        )
+        metadata = FileMetadataForScoring(last_modified="invalid-date")
 
         # Act
         score = scorer.calculate_recency_score(
@@ -524,10 +516,9 @@ class TestFileScoring:
         # Arrange
         scorer = RelevanceScorer(sample_dependency_graph, sample_metadata_index)
         files_content = {"test.md": "authentication system for API"}
-        files_metadata = cast(
-            dict[str, dict[str, object]],
-            {"test.md": {"last_modified": datetime.now().isoformat()}},
-        )
+        files_metadata = {
+            "test.md": FileMetadataForScoring(last_modified=datetime.now().isoformat())
+        }
 
         # Act
         result = await scorer.score_files(
@@ -560,7 +551,7 @@ class TestFileScoring:
             quality_weight=0.0,
         )
         files_content = {"test.md": "test test test"}
-        files_metadata = cast(dict[str, dict[str, object]], {"test.md": {}})
+        files_metadata = {"test.md": FileMetadataForScoring()}
 
         # Act
         result = await scorer.score_files("test", files_content, files_metadata)
@@ -579,7 +570,7 @@ class TestFileScoring:
         # Arrange
         scorer = RelevanceScorer(sample_dependency_graph, sample_metadata_index)
         files_content = {"test.md": "content"}
-        files_metadata = cast(dict[str, dict[str, object]], {"test.md": {}})
+        files_metadata = {"test.md": FileMetadataForScoring()}
         quality_scores = {"test.md": 150.0}  # Above 1.0, should be normalized
 
         # Act
@@ -606,10 +597,9 @@ class TestFileScoring:
         files_content = {
             "test.md": "authentication authentication authentication system api"
         }
-        files_metadata = cast(
-            dict[str, dict[str, object]],
-            {"test.md": {"last_modified": datetime.now().isoformat()}},
-        )
+        files_metadata = {
+            "test.md": FileMetadataForScoring(last_modified=datetime.now().isoformat())
+        }
         quality_scores = {"test.md": 0.9}
 
         # Act
@@ -722,7 +712,7 @@ class TestEdgeCases:
         # Arrange
         scorer = RelevanceScorer(sample_dependency_graph, sample_metadata_index)
         files_content = {"test.md": "系统认证 authentication système"}
-        files_metadata = cast(dict[str, dict[str, object]], {"test.md": {}})
+        files_metadata = {"test.md": FileMetadataForScoring()}
 
         # Act
         result = await scorer.score_files(
@@ -745,7 +735,7 @@ class TestEdgeCases:
         scorer = RelevanceScorer(sample_dependency_graph, sample_metadata_index)
         long_content = "word " * 10000 + "authentication"
         files_content = {"test.md": long_content}
-        files_metadata = cast(dict[str, dict[str, object]], {"test.md": {}})
+        files_metadata = {"test.md": FileMetadataForScoring()}
 
         # Act
         result = await scorer.score_files(
@@ -767,10 +757,9 @@ class TestEdgeCases:
         # Arrange
         scorer = RelevanceScorer(sample_dependency_graph, sample_metadata_index)
         files_content = {"test.md": "test content here"}
-        files_metadata = cast(
-            dict[str, dict[str, object]],
-            {"test.md": {"last_modified": datetime.now().isoformat()}},
-        )
+        files_metadata = {
+            "test.md": FileMetadataForScoring(last_modified=datetime.now().isoformat())
+        }
 
         # Act
         result = await scorer.score_files("test", files_content, files_metadata)
