@@ -24,9 +24,9 @@ class TestSimilarityEngine:
 
     def test_calculate_content_similarity_similar(self):
         """Test similarity calculation for similar content."""
-        engine = SimilarityEngine()
-        content1 = "This is test content for similarity."
-        content2 = "This is test content for similarity check."
+        engine = SimilarityEngine(min_content_length=10)
+        content1 = "This is test content for similarity analysis and comparison between different text samples."
+        content2 = "This is test content for similarity checking and comparison between different text samples."
         similarity = engine.calculate_content_similarity(content1, content2)
         assert similarity > 0.7
 
@@ -57,3 +57,186 @@ class TestSimilarityEngine:
         content = "Test content"
         similarity = engine.calculate_content_similarity(content, content)
         assert similarity == 1.0
+
+    def test_configuration_parameters(self):
+        """Test similarity engine with custom configuration."""
+        engine = SimilarityEngine(
+            high_threshold=0.8,
+            medium_threshold=0.65,
+            min_content_length=50,
+            heading_weight=2.0,
+            code_weight=1.5,
+        )
+        assert engine.high_threshold == 0.8
+        assert engine.medium_threshold == 0.65
+        assert engine.min_content_length == 50
+        assert engine.heading_weight == 2.0
+        assert engine.code_weight == 1.5
+
+    def test_calculate_semantic_similarity(self):
+        """Test semantic similarity calculation."""
+        engine = SimilarityEngine()
+        content1 = "Analyze and validate the system performance"
+        content2 = "Check and process the system validation"
+        similarity = engine.calculate_semantic_similarity(content1, content2)
+        assert 0.0 <= similarity <= 1.0
+
+    def test_calculate_semantic_similarity_identical(self):
+        """Test semantic similarity for identical content."""
+        engine = SimilarityEngine()
+        content = "Test content for semantic analysis"
+        similarity = engine.calculate_semantic_similarity(content, content)
+        assert similarity > 0.8
+
+    def test_calculate_semantic_similarity_different(self):
+        """Test semantic similarity for different content."""
+        engine = SimilarityEngine()
+        content1 = "Analyze system performance"
+        content2 = "Completely unrelated topic here"
+        similarity = engine.calculate_semantic_similarity(content1, content2)
+        assert 0.0 <= similarity < 0.5
+
+    def test_calculate_functional_similarity_parameters(self):
+        """Test functional similarity with parameters."""
+        engine = SimilarityEngine()
+        params1 = ["param1", "param2", "param3"]
+        params2 = ["param1", "param2", "param4"]
+        similarity = engine.calculate_functional_similarity(
+            params1=params1, params2=params2
+        )
+        assert 0.0 <= similarity <= 1.0
+
+    def test_calculate_functional_similarity_return_types(self):
+        """Test functional similarity with return types."""
+        engine = SimilarityEngine()
+        similarity = engine.calculate_functional_similarity(
+            return_type1="str", return_type2="string"
+        )
+        assert similarity == 1.0
+
+    def test_calculate_functional_similarity_different_types(self):
+        """Test functional similarity with different return types."""
+        engine = SimilarityEngine()
+        similarity = engine.calculate_functional_similarity(
+            return_type1="str", return_type2="int"
+        )
+        assert similarity == 0.0
+
+    def test_calculate_functional_similarity_usage_patterns(self):
+        """Test functional similarity with usage patterns."""
+        engine = SimilarityEngine()
+        pattern1 = "Read file and process content"
+        pattern2 = "Read file and analyze content"
+        similarity = engine.calculate_functional_similarity(
+            usage_pattern1=pattern1, usage_pattern2=pattern2
+        )
+        assert 0.0 <= similarity <= 1.0
+
+    def test_calculate_functional_similarity_complete(self):
+        """Test functional similarity with all parameters."""
+        engine = SimilarityEngine()
+        similarity = engine.calculate_functional_similarity(
+            params1=["file", "mode"],
+            params2=["file", "mode"],
+            return_type1="str",
+            return_type2="string",
+            usage_pattern1="Read file content",
+            usage_pattern2="Read file content",
+        )
+        assert similarity > 0.8
+
+    def test_cosine_similarity(self):
+        """Test cosine similarity calculation."""
+        engine = SimilarityEngine()
+        content1 = "This is test content for similarity analysis"
+        content2 = "This is test content for similarity checking"
+        # Access private method via public interface
+        similarity = engine.calculate_content_similarity(content1, content2)
+        assert 0.0 <= similarity <= 1.0
+
+    def test_section_weighting_headings(self):
+        """Test section similarity with heading weighting."""
+        engine = SimilarityEngine(heading_weight=2.0, text_weight=1.0)
+        sections1 = ["# Heading 1", "Regular text content"]
+        sections2 = ["# Heading 1", "Different text content"]
+        similarity = engine.calculate_section_similarity(sections1, sections2)
+        assert 0.0 <= similarity <= 1.0
+        # Heading match should have more weight
+        assert similarity > 0.5
+
+    def test_section_weighting_code(self):
+        """Test section similarity with code weighting."""
+        engine = SimilarityEngine(code_weight=1.5, text_weight=1.0)
+        sections1 = ["```python\ncode\n```", "Regular text"]
+        sections2 = ["```python\ncode\n```", "Different text"]
+        similarity = engine.calculate_section_similarity(sections1, sections2)
+        assert 0.0 <= similarity <= 1.0
+
+    def test_minimum_content_length(self):
+        """Test minimum content length filtering."""
+        engine = SimilarityEngine(min_content_length=100)
+        short1 = "Short"
+        short2 = "Text"
+        similarity = engine.calculate_content_similarity(short1, short2)
+        assert similarity == 0.0
+
+    def test_minimum_content_length_long_content(self):
+        """Test that long content passes minimum length check."""
+        engine = SimilarityEngine(min_content_length=10)
+        long_content = "This is a longer piece of content that should pass the minimum length check."
+        similarity = engine.calculate_content_similarity(long_content, long_content)
+        assert similarity == 1.0
+
+    def test_keyword_extraction(self):
+        """Test keyword extraction functionality."""
+        engine = SimilarityEngine()
+        content = "This is a test document for analyzing similarity between different content pieces."
+        # Access via semantic similarity which uses keywords
+        similarity = engine.calculate_semantic_similarity(content, content)
+        assert similarity > 0.8
+
+    def test_intent_extraction(self):
+        """Test intent pattern extraction."""
+        engine = SimilarityEngine()
+        content1 = "Analyze the system and validate results"
+        content2 = "Check the system and process data"
+        similarity = engine.calculate_semantic_similarity(content1, content2)
+        # Should have some similarity due to intent patterns
+        assert 0.0 <= similarity <= 1.0
+
+    def test_topic_similarity(self):
+        """Test topic similarity calculation."""
+        engine = SimilarityEngine()
+        content1 = "Python programming language development tools"
+        content2 = "Python code development and programming tools"
+        similarity = engine.calculate_semantic_similarity(content1, content2)
+        assert similarity > 0.5
+
+    def test_parameter_overlap_identical(self):
+        """Test parameter overlap with identical parameters."""
+        engine = SimilarityEngine()
+        params = ["param1", "param2"]
+        similarity = engine.calculate_functional_similarity(
+            params1=params, params2=params
+        )
+        assert similarity > 0.8
+
+    def test_parameter_overlap_partial(self):
+        """Test parameter overlap with partial overlap."""
+        engine = SimilarityEngine()
+        params1 = ["param1", "param2", "param3"]
+        params2 = ["param1", "param2", "param4"]
+        similarity = engine.calculate_functional_similarity(
+            params1=params1, params2=params2
+        )
+        assert 0.0 < similarity < 1.0
+
+    def test_parameter_overlap_no_overlap(self):
+        """Test parameter overlap with no overlap."""
+        engine = SimilarityEngine()
+        params1 = ["param1", "param2"]
+        params2 = ["param3", "param4"]
+        similarity = engine.calculate_functional_similarity(
+            params1=params1, params2=params2
+        )
+        assert similarity == 0.0
