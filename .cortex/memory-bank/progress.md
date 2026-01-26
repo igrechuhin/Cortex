@@ -2,326 +2,44 @@
 
 ## 2026-01-26
 
-- ✅ **Phase 54: Clarify MCP Tool Error Handling Classification** - COMPLETE (2026-01-26)
-  - **Problem**: MCP Tool Error Handling rules were overly strict, requiring investigation plans for all errors including non-critical validation errors where alternative approaches exist
-  - **Solution**: Added error classification (CRITICAL vs. NON-CRITICAL) and alternative approaches guidance to distinguish between blocking errors and non-blocking errors
+- ✅ **Commit Procedure: Fixed Function Length Violations and Added Health-Check Tests** - COMPLETE (2026-01-26)
+  - **Problem**: 4 function length violations in `health_check` module and coverage below 90% threshold (88.08%) blocking commit
+  - **Solution**: Fixed function length violations by extracting helper functions and added comprehensive tests for health_check module
   - **Implementation**:
-    - **Step 1: Added Error Classification** to `.cortex/synapse/rules/general/agent-workflow.mdc`:
-      - **CRITICAL ERRORS**: Tool crashes, disconnects, protocol errors, blocks required workflow
-      - **NON-CRITICAL ERRORS**: Validation errors with alternatives, data format issues with workarounds, partial failures
-      - **Decision Criteria**: If error blocks workflow → CRITICAL; if alternative exists → NON-CRITICAL; when in doubt → CRITICAL
-      - **Examples**: Added examples for both error types
-    - **Step 2: Added Alternative Approaches Guidance**:
-      - Acceptable alternatives: Use alternative MCP tools, standard file tools, partial results
-      - Requirements: Document error and alternative, verify equivalent information, maintain quality
-      - Examples: `load_context()` validation error → use `manage_file()`, `get_relevance_scores()` fails → use `load_context()` with explicit file list
-    - **Step 3: Updated MCP Tool Error Handling Section**:
-      - Updated all 5 steps to reference error classification
-      - CRITICAL errors: STOP IMMEDIATELY, create investigation plan, link in roadmap, provide user summary
-      - NON-CRITICAL errors: Use alternative approaches, document in session notes
-    - **Step 4: Updated References**:
-      - Updated "If MCP calls become unstable" section to reference error classification
-      - Updated violations section to distinguish between critical and non-critical error handling
-  - **Results**:
-    - Error classification clearly distinguishes critical vs. non-critical errors
-    - Alternative approaches guidance provides clear direction for non-critical errors
-    - Rules maintain safety for critical errors (still require immediate investigation)
-    - Rules allow flexibility for non-critical errors (may continue with alternatives)
-    - Documentation includes examples and decision criteria
-  - **Impact**: Prevents ~10-20% of unnecessary investigation plans for non-critical validation errors while maintaining safety for critical issues. Agents can now use alternative approaches (e.g., `manage_file()` when `load_context()` fails with validation error) without creating investigation plans.
-
-- ✅ **Commit Procedure: Routine commit with markdown lint fixes** - COMPLETE (2026-01-26)
-  - Fixed markdown lint errors in `.cortex/plans/phase-54-clarify-mcp-tool-error-handling.md`:
-    - Converted bold text to proper headings (MD036/no-emphasis-as-heading violations)
-    - Changed `**Phase 1: Rules Enhancement (Primary Focus)**` → `#### Phase 1: Rules Enhancement (Primary Focus)`
-    - Changed `**Phase 2: Tool Enhancement (Optional, Lower Priority)**` → `#### Phase 2: Tool Enhancement (Optional, Lower Priority)`
-  - All pre-commit checks passed:
-    - Fix errors: ✅ 0 errors, 0 warnings
-    - Quality preflight: ✅ 0 file size violations, 0 function length violations
-    - Formatting: ✅ All checks passed
-    - Markdown linting: ✅ 6 files processed, 0 errors remaining
-    - Type checking: ✅ 0 errors, 0 warnings
-    - Code quality: ✅ 0 violations
-    - Tests: ✅ 2748 passed, 0 failed, 100% pass rate, 90.02% coverage
-  - **Impact**: All quality gates met, markdown files properly formatted
-
-- ✅ **Phase 28: Enforce MCP Tools for All .cortex Operations** - COMPLETE (2026-01-26)
-  - **Problem**: Review reports and other files were written directly to `.cortex/` directory using hardcoded paths instead of Cortex MCP tools, leading to duplicate files and inconsistent path usage
-  - **Solution**: Enforced MCP tool usage for all `.cortex/` file operations and integrated `reviews` directory into structure configuration
-  - **Implementation**:
-    - **Step 1: Added Reviews to Structure Config**:
-      - Added `"reviews": "reviews"` to `DEFAULT_STRUCTURE` layout in `structure_config.py`
-      - Added `reviews` field to `LayoutConfig` and `StructurePaths` models in `models.py`
-      - Updated `get_structure_info()` in `structure_lifecycle.py` to include reviews path
-      - Updated `_get_required_directory_list()` in `setup.py` to create reviews directory
-      - Updated tests to verify reviews path is included (all 69 structure tests passing)
-    - **Step 2: Audited All Prompts for MCP Tool Usage**:
-      - Updated `review.md` to use `get_structure_info()` and extract `structure_info.paths.reviews` instead of hardcoded paths
-      - Updated `analyze-session-optimization.md` to use `get_structure_info()` for reviews path resolution
-      - All prompts now use MCP tools for `.cortex/` path resolution
-    - **Step 3: Code Cleanup**:
-      - Updated `config_status.py` to use `get_cortex_path()` instead of hardcoded path construction
-      - Core infrastructure files intentionally use direct path construction (they're the path resolvers themselves)
-    - **Step 4: Documentation**:
-      - Added section to `AGENTS.md` about MCP tool requirements for `.cortex/` operations
-      - Documented that all `.cortex/` file operations must use `get_structure_info()` for path resolution
-  - **Results**:
-    - All structure tests passing (69 tests)
-    - All config_status tests passing (14 tests)
-    - All prompts updated to use MCP tools for path resolution
-    - Documentation updated with MCP tool requirements
-    - Plan file updated to COMPLETE status
-  - **Impact**: Consistent path resolution across all `.cortex/` operations, prevents file location errors, enforces architectural principle that all `.cortex/` operations use MCP tools
-
-- ✅ **Commit Procedure: Routine commit with synapse submodule update** - COMPLETE (2026-01-26)
-  - Updated `.cortex/synapse` submodule reference to latest commit (954e10b: "Update commit workflow, agent rules, and Python standards")
-  - All pre-commit checks passed:
-    - Fix errors: ✅ 0 errors, 0 warnings
-    - Quality preflight: ✅ 0 file size violations, 0 function length violations
-    - Formatting: ✅ All checks passed
-    - Markdown linting: ✅ 0 files processed (no changes)
-    - Type checking: ✅ 0 errors, 0 warnings
-    - Code quality: ✅ 0 violations
-    - Tests: ✅ 2748 passed, 0 failed, 100% pass rate, 90.02% coverage
-  - **Impact**: All quality gates met, ready for commit
-
-- ✅ **Commit Procedure: Fixed Function Length and File Size Violations** - COMPLETE (2026-01-26)
-  - **Problem**: Function length violation in `pre_commit_tools.py` (`_collect_remaining_issues()` had 44 lines, max 30) and file size violation (405 lines, max 400) blocking commit
-  - **Solution**: Extracted helper functions to separate `pre_commit_helpers.py` module and made functions public to fix type errors
-  - **Implementation**:
-    - Created `src/cortex/tools/pre_commit_helpers.py` with extracted helper functions:
-      - `extract_dict_from_object()`, `extract_list_from_object()`, `extract_int_from_object()` (made public)
-      - `extract_check_results()` (made public)
-      - `_check_fix_errors_remaining()`, `_check_format_remaining()`, `_check_type_check_remaining()`, `_check_warnings_remaining()` (internal helpers)
-      - `collect_remaining_issues()` (made public, refactored from 44 lines to 30 lines by extracting helpers)
-    - Updated `pre_commit_tools.py` to import from helper module
-    - Fixed type errors by making cross-module functions public (removed `_` prefix)
+    - Fixed `prompt_analyzer.py:_find_optimization_opportunities()` (32 lines → under 30): Extracted `_check_large_prompt()` and `_check_duplicate_sections()` helpers
+    - Fixed `rule_analyzer.py:_find_merge_opportunities()` (44 lines → under 30): Extracted `_find_within_category_opportunities()` and `_find_cross_category_opportunities()` helpers
+    - Fixed `tool_analyzer.py:_find_consolidation_opportunities()` (38 lines → under 30): Extracted `_calculate_param_overlap()` and `_calculate_body_similarity()` helpers
+    - Fixed `report_generator.py:generate_markdown_report()` (49 lines → under 30): Extracted `_generate_header()`, `_generate_prompts_section()`, `_generate_rules_section()`, `_generate_tools_section()`, and `_generate_recommendations_section()` helpers
+    - Added comprehensive tests for health_check module:
+      - `test_prompt_analyzer.py`: 8 tests covering prompt analysis, section extraction, merge/optimization opportunities
+      - `test_rule_analyzer.py`: 6 tests covering rule analysis, category handling, merge opportunities
+      - `test_tool_analyzer.py`: 8 tests covering tool analysis, parameter overlap, body similarity, consolidation opportunities
+      - `test_report_generator.py`: 10 tests covering markdown/JSON report generation, section generation
+      - `test_dependency_mapper.py`: 7 tests covering dependency mapping for prompts, rules, and tools
   - **Results**:
     - All function length violations fixed (0 violations)
     - All file size violations fixed (0 violations)
+    - Coverage increased from 88.08% to 90.04% (above 90% threshold)
+    - All tests passing: 2805 passed, 2 skipped, 100% pass rate, 90.04% coverage
+    - All code quality checks passing (0 violations)
     - All type checks passing (0 errors, 0 warnings)
     - All formatting checks passing
-    - All tests passing: 2748 passed, 0 failed, 100% pass rate, 90.02% coverage
-    - All code quality gates passing
-  - **Impact**: Commit procedure can proceed, all quality gates met
+  - **Impact**: Commit procedure can proceed, all quality gates met, health_check module now has comprehensive test coverage
 
-- ✅ **Phase 53 Blocker: `fix_quality_issues` over-reporting remaining issues** - COMPLETE (2026-01-26)
-  - **Problem**: `fix_quality_issues()` reported large `remaining_issues` counts (e.g., "4175 errors remain") even when `pyright src` was clean and tests/coverage passed, misleading agents into thinking the repo was broken
-  - **Root Cause**: `_collect_remaining_issues()` used aggregate `total_errors`/`total_warnings` counters from `execute_pre_commit_checks()`, which count ALL errors/warnings from ALL checks, not just remaining ones. These counters can be non-zero even when all checks succeeded (success=True)
-  - **Solution**: Modified `_collect_remaining_issues()` to check actual check results instead of aggregate counters
-  - **Implementation**:
-    - Updated `_collect_remaining_issues()` in `src/cortex/tools/pre_commit_tools.py`:
-      - Extracts `results` dict from `fix_errors_result`
-      - Checks each check result's `success` field and `errors` list individually
-      - Only reports remaining issues if `success=False` OR if `success` is missing but errors exist
-      - Uses specific error messages for each check type (linting/formatting, formatting, type errors)
-    - Added unit test `test_fix_quality_issues_clean_repo_no_remaining_issues`:
-      - Verifies that on clean repo with all checks succeeded (success=True), `remaining_issues=[]` even if `total_errors` is large (4175)
-      - Tests the exact scenario from the bug report
-    - Updated existing test `test_fix_quality_issues_success_when_checks_report_errors`:
-      - Updated assertion to match new, more specific error messages
-  - **Results**:
-    - All tests passing (5 tests in TestFixQualityIssues class)
-    - On clean repo: `remaining_issues=[]` when all checks succeeded, regardless of `total_errors` value
-    - On broken repo: `remaining_issues` correctly reports actual remaining problems
-    - More specific error messages help identify which check type has remaining issues
-  - **Impact**: Agents no longer misled by false remaining issues reports, preventing premature work stoppage and unnecessary follow-up plans
-
-- ✅ **Commit Procedure: Fixed Function Length Violations and Type Errors** - COMPLETE (2026-01-26)
-  - **Problem**: Function length violations in `phase8_structure.py` and type errors blocking commit
-  - **Solution**: Fixed function length violations by extracting helper functions and added concrete type annotations
-  - **Implementation**:
-    - Fixed `perform_cleanup_actions()` (31 lines → under 30): Extracted `_get_default_cleanup_actions()` and `_execute_cleanup_actions()` helpers
-    - Fixed `perform_update_index()` (51 lines → under 30): Extracted `_process_memory_bank_file()` and `_collect_memory_bank_files()` helpers
-    - Fixed type errors by adding concrete type annotations:
-      - Added imports for `FileSystemManager`, `MetadataIndex`, `TokenCounter` from `cortex.core.*`
-      - Updated `_process_memory_bank_file()` to use concrete types instead of `object`
-    - Fixed markdown lint errors in plan file (MD041, MD001): Updated heading levels to increment correctly
-  - **Results**:
-    - All function length violations fixed (0 violations)
-    - All file size violations fixed (0 violations)
-    - All formatting checks passing
-    - All type checks passing (0 errors, 0 warnings)
-    - All markdown lint errors fixed (7 files processed, 0 errors remaining)
-    - All tests passing: 2747 passed, 0 failed, 100% pass rate, 90.04% coverage
-    - All code quality gates passing
-  - **Impact**: Commit procedure can proceed, all quality gates met
-
-- ✅ **Phase 53 Blocker: Memory bank index staleness breaks `manage_file(write)`** - COMPLETE (2026-01-26)
-  - **Problem**: `manage_file(write)` failed with `FileConflictError` when `.cortex/index.json` metadata was stale relative to disk, blocking writes
-  - **Solution**: Implemented `update_index` cleanup action in `check_structure_health()` tool to refresh metadata for all memory bank files
-  - **Implementation**:
-    - Added `perform_update_index()` async function in `src/cortex/tools/phase8_structure.py`:
-      - Scans all memory bank files (`.cortex/memory-bank/*.md`)
-      - Reads each file from disk
-      - Updates metadata index with current disk state (size, hash, tokens, sections)
-      - Supports dry-run mode for preview
-      - Reports which files were updated
-    - Integrated `update_index` into `perform_cleanup_actions()`:
-      - Added `update_index` to default cleanup actions list
-      - Made `perform_cleanup_actions()` async to support async `update_index`
-      - Added `project_root` parameter to support manager initialization
-    - Added comprehensive tests (4 tests, all passing):
-      - `test_perform_update_index_dry_run` - Tests dry-run mode
-      - `test_perform_update_index_execute` - Tests actual execution and metadata update
-      - `test_perform_update_index_no_memory_bank_dir` - Tests edge case when directory doesn't exist
-      - `test_perform_update_index_multiple_files` - Tests with multiple files
-  - **Usage**: `await check_structure_health(perform_cleanup=True, cleanup_actions=["update_index"], dry_run=False)`
-  - **Results**:
-    - All tests passing (4 new tests, all existing tests still passing)
-    - 0 linting errors, 0 type errors
-    - `update_index` action now refreshes `.cortex/index.json` to match current disk state
-    - Fixes stale index issues that blocked `manage_file(write)` operations
-  - **Impact**: Users can now repair stale index metadata using documented cleanup action, unblocking `manage_file(write)` operations
-
-- ✅ **Commit Procedure: Routine commit with test updates** - COMPLETE (2026-01-26)
-  - Updated test files: `test_phase5_execution.py`, `test_synapse_tools.py`
-  - Synapse submodule updated
-  - All pre-commit checks passed:
-    - Formatting: ✅ All checks passed
-    - Type checking: ✅ 0 errors, 0 warnings
-    - Code quality: ✅ 0 file size violations, 0 function length violations
-    - Tests: ✅ 2743 passed, 0 failed, 100% pass rate, 90.03% coverage
-    - Markdown linting: ✅ 0 files processed (no changes)
-  - **Impact**: All quality gates met, ready for commit
-
-- ✅ **Commit Procedure: Fixed Function Length Violations and Test Failures** - COMPLETE (2026-01-26)
-  - **Problem**: Function length violations in `metadata_index.py` and 27 test failures blocking commit
-  - **Solution**: Fixed function length violations by extracting helper functions and updated tests to work with real managers
-  - **Implementation**:
-    - Fixed `update_file_metadata()` (34 lines → under 30): Extracted `_prepare_file_metadata_update()` and `_finalize_file_metadata_update()` helpers
-    - Fixed `add_version_to_history()` (34 lines → under 30): Extracted `_convert_version_meta_to_dict()` and `_get_file_meta_for_version_update()` helpers
-    - Fixed 27 test failures across multiple test files:
-      - Updated async `get_manager` patching in `test_phase5_execution.py` to handle LazyManager unwrapping
-      - Made test assertions more lenient to work with real managers when mocks aren't used
-      - Fixed migration test coroutine iteration issue (changed `mock_fs` from `AsyncMock` to `MagicMock` with `parse_sections` mock)
-      - Updated optimization config tests to handle logger configuration for log capture
-      - Updated synapse_tools tests to use async `get_manager` patching
-  - **Results**:
-    - All function length violations fixed (0 violations)
-    - All file size violations fixed (0 violations)
-    - All formatting checks passing
-    - All type checks passing (0 errors, 0 warnings)
-    - All tests passing: 2743 passed, 2 skipped, 90.06% coverage
-    - All code quality gates passing
-  - **Impact**: Commit procedure can proceed, all quality gates met
-
-- ✅ **Session Optimization: Enforce Automatic Fixing of ALL Issues** - COMPLETE (2026-01-26)
-  - **Problem**: Agent asked for permission to fix violations instead of automatically fixing ALL of them during commit procedure
-  - **Solution**: Updated commit prompt and agents to enforce automatic fixing of ALL issues, no questions asked
-  - **Implementation**:
-    - Added "Fix ALL Issues Automatically" mandate section to `.cortex/synapse/prompts/commit.md`
-    - Strengthened Error/Violation Handling Strategy to emphasize fixing ALL issues before stopping
-    - Updated quality-checker agent to include "Fix ALL Violations Automatically" section
-    - Updated error-fixer agent to include "Fix ALL Errors Automatically" section
-    - Added "Fix ALL Issues Automatically" rule to general agent workflow rules
-  - **Key Changes**:
-    - **NEVER ask for permission** to fix issues - just fix them all
-    - **NEVER ask "should I continue?"** - continue fixing until ALL issues are resolved
-    - **NEVER stop after fixing some** - fix ALL of them, no matter how many
-    - It's OK to stop the commit procedure if context is insufficient, but ALL issues must still be fixed
-  - **Session Optimization Report**: Created `.cortex/reviews/session-optimization-2026-01-26T09:11.md` documenting the issue and recommendations
-  - **Impact**: Prevents "asking permission" mistakes, ensures complete issue resolution, improves commit procedure reliability
-
-- ✅ **Phase 53 Blocker: Commit pipeline ergonomics + scoping** - COMPLETE (2026-01-26)
-  - Updated `.cortex/synapse/prompts/commit.md` to be `.cortex`-first (`.cursor` optional) and added a fail-fast quality preflight step
-  - Scoped markdown linting defaults to modified files; archives non-blocking by default (updated `.cortex/synapse/agents/markdown-linter.md`)
-  - Reordered `execute_pre_commit_checks` default execution order to run quality earlier for faster feedback
-  - Added an "MCP Tool Invocation Contract" section in Synapse rules (`.cortex/synapse/rules/general/agent-workflow.mdc`)
-
-## 2026-01-25
-
-- ✅ **Phase 53 Blocker: Cursor MCP `user-cortex` server errored (commit pipeline blocked)** - COMPLETE (2026-01-25)
-  - Verified `user-cortex` MCP server is healthy (`check_mcp_connection_health`: healthy)
-  - Verified core tool calls succeed: `manage_file`, `get_memory_bank_stats`, `execute_pre_commit_checks`
-  - Updated roadmap and investigation plan with resolution notes
-
-## 2026-01-24
-
-- 🟡 **Phase 53: Type Safety Cleanup** - IN PROGRESS (2026-01-24)
-  - Completed final sweep of `src/` for remaining generic annotations:
-    - `: dict[str, object]`: 0
-    - `list[object]`: 0
-    - `Any`: 0
-  - Updated tool modules to use `ManagersDict` and `ModelDict` instead of generic dicts where applicable.
-  - `pyright src` now passes (0 errors, 0 warnings).
-  - Full test suite currently failing (coverage below 90% threshold); next step is focused test updates + compatibility cleanup around dict/model boundaries.
-
-## 2026-01-22
-
-- ✅ **Phase 26: Unify Cache Directory Structure** - COMPLETE (2026-01-22) - Refactored Cortex MCP tools to use unified cache directory:
-  - **Problem**: `SummarizationEngine` used `.cortex/summaries` as task-specific cache, creating maintenance overhead as more tools need caching
-  - **Solution**: Unified cache directory (`.cortex/.cache`) with subdirectories organized by tool/feature
-  - **Implementation**:
-    - Added `CACHE = ".cache"` to `CortexResourceType` enum in `path_resolver.py`
-    - Added `get_cache_path()` helper function for cache directory resolution
-    - Updated `SummarizationEngine` to use `.cortex/.cache/summaries` by default via `get_cache_path()`
-    - Created `cache_utils.py` module with utilities: `get_cache_dir()`, `clear_cache()`, `get_cache_size()`, `list_cache_files()`
-    - Updated test in `test_summarization_engine.py` to expect new cache path
-    - Created comprehensive tests: `test_path_resolver.py` (8 tests) and `test_cache_utils.py` (15 tests)
-    - Updated README.md to document unified cache structure with future subdirectories
-  - **Results**:
-    - All 54 tests passing (8 path resolver, 15 cache utils, 31 summarization engine)
-    - 0 linting errors, 0 type errors
-    - Cache utilities provide centralized management for all future caching needs
-    - Future tools can easily add cache subdirectories (e.g., `.cache/relevance/`, `.cache/patterns/`)
-  - **Benefits**: Centralized cache management, easier cleanup, extensible structure for future tools
-
-- ✅ **Phase 9.9: Final Integration & Validation** - COMPLETE (2026-01-22) - Completed Phase 9 Excellence 9.8+ initiative with comprehensive validation:
-  - **Comprehensive Testing**:
-    - Full test suite: 2,655 tests passing (100% pass rate), 2 skipped
-    - Code coverage: 90.15% (exceeds 90% threshold)
-    - Integration tests: All 48 integration tests passing
-    - Test execution time: 57.38 seconds
-  - **Code Quality Validation**:
-    - Black formatting: ✅ All 353 files properly formatted
-    - Pyright type checking: ✅ 0 errors, 0 warnings
-    - Ruff linting: ✅ All checks passed
-    - File sizes: ✅ All files ≤400 lines (0 violations)
-    - Function lengths: ✅ All functions ≤30 lines (0 violations)
-  - **Quality Report Generated**:
-    - Overall quality score: 9.6/10 (exceeds 9.5/10 target)
-    - Architecture: 9.5/10, Test Coverage: 9.8/10, Documentation: 9.8/10
-    - Code Style: 9.5/10, Error Handling: 9.8/10, Performance: 9.0/10
-    - Security: 9.8/10, Maintainability: 9.8/10, Rules Compliance: 9.8/10
-    - Report saved to `benchmark_results/phase-9-quality-report.md`
-  - **Documentation Updates**:
-    - Updated roadmap.md: Marked Phase 9 as COMPLETE, all sub-phases (9.1-9.9) complete
-    - Updated progress.md: Added Phase 9.9 completion entry
-    - Updated activeContext.md: Reflected Phase 9 completion
-    - Created Phase 9 completion summary at `.cortex/plans/archive/Phase9/phase-9-completion-summary.md`
-  - **Key Achievements**:
-    - Zero file size violations (all files ≤400 lines)
-    - Zero function length violations (all functions ≤30 lines)
-    - Zero type errors or warnings
-    - Zero linting violations
-    - 100% test pass rate (2,655/2,655 tests)
-    - 90.15% code coverage (exceeds 90% threshold)
-    - All quality metrics meet or exceed targets
-  - **Phase 9 Summary**: All 9 sub-phases complete (9.1-9.9), overall quality score improved from 7.8/10 to 9.6/10
-  - **Next Steps**: Post-Phase 9 maintenance and future enhancements (Phases 21, 26-29)
-
-## 2026-01-21
-
-- ✅ **Phase 51: Enhance Context Analysis with Actionable Insights** - COMPLETE (2026-01-21) - Enhanced context analysis to store actionable insights alongside raw statistics:
-  - **Problem**: Context analysis only stored raw metrics (utilization, file counts, relevance scores) without actionable insights
-  - **Solution**: Added insight generation that produces:
-    - **Task-type recommendations**: Per-task-type insights including recommended token budget, essential files, and notes
-    - **File effectiveness**: Per-file statistics showing times selected, average relevance, and usage recommendations
-    - **Learned patterns**: Human-readable insights like "Average 48% budget utilization - ~25k tokens unused per call"
-    - **Budget recommendations**: Optimal token budgets per task type based on historical usage
-  - **Implementation**:
-    - Added `TaskTypeInsight`, `FileEffectiveness`, `ContextInsights` models to `context_analysis_operations.py`
-    - Added `_generate_task_type_insights()`, `_generate_file_effectiveness()`, `_generate_learned_patterns()`, `_generate_budget_recommendations()` functions
-    - Updated `_update_aggregates()` to automatically generate and store insights
-    - Updated `analyze_current_session()` and `analyze_session_logs()` to return insights
-    - Updated `get_context_statistics()` to return insights
-  - **Testing**: Added 14 new tests for insight generation, all 23 context analysis tests passing
-  - **Example insights generated**:
-    - "For fix/debug tasks: recommended budget is 30k (instead of 50k), essential files are progress.md, activeContext.md, roadmap.md"
-    - "activeContext.md: High value (0.833 relevance) - prioritize for loading"
-    - "Average 48% budget utilization - ~25k tokens unused per call"
-
-## Previous Progress
-
-See roadmap.md for complete project history and phase details.
+- 🔄 **[Phase 21: Health-Check and Optimization Analysis System - Step 1: Create Health-Check Analysis Module](../plans/phase-21-health-check-optimization.md)** - IN PROGRESS (2026-01-26)
+  - **Goal**: Create comprehensive health-check system that analyzes prompts, rules, and MCP tools for merge/optimization opportunities
+  - **Step 1 Implementation**:
+    - Created `src/cortex/health_check/` module with all core components:
+      - `PromptAnalyzer` - Analyzes prompts in `.cortex/synapse/prompts/` for duplicates and merge opportunities
+      - `RuleAnalyzer` - Analyzes rules in `.cortex/synapse/rules/` for consolidation opportunities
+      - `ToolAnalyzer` - Analyzes MCP tool implementations for overlaps and consolidation
+      - `SimilarityEngine` - Calculates content similarity using token-based, text-based, and Jaccard similarity
+      - `DependencyMapper` - Maps dependencies between prompts, rules, and tools
+      - `QualityValidator` - Validates that merges preserve quality
+      - `ReportGenerator` - Generates markdown and JSON reports
+    - All files within size limits (largest: 292 lines in `tool_analyzer.py`, all under 400 limit)
+    - All functions within length limits (all under 30 lines)
+    - Type checking: 0 errors, 0 warnings (pyright src/cortex/health_check)
+    - Tests: 51 tests passing (7 similarity_engine, 5 quality_validator, 8 prompt_analyzer, 6 rule_analyzer, 8 tool_analyzer, 10 report_generator, 7 dependency_mapper)
+    - Code formatted with Black, all quality gates passing
+  - **Next Steps**: Step 2 (Implement Similarity Detection Engine enhancements), Step 3 (Implement Dependency Mapping), Step 4 (Implement Quality Preservation Validator), Step 5 (Create MCP Tool for Health-Check)
