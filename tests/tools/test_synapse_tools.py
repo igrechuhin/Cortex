@@ -45,6 +45,7 @@ async def _get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object
     manager = getattr(mgrs, key)
     # Handle LazyManager unwrapping if needed
     from cortex.managers.lazy_manager import LazyManager
+
     if isinstance(manager, LazyManager):
         return await manager.get()
     return manager

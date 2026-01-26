@@ -37,6 +37,7 @@ async def _get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object
     manager = getattr(mgrs, key)
     # Handle LazyManager unwrapping if needed
     from cortex.managers.lazy_manager import LazyManager
+
     if isinstance(manager, LazyManager):
         return await manager.get()
     return manager
@@ -45,13 +46,14 @@ async def _get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object
 @pytest.fixture(autouse=True)
 def _patch_get_manager() -> object:
     """Patch strict get_manager() to allow MagicMocks in tool tests."""
+
     async def get_manager_wrapper(managers, name, type_):
         return await _get_manager_helper(managers, name, type_)
-    
+
     # Create a callable that returns a coroutine
     def get_manager_sync_wrapper(*args, **kwargs):
         return get_manager_wrapper(*args, **kwargs)
-    
+
     with (
         patch(
             "cortex.managers.manager_utils.get_manager", new=get_manager_sync_wrapper
