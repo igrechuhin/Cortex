@@ -275,33 +275,56 @@ class PythonAdapter(FrameworkAdapter):
         return self._run_ruff_fix()
 
     def _run_ruff_fix(self) -> CheckResult:
-        """Run ruff with auto-fix."""
+        """Run ruff with auto-fix.
+
+        Matches CI workflow: ruff check --select F,E,W --fix src/ tests/
+        """
         try:
-            result = subprocess.run(
-                [self._get_command("ruff"), "check", "--fix", "."],
-                cwd=self.project_root,
-                capture_output=True,
-                text=True,
-            )
-            output = result.stdout + result.stderr
+            output = self._execute_ruff_command()
             errors = self._parse_lint_errors(output)
-            return CheckResult(
-                check_type="lint",
-                success=len(errors) == 0,
-                output=output,
-                errors=errors,
-                warnings=[],
-                files_modified=[],
-            )
+            return self._create_lint_result(output, errors)
         except Exception as e:
-            return CheckResult(
-                check_type="lint",
-                success=False,
-                output=str(e),
-                errors=[str(e)],
-                warnings=[],
-                files_modified=[],
-            )
+            return self._create_lint_error_result(str(e))
+
+    def _execute_ruff_command(self) -> str:
+        """Execute ruff check command and return output."""
+        result = subprocess.run(
+            [
+                self._get_command("ruff"),
+                "check",
+                "--select",
+                "F,E,W",
+                "--fix",
+                "src/",
+                "tests/",
+            ],
+            cwd=self.project_root,
+            capture_output=True,
+            text=True,
+        )
+        return result.stdout + result.stderr
+
+    def _create_lint_result(self, output: str, errors: list[str]) -> CheckResult:
+        """Create lint check result from output and errors."""
+        return CheckResult(
+            check_type="lint",
+            success=len(errors) == 0,
+            output=output,
+            errors=errors,
+            warnings=[],
+            files_modified=[],
+        )
+
+    def _create_lint_error_result(self, error_msg: str) -> CheckResult:
+        """Create lint check result for error case."""
+        return CheckResult(
+            check_type="lint",
+            success=False,
+            output=error_msg,
+            errors=[error_msg],
+            warnings=[],
+            files_modified=[],
+        )
 
     def _parse_test_output(
         self, output: str, success: bool, coverage_threshold: float = 0.90

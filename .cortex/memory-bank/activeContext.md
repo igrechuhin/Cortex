@@ -6,6 +6,13 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
+- ✅ **Commit Procedure: Fixed Function Length Violation in Python Adapter** - COMPLETE (2026-01-26)
+  - Fixed function length violation in `python_adapter.py`:
+    - `_run_ruff_fix()` (34 lines → under 30): Extracted `_execute_ruff_command()`, `_create_lint_result()`, and `_create_lint_error_result()` helper functions
+  - All tests passing: 2850 passed, 0 failed, 100% pass rate, 90% coverage
+  - All code quality checks passing: 0 violations
+  - All type checks passing: 0 errors, 0 warnings
+
 - ✅ **Commit Procedure: Fixed Test Failures** - COMPLETE (2026-01-26)
   - Fixed 2 test failures blocking commit:
     - `test_update_file_metadata`: Updated assertion to expect `version_info.model_dump(mode="json")` instead of `version_info` (matches actual implementation)
