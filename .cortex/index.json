@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-01-26T14:50:59.742237",
+  "last_updated": "2026-01-26T15:15:59.485080",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 30211,
-      "token_count": 7536,
+      "size_bytes": 31646,
+      "token_count": 7840,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-26T08:23:30.603464",
-      "content_hash": "sha256:2262c6f1a82942198575eb1c0e182508df892327fd3f90826eeac3b26bcbc4d5",
+      "last_modified": "2026-01-26T15:04:55.942656",
+      "content_hash": "sha256:e3dd4669bc5424d5e3d06a1ddbb8524c3a2e44e2c932a8be6739904098dd8025",
       "sections": [
         {
           "title": "## Current Status (2026-01-26)",
@@ -31,58 +31,58 @@
         {
           "title": "### Recent Phase Completions",
           "level": 2,
-          "line_start": 11,
-          "line_end": 11,
+          "line_start": 15,
+          "line_end": 15,
           "content_hash": null
         },
         {
           "title": "## Recent Findings",
           "level": 2,
-          "line_start": 24,
-          "line_end": 24,
+          "line_start": 28,
+          "line_end": 28,
           "content_hash": null
         },
         {
           "title": "## Completed Milestones",
           "level": 2,
-          "line_start": 167,
-          "line_end": 167,
+          "line_start": 171,
+          "line_end": 171,
           "content_hash": null
         },
         {
           "title": "## Blockers (ASAP Priority)",
           "level": 2,
-          "line_start": 199,
-          "line_end": 199,
+          "line_start": 203,
+          "line_end": 203,
           "content_hash": null
         },
         {
           "title": "## Upcoming Milestones",
           "level": 2,
-          "line_start": 221,
-          "line_end": 221,
+          "line_start": 225,
+          "line_end": 225,
           "content_hash": null
         },
         {
           "title": "### Future Enhancements",
           "level": 2,
-          "line_start": 223,
-          "line_end": 223,
+          "line_start": 227,
+          "line_end": 227,
           "content_hash": null
         },
         {
           "title": "### Planned Phases",
           "level": 2,
-          "line_start": 227,
-          "line_end": 227,
+          "line_start": 233,
+          "line_end": 233,
           "content_hash": null
         }
       ],
       "read_count": 2,
-      "write_count": 5,
-      "last_read": "2026-01-26T08:19:39.222133",
+      "write_count": 6,
+      "last_read": "2026-01-26T15:04:55.942656",
       "last_write": "2026-01-26T08:23:30.603464",
-      "current_version": 8,
+      "current_version": 9,
       "version_history": [
         {
           "version": 2,
@@ -160,17 +160,28 @@
           "snapshot_path": ".cortex/history/roadmap_v8.md",
           "changed_sections": [],
           "change_description": "Fix broken roadmap links (archived plans + corrected filenames)"
+        },
+        {
+          "version": 9,
+          "timestamp": "2026-01-26T15:04:55.942120",
+          "content_hash": "sha256:e3dd4669bc5424d5e3d06a1ddbb8524c3a2e44e2c932a8be6739904098dd8025",
+          "size_bytes": 31646,
+          "token_count": 7840,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v9.md",
+          "changed_sections": [],
+          "change_description": "Marked Phase 53 blocker (memory bank index staleness) as COMPLETE - implemented update_index cleanup action"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 10610,
-      "token_count": 2626,
+      "size_bytes": 14084,
+      "token_count": 3407,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-26T14:50:59.735903",
-      "content_hash": "sha256:852efd55130d4e22dae09a168ba4b57b2112ce68e45a0f8e04a0f6b63c1e1f0f",
+      "last_modified": "2026-01-26T15:15:59.484042",
+      "content_hash": "sha256:d6a2192f5ff0a7ae3d0d7cd686c16eb828d8d6a031dcc200ab92e7bfc611a73a",
       "sections": [
         {
           "title": "## 2026-01-26",
@@ -182,44 +193,44 @@
         {
           "title": "## 2026-01-25",
           "level": 2,
-          "line_start": 60,
-          "line_end": 60,
+          "line_start": 107,
+          "line_end": 107,
           "content_hash": null
         },
         {
           "title": "## 2026-01-24",
           "level": 2,
-          "line_start": 67,
-          "line_end": 67,
+          "line_start": 114,
+          "line_end": 114,
           "content_hash": null
         },
         {
           "title": "## 2026-01-22",
           "level": 2,
-          "line_start": 78,
-          "line_end": 78,
+          "line_start": 125,
+          "line_end": 125,
           "content_hash": null
         },
         {
           "title": "## 2026-01-21",
           "level": 2,
-          "line_start": 132,
-          "line_end": 132,
+          "line_start": 179,
+          "line_end": 179,
           "content_hash": null
         },
         {
           "title": "## Previous Progress",
           "level": 2,
-          "line_start": 153,
-          "line_end": 153,
+          "line_start": 200,
+          "line_end": 200,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 5,
-      "last_read": "2026-01-26T14:50:59.735903",
+      "write_count": 7,
+      "last_read": "2026-01-26T15:15:59.484042",
       "last_write": "2026-01-26T09:14:15.342877",
-      "current_version": 6,
+      "current_version": 8,
       "version_history": [
         {
           "version": 2,
@@ -275,17 +286,39 @@
           "snapshot_path": ".cortex/history/progress_v6.md",
           "changed_sections": [],
           "change_description": "Added entry for routine commit procedure completion with test updates"
+        },
+        {
+          "version": 7,
+          "timestamp": "2026-01-26T15:05:56.912569",
+          "content_hash": "sha256:40bddb444fc17d7ca0fd0a5ced598b53361e668241829d2e6a8b46bc4c9c479a",
+          "size_bytes": 12610,
+          "token_count": 3077,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v7.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for Phase 53 blocker completion (memory bank index staleness fix)"
+        },
+        {
+          "version": 8,
+          "timestamp": "2026-01-26T15:15:59.483744",
+          "content_hash": "sha256:d6a2192f5ff0a7ae3d0d7cd686c16eb828d8d6a031dcc200ab92e7bfc611a73a",
+          "size_bytes": 14084,
+          "token_count": 3407,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v8.md",
+          "changed_sections": [],
+          "change_description": "Added entry for commit procedure completion: fixed function length violations and type errors in phase8_structure.py"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 5774,
-      "token_count": 1492,
+      "size_bytes": 7000,
+      "token_count": 1789,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-26T14:33:19.183812",
-      "content_hash": "sha256:6d95664663ffc7af18788e13a0b87cb8ede3623faae4ee116b3b4daf0980336a",
+      "last_modified": "2026-01-26T15:14:46.716212",
+      "content_hash": "sha256:ac166a2a4288a77a1ce1c8f003b7fb91d3c4398b1858027da6906edd37fa5389",
       "sections": [
         {
           "title": "## Current Focus (2026-01-26)",
@@ -304,58 +337,58 @@
         {
           "title": "### Recently Completed",
           "level": 2,
-          "line_start": 18,
-          "line_end": 18,
+          "line_start": 17,
+          "line_end": 17,
           "content_hash": null
         },
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 55,
-          "line_end": 55,
+          "line_start": 73,
+          "line_end": 73,
           "content_hash": null
         },
         {
           "title": "## Code Quality Standards",
           "level": 2,
-          "line_start": 67,
-          "line_end": 67,
+          "line_start": 85,
+          "line_end": 85,
           "content_hash": null
         },
         {
           "title": "## Project Structure",
           "level": 2,
-          "line_start": 75,
-          "line_end": 75,
+          "line_start": 93,
+          "line_end": 93,
           "content_hash": null
         },
         {
           "title": "## Context for AI Assistants",
           "level": 2,
-          "line_start": 95,
-          "line_end": 95,
+          "line_start": 113,
+          "line_end": 113,
           "content_hash": null
         },
         {
           "title": "### Key Files",
           "level": 2,
-          "line_start": 97,
-          "line_end": 97,
+          "line_start": 115,
+          "line_end": 115,
           "content_hash": null
         },
         {
           "title": "### Testing Approach",
           "level": 2,
-          "line_start": 105,
-          "line_end": 105,
+          "line_start": 123,
+          "line_end": 123,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 3,
-      "last_read": "2026-01-26T14:33:19.183812",
+      "write_count": 5,
+      "last_read": "2026-01-26T15:14:46.716212",
       "last_write": "2026-01-26T08:21:45.157617",
-      "current_version": 5,
+      "current_version": 7,
       "version_history": [
         {
           "version": 3,
@@ -389,6 +422,28 @@
           "snapshot_path": ".cortex/history/activeContext_v5.md",
           "changed_sections": [],
           "change_description": "Updated with commit procedure completion: fixed function length violations and test failures"
+        },
+        {
+          "version": 6,
+          "timestamp": "2026-01-26T15:06:25.068101",
+          "content_hash": "sha256:346b507ee494ee771ce8e70ba1d11b98027a1ab6d446e4ca7ea9870e52ddd234",
+          "size_bytes": 6673,
+          "token_count": 1705,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v6.md",
+          "changed_sections": [],
+          "change_description": "Updated active context to reflect Phase 53 blocker completion"
+        },
+        {
+          "version": 7,
+          "timestamp": "2026-01-26T15:14:46.715895",
+          "content_hash": "sha256:ac166a2a4288a77a1ce1c8f003b7fb91d3c4398b1858027da6906edd37fa5389",
+          "size_bytes": 7000,
+          "token_count": 1789,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v7.md",
+          "changed_sections": [],
+          "change_description": "Updated activeContext.md with commit procedure completion: fixed function length violations and type errors in phase8_structure.py"
         }
       ]
     },
@@ -444,8 +499,8 @@
   },
   "totals": {
     "total_files": 4,
-    "total_size_bytes": 46617,
-    "total_tokens": 11662,
-    "last_full_scan": "2026-01-26T14:50:59.736180"
+    "total_size_bytes": 52752,
+    "total_tokens": 13044,
+    "last_full_scan": "2026-01-26T15:15:59.484060"
   }
 }

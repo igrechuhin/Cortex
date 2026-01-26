@@ -26,6 +26,7 @@ from cortex.tools.phase8_structure import (
     perform_cleanup_actions,
     perform_fix_symlinks,
     perform_remove_empty,
+    perform_update_index,
     record_archive_action,
 )
 
@@ -527,24 +528,27 @@ class TestHelperFunctions:
         assert not plan1.exists()
         assert len(report.files_modified) == 1
 
-    def test_perform_cleanup_actions(self, mock_structure_manager: MagicMock) -> None:
+    @pytest.mark.asyncio
+    async def test_perform_cleanup_actions(
+        self, mock_structure_manager: MagicMock, tmp_path: Path
+    ) -> None:
         """Test perform_cleanup_actions."""
         # Arrange
         mock_structure_manager.get_path.return_value = Path("/mock")
 
         # Act
-        result = perform_cleanup_actions(
+        result = await perform_cleanup_actions(
             mock_structure_manager,
             cleanup_actions=["fix_symlinks"],
             stale_days=90,
             dry_run=True,
+            project_root=tmp_path,
         )
 
         # Assert
-        assert "dry_run" in result
-        assert result["dry_run"] is True
-        assert "actions_performed" in result
-        assert "post_cleanup_health" in result
+        assert result.dry_run is True
+        assert len(result.actions_performed) >= 0
+        assert result.post_cleanup_health is not None
 
     def test_perform_archive_stale(
         self, tmp_path: Path, mock_structure_manager: MagicMock
@@ -712,3 +716,132 @@ class TestIntegration:
             assert result["success"] is True
             assert "cleanup" in result
             assert "post_cleanup_health" in result["cleanup"]
+
+
+class TestPerformUpdateIndex:
+    """Tests for perform_update_index() function."""
+
+    @pytest.mark.asyncio
+    async def test_perform_update_index_dry_run(self, tmp_path: Path) -> None:
+        """Test update_index in dry run mode."""
+        # Arrange
+        from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True, exist_ok=True)
+
+        test_file = memory_bank_dir / "test.md"
+        _ = test_file.write_text("# Test File\n\nContent here.")
+
+        report = CleanupReport(
+            dry_run=True,
+            actions_performed=[],
+            files_modified=[],
+            recommendations=[],
+            post_cleanup_health={},
+        )
+
+        # Act
+        await perform_update_index(tmp_path, dry_run=True, report=report)
+
+        # Assert
+        assert len(report.actions_performed) == 1
+        action = report.actions_performed[0]
+        assert action.action == "update_index"
+        assert "test.md" in action.files
+        assert len(report.files_modified) == 1
+        assert "Would refresh" in report.files_modified[0]
+
+    @pytest.mark.asyncio
+    async def test_perform_update_index_execute(self, tmp_path: Path) -> None:
+        """Test update_index execution updates metadata."""
+        # Arrange
+        from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+        from cortex.managers.initialization import get_managers
+
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True, exist_ok=True)
+
+        test_file = memory_bank_dir / "test.md"
+        content = "# Test File\n\nContent here."
+        _ = test_file.write_text(content)
+
+        report = CleanupReport(
+            dry_run=False,
+            actions_performed=[],
+            files_modified=[],
+            recommendations=[],
+            post_cleanup_health={},
+        )
+
+        # Act
+        await perform_update_index(tmp_path, dry_run=False, report=report)
+
+        # Assert
+        assert len(report.actions_performed) == 1
+        action = report.actions_performed[0]
+        assert action.action == "update_index"
+        assert "test.md" in action.files
+        assert len(report.files_modified) == 1
+        assert "Refreshed metadata" in report.files_modified[0]
+
+        # Verify metadata was actually updated
+        mgrs = await get_managers(tmp_path)
+        metadata = await mgrs.index.get_file_metadata("test.md")
+        assert metadata is not None
+        assert metadata.get("exists") is True
+        assert metadata.get("size_bytes") == len(content.encode("utf-8"))
+
+    @pytest.mark.asyncio
+    async def test_perform_update_index_no_memory_bank_dir(
+        self, tmp_path: Path
+    ) -> None:
+        """Test update_index when memory bank directory doesn't exist."""
+        # Arrange
+        report = CleanupReport(
+            dry_run=False,
+            actions_performed=[],
+            files_modified=[],
+            recommendations=[],
+            post_cleanup_health={},
+        )
+
+        # Act
+        await perform_update_index(tmp_path, dry_run=False, report=report)
+
+        # Assert
+        assert len(report.actions_performed) == 0
+        assert len(report.files_modified) == 0
+
+    @pytest.mark.asyncio
+    async def test_perform_update_index_multiple_files(self, tmp_path: Path) -> None:
+        """Test update_index with multiple memory bank files."""
+        # Arrange
+        from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True, exist_ok=True)
+
+        file1 = memory_bank_dir / "file1.md"
+        file2 = memory_bank_dir / "file2.md"
+        _ = file1.write_text("# File 1")
+        _ = file2.write_text("# File 2")
+
+        report = CleanupReport(
+            dry_run=False,
+            actions_performed=[],
+            files_modified=[],
+            recommendations=[],
+            post_cleanup_health={},
+        )
+
+        # Act
+        await perform_update_index(tmp_path, dry_run=False, report=report)
+
+        # Assert
+        assert len(report.actions_performed) == 1
+        action = report.actions_performed[0]
+        assert action.action == "update_index"
+        assert len(action.files) == 2
+        assert "file1.md" in action.files
+        assert "file2.md" in action.files

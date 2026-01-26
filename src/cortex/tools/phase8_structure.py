@@ -21,7 +21,10 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+from cortex.core.file_system import FileSystemManager
+from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonDict, ModelDict
+from cortex.core.token_counter import TokenCounter
 from cortex.managers.initialization import get_project_root
 from cortex.server import mcp
 from cortex.structure.models import (
@@ -308,8 +311,8 @@ async def check_structure_health(
         result_dict = result.model_dump()
 
         if perform_cleanup:
-            cleanup_report = perform_cleanup_actions(
-                structure_mgr, cleanup_actions, stale_days, dry_run
+            cleanup_report = await perform_cleanup_actions(
+                structure_mgr, cleanup_actions, stale_days, dry_run, root
             )
             result_dict["cleanup"] = cleanup_report.model_dump()
 
@@ -384,11 +387,58 @@ def build_health_result(health: HealthCheckResult | ModelDict) -> HealthResult:
     )
 
 
-def perform_cleanup_actions(
+def _get_default_cleanup_actions() -> list[str]:
+    """Get default list of cleanup actions.
+
+    Returns:
+        Default cleanup actions list
+    """
+    return [
+        "archive_stale",
+        "organize_plans",
+        "fix_symlinks",
+        "update_index",
+        "remove_empty",
+    ]
+
+
+async def _execute_cleanup_actions(
+    cleanup_actions: list[str],
+    structure_mgr: StructureManager,
+    stale_days: int,
+    dry_run: bool,
+    project_root: Path,
+    cleanup_report: CleanupReport,
+) -> None:
+    """Execute cleanup actions.
+
+    Args:
+        cleanup_actions: List of cleanup actions to perform
+        structure_mgr: Structure manager instance
+        stale_days: Days of inactivity before considering plan stale
+        dry_run: Preview cleanup actions without making changes
+        project_root: Project root path for accessing managers
+        cleanup_report: Cleanup report to update
+    """
+    if "archive_stale" in cleanup_actions:
+        perform_archive_stale(structure_mgr, stale_days, dry_run, cleanup_report)
+
+    if "fix_symlinks" in cleanup_actions:
+        perform_fix_symlinks(structure_mgr, cleanup_report)
+
+    if "update_index" in cleanup_actions:
+        await perform_update_index(project_root, dry_run, cleanup_report)
+
+    if "remove_empty" in cleanup_actions:
+        perform_remove_empty(structure_mgr, cleanup_report)
+
+
+async def perform_cleanup_actions(
     structure_mgr: StructureManager,
     cleanup_actions: list[str] | None,
     stale_days: int,
     dry_run: bool,
+    project_root: Path,
 ) -> CleanupReport:
     """Perform cleanup actions and return report.
 
@@ -397,16 +447,12 @@ def perform_cleanup_actions(
         cleanup_actions: List of cleanup actions to perform
         stale_days: Days of inactivity before considering plan stale
         dry_run: Preview cleanup actions without making changes
+        project_root: Project root path for accessing managers
 
     Returns:
         Cleanup report model
     """
-    cleanup_actions = cleanup_actions or [
-        "archive_stale",
-        "organize_plans",
-        "fix_symlinks",
-        "remove_empty",
-    ]
+    cleanup_actions = cleanup_actions or _get_default_cleanup_actions()
 
     cleanup_report = CleanupReport(
         dry_run=dry_run,
@@ -416,14 +462,14 @@ def perform_cleanup_actions(
         post_cleanup_health=JsonDict.from_dict({}),
     )
 
-    if "archive_stale" in cleanup_actions:
-        perform_archive_stale(structure_mgr, stale_days, dry_run, cleanup_report)
-
-    if "fix_symlinks" in cleanup_actions:
-        perform_fix_symlinks(structure_mgr, cleanup_report)
-
-    if "remove_empty" in cleanup_actions:
-        perform_remove_empty(structure_mgr, cleanup_report)
+    await _execute_cleanup_actions(
+        cleanup_actions,
+        structure_mgr,
+        stale_days,
+        dry_run,
+        project_root,
+        cleanup_report,
+    )
 
     post_cleanup_health = structure_mgr.check_structure_health()
     cleanup_report.post_cleanup_health = JsonDict.from_dict(post_cleanup_health)
@@ -825,6 +871,125 @@ def perform_fix_symlinks(
             symlinks_fixed=len(symlinks_created),
         )
     )
+
+
+async def _process_memory_bank_file(
+    file_path: Path,
+    file_name: str,
+    dry_run: bool,
+    metadata_index: MetadataIndex,
+    fs_manager: FileSystemManager,
+    token_counter: TokenCounter,
+) -> None:
+    """Process a single memory bank file and update its metadata.
+
+    Args:
+        file_path: Path to the memory bank file
+        file_name: Name of the file
+        dry_run: If True, skip actual update
+        metadata_index: Metadata index manager
+        fs_manager: File system manager
+        token_counter: Token counter manager
+    """
+    if dry_run:
+        return
+
+    content, content_hash = await fs_manager.read_file(file_path)
+    sections_raw = fs_manager.parse_sections(content)
+    sections = [section.model_dump(mode="json") for section in sections_raw]
+    token_count = token_counter.count_tokens(content)
+
+    await metadata_index.update_file_metadata(
+        file_name=file_name,
+        path=file_path,
+        exists=True,
+        size_bytes=len(content.encode("utf-8")),
+        token_count=token_count,
+        content_hash=content_hash,
+        sections=sections,
+        change_source="external",
+    )
+
+
+async def _collect_memory_bank_files(
+    memory_bank_dir: Path,
+    project_root: Path,
+    dry_run: bool,
+) -> list[str]:
+    """Collect and process memory bank files.
+
+    Args:
+        memory_bank_dir: Directory containing memory bank files
+        project_root: Project root path
+        dry_run: If True, only collect file names
+
+    Returns:
+        List of updated file names
+    """
+    from cortex.managers.initialization import get_managers
+
+    if not memory_bank_dir.exists():
+        return []
+
+    mgrs = await get_managers(project_root)
+    metadata_index = mgrs.index
+    fs_manager = mgrs.fs
+    token_counter = mgrs.tokens
+
+    updated_files: list[str] = []
+    for file_path in memory_bank_dir.glob("*.md"):
+        if not file_path.is_file():
+            continue
+
+        file_name = file_path.name
+        updated_files.append(file_name)
+
+        if not dry_run:
+            await _process_memory_bank_file(
+                file_path, file_name, dry_run, metadata_index, fs_manager, token_counter
+            )
+
+    return updated_files
+
+
+async def perform_update_index(
+    project_root: Path, dry_run: bool, report: CleanupReport
+) -> None:
+    """Refresh metadata index for all memory bank files.
+
+    Reads all memory bank files from disk and updates their metadata
+    in the index to match current disk state. This fixes stale index
+    issues when files are modified externally.
+
+    Args:
+        project_root: Project root path
+        dry_run: If True, only report what would be updated
+        report: Cleanup report to record actions
+    """
+    from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
+    memory_bank_dir = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
+    updated_files = await _collect_memory_bank_files(
+        memory_bank_dir, project_root, dry_run
+    )
+
+    if updated_files:
+        report.actions_performed.append(
+            CleanupActionResult(
+                action="update_index",
+                stale_plans_found=None,
+                files=updated_files,
+                symlinks_fixed=None,
+            )
+        )
+        if not dry_run:
+            report.files_modified.append(
+                f"Refreshed metadata for {len(updated_files)} memory bank file(s)"
+            )
+        else:
+            report.files_modified.append(
+                f"Would refresh metadata for {len(updated_files)} memory bank file(s)"
+            )
 
 
 def perform_remove_empty(
