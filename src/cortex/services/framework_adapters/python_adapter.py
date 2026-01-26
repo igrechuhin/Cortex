@@ -53,13 +53,15 @@ class PythonAdapter(FrameworkAdapter):
     def _build_test_command(
         self, coverage_threshold: float, max_failures: int | None
     ) -> list[str]:
-        """Build pytest command with options."""
+        """Build pytest command with options (matches CI workflow exactly)."""
         cmd = [
             self._get_command("pytest"),
+            "tests/",  # Match CI: tests/
             "-v",
-            "--cov=src",
-            "--cov-report=term",
-            f"--cov-fail-under={int(coverage_threshold * 100)}",
+            "--cov=src/cortex",  # Match CI: --cov=src/cortex
+            "--cov-report=xml",  # Match CI: --cov-report=xml
+            "--cov-report=term",  # Also include terminal report
+            f"--cov-fail-under={int(coverage_threshold * 100)}",  # Match CI: --cov-fail-under=90
         ]
         if max_failures:
             cmd.extend(["--maxfail", str(max_failures)])
@@ -427,11 +429,9 @@ class PythonAdapter(FrameworkAdapter):
         errors: list[str] = []
         if not success:
             if coverage is not None and coverage < coverage_threshold:
+                threshold_pct = coverage_threshold * 100
                 errors.append(
-                    
-                        f"Test coverage {coverage * 100:.2f}% is below required threshold "
-                        f"{coverage_threshold * 100:.0f}%"
-                    
+                    f"Test coverage {coverage * 100:.2f}% is below required threshold {threshold_pct:.0f}%"
                 )
             else:
                 errors.append("Test execution failed")

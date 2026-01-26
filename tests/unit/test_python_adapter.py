@@ -159,3 +159,36 @@ class TestPythonAdapter:
 
             # Assert
             assert errors == ["src/foo.py:1:1: F401 `os` imported but unused"]
+
+    def test_build_test_errors_success(self) -> None:
+        """Test _build_test_errors with success=True."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            errors = adapter._build_test_errors(success=True)
+            assert errors == []
+
+    def test_build_test_errors_failure_no_coverage(self) -> None:
+        """Test _build_test_errors with success=False and no coverage."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            errors = adapter._build_test_errors(success=False, coverage=None)
+            assert errors == ["Test execution failed"]
+
+    def test_build_test_errors_failure_low_coverage(self) -> None:
+        """Test _build_test_errors with success=False and coverage below threshold."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            errors = adapter._build_test_errors(
+                success=False, coverage=0.85, coverage_threshold=0.90
+            )
+            assert len(errors) == 1
+            assert "Test coverage 85.00% is below required threshold 90%" in errors[0]
+
+    def test_build_test_errors_failure_coverage_above_threshold(self) -> None:
+        """Test _build_test_errors with success=False but coverage above threshold."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            errors = adapter._build_test_errors(
+                success=False, coverage=0.95, coverage_threshold=0.90
+            )
+            assert errors == ["Test execution failed"]
