@@ -465,44 +465,67 @@ class OptimizationConfig:
         Returns:
             Tuple of (is_valid, error_message)
         """
+        error = self._validate_token_budget()
+        if error:
+            return False, error
+
+        error = self._validate_loading_strategy()
+        if error:
+            return False, error
+
+        error = self._validate_summarization()
+        if error:
+            return False, error
+
+        error = self._validate_relevance_weights()
+        if error:
+            return False, error
+
+        return True, None
+
+    def _validate_token_budget(self) -> str | None:
+        """Validate token budget configuration."""
         default_budget = self.get("token_budget.default_budget")
         max_budget = self.get("token_budget.max_budget")
 
         if not isinstance(default_budget, int) or default_budget <= 0:
-            return False, "token_budget.default_budget must be a positive integer"
+            return "token_budget.default_budget must be a positive integer"
         if not isinstance(max_budget, int) or max_budget <= 0:
-            return False, "token_budget.max_budget must be a positive integer"
+            return "token_budget.max_budget must be a positive integer"
         if default_budget > max_budget:
-            return False, "token_budget.default_budget cannot exceed max_budget"
+            return "token_budget.default_budget cannot exceed max_budget"
+        return None
 
+    def _validate_loading_strategy(self) -> str | None:
+        """Validate loading strategy configuration."""
         strategy = self.get("loading_strategy.default", "dependency_aware")
         valid_strategies = ["priority", "dependency_aware", "section_level", "hybrid"]
 
         if not isinstance(strategy, str) or strategy not in valid_strategies:
             return (
-                False,
-                f"loading_strategy.default must be one of: {', '.join(valid_strategies)}",
+                f"loading_strategy.default must be one of: "
+                f"{', '.join(valid_strategies)}"
             )
+        return None
 
-        # Check summarization
+    def _validate_summarization(self) -> str | None:
+        """Validate summarization configuration."""
         target_reduction = self.get("summarization.target_reduction", 0.5)
         if (
             not isinstance(target_reduction, (int, float))
             or not 0 < float(target_reduction) < 1
         ):
-            return (
-                False,
-                "summarization.target_reduction must be between 0 and 1",
-            )
+            return "summarization.target_reduction must be between 0 and 1"
+        return None
 
-        # Check relevance weights
+    def _validate_relevance_weights(self) -> str | None:
+        """Validate relevance weights configuration."""
         weights = self.get_relevance_weights()
         total_weight = sum(weights.values())
 
         if not 0.9 <= total_weight <= 1.1:
-            return False, f"relevance weights must sum to ~1.0 (got {total_weight})"
-
-        return True, None
+            return f"relevance weights must sum to ~1.0 (got {total_weight})"
+        return None
 
     def to_dict(self) -> ModelDict:
         """Return a defensive copy of current config."""

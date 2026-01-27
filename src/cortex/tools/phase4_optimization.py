@@ -12,9 +12,11 @@ Total: 6 tools (rules tools moved to consolidated.py)
 - analyze_context_effectiveness
 - get_context_usage_statistics
 
-Note: index_rules and get_relevant_rules have been consolidated into rules() tool in consolidated.py
+Note: index_rules and get_relevant_rules have been consolidated into
+rules() tool in consolidated.py
 
-This module now serves as a backward-compatible facade that imports from the split modules.
+This module now serves as a backward-compatible facade that imports
+from the split modules.
 """
 
 # Re-export all tools from the handlers module

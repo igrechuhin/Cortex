@@ -61,7 +61,8 @@ class TestContextOptimizerInitialization:
         mock_relevance_scorer: RelevanceScorer,
         mock_dependency_graph: DependencyGraph,
     ):
-        """Test that initialization creates strategies instance with correct parameters."""
+        """Test that initialization creates strategies instance with
+        correct parameters."""
         optimizer = ContextOptimizer(
             token_counter=mock_token_counter,
             relevance_scorer=mock_relevance_scorer,

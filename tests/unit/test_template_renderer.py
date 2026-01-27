@@ -21,7 +21,9 @@ def test_generate_plan_when_unknown_type_raises_value_error() -> None:
 def test_generate_plan_substitutes_variables_and_title() -> None:
     # Arrange
     templates = {
-        "feature.md": "Created {date}\nName: {plan_name}\n# [Feature Name]\nTeam: {team}"
+        "feature.md": (
+            "Created {date}\nName: {plan_name}\n# [Feature Name]\n" "Team: {team}"
+        )
     }
 
     # Act

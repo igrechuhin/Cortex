@@ -32,7 +32,8 @@ class _SignatureAware(Protocol):
 
 
 class TrackedSemaphore:
-    """Semaphore wrapper that tracks available count without accessing private attributes."""
+    """Semaphore wrapper that tracks available count without accessing
+    private attributes."""
 
     def __init__(self, value: int) -> None:
         """Initialize semaphore with initial value.
@@ -106,7 +107,10 @@ async def _handle_timeout_error(
         Tuple of (error to raise if final attempt, exception to store)
     """
     logger.warning(
-        f"MCP tool {func_name} timed out after {timeout}s (attempt {attempt}/{MCP_CONNECTION_RETRY_ATTEMPTS})"
+        (
+            f"MCP tool {func_name} timed out after {timeout}s "
+            f"(attempt {attempt}/{MCP_CONNECTION_RETRY_ATTEMPTS})"
+        )
     )
     if attempt == MCP_CONNECTION_RETRY_ATTEMPTS:
         error = TimeoutError(f"MCP tool {func_name} exceeded timeout of {timeout}s")
@@ -129,7 +133,10 @@ async def _handle_connection_error(
         Tuple of (error to raise if final attempt, exception to store)
     """
     logger.warning(
-        f"MCP connection error in {func_name} (attempt {attempt}/{MCP_CONNECTION_RETRY_ATTEMPTS}): {e}"
+        (
+            f"MCP connection error in {func_name} "
+            f"(attempt {attempt}/{MCP_CONNECTION_RETRY_ATTEMPTS}): {e}"
+        )
     )
     if attempt == MCP_CONNECTION_RETRY_ATTEMPTS:
         error = RuntimeError(
@@ -238,7 +245,10 @@ async def _execute_with_retry[T](
 
     if last_exception:
         raise RuntimeError(
-            f"MCP tool {func_name} failed after {MCP_CONNECTION_RETRY_ATTEMPTS} attempts"
+            (
+                f"MCP tool {func_name} failed after "
+                f"{MCP_CONNECTION_RETRY_ATTEMPTS} attempts"
+            )
         ) from last_exception
 
     raise RuntimeError(f"MCP tool {func_name} failed unexpectedly")

@@ -34,7 +34,10 @@ def validate_refactoring_type(type: str) -> str | None:
         return json.dumps(
             {
                 "status": "error",
-                "error": f"Invalid type: {type}. Valid types: consolidation, splits, reorganization",
+                "error": (
+                    f"Invalid type: {type}. Valid types: consolidation, "
+                    "splits, reorganization"
+                ),
                 "valid_types": valid_types,
             },
             indent=2,
@@ -263,22 +266,25 @@ async def suggest_refactoring(
     show_diff: bool = True,
     estimate_impact: bool = True,
 ) -> str:
-    """Generate intelligent refactoring suggestions to improve Memory Bank structure and efficiency.
+    """Generate intelligent refactoring suggestions to improve Memory Bank
+    structure and efficiency.
 
-    This consolidated tool provides three types of refactoring suggestions to help optimize
-    your Memory Bank:
+    This consolidated tool provides three types of refactoring suggestions to
+    help optimize your Memory Bank:
 
-    1. **consolidation**: Identifies opportunities to consolidate duplicate or highly similar
-       content across multiple files. Uses similarity analysis to find files sharing common
-       content that could be extracted into shared files and referenced via transclusion.
+    1. **consolidation**: Identifies opportunities to consolidate duplicate or
+       highly similar content across multiple files. Uses similarity analysis
+       to find files sharing common content that could be extracted into
+       shared files and referenced via transclusion.
 
-    2. **splits**: Identifies oversized files that should be split into smaller, more focused
-       files. Analyzes file size in tokens and suggests logical split points based on content
-       structure (headings, sections, topics).
+    2. **splits**: Identifies oversized files that should be split into
+       smaller, more focused files. Analyzes file size in tokens and suggests
+       logical split points based on content structure (headings, sections,
+       topics).
 
-    3. **reorganization**: Generates comprehensive reorganization plans to improve overall
-       structure. Can optimize for reducing dependency depth, grouping by category/functionality,
-       or reducing complexity.
+    3. **reorganization**: Generates comprehensive reorganization plans to
+       improve overall structure. Can optimize for reducing dependency depth,
+       grouping by category/functionality, or reducing complexity.
 
     Args:
         type: Type of refactoring suggestions to generate.
@@ -290,7 +296,8 @@ async def suggest_refactoring(
             Example: "/Users/username/projects/my-project"
             If None, uses current working directory.
 
-        min_similarity: Minimum similarity threshold for consolidation suggestions (0.0-1.0).
+        min_similarity: Minimum similarity threshold for consolidation
+            suggestions (0.0-1.0).
             Example: 0.75 (75% similarity required)
             Default: 0.80 (80% similarity)
             Higher values = stricter matching, fewer suggestions.
@@ -336,7 +343,10 @@ async def suggest_refactoring(
                     "similarity": 0.87,
                     "shared_content_tokens": 450,
                     "potential_savings_tokens": 420,
-                    "recommendation": "Extract shared product requirements into product-requirements.md",
+                    "recommendation": (
+                        "Extract shared product requirements into "
+                        "product-requirements.md"
+                    ),
                     "suggested_transclusion": "{{include:product-requirements.md}}",
                     "confidence": "high"
                 }
@@ -463,7 +473,10 @@ async def suggest_refactoring(
                         "similarity": 0.89,
                         "shared_content_tokens": 780,
                         "potential_savings_tokens": 730,
-                        "recommendation": "Extract shared technology stack information into tech-stack.md",
+                        "recommendation": (
+                            "Extract shared technology stack information "
+                            "into tech-stack.md"
+                        ),
                         "suggested_transclusion": "{{include:tech-stack.md}}",
                         "confidence": "high"
                     },
@@ -473,14 +486,18 @@ async def suggest_refactoring(
                         "similarity": 0.87,
                         "shared_content_tokens": 520,
                         "potential_savings_tokens": 485,
-                        "recommendation": "Extract current sprint goals into sprint-current.md",
+                        "recommendation": (
+                            "Extract current sprint goals into "
+                            "sprint-current.md"
+                        ),
                         "suggested_transclusion": "{{include:sprint-current.md}}",
                         "confidence": "high"
                     }
                 ]
             }
 
-        Example 2: Find files that should be split (smaller threshold for more suggestions)
+        Example 2: Find files that should be split (smaller threshold for
+            more suggestions)
 
         Input:
             type="splits"
@@ -497,21 +514,34 @@ async def suggest_refactoring(
                         "file": "systemPatterns.md",
                         "current_size_tokens": 11200,
                         "current_size_bytes": 44800,
-                        "reason": "File exceeds size threshold and contains multiple distinct topics",
+                        "reason": (
+                            "File exceeds size threshold and contains "
+                            "multiple distinct topics"
+                        ),
                         "suggested_splits": [
                             {
                                 "name": "architecture-overview.md",
-                                "sections": ["System Architecture", "High-Level Design"],
+                                "sections": [
+                                    "System Architecture",
+                                    "High-Level Design",
+                                ],
                                 "estimated_tokens": 4500
                             },
                             {
                                 "name": "design-patterns.md",
-                                "sections": ["Design Patterns", "Pattern Implementations"],
+                                "sections": [
+                                    "Design Patterns",
+                                    "Pattern Implementations",
+                                ],
                                 "estimated_tokens": 3800
                             },
                             {
                                 "name": "coding-standards.md",
-                                "sections": ["Coding Standards", "Best Practices", "Code Review Guidelines"],
+                                "sections": [
+                                    "Coding Standards",
+                                    "Best Practices",
+                                    "Code Review Guidelines",
+                                ],
                                 "estimated_tokens": 2900
                             }
                         ],
@@ -527,7 +557,10 @@ async def suggest_refactoring(
                         "file": "productContext.md",
                         "current_size_tokens": 9100,
                         "current_size_bytes": 36400,
-                        "reason": "File size approaching threshold with separable content sections",
+                        "reason": (
+                            "File size approaching threshold with separable "
+                            "content sections"
+                        ),
                         "suggested_splits": [
                             {
                                 "name": "product-vision.md",
@@ -536,7 +569,11 @@ async def suggest_refactoring(
                             },
                             {
                                 "name": "product-requirements.md",
-                                "sections": ["Requirements", "Features", "User Stories"],
+                                "sections": [
+                                    "Requirements",
+                                    "Features",
+                                    "User Stories",
+                                ],
                                 "estimated_tokens": 4900
                             }
                         ],
@@ -618,18 +655,22 @@ async def suggest_refactoring(
             }
 
     Note:
-        - Consolidation analysis uses content similarity algorithms and may take several
-          seconds for large Memory Banks. Results are cached per session.
-        - Split recommendations consider both file size and logical content boundaries
-          (sections, headings). Files just under the threshold may not get suggestions.
-        - Reorganization plans preserve all file content and dependencies. The tool only
-          suggests moves, it does not execute them automatically.
-        - The min_similarity threshold significantly affects results: 0.80-0.90 is typical,
-          0.70-0.79 is lenient (more suggestions), 0.91-1.0 is strict (fewer suggestions).
-        - Size threshold is in bytes. Typical values: 8000-12000 bytes. Remember that
-          1 token ≈ 4 characters, so 10000 bytes ≈ 2500 tokens.
-        - Preview functionality (preview_suggestion_id) requires suggestion caching which
-          is planned for a future release. Currently returns informational message.
+        - Consolidation analysis uses content similarity algorithms and may
+          take several seconds for large Memory Banks. Results are cached per
+          session.
+        - Split recommendations consider both file size and logical content
+          boundaries (sections, headings). Files just under the threshold may
+          not get suggestions.
+        - Reorganization plans preserve all file content and dependencies.
+          The tool only suggests moves, it does not execute them automatically.
+        - The min_similarity threshold significantly affects results:
+          0.80-0.90 is typical, 0.70-0.79 is lenient (more suggestions),
+          0.91-1.0 is strict (fewer suggestions).
+        - Size threshold is in bytes. Typical values: 8000-12000 bytes.
+          Remember that 1 token ≈ 4 characters, so 10000 bytes ≈ 2500 tokens.
+        - Preview functionality (preview_suggestion_id) requires suggestion
+          caching which is planned for a future release. Currently returns
+          informational message.
         - All suggestions include confidence scores (high/medium/low) based on analysis
           quality and the certainty of the recommendation.
         - Refactoring suggestions do not modify files. Use execute_refactoring tool

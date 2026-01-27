@@ -3,8 +3,10 @@
 Tools: apply_refactoring, provide_feedback, configure_learning.
 
 Notes:
-- get_refactoring_history is consolidated into get_memory_bank_stats(..., include_refactoring_history=True).
-- approve_refactoring/rollback_refactoring are consolidated into apply_refactoring(action=...).
+- get_refactoring_history is consolidated into get_memory_bank_stats(...,
+  include_refactoring_history=True).
+- approve_refactoring/rollback_refactoring are consolidated into
+  apply_refactoring(action=...).
 """
 
 import json
@@ -73,20 +75,23 @@ async def apply_refactoring(
             Example: "ref-consolidate-20240115123045"
         execution_id: ID of the refactoring execution (required for rollback).
             Example: "exec-ref-consolidate-20240115123045-20240115124530"
-        approval_id: Specific approval ID to use (optional for apply, auto-detected if omitted).
+        approval_id: Specific approval ID to use (optional for apply,
+            auto-detected if omitted).
             Example: "approval-123456"
         auto_apply: If True, automatically execute after approval (approve action only).
             Default: False
-        user_comment: Optional comment explaining the approval, application, or rollback.
+        user_comment: Optional comment explaining the approval, application,
+            or rollback.
             Example: "Approved for Phase 2 consolidation"
         dry_run: If True, simulate the operation without making actual changes.
             Useful for previewing impact. Default: False
-        validate_first: If True, validate the refactoring before execution (apply action only).
+        validate_first: If True, validate the refactoring before execution
+            (apply action only).
             Checks file existence, syntax, and conflicts. Default: True
         restore_snapshot: If True, restore files from snapshot (rollback action only).
             Default: True
-        preserve_manual_changes: If True, attempt to preserve manual edits during rollback
-            (rollback action only). Default: True
+        preserve_manual_changes: If True, attempt to preserve manual edits
+            during rollback (rollback action only). Default: True
         project_root: Optional absolute path to project root.
             Default: current working directory
 
@@ -198,12 +203,17 @@ async def apply_refactoring(
         }
 
     Note:
-        - This tool replaces deprecated approve_refactoring and rollback_refactoring tools
-        - All file operations are atomic: either all succeed or all are rolled back
-        - Snapshots are automatically created before applying changes (when dry_run=False)
+        - This tool replaces deprecated approve_refactoring and
+          rollback_refactoring tools
+        - All file operations are atomic: either all succeed or all are
+          rolled back
+        - Snapshots are automatically created before applying changes
+          (when dry_run=False)
         - The tool auto-detects approval_id for apply action if not provided
-        - Validation failures prevent execution and provide detailed error messages
-        - Rollback can detect conflicts with manual edits and preserve them when requested
+        - Validation failures prevent execution and provide detailed error
+          messages
+        - Rollback can detect conflicts with manual edits and preserve them
+          when requested
         - Use dry_run=True to safely preview any operation before actual execution
     """
     return await _execute_apply_refactoring_with_validation(
@@ -483,7 +493,10 @@ async def provide_feedback(
         >>> provide_feedback(
         ...     suggestion_id="ref-consolidate-20240115123045",
         ...     feedback_type="helpful",
-        ...     comment="Great catch! This consolidation removed duplicate validation logic"
+        ...     comment=(
+        ...         "Great catch! This consolidation removed duplicate "
+        ...         "validation logic"
+        ...     )
         ... )
         {
           "feedback_id": "feedback-ref-consolidate-20240115123045-20240115125030",
@@ -501,7 +514,10 @@ async def provide_feedback(
         >>> provide_feedback(
         ...     suggestion_id="ref-split-20240115130000",
         ...     feedback_type="incorrect",
-        ...     comment="These functions should not be split - they share critical state"
+        ...     comment=(
+        ...         "These functions should not be split - they share "
+        ...         "critical state"
+        ...     )
         ... )
         {
           "feedback_id": "feedback-ref-split-20240115130000-20240115130530",
@@ -539,10 +555,12 @@ async def provide_feedback(
         - The learning engine adjusts confidence thresholds based on feedback patterns
         - "helpful" feedback increases confidence in similar patterns
         - "not_helpful" feedback reduces confidence slightly
-        - "incorrect" feedback significantly lowers confidence and may filter future similar suggestions
+        - "incorrect" feedback significantly lowers confidence and may filter
+          future similar suggestions
         - All feedback is persisted to .cortex/learning.json
         - Learning statistics update after each feedback submission
-        - Feedback can be provided at any time, even after suggestion approval/application
+        - Feedback can be provided at any time, even after suggestion
+          approval/application
     """
     try:
         root = get_project_root(project_root)

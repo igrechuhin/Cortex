@@ -33,11 +33,13 @@ from cortex.tools.models import (
 async def resolve_transclusions(
     file_name: str, project_root: str | None = None, max_depth: int = 5
 ) -> str:
-    """Resolve all {{include:}} transclusion directives in a file by replacing them with actual content.
+    """Resolve all {{include:}} transclusion directives in a file by
+    replacing them with actual content.
 
-    Reads the specified file and recursively resolves all transclusion directives by replacing
-    them with the actual content from referenced files. Supports nested transclusions where
-    included files can themselves contain transclusion directives.
+    Reads the specified file and recursively resolves all transclusion
+    directives by replacing them with the actual content from referenced
+    files. Supports nested transclusions where included files can themselves
+    contain transclusion directives.
 
     The resolution process:
     1. Parses file for {{include:file.md}} or {{include:file.md#section}} directives
@@ -47,9 +49,12 @@ async def resolve_transclusions(
     5. Caches results to avoid redundant file reads
 
     Args:
-        file_name: Name of the file to resolve, relative to memory-bank directory (e.g., "activeContext.md", "projectBrief.md")
-        project_root: Optional absolute path to project root directory; if None, uses current working directory
-        max_depth: Maximum nesting level for transclusions to prevent infinite recursion (default: 5, range: 1-10)
+        file_name: Name of the file to resolve, relative to memory-bank
+            directory (e.g., "activeContext.md", "projectBrief.md")
+        project_root: Optional absolute path to project root directory;
+            if None, uses current working directory
+        max_depth: Maximum nesting level for transclusions to prevent
+            infinite recursion (default: 5, range: 1-10)
 
     Returns:
         JSON string containing original and resolved content:
@@ -57,19 +62,29 @@ async def resolve_transclusions(
         - file: Name of the resolved file
         - original_content: Original file content with transclusion directives
         - resolved_content: Fully resolved content with all transclusions expanded
-        - has_transclusions: Boolean indicating if file contained any transclusion directives
-        - cache_stats: Statistics about cache hits and misses (only if has_transclusions is true)
-        - message: Additional information about the result (only if no transclusions found)
+        - has_transclusions: Boolean indicating if file contained any
+          transclusion directives
+        - cache_stats: Statistics about cache hits and misses (only if
+          has_transclusions is true)
+        - message: Additional information about the result (only if no
+          transclusions found)
         - error: Error message (only if status is "error")
-        - error_type: Type of error - "CircularDependencyError", "MaxDepthExceededError", or exception name
+        - error_type: Type of error - "CircularDependencyError",
+          "MaxDepthExceededError", or exception name
 
     Example (Success with transclusions):
         ```json
         {
           "status": "success",
           "file": "activeContext.md",
-          "original_content": "# Active Context\\n\\n{{include:techContext.md#stack}}\\n\\nCurrent work...",
-          "resolved_content": "# Active Context\\n\\n## Technology Stack\\n\\nPython 3.13+, FastAPI...\\n\\nCurrent work...",
+          "original_content": (
+              "# Active Context\\n\\n{{include:techContext.md#stack}}\\n\\n"
+              "Current work..."
+          ),
+          "resolved_content": (
+              "# Active Context\\n\\n## Technology Stack\\n\\n"
+              "Python 3.13+, FastAPI...\\n\\nCurrent work..."
+          ),
           "has_transclusions": true,
           "cache_stats": {
             "hits": 2,
@@ -84,8 +99,12 @@ async def resolve_transclusions(
         {
           "status": "success",
           "file": "progress.md",
-          "original_content": "# Progress\\n\\n## Completed\\n- Feature A\\n- Feature B",
-          "resolved_content": "# Progress\\n\\n## Completed\\n- Feature A\\n- Feature B",
+          "original_content": (
+              "# Progress\\n\\n## Completed\\n- Feature A\\n- Feature B"
+          ),
+          "resolved_content": (
+              "# Progress\\n\\n## Completed\\n- Feature A\\n- Feature B"
+          ),
           "has_transclusions": false,
           "message": "No transclusions found in file"
         }
@@ -95,9 +114,15 @@ async def resolve_transclusions(
         ```json
         {
           "status": "error",
-          "error": "Circular dependency detected: activeContext.md -> techContext.md -> activeContext.md",
+          "error": (
+              "Circular dependency detected: activeContext.md -> "
+              "techContext.md -> activeContext.md"
+          ),
           "error_type": "CircularDependencyError",
-          "message": "Circular transclusion detected. Fix the circular reference and try again."
+          "message": (
+              "Circular transclusion detected. Fix the circular reference "
+              "and try again."
+          ),
         }
         ```
 
@@ -112,13 +137,17 @@ async def resolve_transclusions(
         ```
 
     Note:
-        - Section references use GitHub markdown header slug format (lowercase, hyphens for spaces)
+        - Section references use GitHub markdown header slug format
+          (lowercase, hyphens for spaces)
         - Transclusions are resolved recursively, allowing nested includes
         - Circular dependencies are detected and reported as errors
-        - Cache statistics include hits (reused content), misses (new reads), and cache size
+        - Cache statistics include hits (reused content), misses (new reads),
+          and cache size
         - Missing section references will include the entire file as fallback
-        - Content is cached during resolution to optimize performance for repeated includes
-        - Maximum depth prevents stack overflow from deeply nested or circular transclusions
+        - Content is cached during resolution to optimize performance for
+          repeated includes
+        - Maximum depth prevents stack overflow from deeply nested or
+          circular transclusions
     """
     try:
         result = await execute_tool_with_stability(
@@ -289,7 +318,10 @@ def _build_circular_dependency_error(
     return ResolveTransclusionsErrorResult(
         error=error_message,
         error_type="CircularDependencyError",
-        message="Circular transclusion detected. Fix the circular reference and try again.",
+        message=(
+            "Circular transclusion detected. Fix the circular reference "
+            "and try again."
+        ),
     )
 
 

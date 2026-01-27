@@ -506,7 +506,8 @@ class TestAutoReindex:
     async def test_start_auto_reindex_idempotent(
         self, tmp_path: Path, mock_token_counter: TokenCounter
     ):
-        """Test that starting auto-reindex multiple times doesn't create multiple tasks."""
+        """Test that starting auto-reindex multiple times doesn't create
+        multiple tasks."""
         # Arrange
         rules_dir = tmp_path / ".cursorrules"
         _ = rules_dir.mkdir()

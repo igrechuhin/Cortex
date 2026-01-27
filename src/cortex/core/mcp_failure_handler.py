@@ -38,7 +38,8 @@ Investigate and fix MCP tool failure that occurred during commit procedure execu
 
 ## Requirements
 
-1. **Investigate**: Analyze error, check tool implementation, verify MCP protocol compliance
+1. **Investigate**: Analyze error, check tool implementation, verify MCP
+   protocol compliance
 2. **Fix**: Resolve root cause, ensure tool works via MCP protocol
 3. **Verify**: Test tool, verify commit procedure proceeds, ensure no regressions
 
@@ -56,7 +57,8 @@ Investigate and fix MCP tool failure that occurred during commit procedure execu
 
 ## Notes
 
-Auto-generated on MCP tool failure. Tool: {tool_name}, Error: {error_type}: {error_message}
+Auto-generated on MCP tool failure. Tool: {tool_name}, Error:
+{error_type}: {error_message}
 """
 
 
@@ -141,7 +143,10 @@ class MCPToolFailureHandler:
         """Check for JSON parsing errors."""
         if isinstance(error, json.JSONDecodeError):
             logger.error(
-                f"Detected JSON parsing error in {tool_name} during {step_name}: {error}"
+                (
+                    f"Detected JSON parsing error in {tool_name} during "
+                    f"{step_name}: {error}"
+                )
             )
             return True
         if isinstance(error, ValueError):
@@ -155,7 +160,10 @@ class MCPToolFailureHandler:
             ]
             if any(kw in error_str for kw in json_keywords):
                 logger.error(
-                    f"Detected JSON-related ValueError in {tool_name} during {step_name}: {error}"
+                    (
+                        f"Detected JSON-related ValueError in {tool_name} "
+                        f"during {step_name}: {error}"
+                    )
                 )
                 return True
         return False
@@ -176,7 +184,10 @@ class MCPToolFailureHandler:
             ]
             if any(kw in error_str for kw in connection_keywords):
                 logger.error(
-                    f"Detected connection error in {tool_name} during {step_name}: {error}"
+                    (
+                        f"Detected connection error in {tool_name} during "
+                        f"{step_name}: {error}"
+                    )
                 )
                 return True
         return False
@@ -199,7 +210,10 @@ class MCPToolFailureHandler:
         ]
         if any(kw in error_str for kw in unexpected_keywords):
             logger.error(
-                f"Detected unexpected behavior in {tool_name} during {step_name}: {error}"
+                (
+                    f"Detected unexpected behavior in {tool_name} during "
+                    f"{step_name}: {error}"
+                )
             )
             return True
         return False
@@ -248,7 +262,10 @@ class MCPToolFailureHandler:
             return True
         if "fastmcp" in error_str or "mcp error" in error_str:
             logger.error(
-                f"Detected MCP protocol error in {tool_name} during {step_name}: {error}"
+                (
+                    f"Detected MCP protocol error in {tool_name} during "
+                    f"{step_name}: {error}"
+                )
             )
             return True
         return False
@@ -291,50 +308,97 @@ class MCPToolFailureHandler:
             tool_name: Name of the tool that failed
             error: Exception that occurred
         """
-        # Note: This method should use manage_file() MCP tool, but since we're
-        # in a failure handler, we use standard file tools as fallback
-        # The commit procedure will use MCP tools, but failure handling needs
-        # to work even when MCP tools are broken
+        roadmap_path = self._get_roadmap_path()
+        if not roadmap_path:
+            return
+
+        roadmap_content = roadmap_path.read_text(encoding="utf-8")
+        roadmap_content = self._ensure_blockers_section(roadmap_content)
+        relative_plan_path = self._get_relative_plan_path(plan_path)
+        plan_entry = self._create_plan_entry(tool_name, relative_plan_path, error)
+        roadmap_content = self._insert_plan_entry(roadmap_content, plan_entry)
+
+        _ = roadmap_path.write_text(roadmap_content, encoding="utf-8")
+        logger.info(f"Added investigation plan to roadmap: {plan_path}")
+
+    def _get_roadmap_path(self) -> Path | None:
+        """Get roadmap file path.
+
+        Returns:
+            Path to roadmap file, or None if not found
+        """
         roadmap_path = (
             get_cortex_path(self.project_root, CortexResourceType.MEMORY_BANK)
             / "roadmap.md"
         )
-
         if not roadmap_path.exists():
             logger.warning(f"Roadmap file not found: {roadmap_path}")
-            return
+            return None
+        return roadmap_path
 
-        # Read roadmap
-        roadmap_content = roadmap_path.read_text(encoding="utf-8")
+    def _ensure_blockers_section(self, content: str) -> str:
+        """Ensure blockers section exists in roadmap.
 
-        # Find "Blockers (ASAP Priority)" section
+        Args:
+            content: Current roadmap content
+
+        Returns:
+            Updated roadmap content with blockers section
+        """
         blockers_section = "## Blockers (ASAP Priority)"
-        if blockers_section not in roadmap_content:
-            # Add section if it doesn't exist
-            roadmap_content += f"\n\n{blockers_section}\n\n"
+        if blockers_section not in content:
+            content += f"\n\n{blockers_section}\n\n"
+        return content
 
-        # Create relative path from memory-bank to plan
+    def _get_relative_plan_path(self, plan_path: Path) -> Path:
+        """Get relative path from project root to plan.
+
+        Args:
+            plan_path: Absolute path to plan file
+
+        Returns:
+            Relative path, or absolute path if not relative
+        """
         try:
-            relative_plan_path = plan_path.relative_to(self.project_root)
+            return plan_path.relative_to(self.project_root)
         except ValueError:
-            # If paths don't share common root, use absolute path
-            relative_plan_path = plan_path
+            return plan_path
 
-        # Add plan entry
-        plan_entry = f"- [Phase: Investigate {tool_name} MCP Tool Failure]({relative_plan_path}) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `{tool_name}`, Error: {type(error).__name__} - Impact: Commit procedure blocked - Target completion: {datetime.now().strftime('%Y-%m-%d')}\n"
+    def _create_plan_entry(
+        self, tool_name: str, relative_plan_path: Path, error: Exception
+    ) -> str:
+        """Create plan entry text for roadmap.
 
-        # Insert after blockers section header
-        insert_pos = roadmap_content.find(blockers_section) + len(blockers_section)
-        roadmap_content = (
-            roadmap_content[:insert_pos]
-            + "\n"
-            + plan_entry
-            + roadmap_content[insert_pos:]
+        Args:
+            tool_name: Name of the tool that failed
+            relative_plan_path: Relative path to plan file
+            error: Exception that occurred
+
+        Returns:
+            Formatted plan entry text
+        """
+        return (
+            f"- [Phase: Investigate {tool_name} MCP Tool Failure]"
+            f"({relative_plan_path}) - ASAP (PLANNING) - Investigate and "
+            f"fix MCP tool failure that occurred during commit procedure - "
+            f"Tool: `{tool_name}`, Error: {type(error).__name__} - Impact: "
+            f"Commit procedure blocked - Target completion: "
+            f"{datetime.now().strftime('%Y-%m-%d')}\n"
         )
 
-        # Write updated roadmap
-        _ = roadmap_path.write_text(roadmap_content, encoding="utf-8")
-        logger.info(f"Added investigation plan to roadmap: {plan_path}")
+    def _insert_plan_entry(self, content: str, plan_entry: str) -> str:
+        """Insert plan entry into roadmap content.
+
+        Args:
+            content: Current roadmap content
+            plan_entry: Plan entry text to insert
+
+        Returns:
+            Updated roadmap content with plan entry inserted
+        """
+        blockers_section = "## Blockers (ASAP Priority)"
+        insert_pos = content.find(blockers_section) + len(blockers_section)
+        return content[:insert_pos] + "\n" + plan_entry + content[insert_pos:]
 
     def handle_failure(self, tool_name: str, error: Exception, step_name: str) -> None:
         """Handle MCP tool failure according to protocol.
@@ -361,7 +425,10 @@ class MCPToolFailureHandler:
             self.add_to_roadmap(plan_path, tool_name, error)
         except Exception as roadmap_error:
             logger.error(
-                f"Failed to add plan to roadmap: {roadmap_error}. Plan created at: {plan_path}"
+                (
+                    f"Failed to add plan to roadmap: {roadmap_error}. "
+                    f"Plan created at: {plan_path}"
+                )
             )
 
         # Generate user notification (for logging, not returned since we raise)
@@ -405,7 +472,8 @@ class MCPToolFailureHandler:
 
 **Impact**: Commit procedure was blocked at step: {step_name}
 
-**Fix Recommendation**: **FIX-ASAP** priority - Tool must be fixed before commit can proceed
+**Fix Recommendation**: **FIX-ASAP** priority - Tool must be fixed before
+commit can proceed
 
 **Investigation Plan**: {relative_plan_path}
 
@@ -415,6 +483,7 @@ class MCPToolFailureHandler:
 3. Verify the fix works via MCP protocol
 4. Re-run commit procedure after fix
 
-**Protocol**: Commit procedure stopped immediately per MCP Tool Failure protocol. No workarounds or fallbacks allowed."""
+**Protocol**: Commit procedure stopped immediately per MCP Tool Failure
+protocol. No workarounds or fallbacks allowed."""
 
         return notification

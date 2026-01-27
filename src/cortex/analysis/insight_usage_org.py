@@ -375,8 +375,13 @@ class UsageOrganizationInsights:
             {
                 "id": "similar_filenames",
                 "category": "redundancy",
-                "title": f"Found {len(similar_names)} pairs of files with similar names",
-                "description": "Similar file names may indicate duplicate or overlapping content",
+                "title": (
+                    f"Found {len(similar_names)} pairs of files with " "similar names"
+                ),
+                "description": (
+                    "Similar file names may indicate duplicate or "
+                    "overlapping content"
+                ),
                 "impact_score": 0.65,
                 "severity": "medium",
                 "evidence": {

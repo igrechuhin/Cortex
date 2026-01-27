@@ -300,8 +300,14 @@ class SchemaValidator:
                 ValidationError(
                     type="heading_level_skip",
                     severity="error",
-                    message=f"Line {line_num}: Heading level skip detected (level {prev_level} -> {level})",
-                    suggestion=f"Use incremental heading levels. After {'#' * prev_level}, use {'#' * (prev_level + 1)}",
+                    message=(
+                        f"Line {line_num}: Heading level skip detected "
+                        f"(level {prev_level} -> {level})"
+                    ),
+                    suggestion=(
+                        f"Use incremental heading levels. After "
+                        f"{'#' * prev_level}, use {'#' * (prev_level + 1)}"
+                    ),
                 )
             )
 
@@ -319,8 +325,14 @@ class SchemaValidator:
                 ValidationError(
                     type="heading_too_deep",
                     severity="warning",
-                    message=f"Line {line_num}: Heading '{heading_text}' is too deeply nested (level {level})",
-                    suggestion=f"Consider restructuring to use at most {max_nesting + 1} levels",
+                    message=(
+                        f"Line {line_num}: Heading '{heading_text}' is "
+                        f"too deeply nested (level {level})"
+                    ),
+                    suggestion=(
+                        f"Consider restructuring to use at most "
+                        f"{max_nesting + 1} levels"
+                    ),
                 )
             )
 

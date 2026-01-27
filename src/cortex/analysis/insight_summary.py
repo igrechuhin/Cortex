@@ -77,12 +77,18 @@ class InsightSummaryGenerator:
         if severity_counts["high"] > 0:
             return (
                 "needs_attention",
-                f"Found {severity_counts['high']} high-priority issues that should be addressed",
+                (
+                    f"Found {severity_counts['high']} high-priority issues "
+                    "that should be addressed"
+                ),
             )
         if severity_counts["medium"] >= 3:
             return (
                 "could_improve",
-                f"Found {severity_counts['medium']} medium-priority opportunities for improvement",
+                (
+                    f"Found {severity_counts['medium']} medium-priority "
+                    "opportunities for improvement"
+                ),
             )
         return (
             "good",

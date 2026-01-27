@@ -34,7 +34,7 @@ class TestCleanupMetadataIndex:
         assert result.entries_cleaned == 0
         assert "No stale entries found" in result.message
 
-    async def test_cleanup_metadata_index_when_stale_files_and_dry_run_reports_no_changes(
+    async def test_cleanup_metadata_index_when_stale_files_and_dry_run_reports_no_changes(  # noqa: E501
         self, tmp_path
     ) -> None:
         # Arrange

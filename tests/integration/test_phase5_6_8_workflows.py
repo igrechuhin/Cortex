@@ -114,12 +114,18 @@ considerations, token management, and refresh token handling.
         api_docs_path = memory_bank_path / "api_docs.md"
         _ = await fs.write_file(
             api_docs_path,
-            f"# API Documentation\n{shared_content}\n## Endpoints\nBrief endpoint description.\n",
+            (
+                f"# API Documentation\n{shared_content}\n## Endpoints\n"
+                "Brief endpoint description.\n"
+            ),
         )
         auth_guide_path = memory_bank_path / "auth_guide.md"
         _ = await fs.write_file(
             auth_guide_path,
-            f"# Authentication Guide\n{shared_content}\n## Setup\nBrief setup instructions.\n",
+            (
+                f"# Authentication Guide\n{shared_content}\n## Setup\n"
+                "Brief setup instructions.\n"
+            ),
         )
 
         # Act: Detect consolidation opportunities

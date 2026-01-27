@@ -327,7 +327,8 @@ class TestLegacyStructureDetection:
         # Arrange
         manager = StructureManager(tmp_path)
 
-        # Create doc-mcp-style structure (requires both .cursor/plans and docs/memory-bank)
+        # Create doc-mcp-style structure (requires both .cursor/plans and
+        # docs/memory-bank)
         (tmp_path / ".cursor" / "plans").mkdir(parents=True)
         (tmp_path / "docs" / "memory-bank").mkdir(parents=True)
         (tmp_path / "docs" / "memory-bank" / "projectBrief.md").touch()

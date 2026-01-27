@@ -331,9 +331,10 @@ class ConsolidationDetector:
     ) -> list[ConsolidationOpportunity]:
         """Compare sections between two files for similarity.
 
-        Performance optimization: Uses content hashing for fast exact-match detection
-        and early exit. Reduces O(sections1 × sections2 × content_length) to
-        O(sections1 + sections2) for exact matches, O(sections1 × sections2) for similar.
+        Performance optimization: Uses content hashing for fast exact-match
+        detection and early exit. Reduces O(sections1 × sections2 ×
+        content_length) to O(sections1 + sections2) for exact matches,
+        O(sections1 × sections2) for similar.
 
         Args:
             file1: First file path
@@ -359,7 +360,8 @@ class ConsolidationDetector:
                     content1, content2, hash1, hash2
                 )
 
-                # Early termination: Only create opportunities if similarity meets threshold
+                # Early termination: Only create opportunities if similarity
+                # meets threshold
                 if similarity >= self.min_similarity:
                     opportunity = self._build_similar_section_opportunity(
                         file1, file2, heading1, heading2, content1, content2, similarity
@@ -512,16 +514,13 @@ class ConsolidationDetector:
         Returns:
             ConsolidationOpportunity instance
         """
-        files = [occ[0] for occ in occurrences]
-        contents = [occ[1] for occ in occurrences]
+        files, contents = self._prepare_consolidation_data(occurrences)
         common_content = self.extract_common_content_multi(contents)
         token_savings = int(len(common_content) / 4) * (len(occurrences) - 1)
         extraction_target = self.generate_extraction_target(heading, files)
-
-        transclusion_syntax = [
-            f"{{{{include: {Path(extraction_target).name}#{self.slugify(heading)}}}}}"
-            for _ in files
-        ]
+        transclusion_syntax = self._build_transclusion_syntax_multi(
+            extraction_target, heading, files
+        )
 
         return ConsolidationOpportunity(
             opportunity_id=self.generate_opportunity_id(),
@@ -530,7 +529,9 @@ class ConsolidationDetector:
             common_content=common_content,
             similarity_score=avg_similarity,
             token_savings=token_savings,
-            suggested_action=f"Create shared section for '{heading}' and use transclusion",
+            suggested_action=(
+                f"Create shared section for '{heading}' and use " "transclusion"
+            ),
             extraction_target=extraction_target,
             transclusion_syntax=transclusion_syntax,
             details={
@@ -539,6 +540,39 @@ class ConsolidationDetector:
                 "average_similarity": avg_similarity,
             },
         )
+
+    def _prepare_consolidation_data(
+        self, occurrences: list[tuple[str, str]]
+    ) -> tuple[list[str], list[str]]:
+        """Prepare files and contents lists from occurrences.
+
+        Args:
+            occurrences: List of (file, content) tuples
+
+        Returns:
+            Tuple of (files list, contents list)
+        """
+        files = [occ[0] for occ in occurrences]
+        contents = [occ[1] for occ in occurrences]
+        return files, contents
+
+    def _build_transclusion_syntax_multi(
+        self, extraction_target: str, heading: str, files: list[str]
+    ) -> list[str]:
+        """Build transclusion syntax list for multiple files.
+
+        Args:
+            extraction_target: Target file for extraction
+            heading: Section heading
+            files: List of file paths
+
+        Returns:
+            List of transclusion syntax strings
+        """
+        return [
+            f"{{{{include: {Path(extraction_target).name}#{self.slugify(heading)}}}}}"
+            for _ in files
+        ]
 
     async def detect_shared_patterns(
         self, file_contents: dict[str, str]
@@ -767,7 +801,9 @@ class ConsolidationDetector:
             common_content=content,
             similarity_score=1.0,
             token_savings=token_savings,
-            suggested_action=f"Extract section '{heading}' to shared file and use transclusion",
+            suggested_action=(
+                f"Extract section '{heading}' to shared file and use " "transclusion"
+            ),
             extraction_target=extraction_target,
             transclusion_syntax=transclusion_syntax,
             details={

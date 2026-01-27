@@ -135,7 +135,10 @@ class RelevanceScorer:
             ]
 
             reason: str = (
-                f"Contains keywords: {', '.join(repr(kw) for kw in matching_keywords[:3])}"
+                (
+                    f"Contains keywords: "
+                    f"{', '.join(repr(kw) for kw in matching_keywords[:3])}"
+                )
                 if matching_keywords
                 else "No keyword matches"
             )

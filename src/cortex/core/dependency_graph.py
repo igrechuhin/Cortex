@@ -311,7 +311,8 @@ class DependencyGraph:
         """
         nodes = _build_dependency_nodes(self.static_deps)
 
-        # Optimize: Pre-compute all dependencies once instead of calling get_dependencies in loop
+        # Optimize: Pre-compute all dependencies once instead of calling
+        # get_dependencies in loop
         all_files = set(self.static_deps.keys()) | set(self.dynamic_deps.keys())
         all_dependencies = {
             file_name: self.get_dependencies(file_name) for file_name in all_files
@@ -372,7 +373,10 @@ class DependencyGraph:
             for file_name in self.static_deps.keys()
         }
         edge_lines = [
-            f"    {dep.replace('.md', '').replace('-', '')} --> {file_name.replace('.md', '').replace('-', '')}"
+            (
+                f"    {dep.replace('.md', '').replace('-', '')} --> "
+                f"{file_name.replace('.md', '').replace('-', '')}"
+            )
             for file_name, deps in all_dependencies.items()
             for dep in deps
         ]

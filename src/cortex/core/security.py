@@ -225,7 +225,10 @@ class RegexValidator:
     def _check_basic_constraints(pattern: str) -> tuple[bool, str | None]:
         """Check basic pattern constraints (length, null bytes, nesting)."""
         if len(pattern) > RegexValidator.MAX_PATTERN_LENGTH:
-            msg = f"Pattern too long: {len(pattern)} > {RegexValidator.MAX_PATTERN_LENGTH}"
+            msg = (
+                f"Pattern too long: {len(pattern)} > "
+                f"{RegexValidator.MAX_PATTERN_LENGTH}"
+            )
             return False, msg
         if "\0" in pattern:
             return False, "Pattern contains null bytes"
@@ -243,7 +246,10 @@ class RegexValidator:
             elif char == ")":
                 depth -= 1
         if max_depth > RegexValidator.MAX_NESTING_DEPTH:
-            msg = f"Pattern nesting too deep: {max_depth} > {RegexValidator.MAX_NESTING_DEPTH}"
+            msg = (
+                f"Pattern nesting too deep: {max_depth} > "
+                f"{RegexValidator.MAX_NESTING_DEPTH}"
+            )
             return False, msg
         return True, None
 
@@ -257,14 +263,20 @@ class RegexValidator:
             min_val = int(match.group(1))
             max_val = match.group(2)
             if min_val > RegexValidator.MAX_QUANTIFIER_LIMIT:
-                msg = f"Quantifier minimum too large: {min_val} > {RegexValidator.MAX_QUANTIFIER_LIMIT}"
+                msg = (
+                    f"Quantifier minimum too large: {min_val} > "
+                    f"{RegexValidator.MAX_QUANTIFIER_LIMIT}"
+                )
                 return False, msg
             if (
                 max_val
                 and max_val.isdigit()
                 and int(max_val) > RegexValidator.MAX_QUANTIFIER_LIMIT
             ):
-                msg = f"Quantifier maximum too large: {max_val} > {RegexValidator.MAX_QUANTIFIER_LIMIT}"
+                msg = (
+                    f"Quantifier maximum too large: {max_val} > "
+                    f"{RegexValidator.MAX_QUANTIFIER_LIMIT}"
+                )
                 return False, msg
         return True, None
 
@@ -406,7 +418,10 @@ class InputValidator:
         invalid_chars = [c for c in name if c in InputValidator.INVALID_CHARS]
         if invalid_chars:
             raise ValueError(
-                f"File name contains invalid characters: {', '.join(repr(c) for c in invalid_chars)}"
+                (
+                    f"File name contains invalid characters: "
+                    f"{', '.join(repr(c) for c in invalid_chars)}"
+                )
             )
 
     @staticmethod
@@ -523,7 +538,10 @@ class InputValidator:
         """Check for allowed git protocols (HTTPS and SSH only)."""
         if not (url.startswith("https://") or url.startswith("git@")):
             raise ValueError(
-                f"Invalid git URL protocol: {url}. Only HTTPS and SSH protocols allowed."
+                (
+                    f"Invalid git URL protocol: {url}. Only HTTPS and SSH "
+                    f"protocols allowed."
+                )
             )
 
     @staticmethod
@@ -645,10 +663,12 @@ class RateLimiter:
         Initialize rate limiter.
 
         Design Decision: Sliding window rate limiting
-        Context: Need to prevent abuse of file operations without blocking legitimate use
+        Context: Need to prevent abuse of file operations without blocking
+        legitimate use
         Decision: Sliding window rate limiter with async support
         Alternatives Considered: Fixed window, token bucket
-        Rationale: Sliding window provides smooth rate limiting without burst allowance issues
+        Rationale: Sliding window provides smooth rate limiting without
+        burst allowance issues
 
         Args:
             max_ops: Maximum operations per window

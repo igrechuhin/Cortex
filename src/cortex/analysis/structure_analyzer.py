@@ -245,8 +245,10 @@ class StructureAnalyzer:
                 severity="low",
                 file=file_name,
                 dependent_count=dependent_count,
-                description=f"File is depended upon by {dependent_count} other files",
-                recommendation="This is a central file - ensure it's stable and well-maintained",
+                description=(f"File is depended upon by {dependent_count} other files"),
+                recommendation=(
+                    "This is a central file - ensure it's stable and " "well-maintained"
+                ),
             )
             for file_name, file_data in graph.items()
             if (dependent_count := len(file_data.get("dependents", []))) > 15
@@ -292,7 +294,9 @@ class StructureAnalyzer:
                 severity="low",
                 files=[f"{name1}.md", f"{name2}.md"],
                 description="Files have similar names",
-                recommendation="Check if content is duplicated or could be consolidated",
+                recommendation=(
+                    "Check if content is duplicated or could be " "consolidated"
+                ),
             )
             for name1, name2 in similar_names
         ]

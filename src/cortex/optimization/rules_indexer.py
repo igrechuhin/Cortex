@@ -347,7 +347,8 @@ class RulesIndexer:
         Searches for common rule file patterns including markdown,
         text files, and specific rule file names.
 
-        Performance: O(directories + patterns) - optimized from O(directories × patterns²)
+        Performance: O(directories + patterns) - optimized from
+        O(directories × patterns²)
         - Uses module-level _RULE_FILE_PATTERNS constant
         - Set-based duplicate detection (O(1) membership check)
         - Single pass through directories with batched pattern matching

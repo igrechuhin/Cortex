@@ -35,7 +35,8 @@ class LanguageDetector:
         """Initialize detector with project root.
 
         Args:
-            project_root: Path to project root directory. If None, uses current directory.
+            project_root: Path to project root directory. If None, uses
+            current directory.
         """
         self.project_root = Path(project_root) if project_root else Path.cwd()
 

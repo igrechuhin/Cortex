@@ -1,7 +1,8 @@
 """
 Learning Adjustments Module
 
-Handles confidence adjustments for suggestions based on learned patterns and preferences.
+Handles confidence adjustments for suggestions based on learned patterns
+and preferences.
 Split from learning_engine.py in Phase 9.1 for improved modularity.
 """
 

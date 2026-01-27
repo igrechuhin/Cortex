@@ -134,22 +134,26 @@ async def analyze(
     export_format: str = "json",
     categories: list[str] | None = None,
 ) -> str:
-    """Analyze Memory Bank usage patterns, file structure, and generate optimization insights.
+    """Analyze Memory Bank usage patterns, file structure, and generate
+    optimization insights.
 
-    This consolidated tool provides three types of analysis to help understand and optimize
-    your Memory Bank:
+    This consolidated tool provides three types of analysis to help
+    understand and optimize your Memory Bank:
 
-    1. **usage_patterns**: Analyzes file access frequency, co-access patterns, task patterns,
-       and identifies unused files within a time window. Helps identify frequently accessed
-       files, files that are always accessed together, and files that haven't been used recently.
+    1. **usage_patterns**: Analyzes file access frequency, co-access
+       patterns, task patterns, and identifies unused files within a time
+       window. Helps identify frequently accessed files, files that are
+       always accessed together, and files that haven't been used recently.
 
-    2. **structure**: Analyzes file organization, detects anti-patterns (deeply nested directories,
-       oversized files, naming inconsistencies), and measures complexity metrics (directory depth,
-       file count per directory, dependency complexity).
+    2. **structure**: Analyzes file organization, detects anti-patterns
+       (deeply nested directories, oversized files, naming inconsistencies),
+       and measures complexity metrics (directory depth, file count per
+       directory, dependency complexity).
 
-    3. **insights**: Generates AI-driven optimization insights with impact scoring. Analyzes patterns
-       and structure to suggest specific improvements like consolidating related files, splitting
-       large files, or reorganizing directory structure.
+    3. **insights**: Generates AI-driven optimization insights with impact
+       scoring. Analyzes patterns and structure to suggest specific
+       improvements like consolidating related files, splitting large files,
+       or reorganizing directory structure.
 
     Args:
         target: Analysis target to perform.
@@ -248,18 +252,28 @@ async def analyze(
                 "high_impact": [
                     {
                         "category": "duplication",
-                        "description": "productContext.md and activeContext.md share 85% similar content",
+                        "description": (
+                            "productContext.md and activeContext.md share "
+                            "85% similar content"
+                        ),
                         "impact_score": 0.92,
-                        "recommendation": "Consolidate shared content using transclusion",
+                        "recommendation": (
+                            "Consolidate shared content using transclusion"
+                        ),
                         "affected_files": ["productContext.md", "activeContext.md"]
                     }
                 ],
                 "medium_impact": [
                     {
                         "category": "complexity",
-                        "description": "systemPatterns.md exceeds recommended size (12000 tokens)",
+                        "description": (
+                            "systemPatterns.md exceeds recommended size "
+                            "(12000 tokens)"
+                        ),
                         "impact_score": 0.68,
-                        "recommendation": "Split into architecture.md and patterns.md",
+                        "recommendation": (
+                            "Split into architecture.md and patterns.md"
+                        ),
                         "affected_files": ["systemPatterns.md"]
                     }
                 ],
@@ -338,13 +352,18 @@ async def analyze(
                             "path": "systemPatterns.md",
                             "size_tokens": 14500,
                             "severity": "high",
-                            "recommendation": "Split into architecture.md and design-patterns.md"
+                            "recommendation": (
+                                "Split into architecture.md and "
+                                "design-patterns.md"
+                            )
                         },
                         {
                             "type": "naming_inconsistency",
                             "path": "product_context.md",
                             "severity": "low",
-                            "recommendation": "Rename to productContext.md for consistency"
+                            "recommendation": (
+                                "Rename to productContext.md for consistency"
+                            )
                         }
                     ],
                     "complexity_metrics": {
@@ -367,7 +386,31 @@ async def analyze(
                 "status": "success",
                 "target": "insights",
                 "format": "markdown",
-                "insights": "# Memory Bank Optimization Insights\n\n## High Impact Improvements\n\n### Duplication: Consolidate Shared Content\n\n**Impact Score:** 0.89\n\n**Description:** activeContext.md and progress.md contain 78% duplicate content regarding current sprint goals and completed tasks.\n\n**Recommendation:** Use transclusion to include shared sprint information from a single source file.\n\n**Affected Files:**\n- activeContext.md\n- progress.md\n\n---\n\n## Medium Impact Improvements\n\n### Complexity: Split Large File\n\n**Impact Score:** 0.65\n\n**Description:** systemPatterns.md contains 11200 tokens across multiple distinct topics.\n\n**Recommendation:** Split into separate files: architecture.md, design-patterns.md, and coding-standards.md.\n\n**Affected Files:**\n- systemPatterns.md\n\n"
+                "insights": (
+                    "# Memory Bank Optimization Insights\n\n"
+                    "## High Impact Improvements\n\n"
+                    "### Duplication: Consolidate Shared Content\n\n"
+                    "**Impact Score:** 0.89\n\n"
+                    "**Description:** activeContext.md and progress.md "
+                    "contain 78% duplicate content regarding current sprint "
+                    "goals and completed tasks.\n\n"
+                    "**Recommendation:** Use transclusion to include shared "
+                    "sprint information from a single source file.\n\n"
+                    "**Affected Files:**\n"
+                    "- activeContext.md\n"
+                    "- progress.md\n\n"
+                    "---\n\n"
+                    "## Medium Impact Improvements\n\n"
+                    "### Complexity: Split Large File\n\n"
+                    "**Impact Score:** 0.65\n\n"
+                    "**Description:** systemPatterns.md contains 11200 tokens "
+                    "across multiple distinct topics.\n\n"
+                    "**Recommendation:** Split into separate files: "
+                    "architecture.md, design-patterns.md, and "
+                    "coding-standards.md.\n\n"
+                    "**Affected Files:**\n"
+                    "- systemPatterns.md\n\n"
+                )
             }
 
     Note:

@@ -271,9 +271,10 @@ class TestRetryConstants:
     async def test_retry_async_unreachable_code_path(self):
         """Test retry_async unreachable code path (lines 102-104)."""
         # Arrange
-        # This tests the unreachable code path that satisfies the type checker
-        # We'll mock the function to raise an exception that's not in TRANSIENT_EXCEPTIONS
-        # but then somehow not raise it (impossible scenario, but tests the code)
+        # This tests the unreachable code path that satisfies the type
+        # checker. We'll mock the function to raise an exception that's not
+        # in TRANSIENT_EXCEPTIONS but then somehow not raise it (impossible
+        # scenario, but tests the code)
         func = AsyncMock(side_effect=ValueError("non-transient"))
 
         # Act & Assert

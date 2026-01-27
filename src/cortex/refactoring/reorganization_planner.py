@@ -90,7 +90,8 @@ class ReorganizationPlanner:
         Create a reorganization plan.
 
         Args:
-            optimize_for: Optimization goal ("dependency_depth", "category_based", "complexity")
+            optimize_for: Optimization goal ("dependency_depth",
+            "category_based", "complexity")
             structure_data: Structure analysis results
             dependency_graph: Dependency graph data
 
@@ -194,7 +195,9 @@ class ReorganizationPlanner:
             actions.append(
                 ReorganizationActionPreview(
                     type=action.action_type,
-                    description=f"{action.action_type}: {action.source} -> {action.target}",
+                    description=(
+                        f"{action.action_type}: {action.source} -> " f"{action.target}"
+                    ),
                     reason=action.reason,
                 )
             )

@@ -54,8 +54,14 @@ class PatternAnalyzerProtocol(Protocol):
                         freq[fname] = AccessFrequencyEntry(
                             read_count=read_count,
                             access_count=read_count,
-                            frequency=read_count / time_window_days if time_window_days > 0 else 0.0,
-                            avg_accesses_per_day=read_count / time_window_days if time_window_days > 0 else 0.0,
+                            frequency=(
+                                read_count / time_window_days
+                                if time_window_days > 0 else 0.0
+                            ),
+                            avg_accesses_per_day=(
+                                read_count / time_window_days
+                                if time_window_days > 0 else 0.0
+                            ),
                             last_access=last_access_str,
                         )
                 return freq
@@ -155,13 +161,18 @@ class StructureAnalyzerProtocol(Protocol):
             def __init__(self, dependency_graph: DependencyGraphProtocol):
                 self.dependency_graph = dependency_graph
 
-            async def analyze_organization(self, memory_bank_path: Path) -> StructureAnalysisData:
+            async def analyze_organization(
+                self, memory_bank_path: Path
+            ) -> StructureAnalysisData:
                 from cortex.analysis.models import (
                     AntiPatternInfo,
                     ComplexityAnalysisResult,
                 )
                 files = list(memory_bank_path.rglob("*.md"))
-                max_depth = max((len(f.relative_to(memory_bank_path).parts) for f in files), default=0)
+                max_depth = max(
+                    (len(f.relative_to(memory_bank_path).parts) for f in files),
+                    default=0,
+                )
 
                 organization = FileOrganizationResult(
                     status="analyzed",
@@ -197,11 +208,15 @@ class StructureAnalyzerProtocol(Protocol):
                         max_dependency_depth=max_depth,
                     ),
                     assessment=ComplexityAssessment(
-                        status="healthy" if not self.dependency_graph.has_circular_dependency() else "warning",
+                        status=(
+                            "healthy"
+                            if not self.dependency_graph.has_circular_dependency()
+                            else "warning"
+                        ),
                     ),
                 )
 
-                return StructureAnalysisData(
+                return StructureAnalysisData(  # noqa: E501
                     organization=organization,
                     anti_patterns=anti_patterns,
                     complexity_metrics=complexity,

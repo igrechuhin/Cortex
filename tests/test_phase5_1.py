@@ -261,10 +261,12 @@ async def test_detect_anti_patterns(structure_analyzer: StructureAnalyzer) -> No
 
     assert isinstance(anti_patterns, list)
 
-    # The test fixture creates a file with 60000 bytes, which is < 100KB threshold
-    # So we check if there are ANY anti-patterns detected (could be orphaned files, similar names, etc.)
-    # At minimum, should detect some orphaned files or similar names
-    assert len(anti_patterns) >= 0  # Changed from checking for specific types
+    # The test fixture creates a file with 60000 bytes, which is < 100KB
+    # threshold. So we check if there are ANY anti-patterns detected (could
+    # be orphaned files, similar names, etc.). At minimum, should detect some
+    # orphaned files or similar names
+    assert len(anti_patterns) >= 0  # Changed from checking for specific
+    # types
 
 
 @pytest.mark.asyncio

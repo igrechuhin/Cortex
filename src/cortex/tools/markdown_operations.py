@@ -5,7 +5,8 @@ This module contains MCP tools for markdown file operations.
 
 Total: 2 tools
 - fix_markdown_lint: Fix markdownlint errors in markdown files (modified or all files)
-- fix_roadmap_corruption: Fix text corruption in roadmap.md (missing spaces, malformed dates, etc.)
+- fix_roadmap_corruption: Fix text corruption in roadmap.md
+  (missing spaces, malformed dates, etc.)
 """
 
 import asyncio
@@ -208,7 +209,8 @@ async def _find_markdownlint_command() -> list[str] | None:
     Checks for markdownlint-cli2 in PATH first, then tries npx as fallback.
 
     Returns:
-        Command list to use (e.g., ["markdownlint-cli2"] or ["npx", "markdownlint-cli2"]),
+        Command list to use (e.g., ["markdownlint-cli2"] or
+        ["npx", "markdownlint-cli2"]),
         or None if not available
     """
     # Try direct command first
@@ -280,7 +282,8 @@ async def _run_markdownlint_fix(
     Args:
         file_path: Path to the markdown file
         project_root: Root directory of the project
-        markdownlint_cmd: Command to use (e.g., ["markdownlint-cli2"] or ["npx", "--yes", "markdownlint-cli2"])
+        markdownlint_cmd: Command to use (e.g., ["markdownlint-cli2"] or
+        ["npx", "--yes", "markdownlint-cli2"])
         dry_run: If True, only check without fixing (default: False)
 
     Returns:
@@ -477,8 +480,9 @@ async def fix_markdown_lint(
         project_root: Path to project root directory. If None, uses current directory.
         include_untracked_markdown: Include untracked markdown files (default: False)
         dry_run: Check for errors without fixing them (default: False)
-        check_all_files: Check all markdown files in project, not just modified ones (default: False)
-            When True, scans all .md and .mdc files in the project instead of only git-modified files.
+        check_all_files: Check all markdown files in project, not just
+            modified ones (default: False). When True, scans all .md and
+            .mdc files in the project instead of only git-modified files.
 
     Returns:
         JSON string with fix results containing:
@@ -535,11 +539,15 @@ async def fix_markdown_lint(
         }
 
     Note:
-        - Automatically detects markdownlint-cli2: checks PATH first, then tries npx as fallback
+        - Automatically detects markdownlint-cli2: checks PATH first, then
+          tries npx as fallback
         - If not found, install with: npm install -g markdownlint-cli2
-        - npx fallback works without global installation (auto-installs on first use)
-        - When check_all_files=False: Only processes files tracked by git (staged, unstaged, optionally untracked)
-        - When check_all_files=True: Processes all .md and .mdc files in the project (excludes .git, node_modules, venv, etc.)
+        - npx fallback works without global installation (auto-installs on
+          first use)
+        - When check_all_files=False: Only processes files tracked by git
+          (staged, unstaged, optionally untracked)
+        - When check_all_files=True: Processes all .md and .mdc files in
+          the project (excludes .git, node_modules, venv, etc.)
         - Only processes .md and .mdc files
         - Returns error if not in a git repository (when check_all_files=False)
         - Returns error if markdownlint-cli2 is not available via PATH or npx
@@ -603,7 +611,8 @@ class FixRoadmapCorruptionResult(BaseModel):
 
 
 def _detect_pattern1(lines: list[str], matches: list[CorruptionMatch]) -> None:
-    """Detect pattern 1: missing space/newline after completion date followed by capital."""
+    """Detect pattern 1: missing space/newline after completion date
+    followed by capital."""
     pattern = re.compile(r"(Target completion:)(\d{4}-\d{2}-\d{2})([A-Za-z])")
     for i, line in enumerate(lines, 1):
         for m in pattern.finditer(line):
@@ -739,7 +748,10 @@ def _detect_score_patterns(lines: list[str], matches: list[CorruptionMatch]) -> 
                     CorruptionMatch(
                         line_num=i,
                         original=match.group(0),
-                        fixed=f"{match.group(1)}.{match.group(2)}/10 to {match.group(4)}.{match.group(5)}+/10",
+                        fixed=(
+                            f"{match.group(1)}.{match.group(2)}/10 to "
+                            f"{match.group(4)}.{match.group(5)}+/10"
+                        ),
                         pattern="corrupted_score_format",
                     )
                 )

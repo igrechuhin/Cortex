@@ -223,9 +223,10 @@ This will need careful planning and execution.
         # Should find similar content (not exact) OR exact duplicates
         # Since the content is very similar, it might be detected
         total_found = len(result.similar_content) + len(result.exact_duplicates)
-        assert (
-            total_found > 0
-        ), f"Expected to find similar content, but found {result.model_dump(mode='json')}"
+        assert total_found > 0, (
+            f"Expected to find similar content, but found "
+            f"{result.model_dump(mode='json')}"
+        )
 
     @pytest.mark.asyncio
     async def test_no_duplicates(self):

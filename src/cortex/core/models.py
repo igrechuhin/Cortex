@@ -801,7 +801,10 @@ class StructureMetrics(BaseModel):
     )
     organization: str | None = Field(
         default=None,
-        description="Organization type: flat, category_based, dependency_optimized, simplified",
+        description=(
+            "Organization type: flat, category_based, "
+            "dependency_optimized, simplified"
+        ),
     )
 
 
@@ -1196,7 +1199,8 @@ class SuccessResponseData(BaseModel):
         """Convert to dictionary for JSON serialization.
 
         Returns:
-            Dictionary representation (use model_dump(exclude_none=True) directly for better typing)
+            Dictionary representation (use model_dump(exclude_none=True)
+            directly for better typing)
         """
         return self.model_dump(exclude_none=True)
 
@@ -1213,7 +1217,8 @@ class ErrorContext(BaseModel):
         """Convert to dictionary for JSON serialization.
 
         Returns:
-            Dictionary representation (use model_dump(exclude_none=True) directly for better typing)
+            Dictionary representation (use model_dump(exclude_none=True)
+            directly for better typing)
         """
         return self.model_dump(exclude_none=True)
 

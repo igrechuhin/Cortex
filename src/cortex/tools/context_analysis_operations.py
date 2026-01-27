@@ -289,7 +289,10 @@ def _get_budget_efficiency_pattern(
     if avg_util >= 0.5:
         return None
     waste = int((avg_budget - avg_tokens) / 1000)
-    return f"Average {int(avg_util * 100)}% budget utilization - ~{waste}k tokens unused per call"
+    return (
+        f"Average {int(avg_util * 100)}% budget utilization - "
+        f"~{waste}k tokens unused per call"
+    )
 
 
 def _get_file_frequency_pattern(entries: list[ContextUsageEntry]) -> str | None:
@@ -302,7 +305,10 @@ def _get_file_frequency_pattern(entries: list[ContextUsageEntry]) -> str | None:
     if not file_counts:
         return None
     top_file = max(file_counts, key=lambda x: file_counts[x])
-    return f"'{top_file}' is most frequently loaded ({file_counts[top_file]}/{len(entries)} calls)"
+    return (
+        f"'{top_file}' is most frequently loaded "
+        f"({file_counts[top_file]}/{len(entries)} calls)"
+    )
 
 
 def _get_task_type_pattern(entries: list[ContextUsageEntry]) -> str | None:
@@ -427,7 +433,8 @@ def _calculate_session_stats(
 def _update_global_stats(
     project_root: Path, session_id: str, entries: list[ContextUsageEntry]
 ) -> tuple[ContextUsageStatistics, int]:
-    """Update global statistics with new session entries. Returns (stats, new_entries_count)."""
+    """Update global statistics with new session entries. Returns
+    (stats, new_entries_count)."""
     stats_path = _get_statistics_path(project_root)
     stats = _load_statistics(stats_path)
     existing_sessions = {e.session_id for e in stats.entries}

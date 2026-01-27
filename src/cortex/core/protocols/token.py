@@ -124,7 +124,9 @@ class DependencyGraphProtocol(Protocol):
                 self.graph = {}  # file -> list of dependencies
                 self.reverse_graph = {}  # file -> list of dependents
 
-            def compute_loading_order(self, files: list[str] | None = None) -> list[str]:
+            def compute_loading_order(
+                self, files: list[str] | None = None
+            ) -> list[str]:
                 # Topological sort for dependency order
                 return self._topological_sort(files)
 

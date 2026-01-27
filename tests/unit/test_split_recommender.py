@@ -457,7 +457,10 @@ class TestFilenameGeneration:
     ):
         """Test that filename length is limited"""
         original = "memory-bank/test.md"
-        heading = "Very Long Heading That Should Be Truncated Because It Exceeds Maximum Length"
+        heading = (
+            "Very Long Heading That Should Be Truncated Because It "
+            "Exceeds Maximum Length"
+        )
 
         filename = split_recommender.generate_split_filename(original, heading)
 

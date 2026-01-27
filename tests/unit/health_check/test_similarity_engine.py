@@ -27,8 +27,14 @@ class TestSimilarityEngine:
     def test_calculate_content_similarity_similar(self):
         """Test similarity calculation for similar content."""
         engine = SimilarityEngine(min_content_length=10)
-        content1 = "This is test content for similarity analysis and comparison between different text samples."
-        content2 = "This is test content for similarity checking and comparison between different text samples."
+        content1 = (
+            "This is test content for similarity analysis and comparison "
+            "between different text samples."
+        )
+        content2 = (
+            "This is test content for similarity checking and comparison "
+            "between different text samples."
+        )
         similarity = engine.calculate_content_similarity(content1, content2)
         assert similarity > 0.7
 
@@ -185,14 +191,20 @@ class TestSimilarityEngine:
     def test_minimum_content_length_long_content(self):
         """Test that long content passes minimum length check."""
         engine = SimilarityEngine(min_content_length=10)
-        long_content = "This is a longer piece of content that should pass the minimum length check."
+        long_content = (
+            "This is a longer piece of content that should pass the "
+            "minimum length check."
+        )
         similarity = engine.calculate_content_similarity(long_content, long_content)
         assert similarity == 1.0
 
     def test_keyword_extraction(self):
         """Test keyword extraction functionality."""
         engine = SimilarityEngine()
-        content = "This is a test document for analyzing similarity between different content pieces."
+        content = (
+            "This is a test document for analyzing similarity between "
+            "different content pieces."
+        )
         # Access via semantic similarity which uses keywords
         similarity = engine.calculate_semantic_similarity(content, content)
         assert similarity > 0.8

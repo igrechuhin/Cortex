@@ -91,7 +91,8 @@ class TestFileOrganizationAnalysis:
         mock_metadata_index: MetadataIndex,
     ):
         """Test handles empty memory bank directory."""
-        # Arrange - temp_project_root already has ".cortex" / "memory-bank" dir, so it should be empty
+        # Arrange - temp_project_root already has ".cortex" / "memory-bank"
+        # dir, so it should be empty
         analyzer = StructureAnalyzer(
             temp_project_root,
             mocked_dependency_graph,

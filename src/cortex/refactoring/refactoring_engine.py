@@ -117,11 +117,7 @@ class RefactoringEngine:
         """Build organization suggestion from orphaned files."""
         suggestion_id = self.generate_suggestion_id(RefactoringType.REORGANIZATION)
         actions = self._build_organization_actions(orphaned_files)
-        impact = RefactoringImpactMetrics(
-            files_affected=len(orphaned_files),
-            token_savings=0,
-            complexity_reduction=0.0,
-        )
+        impact = self._create_organization_impact(orphaned_files)
         metadata = RefactoringMetadata(source="structure")
         return [
             RefactoringSuggestionModel(
@@ -129,8 +125,14 @@ class RefactoringEngine:
                 refactoring_type=RefactoringType.REORGANIZATION,
                 priority=RefactoringPriority.MEDIUM,
                 title=f"Orphaned files detected ({len(orphaned_files)})",
-                description="Several files are not referenced by others. Consider reorganizing to improve discoverability.",
-                reasoning="Orphaned files are hard to discover and can indicate missing links or poor structure.",
+                description=(
+                    "Several files are not referenced by others. "
+                    "Consider reorganizing to improve discoverability."
+                ),
+                reasoning=(
+                    "Orphaned files are hard to discover and can indicate "
+                    "missing links or poor structure."
+                ),
                 affected_files=orphaned_files,
                 actions=actions,
                 estimated_impact=impact,
@@ -138,6 +140,23 @@ class RefactoringEngine:
                 metadata=metadata,
             )
         ]
+
+    def _create_organization_impact(
+        self, orphaned_files: list[str]
+    ) -> RefactoringImpactMetrics:
+        """Create impact metrics for organization suggestion.
+
+        Args:
+            orphaned_files: List of orphaned file paths
+
+        Returns:
+            Impact metrics for reorganization
+        """
+        return RefactoringImpactMetrics(
+            files_affected=len(orphaned_files),
+            token_savings=0,
+            complexity_reduction=0.0,
+        )
 
     def _build_organization_actions(
         self, orphaned_files: list[str]
@@ -440,7 +459,10 @@ def _generate_consolidation_actions(
             RefactoringActionModel(
                 action_type="modify",
                 target_file=f,
-                description=f"Replace duplicated content with transclusion in {Path(f).name}",
+                description=(
+                    f"Replace duplicated content with transclusion in "
+                    f"{Path(f).name}"
+                ),
                 details=ActionDetails(source_file=f),
             )
             for f in affected_files
@@ -458,7 +480,7 @@ def _generate_split_actions(
             RefactoringActionModel(
                 action_type="create",
                 target_file=f"memory-bank/{Path(f).stem}-part1.md",
-                description=f"Split {Path(f).name} into logical sections",
+                description=(f"Split {Path(f).name} into logical sections"),
                 details=ActionDetails(source_file=f),
             )
         )
@@ -466,7 +488,7 @@ def _generate_split_actions(
             RefactoringActionModel(
                 action_type="modify",
                 target_file=f,
-                description=f"Update {Path(f).name} to reference split files",
+                description=(f"Update {Path(f).name} to reference split files"),
                 details=ActionDetails(source_file=f),
             )
         )
@@ -493,27 +515,46 @@ def _build_reasoning(insight: InsightDict, refactoring_type: RefactoringType) ->
     if description:
         reasoning_parts.append(f"Analysis shows: {description}")
 
+    type_reasoning = _get_refactoring_type_reasoning(refactoring_type)
+    if type_reasoning:
+        reasoning_parts.append(type_reasoning)
+
+    impact_reasoning = _get_impact_reasoning(insight)
+    if impact_reasoning:
+        reasoning_parts.append(impact_reasoning)
+
+    return " ".join(reasoning_parts)
+
+
+def _get_refactoring_type_reasoning(refactoring_type: RefactoringType) -> str:
+    """Get reasoning text for refactoring type."""
     if refactoring_type == RefactoringType.CONSOLIDATION:
-        reasoning_parts.append(
-            "Consolidating duplicate content reduces token usage and improves maintainability."
+        return (
+            "Consolidating duplicate content reduces token usage and "
+            "improves maintainability."  # noqa: E501
         )
     elif refactoring_type == RefactoringType.SPLIT:
-        reasoning_parts.append(
-            "Splitting large files improves context loading efficiency and navigation."
+        return (
+            "Splitting large files improves context loading efficiency "
+            "and navigation."
         )
     elif refactoring_type == RefactoringType.REORGANIZATION:
-        reasoning_parts.append(
-            "Reorganizing structure reduces dependency complexity and improves discoverability."
+        return (
+            "Reorganizing structure reduces dependency complexity and "
+            "improves discoverability."
         )
+    return ""
 
+
+def _get_impact_reasoning(insight: InsightDict) -> str:
+    """Get impact reasoning if impact score is high."""
     impact_score_raw = insight.get("impact_score", 0.0)
     impact_score = (
         float(impact_score_raw) if isinstance(impact_score_raw, (int, float)) else 0.0
     )
     if impact_score > 0.7:
-        reasoning_parts.append("This change has high potential impact.")
-
-    return " ".join(reasoning_parts)
+        return "This change has high potential impact."
+    return ""
 
 
 def _format_suggestions_markdown(suggestions: list[RefactoringSuggestionModel]) -> str:

@@ -189,7 +189,9 @@ class ToolAnalyzer:
                             similarity=similarity,
                             merge_suggestion=f"Consider merging {name1} and {name2}",
                             quality_impact="positive",
-                            estimated_savings=f"{int((1 - similarity) * 100)}% reduction",
+                            estimated_savings=(
+                                f"{int((1 - similarity) * 100)}% reduction"
+                            ),
                         )
                     )
 
@@ -220,7 +222,10 @@ class ToolAnalyzer:
                         MergeOpportunity(
                             files=[name1, name2],
                             similarity=(param_overlap + body_similarity) / 2,
-                            merge_suggestion=f"Consider consolidating {name1} and {name2} (similar parameters and implementation)",
+                            merge_suggestion=(
+                                f"Consider consolidating {name1} and {name2} "
+                                "(similar parameters and implementation)"
+                            ),
                             quality_impact="positive",
                             estimated_savings="Reduced maintenance overhead",
                         )

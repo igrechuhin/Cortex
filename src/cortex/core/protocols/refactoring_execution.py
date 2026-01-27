@@ -22,7 +22,8 @@ from cortex.refactoring.models import (
 
 
 class ApprovalManagerProtocol(Protocol):
-    """Protocol for refactoring approval operations using structural subtyping (PEP 544).
+    """Protocol for refactoring approval operations using structural
+    subtyping (PEP 544).
 
     This protocol defines the interface for managing approval workflows for
     refactoring operations. Approval management ensures safe execution with
@@ -55,7 +56,9 @@ class ApprovalManagerProtocol(Protocol):
                     message="Approval requested",
                 )
 
-            async def get_approval_status(self, refactoring_id: str) -> ApprovalStatusResult:
+            async def get_approval_status(
+                self, refactoring_id: str
+            ) -> ApprovalStatusResult:
                 if refactoring_id not in self.approvals:
                     return ApprovalStatusResult(
                         approval_id=refactoring_id,
@@ -83,7 +86,9 @@ class ApprovalManagerProtocol(Protocol):
                     )
 
                 self.approvals[refactoring_id]["status"] = "approved"
-                self.approvals[refactoring_id]["approved_at"] = datetime.utcnow().isoformat()
+                self.approvals[refactoring_id]["approved_at"] = (
+                    datetime.utcnow().isoformat()
+                )
 
                 return ApproveResult(
                     approval_id=refactoring_id,
@@ -159,7 +164,9 @@ class RollbackManagerProtocol(Protocol):
                 self.version_manager = version_manager
                 self.rollback_history = []
 
-            async def rollback_refactoring(self, execution_id: str) -> RollbackRefactoringResult:
+            async def rollback_refactoring(
+                self, execution_id: str
+            ) -> RollbackRefactoringResult:
                 # Find and restore snapshots
                 snapshot_ids = self._get_snapshots_for_execution(execution_id)
                 rolled_back = []
@@ -192,7 +199,11 @@ class RollbackManagerProtocol(Protocol):
                         status="completed",
                     )
                     for i, entry in enumerate(
-                        sorted(self.rollback_history, key=lambda x: x["timestamp"], reverse=True)
+                        sorted(
+                            self.rollback_history,
+                            key=lambda x: x["timestamp"],
+                            reverse=True,
+                        )
                     )
                 ]
 
@@ -228,7 +239,8 @@ class RollbackManagerProtocol(Protocol):
 
 
 class LearningEngineProtocol(Protocol):
-    """Protocol for learning and adaptation operations using structural subtyping (PEP 544).
+    """Protocol for learning and adaptation operations using structural
+    subtyping (PEP 544).
 
     This protocol defines the interface for learning from user feedback on
     refactoring suggestions and adapting suggestion confidence scores. Learning
@@ -266,7 +278,9 @@ class LearningEngineProtocol(Protocol):
                 # Auto-adjust confidence
                 pattern = self._extract_pattern(suggestion_id)
                 adjustment = 0.1 if accepted else -0.1
-                await self.adjust_suggestion_confidence(pattern["type"], pattern["pattern"], adjustment)
+                await self.adjust_suggestion_confidence(
+                    pattern["type"], pattern["pattern"], adjustment
+                )
 
                 return FeedbackRecordResult(
                     status="recorded",

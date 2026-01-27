@@ -3,8 +3,10 @@ Learning Engine - Phase 5.4
 
 Learn from user feedback and adapt suggestions over time.
 
-Refactored in Phase 7.1.2 to use LearningDataManager for improved modularity.
-Refactored in Phase 9.1 to split into focused modules (preferences, patterns, adjustments).
+Refactored in Phase 7.1.2 to use LearningDataManager for improved
+modularity.
+Refactored in Phase 9.1 to split into focused modules (preferences,
+patterns, adjustments).
 """
 
 from datetime import datetime

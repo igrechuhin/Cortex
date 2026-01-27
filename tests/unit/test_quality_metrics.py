@@ -3,7 +3,8 @@ Unit tests for QualityMetrics module.
 
 Tests quality score calculation including:
 - Overall score calculation with category weights
-- Individual category scores (completeness, consistency, freshness, structure, token efficiency)
+- Individual category scores (completeness, consistency, freshness,
+  structure, token efficiency)
 - File-level quality scoring
 - Grade and status determination
 - Issue collection and recommendation generation

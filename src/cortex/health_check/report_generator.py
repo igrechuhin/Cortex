@@ -64,10 +64,16 @@ class ReportGenerator:
         lines.append("## Prompts Analysis\n")
         lines.append(f"- **Total**: {report['prompts']['total']}\n")
         lines.append(
-            f"- **Merge Opportunities**: {len(report['prompts']['merge_opportunities'])}\n"
+            (
+                f"- **Merge Opportunities**: "
+                f"{len(report['prompts']['merge_opportunities'])}\n"
+            )
         )
         lines.append(
-            f"- **Optimization Opportunities**: {len(report['prompts']['optimization_opportunities'])}\n\n"
+            (
+                f"- **Optimization Opportunities**: "
+                f"{len(report['prompts']['optimization_opportunities'])}\n\n"
+            )
         )
 
         if report["prompts"]["merge_opportunities"]:
@@ -94,10 +100,16 @@ class ReportGenerator:
         lines.append(f"- **Total**: {report['rules']['total']}\n")
         lines.append(f"- **Categories**: {', '.join(report['rules']['categories'])}\n")
         lines.append(
-            f"- **Merge Opportunities**: {len(report['rules']['merge_opportunities'])}\n"
+            (
+                f"- **Merge Opportunities**: "
+                f"{len(report['rules']['merge_opportunities'])}\n"
+            )
         )
         lines.append(
-            f"- **Optimization Opportunities**: {len(report['rules']['optimization_opportunities'])}\n\n"
+            (
+                f"- **Optimization Opportunities**: "
+                f"{len(report['rules']['optimization_opportunities'])}\n\n"
+            )
         )
         return lines
 
@@ -114,13 +126,22 @@ class ReportGenerator:
         lines.append("## Tools Analysis\n")
         lines.append(f"- **Total**: {report['tools']['total']}\n")
         lines.append(
-            f"- **Merge Opportunities**: {len(report['tools']['merge_opportunities'])}\n"
+            (
+                f"- **Merge Opportunities**: "
+                f"{len(report['tools']['merge_opportunities'])}\n"
+            )
         )
         lines.append(
-            f"- **Consolidation Opportunities**: {len(report['tools']['consolidation_opportunities'])}\n"
+            (
+                f"- **Consolidation Opportunities**: "
+                f"{len(report['tools']['consolidation_opportunities'])}\n"
+            )
         )
         lines.append(
-            f"- **Optimization Opportunities**: {len(report['tools']['optimization_opportunities'])}\n\n"
+            (
+                f"- **Optimization Opportunities**: "
+                f"{len(report['tools']['optimization_opportunities'])}\n\n"
+            )
         )
         return lines
 

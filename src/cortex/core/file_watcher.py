@@ -61,8 +61,9 @@ class MemoryBankWatcher(FileSystemEventHandler):
 
         Args:
             memory_bank_dir: Directory to watch
-            on_change_callback: Async callback function to call on changes
-                                Signature: async def callback(file_path: Path, event_type: str)
+            on_change_callback: Async callback function to call on changes.
+                                Signature: async def callback(file_path: Path,
+                                event_type: str)
             debounce_delay: Delay in seconds before processing change (default: 1.0)
         """
         super().__init__()

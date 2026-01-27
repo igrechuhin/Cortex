@@ -64,7 +64,8 @@ class TestMainErrorHandling:
     def test_base_exception_group_with_broken_resource_error(
         self, mock_mcp: MagicMock
     ) -> None:
-        """Test that BaseExceptionGroup containing BrokenResourceError is handled gracefully."""
+        """Test that BaseExceptionGroup containing BrokenResourceError is
+        handled gracefully."""
         # Arrange
         broken_resource_error = anyio.BrokenResourceError("Resource broken")
         exception_group = BaseExceptionGroup(
@@ -104,7 +105,8 @@ class TestMainErrorHandling:
     def test_base_exception_group_with_mixed_exceptions(
         self, mock_mcp: MagicMock
     ) -> None:
-        """Test that BaseExceptionGroup with BrokenResourceError exits gracefully even with other exceptions."""
+        """Test that BaseExceptionGroup with BrokenResourceError exits
+        gracefully even with other exceptions."""
         # Arrange
         broken_resource_error = anyio.BrokenResourceError("Resource broken")
         other_error = ValueError("Some other error")
@@ -120,14 +122,15 @@ class TestMainErrorHandling:
         # Assert
         assert (
             exc_info.value.code == 0
-        )  # Should exit gracefully if BrokenResourceError found
+        )  # Should exit gracefully if BrokenResourceError found  # noqa: E501
         mock_mcp.run.assert_called_once_with(transport="stdio")
 
     @patch("cortex.main.mcp")
     def test_base_exception_group_with_connection_reset_error(
         self, mock_mcp: MagicMock
     ) -> None:
-        """Test that BaseExceptionGroup containing ConnectionResetError is handled gracefully."""
+        """Test that BaseExceptionGroup containing ConnectionResetError is
+        handled gracefully."""
         # Arrange
         connection_reset_error = ConnectionResetError("Connection reset by peer")
         exception_group = BaseExceptionGroup(
@@ -145,7 +148,8 @@ class TestMainErrorHandling:
 
     @patch("cortex.main.mcp")
     def test_base_exception_group_with_nested_group(self, mock_mcp: MagicMock) -> None:
-        """Test that nested BaseExceptionGroup with connection error is handled gracefully."""
+        """Test that nested BaseExceptionGroup with connection error is
+        handled gracefully."""
         # Arrange
         broken_resource_error = anyio.BrokenResourceError("Resource broken")
         inner_group = BaseExceptionGroup("inner", [broken_resource_error])

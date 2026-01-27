@@ -40,7 +40,8 @@ class TestPythonAdapter:
             result = adapter.run_tests()
 
             assert result["success"] is True
-            # Note: Parsing may not work perfectly in unit tests, but structure is correct
+            # Note: Parsing may not work perfectly in unit tests, but
+            # structure is correct
             assert "tests_run" in result
             assert "tests_passed" in result
             assert "tests_failed" in result

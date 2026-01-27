@@ -204,7 +204,7 @@ def test_create_symlink_windows_file_uses_mklink_file(tmp_path: Path) -> None:
         assert "/J" not in args
 
 
-def test_setup_cursor_integration_when_validation_has_no_dict_error_response_returns_generic_error(
+def test_setup_cursor_integration_when_validation_has_no_dict_error_response_returns_generic_error(  # noqa: E501
     tmp_path: Path,
 ) -> None:
     # Arrange

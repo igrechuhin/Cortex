@@ -483,6 +483,23 @@ class InfrastructureValidator:
             "optimization.json",
         ]
 
+        issues.extend(self._check_required_configs(config_dir, required_configs))
+
+        if issues:
+            recommendations.append(
+                (
+                    "Ensure all required configuration files exist and are "
+                    "properly configured"
+                )
+            )
+
+        return issues, recommendations
+
+    def _check_required_configs(
+        self, config_dir: Path, required_configs: list[str]
+    ) -> list[InfrastructureIssue]:
+        """Check for missing required configuration files."""
+        issues: list[InfrastructureIssue] = []
         for config_name in required_configs:
             config_path = config_dir / config_name
             if not config_path.exists():
@@ -497,10 +514,4 @@ class InfrastructureValidator:
                         missing_in_commit=False,
                     )
                 )
-
-        if issues:
-            recommendations.append(
-                "Ensure all required configuration files exist and are properly configured"
-            )
-
-        return issues, recommendations
+        return issues

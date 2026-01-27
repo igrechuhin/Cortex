@@ -102,13 +102,16 @@ async def configure(
     """Configure Memory Bank validation, optimization, and learning settings.
 
     This unified configuration tool manages three core Memory Bank components:
-    - Validation: Control schema validation, duplication detection, quality metrics, and token budgets
-    - Optimization: Configure context loading strategies, summarization, relevance scoring, and caching
-    - Learning: Manage adaptive learning behavior, feedback collection, and pattern recognition
+    - Validation: Control schema validation, duplication detection, quality
+      metrics, and token budgets
+    - Optimization: Configure context loading strategies, summarization,
+      relevance scoring, and caching
+    - Learning: Manage adaptive learning behavior, feedback collection, and
+      pattern recognition
 
-    Each component supports viewing current settings, updating specific values or bulk settings,
-    and resetting to factory defaults. Configuration changes persist to disk and take effect
-    immediately for subsequent operations.
+    Each component supports viewing current settings, updating specific values
+    or bulk settings, and resetting to factory defaults. Configuration changes
+    persist to disk and take effect immediately for subsequent operations.
 
     Args:
         component: Component to configure. Valid options:
@@ -123,7 +126,8 @@ async def configure(
             - "reset": Restore factory defaults
             Example: "update"
 
-        settings: Dictionary of settings for bulk updates. Use dot notation for nested keys.
+        settings: Dictionary of settings for bulk updates. Use dot notation
+            for nested keys.
             Mutually exclusive with key/value parameters.
             Example: {"strict_mode": true, "quality.minimum_score": 75}
 
@@ -186,14 +190,19 @@ async def configure(
           "status": "error",
           "error": "Error message description",
           "error_type": "ExceptionClassName",
-          "valid_components": ["validation", "optimization", "learning"],  // If invalid component
+          "valid_components": ["validation", "optimization", "learning"],
+          // If invalid component
           "valid_actions": ["view", "update", "reset"]  // If invalid action
         }
 
     Examples:
         Example 1: View validation configuration
         >>> configure(component="validation", action="view")
-        {"status": "success", "component": "validation", "configuration": {"...": "..."}}
+        {
+            "status": "success",
+            "component": "validation",
+            "configuration": {"...": "..."}
+        }
 
         Example 2: Update optimization settings with bulk changes
         >>> configure(
@@ -205,7 +214,12 @@ async def configure(
         ...         "relevance.keyword_weight": 0.5
         ...     }
         ... )
-        {"status": "success", "component": "optimization", "message": "Configuration updated", "...": "..."}
+        {
+            "status": "success",
+            "component": "optimization",
+            "message": "Configuration updated",
+            "...": "..."
+        }
 
         Example 3: Update single learning setting
         >>> configure(
@@ -214,11 +228,17 @@ async def configure(
         ...     key="self_evolution.learning.learning_rate",
         ...     value="moderate"
         ... )
-        {"status": "success", "component": "learning", "message": "Configuration updated", "...": "..."}
+        {
+            "status": "success",
+            "component": "learning",
+            "message": "Configuration updated",
+            "...": "..."
+        }
 
     Note:
         - Use dot notation (e.g., "token_budget.max_total_tokens") for nested settings
-        - Changes persist to `.cortex/{validation,optimization,learning}.json` and take effect immediately.
+        - Changes persist to `.cortex/{validation,optimization,learning}.json`
+          and take effect immediately.
     """
     try:
         root = get_project_root(project_root)
@@ -239,8 +259,8 @@ def _create_invalid_component_error(component: str) -> str:
         f"Unknown component: {component}",
         valid_components=["validation", "optimization", "learning"],
         action_required=(
-            f"Use one of the valid components: 'validation', 'optimization', or 'learning'. "
-            f"Received: '{component}'. "
+            f"Use one of the valid components: 'validation', "
+            f"'optimization', or 'learning'. Received: '{component}'. "
             f"Example: {{'component': 'validation', 'action': 'view'}}"
         ),
         context={
@@ -506,7 +526,8 @@ def apply_config_updates(
     key: str | None,
     value: JsonValue | None,
 ) -> str | None:
-    """Apply configuration updates. Returns error message if invalid, None on success."""
+    """Apply configuration updates. Returns error message if invalid,
+    None on success."""
     if settings:
         for k, v in settings.items():
             _ = config.set(k, v)
@@ -542,7 +563,8 @@ def _format_component_error(valid_components: list[str]) -> str:
     """Format component error message."""
     return (
         f"Use one of the valid components: {', '.join(valid_components)}. "
-        f"Example: {{'component': '{valid_components[0] if valid_components else 'validation'}'}}"
+        f"Example: {{'component': "
+        f"'{valid_components[0] if valid_components else 'validation'}'}}"
     )
 
 
@@ -588,7 +610,8 @@ def create_error_response(error: str, **extra_fields: JsonValue) -> str:
 
     Args:
         error: Error message string
-        **extra_fields: Additional fields to include in response (e.g., action_required, context)
+        **extra_fields: Additional fields to include in response
+            (e.g., action_required, context)
 
     Returns:
         JSON string with standardized error response

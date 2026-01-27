@@ -29,7 +29,8 @@ class RefactoringEngineProtocol(Protocol):
     class implementing these methods automatically satisfies this protocol.
 
     Used by:
-        - RefactoringEngine: Generates consolidation, split, and reorganization suggestions
+        - RefactoringEngine: Generates consolidation, split, and
+          reorganization suggestions
         - MCP Tools: For get_refactoring_suggestions operations
         - InsightEngine: For actionable refactoring insights
         - Client Applications: For presenting refactoring options
@@ -77,12 +78,17 @@ class RefactoringEngineProtocol(Protocol):
                 return suggestions[:max_suggestions] if max_suggestions else suggestions
 
             async def export_suggestions(
-                self, suggestions: list[RefactoringSuggestionModel], format: str = "json"
+                self,
+                suggestions: list[RefactoringSuggestionModel],
+                format: str = "json"
             ) -> str:
                 if format == "json":
                     return json.dumps(suggestions, indent=2)
                 elif format == "markdown":
-                    return "\\n".join([f"## {s['type']}: {s['reason']}" for s in suggestions])
+                    return "\\n".join([
+                        f"## {s['type']}: {s['reason']}"
+                        for s in suggestions
+                    ])
                 return str(suggestions)
 
         # SimpleRefactoringEngine automatically satisfies RefactoringEngineProtocol
@@ -128,7 +134,8 @@ class RefactoringEngineProtocol(Protocol):
 
 
 class ConsolidationDetectorProtocol(Protocol):
-    """Protocol for consolidation detection operations using structural subtyping (PEP 544).
+    """Protocol for consolidation detection operations using structural
+    subtyping (PEP 544).
 
     This protocol defines the interface for detecting opportunities to consolidate
     duplicated content across files using transclusion. Consolidation reduces
@@ -161,10 +168,16 @@ class ConsolidationDetectorProtocol(Protocol):
                             common_content=common,
                             similarity_score=0.85,
                             token_savings=len(common) * (2 - 1),
-                            suggested_action="Use transclusion" if suggest_transclusion else "Extract to shared file",
+                            suggested_action=(
+                                "Use transclusion" if suggest_transclusion
+                                else "Extract to shared file"
+                            ),
                             extraction_target="shared-content.md",
                             transclusion_syntax=[
-                                f"{{{{include:shared-content.md}}}}" if suggest_transclusion else ""
+                                (
+                                    f"{{{{include:shared-content.md}}}}"
+                                    if suggest_transclusion else ""
+                                )
                             ],
                         ))
                 return opportunities
@@ -181,7 +194,8 @@ class ConsolidationDetectorProtocol(Protocol):
                     maintainability_improvement=0.8 if len(files) > 2 else 0.5,
                 )
 
-        # SimpleConsolidationDetector automatically satisfies ConsolidationDetectorProtocol
+        # SimpleConsolidationDetector automatically satisfies
+        # ConsolidationDetectorProtocol
         ```
 
     Note:
@@ -284,7 +298,9 @@ class SplitRecommenderProtocol(Protocol):
                             section_title=s.get("title", ""),
                             line_number=s.get("line", 0),
                         )
-                        for i, s in enumerate(sections[len(sections)//2:] if should_split else [])
+                        for i, s in enumerate(
+                            sections[len(sections)//2:] if should_split else []
+                        )
                     ],
                 )
 
@@ -326,7 +342,8 @@ class SplitRecommenderProtocol(Protocol):
 
 
 class ReorganizationPlannerProtocol(Protocol):
-    """Protocol for reorganization planning operations using structural subtyping (PEP 544).
+    """Protocol for reorganization planning operations using structural
+    subtyping (PEP 544).
 
     This protocol defines the interface for creating comprehensive reorganization
     plans that optimize Memory Bank structure based on dependencies, access
@@ -381,7 +398,8 @@ class ReorganizationPlannerProtocol(Protocol):
                     risks=self._assess_risks(plan),
                 )
 
-        # SimpleReorganizationPlanner automatically satisfies ReorganizationPlannerProtocol
+        # SimpleReorganizationPlanner automatically satisfies
+        # ReorganizationPlannerProtocol
         ```
 
     Note:

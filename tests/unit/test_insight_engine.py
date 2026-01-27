@@ -4,7 +4,8 @@ Tests for insight_engine.py - Insight generation functionality.
 This test module covers:
 - InsightEngine initialization
 - Comprehensive insight generation
-- Category-specific insight generation (usage, organization, redundancy, dependencies, quality)
+- Category-specific insight generation (usage, organization, redundancy,
+  dependencies, quality)
 - Summary generation
 - Export formats (JSON, Markdown, Text)
 - Impact scoring and filtering

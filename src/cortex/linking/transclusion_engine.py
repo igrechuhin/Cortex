@@ -280,11 +280,18 @@ class TransclusionEngine:
         """Validate transclusion depth and circular dependencies."""
         if depth > self.max_depth:
             raise MaxDepthExceededError(
-                f"Failed to resolve transclusion of '{target_file}' from '{source_file}': "
-                + f"Maximum transclusion depth ({self.max_depth}) exceeded. "
-                + "Cause: Too many nested {{include:}} directives. "
-                + "Try: Reduce nesting depth, increase max_depth limit, "
-                + "or reorganize content to avoid deep transclusion chains."
+                (
+                    (
+                        f"Failed to resolve transclusion of '{target_file}' from "
+                        f"'{source_file}': Maximum transclusion depth "
+                        f"({self.max_depth}) exceeded. Cause: Too many nested "
+                        "{{include:}} directives. "
+                    )
+                    + (
+                        "Try: Reduce nesting depth, increase max_depth limit, "
+                        "or reorganize content to avoid deep transclusion chains."
+                    )
+                )
             )
         if self.detect_circular_dependency(target_file):
             chain = " -> ".join(self.resolution_stack)
@@ -421,11 +428,13 @@ class TransclusionEngine:
     def _raise_section_not_found_error(self, section_heading: str) -> None:
         """Raise error when section not found."""
         raise ValueError(
-            f"Failed to transclude section '{section_heading}': "
-            + "Section heading not found in target file. "
-            + "Try: Check the exact heading text including case and special characters, "
-            + "list available sections with parse_file_links(), "
-            + "or verify the section exists in the target file."
+            (
+                f"Failed to transclude section '{section_heading}': "
+                "Section heading not found in target file. "
+                "Try: Check the exact heading text including case and special "
+                "characters, list available sections with parse_file_links(), "
+                "or verify the section exists in the target file."
+            )
         )
 
     def _find_section_end(

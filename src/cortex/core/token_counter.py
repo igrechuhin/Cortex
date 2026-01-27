@@ -47,8 +47,9 @@ class TokenCounter:
                 - "cl100k_base": GPT-4, GPT-3.5-turbo, text-embedding-ada-002
                 - "p50k_base": Codex models
                 - "o200k_base": GPT-4o models
-            use_bundled_cache: Whether to use bundled tiktoken cache if available
-                (default: True). This allows offline operation when network is unavailable.
+            use_bundled_cache: Whether to use bundled tiktoken cache if
+                available (default: True). This allows offline operation
+                when network is unavailable.
         """
         self.model = model
         self.encoding_impl = None  # Lazy initialization
@@ -195,9 +196,12 @@ class TokenCounter:
             return True, retry_delay
         else:
             logger.warning(
-                f"Tiktoken encoding '{self.model}' network unavailable after "
-                + f"{max_retries + 1} attempts (final error after {load_time:.2f}s): {e}. "
-                + "Cache may be used if available. Falling back to word-based estimation."
+                (
+                    f"Tiktoken encoding '{self.model}' network unavailable after "
+                    f"{max_retries + 1} attempts (final error after "
+                    f"{load_time:.2f}s): {e}. Cache may be used if available. "
+                    "Falling back to word-based estimation."
+                )
             )
             self._tiktoken_available = False
             return False, 0.0
@@ -359,7 +363,10 @@ class TokenCounter:
                 return len(encoding.encode(text))
             except Exception as e:
                 logger.warning(
-                    f"tiktoken encoding failed: {e}. Falling back to word-based estimation."
+                    (
+                        f"tiktoken encoding failed: {e}. Falling back to "
+                        "word-based estimation."
+                    )
                 )
                 self._tiktoken_available = False
 

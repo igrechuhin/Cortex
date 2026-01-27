@@ -210,7 +210,9 @@ class MetadataIndexProtocol(Protocol):
                     "transclusions": transclusions or [],
                 }
 
-            async def get_file_metadata(self, file_name: str) -> DetailedFileMetadata | None:
+            async def get_file_metadata(
+                self, file_name: str
+            ) -> DetailedFileMetadata | None:
                 return self.data.files.get(file_name)
 
             async def get_all_files_metadata(self) -> dict[str, DetailedFileMetadata]:

@@ -157,7 +157,10 @@ class SplitAnalyzer:
         top_level_sections = [s for s in sections if s["level"] == 1]
         if len(top_level_sections) > 3:
             reasons.append(
-                f"Multiple distinct topics ({len(top_level_sections)} top-level sections)"
+                (
+                    f"Multiple distinct topics ({len(top_level_sections)} "
+                    "top-level sections)"
+                )
             )
 
         should_split = len(reasons) > 0

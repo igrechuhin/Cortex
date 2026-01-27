@@ -486,15 +486,18 @@ class TestValidate:
                         print(f"Error result: {json_module.dumps(result, indent=2)}")
                     assert result["status"] == "success"
                     assert result["check_type"] == "duplications"
-                    # Result has "duplicates_found" and "exact_duplicates"/"similar_content" keys
+                    # Result has "duplicates_found" and
+                    # "exact_duplicates"/"similar_content" keys
                     assert "duplicates_found" in result
                     assert result["duplicates_found"] >= 0
                     if result["duplicates_found"] > 0:
                         assert (
                             "exact_duplicates" in result or "similar_content" in result
                         )
-                        # Suggested fixes only present when duplicates found and suggest_fixes=True
-                        # Note: suggested_fixes may be empty if fix generation doesn't produce fixes
+                        # Suggested fixes only present when duplicates found
+                        # and suggest_fixes=True
+                        # Note: suggested_fixes may be empty if fix generation
+                        # doesn't produce fixes
                         if "suggested_fixes" in result:
                             assert isinstance(result["suggested_fixes"], list)
 
@@ -560,13 +563,15 @@ class TestValidate:
                 result = json.loads(result_str)
                 assert result["status"] == "success"
                 assert result["check_type"] == "quality"
-                # Quality result has "breakdown" key with score details, not "score"
+                # Quality result has "breakdown" key with score details,
+                # not "score"
                 assert "breakdown" in result or "overall_score" in result
                 if "breakdown" in result:
                     breakdown = result["breakdown"]
                     assert isinstance(breakdown, dict)
-                # Quality score may vary based on actual file contents and duplication data
-                # Just verify the score is present and is a number
+                # Quality score may vary based on actual file contents and
+                # duplication data. Just verify the score is present and is
+                # a number
                 if "overall_score" in result:
                     assert isinstance(result["overall_score"], (int, float))
                     assert result["overall_score"] >= 0

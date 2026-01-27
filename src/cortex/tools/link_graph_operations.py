@@ -22,28 +22,37 @@ async def get_link_graph(
     include_transclusions: bool = True,
     format: str = "json",
 ) -> str:
-    """Build and return a dependency graph showing how Memory Bank files reference each other through links.
+    """Build and return a dependency graph showing how Memory Bank files
+    reference each other through links.
 
     Analyzes all Memory Bank files to construct a directed graph where:
     - Nodes represent files in the memory-bank directory
-    - Edges represent links between files (markdown links and/or transclusions)
-    - Edge types distinguish between reference links and transclusion dependencies
+    - Edges represent links between files (markdown links and/or
+      transclusions)
+    - Edge types distinguish between reference links and transclusion
+      dependencies
 
-    The graph includes cycle detection to identify circular dependencies that could cause
-    issues during transclusion resolution. Can output in JSON format for programmatic use
-    or Mermaid diagram format for visualization.
+    The graph includes cycle detection to identify circular dependencies
+    that could cause issues during transclusion resolution. Can output in
+    JSON format for programmatic use or Mermaid diagram format for
+    visualization.
 
     Args:
-        project_root: Optional absolute path to project root directory; if None, uses current working directory
-        include_transclusions: Whether to include transclusion links in the graph (default: True); if False, only markdown reference links are included
-        format: Output format - "json" for structured data or "mermaid" for diagram syntax (default: "json")
+        project_root: Optional absolute path to project root directory;
+            if None, uses current working directory
+        include_transclusions: Whether to include transclusion links in
+            the graph (default: True); if False, only markdown reference
+            links are included
+        format: Output format - "json" for structured data or "mermaid"
+            for diagram syntax (default: "json")
 
     Returns:
         JSON string containing link graph in requested format:
         - status: "success" or "error"
         - format: "json" or "mermaid" indicating output format
         - nodes: List of file nodes with metadata (only in JSON format)
-        - edges: List of edges with source, target, type, and metadata (only in JSON format)
+        - edges: List of edges with source, target, type, and metadata
+          (only in JSON format)
         - cycles: List of detected circular dependency paths
         - summary: Statistics about graph structure (only in JSON format)
         - diagram: Mermaid diagram syntax string (only in Mermaid format)
@@ -152,7 +161,17 @@ async def get_link_graph(
         {
           "status": "success",
           "format": "mermaid",
-          "diagram": "graph TD\\n  activeContext[activeContext.md]\\n  systemPatterns[systemPatterns.md]\\n  techContext[techContext.md]\\n  activeContext -->|reference| systemPatterns\\n  activeContext -.->|transclusion| techContext\\n  systemPatterns -->|reference| techContext\\n  style activeContext fill:#e1f5ff\\n  style systemPatterns fill:#e1f5ff\\n  style techContext fill:#e1f5ff",
+          "diagram": (
+              "graph TD\\n  activeContext[activeContext.md]\\n  "
+              "systemPatterns[systemPatterns.md]\\n  "
+              "techContext[techContext.md]\\n  "
+              "activeContext -->|reference| systemPatterns\\n  "
+              "activeContext -.->|transclusion| techContext\\n  "
+              "systemPatterns -->|reference| techContext\\n  "
+              "style activeContext fill:#e1f5ff\\n  "
+              "style systemPatterns fill:#e1f5ff\\n  "
+              "style techContext fill:#e1f5ff"
+          ),
           "cycles": []
         }
         ```
@@ -167,13 +186,20 @@ async def get_link_graph(
         ```
 
     Note:
-        - Cycles indicate circular dependencies that will cause transclusion resolution to fail
-        - Reference links (markdown links) are shown with solid arrows in Mermaid diagrams
-        - Transclusion links are shown with dashed arrows in Mermaid diagrams
-        - The graph only includes files that exist in the memory-bank directory
-        - Nodes include an 'exists' flag to identify broken links to non-existent files
-        - Edge line numbers indicate where in the source file the link appears
-        - Setting include_transclusions=False is useful for analyzing reference structure only
+        - Cycles indicate circular dependencies that will cause
+          transclusion resolution to fail
+        - Reference links (markdown links) are shown with solid arrows
+          in Mermaid diagrams
+        - Transclusion links are shown with dashed arrows in Mermaid
+          diagrams
+        - The graph only includes files that exist in the memory-bank
+          directory
+        - Nodes include an 'exists' flag to identify broken links to
+          non-existent files
+        - Edge line numbers indicate where in the source file the link
+          appears
+        - Setting include_transclusions=False is useful for analyzing
+          reference structure only
         - The summary includes has_cycles and cycle_count for quick cycle detection
     """
     try:

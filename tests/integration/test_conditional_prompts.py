@@ -159,7 +159,8 @@ class TestConditionalPromptRegistration:
 
             import cortex.tools.prompts as prompts_module
 
-            # Assert - initialize_memory_bank should NOT be registered (memory bank exists)
+            # Assert - initialize_memory_bank should NOT be registered
+            # (memory bank exists)
             assert not hasattr(prompts_module, "initialize_memory_bank")
 
             # setup_project_structure should be registered (structure incomplete)

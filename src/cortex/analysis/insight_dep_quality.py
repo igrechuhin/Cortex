@@ -230,7 +230,10 @@ class DependencyQualityInsights:
                     "id": "large_average_size",
                     "category": "quality",
                     "title": "Average file size is large",
-                    "description": f"Average file size is {avg_size}KB, consider smaller focused files",
+                    "description": (
+                        f"Average file size is {avg_size}KB, consider "
+                        "smaller focused files"
+                    ),
                     "impact_score": 0.6,
                     "severity": "low",
                     "evidence": {"avg_size_kb": avg_size, "recommended_max_kb": 15},

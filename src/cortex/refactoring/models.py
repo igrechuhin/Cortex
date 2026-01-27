@@ -724,7 +724,10 @@ class MemoryBankStructureData(RefactoringBaseModel):
     # Organization structure
     organization: str = Field(
         default="flat",
-        description="Organization type: flat, category_based, dependency_optimized, simplified",
+        description=(
+            "Organization type: flat, category_based, "
+            "dependency_optimized, simplified"
+        ),
     )
     categories: dict[str, list[str]] = Field(
         default_factory=dict, description="Files grouped by category"

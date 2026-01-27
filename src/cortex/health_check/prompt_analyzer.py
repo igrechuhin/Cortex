@@ -128,7 +128,9 @@ class PromptAnalyzer:
                             similarity=similarity,
                             merge_suggestion=f"Consider merging {name1} and {name2}",
                             quality_impact="positive",
-                            estimated_savings=f"{int((1 - similarity) * 100)}% reduction",
+                            estimated_savings=(
+                                f"{int((1 - similarity) * 100)}% reduction"
+                            ),
                         )
                     )
 
@@ -202,7 +204,10 @@ class PromptAnalyzer:
                         opportunities.append(
                             OptimizationOpportunity(
                                 file=name,
-                                issue=f"Duplicate sections detected (similarity: {sim:.2f})",
+                                issue=(
+                                    f"Duplicate sections detected "
+                                    f"(similarity: {sim:.2f})"
+                                ),
                                 recommendation="Remove duplicate sections",
                                 estimated_improvement="Reduced token usage",
                             )

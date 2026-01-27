@@ -95,11 +95,17 @@ async def check_structure_health(
                     "files_organized": false
                 },
                 "issues": [
-                    "3 plan files found in root .cursor/plans/ (should be in subdirectories)"
+                    (
+                        "3 plan files found in root .cursor/plans/ "
+                        "(should be in subdirectories)"
+                    )
                 ],
                 "recommendations": [
                     "Move misplaced plan files to active/, completed/, or archived/",
-                    "Run with perform_cleanup=True and cleanup_actions=['organize_plans']"
+                    (
+                        "Run with perform_cleanup=True and "
+                        "cleanup_actions=['organize_plans']"
+                    )
                 ]
             },
             "summary": "Structure health: GOOD (Grade: B, Score: 85/100)",
@@ -291,12 +297,15 @@ async def check_structure_health(
         - This tool replaces the deprecated cleanup_project_structure tool
         - Use perform_cleanup=True to perform cleanup actions alongside health checks
         - Always run with dry_run=True first to preview changes before executing
-        - The stale_days parameter uses file modification time (st_mtime), not access time
+        - The stale_days parameter uses file modification time (st_mtime),
+          not access time
         - Cleanup actions are idempotent and safe to run multiple times
         - Health score formula: 100 - (10 × number_of_issues), minimum 0
         - Grade mapping: A=90-100, B=80-89, C=70-79, D=60-69, F=0-59
-        - Status mapping: healthy=90-100, good=75-89, fair=60-74, warning=40-59, critical=0-39
-        - If structure is not initialized, returns score=0, grade=F, status=not_initialized
+        - Status mapping: healthy=90-100, good=75-89, fair=60-74,
+          warning=40-59, critical=0-39
+        - If structure is not initialized, returns score=0, grade=F,
+          status=not_initialized
     """
     try:
         root = get_project_root(project_root)
@@ -371,7 +380,8 @@ def build_health_result(health: HealthCheckResult | ModelDict) -> HealthResult:
             success=True,
             health=JsonDict.from_dict(health),
             summary=(
-                f"Structure health: {status.upper()} (Grade: {grade}, Score: {score}/100)"
+                f"Structure health: {status.upper()} "
+                f"(Grade: {grade}, Score: {score}/100)"
             ),
             action_required=status in ["warning", "critical"],
         )
@@ -508,15 +518,38 @@ async def get_structure_info(project_root: str | None = None) -> str:
                 "root": "/Users/username/projects/my-project",
                 "paths": {
                     "cursor_dir": "/Users/username/projects/my-project/.cursor",
-                    "memory_bank": "/Users/username/projects/my-project/.cursor/memory-bank",
-                    "memory_bank_symlink": "/Users/username/projects/my-project/memory-bank",
-                    "plans": "/Users/username/projects/my-project/.cursor/plans",
-                    "plans_active": "/Users/username/projects/my-project/.cursor/plans/active",
-                    "plans_completed": "/Users/username/projects/my-project/.cursor/plans/completed",
-                    "plans_archived": "/Users/username/projects/my-project/.cursor/plans/archived",
-                    "rules": "/Users/username/projects/my-project/.cursor/rules",
-                    "rules_symlink": "/Users/username/projects/my-project/rules",
-                    "config": "/Users/username/projects/my-project/.cursor/structure.json"
+                    "memory_bank": (
+                        "/Users/username/projects/my-project/"
+                        ".cursor/memory-bank"
+                    ),
+                    "memory_bank_symlink": (
+                        "/Users/username/projects/my-project/memory-bank"
+                    ),
+                    "plans": (
+                        "/Users/username/projects/my-project/.cursor/plans"
+                    ),
+                    "plans_active": (
+                        "/Users/username/projects/my-project/"
+                        ".cursor/plans/active"
+                    ),
+                    "plans_completed": (
+                        "/Users/username/projects/my-project/"
+                        ".cursor/plans/completed"
+                    ),
+                    "plans_archived": (
+                        "/Users/username/projects/my-project/"
+                        ".cursor/plans/archived"
+                    ),
+                    "rules": (
+                        "/Users/username/projects/my-project/.cursor/rules"
+                    ),
+                    "rules_symlink": (
+                        "/Users/username/projects/my-project/rules"
+                    ),
+                    "config": (
+                        "/Users/username/projects/my-project/"
+                        ".cursor/structure.json"
+                    )
                 },
                 "exists": {
                     "cursor_dir": true,
@@ -703,12 +736,28 @@ async def get_structure_info(project_root: str | None = None) -> str:
                     "memory_bank": "/Users/dev/enterprise-project/.cursor/memory-bank",
                     "memory_bank_symlink": "/Users/dev/enterprise-project/memory-bank",
                     "plans": "/Users/dev/enterprise-project/.cursor/plans",
-                    "plans_active": "/Users/dev/enterprise-project/.cursor/plans/active",
-                    "plans_completed": "/Users/dev/enterprise-project/.cursor/plans/completed",
-                    "plans_archived": "/Users/dev/enterprise-project/.cursor/plans/archived",
-                    "rules": "/Users/dev/enterprise-project/.cursor/rules",
-                    "rules_symlink": "/Users/dev/enterprise-project/rules",
-                    "config": "/Users/dev/enterprise-project/.cursor/structure.json"
+                    "plans_active": (
+                        "/Users/dev/enterprise-project/"
+                        ".cursor/plans/active"
+                    ),
+                    "plans_completed": (
+                        "/Users/dev/enterprise-project/"
+                        ".cursor/plans/completed"
+                    ),
+                    "plans_archived": (
+                        "/Users/dev/enterprise-project/"
+                        ".cursor/plans/archived"
+                    ),
+                    "rules": (
+                        "/Users/dev/enterprise-project/.cursor/rules"
+                    ),
+                    "rules_symlink": (
+                        "/Users/dev/enterprise-project/rules"
+                    ),
+                    "config": (
+                        "/Users/dev/enterprise-project/"
+                        ".cursor/structure.json"
+                    )
                 },
                 "exists": {
                     "cursor_dir": true,
@@ -758,9 +807,11 @@ async def get_structure_info(project_root: str | None = None) -> str:
     Note:
         - This is a read-only tool that does not modify any files or directories
         - Use this tool to inspect structure state before running cleanup operations
-        - The health_summary provides a quick overview; use check_structure_health() for detailed analysis
+        - The health_summary provides a quick overview; use
+          check_structure_health() for detailed analysis
         - All paths returned are absolute paths, not relative paths
-        - Symlink validity checks both that the symlink exists and points to correct target
+        - Symlink validity checks both that the symlink exists and points
+          to correct target
         - The config field will be null if .cursor/structure.json does not exist
         - For uninitialized projects, many exists fields will be false
         - The version field indicates the structure schema version (currently "1.0")

@@ -3,8 +3,10 @@
 MCP tools for executing pre-commit checks with language auto-detection.
 
 Total: 2 tools
-- execute_pre_commit_checks: Execute pre-commit checks (fix errors, format, type check, quality, tests)
-- fix_quality_issues: Automatically fix quality issues on-the-go (fix errors, format, type check, markdown lint)
+- execute_pre_commit_checks: Execute pre-commit checks (fix errors,
+  format, type check, quality, tests)
+- fix_quality_issues: Automatically fix quality issues on-the-go
+  (fix errors, format, type check, markdown lint)
 """
 
 import ast
@@ -159,8 +161,9 @@ async def execute_pre_commit_checks(
     """Execute pre-commit checks with language auto-detection.
 
     Args:
-        checks: List of checks to perform. Options: "fix_errors", "format", "type_check",
-            "quality", "tests". If None, performs all checks.
+        checks: List of checks to perform. Options: "fix_errors",
+            "format", "type_check", "quality", "tests". If None, performs
+            all checks.
         language: Project language (python, typescript, javascript, rust, go).
             If None, auto-detects from project structure.
         project_root: Path to project root directory. If None, uses current directory.
@@ -173,7 +176,8 @@ async def execute_pre_commit_checks(
         JSON string with pre-commit check results containing:
         - status: "success" or "error"
         - language: Detected or specified language
-        - checks: Dictionary of check results (fix_errors, format, type_check, quality, tests)
+        - checks: Dictionary of check results (fix_errors, format,
+          type_check, quality, tests)
         - stats: Summary statistics (total_errors, total_warnings, files_modified)
         - error: Error message (only if status is "error")
 
@@ -219,7 +223,13 @@ async def execute_pre_commit_checks(
             "total_errors": 0,
             "total_warnings": 2,
             "files_modified": ["src/file1.py"],
-            "checks_performed": ["fix_errors", "format", "type_check", "quality", "tests"]
+            "checks_performed": [
+                "fix_errors",
+                "format",
+                "type_check",
+                "quality",
+                "tests",
+            ]
           }
         }
 
@@ -944,9 +954,10 @@ async def fix_quality_issues(
 ) -> str:
     """Automatically fix code quality issues on-the-go.
 
-    This tool provides lightweight, automatic quality fixes to prevent error accumulation.
-    It fixes type errors, formatting issues, linting errors, and markdown lint errors,
-    but does NOT run tests (tests are reserved for the commit pipeline).
+    This tool provides lightweight, automatic quality fixes to prevent
+    error accumulation. It fixes type errors, formatting issues, linting
+    errors, and markdown lint errors, but does NOT run tests (tests are
+    reserved for the commit pipeline).
 
     The agent should automatically call this tool:
     - After making code changes
@@ -956,8 +967,8 @@ async def fix_quality_issues(
 
     Args:
         project_root: Path to project root directory. If None, uses current directory.
-        include_untracked_markdown: Include untracked markdown files in markdown lint fixing.
-            Default: True.
+        include_untracked_markdown: Include untracked markdown files in
+            markdown lint fixing. Default: True.
 
     Returns:
         JSON string with quality fix results containing:

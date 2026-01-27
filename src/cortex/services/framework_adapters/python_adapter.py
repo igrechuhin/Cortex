@@ -61,7 +61,8 @@ class PythonAdapter(FrameworkAdapter):
             "--cov=src/cortex",  # Match CI: --cov=src/cortex
             "--cov-report=xml",  # Match CI: --cov-report=xml
             "--cov-report=term",  # Also include terminal report
-            f"--cov-fail-under={int(coverage_threshold * 100)}",  # Match CI: --cov-fail-under=90
+            f"--cov-fail-under={int(coverage_threshold * 100)}",  # Match CI:
+            # --cov-fail-under=90
         ]
         if max_failures:
             cmd.extend(["--maxfail", str(max_failures)])
@@ -297,7 +298,8 @@ class PythonAdapter(FrameworkAdapter):
             if verify_errors:
                 return self._create_lint_result(combined_output, verify_errors)
 
-            # If fix step had errors but verification passed, that's OK (errors were fixed)
+            # If fix step had errors but verification passed, that's OK
+            # (errors were fixed)
             return self._create_lint_result(combined_output, [])
         except Exception as e:
             return self._create_lint_error_result(str(e))
@@ -377,8 +379,9 @@ class PythonAdapter(FrameworkAdapter):
         tests_passed, tests_failed = self._parse_test_counts(output)
         coverage = self._parse_coverage(output)
 
-        # Determine actual success based on test results AND coverage threshold
-        # Return code can be non-zero due to coverage threshold, but tests may still pass
+        # Determine actual success based on test results AND coverage
+        # threshold. Return code can be non-zero due to coverage threshold,
+        # but tests may still pass
         tests_run = tests_passed + tests_failed
         tests_passed_check = tests_failed == 0 and tests_run > 0
 
@@ -424,12 +427,14 @@ class PythonAdapter(FrameworkAdapter):
                 # Try to extract counts
                 passed_count = self._extract_count_from_line(parts, "passed")
                 failed_count = self._extract_count_from_line(parts, "failed")
-                # If we found passed count, use it (failed_count will be None if no failures)
+                # If we found passed count, use it (failed_count will be
+                # None if no failures)
                 if passed_count is not None:
                     tests_passed = passed_count
                 if failed_count is not None:
                     tests_failed = failed_count
-                # If we found at least passed count, we're done (failed defaults to 0 if not found)
+                # If we found at least passed count, we're done (failed
+                # defaults to 0 if not found)
                 if passed_count is not None:
                     break
 
@@ -498,7 +503,10 @@ class PythonAdapter(FrameworkAdapter):
             if coverage is not None and coverage < coverage_threshold:
                 threshold_pct = coverage_threshold * 100
                 errors.append(
-                    f"Test coverage {coverage * 100:.2f}% is below required threshold {threshold_pct:.0f}%"
+                    (
+                        f"Test coverage {coverage * 100:.2f}% is below "
+                        f"required threshold {threshold_pct:.0f}%"
+                    )
                 )
             else:
                 errors.append("Test execution failed")

@@ -7,7 +7,8 @@ Modules:
 - file_operations: File management operations (1 tool) - Phase 9.1.1 split
 - validation_operations: Validation operations (1 tool) - Phase 9.1.1 split
 - analysis_operations: Analysis operations (1 tool) - Phase 9.1.1 split
-- refactoring_operations: Refactoring suggestions (1 tool) - Split from analysis_operations
+- refactoring_operations: Refactoring suggestions (1 tool) - Split from
+  analysis_operations
 - rules_operations: Rules management (1 tool) - Phase 9.1.1 split
 - configuration_operations: Configuration management (1 tool) - Phase 9.1.1 split
 - markdown_operations: Markdown file operations (1 tool) - Markdown lint fixing
@@ -52,7 +53,8 @@ from . import (
     validation_operations,  # noqa: F401
 )
 
-# Explicitly reference synapse_prompts to satisfy type checker (imported for side effects)
+# Explicitly reference synapse_prompts to satisfy type checker
+# (imported for side effects)
 _ = synapse_prompts
 
 __all__ = [

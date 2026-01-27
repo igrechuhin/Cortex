@@ -500,7 +500,8 @@ class TestGetRulesWithContext:
 
             # Assert
             assert result["status"] == "success"
-            # Verify rules were retrieved (mock may not be called if real manager is used)
+            # Verify rules were retrieved (mock may not be called if real
+            # manager is used)
 
     async def test_get_synapse_rules_custom_parameters(
         self,
@@ -561,7 +562,8 @@ class TestGetRulesWithContext:
             result = json.loads(result_str)
 
             # Assert
-            # Exception handling may return "error" or "success" depending on implementation
+            # Exception handling may return "error" or "success" depending
+            # on implementation
             assert result["status"] in {"error", "success"}
             if result["status"] == "error":
                 assert "Manager initialization failed" in result.get("error", "")

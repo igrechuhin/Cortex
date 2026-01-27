@@ -24,7 +24,9 @@ class FileReadWriteBenchmark(Benchmark):
         """
         super().__init__(
             name=f"File Read/Write ({num_files} files, {content_size} lines)",
-            description=f"Measure file I/O with {num_files} files of {content_size} lines",
+            description=(
+                f"Measure file I/O with {num_files} files of " f"{content_size} lines"
+            ),
             iterations=50,
             warmup_iterations=5,
         )

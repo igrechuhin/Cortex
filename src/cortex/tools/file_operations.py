@@ -44,7 +44,8 @@ async def manage_file(
 
     The tool consolidates three distinct operations:
     - read: Retrieve file content with optional metadata (size, tokens, hash, sections)
-    - write: Write file content with automatic versioning, conflict detection, and metadata updates
+    - write: Write file content with automatic versioning, conflict
+      detection, and metadata updates
     - metadata: Query file metadata without reading full content
 
     Args:
@@ -148,7 +149,9 @@ async def manage_file(
           "metadata": {
             "size_bytes": 2048,
             "token_count": 512,
-            "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "content_hash": (
+                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            ),
             "sections": [
               {"heading": "## Overview", "level": 2},
               {"heading": "## Goals", "level": 2},
@@ -173,14 +176,20 @@ async def manage_file(
         >>> await manage_file(
         ...     file_name="activeContext.md",
         ...     operation="write",
-        ...     content="# Active Context\\n\\n## Current Work\\n\\nImplementing DRY linking...",
+        ...     content=(
+        ...         "# Active Context\\n\\n## Current Work\\n\\n"
+        ...         "Implementing DRY linking..."
+        ...     ),
         ...     change_description="Updated current work focus"
         ... )
         {
           "status": "success",
           "file_name": "activeContext.md",
           "message": "File activeContext.md written successfully",
-          "snapshot_id": "/Users/username/projects/my-app/.cortex/history/activeContext.md.v3.snapshot",
+          "snapshot_id": (
+              "/Users/username/projects/my-app/.cortex/history/"
+              "activeContext.md.v3.snapshot"
+          ),
           "version": 3,
           "tokens": 128
         }
@@ -213,15 +222,22 @@ async def manage_file(
         }
 
     Note:
-        - All file operations are performed within .cortex/memory-bank/ directory for security
+        - All file operations are performed within .cortex/memory-bank/
+          directory for security
         - Write operations create versioned snapshots in .cortex/history/
-        - Conflict detection prevents concurrent modification (uses content_hash)
+        - Conflict detection prevents concurrent modification
+          (uses content_hash)
         - File locking prevents race conditions during write operations
-        - Token counts use tiktoken encoding (cl100k_base) for accurate context sizing
-        - Section extraction is simplified (only extracts level 2 headings starting with "##")
-        - Invalid file names with path traversal attempts (.., /, \\) are rejected
-        - If file doesn't exist during read/metadata operations, returns available files list
-        - Write operations update both the file content and metadata index atomically
+        - Token counts use tiktoken encoding (cl100k_base) for accurate
+          context sizing
+        - Section extraction is simplified (only extracts level 2 headings
+          starting with "##")
+        - Invalid file names with path traversal attempts (.., /, \\) are
+          rejected
+        - If file doesn't exist during read/metadata operations, returns
+          available files list
+        - Write operations update both the file content and metadata index
+          atomically
     """
     try:
         return await _execute_file_operation(
@@ -275,7 +291,8 @@ def _validate_file_path(
     """Validate file name and construct safe path.
 
     Returns:
-        Tuple of (file_path, error_json). If file_path is None, error_json contains the error.
+        Tuple of (file_path, error_json). If file_path is None,
+        error_json contains the error.
     """
     try:
         file_path = fs_manager.construct_safe_path(memory_bank_dir, file_name)
@@ -579,9 +596,10 @@ def _get_lock_timeout_details(
 ) -> tuple[str, dict[str, str | int]]:
     """Get action_required and context for FileLockTimeoutError."""
     action_required = (
-        f"Could not acquire lock for '{error.file_name}' after {error.timeout_seconds}s. "
-        "Wait and retry, check for stale lock files in memory-bank directory, "
-        "or verify no other process is accessing the file. "
+        f"Could not acquire lock for '{error.file_name}' after "
+        f"{error.timeout_seconds}s. Wait and retry, check for stale lock "
+        "files in memory-bank directory, or verify no other process is "
+        "accessing the file. "
         "If locks are stale, remove .lock files manually."
     )
     context = {

@@ -15,7 +15,8 @@ from cortex.optimization.models import (
 
 
 class ProgressiveLoaderProtocol(Protocol):
-    """Protocol for progressive context loading operations using structural subtyping (PEP 544).
+    """Protocol for progressive context loading operations using structural
+    subtyping (PEP 544).
 
     This protocol defines the interface for loading Memory Bank context progressively
     based on priority, dependencies, or relevance. Progressive loading enables
@@ -57,7 +58,9 @@ class ProgressiveLoaderProtocol(Protocol):
                     loaded_files=loaded,
                     total_tokens=total_tokens,
                     files_count=len(loaded),
-                    budget_remaining=token_budget - total_tokens if token_budget else None,
+                    budget_remaining=(
+                        token_budget - total_tokens if token_budget else None
+                    ),
                     truncated=token_budget is not None and total_tokens >= token_budget,
                     loading_order=loading_order,
                 )
@@ -69,7 +72,9 @@ class ProgressiveLoaderProtocol(Protocol):
                 token_budget: int | None = None,
             ) -> ProgressiveLoadResult:
                 loading_order = self.dependency_graph.compute_loading_order(start_files)
-                return await self._load_files_in_order(loading_order, memory_bank_path, token_budget)
+                return await self._load_files_in_order(
+                    loading_order, memory_bank_path, token_budget
+                )
 
             async def load_by_relevance(
                 self,
@@ -77,9 +82,19 @@ class ProgressiveLoaderProtocol(Protocol):
                 task_description: str,
                 token_budget: int | None = None,
             ) -> ProgressiveLoadResult:
-                scores = await self.scorer.score_files(task_description, self._get_all_files(memory_bank_path))
-                sorted_files = sorted(scores.items(), key=lambda x: x[1]["relevance_score"], reverse=True)
-                return await self._load_files_in_order([f[0] for f in sorted_files], memory_bank_path, token_budget)
+                scores = await self.scorer.score_files(
+                    task_description, self._get_all_files(memory_bank_path)
+                )
+                sorted_files = sorted(
+                    scores.items(),
+                    key=lambda x: x[1]["relevance_score"],
+                    reverse=True,
+                )
+                return await self._load_files_in_order(
+                    [f[0] for f in sorted_files],
+                    memory_bank_path,
+                    token_budget,
+                )
 
         # SimpleProgressiveLoader automatically satisfies ProgressiveLoaderProtocol
         ```
@@ -146,7 +161,8 @@ class ProgressiveLoaderProtocol(Protocol):
 
 
 class SummarizationEngineProtocol(Protocol):
-    """Protocol for content summarization operations using structural subtyping (PEP 544).
+    """Protocol for content summarization operations using structural
+    subtyping (PEP 544).
 
     This protocol defines the interface for summarizing file content when full
     content exceeds token budgets. Summarization enables including more files
@@ -182,12 +198,17 @@ class SummarizationEngineProtocol(Protocol):
                 return SummarizationResultModel(
                     original_tokens=original_tokens,
                     summary_tokens=summary_tokens,
-                    reduction=(original_tokens - summary_tokens) / original_tokens if original_tokens > 0 else 0.0,
+                    reduction=(
+                        (original_tokens - summary_tokens) / original_tokens
+                        if original_tokens > 0 else 0.0
+                    ),
                     summary=summarized,
                     strategy=strategy,
                 )
 
-            async def extract_key_sections(self, content: str, target_tokens: int) -> str:
+            async def extract_key_sections(
+                self, content: str, target_tokens: int
+            ) -> str:
                 sections = self._parse_sections(content)
                 scored_sections = [(s, self._score_section(s)) for s in sections]
                 scored_sections.sort(key=lambda x: x[1], reverse=True)

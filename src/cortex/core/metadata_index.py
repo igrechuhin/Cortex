@@ -10,7 +10,8 @@ from .async_file_utils import open_async_text_file
 from .exceptions import IndexCorruptedError
 from .retry import retry_async
 
-# Type alias for section metadata - accepts various dict types with str/int/object values
+# Type alias for section metadata - accepts various dict types with
+# str/int/object values
 SectionType = Mapping[str, str | int | object]
 
 
@@ -107,9 +108,13 @@ class MetadataIndex:
             # Validate schema
             if self._data is not None and not self.validate_schema(self._data):
                 raise IndexCorruptedError(
-                    "Failed to load memory bank index: Invalid schema structure. "
-                    + f"Cause: Missing required fields in index file at {self.index_path}. "
-                    + "Try: Delete '.cortex/index.json' and run get_memory_bank_stats() to rebuild automatically."
+                    (
+                        "Failed to load memory bank index: Invalid schema "
+                        "structure. Cause: Missing required fields in index "
+                        f"file at {self.index_path}. Try: Delete "
+                        "'.cortex/index.json' and run get_memory_bank_stats() "
+                        "to rebuild automatically."
+                    )
                 )
 
             if self._data is None:
@@ -120,14 +125,21 @@ class MetadataIndex:
 
         except (json.JSONDecodeError, IndexCorruptedError) as e:
             # Index is corrupted - attempt recovery
-            error_msg = str(e)
-            if isinstance(e, json.JSONDecodeError):
-                error_msg = (
-                    f"Failed to load memory bank index: Invalid JSON at line {e.lineno}. "
-                    f"Cause: {e.msg}. "
-                    f"Try: Delete '.cortex/index.json' file and run any read operation to rebuild automatically."
-                )
+            error_msg = self._build_corruption_error_message(e)
             return await self._recover_from_corruption(error_msg)
+
+    def _build_corruption_error_message(
+        self, e: json.JSONDecodeError | IndexCorruptedError
+    ) -> str:
+        """Build error message for corruption recovery."""
+        if isinstance(e, json.JSONDecodeError):
+            return (
+                f"Failed to load memory bank index: Invalid JSON at "
+                f"line {e.lineno}. Cause: {e.msg}. Try: Delete "
+                f"'.cortex/index.json' file and run any read operation "
+                "to rebuild automatically."
+            )
+        return str(e)
 
     async def save(self):
         """

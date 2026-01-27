@@ -55,7 +55,8 @@ class TestManagerCoordination:
         assert metadata is not None
         assert metadata["path"] == str(file_path)
 
-        # Act: Add file to dependency graph (as a dynamic dependency with no dependencies)
+        # Act: Add file to dependency graph (as a dynamic dependency with
+        # no dependencies)
         dependency_graph.add_link_dependency("test.md", "test.md", "self")
 
         # Act: Check dependency graph can access metadata
@@ -202,7 +203,8 @@ class TestManagerCoordination:
             content_hash=content_hash1,
             sections=sections,
         )
-        # Manually set current_version in metadata (in production, this would be done by the tool layer)
+        # Manually set current_version in metadata (in production, this
+        # would be done by the tool layer)
         data = metadata_index.get_data()
         if data and "files" in data:
             files = data["files"]

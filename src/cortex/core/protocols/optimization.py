@@ -49,8 +49,13 @@ class RelevanceScorerProtocol(Protocol):
                 # Calculate cosine similarity
                 scores = {}
                 for idx, (file_name, _) in enumerate(files_content.items(), 1):
-                    similarity = cosine_similarity(tfidf_matrix[0], tfidf_matrix[idx])[0][0]
-                    quality = quality_scores.get(file_name, 1.0) if quality_scores else 1.0
+                    similarity = cosine_similarity(
+                        tfidf_matrix[0], tfidf_matrix[idx]
+                    )[0][0]
+                    quality = (
+                        quality_scores.get(file_name, 1.0)
+                        if quality_scores else 1.0
+                    )
                     scores[file_name] = FileRelevanceScoreModel(
                         file_name=file_name,
                         relevance_score=similarity * quality,
@@ -125,7 +130,8 @@ class RelevanceScorerProtocol(Protocol):
 
 
 class ContextOptimizerProtocol(Protocol):
-    """Protocol for context optimization operations using structural subtyping (PEP 544).
+    """Protocol for context optimization operations using structural
+    subtyping (PEP 544).
 
     This protocol defines the interface for optimizing context selection within
     token budgets using various strategies (relevance-based, dependency-based,
@@ -152,8 +158,14 @@ class ContextOptimizerProtocol(Protocol):
                 mandatory_files: list[str] | None = None,
             ) -> OptimizationResultModel:
                 # Score files by relevance
-                scored = await self.scorer.score_files(task_description, files_content, files_metadata)
-                sorted_files = sorted(scored.items(), key=lambda x: x[1].relevance_score, reverse=True)
+                scored = await self.scorer.score_files(
+                    task_description, files_content, files_metadata
+                )
+                sorted_files = sorted(
+                    scored.items(),
+                    key=lambda x: x[1].relevance_score,
+                    reverse=True,
+                )
 
                 # Select files within budget
                 selected = {}
@@ -162,7 +174,9 @@ class ContextOptimizerProtocol(Protocol):
                 # Mandatory files first
                 for fname in (mandatory_files or []):
                     selected[fname] = files_content[fname]
-                    total_tokens += self.token_counter.count_tokens(files_content[fname])
+                    total_tokens += self.token_counter.count_tokens(
+                        files_content[fname]
+                    )
 
                 # Add by relevance
                 for fname, _ in sorted_files:

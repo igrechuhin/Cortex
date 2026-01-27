@@ -190,7 +190,10 @@ async def update_synapse_rule(
         >>> await update_synapse_rule(
         ...     category="python",
         ...     file="style-guide.mdc",
-        ...     content="# Python Style Guide\n\n## Type Hints\n\nAll functions must...",
+        ...     content=(
+        ...         "# Python Style Guide\n\n## Type Hints\n\n"
+        ...         "All functions must..."
+        ...     ),
         ...     commit_message="Update Python style guide with type hint requirements"
         ... )
         {
@@ -272,9 +275,12 @@ async def get_synapse_rules(
         project_files: Comma-separated list of file paths for context detection.
                       Optional - if not provided, uses task_description only.
 
-        rule_priority: Conflict resolution strategy when Synapse and local rules overlap.
-                      "local_overrides_shared": Prefer project-specific rules (default)
-                      "shared_overrides_local": Prefer team-wide Synapse rules
+        rule_priority: Conflict resolution strategy when Synapse and local
+                      rules overlap.
+                      "local_overrides_shared": Prefer project-specific
+                      rules (default)
+                      "shared_overrides_local": Prefer team-wide Synapse
+                      rules
 
         context_aware: Enable intelligent context detection and rule selection.
                       Default: True
@@ -292,13 +298,18 @@ async def get_synapse_rules(
     Examples:
         Example 1: Get rules for Python async task
         >>> await get_synapse_rules(
-        ...     task_description="Implement async file operations with proper error handling",
+        ...     task_description=(
+        ...         "Implement async file operations with proper error "
+        ...         "handling"
+        ...     ),
         ...     max_tokens=8000,
         ...     min_relevance_score=0.4
         ... )
         {
           "status": "success",
-          "task_description": "Implement async file operations with proper error handling",
+          "task_description": (
+              "Implement async file operations with proper error handling"
+          ),
           "context": {
             "languages": ["python"],
             "frameworks": [],

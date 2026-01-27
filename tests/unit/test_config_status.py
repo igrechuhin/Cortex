@@ -249,7 +249,8 @@ class TestGetProjectConfigStatus:
             status = get_project_config_status()
 
             # Assert
-            # Fail-safe assumes configured (all True) to avoid showing setup prompts on error
+            # Fail-safe assumes configured (all True) to avoid showing setup
+            # prompts on error
             # This is safer than showing all prompts when we can't determine status
             assert status["memory_bank_initialized"] is True
             assert status["structure_configured"] is True

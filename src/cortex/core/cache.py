@@ -22,7 +22,8 @@ class TTLCache[T = JsonValue]:
         Context: Need to balance memory usage with cache hit rate
         Decision: Time-based eviction with configurable TTL
         Alternatives Considered: Pure LRU, size-based eviction
-        Rationale: TTL prevents stale data while allowing frequent access patterns to benefit
+        Rationale: TTL prevents stale data while allowing frequent access
+        patterns to benefit
 
         Args:
             ttl_seconds: Time to live for cache entries in seconds (default: 5 minutes)

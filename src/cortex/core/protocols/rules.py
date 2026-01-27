@@ -60,7 +60,9 @@ class RulesManagerProtocol(Protocol):
             ) -> RelevantRulesResultModel:
                 scored_rules = []
                 for rule_path, rule_data in self.rules_index.items():
-                    relevance = self._calculate_relevance(task_description, rule_data["keywords"])
+                    relevance = self._calculate_relevance(
+                        task_description, rule_data["keywords"]
+                    )
                     if min_relevance is None or relevance >= min_relevance:
                         scored_rules.append((rule_path, rule_data, relevance))
 
@@ -71,7 +73,11 @@ class RulesManagerProtocol(Protocol):
                 for rule_path, rule_data, relevance in scored_rules:
                     if max_tokens and (total_tokens + rule_data["tokens"]) > max_tokens:
                         break
-                    selected.append({"path": rule_path, "content": rule_data["content"], "relevance": relevance})
+                    selected.append({
+                        "path": rule_path,
+                        "content": rule_data["content"],
+                        "relevance": relevance,
+                    })
                     total_tokens += rule_data["tokens"]
 
                 from cortex.optimization.models import RelevantRuleModel

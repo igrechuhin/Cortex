@@ -58,7 +58,8 @@ def get_cache_path(project_root: Path, cache_type: str | None = None) -> Path:
 
     Args:
         project_root: Root directory of the project
-        cache_type: Optional cache subdirectory type (string value, typically from CacheType enum)
+        cache_type: Optional cache subdirectory type (string value,
+        typically from CacheType enum)
 
     Returns:
         Path to cache directory or cache subdirectory

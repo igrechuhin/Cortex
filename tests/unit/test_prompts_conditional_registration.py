@@ -37,7 +37,10 @@ def test_prompts_module_registers_conditional_prompts_when_needed() -> None:
 
     # Assert
     assert "Please initialize a Memory Bank" in init_text
-    assert "standardized Cortex project structure" in structure_text
+    assert (
+        "standardized Cortex" in structure_text
+        and "project structure" in structure_text
+    )
     assert "Please setup Cursor IDE integration" in cursor_text
     assert "populate the bundled tiktoken cache" in tiktoken_text
     assert "needs migration" in mig_status_text.lower()

@@ -300,7 +300,8 @@ Content for section three with enough length to be included.
 Short content.
 
 ## Section B
-This section has much longer content that exceeds the minimum length requirement for duplication detection.
+This section has much longer content that exceeds the minimum length
+requirement for duplication detection.
 """
 
         sections = detector.extract_sections(content)
@@ -458,7 +459,10 @@ class TestFindSimilarContent:
             "file1.md": [
                 (
                     "Section A",
-                    "This is content about architecture patterns and design principles.",
+                    (
+                        "This is content about architecture patterns and "
+                        "design principles."
+                    ),
                 )
             ],
             "file2.md": [

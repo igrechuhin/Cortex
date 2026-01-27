@@ -215,7 +215,8 @@ async def test_get_dependency_graph_success_json_format(
             assert result_dict["format"] == "json"
             assert "graph" in result_dict
             assert "loading_order" in result_dict
-            # Check that expected files are in loading order (may include additional files)
+            # Check that expected files are in loading order (may include
+            # additional files)
             loading_order = result_dict["loading_order"]
             assert "projectBrief.md" in loading_order
             assert "activeContext.md" in loading_order
@@ -282,7 +283,8 @@ async def test_get_dependency_graph_default_project_root(mock_managers: dict[str
             result = await get_dependency_graph(project_root=None, format="json")
 
             # Assert
-            # get_project_root may be called multiple times or not at all depending on implementation
+            # get_project_root may be called multiple times or not at all
+            # depending on implementation
             result_dict = json.loads(result)
             assert result_dict["status"] == "success"
 

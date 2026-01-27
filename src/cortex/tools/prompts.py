@@ -70,7 +70,8 @@ Expected output format:
   "total_tokens": <token_count>
 }"""
 
-_SETUP_PROJECT_STRUCTURE_PROMPT = """Please setup the standardized Cortex project structure.
+_SETUP_PROJECT_STRUCTURE_PROMPT = """Please setup the standardized Cortex
+project structure.
 
 I need you to:
 1. Create the .cortex/ directory structure
@@ -190,7 +191,8 @@ if not _config_status.structure_configured:
         return _SETUP_PROJECT_STRUCTURE_PROMPT
 
 
-# Conditionally register setup_cursor_integration only if Cursor integration not configured
+# Conditionally register setup_cursor_integration only if Cursor
+# integration not configured
 if not _config_status.cursor_integration_configured:
 
     @mcp.prompt()
@@ -214,7 +216,8 @@ _SETUP_SYNAPSE_PROMPT_TEMPLATE = """Please setup Synapse in my project.
 
 I want to use Synapse from: {synapse_repo_url}
 
-Synapse is a shared repository that contains both rules and prompts for cross-project sharing.
+Synapse is a shared repository that contains both rules and prompts for
+cross-project sharing.
 
 I need you to:
 1. Add the Synapse repository as a Git submodule
@@ -253,16 +256,21 @@ Expected output format:
 }}"""
 
 
-_POPULATE_TIKTOKEN_CACHE_PROMPT = """Please populate the bundled tiktoken cache with encoding files.
+_POPULATE_TIKTOKEN_CACHE_PROMPT = """Please populate the bundled tiktoken cache
+with encoding files.
 
-The tiktoken cache is missing or empty, which may cause slower token counting or require network access.
+The tiktoken cache is missing or empty, which may cause slower token
+counting or require network access.
 
 I need you to:
-1. Check if `src/cortex/resources/tiktoken_cache/` directory exists (create if needed)
+1. Check if `src/cortex/resources/tiktoken_cache/` directory exists
+   (create if needed)
 2. Run the populate script: `python3 scripts/populate_tiktoken_cache.py`
    - This downloads common encodings: cl100k_base, o200k_base, p50k_base
-   - Or specify custom encodings: `python3 scripts/populate_tiktoken_cache.py --encodings cl100k_base o200k_base`
-3. Verify cache files were downloaded (tiktoken uses SHA-1 hash of URL as filename)
+   - Or specify custom encodings:
+     `python3 scripts/populate_tiktoken_cache.py --encodings cl100k_base o200k_base`
+3. Verify cache files were downloaded (tiktoken uses SHA-1 hash of URL
+   as filename)
 4. Test that token counting works with cached files
 
 Expected output format:
@@ -315,11 +323,13 @@ def setup_synapse(synapse_repo_url: str) -> str:
     return _SETUP_SYNAPSE_PROMPT_TEMPLATE.format(synapse_repo_url=synapse_repo_url)
 
 
-_CHECK_MIGRATION_STATUS_PROMPT = """Please check if my project needs migration to the .cortex/ structure.
+_CHECK_MIGRATION_STATUS_PROMPT = """Please check if my project needs migration
+to the .cortex/ structure.
 
 I need you to:
 1. Detect the current project structure
-2. Check if it's using an old directory structure (e.g., .cursor/memory-bank/, memory-bank/, .memory-bank/)
+2. Check if it's using an old directory structure
+   (e.g., .cursor/memory-bank/, memory-bank/, .memory-bank/)
 3. Identify what changes would be needed
 4. Report the migration status
 
@@ -333,13 +343,18 @@ Current format should be:
 - .cursor/ containing symlinks to .cortex/
 
 Expected output format (up to date):
-{"status": "up_to_date", "message": "Project is already using the .cortex/ structure", "current_location": ".cortex/memory-bank/", "files_count": 7}
+{"status": "up_to_date", "message": "Project is already using the "
+".cortex/ structure", "current_location": ".cortex/memory-bank/",
+"files_count": 7}
 
 Expected output format (migration needed):
-{"status": "migration_needed", "message": "Legacy format detected", "old_location": "<detected_location>", "new_location": ".cortex/memory-bank/", "files_to_migrate": 7}
+{"status": "migration_needed", "message": "Legacy format detected",
+"old_location": "<detected_location>", "new_location":
+".cortex/memory-bank/", "files_to_migrate": 7}
 
 Expected output format (not initialized):
-{"status": "not_initialized", "message": "No Memory Bank found", "suggestion": "Run initialize_memory_bank to create one"}"""
+{"status": "not_initialized", "message": "No Memory Bank found",
+"suggestion": "Run initialize_memory_bank to create one"}"""
 
 
 # Conditionally register migration prompts only if migration needed
@@ -358,7 +373,8 @@ if _config_status.migration_needed:
         return _CHECK_MIGRATION_STATUS_PROMPT
 
 
-_MIGRATE_MEMORY_BANK_PROMPT = """Please migrate my Memory Bank to the .cortex/ structure.
+_MIGRATE_MEMORY_BANK_PROMPT = """Please migrate my Memory Bank to the
+.cortex/ structure.
 
 I need you to:
 1. Create the new .cortex/memory-bank/ directory
@@ -410,7 +426,8 @@ if _config_status.migration_needed:
         return _MIGRATE_MEMORY_BANK_PROMPT
 
 
-_MIGRATE_PROJECT_STRUCTURE_PROMPT = """Please migrate my project to the .cortex/ structure.
+_MIGRATE_PROJECT_STRUCTURE_PROMPT = """Please migrate my project to the
+.cortex/ structure.
 
 I need you to:
 1. Detect the current structure

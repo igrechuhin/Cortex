@@ -46,7 +46,8 @@ __all__ = ["ManagersDict"]
 
 # ConfigValue type for configuration values - supports primitive and nested structures.
 # This type union is designed to support the dynamic nature of configuration systems
-# while maintaining some type safety. The configuration system (validation, optimization,
+# while maintaining some type safety. The configuration system
+# (validation, optimization,
 # adaptation) stores structured data that may have arbitrarily nested structures.
 #
 # Accepted value types:

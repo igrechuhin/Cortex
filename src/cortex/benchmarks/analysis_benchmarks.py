@@ -94,7 +94,8 @@ class StructureAnalysisBenchmark(Benchmark):
             if i > 0:
                 dep_graph.add_dynamic_dependency(f"file_{i}.md", f"file_{i - 1}.md")
 
-        # StructureAnalyzer requires project_root, dependency_graph, file_system, and metadata_index
+        # StructureAnalyzer requires project_root, dependency_graph,
+        # file_system, and metadata_index
         from ..core.metadata_index import MetadataIndex
 
         metadata_index = MetadataIndex(base_path)

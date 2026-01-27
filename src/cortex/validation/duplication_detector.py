@@ -34,7 +34,8 @@ class DuplicationDetector:
         Algorithm: Content similarity detection using hash-based grouping.
         Purpose: Efficiently find duplicate and similar sections across files.
         Complexity: O(n) for grouping + O(k²) for pairwise comparisons where k << n.
-        Rationale: Hash-based grouping reduces comparisons from O(n²) to O(k²) per group.
+        Rationale: Hash-based grouping reduces comparisons from O(n²) to
+        O(k²) per group.
 
         Args:
             similarity_threshold: Similarity score 0.0-1.0 to flag as duplicate
@@ -274,7 +275,8 @@ class DuplicationDetector:
         # ACCEPTABLE PATTERN: Stateful accumulation of similar content entries
         # This is inherent to the algorithm - we must accumulate similar pairs
         # as we discover them during signature group comparison.
-        # Pre-calculation is not possible as similarity scores depend on pairwise comparisons.
+        # Pre-calculation is not possible as similarity scores depend on
+        # pairwise comparisons.
         similar: list[DuplicateEntry] = [
             DuplicateEntry(
                 file1=file1,
@@ -360,10 +362,13 @@ class DuplicationDetector:
         Calculate text similarity using multiple algorithms.
 
         Algorithm: Hybrid similarity scoring combining SequenceMatcher and Jaccard.
-        Purpose: Balance character-level precision (SequenceMatcher) with token-level recall (Jaccard).
-        Complexity: O(n×m) time for SequenceMatcher, O(n+m) for Jaccard where n,m are text lengths.
-        Rationale: SequenceMatcher catches reordering, Jaccard catches synonym/paraphrase variations.
-                  Averaging reduces false positives from either algorithm alone.
+        Purpose: Balance character-level precision (SequenceMatcher) with
+        token-level recall (Jaccard).
+        Complexity: O(n×m) time for SequenceMatcher, O(n+m) for Jaccard
+        where n,m are text lengths.
+        Rationale: SequenceMatcher catches reordering, Jaccard catches
+        synonym/paraphrase variations. Averaging reduces false positives
+        from either algorithm alone.
 
         Args:
             text1: First text
@@ -457,6 +462,6 @@ class DuplicationDetector:
                 source_section, target_section = target_section, source_section
 
         return (
-            f"Consider using transclusion in '{target_file}' section '{target_section}': "
-            f"{{{{include: {source_file}#{source_section}}}}}"
+            f"Consider using transclusion in '{target_file}' section "
+            f"'{target_section}': {{{{include: {source_file}#{source_section}}}}}"
         )

@@ -136,9 +136,14 @@ class RuleAnalyzer:
                             MergeOpportunity(
                                 files=[f"{category}/{name1}", f"{category}/{name2}"],
                                 similarity=similarity,
-                                merge_suggestion=f"Consider merging {name1} and {name2} in {category}",
+                                merge_suggestion=(
+                                    f"Consider merging {name1} and "
+                                    f"{name2} in {category}"
+                                ),
                                 quality_impact="positive",
-                                estimated_savings=f"{int((1 - similarity) * 100)}% reduction",
+                                estimated_savings=(
+                                    f"{int((1 - similarity) * 100)}% " "reduction"
+                                ),
                             )
                         )
 
@@ -162,27 +167,53 @@ class RuleAnalyzer:
             for cat2 in categories[i + 1 :]:
                 for name1, content1 in rules[cat1].items():
                     for name2, content2 in rules[cat2].items():
-                        similarity = (
-                            self.similarity_engine.calculate_content_similarity(
-                                content1, content2
-                            )
+                        similarity = self._check_cross_category_similarity(
+                            content1, content2
                         )
-
                         if similarity >= 0.80:  # Higher threshold for cross-category
-                            opportunities.append(
-                                MergeOpportunity(
-                                    files=[
-                                        f"{cat1}/{name1}",
-                                        f"{cat2}/{name2}",
-                                    ],
-                                    similarity=similarity,
-                                    merge_suggestion=f"Consider consolidating {name1} ({cat1}) and {name2} ({cat2})",
-                                    quality_impact="positive",
-                                    estimated_savings=f"{int((1 - similarity) * 100)}% reduction",
-                                )
+                            opportunity = self._create_cross_category_opportunity(
+                                cat1, name1, cat2, name2, similarity
                             )
+                            opportunities.append(opportunity)
 
         return opportunities
+
+    def _check_cross_category_similarity(self, content1: str, content2: str) -> float:
+        """Check similarity between two rule contents.
+
+        Args:
+            content1: First rule content
+            content2: Second rule content
+
+        Returns:
+            Similarity score (0.0-1.0)
+        """
+        return self.similarity_engine.calculate_content_similarity(content1, content2)
+
+    def _create_cross_category_opportunity(
+        self, cat1: str, name1: str, cat2: str, name2: str, similarity: float
+    ) -> MergeOpportunity:
+        """Create merge opportunity for cross-category rules.
+
+        Args:
+            cat1: First category name
+            name1: First rule name
+            cat2: Second category name
+            name2: Second rule name
+            similarity: Similarity score
+
+        Returns:
+            MergeOpportunity instance
+        """
+        return MergeOpportunity(
+            files=[f"{cat1}/{name1}", f"{cat2}/{name2}"],
+            similarity=similarity,
+            merge_suggestion=(
+                f"Consider consolidating {name1} " f"({cat1}) and {name2} ({cat2})"
+            ),
+            quality_impact="positive",
+            estimated_savings=(f"{int((1 - similarity) * 100)}% " "reduction"),
+        )
 
     async def _find_optimization_opportunities(
         self, rules: dict[str, dict[str, str]]

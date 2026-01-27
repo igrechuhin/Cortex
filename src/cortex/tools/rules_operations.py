@@ -34,7 +34,10 @@ async def check_rules_enabled(
         return json.dumps(
             {
                 "status": "disabled",
-                "message": "Rules indexing is disabled. Enable it in .cortex/optimization.json",
+                "message": (
+                    "Rules indexing is disabled. "
+                    "Enable it in .cortex/optimization.json"
+                ),
             },
             indent=2,
         )
@@ -407,7 +410,10 @@ async def rules(
         For disabled rules:
         {
             "status": "disabled",
-            "message": "Rules indexing is disabled. Enable it in .cortex/optimization.json"
+            "message": (
+                "Rules indexing is disabled. "
+                "Enable it in .cortex/optimization.json"
+            )
         }
 
         For errors:
@@ -459,14 +465,18 @@ async def rules(
         Example 3 - Get relevant rules for async Python task:
         >>> await rules(
         ...     operation="get_relevant",
-        ...     task_description="Implementing async file operations with error handling",
+        ...     task_description=(
+        ...         "Implementing async file operations with error handling"
+        ...     ),
         ...     max_tokens=5000,
         ...     min_relevance_score=0.7
         ... )
         {
             "status": "success",
             "operation": "get_relevant",
-            "task_description": "Implementing async file operations with error handling",
+            "task_description": (
+                "Implementing async file operations with error handling"
+            ),
             "max_tokens": 5000,
             "min_relevance_score": 0.7,
             "rules_count": 6,
@@ -487,7 +497,10 @@ async def rules(
                     "relevance_score": 0.85,
                     "tokens": 620,
                     "title": "Error Handling Patterns",
-                    "content": "Always validate inputs and use specific exception types...",
+                    "content": (
+                        "Always validate inputs and use specific "
+                        "exception types..."
+                    ),
                     "metadata": {"tags": ["errors", "validation"]}
                 },
                 {

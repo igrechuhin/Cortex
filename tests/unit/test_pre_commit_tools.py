@@ -174,7 +174,8 @@ class TestFixQualityIssues:
 
     @pytest.mark.asyncio
     async def test_fix_quality_issues_success_when_checks_report_errors(self) -> None:
-        """Test non-exceptional 'status=error' from checks is still handled as success."""
+        """Test non-exceptional 'status=error' from checks is still
+        handled as success."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
@@ -282,9 +283,9 @@ class TestFixQualityIssues:
     async def test_fix_quality_issues_clean_repo_no_remaining_issues(self) -> None:
         """Test that fix_quality_issues returns empty remaining_issues on clean repo.
 
-        This test verifies the fix for over-reporting remaining issues. Even if
-        total_errors/total_warnings are non-zero, if all checks succeeded (success=True),
-        remaining_issues should be empty.
+        This test verifies the fix for over-reporting remaining issues.
+        Even if total_errors/total_warnings are non-zero, if all checks
+        succeeded (success=True), remaining_issues should be empty.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
@@ -300,14 +301,17 @@ class TestFixQualityIssues:
                 ) as mock_markdown,
             ):
                 # Simulate a clean repo where all checks succeeded but
-                # total_errors/total_warnings might be non-zero (e.g., from previous runs)
+                # total_errors/total_warnings might be non-zero
+                # (e.g., from previous runs)
                 mock_execute.return_value = json.dumps(
                     {
                         "status": "success",
                         "checks_performed": ["fix_errors", "format", "type_check"],
                         "files_modified": [],
-                        "total_errors": 4175,  # Large number that should NOT appear in remaining_issues
-                        "total_warnings": 100,  # Large number that should NOT appear in remaining_issues
+                        "total_errors": 4175,  # Large number that should
+                        # NOT appear in remaining_issues
+                        "total_warnings": 100,  # Large number that should NOT
+                        # appear in remaining_issues
                         "success": True,
                         "results": {
                             "fix_errors": {
@@ -600,7 +604,8 @@ class TestQualityCheckIntegration:
 
                 assert result["status"] == "success"
                 assert "quality" in result["checks_performed"]
-                # Quality result should include file_size_violations and function_length_violations
+                # Quality result should include file_size_violations and
+                # function_length_violations
                 quality_result = result["results"]["quality"]
                 assert "file_size_violations" in quality_result
                 assert "function_length_violations" in quality_result

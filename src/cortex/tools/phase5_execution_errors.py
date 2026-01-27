@@ -40,17 +40,20 @@ def create_execution_error_response(error: Exception) -> str:
         action_required = (
             "Review the refactoring suggestion for issues. "
             "Check that all required files exist and parameters are valid. "
-            "Try running with 'validate_first=true' to identify issues before execution."
+            "Try running with 'validate_first=true' to identify issues "
+            "before execution."
         )
     elif "PermissionError" in error_type or "permission" in str(error).lower():
         action_required = (
             "Check file system permissions. Ensure the process has read/write access "
-            "to the memory bank directory. Verify no other process is locking the files."
+            "to the memory bank directory. Verify no other process is "
+            "locking the files."
         )
     elif "FileNotFoundError" in error_type or "not found" in str(error).lower():
         action_required = (
             "Verify that all referenced files exist. Check file paths and ensure "
-            "the memory bank is properly initialized. Run 'get_memory_bank_stats()' to verify setup."
+            "the memory bank is properly initialized. Run "
+            "'get_memory_bank_stats()' to verify setup."
         )
     else:
         action_required = (

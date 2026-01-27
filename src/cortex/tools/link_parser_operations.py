@@ -20,18 +20,23 @@ from cortex.server import mcp
 
 @mcp.tool()
 async def parse_file_links(file_name: str, project_root: str | None = None) -> str:
-    """Parse and extract all markdown links and transclusion directives from a Memory Bank file.
+    """Parse and extract all markdown links and transclusion directives
+    from a Memory Bank file.
 
     Scans the specified file for two types of links:
     - Markdown links: Standard [text](target) format for references
-    - Transclusion directives: {{include:file.md}} or {{include:file.md#section}} for content inclusion
+    - Transclusion directives: {{include:file.md}} or
+      {{include:file.md#section}} for content inclusion
 
-    Each link is extracted with its text, target, line number, and position information.
-    The tool also provides a summary with counts of each link type and unique file references.
+    Each link is extracted with its text, target, line number, and position
+    information. The tool also provides a summary with counts of each link
+    type and unique file references.
 
     Args:
-        file_name: Name of the file to parse, relative to memory-bank directory (e.g., "activeContext.md", "systemPatterns.md")
-        project_root: Optional absolute path to project root directory; if None, uses current working directory
+        file_name: Name of the file to parse, relative to memory-bank
+            directory (e.g., "activeContext.md", "systemPatterns.md")
+        project_root: Optional absolute path to project root directory;
+            if None, uses current working directory
 
     Returns:
         JSON string containing parsed links and summary statistics:
@@ -110,7 +115,8 @@ async def parse_file_links(file_name: str, project_root: str | None = None) -> s
     Note:
         - Transclusions can reference specific sections using #section-name syntax
         - Section anchors in transclusions follow GitHub markdown header slug format
-        - Duplicate links to the same file are counted separately but counted once in unique_files
+        - Duplicate links to the same file are counted separately but
+          counted once in unique_files
         - Line and column numbers are 1-indexed for editor compatibility
         - Relative paths in links are resolved relative to the memory-bank directory
     """

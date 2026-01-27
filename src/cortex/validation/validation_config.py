@@ -43,26 +43,43 @@ class ValidationConfig:
         if not self.config_path.exists():
             return ValidationConfigModel()
 
-        try:
-            with open(self.config_path) as f:
-                user_config_raw = cast(JsonValue, json.load(f))
-        except Exception as e:
-            from cortex.core.logging_config import logger
-
-            error_detail = str(e)
-            error_type = type(e).__name__
-            logger.warning(
-                f"Failed to load validation config from {self.config_path}: {error_type}: {error_detail}. "
-                + "Cause: Invalid JSON format or file read error. "
-                + "Try: Fix JSON syntax errors, check file permissions, "
-                + "or delete config file to use default values."
-            )
+        user_config_raw = self._read_config_file()
+        if user_config_raw is None:
             return ValidationConfigModel()
 
         # Validate config type and parse with Pydantic
         if not isinstance(user_config_raw, dict):
             return ValidationConfigModel()
 
+        return self._parse_and_merge_config(cast(dict[str, object], user_config_raw))
+
+    def _read_config_file(self) -> JsonValue | None:
+        """Read config file, handling errors gracefully."""
+        try:
+            with open(self.config_path) as f:
+                return cast(JsonValue, json.load(f))
+        except Exception as e:
+            from cortex.core.logging_config import logger
+
+            error_detail = str(e)
+            error_type = type(e).__name__
+            logger.warning(
+                (
+                    (
+                        f"Failed to load validation config from "
+                        f"{self.config_path}: {error_type}: {error_detail}. "
+                        "Cause: Invalid JSON format or file read error. "
+                        "Try: Fix JSON syntax errors, check file permissions, "
+                    )
+                    + ("or delete config file to use default values.")
+                )
+            )
+            return None
+
+    def _parse_and_merge_config(
+        self, user_config_raw: dict[str, object]
+    ) -> ValidationConfigModel:
+        """Parse and merge user config with defaults."""
         try:
             # Parse user config, merging with defaults
             default_dict = cast(
@@ -171,10 +188,13 @@ class ValidationConfig:
                 _ = await f.write(json.dumps(config_dict, indent=2))
         except Exception as e:
             raise OSError(
-                f"Failed to save validation config to {self.config_path}: {type(e).__name__}: {e}. "
-                + "Cause: File write error or permission denied. "
-                + "Try: Check directory exists and has write permissions, "
-                + "or verify disk space is available."
+                (
+                    f"Failed to save validation config to "
+                    f"{self.config_path}: {type(e).__name__}: {e}. "
+                    "Cause: File write error or permission denied. "
+                    "Try: Check directory exists and has write permissions, "
+                    "or verify disk space is available."
+                )
             ) from e
 
     def reset_to_defaults(self) -> None:
@@ -200,9 +220,13 @@ class ValidationConfig:
         enabled = self.config.enabled
         if not isinstance(enabled, bool):
             errors.append(
-                "Invalid 'enabled' value: 'enabled' must be a boolean (true/false). "
-                + f"Got {type(enabled).__name__}. "
-                + "Try: Set 'enabled' to true or false in '.cortex/validation.json'."
+                (
+                    "Invalid 'enabled' value: 'enabled' must be a boolean "
+                    "(true/false). "
+                    f"Got {type(enabled).__name__}. "
+                    "Try: Set 'enabled' to true or false in "
+                    "'.cortex/validation.json'."
+                )
             )
 
     def _validate_quality_weights_sum(self, errors: list[str]) -> None:
@@ -221,9 +245,14 @@ class ValidationConfig:
         )
         if abs(weight_sum - 1.0) > 0.01:  # Allow small floating point error
             errors.append(
-                f"Invalid 'quality.weights' sum: Must sum to 1.0, currently {weight_sum}. "
-                + "Try: Adjust weight values so they add up to 1.0, "
-                + "e.g., {'completeness': 0.3, 'consistency': 0.3, 'freshness': 0.2, 'structure': 0.1, 'token_efficiency': 0.1}."
+                (
+                    f"Invalid 'quality.weights' sum: Must sum to 1.0, "
+                    f"currently {weight_sum}. "
+                    "Try: Adjust weight values so they add up to 1.0, "
+                    "e.g., {'completeness': 0.3, 'consistency': 0.3, "
+                    "'freshness': 0.2, 'structure': 0.1, "
+                    "'token_efficiency': 0.1}."
+                )
             )
 
     def is_validation_enabled(self) -> bool:

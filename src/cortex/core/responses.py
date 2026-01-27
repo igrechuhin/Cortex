@@ -48,8 +48,8 @@ def error_response(
         error: The exception that occurred.
         action_required: Optional human-readable description of what the user
                         should do to resolve the error.
-        context: Optional ErrorContext or JsonDict with additional context about the error
-                (e.g., file paths, config values).
+        context: Optional ErrorContext or JsonDict with additional context
+                about the error (e.g., file paths, config values).
 
     Returns:
         JSON string with status, error details, and optional guidance.

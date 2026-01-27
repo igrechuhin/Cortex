@@ -74,7 +74,8 @@ class AdaptationConfig:
         Initialize adaptation configuration.
 
         Args:
-            base_config: Base configuration dictionary (usually from OptimizationConfig.config)
+            base_config: Base configuration dictionary (usually from
+            OptimizationConfig.config)
         """
         if base_config is None:
             self._model = AdaptationConfigModel()

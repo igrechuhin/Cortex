@@ -92,7 +92,8 @@ def create_all_managers(
         project_root: Project root directory
 
     Returns:
-        Tuple of manager groups: (foundation, linking, optimization, analysis, refactoring, execution)
+        Tuple of manager groups: (foundation, linking, optimization,
+        analysis, refactoring, execution)
     """
     foundation_managers = create_foundation_managers(project_root)
     linking_managers = create_linking_managers_from_foundation(foundation_managers)

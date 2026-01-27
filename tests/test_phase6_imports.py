@@ -43,7 +43,8 @@ try:
         print("✓ Shared rules configuration keys present")
     else:
         print(
-            "ℹ Shared rules configuration keys not found (may use SynapseManager instead)"
+            "ℹ Shared rules configuration keys not found "
+            + "(may use SynapseManager instead)"
         )
 
 except Exception as e:

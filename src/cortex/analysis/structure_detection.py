@@ -122,7 +122,9 @@ def detect_excessive_dependents(
             file=file_name,
             files=[],
             description=f"File is depended upon by {dependent_count} other files",
-            recommendation="This is a central file - ensure it's stable and well-maintained",
+            recommendation=(
+                "This is a central file - ensure it's stable and " "well-maintained"
+            ),
         )
         for file_name, file_data in graph.items()
         if (dependent_count := len(file_data.get("dependents", []))) > 15

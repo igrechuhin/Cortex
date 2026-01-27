@@ -77,7 +77,8 @@ class TestRunCommand:
     async def test_run_command_timeout(self):
         """Test command timeout handling."""
 
-        # Arrange - Create mock that raises TimeoutError (Python 3.13+ asyncio.timeout raises TimeoutError)
+        # Arrange - Create mock that raises TimeoutError (Python 3.13+
+        # asyncio.timeout raises TimeoutError)
         async def slow_subprocess(*args: object, **kwargs: object) -> Mock:
             """Mock that simulates a long-running process."""
             raise TimeoutError("Operation timed out")

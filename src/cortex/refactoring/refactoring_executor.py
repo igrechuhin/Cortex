@@ -261,7 +261,8 @@ class RefactoringExecutor:
         suggestion: RefactoringSuggestionModel | ModelDict,
         dry_run: bool,
     ) -> ExecutionResult | None:
-        """Validate refactoring; return error result if validation fails, None if success."""
+        """Validate refactoring; return error result if validation fails,
+        None if success."""
         execution.status = RefactoringStatus.VALIDATING
         validation_results = await self.validate_refactoring(suggestion, dry_run)
         # Convert validation results to impact metrics

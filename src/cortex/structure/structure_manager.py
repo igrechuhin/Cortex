@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Structure Manager Facade (DEPRECATED - Use StructureLifecycleManager or StructureMigrationManager).
+Structure Manager Facade (DEPRECATED - Use StructureLifecycleManager or
+StructureMigrationManager).
 
 This module maintains backward compatibility by delegating to the new split modules.
 For new code, import directly from structure_lifecycle or structure_migration.

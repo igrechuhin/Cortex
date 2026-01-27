@@ -92,7 +92,7 @@ def test_generate_duplication_fixes_when_exact_not_list_still_processes_similar(
     assert fixes[0]["files"] == ["a.md", "b.md"]
 
 
-def test_generate_duplication_fixes_when_similar_not_list_returns_only_exact_fixes() -> (
+def test_generate_duplication_fixes_when_similar_not_list_returns_only_exact_fixes() -> (  # noqa: E501
     None
 ):
     # Arrange

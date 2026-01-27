@@ -29,19 +29,26 @@ async def validate(
     check_documentation_consistency: bool = True,
     check_config_consistency: bool = True,
 ) -> str:
-    """Run validation checks on Memory Bank files for schema compliance, duplications, quality metrics, or timestamps.
+    """Run validation checks on Memory Bank files for schema compliance,
+    duplications, quality metrics, or timestamps.
 
     This consolidated validation tool performs six types of checks:
-    - schema: Validates file structure against Memory Bank schema (required sections, frontmatter)
+    - schema: Validates file structure against Memory Bank schema
+      (required sections, frontmatter)
     - duplications: Detects exact and similar duplicate content across files
-    - quality: Calculates quality scores based on completeness, structure, and content
-    - infrastructure: Validates project infrastructure consistency (CI vs commit prompt, code quality, docs, config)
-    - timestamps: Validates that all timestamps use YYYY-MM-DDTHH:MM format (ISO 8601 date-time without seconds/timezone)
-    - roadmap_sync: Validates that roadmap.md is synchronized with codebase (all production TODOs tracked, all references valid)
+    - quality: Calculates quality scores based on completeness, structure,
+      and content
+    - infrastructure: Validates project infrastructure consistency
+      (CI vs commit prompt, code quality, docs, config)
+    - timestamps: Validates that all timestamps use YYYY-MM-DDTHH:MM format
+      (ISO 8601 date-time without seconds/timezone)
+    - roadmap_sync: Validates that roadmap.md is synchronized with codebase
+      (all production TODOs tracked, all references valid)
 
-    Use this tool to ensure Memory Bank files follow best practices, identify content duplication
-    that could be refactored using transclusion, assess overall documentation quality, and validate
-    project infrastructure consistency.
+    Use this tool to ensure Memory Bank files follow best practices,
+    identify content duplication that could be refactored using transclusion,
+    assess overall documentation quality, and validate project infrastructure
+    consistency.
 
     Args:
         check_type: Type of validation to perform
@@ -50,11 +57,13 @@ async def validate(
             - "quality": Calculate quality scores and metrics
             - "roadmap_sync": Validate roadmap.md synchronization with codebase
             - "infrastructure": Validate project infrastructure consistency
-            - "timestamps": Validate timestamp format (YYYY-MM-DDTHH:MM, ISO 8601 date-time without seconds/timezone)
+            - "timestamps": Validate timestamp format (YYYY-MM-DDTHH:MM,
+              ISO 8601 date-time without seconds/timezone)
         file_name: Specific file to validate (e.g., "projectBrief.md")
             - For schema: validates single file or all files if None
             - For duplications: always checks all files (parameter ignored)
-            - For quality: calculates score for single file or overall score if None
+            - For quality: calculates score for single file or overall
+              score if None
             - For infrastructure: parameter ignored (always validates entire project)
             - For timestamps: validates single file or all files if None
             Examples: "projectBrief.md", "activeContext.md", None
@@ -74,9 +83,11 @@ async def validate(
         suggest_fixes: Include fix suggestions in duplication results (default: True)
             - Only applicable for check_type="duplications"
             - Provides actionable suggestions for using transclusion
-        check_commit_ci_alignment: Check commit prompt vs CI workflow alignment (default: True)
+        check_commit_ci_alignment: Check commit prompt vs CI workflow
+            alignment (default: True)
             - Only applicable for check_type="infrastructure"
-        check_code_quality_consistency: Check code quality standards consistency (default: True)
+        check_code_quality_consistency: Check code quality standards
+            consistency (default: True)
             - Only applicable for check_type="infrastructure"
         check_documentation_consistency: Check documentation consistency (default: True)
             - Only applicable for check_type="infrastructure"
@@ -104,7 +115,11 @@ async def validate(
           "check_type": "schema",
           "results": {
             "projectBrief.md": {"valid": true, "errors": [], "warnings": []},
-            "activeContext.md": {"valid": false, "errors": ["Missing required section: Current Work"], "warnings": []}
+            "activeContext.md": {
+                "valid": false,
+                "errors": ["Missing required section: Current Work"],
+                "warnings": []
+            }
           }
         }
 
@@ -118,7 +133,8 @@ async def validate(
             {
               "content": "## Architecture Overview\nThe system uses...",
               "files": ["systemPatterns.md", "techContext.md"],
-              "locations": [{"file": "systemPatterns.md", "line": 15}, {"file": "techContext.md", "line": 42}]
+              "locations": [{"file": "systemPatterns.md", "line": 15},
+              {"file": "techContext.md", "line": 42}]
             }
           ],
           "similar_content": [
@@ -131,7 +147,10 @@ async def validate(
           "suggested_fixes": [
             {
               "files": ["systemPatterns.md", "techContext.md"],
-              "suggestion": "Consider using transclusion: {{include:shared-content.md}}",
+              "suggestion": (
+                  "Consider using transclusion: "
+                  "{{include:shared-content.md}}"
+              ),
               "steps": [
                 "1. Create a new file for shared content",
                 "2. Move duplicate content to the new file",
@@ -201,7 +220,8 @@ async def validate(
            }
 
         2. Detect duplications across all files with fix suggestions:
-           Input: validate(check_type="duplications", similarity_threshold=0.85, suggest_fixes=True)
+           Input: validate(check_type="duplications", similarity_threshold=0.85,
+           suggest_fixes=True)
            Output:
            {
              "status": "success",
@@ -228,7 +248,10 @@ async def validate(
              "suggested_fixes": [
                {
                  "files": ["techContext.md", "README.md"],
-                 "suggestion": "Consider using transclusion: {{include:shared-content.md}}",
+                 "suggestion": (
+                  "Consider using transclusion: "
+                  "{{include:shared-content.md}}"
+              ),
                  "steps": [
                    "1. Create a new file for shared content",
                    "2. Move duplicate content to the new file",
@@ -361,7 +384,10 @@ async def validate(
                }
              ],
              "warnings": [
-               "Reference to src/cortex/core/token_counter.py:500 exceeds file length (458 lines)"
+               (
+                  "Reference to src/cortex/core/token_counter.py:500 "
+                  "exceeds file length (458 lines)"
+              )
              ],
              "summary": {
                "total_todos_found": 1,
@@ -372,16 +398,25 @@ async def validate(
            }
 
     Note:
-        - Schema validation checks for required sections, proper frontmatter, and file structure
-        - Duplication detection uses content hashing for exact matches and similarity algorithms for near-matches
-        - Quality metrics consider completeness (required sections present), structure (proper formatting),
+        - Schema validation checks for required sections, proper frontmatter,
+        and file structure
+        - Duplication detection uses content hashing for exact matches and
+          similarity algorithms for near-matches
+        - Quality metrics consider completeness (required sections present),
+        structure (proper formatting),
           and content quality (sufficient detail, clear writing)
-        - Infrastructure validation checks project consistency (CI vs commit prompt, code quality, docs, config)
-        - Timestamp validation ensures all timestamps use YYYY-MM-DDTHH:MM format (ISO 8601 date-time without seconds/timezone)
-        - Roadmap sync validation ensures all production TODOs are tracked in roadmap.md and all roadmap references are valid
-        - The similarity_threshold parameter only affects duplication checks; typical values are 0.8-0.95
-        - Suggested fixes for duplications recommend using DRY linking with transclusion syntax
-        - Quality scores range from 0-100, with 80+ considered good, 60-79 acceptable, below 60 needs improvement
+        - Infrastructure validation checks project consistency
+          (CI vs commit prompt, code quality, docs, config)
+        - Timestamp validation ensures all timestamps use YYYY-MM-DDTHH:MM
+          format (ISO 8601 date-time without seconds/timezone)
+        - Roadmap sync validation ensures all production TODOs are tracked
+          in roadmap.md and all roadmap references are valid
+        - The similarity_threshold parameter only affects duplication checks;
+          typical values are 0.8-0.95
+        - Suggested fixes for duplications recommend using DRY linking
+          with transclusion syntax
+        - Quality scores range from 0-100, with 80+ considered good, 60-79 acceptable,
+        below 60 needs improvement
         - All validation operations are read-only and do not modify files
     """
     return await _execute_validation_with_error_handling(

@@ -105,7 +105,13 @@ class FileSystemManager:
         # Validate path is within project root
         if not self.validate_path(file_path):
             raise PermissionError(
-                f"Failed to construct safe path for '{file_name}': Path {file_path} is outside project root '{self.project_root}'. Try: Ensure file name doesn't contain '..' or absolute paths, or verify project root is correctly configured."
+                (
+                    f"Failed to construct safe path for '{file_name}': "
+                    f"Path {file_path} is outside project root "
+                    f"'{self.project_root}'. Try: Ensure file name doesn't "
+                    "contain '..' or absolute paths, or verify project root "
+                    "is correctly configured."
+                )
             )
 
         # Additional check using InputValidator
@@ -132,7 +138,12 @@ class FileSystemManager:
 
         if not self.validate_path(file_path):
             raise PermissionError(
-                f"Failed to read '{file_path.name}': Path {file_path} is outside project root '{self.project_root}'. Try: Check file path is correct and within project directory, or verify project root configuration."
+                (
+                    f"Failed to read '{file_path.name}': Path {file_path} is "
+                    f"outside project root '{self.project_root}'. Try: Check "
+                    "file path is correct and within project directory, or "
+                    "verify project root configuration."
+                )
             )
 
         async def read_operation() -> tuple[str, str]:
@@ -227,14 +238,25 @@ class FileSystemManager:
         """Validate file path for writing."""
         if not self.validate_path(file_path):
             raise PermissionError(
-                f"Failed to write '{file_path.name}': Path {file_path} is outside project root '{self.project_root}'. Try: Check file path is correct and within project directory, or verify project root configuration."
+                (
+                    f"Failed to write '{file_path.name}': Path {file_path} is "
+                    f"outside project root '{self.project_root}'. Try: Check "
+                    "file path is correct and within project directory, or "
+                    "verify project root configuration."
+                )
             )
 
     def _validate_write_content(self, file_path: Path, content: str) -> None:
         """Validate file content for writing."""
         if self.has_git_conflicts(content):
             raise GitConflictError(
-                f"Failed to write '{file_path.name}': Git conflict markers detected in content. Cause: File contains unresolved git merge conflicts (<<<<<<, =======, >>>>>>>). Try: Resolve git conflicts manually and remove conflict markers before saving."
+                (
+                    f"Failed to write '{file_path.name}': Git conflict "
+                    "markers detected in content. Cause: File contains "
+                    "unresolved git merge conflicts (<<<<<<, =======, "
+                    ">>>>>>>). Try: Resolve git conflicts manually and remove "
+                    "conflict markers before saving."
+                )
             )
 
     async def acquire_lock(self, lock_path: Path):
@@ -372,7 +394,12 @@ class FileSystemManager:
         """
         if not self.validate_path(dir_path):
             raise PermissionError(
-                f"Failed to create directory '{dir_path.name}': Path {dir_path} is outside project root '{self.project_root}'. Try: Ensure directory path is within project, or verify project root configuration."
+                (
+                    f"Failed to create directory '{dir_path.name}': Path "
+                    f"{dir_path} is outside project root '{self.project_root}'. "
+                    "Try: Ensure directory path is within project, or verify "
+                    "project root configuration."
+                )
             )
 
         dir_path.mkdir(parents=True, exist_ok=True)
@@ -407,7 +434,12 @@ class FileSystemManager:
         """
         if not await self.file_exists(file_path):
             raise FileNotFoundError(
-                f"Failed to get file size for '{file_path.name}': File not found at {file_path}. Try: Check file path is correct, verify file exists, or run initialize_memory_bank() to create missing files."
+                (
+                    f"Failed to get file size for '{file_path.name}': File "
+                    f"not found at {file_path}. Try: Check file path is "
+                    "correct, verify file exists, or run initialize_memory_bank() "
+                    "to create missing files."
+                )
             )
 
         return file_path.stat().st_size
@@ -427,7 +459,12 @@ class FileSystemManager:
         """
         if not await self.file_exists(file_path):
             raise FileNotFoundError(
-                f"Failed to get modification time for '{file_path.name}': File not found at {file_path}. Try: Check file path is correct, verify file exists, or run initialize_memory_bank() to create missing files."
+                (
+                    f"Failed to get modification time for '{file_path.name}': "
+                    f"File not found at {file_path}. Try: Check file path is "
+                    "correct, verify file exists, or run initialize_memory_bank() "
+                    "to create missing files."
+                )
             )
 
         return file_path.stat().st_mtime

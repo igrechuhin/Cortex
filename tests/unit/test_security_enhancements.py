@@ -220,7 +220,8 @@ class TestGitOperationTimeouts:
 
         async def command_with_timeout_check(cmd: list[str]) -> dict[str, object]:
             nonlocal timeout_used
-            # Simulate checking timeout (in real implementation, timeout is passed to asyncio.wait_for)
+            # Simulate checking timeout (in real implementation, timeout is
+            # passed to asyncio.wait_for)
             timeout_used = 30  # Default timeout
             return {"success": True, "stdout": "", "stderr": ""}
 

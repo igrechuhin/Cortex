@@ -229,10 +229,12 @@ def get_nested_int(result_dict: TestResultDict, *keys: str) -> int:
         The integer value at the nested path
 
     Raises:
-        AssertionError: If any intermediate value is not a dict or final value is not int
+        AssertionError: If any intermediate value is not a dict or final
+        value is not int
 
     Example:
-        >>> get_nested_int(result, "summary", "markdown_links")  # result["summary"]["markdown_links"]
+        >>> get_nested_int(result, "summary", "markdown_links")
+        # result["summary"]["markdown_links"]
     """
     current: dict[str, object] = result_dict
     for key in keys[:-1]:

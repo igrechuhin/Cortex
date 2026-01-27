@@ -52,7 +52,7 @@ def test_validate_template_variables_when_missing_returns_false_and_missing_list
     assert "date" in missing
 
 
-def test_validate_template_variables_when_all_provided_returns_true_and_empty_list() -> (
+def test_validate_template_variables_when_all_provided_returns_true_and_empty_list() -> (  # noqa: E501
     None
 ):
     # Arrange

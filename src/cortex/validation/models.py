@@ -222,7 +222,10 @@ class ValidationConfigModel(BaseModel):
 
     enabled: str | StrictBool = Field(
         default=True,
-        description="Whether validation is enabled (may be invalid when loaded from user config)",
+        description=(
+            "Whether validation is enabled (may be invalid when loaded "
+            "from user config)"
+        ),
     )
     auto_validate_on_write: bool = Field(
         default=True, description="Whether to auto-validate on write"

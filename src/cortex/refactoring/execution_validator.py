@@ -117,8 +117,9 @@ class ExecutionValidator:
             if target_file.exists():
                 # Check if file has been modified since last snapshot
                 metadata = await self.metadata_index.get_file_metadata(op.target_file)
-                # Note: modified_externally is not currently tracked in DetailedFileMetadata
-                # This check is a placeholder for future external change detection
+                # Note: modified_externally is not currently tracked in
+                # DetailedFileMetadata. This check is a placeholder for
+                # future external change detection
                 if metadata:
                     warnings.append(
                         f"File has uncommitted changes: {op.target_file}. "
@@ -174,7 +175,10 @@ class ExecutionValidator:
         estimated_token_change = suggestion.estimated_impact.token_savings
         if estimated_token_change < -1000:
             warnings.append(
-                f"Refactoring may increase token usage by {-estimated_token_change} tokens"
+                (
+                    f"Refactoring may increase token usage by "
+                    f"{-estimated_token_change} tokens"
+                )
             )
 
     async def _run_validation_checks(

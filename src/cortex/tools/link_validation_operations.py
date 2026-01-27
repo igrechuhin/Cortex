@@ -19,7 +19,8 @@ from cortex.server import mcp
 async def validate_links(
     file_name: str | None = None, project_root: str | None = None
 ) -> str:
-    """Validate all markdown links and transclusion directives to ensure they point to existing targets.
+    """Validate all markdown links and transclusion directives to ensure
+    they point to existing targets.
 
     Performs comprehensive link validation by checking:
     - Target files exist in the memory-bank directory or project
@@ -27,12 +28,16 @@ async def validate_links(
     - Transclusion directives use correct syntax
     - Links are not broken by file moves or deletions
 
-    Can validate a single file or all files in the memory-bank directory. For each broken link,
-    provides detailed error information including the source location, target, and suggested fixes.
+    Can validate a single file or all files in the memory-bank directory.
+    For each broken link, provides detailed error information including
+    the source location, target, and suggested fixes.
 
     Args:
-        file_name: Optional specific file to validate relative to memory-bank directory (e.g., "activeContext.md"); if None, validates all files in memory-bank
-        project_root: Optional absolute path to project root directory; if None, uses current working directory
+        file_name: Optional specific file to validate relative to
+            memory-bank directory (e.g., "activeContext.md"); if None,
+            validates all files in memory-bank
+        project_root: Optional absolute path to project root directory;
+            if None, uses current working directory
 
     Returns:
         JSON string containing validation results and detailed error reports:
@@ -43,8 +48,10 @@ async def validate_links(
         - valid_links: Number of links that passed validation
         - broken_links: Number of links with errors
         - warnings: Number of non-critical issues found
-        - validation_errors: List of broken link objects with file, line, target, error details
-        - validation_warnings: List of warning objects with file, line, target, warning details
+        - validation_errors: List of broken link objects with file, line,
+          target, error details
+        - validation_warnings: List of warning objects with file, line,
+          target, warning details
         - report: Human-readable summary report (only in all_files mode)
         - error: Error message (only if status is "error")
         - error_type: Type of error that occurred (only if status is "error")
@@ -111,7 +118,12 @@ async def validate_links(
               "suggestion": "Consider using transclusion for internal content"
             }
           ],
-          "report": "Link Validation Report\\n===================\\n\\nFiles checked: 7\\nTotal links: 45\\nValid: 42 (93%)\\nBroken: 3 (7%)\\n\\nFiles with errors:\\n- systemPatterns.md: 3 errors\\n"
+          "report": (
+              "Link Validation Report\\n===================\\n\\n"
+              "Files checked: 7\\nTotal links: 45\\nValid: 42 (93%)\\n"
+              "Broken: 3 (7%)\\n\\nFiles with errors:\\n"
+              "- systemPatterns.md: 3 errors\\n"
+          )
         }
         ```
 
@@ -127,7 +139,10 @@ async def validate_links(
           "warnings": 0,
           "validation_errors": [],
           "validation_warnings": [],
-          "report": "Link Validation Report\\n===================\\n\\nAll links valid! ✓\\n\\nFiles checked: 7\\nTotal links: 45"
+          "report": (
+              "Link Validation Report\\n===================\\n\\n"
+              "All links valid! ✓\\n\\nFiles checked: 7\\nTotal links: 45"
+          )
         }
         ```
 

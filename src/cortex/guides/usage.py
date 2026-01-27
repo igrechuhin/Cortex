@@ -8,4 +8,5 @@ Memory Bank updates occur when:
 3. When user requests with **update memory bank** (MUST review ALL files)
 4. When context needs clarification
 
-Remember: After every memory reset, begin by reading the Memory Bank files to rebuild context."""
+Remember: After every memory reset, begin by reading the Memory Bank "
+"files to rebuild context."""

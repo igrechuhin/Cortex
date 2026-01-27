@@ -498,7 +498,8 @@ Line 5"""
 
         result = engine.extract_section(content, "Section", lines_limit=2)
 
-        # The section content starts with empty line, so lines_limit=2 gets empty line + Line 1
+        # The section content starts with empty line, so lines_limit=2 gets
+        # empty line + Line 1
         lines = result.split("\n")
         assert len(lines) <= 2
 

@@ -642,7 +642,8 @@ class TestVerifyMigration:
         md_files = [tmp_path / ".cortex" / "memory-bank" / "test.md"]
 
         # Create snapshot file - use the correct path format
-        # VersionManager.get_snapshot_path returns: history_dir / "{base_name}_v{version}.md"
+        # VersionManager.get_snapshot_path returns: history_dir /
+        # "{base_name}_v{version}.md"
         snapshot_path = tmp_path / ".cortex/history" / "test_v1.md"
         snapshot_path.parent.mkdir(parents=True, exist_ok=True)
         _ = snapshot_path.write_text("{}")

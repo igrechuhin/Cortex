@@ -1,7 +1,8 @@
 """Timestamp validation utilities for Memory Bank files.
 
 This module provides functions to validate timestamp formats in Memory Bank files.
-Valid timestamps use YYYY-MM-DDTHH:MM format (ISO 8601 date-time without seconds/timezone).
+Valid timestamps use YYYY-MM-DDTHH:MM format (ISO 8601 date-time without
+seconds/timezone).
 """
 
 import json
@@ -279,7 +280,8 @@ def process_file_timestamps(
     """Process timestamps for a single file.
 
     Returns:
-        Tuple of (file_result, valid_count, invalid_format_count, invalid_with_time_count)
+        Tuple of (file_result, valid_count, invalid_format_count,
+        invalid_with_time_count)
     """
     scan_result = scan_timestamps(content)
     valid_count = scan_result.valid_count

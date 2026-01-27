@@ -62,8 +62,13 @@ class VersionManagerProtocol(Protocol):
 
                 return snapshot_id
 
-            async def get_version_history(self, file_name: str) -> list[VersionHistoryEntryModel]:
-                from cortex.core.models import VersionHistoryEntryModel, VersionHistoryMetadata
+            async def get_version_history(
+                self, file_name: str
+            ) -> list[VersionHistoryEntryModel]:
+                from cortex.core.models import (
+                    VersionHistoryEntryModel,
+                    VersionHistoryMetadata,
+                )
                 history = []
                 for snapshot_file in self.versions_dir.glob(f"{file_name}_*.snapshot"):
                     async with open_async_text_file(snapshot_file, "r", "utf-8") as f:
@@ -76,9 +81,13 @@ class VersionManagerProtocol(Protocol):
                             token_count=data.get("token_count"),
                             metadata=VersionHistoryMetadata(),
                         ))
-                return sorted(history, key=lambda x: x.timestamp, reverse=True)
+                return sorted(
+                    history, key=lambda x: x.timestamp, reverse=True
+                )
 
-            async def rollback_to_version(self, snapshot_id: str) -> RollbackToVersionResult:
+            async def rollback_to_version(
+                self, snapshot_id: str
+            ) -> RollbackToVersionResult:
                 snapshot_path = self.versions_dir / f"{snapshot_id}.snapshot"
                 async with open_async_text_file(snapshot_path, "r", "utf-8") as f:
                     data = json.loads(await f.read())

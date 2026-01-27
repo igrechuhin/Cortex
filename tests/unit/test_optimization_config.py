@@ -145,7 +145,8 @@ class TestConfigFileOperations:
             # Assert
             assert result is False
             # Verify save failed (main behavior)
-            # Log capture may not work due to logger configuration, but behavior is correct
+            # Log capture may not work due to logger configuration, but
+            # behavior is correct
             # Check if any error was logged (more lenient check)
             if caplog.records:
                 log_messages = [record.message for record in caplog.records]

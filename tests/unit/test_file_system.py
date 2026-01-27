@@ -1,7 +1,8 @@
 """
 Unit tests for file_system module.
 
-Tests file system operations including locking, conflict detection, and markdown parsing.
+Tests file system operations including locking, conflict detection, and
+markdown parsing.
 """
 
 from pathlib import Path

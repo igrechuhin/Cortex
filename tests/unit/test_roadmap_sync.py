@@ -347,6 +347,7 @@ class TestValidateRoadmapSync:
             result = validate_roadmap_sync(project_root, roadmap_content)
 
             # Assert
-            # The file "module.py" is matched because roadmap contains "module.py" (same case)
+            # The file "module.py" is matched because roadmap contains
+            # "module.py" (same case)
             assert result["valid"] is True  # Matching case succeeds
             assert len(result["missing_roadmap_entries"]) == 0

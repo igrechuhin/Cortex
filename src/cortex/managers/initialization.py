@@ -128,7 +128,8 @@ def get_project_root(project_root: str | None = None) -> Path:
             for path in [script_path.parent, *script_path.parent.parents]:
                 cortex_dir = path / ".cortex"
                 if cortex_dir.is_dir():
-                    # Verify this .cortex/ has a memory-bank subdirectory (more specific check)
+                    # Verify this .cortex/ has a memory-bank subdirectory
+                    # (more specific check)
                     memory_bank_dir = cortex_dir / "memory-bank"
                     if memory_bank_dir.is_dir():
                         return path

@@ -76,7 +76,8 @@ class ContextOptimizer:
             files_content: Available files with content
             files_metadata: File metadata
             token_budget: Maximum tokens allowed
-            strategy: Optimization strategy (priority, dependency_aware, section_level, hybrid)
+            strategy: Optimization strategy (priority, dependency_aware,
+            section_level, hybrid)
             quality_scores: Optional quality scores for files
 
         Returns:

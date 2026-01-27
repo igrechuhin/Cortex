@@ -5,7 +5,7 @@ from cortex.rules.rules_merger import RulesMerger
 
 
 @pytest.mark.asyncio
-async def test_merge_rules_when_local_overrides_shared_replaces_duplicates_and_sorts() -> (
+async def test_merge_rules_when_local_overrides_shared_replaces_duplicates_and_sorts() -> (  # noqa: E501, PLR0915
     None
 ):
     # Arrange

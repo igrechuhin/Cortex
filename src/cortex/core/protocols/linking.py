@@ -105,16 +105,24 @@ class TransclusionEngineProtocol(Protocol):
     Example implementation:
         ```python
         class SimpleTransclusionEngine:
-            def __init__(self, file_system: FileSystemProtocol, link_parser: LinkParserProtocol):
+            def __init__(
+                self,
+                file_system: FileSystemProtocol,
+                link_parser: LinkParserProtocol,
+            ):
                 self.file_system = file_system
                 self.link_parser = link_parser
                 self.cache = {}
                 self.resolution_stack = []
 
-            async def resolve_file(self, file_path: Path, max_depth: int | None = None) -> str:
+            async def resolve_file(
+                self, file_path: Path, max_depth: int | None = None
+            ) -> str:
                 # Check for circular dependencies
                 if str(file_path) in self.resolution_stack:
-                    raise CircularDependencyError(f"Circular transclusion: {self.resolution_stack}")
+                    raise CircularDependencyError(
+                        f"Circular transclusion: {self.resolution_stack}"
+                    )
 
                 self.resolution_stack.append(str(file_path))
                 try:
@@ -125,7 +133,9 @@ class TransclusionEngineProtocol(Protocol):
                     for trans in transclusions:
                         target_path = file_path.parent / trans["target"]
                         included = await self.resolve_file(target_path, max_depth)
-                        content = content.replace(f"{{{{include:{trans['target']}}}}}", included)
+                        content = content.replace(
+                            f"{{{{include:{trans['target']}}}}}", included
+                        )
 
                     return content
                 finally:
@@ -181,7 +191,11 @@ class LinkValidatorProtocol(Protocol):
     Example implementation:
         ```python
         class SimpleLinkValidator:
-            def __init__(self, file_system: FileSystemProtocol, link_parser: LinkParserProtocol):
+            def __init__(
+                self,
+                file_system: FileSystemProtocol,
+                link_parser: LinkParserProtocol,
+            ):
                 self.file_system = file_system
                 self.link_parser = link_parser
 
@@ -222,7 +236,10 @@ class LinkValidatorProtocol(Protocol):
                 return LinkValidationResult(
                     valid=len(broken_links) == 0 and len(broken_transclusions) == 0,
                     total_links=len(links) + len(transclusions),
-                    valid_links=len(links) + len(transclusions) - len(broken_links) - len(broken_transclusions),
+                    valid_links=(
+                        len(links) + len(transclusions)
+                        - len(broken_links) - len(broken_transclusions)
+                    ),
                     broken_links=broken_links,
                     broken_transclusions=broken_transclusions,
                 )

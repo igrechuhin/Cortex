@@ -515,7 +515,10 @@ class QualityMetrics:
         """Add freshness recommendation if needed."""
         if freshness < 60:
             recommendations.append(
-                "Review and update stale files, especially activeContext.md and progress.md"
+                (
+                    "Review and update stale files, especially "
+                    "activeContext.md and progress.md"
+                )
             )
 
     def _add_structure_recommendation(
@@ -533,7 +536,10 @@ class QualityMetrics:
         """Add token efficiency recommendation if needed."""
         if token_efficiency < 70:
             recommendations.append(
-                "Review token usage with 'check_token_budget' and consider summarizing verbose sections"
+                (
+                    "Review token usage with 'check_token_budget' and "
+                    "consider summarizing verbose sections"  # noqa: E501
+                )
             )
 
     def _add_general_recommendation(
@@ -577,8 +583,10 @@ class QualityMetrics:
 
         Algorithm: Weighted sum of quality components
         Purpose: Combine multiple quality dimensions into single 0-100 score
-        Rationale: Weights reflect relative importance based on Memory Bank usage patterns
-                  - Completeness & Consistency: Most critical (50% combined)
+        Rationale: Weights reflect relative importance based on Memory
+        Bank usage patterns
+                  - Completeness & Consistency: Most critical (50%
+                  combined)
                   - Structure: Important for maintainability (20%)
                   - Freshness & Efficiency: Supporting metrics (30% combined)
 
@@ -682,7 +690,10 @@ class QualityMetrics:
         if consistency < 80:
             if duplication_data.duplicates_found > 0:
                 issues.append(
-                    f"Found {duplication_data.duplicates_found} duplicate or similar content sections"
+                    (
+                        f"Found {duplication_data.duplicates_found} duplicate "
+                        f"or similar content sections"
+                    )
                 )
 
     def _add_freshness_issue(self, issues: list[str], freshness: float) -> None:

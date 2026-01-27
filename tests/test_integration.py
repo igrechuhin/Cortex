@@ -14,7 +14,8 @@ from cortex.tools.phase1_foundation_stats import get_memory_bank_stats
 from cortex.tools.phase1_foundation_version import get_version_history
 
 
-# Helper function to replace initialize_memory_bank (which has been replaced by prompt templates)
+# Helper function to replace initialize_memory_bank (which has been
+# replaced by prompt templates)
 async def _initialize_memory_bank_helper(project_root: str) -> str:
     """
     Helper to initialize memory bank structure for tests.
@@ -99,7 +100,10 @@ async def test_full_workflow():
 
         # Test 3: Write/update a file
         print("🧪 Test 3: Update projectBrief.md")
-        new_content = "# Project Brief\n\nThis is an updated project brief.\n\n## Goals\n- Test versioning\n- Test metadata tracking\n"
+        new_content = (
+            "# Project Brief\n\nThis is an updated project brief.\n\n"
+            "## Goals\n- Test versioning\n- Test metadata tracking\n"
+        )
         result = await manage_file(
             operation="write",
             file_name="projectBrief.md",

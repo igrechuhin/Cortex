@@ -1,6 +1,7 @@
 """Comprehensive tests for file_operations module.
 
-Tests cover all functions, edge cases, error paths, and helpers to achieve 100% coverage.
+Tests cover all functions, edge cases, error paths, and helpers to
+achieve 100% coverage.
 """
 
 import json

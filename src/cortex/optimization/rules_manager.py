@@ -213,7 +213,8 @@ class RulesManager:
         # Convert dict to model
         if isinstance(context_dict, dict):
             normalized: ModelDict = dict(context_dict)
-            # Some legacy callers/tests use `frameworks` instead of `detected_frameworks`.
+            # Some legacy callers/tests use `frameworks` instead of
+            # `detected_frameworks`.
             if "frameworks" in normalized and "detected_frameworks" not in normalized:
                 normalized["detected_frameworks"] = normalized.get("frameworks", [])
             _ = normalized.pop("frameworks", None)

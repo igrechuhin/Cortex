@@ -70,7 +70,10 @@ def _validate_summarize_inputs(target_reduction: float, strategy: str) -> str | 
         return json.dumps(
             {
                 "status": "error",
-                "error": f"Invalid strategy: {strategy}. Use {', '.join(valid_strategies)}.",
+                "error": (
+                    f"Invalid strategy: {strategy}. Use "
+                    f"{', '.join(valid_strategies)}."
+                ),
             },
             indent=2,
         )

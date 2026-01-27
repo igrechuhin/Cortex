@@ -141,7 +141,8 @@ class TestGeneratePlan:
 
         # Assert
         assert plan_name in content
-        # Note: Custom vars won't be substituted unless template has {author}, {priority}
+        # Note: Custom vars won't be substituted unless template has
+        # {author}, {priority}
         # But date should still be replaced
         assert "{date}" not in content
 

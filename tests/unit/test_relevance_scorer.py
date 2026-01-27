@@ -283,7 +283,8 @@ class TestDependencyScoring:
         """Test _calculate_dependency_scores boosts files that are dependencies."""
         # Arrange
         scorer = RelevanceScorer(sample_dependency_graph, sample_metadata_index)
-        # Use real files from dependency graph: activeContext depends on productContext, systemPatterns, techContext
+        # Use real files from dependency graph: activeContext depends on
+        # productContext, systemPatterns, techContext
         keyword_scores = {
             "activeContext.md": 0.9,  # High score, has dependencies
             "productContext.md": 0.1,  # Low score, but dependency of activeContext

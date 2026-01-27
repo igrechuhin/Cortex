@@ -340,7 +340,8 @@ And this is code: `#define MACRO`
         assert sections[1]["level"] == 2
 
     def test_parse_markdown_sections_with_hash_not_at_start(self):
-        """Test parse_markdown_sections handles indented headers and hashes in content."""
+        """Test parse_markdown_sections handles indented headers and hashes
+        in content."""
         # Arrange
         counter = TokenCounter()
         content = """   # Indented header (still detected)
@@ -514,7 +515,10 @@ class TestCountTokensWithCache:
         """Test that different hashes produce different cached results."""
         # Arrange
         counter = TokenCounter()
-        text1 = "This is a much longer text that should have significantly more tokens than a short one."
+        text1 = (
+            "This is a much longer text that should have significantly "
+            "more tokens than a short one."
+        )
         text2 = "Short."
         hash1 = counter.content_hash(text1)
         hash2 = counter.content_hash(text2)
@@ -741,7 +745,7 @@ class TestTiktokenTimeoutAndRetry:
             with patch("concurrent.futures.ThreadPoolExecutor") as mock_executor:
                 mock_future = MagicMock()
                 mock_future.result.return_value = mock_encoding
-                mock_executor.return_value.__enter__.return_value.submit.return_value = (
+                mock_executor.return_value.__enter__.return_value.submit.return_value = (  # noqa: E501
                     mock_future
                 )
 
@@ -780,7 +784,7 @@ class TestTiktokenTimeoutAndRetry:
                         TimeoutError("Timeout"),
                         mock_encoding,
                     ]
-                    mock_executor.return_value.__enter__.return_value.submit.return_value = (
+                    mock_executor.return_value.__enter__.return_value.submit.return_value = (  # noqa: E501
                         mock_future
                     )
 
@@ -815,7 +819,7 @@ class TestTiktokenTimeoutAndRetry:
                     # All attempts timeout
                     mock_future = MagicMock()
                     mock_future.result.side_effect = TimeoutError("Timeout")
-                    mock_executor.return_value.__enter__.return_value.submit.return_value = (
+                    mock_executor.return_value.__enter__.return_value.submit.return_value = (  # noqa: E501
                         mock_future
                     )
 
@@ -854,7 +858,7 @@ class TestTiktokenTimeoutAndRetry:
                         ValueError("Network error"),
                         mock_encoding,
                     ]
-                    mock_executor.return_value.__enter__.return_value.submit.return_value = (
+                    mock_executor.return_value.__enter__.return_value.submit.return_value = (  # noqa: E501
                         mock_future
                     )
 
@@ -889,7 +893,7 @@ class TestTiktokenTimeoutAndRetry:
                     # All attempts raise exceptions
                     mock_future = MagicMock()
                     mock_future.result.side_effect = ValueError("Network error")
-                    mock_executor.return_value.__enter__.return_value.submit.return_value = (
+                    mock_executor.return_value.__enter__.return_value.submit.return_value = (  # noqa: E501
                         mock_future
                     )
 
@@ -970,7 +974,7 @@ class TestTiktokenTimeoutAndRetry:
                         # All attempts timeout
                         mock_future = MagicMock()
                         mock_future.result.side_effect = TimeoutError("Timeout")
-                        mock_executor.return_value.__enter__.return_value.submit.return_value = (
+                        mock_executor.return_value.__enter__.return_value.submit.return_value = (  # noqa: E501
                             mock_future
                         )
 
@@ -995,7 +999,8 @@ class TestTiktokenTimeoutAndRetry:
                 del sys.modules["tiktoken"]
 
     def test_count_tokens_fallback_to_word_estimation_on_timeout(self):
-        """Test that count_tokens falls back to word estimation when tiktoken times out."""
+        """Test that count_tokens falls back to word estimation when
+        tiktoken times out."""
         # Arrange
         counter = TokenCounter()
         text = "This is a test text with multiple words"
@@ -1048,7 +1053,7 @@ class TestTiktokenTimeoutAndRetry:
                 # Simulate network error (connection refused)
                 mock_future = MagicMock()
                 mock_future.result.side_effect = ConnectionError("Connection refused")
-                mock_executor.return_value.__enter__.return_value.submit.return_value = (
+                mock_executor.return_value.__enter__.return_value.submit.return_value = (  # noqa: E501
                     mock_future
                 )
 
@@ -1082,7 +1087,7 @@ class TestTiktokenTimeoutAndRetry:
                 # Simulate non-network error (invalid model)
                 mock_future = MagicMock()
                 mock_future.result.side_effect = ValueError("Invalid encoding name")
-                mock_executor.return_value.__enter__.return_value.submit.return_value = (
+                mock_executor.return_value.__enter__.return_value.submit.return_value = (  # noqa: E501
                     mock_future
                 )
 

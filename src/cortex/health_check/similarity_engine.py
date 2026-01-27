@@ -26,7 +26,8 @@ class SimilarityEngine:
             token_counter: Token counter instance. If None, creates new one.
             high_threshold: High confidence similarity threshold (default: 0.75)
             medium_threshold: Medium confidence similarity threshold (default: 0.60)
-            min_content_length: Minimum content length in tokens for analysis (default: 100)
+            min_content_length: Minimum content length in tokens for
+            analysis (default: 100)
             heading_weight: Weight for heading sections (default: 1.5)
             code_weight: Weight for code sections (default: 1.2)
             text_weight: Weight for text sections (default: 1.0)
