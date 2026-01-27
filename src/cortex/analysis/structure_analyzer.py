@@ -779,7 +779,7 @@ class StructureAnalyzer:
         """
         seen: set[tuple[str, ...]] = set()
 
-        def _is_unique_chain(chain: ModelDict) -> bool:
+        def _is_unique_chain(chain: dict[str, JsonValue]) -> bool:
             """Check if chain is unique and add to seen set."""
             chain_list = chain.get("chain", [])
             if not isinstance(chain_list, list):
@@ -800,7 +800,7 @@ class StructureAnalyzer:
             chain for chain in chains if _is_unique_chain(chain)
         ]
 
-        def _chain_length(chain: ModelDict) -> int:
+        def _chain_length(chain: dict[str, JsonValue]) -> int:
             raw_length = chain.get("length", 0)
             return int(raw_length) if isinstance(raw_length, (int, float, str)) else 0
 

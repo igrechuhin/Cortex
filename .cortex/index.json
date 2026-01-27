@@ -1,21 +1,21 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-01-26T18:25:29.044171",
+  "last_updated": "2026-01-27T12:40:11.921507",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 1673,
-      "token_count": 361,
+      "size_bytes": 5458,
+      "token_count": 1277,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-26T18:24:02.657866",
-      "content_hash": "sha256:a8e26beff63f42c53aff47fd7d8d1a276d922f72c4e6b85335b7e855bf9b2545",
+      "last_modified": "2026-01-27T12:40:11.920484",
+      "content_hash": "sha256:8c030dbbd61007777d882c2adcfdd612934e6be8810b0f78e84cadbd797510ff",
       "sections": [
         {
-          "title": "## Current Status (2026-01-26)",
+          "title": "## Current Status (2026-01-27)",
           "level": 2,
           "line_start": 3,
           "line_end": 3,
@@ -31,14 +31,14 @@
         {
           "title": "## Future Enhancements",
           "level": 2,
-          "line_start": 11,
-          "line_end": 11,
+          "line_start": 25,
+          "line_end": 25,
           "content_hash": null
         }
       ],
       "read_count": 2,
-      "write_count": 11,
-      "last_read": "2026-01-26T18:24:02.657866",
+      "write_count": 12,
+      "last_read": "2026-01-27T12:40:11.920484",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -184,6 +184,17 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Updated roadmap to reflect Step 2 completion and mark Step 2 as in progress with detailed status"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-27T12:40:11.920059",
+          "content_hash": "sha256:8c030dbbd61007777d882c2adcfdd612934e6be8810b0f78e84cadbd797510ff",
+          "size_bytes": 5458,
+          "token_count": 1277,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Align roadmap.md with roadmap_sync validator by updating file references and removing invalid plan links."
         }
       ]
     },
@@ -548,6 +559,41 @@
           "change_description": "debug: manage_file write"
         }
       ]
+    },
+    "file.md": {
+      "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/file.md",
+      "exists": true,
+      "read_count": 0,
+      "write_count": 1,
+      "current_version": 1,
+      "version_history": [
+        {
+          "version": 1,
+          "timestamp": "2026-01-27T12:18:46.245655",
+          "content_hash": "sha256:4e25a7f51c3df28fd5927c265d0d842fd5772d1458c104f849d6db6a4dd71a48",
+          "size_bytes": 185,
+          "token_count": 41,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/file_v1.md",
+          "changed_sections": [],
+          "change_description": "Create example transclusion target file.md#section to fix broken link reported by validate_links()."
+        }
+      ],
+      "size_bytes": 185,
+      "token_count": 41,
+      "token_model": "cl100k_base",
+      "last_modified": "2026-01-27T12:18:46.245981",
+      "content_hash": "sha256:4e25a7f51c3df28fd5927c265d0d842fd5772d1458c104f849d6db6a4dd71a48",
+      "sections": [
+        {
+          "title": "## section",
+          "level": 2,
+          "line_start": 3,
+          "line_end": 3,
+          "content_hash": null
+        }
+      ],
+      "last_read": "2026-01-27T12:18:46.245981"
     }
   },
   "dependency_graph": {
@@ -564,9 +610,9 @@
     "sessions_count": 0
   },
   "totals": {
-    "total_files": 4,
-    "total_size_bytes": 19219,
-    "total_tokens": 4511,
-    "last_full_scan": "2026-01-26T18:25:29.042889"
+    "total_files": 5,
+    "total_size_bytes": 23189,
+    "total_tokens": 5468,
+    "last_full_scan": "2026-01-27T12:40:11.920519"
   }
 }
