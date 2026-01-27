@@ -2,8 +2,8 @@
   "typeCheckingMode": "strict",
   "pythonVersion": "3.13",
 
-  "include": ["src"],
-  "extraPaths": ["scripts"],
+  "include": ["src", ".cortex/synapse/scripts/python"],
+  "extraPaths": ["scripts", ".cortex/synapse/scripts/python"],
 
   "exclude": [
     "**/__pycache__",

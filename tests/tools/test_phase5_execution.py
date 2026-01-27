@@ -29,6 +29,7 @@ from cortex.refactoring.models import (
     RollbackRefactoringResult,
 )
 from cortex.tools.phase5_execution import apply_refactoring, provide_feedback
+from cortex.tools.phase5_execution_helpers import check_approval_status
 from tests.helpers.managers import make_test_managers
 
 
@@ -324,7 +325,8 @@ class TestApplyRefactoringApply:
             result = json.loads(result_str)
 
             # Assert
-            # Status may be "success" or "validation_failed" depending on whether suggestion exists
+            # Status may be "success" or "validation_failed" depending on
+            # whether suggestion exists
             if result["status"] == "success":
                 assert "execution_id" in result
                 assert result["suggestion_id"] == "test-123"
@@ -355,7 +357,8 @@ class TestApplyRefactoringApply:
             result = json.loads(result_str)
 
             # Assert
-            # Status may be "success" or "validation_failed" depending on whether suggestion exists
+            # Status may be "success" or "validation_failed" depending on
+            # whether suggestion exists
             assert result["status"] in {"success", "validation_failed"}
 
     async def test_apply_dry_run(
@@ -685,7 +688,8 @@ class TestProvideFeedback:
                 assert result["feedback_id"] is not None
                 assert "learning_summary" in result
             else:
-                # If error, verify it's about suggestion not found (expected when using real managers)
+                # If error, verify it's about suggestion not found
+                # (expected when using real managers)
                 assert "error" in result
                 assert "suggestion" in result.get("error", "").lower()
 
@@ -855,6 +859,65 @@ class TestProvideFeedback:
             assert result["status"] == "error"
             assert "Invalid feedback" in result["error"]
             assert result["error_type"] == "ValueError"
+
+
+# ============================================================================
+# Helper Function Tests
+# ============================================================================
+
+
+class TestPhase5ExecutionHelpers:
+    """Tests for helper functions in phase5_execution_helpers."""
+
+    def test_check_approval_status_no_approvals(self) -> None:
+        """Test check_approval_status with empty approvals list."""
+        # Arrange
+        approvals: list[ApprovalModel] = []
+
+        # Act
+        was_approved, was_applied = check_approval_status(approvals)
+
+        # Assert
+        assert was_approved is False
+        assert was_applied is False
+
+    def test_check_approval_status_approved(self) -> None:
+        """Test check_approval_status with approved status."""
+        # Arrange
+        approval = ApprovalModel(
+            approval_id="test-123",
+            suggestion_id="suggestion-123",
+            suggestion_type="consolidation",
+            status=ApprovalStatus.APPROVED,
+            created_at="2026-01-01T00:00:00",
+        )
+        approvals = [approval]
+
+        # Act
+        was_approved, was_applied = check_approval_status(approvals)
+
+        # Assert
+        assert was_approved is True
+        assert was_applied is False
+
+    def test_check_approval_status_applied(self) -> None:
+        """Test check_approval_status with applied status."""
+        # Arrange
+        approval = ApprovalModel(
+            approval_id="test-123",
+            suggestion_id="suggestion-123",
+            suggestion_type="consolidation",
+            status=ApprovalStatus.APPLIED,
+            created_at="2026-01-01T00:00:00",
+        )
+        approvals = [approval]
+
+        # Act
+        was_approved, was_applied = check_approval_status(approvals)
+
+        # Assert
+        assert was_approved is True
+        assert was_applied is True
 
 
 # ============================================================================

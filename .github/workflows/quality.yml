@@ -229,25 +229,31 @@ jobs:
           fi
           
           # Find all markdown files (excluding node_modules and other common excludes)
-          MD_FILES=$(find . -name "*.md" -o -name "*.mdc" | grep -v node_modules | grep -v .venv | grep -v __pycache__ | head -500)
+          MD_FILES=$(find . -name "*.md" -o -name "*.mdc" | grep -v node_modules | grep -v .venv | grep -v __pycache__ | grep -v ".git" | head -500)
           
           if [ -n "$MD_FILES" ]; then
             # Run markdownlint with config if it exists
             if [ -f ".markdownlint.json" ]; then
               if ! echo "$MD_FILES" | xargs markdownlint-cli2 --config .markdownlint.json 2>&1; then
-                echo "::warning::Markdown lint issues detected. Consider running 'markdownlint-cli2 --fix' to fix."
-                # Don't fail the build for markdown issues, just warn
+                echo "::error::Markdown lint issues detected. Run 'markdownlint-cli2 --fix' to fix auto-fixable issues."
+                exit 1
               else
                 echo "✅ Markdown lint check passed"
               fi
             else
-              echo "No .markdownlint.json config found, skipping strict markdown check"
+              # Run without config if no config file exists
+              if ! echo "$MD_FILES" | xargs markdownlint-cli2 2>&1; then
+                echo "::error::Markdown lint issues detected. Run 'markdownlint-cli2 --fix' to fix auto-fixable issues."
+                exit 1
+              else
+                echo "✅ Markdown lint check passed"
+              fi
             fi
           else
             echo "No markdown files found to check"
           fi
           echo "::endgroup::"
-        continue-on-error: true
+        continue-on-error: false
 
       - name: Run tests
         id: tests
