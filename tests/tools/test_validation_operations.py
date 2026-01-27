@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.core.models import ModelDict
 from cortex.tools.validation_dispatch import setup_validation_managers
 from cortex.tools.validation_duplication import (
     handle_duplications_validation,
@@ -269,7 +270,7 @@ class TestGenerateDuplicationFixes:
         }
 
         # Act
-        fixes = generate_duplication_fixes(cast(dict[str, object], duplications_dict))
+        fixes = generate_duplication_fixes(cast(ModelDict, duplications_dict))
 
         # Assert
         assert len(fixes) == 1
@@ -293,7 +294,7 @@ class TestGenerateDuplicationFixes:
         }
 
         # Act
-        fixes = generate_duplication_fixes(cast(dict[str, object], duplications_dict))
+        fixes = generate_duplication_fixes(cast(ModelDict, duplications_dict))
 
         # Assert
         assert len(fixes) == 1
@@ -314,7 +315,7 @@ class TestGenerateDuplicationFixes:
         }
 
         # Act
-        fixes = generate_duplication_fixes(cast(dict[str, object], duplications_dict))
+        fixes = generate_duplication_fixes(cast(ModelDict, duplications_dict))
 
         # Assert
         assert len(fixes) == 2
@@ -322,7 +323,7 @@ class TestGenerateDuplicationFixes:
     def test_generate_duplication_fixes_empty(self) -> None:
         """Test fix generation with no duplicates."""
         # Arrange
-        duplications_dict: dict[str, object] = {
+        duplications_dict: ModelDict = {
             "exact_duplicates": [],
             "similar_content": [],
         }

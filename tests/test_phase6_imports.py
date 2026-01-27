@@ -52,7 +52,7 @@ except Exception as e:
     exit(1)
 
 try:
-    from cortex.main import mcp  # noqa: F401
+    from cortex.server import mcp  # noqa: F401
 
     # Verify the import by checking the module exists
     _ = mcp

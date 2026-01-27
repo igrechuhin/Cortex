@@ -742,12 +742,12 @@ A third file for comprehensive testing.
 
 
 @pytest.fixture
-def sample_files_metadata():
+def sample_files_metadata() -> dict[str, ModelDict]:
     """
     Get sample files metadata for optimization testing.
 
     Returns:
-        dict[str, dict]: Mapping of file names to metadata
+        dict[str, ModelDict]: Mapping of file names to metadata
     """
     return {
         "file1.md": {

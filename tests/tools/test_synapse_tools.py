@@ -12,7 +12,7 @@ This test suite provides comprehensive coverage for:
 
 import json
 from pathlib import Path
-from typing import Any, cast
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -47,7 +47,7 @@ async def _get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object
     from cortex.managers.lazy_manager import LazyManager
 
     if isinstance(manager, LazyManager):
-        return await manager.get()
+        return await manager.get()  # type: ignore[return-value] - LazyManager.get() returns T, which is object here
     return manager
 
 
@@ -157,7 +157,7 @@ class TestSyncSharedRules:
     async def test_sync_synapse_pull_only(
         self,
         mock_project_root: Path,
-        mock_managers_with_synapse: dict[str, Any],
+        mock_managers_with_synapse: ManagersDict,
     ) -> None:
         """Test successful sync with pull only."""
         # Arrange
@@ -187,14 +187,15 @@ class TestSyncSharedRules:
             assert result["status"] == "success"
             assert "changes" in result
             assert mock_managers_with_synapse.synapse is not None
-            mock_managers_with_synapse.synapse.sync_synapse.assert_called_once_with(
+            # type: ignore[union-attr] - Mock manager, safe to access
+            mock_managers_with_synapse.synapse.sync_synapse.assert_called_once_with(  # type: ignore[attr-defined]
                 pull=True, push=False
             )
 
     async def test_sync_synapse_with_reindex(
         self,
         mock_project_root: Path,
-        mock_managers_with_synapse: dict[str, Any],
+        mock_managers_with_synapse: ManagersDict,
     ) -> None:
         """Test sync triggers reindex when changes detected."""
         # Arrange
@@ -222,7 +223,8 @@ class TestSyncSharedRules:
 
             # Assert
             assert result["status"] == "success"
-            mock_managers_with_synapse.rules_manager.index_rules.assert_called_once_with(
+            # type: ignore[union-attr] - Mock manager, safe to access
+            mock_managers_with_synapse.rules_manager.index_rules.assert_called_once_with(  # type: ignore[attr-defined]
                 force=True
             )
 
@@ -251,7 +253,7 @@ class TestSyncSharedRules:
     async def test_sync_synapse_push_only(
         self,
         mock_project_root: Path,
-        mock_managers_with_synapse: dict[str, Any],
+        mock_managers_with_synapse: ManagersDict,
     ) -> None:
         """Test successful sync with push only."""
         # Arrange
@@ -280,7 +282,8 @@ class TestSyncSharedRules:
             # Assert
             assert result["status"] == "success"
             assert mock_managers_with_synapse.synapse is not None
-            mock_managers_with_synapse.synapse.sync_synapse.assert_called_once_with(
+            # type: ignore[union-attr] - Mock manager, safe to access
+            mock_managers_with_synapse.synapse.sync_synapse.assert_called_once_with(  # type: ignore[attr-defined]
                 pull=False, push=True
             )
 
@@ -320,7 +323,7 @@ class TestUpdateSharedRule:
     async def test_update_synapse_rule_success(
         self,
         mock_project_root: Path,
-        mock_managers_with_synapse: dict[str, Any],
+        mock_managers_with_synapse: ManagersDict,
     ) -> None:
         """Test successful rule update."""
         # Arrange
@@ -355,7 +358,8 @@ class TestUpdateSharedRule:
             assert result["status"] == "success"
             assert "commit_sha" in result
             assert mock_managers_with_synapse.synapse is not None
-            mock_managers_with_synapse.synapse.update_synapse_rule.assert_called_once()
+            # type: ignore[union-attr] - Mock manager, safe to access
+            mock_managers_with_synapse.synapse.update_synapse_rule.assert_called_once()  # type: ignore[attr-defined]
 
     async def test_update_synapse_rule_not_initialized(
         self, mock_project_root: Path
@@ -427,7 +431,7 @@ class TestGetRulesWithContext:
     async def test_get_synapse_rules_success(
         self,
         mock_project_root: Path,
-        mock_managers_with_synapse: dict[str, Any],
+        mock_managers_with_synapse: ManagersDict,
     ) -> None:
         """Test successful rules retrieval with context."""
         # Arrange
@@ -470,7 +474,7 @@ class TestGetRulesWithContext:
     async def test_get_synapse_rules_no_project_files(
         self,
         mock_project_root: Path,
-        mock_managers_with_synapse: dict[str, Any],
+        mock_managers_with_synapse: ManagersDict,
     ) -> None:
         """Test rules retrieval without project files."""
         # Arrange
@@ -506,7 +510,7 @@ class TestGetRulesWithContext:
     async def test_get_synapse_rules_custom_parameters(
         self,
         mock_project_root: Path,
-        mock_managers_with_synapse: dict[str, Any],
+        mock_managers_with_synapse: ManagersDict,
     ) -> None:
         """Test rules retrieval with custom parameters."""
         # Arrange
@@ -590,7 +594,9 @@ class TestHelperFunctions:
         ]
 
         # Act
-        result = format_rules_list(cast(list[object], rules))
+        from cortex.core.models import ModelDict
+
+        result = format_rules_list([cast(ModelDict, rule) for rule in rules])
 
         # Assert
         assert len(result) == 1
@@ -600,7 +606,9 @@ class TestHelperFunctions:
     def test_format_rules_list_empty(self):
         """Test _format_rules_list with empty input."""
         # Arrange
-        rules: list[object] = []
+        from cortex.core.models import ModelDict
+
+        rules: list[ModelDict] = []
 
         # Act
         result = format_rules_list(rules)
@@ -622,7 +630,9 @@ class TestHelperFunctions:
         ]
 
         # Act
-        result = format_language_rules_list(rules)
+        from cortex.core.models import ModelDict
+
+        result = format_language_rules_list([cast(ModelDict, rule) for rule in rules])
 
         # Assert
         assert len(result) == 1
@@ -691,7 +701,9 @@ class TestHelperFunctions:
     def test_extract_rules_list(self):
         """Test _extract_rules_list with valid result."""
         # Arrange
-        result: dict[str, object] = {"rules": [{"file": "test.md"}]}
+        from cortex.core.models import ModelDict
+
+        result = cast(ModelDict, {"rules": [{"file": "test.md"}]})
 
         # Act
         rules = extract_rules_list(result, "rules")
@@ -702,7 +714,9 @@ class TestHelperFunctions:
     def test_extract_rules_list_missing_key(self):
         """Test _extract_rules_list with missing key."""
         # Arrange
-        result: dict[str, object] = {}
+        from cortex.core.models import ModelDict
+
+        result = cast(ModelDict, {})
 
         # Act
         rules = extract_rules_list(result, "missing")
@@ -713,16 +727,21 @@ class TestHelperFunctions:
     def test_extract_and_format_rules(self):
         """Test _extract_and_format_rules integration."""
         # Arrange
-        result: dict[str, object] = {
-            "generic_rules": [
-                {
-                    "file": "standards.md",
-                    "tokens": 500,
-                    "priority": "high",
-                    "relevance_score": 0.9,
-                }
-            ]
-        }
+        from cortex.core.models import ModelDict
+
+        result = cast(
+            ModelDict,
+            {
+                "generic_rules": [
+                    {
+                        "file": "standards.md",
+                        "tokens": 500,
+                        "priority": "high",
+                        "relevance_score": 0.9,
+                    }
+                ]
+            },
+        )
 
         # Act
         rules = extract_and_format_rules(result, "generic_rules")
@@ -734,23 +753,30 @@ class TestHelperFunctions:
     def test_format_rules_response(self):
         """Test _format_rules_response integration."""
         # Arrange
-        result: dict[str, object] = {
-            "generic_rules": [{"file": "test.md", "tokens": 100, "priority": "high"}],
-            "language_rules": [],
-            "local_rules": [],
-            "context": {"languages": ["python"]},
-            "total_tokens": 100,
-            "source": "local_only",
-        }
+        from cortex.core.models import ModelDict
+
+        result = cast(
+            ModelDict,
+            {
+                "generic_rules": [
+                    {"file": "test.md", "tokens": 100, "priority": "high"}
+                ],
+                "language_rules": [],
+                "local_rules": [],
+                "context": {"languages": ["python"]},
+                "total_tokens": 100,
+                "source": "local_only",
+            },
+        )
 
         # Act
         response = format_rules_response(result, "Test task", 5000)
 
         # Assert
-        assert response["status"] == "success"
-        assert response["task_description"] == "Test task"
-        assert response["token_budget"] == 5000
-        assert response["total_tokens"] == 100
+        assert response.status == "success"
+        assert response.task_description == "Test task"
+        assert response.token_budget == 5000
+        assert response.total_tokens == 100
 
 
 # ============================================================================
@@ -764,7 +790,7 @@ class TestIntegration:
     async def test_full_rules_workflow(
         self,
         mock_project_root: Path,
-        mock_managers_with_synapse: dict[str, Any],
+        mock_managers_with_synapse: ManagersDict,
     ) -> None:
         """Test complete workflow: sync -> get rules -> update."""
         with (

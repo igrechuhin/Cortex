@@ -19,7 +19,7 @@ from cortex.core.constants import (
     QUALITY_WEIGHT_STRUCTURE,
     SIMILARITY_THRESHOLD_DUPLICATE,
 )
-from cortex.core.models import JsonValue, ModelDict
+from cortex.core.models import DictLikeModel, JsonValue, ModelDict
 
 # ============================================================================
 # Validation Config Models (from validation_config.py)
@@ -376,7 +376,7 @@ class ValidationResult(BaseModel):
     score: int = Field(ge=0, le=100, description="Validation score 0-100")
 
 
-class DuplicateEntry(BaseModel):
+class DuplicateEntry(DictLikeModel):
     """Duplicate content entry."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
@@ -390,7 +390,7 @@ class DuplicateEntry(BaseModel):
     suggestion: str = Field(description="Refactoring suggestion")
 
 
-class DuplicationScanResult(BaseModel):
+class DuplicationScanResult(DictLikeModel):
     """Result of duplication scan across files."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)

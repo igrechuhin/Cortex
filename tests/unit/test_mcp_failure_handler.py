@@ -22,6 +22,7 @@ from cortex.core.mcp_tool_validator import (
     handle_mcp_tool_failure,
     validate_mcp_tool_response,
 )
+from cortex.core.models import JsonValue
 from tests.helpers.types import RawJSONDict
 
 
@@ -196,7 +197,7 @@ class TestResponseValidation:
         errors in the code (e.g., type errors, lint errors). This is different from
         a tool failure (JSON parsing, connection error, etc.).
         """
-        response = {
+        response: JsonValue = {
             "status": "error",
             "error": "Type checking found 5 errors",
             "total_errors": 5,
@@ -214,13 +215,13 @@ class TestResponseValidation:
 
     def test_validate_valid_response(self, tmp_path: Path) -> None:
         """Test that valid response passes validation."""
-        response = {"status": "success", "data": "test"}
+        response: JsonValue = {"status": "success", "data": "test"}
         # Should not raise
         validate_mcp_tool_response(response, "test_tool", "test_step", str(tmp_path))
 
     def test_validate_response_without_status(self, tmp_path: Path) -> None:
         """Test that response without status field logs warning but doesn't fail."""
-        response = {"data": "test"}  # Missing status field
+        response: JsonValue = {"data": "test"}  # Missing status field
         # Should not raise (just logs warning)
         validate_mcp_tool_response(response, "test_tool", "test_step", str(tmp_path))
 

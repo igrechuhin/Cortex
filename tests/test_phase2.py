@@ -27,6 +27,7 @@ from cortex.linking.transclusion_engine import (
     TransclusionEngine,
 )
 from tests.helpers.path_helpers import ensure_test_cortex_structure
+from tests.helpers.types import get_list
 
 
 class TestLinkParser:
@@ -49,10 +50,13 @@ External link: [Google](https://google.com)
 """
         result = await self.parser.parse_file(content)
 
-        assert len(result["markdown_links"]) == 2  # External link excluded
-        assert result["markdown_links"][0]["target"] == "projectBrief.md"
-        assert result["markdown_links"][1]["target"] == "file.md"
-        assert result["markdown_links"][1]["section"] == "Section"
+        markdown_links = get_list(result, "markdown_links")
+        assert len(markdown_links) == 2  # External link excluded
+        link0 = cast(dict[str, object], markdown_links[0])
+        link1 = cast(dict[str, object], markdown_links[1])
+        assert link0["target"] == "projectBrief.md"
+        assert link1["target"] == "file.md"
+        assert link1["section"] == "Section"
 
     @pytest.mark.asyncio
     async def test_parse_transclusion_directives(self):
@@ -71,20 +75,20 @@ And with options:
 """
         result = await self.parser.parse_file(content)
 
-        assert len(result["transclusions"]) == 3
-        assert result["transclusions"][0]["target"] == "projectBrief.md"
-        assert result["transclusions"][0]["section"] is None
+        transclusions = get_list(result, "transclusions")
+        assert len(transclusions) == 3
+        trans0 = cast(dict[str, object], transclusions[0])
+        trans1 = cast(dict[str, object], transclusions[1])
+        assert trans0["target"] == "projectBrief.md"
+        assert trans0["section"] is None
 
-        assert result["transclusions"][1]["target"] == "systemPatterns.md"
-        assert result["transclusions"][1]["section"] == "Architecture"
+        assert trans1["target"] == "systemPatterns.md"
+        assert trans1["section"] == "Architecture"
 
-        transclusions = result.get("transclusions")
-        assert isinstance(transclusions, list)
         assert len(transclusions) > 2
-        trans2 = transclusions[2]
-        assert isinstance(trans2, dict)
-        assert trans2.get("target") == "activeContext.md"
-        assert trans2.get("section") == "Changes"
+        trans2 = cast(dict[str, object], transclusions[2])
+        assert trans2["target"] == "activeContext.md"
+        assert trans2["section"] == "Changes"
         options_raw = trans2.get("options")
         assert isinstance(options_raw, dict)
         # Type assertion for dict[str, object] from parse_transclusion_options

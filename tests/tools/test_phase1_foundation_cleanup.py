@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -9,7 +10,7 @@ from tests.helpers.managers import make_test_managers
 @pytest.mark.asyncio
 class TestCleanupMetadataIndex:
     async def test_cleanup_metadata_index_when_no_stale_files_returns_success(
-        self, tmp_path
+        self, tmp_path: Path
     ) -> None:
         # Arrange
         mock_index = AsyncMock()
@@ -35,7 +36,7 @@ class TestCleanupMetadataIndex:
         assert "No stale entries found" in result.message
 
     async def test_cleanup_metadata_index_when_stale_files_and_dry_run_reports_no_changes(  # noqa: E501
-        self, tmp_path
+        self, tmp_path: Path
     ) -> None:
         # Arrange
         stale_files = ["missing.md", "old.md"]
@@ -64,7 +65,7 @@ class TestCleanupMetadataIndex:
         assert "Would clean 2 stale entries" in result.message
 
     async def test_cleanup_metadata_index_when_exception_returns_error(
-        self, tmp_path
+        self, tmp_path: Path
     ) -> None:
         # Arrange
         with (

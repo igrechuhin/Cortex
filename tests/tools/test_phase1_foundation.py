@@ -17,6 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.core.dependency_graph import FileDependencyInfo
+from cortex.core.models import ModelDict
 from cortex.managers.types import ManagersDict
 from cortex.tools.phase1_foundation_dependency import get_dependency_graph
 from cortex.tools.phase1_foundation_rollback import rollback_file_version
@@ -552,7 +553,7 @@ async def test_rollback_file_version_snapshot_not_found(
     """Test rollback_file_version handles missing snapshot."""
     # Arrange
     nonexistent_path = mock_project_root / ".memory-bank-history/test.md/v99.md"
-    mock_managers.versions.get_snapshot_path.return_value = nonexistent_path
+    mock_managers.versions.get_snapshot_path = MagicMock(return_value=nonexistent_path)
 
     with patch(
         "cortex.managers.initialization.get_project_root",
@@ -872,7 +873,7 @@ def test_extract_version_history_valid_list():
     }
 
     # Act
-    result = extract_version_history(cast(dict[str, object], file_meta))
+    result = extract_version_history(cast(ModelDict, file_meta))
 
     # Assert
     assert len(result) == 2
@@ -888,7 +889,7 @@ def test_extract_version_history_invalid_format():
     file_meta = {"version_history": "not a list"}
 
     # Act
-    result = extract_version_history(cast(dict[str, object], file_meta))
+    result = extract_version_history(cast(ModelDict, file_meta))
 
     # Assert
     assert result == []
@@ -902,7 +903,7 @@ def test_extract_version_history_missing_field():
     file_meta = {}
 
     # Act
-    result = extract_version_history(cast(dict[str, object], file_meta))
+    result = extract_version_history(cast(ModelDict, file_meta))
 
     # Assert
     assert result == []
@@ -920,7 +921,7 @@ def test_sort_and_limit_versions():
     ]
 
     # Act
-    result = sort_and_limit_versions(cast(list[dict[str, object]], versions), limit=2)
+    result = sort_and_limit_versions(cast(list[ModelDict], versions), limit=2)
 
     # Assert
     assert len(result) == 2
@@ -940,7 +941,7 @@ def test_sort_and_limit_versions_with_float_versions():
     ]
 
     # Act
-    result = sort_and_limit_versions(cast(list[dict[str, object]], versions), limit=10)
+    result = sort_and_limit_versions(cast(list[ModelDict], versions), limit=10)
 
     # Assert
     assert len(result) == 3
@@ -961,7 +962,7 @@ def test_sort_and_limit_versions_with_missing_version():
     ]
 
     # Act
-    result = sort_and_limit_versions(cast(list[dict[str, object]], versions), limit=10)
+    result = sort_and_limit_versions(cast(list[ModelDict], versions), limit=10)
 
     # Assert
     assert len(result) == 3
@@ -986,7 +987,7 @@ def test_format_versions_for_export_all_fields():
     ]
 
     # Act
-    result = format_versions_for_export(cast(list[dict[str, object]], versions))
+    result = format_versions_for_export(cast(list[ModelDict], versions))
 
     # Assert
     assert len(result) == 1
@@ -1007,7 +1008,7 @@ def test_format_versions_for_export_minimal_fields():
     versions = [{"version": 1, "timestamp": "2026-01-10T10:00:00"}]
 
     # Act
-    result = format_versions_for_export(cast(list[dict[str, object]], versions))
+    result = format_versions_for_export(cast(list[ModelDict], versions))
 
     # Assert
     assert len(result) == 1
@@ -1030,10 +1031,10 @@ def test_sum_file_field():
 
     # Act
     total_tokens = sum_file_field(
-        cast(dict[str, dict[str, object]], files_metadata), "token_count"
+        cast(dict[str, ModelDict], files_metadata), "token_count"
     )
     total_size = sum_file_field(
-        cast(dict[str, dict[str, object]], files_metadata), "size_bytes"
+        cast(dict[str, ModelDict], files_metadata), "size_bytes"
     )
 
     # Assert
@@ -1052,9 +1053,7 @@ def test_sum_file_field_missing_field():
     }
 
     # Act
-    result = sum_file_field(
-        cast(dict[str, dict[str, object]], files_metadata), "token_count"
-    )
+    result = sum_file_field(cast(dict[str, ModelDict], files_metadata), "token_count")
 
     # Assert
     assert result == 100
@@ -1071,9 +1070,7 @@ def test_sum_file_field_non_numeric():
     }
 
     # Act
-    result = sum_file_field(
-        cast(dict[str, dict[str, object]], files_metadata), "token_count"
-    )
+    result = sum_file_field(cast(dict[str, ModelDict], files_metadata), "token_count")
 
     # Assert
     assert result == 100
@@ -1087,7 +1084,7 @@ def test_extract_last_updated_success():
     index_stats = {"totals": {"last_full_scan": "2026-01-10T12:00:00"}}
 
     # Act
-    result = extract_last_updated(cast(dict[str, object], index_stats))
+    result = extract_last_updated(cast(ModelDict, index_stats))
 
     # Assert
     assert result == "2026-01-10T12:00:00"
@@ -1098,7 +1095,7 @@ def test_extract_last_updated_missing_field():
     # Arrange
     from cortex.tools.phase1_foundation_stats import extract_last_updated
 
-    index_stats: dict[str, object] = {"totals": {}}
+    index_stats: ModelDict = {"totals": {}}
 
     # Act
     result = extract_last_updated(index_stats)
@@ -1115,7 +1112,7 @@ def test_extract_last_updated_invalid_structure():
     index_stats = {"totals": "not a dict"}
 
     # Act
-    result = extract_last_updated(cast(dict[str, object], index_stats))
+    result = extract_last_updated(cast(ModelDict, index_stats))
 
     # Assert
     assert result is None
@@ -1133,7 +1130,7 @@ def test_build_summary_dict():
 
     # Act
     result = build_summary_dict(
-        cast(dict[str, dict[str, object]], files_metadata),
+        cast(dict[str, ModelDict], files_metadata),
         total_tokens=300,
         total_size=1024,
         total_reads=10,
@@ -1204,7 +1201,7 @@ def test_calculate_totals():
 
     # Act
     total_tokens, total_size, total_reads = calculate_totals(
-        cast(dict[str, dict[str, object]], files_metadata)
+        cast(dict[str, ModelDict], files_metadata)
     )
 
     # Assert
@@ -1229,11 +1226,11 @@ def test_build_rollback_success_response():
     )
 
     # Assert
-    assert result["status"] == "success"
-    assert result["file_name"] == "test.md"
-    assert result["rolled_back_from_version"] == 2
-    assert result["new_version"] == 4
-    assert result["token_count"] == 128
+    assert result.status == "success"
+    assert result.file_name == "test.md"
+    assert result.rolled_back_from_version == 2
+    assert result.new_version == 4
+    assert result.token_count == 128
 
 
 def test_build_rollback_error_response():
@@ -1245,6 +1242,6 @@ def test_build_rollback_error_response():
     result = build_rollback_error_response("Test error", "ValueError")
 
     # Assert
-    assert result["status"] == "error"
-    assert result["error"] == "Test error"
-    assert result["error_type"] == "ValueError"
+    assert result.status == "error"
+    assert result.error == "Test error"
+    assert result.error_type == "ValueError"

@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from cortex.core.models import ModelDict
 from cortex.core.version_manager import VersionManager
 
 
@@ -318,7 +319,13 @@ class TestRollbackToVersion:
         ]
 
         # Act
-        result = await manager.rollback_to_version("test.md", version_history, 2)
+        from typing import cast
+
+        from cortex.core.models import VersionMetadata
+
+        result = await manager.rollback_to_version(
+            "test.md", cast(list[VersionMetadata], version_history), 2
+        )  # type: ignore[arg-type]
 
         # Assert
         assert result is not None
@@ -346,7 +353,13 @@ class TestRollbackToVersion:
         version_history = [make_version(1), make_version(2)]
 
         # Act
-        result = await manager.rollback_to_version("test.md", version_history, 5)
+        from typing import cast
+
+        from cortex.core.models import VersionMetadata
+
+        result = await manager.rollback_to_version(
+            "test.md", cast(list[VersionMetadata], version_history), 5
+        )  # type: ignore[arg-type]
 
         # Assert
         assert result is None
@@ -369,7 +382,13 @@ class TestRollbackToVersion:
         version_history = [version_meta]
 
         # Act
-        result = await manager.rollback_to_version("missing.md", version_history, 1)
+        from typing import cast
+
+        from cortex.core.models import VersionMetadata
+
+        result = await manager.rollback_to_version(
+            "missing.md", cast(list[VersionMetadata], version_history), 1
+        )  # type: ignore[arg-type]
 
         # Assert
         assert result is None
@@ -378,10 +397,16 @@ class TestRollbackToVersion:
         """Test handles empty version history."""
         # Arrange
         manager = VersionManager(tmp_path)
-        version_history: list[dict[str, object]] = []
+        version_history = cast(list[ModelDict], [])
 
         # Act
-        result = await manager.rollback_to_version("test.md", version_history, 1)
+        from typing import cast as cast_func
+
+        from cortex.core.models import VersionMetadata
+
+        result = await manager.rollback_to_version(
+            "test.md", cast_func(list[VersionMetadata], version_history), 1
+        )  # type: ignore[arg-type]
 
         # Assert
         assert result is None
@@ -578,7 +603,10 @@ class TestGetDiskUsage:
         usage = await manager.get_disk_usage()
 
         # Assert - should return valid results for accessible files
-        assert usage["file_count"] >= 0
+        from cortex.core.models import DiskUsageInfo
+
+        assert isinstance(usage, DiskUsageInfo)
+        assert usage.file_count >= 0
 
 
 @pytest.mark.asyncio
@@ -674,29 +702,36 @@ class TestExportVersionHistory:
         """Test returns formatted version history."""
         # Arrange
         manager = VersionManager(tmp_path)
-        version_history: list[dict[str, object]] = [
-            {
-                "version": 1,
-                "timestamp": "2024-01-01T10:00:00",
-                "change_type": "created",
-                "size_bytes": 100,
-                "token_count": 50,
-                "content_hash": "abc123def456ghi789",
-                "snapshot_path": ".cortex/history/test.md.v1.snapshot",
-            },
-            {
-                "version": 2,
-                "timestamp": "2024-01-02T10:00:00",
-                "change_type": "modified",
-                "size_bytes": 120,
-                "token_count": 60,
-                "content_hash": "xyz789uvw456rst123",
-                "snapshot_path": ".cortex/history/test.md.v2.snapshot",
-            },
-        ]
+        version_history = cast(
+            list[ModelDict],
+            [
+                {
+                    "version": 1,
+                    "timestamp": "2024-01-01T10:00:00",
+                    "change_type": "created",
+                    "size_bytes": 100,
+                    "token_count": 50,
+                    "content_hash": "abc123def456ghi789",
+                    "snapshot_path": ".cortex/history/test.md.v1.snapshot",
+                },
+                {
+                    "version": 2,
+                    "timestamp": "2024-01-02T10:00:00",
+                    "change_type": "modified",
+                    "size_bytes": 120,
+                    "token_count": 60,
+                    "content_hash": "xyz789uvw456rst123",
+                    "snapshot_path": ".cortex/history/test.md.v2.snapshot",
+                },
+            ],
+        )
 
         # Act
-        formatted = await manager.export_version_history("test.md", version_history)
+        from cortex.core.models import VersionMetadata
+
+        formatted = await manager.export_version_history(
+            "test.md", cast(list[VersionMetadata | ModelDict], version_history)
+        )
 
         # Assert
         assert len(formatted) == 2
@@ -708,38 +743,45 @@ class TestExportVersionHistory:
         """Test sorts versions in descending order (newest first)."""
         # Arrange
         manager = VersionManager(tmp_path)
-        version_history: list[dict[str, object]] = [
-            {
-                "version": 1,
-                "timestamp": "2024-01-01T10:00:00",
-                "change_type": "created",
-                "size_bytes": 100,
-                "token_count": 50,
-                "content_hash": "abc123",
-                "snapshot_path": ".cortex/history/test.md.v1.snapshot",
-            },
-            {
-                "version": 3,
-                "timestamp": "2024-01-03T10:00:00",
-                "change_type": "modified",
-                "size_bytes": 120,
-                "token_count": 60,
-                "content_hash": "xyz789",
-                "snapshot_path": ".cortex/history/test.md.v3.snapshot",
-            },
-            {
-                "version": 2,
-                "timestamp": "2024-01-02T10:00:00",
-                "change_type": "modified",
-                "size_bytes": 110,
-                "token_count": 55,
-                "content_hash": "def456",
-                "snapshot_path": ".cortex/history/test.md.v2.snapshot",
-            },
-        ]
+        version_history = cast(
+            list[ModelDict],
+            [
+                {
+                    "version": 1,
+                    "timestamp": "2024-01-01T10:00:00",
+                    "change_type": "created",
+                    "size_bytes": 100,
+                    "token_count": 50,
+                    "content_hash": "abc123",
+                    "snapshot_path": ".cortex/history/test.md.v1.snapshot",
+                },
+                {
+                    "version": 3,
+                    "timestamp": "2024-01-03T10:00:00",
+                    "change_type": "modified",
+                    "size_bytes": 120,
+                    "token_count": 60,
+                    "content_hash": "xyz789",
+                    "snapshot_path": ".cortex/history/test.md.v3.snapshot",
+                },
+                {
+                    "version": 2,
+                    "timestamp": "2024-01-02T10:00:00",
+                    "change_type": "modified",
+                    "size_bytes": 110,
+                    "token_count": 55,
+                    "content_hash": "def456",
+                    "snapshot_path": ".cortex/history/test.md.v2.snapshot",
+                },
+            ],
+        )
 
         # Act
-        formatted = await manager.export_version_history("test.md", version_history)
+        from cortex.core.models import VersionMetadata
+
+        formatted = await manager.export_version_history(
+            "test.md", cast(list[VersionMetadata | ModelDict], version_history)
+        )
 
         # Assert
         assert formatted[0]["version"] == 3
@@ -764,8 +806,10 @@ class TestExportVersionHistory:
         ]
 
         # Act
+        from cortex.core.models import VersionMetadata
+
         formatted = await manager.export_version_history(
-            "test.md", cast(list[dict[str, object]], version_history), limit=2
+            "test.md", cast(list[VersionMetadata | ModelDict], version_history), limit=2
         )
 
         # Assert
@@ -777,22 +821,29 @@ class TestExportVersionHistory:
         """Test includes optional fields in formatted output."""
         # Arrange
         manager = VersionManager(tmp_path)
-        version_history: list[dict[str, object]] = [
-            {
-                "version": 1,
-                "timestamp": "2024-01-01T10:00:00",
-                "change_type": "modified",
-                "size_bytes": 100,
-                "token_count": 50,
-                "content_hash": "abc123",
-                "snapshot_path": ".cortex/history/test.md.v1.snapshot",
-                "changed_sections": ["Overview", "Features"],
-                "change_description": "Updated features section",
-            }
-        ]
+        version_history = cast(
+            list[ModelDict],
+            [
+                {
+                    "version": 1,
+                    "timestamp": "2024-01-01T10:00:00",
+                    "change_type": "modified",
+                    "size_bytes": 100,
+                    "token_count": 50,
+                    "content_hash": "abc123",
+                    "snapshot_path": ".cortex/history/test.md.v1.snapshot",
+                    "changed_sections": ["Overview", "Features"],
+                    "change_description": "Updated features section",
+                }
+            ],
+        )
 
         # Act
-        formatted = await manager.export_version_history("test.md", version_history)
+        from cortex.core.models import VersionMetadata
+
+        formatted = await manager.export_version_history(
+            "test.md", cast(list[VersionMetadata | ModelDict], version_history)
+        )
 
         # Assert
         assert "changed_sections" in formatted[0]
@@ -804,20 +855,27 @@ class TestExportVersionHistory:
         """Test truncates content hash to 16 characters + ellipsis."""
         # Arrange
         manager = VersionManager(tmp_path)
-        version_history: list[dict[str, object]] = [
-            {
-                "version": 1,
-                "timestamp": "2024-01-01T10:00:00",
-                "change_type": "created",
-                "size_bytes": 100,
-                "token_count": 50,
-                "content_hash": "abcdefghijklmnopqrstuvwxyz123456",
-                "snapshot_path": ".cortex/history/test.md.v1.snapshot",
-            }
-        ]
+        version_history = cast(
+            list[ModelDict],
+            [
+                {
+                    "version": 1,
+                    "timestamp": "2024-01-01T10:00:00",
+                    "change_type": "created",
+                    "size_bytes": 100,
+                    "token_count": 50,
+                    "content_hash": "abcdefghijklmnopqrstuvwxyz123456",
+                    "snapshot_path": ".cortex/history/test.md.v1.snapshot",
+                }
+            ],
+        )
 
         # Act
-        formatted = await manager.export_version_history("test.md", version_history)
+        from cortex.core.models import VersionMetadata
+
+        formatted = await manager.export_version_history(
+            "test.md", cast(list[VersionMetadata | ModelDict], version_history)
+        )
 
         # Assert
         content_hash = formatted[0]["content_hash"]

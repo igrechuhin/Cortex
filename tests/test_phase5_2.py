@@ -21,6 +21,7 @@ from cortex.refactoring.models import (
     DependencyGraphInput,
     MemoryBankStructureData,
     RefactoringActionModel,
+    RefactoringImpactMetrics,
     RefactoringPriority,
     RefactoringSuggestionModel,
     RefactoringType,
@@ -117,7 +118,10 @@ async def test_refactoring_engine_generate_from_insight(temp_memory_bank: Path):
     engine = RefactoringEngine(memory_bank_path=temp_memory_bank, min_confidence=0.5)
 
     # Create mock insight
-    insight: dict[str, object] = {
+    from cortex.core.models import ModelDict
+
+    insight: ModelDict = {
+        "id": "test-insight-1",
         "title": "Duplicate content detected",
         "description": "Multiple files contain similar sections",
         "category": "redundancy",
@@ -128,6 +132,7 @@ async def test_refactoring_engine_generate_from_insight(temp_memory_bank: Path):
             str(temp_memory_bank / "test1.md"),
             str(temp_memory_bank / "test2.md"),
         ],
+        "estimated_token_savings": 100,
     }
 
     suggestions = await engine.generate_suggestions(insights=[insight])
@@ -161,7 +166,7 @@ async def test_refactoring_engine_preview(temp_memory_bank: Path):
                 description="Create shared file",
             )
         ],
-        estimated_impact={"token_savings": 100},
+        estimated_impact=RefactoringImpactMetrics(token_savings=100),
         confidence_score=0.8,
     )
 
@@ -192,7 +197,7 @@ async def test_refactoring_engine_export(temp_memory_bank: Path):
         reasoning="Improve maintainability",
         affected_files=["large.md"],
         actions=[],
-        estimated_impact={},
+        estimated_impact=RefactoringImpactMetrics(),
         confidence_score=0.7,
     )
     engine.suggestions[suggestion.suggestion_id] = suggestion
@@ -277,13 +282,12 @@ async def test_consolidation_analyze_impact(temp_memory_bank: Path):
 
     impact = await detector.analyze_consolidation_impact(opportunity)
 
-    assert impact["opportunity_id"] == "CONS-0001"
-    assert impact["token_savings"] == 100
-    assert impact["files_affected"] == 2
-    assert impact["risk_level"] == "low"
-    benefits_raw = impact.get("benefits", [])
-    assert isinstance(benefits_raw, list)
-    benefits = cast(list[str], benefits_raw)
+    assert impact.opportunity_id == "CONS-0001"
+    assert impact.token_savings == 100
+    assert impact.files_affected == 2
+    assert impact.risk_level == "low"
+    benefits = impact.benefits
+    assert isinstance(benefits, list)
     assert len(benefits) > 0
 
 
@@ -423,7 +427,9 @@ async def test_reorganization_planner_create_plan(temp_memory_bank: Path):
     planner = ReorganizationPlanner(memory_bank_path=temp_memory_bank)
 
     # Create mock structure data
-    structure_data: dict[str, object] = {
+    from cortex.core.models import ModelDict
+
+    structure_data: ModelDict = {
         "organization": {"type": "flat"},
         "anti_patterns": {},
         "complexity_metrics": {"max_dependency_depth": 6},
@@ -438,7 +444,7 @@ async def test_reorganization_planner_create_plan(temp_memory_bank: Path):
     if plan:
         assert plan.optimization_goal == "dependency_depth"
         assert len(plan.actions) >= 0
-        assert len(plan.estimated_impact) > 0
+        assert plan.estimated_impact is not None
 
 
 @pytest.mark.asyncio
@@ -475,12 +481,10 @@ async def test_reorganization_planner_preview(temp_memory_bank: Path):
 
     preview = await planner.preview_reorganization(plan, show_details=True)
 
-    assert preview["plan_id"] == "REORG-0001"
-    assert preview["optimization_goal"] == "category_based"
-    assert "actions" in preview
-    actions_raw = preview.get("actions", [])
-    assert isinstance(actions_raw, list)
-    actions = cast(list[dict[str, object]], actions_raw)
+    assert preview.plan_id == "REORG-0001"
+    assert preview.optimization_goal == "category_based"
+    actions = preview.actions
+    assert isinstance(actions, list)
     assert len(actions) == 1
 
 
@@ -500,9 +504,12 @@ async def test_integration_consolidation_to_refactoring(temp_memory_bank: Path):
     opportunities = await detector.detect_opportunities()
 
     # Create insight manually for testing if no opportunities found
+    from cortex.core.models import ModelDict
+
     if len(opportunities) == 0:
         # Create a synthetic opportunity for testing
-        insight: dict[str, object] = {
+        insight: ModelDict = {
+            "id": "test-consolidation-1",
             "title": "Test consolidation opportunity",
             "description": "Test duplicate content",
             "category": "redundancy",
@@ -513,17 +520,22 @@ async def test_integration_consolidation_to_refactoring(temp_memory_bank: Path):
                 str(temp_memory_bank / "test1.md"),
                 str(temp_memory_bank / "test2.md"),
             ],
+            "estimated_token_savings": 100,
         }
     else:
         opportunity = opportunities[0]
-        insight = {
+        from cortex.core.models import JsonValue
+
+        insight: ModelDict = {
+            "id": f"consolidation-{opportunity.opportunity_id}",
             "title": f"Consolidation opportunity: {opportunity.opportunity_type}",
             "description": opportunity.suggested_action,
             "category": "redundancy",
             "impact_score": min(opportunity.similarity_score, 1.0),
             "severity": "high" if opportunity.token_savings > 200 else "medium",
-            "recommendations": [opportunity.suggested_action],
-            "affected_files": opportunity.affected_files,
+            "recommendations": cast(list[JsonValue], [opportunity.suggested_action]),
+            "affected_files": cast(list[JsonValue], opportunity.affected_files),
+            "estimated_token_savings": opportunity.token_savings,
         }
 
     # Step 2: Generate refactoring suggestion

@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import cast
 
+from cortex.core.models import ModelDict
 from cortex.rules.context_detector import ContextDetector
 
 
@@ -36,10 +37,10 @@ class TestDetectContext:
         context = detector.detect_context(task)
 
         # Assert
-        languages = context.get("detected_languages")
+        languages = context.detected_languages
         assert isinstance(languages, list)
         assert "python" in languages
-        categories = context.get("categories_to_load")
+        categories = context.categories_to_load
         assert isinstance(categories, list)
         assert "python" in categories
         assert "generic" in categories
@@ -54,10 +55,10 @@ class TestDetectContext:
         context = detector.detect_context(task)
 
         # Assert
-        languages = context.get("detected_languages")
+        languages = context.detected_languages
         assert isinstance(languages, list)
         assert "swift" in languages
-        frameworks = context.get("detected_frameworks")
+        frameworks = context.detected_frameworks
         assert isinstance(frameworks, list)
         assert "swiftui" in frameworks
 
@@ -71,10 +72,10 @@ class TestDetectContext:
         context = detector.detect_context(task)
 
         # Assert
-        frameworks = context.get("detected_frameworks")
+        frameworks = context.detected_frameworks
         assert isinstance(frameworks, list)
         assert "django" in frameworks
-        categories = context.get("categories_to_load")
+        categories = context.categories_to_load
         assert isinstance(categories, list)
         assert "django" in categories
 
@@ -88,7 +89,7 @@ class TestDetectContext:
         context = detector.detect_context(task)
 
         # Assert
-        languages = context.get("detected_languages")
+        languages = context.detected_languages
         assert isinstance(languages, list)
         assert "python" in languages
         assert "javascript" in languages
@@ -107,7 +108,7 @@ class TestDetectContext:
         context = detector.detect_context("", project_files=files)
 
         # Assert
-        languages = context.get("detected_languages")
+        languages = context.detected_languages
         assert isinstance(languages, list)
         assert "python" in languages
 
@@ -125,7 +126,7 @@ class TestDetectContext:
         context = detector.detect_context("", project_files=files)
 
         # Assert
-        languages = context.get("detected_languages")
+        languages = context.detected_languages
         assert isinstance(languages, list)
         assert "swift" in languages
         assert "python" in languages
@@ -140,7 +141,7 @@ class TestDetectContext:
         context = detector.detect_context("")
 
         # Assert
-        categories = context.get("categories_to_load")
+        categories = context.categories_to_load
         assert isinstance(categories, list)
         assert "generic" in categories
 
@@ -158,9 +159,9 @@ class TestDetectTaskType:
         context = detector.detect_context(task)
 
         # Assert
-        task_type = context.get("task_type")
+        task_type = context.task_type
         assert task_type == "testing"
-        categories = context.get("categories_to_load")
+        categories = context.categories_to_load
         assert isinstance(categories, list)
         assert "testing" in categories
 
@@ -174,7 +175,7 @@ class TestDetectTaskType:
         context = detector.detect_context(task)
 
         # Assert
-        task_type = context.get("task_type")
+        task_type = context.task_type
         assert task_type == "authentication"
 
     def test_detect_api_task(self):
@@ -187,7 +188,7 @@ class TestDetectTaskType:
         context = detector.detect_context(task)
 
         # Assert
-        task_type = context.get("task_type")
+        task_type = context.task_type
         assert task_type == "api"
 
     def test_detect_ui_task(self):
@@ -200,7 +201,7 @@ class TestDetectTaskType:
         context = detector.detect_context(task)
 
         # Assert
-        task_type = context.get("task_type")
+        task_type = context.task_type
         assert task_type == "ui"
 
     def test_detect_database_task(self):
@@ -213,7 +214,7 @@ class TestDetectTaskType:
         context = detector.detect_context(task)
 
         # Assert
-        task_type = context.get("task_type")
+        task_type = context.task_type
         assert task_type == "database"
 
 
@@ -224,12 +225,15 @@ class TestGetRelevantCategories:
         """Test getting categories for Python context."""
         # Arrange
         detector = ContextDetector()
-        context: dict[str, object] = {
-            "detected_languages": ["python"],
-            "detected_frameworks": ["django"],
-            "task_type": "testing",
-            "categories_to_load": ["generic", "python", "django", "testing"],
-        }
+        context = cast(
+            ModelDict,
+            {
+                "detected_languages": ["python"],
+                "detected_frameworks": ["django"],
+                "task_type": "testing",
+                "categories_to_load": ["generic", "python", "django", "testing"],
+            },
+        )
 
         # Act
         categories = detector.get_relevant_categories(context)
@@ -244,12 +248,15 @@ class TestGetRelevantCategories:
         """Test getting categories for Swift context."""
         # Arrange
         detector = ContextDetector()
-        context: dict[str, object] = {
-            "detected_languages": ["swift"],
-            "detected_frameworks": ["swiftui"],
-            "task_type": "ui",
-            "categories_to_load": ["generic", "swift", "swiftui", "ui"],
-        }
+        context = cast(
+            ModelDict,
+            {
+                "detected_languages": ["swift"],
+                "detected_frameworks": ["swiftui"],
+                "task_type": "ui",
+                "categories_to_load": ["generic", "swift", "swiftui", "ui"],
+            },
+        )
 
         # Act
         categories = detector.get_relevant_categories(context)
@@ -264,12 +271,15 @@ class TestGetRelevantCategories:
         """Test that generic is always in categories."""
         # Arrange
         detector = ContextDetector()
-        context: dict[str, object] = {
-            "detected_languages": [],
-            "detected_frameworks": [],
-            "task_type": None,
-            "categories_to_load": ["generic"],
-        }
+        context = cast(
+            ModelDict,
+            {
+                "detected_languages": [],
+                "detected_frameworks": [],
+                "task_type": None,
+                "categories_to_load": ["generic"],
+            },
+        )
 
         # Act
         categories = detector.get_relevant_categories(context)
@@ -311,10 +321,9 @@ class TestPrivateHelperMethods:
         context = detector.detect_context("Test task", project_files=[])
 
         # Assert
-        languages = context.get("detected_languages")
+        languages = context.detected_languages
         assert isinstance(languages, list)
-        languages_list = cast(list[str], languages)
-        assert len(languages_list) == 0
+        assert len(languages) == 0
 
     def test_detect_from_files_ignores_unknown_extensions(self):
         """Test file detection ignores unknown extensions."""
@@ -326,10 +335,9 @@ class TestPrivateHelperMethods:
         context = detector.detect_context("", project_files=files)
 
         # Assert
-        languages = context.get("detected_languages")
+        languages = context.detected_languages
         assert isinstance(languages, list)
-        languages_list = cast(list[str], languages)
-        assert len(languages_list) == 0
+        assert len(languages) == 0
 
 
 class TestMultipleSignals:
@@ -346,8 +354,8 @@ class TestMultipleSignals:
         context = detector.detect_context(task, project_files=files)
 
         # Assert
-        languages = context.get("detected_languages")
-        frameworks = context.get("detected_frameworks")
+        languages = context.detected_languages
+        frameworks = context.detected_frameworks
         assert isinstance(languages, list)
         assert isinstance(frameworks, list)
         assert "javascript" in languages
@@ -363,9 +371,9 @@ class TestMultipleSignals:
         context = detector.detect_context(task)
 
         # Assert
-        frameworks = context.get("detected_frameworks")
-        task_type = context.get("task_type")
-        categories = context.get("categories_to_load")
+        frameworks = context.detected_frameworks
+        task_type = context.task_type
+        categories = context.categories_to_load
         assert isinstance(frameworks, list)
         assert isinstance(categories, list)
         assert "django" in frameworks
@@ -386,7 +394,7 @@ class TestEdgeCases:
         context = detector.detect_context("")
 
         # Assert
-        categories = context.get("categories_to_load")
+        categories = context.categories_to_load
         assert isinstance(categories, list)
         assert "generic" in categories
 
@@ -413,7 +421,7 @@ class TestEdgeCases:
         context = detector.detect_context(task)
 
         # Assert
-        languages = context.get("detected_languages")
+        languages = context.detected_languages
         assert isinstance(languages, list)
         # Should detect python, go, and java
         assert "python" in languages

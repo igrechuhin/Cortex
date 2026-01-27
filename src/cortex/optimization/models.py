@@ -7,14 +7,16 @@ migrated from dataclass and legacy dict-based shapes for better validation.
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import ConfigDict, Field, model_validator
+
+from cortex.core.models import DictLikeModel
 
 # ============================================================================
 # Base Model
 # ============================================================================
 
 
-class OptimizationBaseModel(BaseModel):
+class OptimizationBaseModel(DictLikeModel):
     """Base model for optimization types with strict validation."""
 
     model_config = ConfigDict(
@@ -433,8 +435,14 @@ class RulesResultModel(OptimizationBaseModel):
     )
 
 
-class RulesManagerStatusModel(OptimizationBaseModel):
+class RulesManagerStatusModel(DictLikeModel):
     """Status information for rules manager."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        validate_assignment=True,
+        validate_default=True,
+    )
 
     enabled: bool = Field(..., description="Whether rules manager is enabled")
     rules_folder: str | None = Field(

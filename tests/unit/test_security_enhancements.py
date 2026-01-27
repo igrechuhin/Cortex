@@ -143,10 +143,11 @@ class TestGitOperationTimeouts:
         # Arrange
         from pathlib import Path
 
+        from cortex.rules.models import GitCommandResult
         from cortex.rules.synapse_repository import SynapseRepository
 
-        async def git_runner(cmd: list[str]) -> dict[str, object]:
-            return {"success": True, "stdout": "OK", "stderr": ""}
+        async def git_runner(cmd: list[str]) -> GitCommandResult:
+            return GitCommandResult(success=True, stdout="OK", stderr="")
 
         repo = SynapseRepository(
             project_root=Path("/tmp/test"),
@@ -155,8 +156,8 @@ class TestGitOperationTimeouts:
         )
 
         # Mock fast command to avoid actual git execution
-        async def fast_command(cmd: list[str]) -> dict[str, object]:
-            return {"success": True, "stdout": "OK", "stderr": ""}
+        async def fast_command(cmd: list[str]) -> GitCommandResult:
+            return GitCommandResult(success=True, stdout="OK", stderr="")
 
         repo.git_command_runner = fast_command
 
@@ -164,8 +165,8 @@ class TestGitOperationTimeouts:
         result = await repo.run_git_command(["git", "status"], timeout=30)
 
         # Assert - Should complete successfully
-        assert result["success"] is True
-        assert result["stdout"] == "OK"
+        assert result.success is True
+        assert result.stdout == "OK"
 
     @pytest.mark.asyncio
     async def test_git_command_completes_within_timeout(self):
@@ -173,10 +174,11 @@ class TestGitOperationTimeouts:
         # Arrange
         from pathlib import Path
 
+        from cortex.rules.models import GitCommandResult
         from cortex.rules.synapse_repository import SynapseRepository
 
-        async def git_runner(cmd: list[str]) -> dict[str, object]:
-            return {"success": True, "stdout": "OK", "stderr": ""}
+        async def git_runner(cmd: list[str]) -> GitCommandResult:
+            return GitCommandResult(success=True, stdout="OK", stderr="")
 
         repo = SynapseRepository(
             project_root=Path("/tmp/test"),
@@ -185,9 +187,9 @@ class TestGitOperationTimeouts:
         )
 
         # Mock fast git command
-        async def fast_command(cmd: list[str]) -> dict[str, object]:
+        async def fast_command(cmd: list[str]) -> GitCommandResult:
             await asyncio.sleep(0.1)  # Faster than timeout
-            return {"success": True, "stdout": "OK", "stderr": ""}
+            return GitCommandResult(success=True, stdout="OK", stderr="")
 
         repo.git_command_runner = fast_command
 
@@ -195,8 +197,8 @@ class TestGitOperationTimeouts:
         result = await repo.run_git_command(["git", "status"], timeout=1)
 
         # Assert
-        assert result["success"] is True
-        assert result["stdout"] == "OK"
+        assert result.success is True
+        assert result.stdout == "OK"
 
     @pytest.mark.asyncio
     async def test_git_command_default_timeout(self):
@@ -204,10 +206,11 @@ class TestGitOperationTimeouts:
         # Arrange
         from pathlib import Path
 
+        from cortex.rules.models import GitCommandResult
         from cortex.rules.synapse_repository import SynapseRepository
 
-        async def git_runner(cmd: list[str]) -> dict[str, object]:
-            return {"success": True, "stdout": "OK", "stderr": ""}
+        async def git_runner(cmd: list[str]) -> GitCommandResult:
+            return GitCommandResult(success=True, stdout="OK", stderr="")
 
         repo = SynapseRepository(
             project_root=Path("/tmp/test"),
@@ -218,12 +221,12 @@ class TestGitOperationTimeouts:
         # Mock command that checks timeout parameter
         timeout_used = None
 
-        async def command_with_timeout_check(cmd: list[str]) -> dict[str, object]:
+        async def command_with_timeout_check(cmd: list[str]) -> GitCommandResult:
             nonlocal timeout_used
             # Simulate checking timeout (in real implementation, timeout is
             # passed to asyncio.wait_for)
             timeout_used = 30  # Default timeout
-            return {"success": True, "stdout": "", "stderr": ""}
+            return GitCommandResult(success=True, stdout="", stderr="")
 
         repo.set_git_command_runner(command_with_timeout_check)
 

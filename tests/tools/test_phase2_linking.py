@@ -153,13 +153,13 @@ class TestParseFileLinks:
     """Tests for parse_file_links() tool."""
 
     async def test_parse_file_links_success(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test successful link parsing."""
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
-        mock_managers.fs.construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
 
         with (
             patch(
@@ -189,11 +189,11 @@ class TestParseFileLinks:
             assert result["summary"]["transclusions"] == 1
 
     async def test_parse_file_links_invalid_path(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test parsing with invalid file path."""
         # Arrange
-        mock_managers.fs.construct_safe_path.side_effect = ValueError("Invalid path")
+        mock_managers.fs.construct_safe_path.side_effect = ValueError("Invalid path")  # type: ignore[attr-defined]
 
         with (
             patch(
@@ -214,12 +214,12 @@ class TestParseFileLinks:
             assert "Invalid file name" in result["error"]
 
     async def test_parse_file_links_not_found(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test parsing when file doesn't exist."""
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "nonexistent.md"
-        mock_managers.fs.construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
 
         with (
             patch(
@@ -265,13 +265,13 @@ class TestResolveTransclusions:
     """Tests for resolve_transclusions() tool."""
 
     async def test_resolve_transclusions_success(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test successful transclusion resolution."""
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
-        mock_managers.fs.construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
 
         with (
             patch(
@@ -300,14 +300,14 @@ class TestResolveTransclusions:
             assert "cache_stats" in result
 
     async def test_resolve_transclusions_no_transclusions(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test resolution when file has no transclusions."""
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
-        mock_managers.fs.construct_safe_path.return_value = file_path
-        mock_managers.link_parser.has_transclusions.return_value = False
+        mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
+        mock_managers.link_parser.has_transclusions.return_value = False  # type: ignore[attr-defined]
 
         with (
             patch(
@@ -333,14 +333,14 @@ class TestResolveTransclusions:
             assert "No transclusions found" in result["message"]
 
     async def test_resolve_transclusions_circular_dependency(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test circular dependency detection."""
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
-        mock_managers.fs.construct_safe_path.return_value = file_path
-        mock_managers.transclusion.resolve_content.side_effect = (
+        mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
+        mock_managers.transclusion.resolve_content.side_effect = (  # type: ignore[attr-defined]
             CircularDependencyError(
                 "Circular dependency detected: a.md -> b.md -> a.md"
             )
@@ -370,14 +370,14 @@ class TestResolveTransclusions:
             assert "Circular transclusion detected" in result["message"]
 
     async def test_resolve_transclusions_max_depth_exceeded(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test max depth exceeded error."""
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
-        mock_managers.fs.construct_safe_path.return_value = file_path
-        mock_managers.transclusion.resolve_content.side_effect = MaxDepthExceededError(
+        mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
+        mock_managers.transclusion.resolve_content.side_effect = MaxDepthExceededError(  # type: ignore[attr-defined]
             "Maximum transclusion depth (5) exceeded"
         )
 
@@ -405,13 +405,13 @@ class TestResolveTransclusions:
             assert "Maximum transclusion depth (5) exceeded" in result["message"]
 
     async def test_resolve_transclusions_custom_max_depth(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test resolution with custom max depth."""
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
-        mock_managers.fs.construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
 
         with (
             patch(
@@ -434,14 +434,14 @@ class TestResolveTransclusions:
             # Assert
             assert result["status"] == "success"
             # Verify max_depth was set
-            assert mock_managers.transclusion.max_depth == 10
+            assert mock_managers.transclusion.max_depth == 10  # type: ignore[attr-defined]
 
     async def test_resolve_transclusions_invalid_file(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test resolution with invalid file name."""
         # Arrange
-        mock_managers.fs.construct_safe_path.side_effect = ValueError("Invalid path")
+        mock_managers.fs.construct_safe_path.side_effect = ValueError("Invalid path")  # type: ignore[attr-defined]
 
         with (
             patch(
@@ -462,12 +462,12 @@ class TestResolveTransclusions:
             assert "Invalid file name" in result["error"]
 
     async def test_resolve_transclusions_file_not_found(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test resolution when file doesn't exist."""
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "nonexistent.md"
-        mock_managers.fs.construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
 
         with (
             patch(
@@ -497,13 +497,13 @@ class TestValidateLinks:
     """Tests for validate_links() tool."""
 
     async def test_validate_links_single_file(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test validating links in a single file."""
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
-        mock_managers.fs.construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
 
         with (
             patch(
@@ -530,7 +530,7 @@ class TestValidateLinks:
             assert "broken_links" in result
 
     async def test_validate_links_all_files(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test validating links in all files."""
         # Arrange
@@ -560,11 +560,11 @@ class TestValidateLinks:
             assert "report" in result
 
     async def test_validate_links_invalid_file_path(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test validation with invalid file path."""
         # Arrange
-        mock_managers.fs.construct_safe_path.side_effect = ValueError("Invalid path")
+        mock_managers.fs.construct_safe_path.side_effect = ValueError("Invalid path")  # type: ignore[attr-defined]
 
         with (
             patch(
@@ -585,12 +585,12 @@ class TestValidateLinks:
             assert "Invalid file name" in result["error"]
 
     async def test_validate_links_file_not_found(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test validation when file doesn't exist."""
         # Arrange
         file_path = get_test_memory_bank_dir(mock_project_root) / "nonexistent.md"
-        mock_managers.fs.construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
 
         with (
             patch(
@@ -635,7 +635,7 @@ class TestGetLinkGraph:
     """Tests for get_link_graph() tool."""
 
     async def test_get_link_graph_json_format(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test link graph in JSON format."""
         # Arrange
@@ -667,7 +667,7 @@ class TestGetLinkGraph:
             assert result["summary"]["total_files"] == 2
 
     async def test_get_link_graph_mermaid_format(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test link graph in Mermaid format."""
         # Arrange
@@ -697,7 +697,7 @@ class TestGetLinkGraph:
             assert "graph TD" in result["diagram"]
 
     async def test_get_link_graph_without_transclusions(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test link graph excluding transclusion links."""
         # Arrange
@@ -722,14 +722,14 @@ class TestGetLinkGraph:
             # Assert
             assert result["status"] == "success"
             # Verify get_reference_graph was called instead of to_dict
-            mock_managers.graph.get_reference_graph.assert_called_once()
+            mock_managers.graph.get_reference_graph.assert_called_once()  # type: ignore[attr-defined]
 
     async def test_get_link_graph_with_cycles(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test link graph with circular dependencies."""
         # Arrange
-        mock_managers.graph.detect_cycles.return_value = [
+        mock_managers.graph.detect_cycles.return_value = [  # type: ignore[attr-defined]
             ["file1.md", "file2.md", "file1.md"]
         ]
 
@@ -758,7 +758,7 @@ class TestGetLinkGraph:
             assert result["summary"]["cycle_count"] == 1
 
     async def test_get_link_graph_summary_stats(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test link graph summary statistics."""
         # Arrange
@@ -815,12 +815,12 @@ class TestIntegration:
     """Integration tests for Phase 2 linking workflows."""
 
     async def test_full_linking_workflow(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test complete workflow: parse -> resolve -> validate -> graph."""
         file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
         file_path.touch()
-        mock_managers.fs.construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
 
         with (
             patch(
@@ -904,12 +904,12 @@ class TestIntegration:
             assert "summary" in graph_data
 
     async def test_error_handling_workflow(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test error handling across multiple operations."""
         # Arrange - simulate file not found
         file_path = get_test_memory_bank_dir(mock_project_root) / "missing.md"
-        mock_managers.fs.construct_safe_path.return_value = file_path
+        mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
 
         with (
             patch(

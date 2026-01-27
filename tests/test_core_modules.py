@@ -72,8 +72,7 @@ async def test_file_system():
     print(f"   ✓ Hash computation: {hash_val[:20]}...")
 
     # Test section parsing
-    sections_raw = fs.parse_sections(content)
-    sections: list[dict[str, str | int]] = sections_raw
+    sections = fs.parse_sections(content)
     print(f"   ✓ Section parsing: {len(sections)} sections found")
 
     # Test file write/read

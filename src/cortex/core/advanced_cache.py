@@ -13,13 +13,19 @@ import time
 from collections import defaultdict
 from collections.abc import Callable
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
 from cortex.core.cache import LRUCache, TTLCache
-from cortex.core.models import CacheConfig, JsonValue, ManagerCacheDefaults, ModelDict
+from cortex.core.models import (
+    CacheConfig,
+    DictLikeModel,
+    JsonValue,
+    ManagerCacheDefaults,
+    ModelDict,
+)
 
 
-class CacheStats(BaseModel):
+class CacheStats(DictLikeModel):
     """Cache statistics for monitoring performance."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
@@ -31,7 +37,7 @@ class CacheStats(BaseModel):
     hit_rate: float = Field(ge=0.0, le=1.0, description="Hit rate (0-1)")
 
 
-class AccessPattern(BaseModel):
+class AccessPattern(DictLikeModel):
     """Access pattern for predictive prefetching."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)

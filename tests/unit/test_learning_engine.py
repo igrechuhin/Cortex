@@ -5,6 +5,7 @@ from typing import cast
 
 import pytest
 
+from cortex.core.models import ModelDict
 from cortex.refactoring.learning_engine import LearningEngine
 
 
@@ -23,7 +24,7 @@ class TestLearningEngineInitialization:
     def test_initialization_with_config(self, memory_bank_dir: Path):
         """Test initialization with custom config."""
         # Arrange
-        config: dict[str, object] = {"enabled": True, "min_feedback": 10}
+        config: ModelDict = {"enabled": True, "min_feedback": 10}
 
         # Act
         engine = LearningEngine(memory_bank_dir=memory_bank_dir, config=config)
@@ -51,8 +52,8 @@ class TestRecordFeedback:
         )
 
         # Assert
-        assert result["status"] == "recorded"
-        assert "feedback_id" in result
+        assert result.status == "recorded"
+        assert result.feedback_id is not None
         assert len(engine.data_manager.feedback_records) == 1
 
     @pytest.mark.asyncio
@@ -61,7 +62,7 @@ class TestRecordFeedback:
         # Arrange
         engine = LearningEngine(memory_bank_dir=memory_bank_dir)
 
-        suggestion_details: dict[str, object] = {
+        suggestion_details: ModelDict = {
             "type": "consolidation",
             "similarity_threshold": 0.8,
             "confidence": 0.7,
@@ -109,7 +110,7 @@ class TestAdjustSuggestionConfidence:
         # Arrange
         engine = LearningEngine(memory_bank_dir=memory_bank_dir)
 
-        suggestion: dict[str, object] = {"type": "consolidation", "confidence": 0.7}
+        suggestion: ModelDict = {"type": "consolidation", "confidence": 0.7}
 
         # Act
         adjusted, details = await engine.adjust_suggestion_confidence(suggestion)
@@ -146,7 +147,7 @@ class TestAdjustSuggestionConfidence:
                 },
             )
 
-        suggestion: dict[str, object] = {
+        suggestion: ModelDict = {
             "type": "consolidation",
             "confidence": 0.7,
             "similarity_threshold": 0.8,
@@ -178,7 +179,7 @@ class TestAdjustSuggestionConfidence:
                 },
             )
 
-        suggestion: dict[str, object] = {
+        suggestion: ModelDict = {
             "type": "consolidation",
             "confidence": 0.7,
             "similarity_threshold": 0.8,
@@ -198,10 +199,10 @@ class TestShouldShowSuggestion:
     async def test_should_show_with_learning_disabled(self, memory_bank_dir: Path):
         """Test all suggestions shown when learning disabled."""
         # Arrange
-        config: dict[str, object] = {"enabled": False}
+        config: ModelDict = {"enabled": False}
         engine = LearningEngine(memory_bank_dir=memory_bank_dir, config=config)
 
-        suggestion: dict[str, object] = {"type": "consolidation", "confidence": 0.3}
+        suggestion: ModelDict = {"type": "consolidation", "confidence": 0.3}
 
         # Act
         should_show, reason = await engine.should_show_suggestion(suggestion)
@@ -218,7 +219,7 @@ class TestShouldShowSuggestion:
         engine = LearningEngine(memory_bank_dir=memory_bank_dir)
         engine.data_manager.update_preference("min_confidence_threshold", 0.7)
 
-        suggestion: dict[str, object] = {"type": "consolidation", "confidence": 0.5}
+        suggestion: ModelDict = {"type": "consolidation", "confidence": 0.5}
 
         # Act
         should_show, reason = await engine.should_show_suggestion(suggestion)
@@ -244,7 +245,7 @@ class TestShouldShowSuggestion:
                 was_applied=False,
             )
 
-        suggestion: dict[str, object] = {"type": "consolidation", "confidence": 1.0}
+        suggestion: ModelDict = {"type": "consolidation", "confidence": 1.0}
 
         # Act
         should_show, reason = await engine.should_show_suggestion(suggestion)
@@ -286,10 +287,10 @@ class TestGetLearningInsights:
         result = await engine.get_learning_insights()
 
         # Assert
-        assert result["total_feedback"] == 2
-        assert result["approved"] == 1
-        assert result["rejected"] == 1
-        assert result["approval_rate"] == 0.5
+        assert result.total_feedback == 2
+        assert result.approved == 1
+        assert result.rejected == 1
+        assert result.approval_rate == 0.5
 
     @pytest.mark.asyncio
     async def test_get_learning_insights_includes_recommendations(
@@ -303,14 +304,7 @@ class TestGetLearningInsights:
         result = await engine.get_learning_insights()
 
         # Assert
-        assert "recommendations" in result
-        recommendations_val = result.get("recommendations", [])
-        recommendations: list[str] = (
-            cast(list[str], recommendations_val)
-            if isinstance(recommendations_val, list)
-            else []
-        )
-        assert len(recommendations) > 0
+        assert len(result.recommendations) > 0
 
 
 class TestResetLearningData:
@@ -336,7 +330,7 @@ class TestResetLearningData:
         )
 
         # Assert
-        assert result["status"] == "success"
+        assert result.status == "success"
         assert len(engine.data_manager.feedback_records) == 0
 
 
@@ -428,7 +422,7 @@ class TestPatternExtraction:
             was_applied=True,
         )
 
-        suggestion_details: dict[str, object] = {"similarity_threshold": 0.85}
+        suggestion_details: ModelDict = {"similarity_threshold": 0.85}
 
         # Act
         key = engine.extract_pattern_key(feedback, suggestion_details)
@@ -458,7 +452,7 @@ class TestPatternExtraction:
             was_applied=True,
         )
 
-        suggestion_details: dict[str, object] = {"file_tokens": 12000}
+        suggestion_details: ModelDict = {"file_tokens": 12000}
 
         # Act
         key = engine.extract_pattern_key(feedback, suggestion_details)
@@ -548,7 +542,7 @@ class TestPatternKeyExtractionCoverage:
             was_applied=True,
         )
 
-        suggestion_details: dict[str, object] = {"optimization_goal": "category_based"}
+        suggestion_details: ModelDict = {"optimization_goal": "category_based"}
 
         # Act
         key = engine.extract_pattern_key(feedback, suggestion_details)
@@ -578,7 +572,7 @@ class TestPatternKeyExtractionCoverage:
             was_applied=True,
         )
 
-        suggestion_details: dict[str, object] = {"file_tokens": 15000}
+        suggestion_details: ModelDict = {"file_tokens": 15000}
 
         # Act
         key = engine.extract_pattern_key(feedback, suggestion_details)
@@ -608,7 +602,7 @@ class TestPatternKeyExtractionCoverage:
             was_applied=True,
         )
 
-        suggestion_details: dict[str, object] = {"file_tokens": 3000}
+        suggestion_details: ModelDict = {"file_tokens": 3000}
 
         # Act
         key = engine.extract_pattern_key(feedback, suggestion_details)
@@ -636,7 +630,7 @@ class TestPatternKeyExtractionCoverage:
             was_applied=True,
         )
 
-        suggestion_details: dict[str, object] = {}
+        suggestion_details: ModelDict = {}
 
         # Act
         key = engine.extract_pattern_key(feedback, suggestion_details)
@@ -652,7 +646,7 @@ class TestExtractConditions:
         """Test extracting all condition fields."""
         # Arrange
         engine = LearningEngine(memory_bank_dir=memory_bank_dir)
-        suggestion_details: dict[str, object] = {
+        suggestion_details: ModelDict = {
             "confidence": 0.85,
             "thresholds": {"min_similarity": 0.8},
             "parameters": {"max_files": 10},
@@ -670,7 +664,7 @@ class TestExtractConditions:
         """Test extracting conditions with default values."""
         # Arrange
         engine = LearningEngine(memory_bank_dir=memory_bank_dir)
-        suggestion_details: dict[str, object] = {}
+        suggestion_details: ModelDict = {}
 
         # Act
         conditions = engine.extract_conditions(suggestion_details)
@@ -688,7 +682,7 @@ class TestGetPreferenceRecommendation:
         """Test recommendation when not enough data."""
         # Arrange
         engine = LearningEngine(memory_bank_dir=memory_bank_dir)
-        pref: dict[str, object] = {"preference_score": 0.8, "total": 2}
+        pref: ModelDict = {"preference_score": 0.8, "total": 2}
 
         # Act
         recommendation = engine.get_preference_recommendation(pref)
@@ -700,7 +694,7 @@ class TestGetPreferenceRecommendation:
         """Test recommendation for strongly preferred type."""
         # Arrange
         engine = LearningEngine(memory_bank_dir=memory_bank_dir)
-        pref: dict[str, object] = {"preference_score": 0.9, "total": 10}
+        pref: ModelDict = {"preference_score": 0.9, "total": 10}
 
         # Act
         recommendation = engine.get_preference_recommendation(pref)
@@ -712,7 +706,7 @@ class TestGetPreferenceRecommendation:
         """Test recommendation for somewhat preferred type."""
         # Arrange
         engine = LearningEngine(memory_bank_dir=memory_bank_dir)
-        pref: dict[str, object] = {"preference_score": 0.65, "total": 10}
+        pref: ModelDict = {"preference_score": 0.65, "total": 10}
 
         # Act
         recommendation = engine.get_preference_recommendation(pref)
@@ -724,7 +718,7 @@ class TestGetPreferenceRecommendation:
         """Test recommendation for neutral preference."""
         # Arrange
         engine = LearningEngine(memory_bank_dir=memory_bank_dir)
-        pref: dict[str, object] = {"preference_score": 0.45, "total": 10}
+        pref: ModelDict = {"preference_score": 0.45, "total": 10}
 
         # Act
         recommendation = engine.get_preference_recommendation(pref)
@@ -736,7 +730,7 @@ class TestGetPreferenceRecommendation:
         """Test recommendation for not preferred type."""
         # Arrange
         engine = LearningEngine(memory_bank_dir=memory_bank_dir)
-        pref: dict[str, object] = {"preference_score": 0.2, "total": 10}
+        pref: ModelDict = {"preference_score": 0.2, "total": 10}
 
         # Act
         recommendation = engine.get_preference_recommendation(pref)
@@ -822,7 +816,7 @@ class TestAdjustSuggestionConfidenceEdgeCases:
                 was_applied=True,
             )
 
-        suggestion: dict[str, object] = {"type": "consolidation", "confidence": 0.6}
+        suggestion: ModelDict = {"type": "consolidation", "confidence": 0.6}
 
         # Act
         adjusted, details = await engine.adjust_suggestion_confidence(suggestion)
@@ -857,7 +851,7 @@ class TestAdjustSuggestionConfidenceEdgeCases:
                 was_applied=False,
             )
 
-        suggestion: dict[str, object] = {"type": "consolidation", "confidence": 0.6}
+        suggestion: ModelDict = {"type": "consolidation", "confidence": 0.6}
 
         # Act
         adjusted, details = await engine.adjust_suggestion_confidence(suggestion)
@@ -894,7 +888,7 @@ class TestAdjustSuggestionConfidenceEdgeCases:
                 },
             )
 
-        suggestion: dict[str, object] = {
+        suggestion: ModelDict = {
             "type": "consolidation",
             "confidence": 0.1,
             "similarity_threshold": 0.8,
@@ -926,7 +920,7 @@ class TestAdjustSuggestionConfidenceEdgeCases:
                 },
             )
 
-        suggestion: dict[str, object] = {
+        suggestion: ModelDict = {
             "type": "consolidation",
             "confidence": 0.95,
             "similarity_threshold": 0.8,
@@ -948,7 +942,7 @@ class TestShouldShowSuggestionEdgeCases:
         # Arrange
         engine = LearningEngine(memory_bank_dir=memory_bank_dir)
 
-        suggestion: dict[str, object] = {"type": "consolidation", "confidence": 0.95}
+        suggestion: ModelDict = {"type": "consolidation", "confidence": 0.95}
 
         # Act
         should_show, reason = await engine.should_show_suggestion(suggestion)
@@ -974,7 +968,7 @@ class TestShouldShowSuggestionEdgeCases:
                 was_applied=i % 2 == 0,
             )
 
-        suggestion: dict[str, object] = {"type": "consolidation", "confidence": 0.8}
+        suggestion: ModelDict = {"type": "consolidation", "confidence": 0.8}
 
         # Act
         should_show, _ = await engine.should_show_suggestion(suggestion)
@@ -1006,7 +1000,7 @@ class TestUpdatePatternsCoverage:
             was_applied=True,
         )
 
-        suggestion_details: dict[str, object] = {"similarity_threshold": 0.9}
+        suggestion_details: ModelDict = {"similarity_threshold": 0.9}
 
         # Act
         await engine.update_patterns(feedback, suggestion_details)
@@ -1051,7 +1045,7 @@ class TestUpdatePatternsCoverage:
             was_applied=False,
         )
 
-        suggestion_details: dict[str, object] = {"similarity_threshold": 0.8}
+        suggestion_details: ModelDict = {"similarity_threshold": 0.8}
 
         # Act
         await engine.update_patterns(feedback, suggestion_details)

@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from cortex.core.models import ModelDict, SectionMetadata
 from cortex.core.token_counter import TokenCounter
 
 
@@ -227,10 +228,10 @@ Content for section 2.
 
         # Assert
         assert len(sections) == 3  # Main Title, Section 1, Section 2
-        assert sections[0]["title"] == "Main Title"
-        assert sections[0]["level"] == 1
-        assert sections[1]["title"] == "Section 1"
-        assert sections[1]["level"] == 2
+        assert sections[0].title == "Main Title"
+        assert sections[0].level == 1
+        assert sections[1].title == "Section 1"
+        assert sections[1].level == 2
 
     def test_parse_markdown_sections_nested(self):
         """Test parsing nested markdown sections."""
@@ -252,10 +253,10 @@ Content here.
 
         # Assert
         assert len(sections) == 4
-        assert sections[0]["level"] == 1
-        assert sections[1]["level"] == 2
-        assert sections[2]["level"] == 3
-        assert sections[3]["level"] == 2
+        assert sections[0].level == 1
+        assert sections[1].level == 2
+        assert sections[2].level == 3
+        assert sections[3].level == 2
 
     def test_parse_markdown_sections_with_line_numbers(self):
         """Test parsing sections includes line numbers."""
@@ -273,8 +274,8 @@ Line 5
 
         # Assert
         assert len(sections) == 2
-        assert sections[0]["start_line"] == 1
-        assert sections[1]["start_line"] == 4
+        assert sections[0].start_line == 1
+        assert sections[1].start_line == 4
 
     def test_parse_markdown_sections_empty_content(self):
         """Test parsing empty content returns empty list."""
@@ -317,8 +318,8 @@ And this is code: `#define MACRO`
         # Assert
         # Should only find real headers (at start of line)
         assert len(sections) == 2
-        assert sections[0]["title"] == "Real Header"
-        assert sections[1]["title"] == "Another Real Header"
+        assert sections[0].title == "Real Header"
+        assert sections[1].title == "Another Real Header"
 
     def test_parse_markdown_sections_with_invalid_levels(self):
         """Test parse_markdown_sections ignores headers with invalid levels."""
@@ -336,8 +337,8 @@ And this is code: `#define MACRO`
         # Assert
         # Should only find valid headers (levels 1-6)
         assert len(sections) == 2
-        assert sections[0]["level"] == 1
-        assert sections[1]["level"] == 2
+        assert sections[0].level == 1
+        assert sections[1].level == 2
 
     def test_parse_markdown_sections_with_hash_not_at_start(self):
         """Test parse_markdown_sections handles indented headers and hashes
@@ -356,8 +357,8 @@ Text with # hash in middle (not detected)
         # Indented headers are still detected (lstrip removes leading whitespace)
         # Hashes in middle of line are not detected
         assert len(sections) == 2
-        assert sections[0]["title"] == "Indented header (still detected)"
-        assert sections[1]["title"] == "Real header"
+        assert sections[0].title == "Indented header (still detected)"
+        assert sections[1].title == "Real header"
 
 
 class TestContentHashing:
@@ -547,47 +548,37 @@ Content for section 1.
 ## Section 2
 Content for section 2.
 """
-        sections: list[dict[str, object]] = [
-            {"heading": "# Section 1", "line_start": 1, "line_end": 3},
-            {"heading": "## Section 2", "line_start": 4, "line_end": 6},
+        sections: list[SectionMetadata | ModelDict] = [
+            cast(ModelDict, {"heading": "# Section 1", "line_start": 1, "line_end": 3}),
+            cast(
+                ModelDict, {"heading": "## Section 2", "line_start": 4, "line_end": 6}
+            ),
         ]
 
         # Act
         result = counter.count_tokens_sections(content, sections)
 
         # Assert
-        assert "total_tokens" in result
-        assert "sections" in result
-        total_tokens = cast(int, result["total_tokens"])
-        sections_list = cast(list[dict[str, object]], result["sections"])
-        assert len(sections_list) == 2
-        assert total_tokens > 0
-        assert isinstance(sections_list[0], dict)
-        assert isinstance(sections_list[1], dict)
-        assert "token_count" in sections_list[0]
-        assert "token_count" in sections_list[1]
-        token_count_0 = cast(int, sections_list[0]["token_count"])
-        token_count_1 = cast(int, sections_list[1]["token_count"])
-        assert token_count_0 > 0
-        assert token_count_1 > 0
+        assert result.total_tokens > 0
+        assert len(result.sections) == 2
+        assert result.sections[0].token_count > 0
+        assert result.sections[1].token_count > 0
 
     def test_count_tokens_sections_with_percentages(self):
         """Test that sections include percentage calculations."""
         # Arrange
         counter = TokenCounter()
         content = "Line 1\nLine 2\nLine 3"
-        sections: list[dict[str, object]] = [
-            {"heading": "Test", "line_start": 1, "line_end": 3}
+        sections: list[SectionMetadata | ModelDict] = [
+            cast(ModelDict, {"heading": "Test", "line_start": 1, "line_end": 3})
         ]
 
         # Act
         result = counter.count_tokens_sections(content, sections)
 
         # Assert
-        sections_list = cast(list[dict[str, object]], result["sections"])
-        assert len(sections_list) > 0
-        assert "percentage" in sections_list[0]
-        percentage = cast(float, sections_list[0]["percentage"])
+        assert len(result.sections) > 0
+        percentage = result.sections[0].percentage
         assert isinstance(percentage, float)
         assert 0 <= percentage <= 100
 
@@ -601,10 +592,8 @@ Content for section 2.
         result = counter.count_tokens_sections(content, [])
 
         # Assert
-        total_tokens = cast(int, result["total_tokens"])
-        sections_list = cast(list[dict[str, object]], result["sections"])
-        assert total_tokens > 0
-        assert sections_list == []
+        assert result.total_tokens > 0
+        assert result.sections == []
 
 
 class TestEstimateContextSize:
@@ -620,13 +609,10 @@ class TestEstimateContextSize:
         result = counter.estimate_context_size(file_tokens)
 
         # Assert
-        total_tokens = cast(int, result["total_tokens"])
-        breakdown = cast(dict[str, int], result["breakdown"])
-        assert total_tokens == 1600
-        assert "estimated_cost_gpt4" in result
-        assert "warnings" in result
-        assert "breakdown" in result
-        assert breakdown == file_tokens
+        assert result.total_tokens == 1600
+        assert result.estimated_cost_gpt4 >= 0
+        assert isinstance(result.warnings, list)
+        assert result.breakdown == file_tokens
 
     def test_estimate_context_size_with_warnings(self):
         """Test that warnings are generated for large token counts."""
@@ -638,11 +624,11 @@ class TestEstimateContextSize:
         result = counter.estimate_context_size(file_tokens)
 
         # Assert
-        total_tokens = cast(int, result["total_tokens"])
-        warnings = cast(list[str], result["warnings"])
-        assert total_tokens == 150000
-        assert len(warnings) > 0
-        assert any("100K" in warning or "100000" in warning for warning in warnings)
+        assert result.total_tokens == 150000
+        assert len(result.warnings) > 0
+        assert any(
+            "100K" in warning or "100000" in warning for warning in result.warnings
+        )
 
     def test_estimate_context_size_very_large(self):
         """Test warnings for very large token counts."""
@@ -654,12 +640,10 @@ class TestEstimateContextSize:
         result = counter.estimate_context_size(file_tokens)
 
         # Assert
-        total_tokens = cast(int, result["total_tokens"])
-        warnings = cast(list[str], result["warnings"])
-        assert total_tokens == 250000
-        assert len(warnings) >= 2
+        assert result.total_tokens == 250000
+        assert len(result.warnings) >= 2
         # Check for warnings about exceeding limits
-        warning_text = " ".join(warnings)
+        warning_text = " ".join(result.warnings)
         assert (
             "200000" in warning_text
             or "200K" in warning_text
@@ -676,13 +660,12 @@ class TestEstimateContextSize:
         result = counter.estimate_context_size(file_tokens)
 
         # Assert
-        total_tokens = cast(int, result["total_tokens"])
-        warnings = cast(list[str], result["warnings"])
-        assert total_tokens == 75000
+        assert result.total_tokens == 75000
         # Should trigger the 50K-100K warning
-        assert len(warnings) > 0
+        assert len(result.warnings) > 0
         assert any(
-            "50K" in warning or "progressive" in warning.lower() for warning in warnings
+            "50K" in warning or "progressive" in warning.lower()
+            for warning in result.warnings
         )
 
 

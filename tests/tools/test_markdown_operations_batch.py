@@ -34,12 +34,12 @@ class TestBatchProcessing:
             ) -> FileResult:
                 nonlocal call_count
                 call_count += 1
-                return {
-                    "file": str(file_path.relative_to(root)),
-                    "fixed": False,
-                    "errors": [],
-                    "error_message": None,
-                }
+                return FileResult(
+                    file=str(file_path.relative_to(root)),
+                    fixed=False,
+                    errors=[],
+                    error_message=None,
+                )
 
             # Act
             with patch(
@@ -81,12 +81,12 @@ class TestBatchProcessing:
                 max_concurrent_seen = max(max_concurrent_seen, concurrent_count)
                 await asyncio.sleep(0.01)  # Small delay to allow concurrency
                 concurrent_count -= 1
-                return {
-                    "file": str(file_path.relative_to(root)),
-                    "fixed": False,
-                    "errors": [],
-                    "error_message": None,
-                }
+                return FileResult(
+                    file=str(file_path.relative_to(root)),
+                    fixed=False,
+                    errors=[],
+                    error_message=None,
+                )
 
             # Act
             with patch(
@@ -123,12 +123,12 @@ class TestBatchProcessing:
             ) -> FileResult:
                 if "file2" in str(file_path):
                     raise ValueError("Test error")
-                return {
-                    "file": str(file_path.relative_to(root)),
-                    "fixed": False,
-                    "errors": [],
-                    "error_message": None,
-                }
+                return FileResult(
+                    file=str(file_path.relative_to(root)),
+                    fixed=False,
+                    errors=[],
+                    error_message=None,
+                )
 
             # Act
             with patch(
@@ -147,9 +147,9 @@ class TestBatchProcessing:
             # Assert
             assert len(results) == 5
             # Find the error result
-            error_results = [r for r in results if r.get("error_message")]
+            error_results = [r for r in results if r.error_message]
             assert len(error_results) == 1
-            error_msg = error_results[0]["error_message"]
+            error_msg = error_results[0].error_message
             assert error_msg is not None
             assert "Test error" in error_msg
 
@@ -182,7 +182,7 @@ class TestBatchProcessing:
             # Assert
             # Should only process existing files
             assert len(results) == 2
-            file_names = {r["file"] for r in results}
+            file_names = {r.file for r in results}
             assert "exists.md" in file_names
             assert "also_exists.md" in file_names
             assert "nonexistent.md" not in file_names
@@ -201,7 +201,7 @@ class TestRoadmapCorruption:
         matches = _detect_roadmap_corruption(content)
         assert len(matches) > 0
         # Should detect missing space (could be multiple patterns)
-        patterns = {m["pattern"] for m in matches}
+        patterns = {m.pattern for m in matches}
         assert any("space" in p or "completion" in p for p in patterns)
 
     def test_detect_roadmap_corruption_corrupted_phase(self):
@@ -213,8 +213,8 @@ class TestRoadmapCorruption:
         content = "Phase 5% rate"
         matches = _detect_roadmap_corruption(content)
         assert len(matches) > 0
-        assert matches[0]["pattern"] == "corrupted_phase_number"
-        assert "Phase 5: Validate" in matches[0]["fixed"]
+        assert matches[0].pattern == "corrupted_phase_number"
+        assert "Phase 5: Validate" in matches[0].fixed
 
     def test_detect_roadmap_corruption_ented(self):
         """Test detection of 'ented' corruption."""
@@ -225,5 +225,5 @@ class TestRoadmapCorruption:
         content = "Feature ented successfully"
         matches = _detect_roadmap_corruption(content)
         assert len(matches) > 0
-        assert matches[0]["pattern"] == "corrupted_implemented"
-        assert "Implemented" in matches[0]["fixed"]
+        assert matches[0].pattern == "corrupted_implemented"
+        assert "Implemented" in matches[0].fixed

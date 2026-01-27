@@ -14,6 +14,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from cortex.core.models import JsonDict, ModelDict
 from cortex.tools.models import CleanupReport
 from cortex.tools.phase8_structure import (
     build_health_result,
@@ -434,27 +435,27 @@ class TestHelperFunctions:
     def test_build_health_result(self) -> None:
         """Test build_health_result."""
         # Arrange
-        health: dict[str, object] = {"score": 75, "grade": "C", "status": "fair"}
+        health: ModelDict = {"score": 75, "grade": "C", "status": "fair"}
 
         # Act
         result = build_health_result(health)
 
         # Assert
-        assert result["success"] is True
-        assert result["health"] == health
-        assert "FAIR" in str(result.get("summary", ""))
-        assert result["action_required"] is False
+        assert result.success is True
+        assert isinstance(result.health, JsonDict)
+        assert "FAIR" in str(result.summary)
+        assert result.action_required is False
 
     def test_build_health_result_warning_status(self) -> None:
         """Test build_health_result with warning status."""
         # Arrange
-        health: dict[str, object] = {"score": 60, "grade": "D", "status": "warning"}
+        health: ModelDict = {"score": 60, "grade": "D", "status": "warning"}
 
         # Act
         result = build_health_result(health)
 
         # Assert
-        assert result["action_required"] is True
+        assert result.action_required is True
 
     def test_find_stale_plans(self, tmp_path: Path) -> None:
         """Test find_stale_plans."""
@@ -488,7 +489,7 @@ class TestHelperFunctions:
             actions_performed=[],
             files_modified=[],
             recommendations=[],
-            post_cleanup_health={},
+            post_cleanup_health=JsonDict.from_dict({}),
         )
         stale_plans = [Path("/plan1.md"), Path("/plan2.md")]
 
@@ -516,7 +517,7 @@ class TestHelperFunctions:
             actions_performed=[],
             files_modified=[],
             recommendations=[],
-            post_cleanup_health={},
+            post_cleanup_health=JsonDict.from_dict({}),
         )
 
         # Act
@@ -569,7 +570,7 @@ class TestHelperFunctions:
             actions_performed=[],
             files_modified=[],
             recommendations=[],
-            post_cleanup_health={},
+            post_cleanup_health=JsonDict.from_dict({}),
         )
 
         # Act
@@ -587,7 +588,7 @@ class TestHelperFunctions:
             actions_performed=[],
             files_modified=[],
             recommendations=[],
-            post_cleanup_health={},
+            post_cleanup_health=JsonDict.from_dict({}),
         )
 
         # Act
@@ -613,7 +614,7 @@ class TestHelperFunctions:
             actions_performed=[],
             files_modified=[],
             recommendations=[],
-            post_cleanup_health={},
+            post_cleanup_health=JsonDict.from_dict({}),
         )
 
         # Act
@@ -738,7 +739,7 @@ class TestPerformUpdateIndex:
             actions_performed=[],
             files_modified=[],
             recommendations=[],
-            post_cleanup_health={},
+            post_cleanup_health=JsonDict.from_dict({}),
         )
 
         # Act
@@ -771,7 +772,7 @@ class TestPerformUpdateIndex:
             actions_performed=[],
             files_modified=[],
             recommendations=[],
-            post_cleanup_health={},
+            post_cleanup_health=JsonDict.from_dict({}),
         )
 
         # Act
@@ -803,7 +804,7 @@ class TestPerformUpdateIndex:
             actions_performed=[],
             files_modified=[],
             recommendations=[],
-            post_cleanup_health={},
+            post_cleanup_health=JsonDict.from_dict({}),
         )
 
         # Act
@@ -832,7 +833,7 @@ class TestPerformUpdateIndex:
             actions_performed=[],
             files_modified=[],
             recommendations=[],
-            post_cleanup_health={},
+            post_cleanup_health=JsonDict.from_dict({}),
         )
 
         # Act

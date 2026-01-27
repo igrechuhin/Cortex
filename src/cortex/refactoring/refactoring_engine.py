@@ -229,7 +229,7 @@ class RefactoringEngine:
 
         affected_files_json = cast(list[JsonValue], list(suggestion.affected_files))
         actions_json: list[JsonValue] = [cast(JsonValue, item) for item in actions]
-        estimated_impact = cast(ModelDict, dict(suggestion.estimated_impact))
+        estimated_impact: ModelDict = dict(suggestion.estimated_impact)
         return {
             "suggestion_id": suggestion.suggestion_id,
             "title": suggestion.title,

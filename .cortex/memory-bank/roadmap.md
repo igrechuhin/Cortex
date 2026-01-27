@@ -24,6 +24,8 @@
 
 - 🔄 **Plan: Roadmap Sync & Validation Error UX Improvements** - PLANNED (2026-01-27) - See `../plans/roadmap-sync-validation-error-ux.md` for full design and testing strategy to clarify roadmap_sync semantics, improve path resolution for Phase plan references, and enrich MCP error messages for invalid references while preserving existing TODO tracking behavior.
 
+- 🔄 **Plan: Enhance Tool Descriptions with USE WHEN and EXAMPLES** - PLANNED (2026-01-27) - See `../plans/enhance-tool-descriptions.plan.md` for comprehensive plan to improve all 53+ Cortex MCP tool descriptions by adding explicit "USE WHEN" triggers and "EXAMPLES" sections, following the pattern used in doc-mcp, taiga-ui-mcp, and react-mcp. This significantly improves tool discoverability for LLMs by making it clear when and how to use each tool.
+
 ## Future Enhancements
 
 - **Commit Workflow Parallelization (Steps 9–11)** - PLANNED - Implement a constrained parallelization block for commit Steps 9–11 (timestamp-validator, roadmap-sync-validator, submodule handling) based on the commit-parallelization analysis in the quality reviews. Keep Steps 0–8 and 12–14 strictly sequential, run Steps 9–11 in a structured TaskGroup, aggregate their results, and ensure Step 12 runs only after all three complete successfully. This work is tracked in the Phase 56 commit workflow parallelization plan.

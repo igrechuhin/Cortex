@@ -8,12 +8,15 @@ This test suite provides comprehensive coverage for:
 """
 
 import json
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.core.models import ModelDict
+from cortex.managers.builder_types import ManagersBuilder
 from cortex.managers.types import ManagersDict
 from cortex.refactoring.models import (
     ApprovalModel,
@@ -23,6 +26,7 @@ from cortex.refactoring.models import (
     FeedbackRecordResult,
     LearningInsights,
     RefactoringActionModel,
+    RefactoringImpactMetrics,
     RefactoringPriority,
     RefactoringSuggestionModel,
     RefactoringType,
@@ -33,27 +37,45 @@ from cortex.tools.phase5_execution_helpers import check_approval_status
 from tests.helpers.managers import make_test_managers
 
 
-async def _get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object:
+async def _get_manager_helper[T](
+    mgrs: ManagersDict | ModelDict | ManagersBuilder, key: str, type_: type[T]
+) -> T:
     """Helper function to get manager by field name."""
-    manager = getattr(mgrs, key)
+    # Handle Pydantic model by accessing attribute
+    if isinstance(mgrs, ManagersDict):
+        manager_or_lazy = getattr(mgrs, key, None)
+        if manager_or_lazy is None:
+            # Fallback to dict access if attribute not found
+            managers_dict = mgrs.model_dump()
+            manager_or_lazy = managers_dict.get(key)
+    else:
+        manager_or_lazy = mgrs[key]  # type: ignore[index]
+
     # Handle LazyManager unwrapping if needed
     from cortex.managers.lazy_manager import LazyManager
 
-    if isinstance(manager, LazyManager):
-        return await manager.get()
-    return manager
+    if isinstance(manager_or_lazy, LazyManager):
+        return cast(T, await manager_or_lazy.get())
+    return cast(T, manager_or_lazy)
 
 
 @pytest.fixture(autouse=True)
-def _patch_get_manager() -> object:
+def _patch_get_manager() -> (  # pyright: ignore[reportUnusedFunction]
+    Iterator[None]
+):  # noqa: ARG001
     """Patch strict get_manager() to allow MagicMocks in tool tests."""
 
-    async def get_manager_wrapper(managers, name, type_):
+    async def get_manager_wrapper[T](
+        managers: ManagersDict | ModelDict | ManagersBuilder,
+        name: str,
+        type_: type[T],
+    ) -> T:
         return await _get_manager_helper(managers, name, type_)
 
     # Create a callable that returns a coroutine
-    def get_manager_sync_wrapper(*args, **kwargs):
-        return get_manager_wrapper(*args, **kwargs)
+    # Type checker can't verify the dynamic call signature matches get_manager
+    def get_manager_sync_wrapper(*args: object, **kwargs: object) -> object:
+        return get_manager_wrapper(*args, **kwargs)  # type: ignore[arg-type]
 
     with (
         patch(
@@ -102,7 +124,7 @@ def mock_refactoring_suggestion():
                 description="Modify file1",
             )
         ],
-        estimated_impact={"token_savings": 0, "files_affected": 2},
+        estimated_impact=RefactoringImpactMetrics(token_savings=0, files_affected=2),
         confidence_score=0.85,
     )
 
@@ -201,7 +223,7 @@ class TestApplyRefactoringApprove:
     """Tests for apply_refactoring() with approve action."""
 
     async def test_approve_success(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test successful approval."""
         # Arrange
@@ -228,7 +250,7 @@ class TestApplyRefactoringApprove:
             assert result["suggestion_id"] == "test-123"
 
     async def test_approve_with_auto_apply(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test approval with auto-apply enabled."""
         # Arrange
@@ -254,7 +276,7 @@ class TestApplyRefactoringApprove:
             assert "approval_id" in result
 
     async def test_approve_with_user_comment(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test approval with user comment."""
         # Arrange
@@ -304,7 +326,7 @@ class TestApplyRefactoringApply:
     """Tests for apply_refactoring() with apply action."""
 
     async def test_apply_success(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test successful application of approved refactoring."""
         # Arrange
@@ -336,7 +358,7 @@ class TestApplyRefactoringApply:
                 assert "suggestion" in result.get("error", "").lower()
 
     async def test_apply_with_approval_id(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test application with explicit approval_id."""
         # Arrange
@@ -362,11 +384,12 @@ class TestApplyRefactoringApply:
             assert result["status"] in {"success", "validation_failed"}
 
     async def test_apply_dry_run(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test application in dry-run mode."""
         # Arrange
-        mock_managers.refactoring_executor.execute_refactoring = AsyncMock(
+        # type: ignore[assignment] - MagicMock assignment to optional manager
+        mock_managers.refactoring_executor.execute_refactoring = AsyncMock(  # type: ignore[union-attr]
             return_value=ExecutionResult(
                 status="success",
                 execution_id="exec-dry-123",
@@ -397,11 +420,12 @@ class TestApplyRefactoringApply:
             assert result["status"] in {"success", "error", "validation_failed"}
 
     async def test_apply_suggestion_not_found(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test application when suggestion not found."""
         # Arrange
-        mock_managers.refactoring_engine.get_suggestion = AsyncMock(return_value=None)
+        # type: ignore[assignment] - MagicMock assignment to optional manager
+        mock_managers.refactoring_engine.get_suggestion = AsyncMock(return_value=None)  # type: ignore[union-attr]
 
         with (
             patch(
@@ -426,11 +450,12 @@ class TestApplyRefactoringApply:
             assert "not found" in error_msg or "suggestion" in error_msg.lower()
 
     async def test_apply_no_approval(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test application when no approval exists."""
         # Arrange
-        mock_managers.approval_manager.get_approvals_for_suggestion = AsyncMock(
+        # type: ignore[assignment] - MagicMock assignment to optional manager
+        mock_managers.approval_manager.get_approvals_for_suggestion = AsyncMock(  # type: ignore[union-attr]
             return_value=[]
         )
 
@@ -481,7 +506,7 @@ class TestApplyRefactoringRollback:
     """Tests for apply_refactoring() with rollback action."""
 
     async def test_rollback_success(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test successful rollback."""
         # Arrange
@@ -512,7 +537,7 @@ class TestApplyRefactoringRollback:
                 assert "error" in result
 
     async def test_rollback_with_options(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test rollback with restore and preserve options."""
         # Arrange
@@ -542,11 +567,12 @@ class TestApplyRefactoringRollback:
                 assert "rollback_id" in result
 
     async def test_rollback_dry_run(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test rollback in dry-run mode."""
         # Arrange
-        mock_managers.rollback_manager.rollback_refactoring = AsyncMock(
+        # type: ignore[assignment] - MagicMock assignment to optional manager
+        mock_managers.rollback_manager.rollback_refactoring = AsyncMock(  # type: ignore[union-attr]
             return_value=RollbackRefactoringResult(
                 status="success",
                 rollback_id="rollback-dry-123",
@@ -605,7 +631,7 @@ class TestApplyRefactoringEdgeCases:
     """Tests for apply_refactoring() edge cases."""
 
     async def test_invalid_action(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test with invalid action."""
         # Arrange
@@ -659,7 +685,7 @@ class TestProvideFeedback:
     async def test_provide_feedback_helpful(
         self,
         mock_project_root: Path,
-        mock_managers: dict[str, Any],
+        mock_managers: ManagersDict,
         mock_refactoring_suggestion: RefactoringSuggestionModel,
     ) -> None:
         """Test providing helpful feedback."""
@@ -694,7 +720,7 @@ class TestProvideFeedback:
                 assert "suggestion" in result.get("error", "").lower()
 
     async def test_provide_feedback_not_helpful(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test providing not_helpful feedback."""
         # Arrange
@@ -721,7 +747,7 @@ class TestProvideFeedback:
             assert result["status"] in {"recorded", "error"}
 
     async def test_provide_feedback_incorrect(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test providing incorrect feedback."""
         # Arrange
@@ -748,7 +774,7 @@ class TestProvideFeedback:
             assert result["status"] in {"recorded", "error"}
 
     async def test_provide_feedback_without_comment(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test providing feedback without comment."""
         # Arrange
@@ -773,11 +799,12 @@ class TestProvideFeedback:
             assert result["status"] in {"recorded", "error"}
 
     async def test_provide_feedback_suggestion_not_found(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test feedback for non-existent suggestion."""
         # Arrange
-        mock_managers.refactoring_engine.get_suggestion = AsyncMock(return_value=None)
+        # type: ignore[assignment] - MagicMock assignment to optional manager
+        mock_managers.refactoring_engine.get_suggestion = AsyncMock(return_value=None)  # type: ignore[union-attr]
 
         with (
             patch(
@@ -800,11 +827,12 @@ class TestProvideFeedback:
             assert "not found" in result["error"]
 
     async def test_provide_feedback_with_applied_status(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test feedback for already applied suggestion."""
         # Arrange
-        mock_managers.approval_manager.get_approvals_for_suggestion = AsyncMock(
+        # type: ignore[assignment] - MagicMock assignment to optional manager
+        mock_managers.approval_manager.get_approvals_for_suggestion = AsyncMock(  # type: ignore[union-attr]
             return_value=[
                 ApprovalModel(
                     approval_id="approval-123",
@@ -929,7 +957,7 @@ class TestIntegration:
     """Integration tests for Phase 5 execution workflows."""
 
     async def test_full_refactoring_workflow(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test complete workflow: approve -> apply -> provide feedback."""
         with (
@@ -972,7 +1000,7 @@ class TestIntegration:
             assert feedback_data["status"] in {"recorded", "error"}
 
     async def test_rollback_workflow(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test rollback workflow."""
         with (
@@ -1018,11 +1046,12 @@ class TestHelperFunctions:
     """Tests for helper functions and edge cases."""
 
     async def test_apply_invalid_approval_id_returns_validation_failed(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test application when approval_id is invalid."""
         # Arrange - approval has empty approval_id
-        mock_managers.approval_manager.get_approvals_for_suggestion = AsyncMock(
+        # type: ignore[assignment] - MagicMock assignment to optional manager
+        mock_managers.approval_manager.get_approvals_for_suggestion = AsyncMock(  # type: ignore[union-attr]
             return_value=[MagicMock(approval_id="", status=ApprovalStatus.APPROVED)]
         )
 
@@ -1048,11 +1077,12 @@ class TestHelperFunctions:
             assert "approval" in result.get("error", "").lower()
 
     async def test_apply_execution_id_not_string(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
+        self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
         """Test application when execution_id is not a string (edge case)."""
         # Arrange - empty execution_id should skip mark_as_applied
-        mock_managers.refactoring_executor.execute_refactoring = AsyncMock(
+        # type: ignore[assignment] - MagicMock assignment to optional manager
+        mock_managers.refactoring_executor.execute_refactoring = AsyncMock(  # type: ignore[union-attr]
             return_value=ExecutionResult(
                 status="success",
                 execution_id="",
@@ -1081,4 +1111,5 @@ class TestHelperFunctions:
             # Status may vary depending on whether suggestion exists
             assert result["status"] in {"success", "validation_failed", "error"}
             # Mark as applied should NOT have been called (execution_id is not string)
-            mock_managers.approval_manager.mark_as_applied.assert_not_called()
+            # type: ignore[union-attr] - MagicMock access on optional manager
+            mock_managers.approval_manager.mark_as_applied.assert_not_called()  # type: ignore[union-attr]

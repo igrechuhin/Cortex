@@ -3,6 +3,7 @@ Unit tests for execution_operations module.
 """
 
 from pathlib import Path
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -21,11 +22,24 @@ def make_operation(
     **params: object,
 ) -> RefactoringOperationModel:
     """Helper to create RefactoringOperationModel with correct signature."""
+    # Convert object params to proper types for OperationParameters
+    typed_params: dict[str, str | list[str] | int | bool | None] = {}
+    for key, value in params.items():
+        if isinstance(value, (str, int, bool)) or value is None:
+            typed_params[key] = value
+        elif isinstance(value, list):
+            typed_params[key] = [
+                str(item) if isinstance(item, str) else str(item)
+                for item in cast(list[object], value)
+            ]  # type: ignore[assignment]
+        else:
+            typed_params[key] = str(value) if value is not None else None  # type: ignore[assignment]
+
     return RefactoringOperationModel(
         operation_id=f"op-{op_type}-001",
         operation_type=op_type,
         target_file=target_file,
-        parameters=OperationParameters(**params),
+        parameters=OperationParameters(**typed_params),  # type: ignore[arg-type]
     )
 
 

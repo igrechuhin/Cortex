@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -18,7 +19,7 @@ class TestPhase1FoundationStatsOptional:
         mgrs = make_test_managers(refactoring_executor=None)
 
         # Act
-        result = await phase1_foundation_stats._build_refactoring_history_dict(  # noqa: SLF001
+        result = await phase1_foundation_stats._build_refactoring_history_dict(  # noqa: SLF001  # type: ignore[attr-defined]
             mgrs, refactoring_days=7
         )
 
@@ -43,10 +44,10 @@ class TestPhase1FoundationStatsOptional:
             return refactoring_executor
 
         lazy = LazyManager(_factory, name="refactoring_executor")
-        mgrs = make_test_managers(refactoring_executor=lazy)
+        mgrs = make_test_managers(refactoring_executor=lazy)  # type: ignore[arg-type]
 
         # Act
-        result = await phase1_foundation_stats._build_refactoring_history_dict(  # noqa: SLF001
+        result = await phase1_foundation_stats._build_refactoring_history_dict(  # noqa: SLF001  # type: ignore[attr-defined]
             mgrs, refactoring_days=30
         )
 
@@ -76,8 +77,10 @@ class TestPhase1FoundationStatsOptional:
             ),
         ):
             # Act
-            result = await phase1_foundation_stats._add_optional_stats(  # noqa: SLF001
-                base,
+            from cortex.core.models import ModelDict
+
+            result = await phase1_foundation_stats._add_optional_stats(  # noqa: SLF001  # type: ignore[attr-defined]
+                cast(ModelDict, base),
                 include_token_budget=False,
                 include_refactoring_history=True,
                 project_root=str(tmp_path),

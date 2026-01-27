@@ -34,7 +34,7 @@ class TestToolAnalyzer:
         """Test calculating parameter overlap."""
         tool1 = {"params": ["param1", "param2"]}
         tool2 = {"params": ["param1", "param3"]}
-        overlap = analyzer._calculate_param_overlap(tool1, tool2)
+        overlap = analyzer._calculate_param_overlap(tool1, tool2)  # type: ignore[attr-defined]
         assert 0.0 <= overlap <= 1.0
         assert overlap > 0.0  # Should have some overlap
 
@@ -42,7 +42,7 @@ class TestToolAnalyzer:
         """Test calculating body similarity."""
         tool1 = {"body": "This is test content."}
         tool2 = {"body": "This is test content."}
-        similarity = analyzer._calculate_body_similarity(tool1, tool2)
+        similarity = analyzer._calculate_body_similarity(tool1, tool2)  # type: ignore[attr-defined]
         assert similarity == 1.0
 
     @pytest.mark.asyncio
@@ -58,7 +58,7 @@ class TestToolAnalyzer:
                 "body": "This is test content.",
             },
         }
-        opportunities = await analyzer._find_consolidation_opportunities(tools)
+        opportunities = await analyzer._find_consolidation_opportunities(tools)  # type: ignore[attr-defined]
         assert len(opportunities) > 0
 
     @pytest.mark.asyncio
@@ -74,7 +74,7 @@ class TestToolAnalyzer:
                 "signature": "tool2(param1, param2)",
             },
         }
-        opportunities = await analyzer._find_merge_opportunities(tools)
+        opportunities = await analyzer._find_merge_opportunities(tools)  # type: ignore[attr-defined]
         assert isinstance(opportunities, list)
 
     @pytest.mark.asyncio
@@ -84,19 +84,19 @@ class TestToolAnalyzer:
             "tool1": {"docstring": "Short doc."},
             "tool2": {"docstring": ""},
         }
-        opportunities = await analyzer._find_optimization_opportunities(tools)
+        opportunities = await analyzer._find_optimization_opportunities(tools)  # type: ignore[attr-defined]
         assert isinstance(opportunities, list)
 
     @pytest.mark.asyncio
     async def test_scan_tools_no_dir(self, analyzer: ToolAnalyzer):
         """Test scanning tools when directory doesn't exist."""
-        tools = await analyzer._scan_tools()
+        tools = await analyzer._scan_tools()  # type: ignore[attr-defined]
         assert tools == {}
 
     def test_extract_tools_from_file(self, analyzer: ToolAnalyzer, tmp_path: Path):
         """Test extracting tools from a Python file."""
         test_file = tmp_path / "test_tools.py"
-        test_file.write_text(
+        _ = test_file.write_text(
             '''"""Test file."""
 import mcp
 
@@ -106,7 +106,7 @@ def test_tool(param1: str) -> str:
     return "test"
 '''
         )
-        tools = analyzer._extract_tools_from_file(test_file)
+        tools = analyzer._extract_tools_from_file(test_file)  # type: ignore[attr-defined]
         assert "test_tool" in tools
 
     def test_has_mcp_tool_decorator(self, analyzer: ToolAnalyzer):
@@ -116,7 +116,7 @@ def test_tool(param1: str) -> str:
         code = "@mcp.tool()\ndef test(): pass"
         tree = ast.parse(code)
         func_node = tree.body[0]
-        assert analyzer._has_mcp_tool_decorator(func_node) is True
+        assert analyzer._has_mcp_tool_decorator(func_node) is True  # type: ignore[attr-defined]
 
     def test_extract_tool_info(self, analyzer: ToolAnalyzer):
         """Test extracting tool information from function node."""
@@ -129,22 +129,24 @@ def test_tool(param1: str, param2: int) -> str:
 '''
         tree = ast.parse(code)
         func_node = tree.body[0]
-        tool_info = analyzer._extract_tool_info(func_node, code)
+        tool_info = analyzer._extract_tool_info(func_node, code)  # type: ignore[attr-defined]
         assert tool_info is not None
         assert tool_info["name"] == "test_tool"
-        assert "param1" in tool_info["params"]
-        assert "param2" in tool_info["params"]
+        params = tool_info.get("params", [])
+        assert isinstance(params, list)
+        assert "param1" in params
+        assert "param2" in params
 
     def test_calculate_param_overlap_no_overlap(self, analyzer: ToolAnalyzer):
         """Test calculating parameter overlap with no overlap."""
-        tool1 = {"params": ["param1", "param2"]}
-        tool2 = {"params": ["param3", "param4"]}
-        overlap = analyzer._calculate_param_overlap(tool1, tool2)
+        tool1: dict[str, object] = {"params": ["param1", "param2"]}
+        tool2: dict[str, object] = {"params": ["param3", "param4"]}
+        overlap = analyzer._calculate_param_overlap(tool1, tool2)  # type: ignore[attr-defined]
         assert overlap == 0.0
 
     def test_calculate_param_overlap_empty(self, analyzer: ToolAnalyzer):
         """Test calculating parameter overlap with empty params."""
-        tool1 = {"params": []}
-        tool2 = {"params": []}
-        overlap = analyzer._calculate_param_overlap(tool1, tool2)
+        tool1: dict[str, object] = {"params": []}
+        tool2: dict[str, object] = {"params": []}
+        overlap = analyzer._calculate_param_overlap(tool1, tool2)  # type: ignore[attr-defined]
         assert overlap == 0.0

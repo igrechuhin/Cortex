@@ -16,6 +16,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from cortex.core.file_system import FileSystemManager
+from cortex.core.models import JsonValue, ModelDict
 from cortex.linking.link_parser import LinkParser
 from cortex.linking.link_validator import LinkValidator
 
@@ -813,12 +814,12 @@ class TestValidateAll:
         # Mock parser to return different results for each file
         call_count = 0
 
-        async def mock_parse(content: str) -> dict[str, list[dict[str, object]]]:
+        async def mock_parse(content: str) -> ModelDict:
             nonlocal call_count
             call_count += 1
-            transclusions: list[dict[str, object]] = []
+            transclusions: list[ModelDict] = []
             if call_count == 1:
-                markdown_links: list[dict[str, object]] = [
+                markdown_links: list[ModelDict] = [
                     {
                         "type": "markdown",
                         "target": "file2.md",
@@ -835,7 +836,10 @@ class TestValidateAll:
                         "line": 1,
                     }
                 ]
-            return {"markdown_links": markdown_links, "transclusions": transclusions}
+            return {
+                "markdown_links": cast(list[JsonValue], markdown_links),
+                "transclusions": cast(list[JsonValue], transclusions),
+            }
 
         mock_link_parser.parse_file = mock_parse
 

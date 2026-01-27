@@ -3,6 +3,7 @@
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 from cortex.services.framework_adapters.python_adapter import PythonAdapter
@@ -59,11 +60,10 @@ class TestPythonAdapter:
             result = adapter.run_tests(timeout=30)
 
             assert result["success"] is False
-            assert (
-                "timeout" in result["output"].lower()
-                or "timed out" in result["output"].lower()
-            )
-            assert len(result["errors"]) > 0
+            output = cast(str, result["output"])
+            assert "timeout" in output.lower() or "timed out" in output.lower()
+            errors = cast(list[str], result["errors"])
+            assert len(errors) > 0
 
     @patch("cortex.services.framework_adapters.python_adapter.subprocess.run")
     def test_format_code(self, mock_run: MagicMock) -> None:
@@ -85,7 +85,8 @@ class TestPythonAdapter:
 
             assert result["check_type"] == "format"
             assert result["success"] is True
-            assert len(result["errors"]) == 0
+            errors = cast(list[str], result["errors"])
+            assert len(errors) == 0
 
     @patch("cortex.services.framework_adapters.python_adapter.subprocess.run")
     def test_type_check(self, mock_run: MagicMock) -> None:
@@ -106,7 +107,8 @@ class TestPythonAdapter:
 
             assert result["check_type"] == "type_check"
             assert result["success"] is True
-            assert len(result["errors"]) == 0
+            errors = cast(list[str], result["errors"])
+            assert len(errors) == 0
 
     @patch("cortex.services.framework_adapters.python_adapter.subprocess.run")
     def test_fix_errors(self, mock_run: MagicMock) -> None:
@@ -138,7 +140,7 @@ class TestPythonAdapter:
             output = "Found 5 errors (5 fixed, 0 remaining).\n"
 
             # Act
-            errors = adapter._parse_lint_errors(output)
+            errors = adapter._parse_lint_errors(output)  # type: ignore[attr-defined]
 
             # Assert
             assert errors == []
@@ -156,7 +158,7 @@ class TestPythonAdapter:
             )
 
             # Act
-            errors = adapter._parse_lint_errors(output)
+            errors = adapter._parse_lint_errors(output)  # type: ignore[attr-defined]
 
             # Assert
             assert errors == ["src/foo.py:1:1: F401 `os` imported but unused"]
@@ -165,21 +167,21 @@ class TestPythonAdapter:
         """Test _build_test_errors with success=True."""
         with tempfile.TemporaryDirectory() as tmpdir:
             adapter = PythonAdapter(str(tmpdir))
-            errors = adapter._build_test_errors(success=True)
+            errors = adapter._build_test_errors(success=True)  # type: ignore[attr-defined]
             assert errors == []
 
     def test_build_test_errors_failure_no_coverage(self) -> None:
         """Test _build_test_errors with success=False and no coverage."""
         with tempfile.TemporaryDirectory() as tmpdir:
             adapter = PythonAdapter(str(tmpdir))
-            errors = adapter._build_test_errors(success=False, coverage=None)
+            errors = adapter._build_test_errors(success=False, coverage=None)  # type: ignore[attr-defined]
             assert errors == ["Test execution failed"]
 
     def test_build_test_errors_failure_low_coverage(self) -> None:
         """Test _build_test_errors with success=False and coverage below threshold."""
         with tempfile.TemporaryDirectory() as tmpdir:
             adapter = PythonAdapter(str(tmpdir))
-            errors = adapter._build_test_errors(
+            errors = adapter._build_test_errors(  # type: ignore[attr-defined]
                 success=False, coverage=0.85, coverage_threshold=0.90
             )
             assert len(errors) == 1
@@ -189,7 +191,7 @@ class TestPythonAdapter:
         """Test _build_test_errors with success=False but coverage above threshold."""
         with tempfile.TemporaryDirectory() as tmpdir:
             adapter = PythonAdapter(str(tmpdir))
-            errors = adapter._build_test_errors(
+            errors = adapter._build_test_errors(  # type: ignore[attr-defined]
                 success=False, coverage=0.95, coverage_threshold=0.90
             )
             assert errors == ["Test execution failed"]

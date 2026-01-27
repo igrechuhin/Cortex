@@ -7,10 +7,12 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
+
+from cortex.core.models import DictLikeModel
 
 
-class CheckResult(BaseModel):
+class CheckResult(DictLikeModel):
     """Result of a single check operation."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
@@ -25,7 +27,7 @@ class CheckResult(BaseModel):
     )
 
 
-class TestResult(BaseModel):
+class TestResult(DictLikeModel):
     """Test execution result."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)

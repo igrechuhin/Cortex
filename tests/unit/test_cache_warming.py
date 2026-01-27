@@ -1,6 +1,7 @@
 """Tests for cache warming functionality."""
 
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -9,6 +10,7 @@ from cortex.core.cache_warming import (
     CacheWarmer,
     warm_cache_on_startup,
 )
+from cortex.core.models import ModelDict
 
 
 class TestCacheWarmer:
@@ -55,8 +57,11 @@ class TestCacheWarmer:
         results = await cache_warmer.warm_all(loader)
 
         # Assert
-        mandatory_result = next(r for r in results if "Mandatory" in r["strategy"])
-        assert mandatory_result["items_warmed"] > 0
+        mandatory_result = next(
+            r for r in results if "Mandatory" in cast(str, r.get("strategy", ""))
+        )
+        items_warmed = cast(int, mandatory_result["items_warmed"])
+        assert items_warmed > 0
         assert cache_manager.get("memorybankinstructions.md") is not None
 
     @pytest.mark.asyncio
@@ -79,7 +84,8 @@ class TestCacheWarmer:
 
         # Assert
         hot_path_result = next(
-            (r for r in results if "Hot Path" in r["strategy"]), None
+            (r for r in results if "Hot Path" in cast(str, r.get("strategy", ""))),
+            None,
         )
         assert hot_path_result is not None
 
@@ -98,13 +104,14 @@ class TestCacheWarmer:
 
         # Assert
         # Mandatory (priority 0) should be first
-        assert "Mandatory" in results[0]["strategy"]
+        strategy = cast(str, results[0]["strategy"])
+        assert "Mandatory" in strategy
 
     def test_configure_strategy_updates_settings(self, cache_warmer: CacheWarmer):
         """Test configuring strategy settings."""
         # Arrange
         strategy_name = "hot_path"
-        config: dict[str, object] = {"max_items": 50, "enabled": False}
+        config = cast(ModelDict, {"max_items": 50, "enabled": False})
 
         # Act
         cache_warmer.configure_strategy(strategy_name, config)
@@ -199,4 +206,5 @@ class TestWarmCacheOnStartup:
         # Assert
         for result in results:
             assert "time_ms" in result
-            assert result["time_ms"] >= 0
+            time_ms = cast(int | float, result["time_ms"])
+            assert time_ms >= 0

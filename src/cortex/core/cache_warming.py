@@ -10,13 +10,13 @@ This module provides strategies to pre-populate caches based on:
 from collections.abc import Callable
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
 from cortex.core.advanced_cache import AdvancedCacheManager
-from cortex.core.models import JsonValue, ModelDict
+from cortex.core.models import DictLikeModel, JsonValue, ModelDict
 
 
-class WarmingStrategy(BaseModel):
+class WarmingStrategy(DictLikeModel):
     """Cache warming strategy configuration."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
@@ -27,7 +27,7 @@ class WarmingStrategy(BaseModel):
     max_items: int = Field(ge=0, description="Maximum items to warm")
 
 
-class CacheWarmingResult(BaseModel):
+class CacheWarmingResult(DictLikeModel):
     """Result of cache warming operation."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)

@@ -260,8 +260,9 @@ class TestFileMetadataUpdates:
 
         # Act
         sections = [
-            SectionMetadata(title="Introduction", line_start=1, line_end=10),
+            SectionMetadata(heading="Introduction", line_start=1, line_end=10),
         ]
+        sections_dict = [s.model_dump(mode="json") for s in sections]
         await index.update_file_metadata(
             file_name="test.md",
             path=temp_project_root / "memory-bank/test.md",
@@ -269,7 +270,7 @@ class TestFileMetadataUpdates:
             size_bytes=1024,
             token_count=256,
             content_hash="abc123",
-            sections=sections,
+            sections=sections_dict,
             change_source="internal",
         )
 
@@ -370,9 +371,10 @@ class TestFileMetadataUpdates:
         index = MetadataIndex(temp_project_root)
         _ = await index.load()
         sections = [
-            SectionMetadata(title="Intro", line_start=1, line_end=5),
-            SectionMetadata(title="Body", line_start=6, line_end=20),
+            SectionMetadata(heading="Intro", line_start=1, line_end=5),
+            SectionMetadata(heading="Body", line_start=6, line_end=20),
         ]
+        sections_dict = [s.model_dump(mode="json") for s in sections]
 
         # Act
         await index.update_file_metadata(
@@ -382,7 +384,7 @@ class TestFileMetadataUpdates:
             500,
             200,
             "hash",
-            sections,
+            sections_dict,
             "internal",
         )
 

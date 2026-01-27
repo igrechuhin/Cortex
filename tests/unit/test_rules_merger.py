@@ -9,9 +9,17 @@ async def test_merge_rules_when_local_overrides_shared_replaces_duplicates_and_s
     None
 ):
     # Arrange
+    from cortex.core.models import ModelDict
+
     merger = RulesMerger()
-    shared = [{"file": "a.md", "priority": 10}, {"file": "b.md", "priority": 5}]
-    local = [{"file": "a.md", "priority": 99}, {"file": "c.md", "priority": 1}]
+    shared: list[ModelDict] = [
+        {"file": "a.md", "priority": 10},
+        {"file": "b.md", "priority": 5},
+    ]
+    local: list[ModelDict] = [
+        {"file": "a.md", "priority": 99},
+        {"file": "c.md", "priority": 1},
+    ]
 
     # Act
     merged = await merger.merge_rules(shared, local, priority="local_overrides_shared")
@@ -25,8 +33,13 @@ async def test_merge_rules_when_local_overrides_shared_replaces_duplicates_and_s
 async def test_merge_rules_when_shared_overrides_local_replaces_duplicates() -> None:
     # Arrange
     merger = RulesMerger()
-    shared = [{"file": "a.md", "priority": 50}]
-    local = [{"file": "a.md", "priority": 1}, {"file": "b.md", "priority": "bad"}]
+    from cortex.core.models import ModelDict
+
+    shared: list[ModelDict] = [{"file": "a.md", "priority": 50}]
+    local: list[ModelDict] = [
+        {"file": "a.md", "priority": 1},
+        {"file": "b.md", "priority": "bad"},
+    ]
 
     # Act
     merged = await merger.merge_rules(shared, local, priority="shared_overrides_local")
@@ -66,9 +79,9 @@ def test_manifest_helpers_create_missing_containers() -> None:
     manifest_dict: dict[str, object] = {"categories": "not-a-dict"}
 
     # Act
-    categories = merger._get_or_create_categories(manifest_dict)  # noqa: SLF001
-    merger._ensure_category_exists(categories, "general")  # noqa: SLF001
-    rules_list = merger._get_or_create_rules_list(categories["general"])  # noqa: SLF001
+    categories = merger._get_or_create_categories(manifest_dict)  # type: ignore[attr-defined]  # noqa: SLF001
+    merger._ensure_category_exists(categories, "general")  # type: ignore[attr-defined]  # noqa: SLF001
+    rules_list = merger._get_or_create_rules_list(categories["general"])  # type: ignore[attr-defined]  # noqa: SLF001
 
     # Assert
     assert isinstance(categories, dict)

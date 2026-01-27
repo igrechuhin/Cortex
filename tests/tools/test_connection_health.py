@@ -21,18 +21,18 @@ class TestCheckMCPConnectionHealth:
     async def test_check_connection_health_success(self) -> None:
         """Test successful connection health check."""
         # Arrange
-        expected_health = {
-            "healthy": True,
-            "concurrent_operations": 2,
-            "max_concurrent": 5,
-            "semaphore_available": 3,
-            "utilization_percent": 40.0,
-        }
+        expected_health = ConnectionHealth(
+            healthy=True,
+            concurrent_operations=2,
+            max_concurrent=5,
+            semaphore_available=3,
+            utilization_percent=40.0,
+        )
 
         with patch(
             "cortex.tools.connection_health.check_connection_health",
             new_callable=AsyncMock,
-            return_value=ConnectionHealth(**expected_health),
+            return_value=expected_health,
         ):
             # Act
             result_str = await check_mcp_connection_health()
@@ -41,12 +41,12 @@ class TestCheckMCPConnectionHealth:
             # Assert
             assert result["status"] == "success"
             assert "health" in result
-            assert result["health"] == expected_health
-            assert result["health"]["healthy"] is True
-            assert result["health"]["concurrent_operations"] == 2
-            assert result["health"]["max_concurrent"] == 5
-            assert result["health"]["semaphore_available"] == 3
-            assert result["health"]["utilization_percent"] == 40.0
+            health_data = result["health"]
+            assert health_data["healthy"] is True
+            assert health_data["concurrent_operations"] == 2
+            assert health_data["max_concurrent"] == 5
+            assert health_data["semaphore_available"] == 3
+            assert health_data["utilization_percent"] == 40.0
 
     @pytest.mark.asyncio
     async def test_check_connection_health_error(self) -> None:

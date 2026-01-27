@@ -458,7 +458,7 @@ class TestValidate:
 
             def mock_get_manager(mgrs: object, key: str, cls: type) -> object:
                 if isinstance(mgrs, dict):
-                    return mgrs.get(key)
+                    return mgrs.get(key)  # type: ignore[attr-defined] - dict.get() is valid
                 return getattr(mgrs, key, None)
 
             with patch(
@@ -705,7 +705,7 @@ class TestAnalyze:
 
         with patch(
             "cortex.tools.analysis_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict_with_lazy),
+            return_value=make_test_managers(**mock_managers_dict_with_lazy),  # type: ignore[arg-type] - LazyManager is valid for ManagersDict
         ):
             with patch(
                 "cortex.tools.analysis_operations.get_project_root",
@@ -768,7 +768,7 @@ class TestAnalyze:
 
         with patch(
             "cortex.tools.analysis_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict_with_lazy),
+            return_value=make_test_managers(**mock_managers_dict_with_lazy),  # type: ignore[arg-type] - LazyManager is valid for ManagersDict
         ):
             with patch(
                 "cortex.tools.analysis_operations.get_project_root",
@@ -1149,7 +1149,7 @@ class TestConfigure:
         }
 
         async def mock_get_managers(root: Path) -> object:
-            return make_test_managers(**mock_managers_dict)
+            return make_test_managers(**mock_managers_dict)  # type: ignore[arg-type] - object values are valid MagicMock types
 
         with patch(
             "cortex.tools.configuration_operations.get_managers",
@@ -1414,7 +1414,7 @@ class TestConfigure:
 
         with patch(
             "cortex.tools.file_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
+            return_value=make_test_managers(**mock_managers_dict),  # type: ignore[arg-type] - empty dict is valid
         ):
             with patch(
                 "cortex.tools.file_operations.get_project_root",

@@ -17,7 +17,13 @@ async def test_get_managers():
 
         print("\nCalling get_managers()...")
         mgrs = await get_managers(project_root)
-        print(f"Managers initialized: {list(mgrs.keys())}")
+        # Use class-level model_fields for Pydantic v2 compatibility
+        from cortex.managers.types import ManagersDict
+
+        field_names = list(ManagersDict.model_fields.keys())
+        print(f"Managers initialized: {field_names}")
+        # Verify mgrs is a ManagersDict instance
+        assert isinstance(mgrs, ManagersDict)
 
         print("\n✅ Test complete - no hang!")
 

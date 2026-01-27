@@ -2,11 +2,11 @@
 
 import json
 from pathlib import Path
-from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.core.models import JsonValue, ModelDict
 from cortex.tools.configuration_operations import (
     apply_config_updates,
     configure,
@@ -205,13 +205,13 @@ class TestValidationConfiguration:
         mock_validation_config.save = AsyncMock()
         mgrs = make_test_managers(validation_config=mock_validation_config)
 
-        settings = {"strict_mode": True, "enabled": True}
+        settings: dict[str, JsonValue] = {"strict_mode": True, "enabled": True}
 
         # Act
         result = await configure_validation(
             mgrs,
             "update",
-            cast(dict[str, object], settings),
+            settings,
             None,
             None,
         )
@@ -331,12 +331,10 @@ class TestOptimizationConfiguration:
             "enabled": True,
             "token_budget": {"default_budget": 100000},
         }
-        mock_managers = {"optimization_config": mock_optimization_config}
+        mgrs = make_test_managers(optimization_config=mock_optimization_config)
 
         # Act
-        result = await configure_optimization(
-            cast(dict[str, object], mock_managers), "view", None, None, None
-        )
+        result = await configure_optimization(mgrs, "view", None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -353,18 +351,12 @@ class TestOptimizationConfiguration:
             "token_budget": {"default_budget": 90000},
         }
         mock_optimization_config.save_config = AsyncMock(return_value=True)
-        mock_managers = {"optimization_config": mock_optimization_config}
+        mgrs = make_test_managers(optimization_config=mock_optimization_config)
 
-        settings = {"token_budget.default_budget": 90000}
+        settings: dict[str, JsonValue] = {"token_budget.default_budget": 90000}
 
         # Act
-        result = await configure_optimization(
-            cast(dict[str, object], mock_managers),
-            "update",
-            cast(dict[str, object], settings),
-            None,
-            None,
-        )
+        result = await configure_optimization(mgrs, "update", settings, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -379,12 +371,10 @@ class TestOptimizationConfiguration:
         mock_optimization_config = MagicMock()
         mock_optimization_config.to_dict.return_value = {"enabled": True}
         mock_optimization_config.reset = AsyncMock()
-        mock_managers = {"optimization_config": mock_optimization_config}
+        mgrs = make_test_managers(optimization_config=mock_optimization_config)
 
         # Act
-        result = await configure_optimization(
-            cast(dict[str, object], mock_managers), "reset", None, None, None
-        )
+        result = await configure_optimization(mgrs, "reset", None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -397,12 +387,10 @@ class TestOptimizationConfiguration:
         """Test optimization with unknown action returns error."""
         # Arrange
         mock_optimization_config = MagicMock()
-        mock_managers = {"optimization_config": mock_optimization_config}
+        mgrs = make_test_managers(optimization_config=mock_optimization_config)
 
         # Act
-        result = await configure_optimization(
-            cast(dict[str, object], mock_managers), "unknown", None, None, None
-        )
+        result = await configure_optimization(mgrs, "unknown", None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -458,15 +446,13 @@ class TestLearningConfiguration:
         mock_optimization_config = MagicMock()
         mock_optimization_config.config = {"learning": {"enabled": True}}
 
-        mock_managers = {
-            "learning_engine": mock_learning_engine,
-            "optimization_config": mock_optimization_config,
-        }
+        mgrs = make_test_managers(
+            learning_engine=mock_learning_engine,
+            optimization_config=mock_optimization_config,
+        )
 
         # Act
-        result = await configure_learning(
-            cast(dict[str, object], mock_managers), "view", None, None, None
-        )
+        result = await configure_learning(mgrs, "view", None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -484,21 +470,15 @@ class TestLearningConfiguration:
         mock_optimization_config.config = {"learning": {"enabled": True}}
         mock_optimization_config.save_config = AsyncMock(return_value=True)
 
-        mock_managers = {
-            "learning_engine": mock_learning_engine,
-            "optimization_config": mock_optimization_config,
-        }
+        mgrs = make_test_managers(
+            learning_engine=mock_learning_engine,
+            optimization_config=mock_optimization_config,
+        )
 
-        settings = {"learning.enabled": True}
+        settings: dict[str, JsonValue] = {"learning.enabled": True}
 
         # Act
-        result = await configure_learning(
-            cast(dict[str, object], mock_managers),
-            "update",
-            cast(dict[str, object], settings),
-            None,
-            None,
-        )
+        result = await configure_learning(mgrs, "update", settings, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -522,19 +502,13 @@ class TestLearningConfiguration:
         mock_optimization_config = MagicMock()
         mock_optimization_config.config = {"learning": {"enabled": True}}
 
-        mock_managers = {
-            "learning_engine": mock_learning_engine,
-            "optimization_config": mock_optimization_config,
-        }
+        mgrs = make_test_managers(
+            learning_engine=mock_learning_engine,
+            optimization_config=mock_optimization_config,
+        )
 
         # Act
-        result = await configure_learning(
-            cast(dict[str, object], mock_managers),
-            "update",
-            None,
-            "export_patterns",
-            True,
-        )
+        result = await configure_learning(mgrs, "update", None, "export_patterns", True)
 
         # Assert
         result_data = json.loads(result)
@@ -553,15 +527,13 @@ class TestLearningConfiguration:
         mock_optimization_config.config = {"learning": {"enabled": True}}
         mock_optimization_config.save_config = AsyncMock(return_value=True)
 
-        mock_managers = {
-            "learning_engine": mock_learning_engine,
-            "optimization_config": mock_optimization_config,
-        }
+        mgrs = make_test_managers(
+            learning_engine=mock_learning_engine,
+            optimization_config=mock_optimization_config,
+        )
 
         # Act
-        result = await configure_learning(
-            cast(dict[str, object], mock_managers), "reset", None, None, None
-        )
+        result = await configure_learning(mgrs, "reset", None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -577,15 +549,13 @@ class TestLearningConfiguration:
         mock_optimization_config = MagicMock()
         mock_optimization_config.config = {"learning": {"enabled": True}}
 
-        mock_managers = {
-            "learning_engine": mock_learning_engine,
-            "optimization_config": mock_optimization_config,
-        }
+        mgrs = make_test_managers(
+            learning_engine=mock_learning_engine,
+            optimization_config=mock_optimization_config,
+        )
 
         # Act
-        result = await configure_learning(
-            cast(dict[str, object], mock_managers), "unknown", None, None, None
-        )
+        result = await configure_learning(mgrs, "unknown", None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -670,12 +640,10 @@ class TestHelperFunctions:
         """Test applying config updates with settings dict."""
         # Arrange
         mock_config = MagicMock()
-        settings = {"key1": "value1", "key2": "value2"}
+        settings: dict[str, JsonValue] = {"key1": "value1", "key2": "value2"}
 
         # Act
-        result = apply_config_updates(
-            mock_config, cast(dict[str, object], settings), None, None
-        )
+        result = apply_config_updates(mock_config, settings, None, None)
 
         # Assert
         assert result is None
@@ -724,13 +692,11 @@ class TestHelperFunctions:
         """Test creating success response with message."""
         # Arrange
         component = "validation"
-        configuration = {"enabled": True}
+        configuration: ModelDict = {"enabled": True}
         message = "Test message"
 
         # Act
-        result = create_success_response(
-            component, cast(dict[str, object], configuration), message
-        )
+        result = create_success_response(component, configuration, message)
 
         # Assert
         result_data = json.loads(result)
@@ -743,12 +709,10 @@ class TestHelperFunctions:
         """Test creating success response without message."""
         # Arrange
         component = "optimization"
-        configuration = {"enabled": False}
+        configuration: ModelDict = {"enabled": False}
 
         # Act
-        result = create_success_response(
-            component, cast(dict[str, object], configuration), None
-        )
+        result = create_success_response(component, configuration, None)
 
         # Assert
         result_data = json.loads(result)
@@ -761,10 +725,10 @@ class TestHelperFunctions:
         """Test creating error response."""
         # Arrange
         error = "Test error message"
-        extra = {"valid_actions": ["view", "update", "reset"]}
+        valid_actions: JsonValue = ["view", "update", "reset"]
 
         # Act
-        result = create_error_response(error, **extra)
+        result = create_error_response(error, valid_actions=valid_actions)
 
         # Assert
         result_data = json.loads(result)

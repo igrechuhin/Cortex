@@ -12,6 +12,7 @@ import pytest
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.optimization.context_optimizer import ContextOptimizer
+from cortex.optimization.models import FileContentMetadata
 from cortex.optimization.progressive_loader import (
     LoadedContent,
     ProgressiveLoader,
@@ -50,7 +51,7 @@ class TestLoadedContentDataclass:
             priority=0,
             relevance_score=0.85,
             more_available=True,
-            metadata={"last_modified": "2024-01-01"},
+            metadata=FileContentMetadata(last_modified="2024-01-01"),
         )
 
         assert content.file_name == "test.md"
@@ -60,7 +61,7 @@ class TestLoadedContentDataclass:
         assert content.priority == 0
         assert content.relevance_score == 0.85
         assert content.more_available is True
-        assert content.metadata == {"last_modified": "2024-01-01"}
+        assert content.metadata.last_modified == "2024-01-01"
 
 
 class TestGetDefaultPriorityOrder:

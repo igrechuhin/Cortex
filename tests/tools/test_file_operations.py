@@ -516,10 +516,12 @@ Final section
         )
 
         # Act
+        from cortex.core.models import ModelDict
+
         result = await create_version_snapshot(
             file_path,
             content,
-            cast(dict[str, object], file_metrics),
+            cast(ModelDict, file_metrics),
             mock_version_manager,
             "Custom description",
         )
@@ -549,11 +551,13 @@ Final section
         mock_metadata_index.add_version_to_history = AsyncMock()
 
         # Act
+        from cortex.core.models import ModelDict
+
         await update_file_metadata(
             file_name,
             file_path,
             content,
-            cast(dict[str, object], file_metrics),
+            cast(ModelDict, file_metrics),
             mock_metadata_index,
             version_info,
         )

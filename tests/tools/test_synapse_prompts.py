@@ -19,6 +19,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from cortex.core.models import ModelDict
 from cortex.tools import synapse_prompts
 
 # ============================================================================
@@ -301,7 +302,7 @@ class TestProcessPromptInfo:
 
         # Act
         result = synapse_prompts.process_prompt_info(
-            cast(dict[str, object], prompt_info), prompts_dir, "general"
+            cast(ModelDict, prompt_info), prompts_dir, "general"
         )
 
         # Assert
@@ -314,7 +315,7 @@ class TestProcessPromptInfo:
 
         # Act
         result = synapse_prompts.process_prompt_info(
-            cast(dict[str, object], prompt_info), prompts_dir, "general"
+            cast(ModelDict, prompt_info), prompts_dir, "general"
         )
 
         # Assert
@@ -327,7 +328,7 @@ class TestProcessPromptInfo:
 
         # Act
         result = synapse_prompts.process_prompt_info(
-            cast(dict[str, object], prompt_info), prompts_dir, "general"
+            cast(ModelDict, prompt_info), prompts_dir, "general"
         )
 
         # Assert
@@ -340,7 +341,7 @@ class TestProcessPromptInfo:
 
         # Act
         result = synapse_prompts.process_prompt_info(
-            cast(dict[str, object], prompt_info), prompts_dir, "general"
+            cast(ModelDict, prompt_info), prompts_dir, "general"
         )
 
         # Assert
@@ -357,7 +358,7 @@ class TestProcessPromptInfo:
 
         # Act
         result = synapse_prompts.process_prompt_info(
-            cast(dict[str, object], prompt_info), prompts_dir, "general"
+            cast(ModelDict, prompt_info), prompts_dir, "general"
         )
 
         # Assert
@@ -380,7 +381,7 @@ class TestProcessPromptInfo:
         ):
             # Act
             result = synapse_prompts.process_prompt_info(
-                cast(dict[str, object], prompt_info), prompts_dir, "general"
+                cast(ModelDict, prompt_info), prompts_dir, "general"
             )
 
             # Assert
@@ -588,7 +589,7 @@ class TestRegisterSynapsePrompts:
 
         # Act
         result = synapse_prompts.process_prompt_info(
-            cast(dict[str, object], prompt_info), prompts_dir, "general"
+            cast(ModelDict, prompt_info), prompts_dir, "general"
         )
 
         # Assert
@@ -607,7 +608,7 @@ class TestRegisterSynapsePrompts:
 
         # Act
         result = synapse_prompts.process_prompt_info(
-            cast(dict[str, object], prompt_info), prompts_dir, "general"
+            cast(ModelDict, prompt_info), prompts_dir, "general"
         )
 
         # Assert

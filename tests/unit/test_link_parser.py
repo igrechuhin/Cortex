@@ -16,7 +16,9 @@ from typing import cast
 
 import pytest
 
+from cortex.core.models import ModelDict
 from cortex.linking.link_parser import LinkParser
+from tests.helpers.types import get_list
 
 
 class TestLinkParserInitialization:
@@ -52,8 +54,10 @@ class TestParseFile:
 
         assert "markdown_links" in result
         assert "transclusions" in result
-        assert len(result["markdown_links"]) == 0
-        assert len(result["transclusions"]) == 0
+        markdown_links = get_list(result, "markdown_links")
+        transclusions = get_list(result, "transclusions")
+        assert len(markdown_links) == 0
+        assert len(transclusions) == 0
 
     @pytest.mark.asyncio
     async def test_parse_file_with_markdown_link(self):
@@ -63,8 +67,9 @@ class TestParseFile:
 
         result = await parser.parse_file(content)
 
-        assert len(result["markdown_links"]) == 1
-        link = result["markdown_links"][0]
+        markdown_links = get_list(result, "markdown_links")
+        assert len(markdown_links) == 1
+        link = cast(dict[str, object], markdown_links[0])
         assert link["text"] == "project brief"
         assert link["target"] == "projectBrief.md"
         assert link["section"] is None
@@ -79,8 +84,9 @@ class TestParseFile:
 
         result = await parser.parse_file(content)
 
-        assert len(result["markdown_links"]) == 1
-        link = result["markdown_links"][0]
+        markdown_links = get_list(result, "markdown_links")
+        assert len(markdown_links) == 1
+        link = cast(dict[str, object], markdown_links[0])
         assert link["text"] == "architecture"
         assert link["target"] == "systemPatterns.md"
         assert link["section"] == "Architecture"
@@ -100,8 +106,10 @@ class TestParseFile:
         result = await parser.parse_file(content)
 
         # Should only find the local file link
-        assert len(result["markdown_links"]) == 1
-        assert result["markdown_links"][0]["target"] == "projectBrief.md"
+        markdown_links = get_list(result, "markdown_links")
+        assert len(markdown_links) == 1
+        link = cast(dict[str, object], markdown_links[0])
+        assert link["target"] == "projectBrief.md"
 
     @pytest.mark.asyncio
     async def test_parse_file_with_transclusion_directive(self):
@@ -111,8 +119,9 @@ class TestParseFile:
 
         result = await parser.parse_file(content)
 
-        assert len(result["transclusions"]) == 1
-        trans = result["transclusions"][0]
+        transclusions = get_list(result, "transclusions")
+        assert len(transclusions) == 1
+        trans = cast(dict[str, object], transclusions[0])
         assert trans["target"] == "systemPatterns.md"
         assert trans["section"] is None
         assert trans["options"] == {}
@@ -127,8 +136,9 @@ class TestParseFile:
 
         result = await parser.parse_file(content)
 
-        assert len(result["transclusions"]) == 1
-        trans = result["transclusions"][0]
+        transclusions = get_list(result, "transclusions")
+        assert len(transclusions) == 1
+        trans = cast(dict[str, object], transclusions[0])
         assert trans["target"] == "systemPatterns.md"
         assert trans["section"] == "Architecture"
 
@@ -140,8 +150,9 @@ class TestParseFile:
 
         result = await parser.parse_file(content)
 
-        assert len(result["transclusions"]) == 1
-        trans = result["transclusions"][0]
+        transclusions = get_list(result, "transclusions")
+        assert len(transclusions) == 1
+        trans = cast(dict[str, object], transclusions[0])
         assert trans["target"] == "systemPatterns.md"
         assert trans["options"] == {"lines": 5}
 
@@ -161,10 +172,14 @@ class TestParseFile:
 
         result = await parser.parse_file(content)
 
-        assert len(result["markdown_links"]) == 2
-        assert len(result["transclusions"]) == 2
-        assert result["markdown_links"][0]["target"] == "projectBrief.md"
-        assert result["markdown_links"][1]["target"] == "techContext.md"
+        markdown_links = get_list(result, "markdown_links")
+        transclusions = get_list(result, "transclusions")
+        assert len(markdown_links) == 2
+        assert len(transclusions) == 2
+        link0 = cast(dict[str, object], markdown_links[0])
+        link1 = cast(dict[str, object], markdown_links[1])
+        assert link0["target"] == "projectBrief.md"
+        assert link1["target"] == "techContext.md"
 
     @pytest.mark.asyncio
     async def test_parse_file_with_memory_bank_files_without_md_extension(self):
@@ -179,7 +194,8 @@ class TestParseFile:
         result = await parser.parse_file(content)
 
         # All three should be included as they're memory bank files
-        assert len(result["markdown_links"]) == 3
+        markdown_links = get_list(result, "markdown_links")
+        assert len(markdown_links) == 3
 
     @pytest.mark.asyncio
     async def test_parse_file_tracks_line_numbers(self):
@@ -193,8 +209,12 @@ Line 5"""
 
         result = await parser.parse_file(content)
 
-        assert result["markdown_links"][0]["line"] == 2
-        assert result["transclusions"][0]["line"] == 4
+        markdown_links = get_list(result, "markdown_links")
+        transclusions = get_list(result, "transclusions")
+        link0 = cast(dict[str, object], markdown_links[0])
+        trans0 = cast(dict[str, object], transclusions[0])
+        assert link0["line"] == 2
+        assert trans0["line"] == 4
 
     @pytest.mark.asyncio
     async def test_parse_file_with_whitespace_in_targets(self):
@@ -204,8 +224,9 @@ Line 5"""
 
         result = await parser.parse_file(content)
 
-        assert len(result["markdown_links"]) == 1
-        link = result["markdown_links"][0]
+        markdown_links = get_list(result, "markdown_links")
+        assert len(markdown_links) == 1
+        link = cast(dict[str, object], markdown_links[0])
         assert link["target"] == "projectBrief.md"
         assert link["section"] == "Section"
 
@@ -366,10 +387,7 @@ class TestExtractAllLinks:
     def test_extract_all_links_with_empty_data(self):
         """Test extracting links from empty parsed data."""
         parser = LinkParser()
-        parsed_data = cast(
-            dict[str, list[dict[str, object]]],
-            {"markdown_links": [], "transclusions": []},
-        )
+        parsed_data: ModelDict = {"markdown_links": [], "transclusions": []}
 
         links = parser.extract_all_links(parsed_data)
 
@@ -378,16 +396,13 @@ class TestExtractAllLinks:
     def test_extract_all_links_from_markdown_links_only(self):
         """Test extracting links from markdown links only."""
         parser = LinkParser()
-        parsed_data = cast(
-            dict[str, list[dict[str, object]]],
-            {
-                "markdown_links": [
-                    {"target": "file1.md", "section": None},
-                    {"target": "file2.md", "section": "Section"},
-                ],
-                "transclusions": [],
-            },
-        )
+        parsed_data: ModelDict = {
+            "markdown_links": [
+                {"target": "file1.md", "section": None},
+                {"target": "file2.md", "section": "Section"},
+            ],
+            "transclusions": [],
+        }
 
         links = parser.extract_all_links(parsed_data)
 
@@ -396,16 +411,13 @@ class TestExtractAllLinks:
     def test_extract_all_links_from_transclusions_only(self):
         """Test extracting links from transclusions only."""
         parser = LinkParser()
-        parsed_data = cast(
-            dict[str, list[dict[str, object]]],
-            {
-                "markdown_links": [],
-                "transclusions": [
-                    {"target": "file1.md", "section": None},
-                    {"target": "file2.md", "section": "Section"},
-                ],
-            },
-        )
+        parsed_data: ModelDict = {
+            "markdown_links": [],
+            "transclusions": [
+                {"target": "file1.md", "section": None},
+                {"target": "file2.md", "section": "Section"},
+            ],
+        }
 
         links = parser.extract_all_links(parsed_data)
 
@@ -414,19 +426,16 @@ class TestExtractAllLinks:
     def test_extract_all_links_removes_duplicates(self):
         """Test that duplicate targets are removed."""
         parser = LinkParser()
-        parsed_data = cast(
-            dict[str, list[dict[str, object]]],
-            {
-                "markdown_links": [
-                    {"target": "file1.md", "section": None},
-                    {"target": "file2.md", "section": "Section"},
-                ],
-                "transclusions": [
-                    {"target": "file1.md", "section": "Different"},
-                    {"target": "file3.md", "section": None},
-                ],
-            },
-        )
+        parsed_data: ModelDict = {
+            "markdown_links": [
+                {"target": "file1.md", "section": None},
+                {"target": "file2.md", "section": "Section"},
+            ],
+            "transclusions": [
+                {"target": "file1.md", "section": "Different"},
+                {"target": "file3.md", "section": None},
+            ],
+        }
 
         links = parser.extract_all_links(parsed_data)
 
@@ -436,16 +445,13 @@ class TestExtractAllLinks:
     def test_extract_all_links_returns_sorted_list(self):
         """Test that links are returned in sorted order."""
         parser = LinkParser()
-        parsed_data = cast(
-            dict[str, list[dict[str, object]]],
-            {
-                "markdown_links": [
-                    {"target": "zzz.md", "section": None},
-                    {"target": "aaa.md", "section": None},
-                ],
-                "transclusions": [{"target": "mmm.md", "section": None}],
-            },
-        )
+        parsed_data: ModelDict = {
+            "markdown_links": [
+                {"target": "zzz.md", "section": None},
+                {"target": "aaa.md", "section": None},
+            ],
+            "transclusions": [{"target": "mmm.md", "section": None}],
+        }
 
         links = parser.extract_all_links(parsed_data)
 
@@ -454,17 +460,14 @@ class TestExtractAllLinks:
     def test_extract_all_links_skips_empty_targets(self):
         """Test that empty targets are skipped."""
         parser = LinkParser()
-        parsed_data = cast(
-            dict[str, list[dict[str, object]]],
-            {
-                "markdown_links": [
-                    {"target": "file1.md", "section": None},
-                    {"target": "", "section": None},
-                    {"target": "file2.md", "section": None},
-                ],
-                "transclusions": [],
-            },
-        )
+        parsed_data: ModelDict = {
+            "markdown_links": [
+                {"target": "file1.md", "section": None},
+                {"target": "", "section": None},
+                {"target": "file2.md", "section": None},
+            ],
+            "transclusions": [],
+        }
 
         links = parser.extract_all_links(parsed_data)
 
@@ -477,10 +480,10 @@ class TestGetTransclusionTargets:
     def test_get_transclusion_targets_with_no_transclusions(self):
         """Test getting targets when no transclusions exist."""
         parser = LinkParser()
-        parsed_data = cast(
-            dict[str, list[dict[str, object]]],
-            {"markdown_links": [{"target": "file1.md"}], "transclusions": []},
-        )
+        parsed_data: ModelDict = {
+            "markdown_links": [{"target": "file1.md"}],
+            "transclusions": [],
+        }
 
         targets = parser.get_transclusion_targets(parsed_data)
 
@@ -489,10 +492,10 @@ class TestGetTransclusionTargets:
     def test_get_transclusion_targets_with_single_transclusion(self):
         """Test getting targets with single transclusion."""
         parser = LinkParser()
-        parsed_data = cast(
-            dict[str, list[dict[str, object]]],
-            {"markdown_links": [], "transclusions": [{"target": "file1.md"}]},
-        )
+        parsed_data: ModelDict = {
+            "markdown_links": [],
+            "transclusions": [{"target": "file1.md"}],
+        }
 
         targets = parser.get_transclusion_targets(parsed_data)
 
@@ -501,17 +504,14 @@ class TestGetTransclusionTargets:
     def test_get_transclusion_targets_with_multiple_transclusions(self):
         """Test getting targets with multiple transclusions."""
         parser = LinkParser()
-        parsed_data = cast(
-            dict[str, list[dict[str, object]]],
-            {
-                "markdown_links": [],
-                "transclusions": [
-                    {"target": "file1.md"},
-                    {"target": "file2.md"},
-                    {"target": "file3.md"},
-                ],
-            },
-        )
+        parsed_data: ModelDict = {
+            "markdown_links": [],
+            "transclusions": [
+                {"target": "file1.md"},
+                {"target": "file2.md"},
+                {"target": "file3.md"},
+            ],
+        }
 
         targets = parser.get_transclusion_targets(parsed_data)
 
@@ -520,17 +520,14 @@ class TestGetTransclusionTargets:
     def test_get_transclusion_targets_preserves_duplicates(self):
         """Test that duplicates are preserved (not unique)."""
         parser = LinkParser()
-        parsed_data = cast(
-            dict[str, list[dict[str, object]]],
-            {
-                "markdown_links": [],
-                "transclusions": [
-                    {"target": "file1.md"},
-                    {"target": "file1.md"},
-                    {"target": "file2.md"},
-                ],
-            },
-        )
+        parsed_data: ModelDict = {
+            "markdown_links": [],
+            "transclusions": [
+                {"target": "file1.md"},
+                {"target": "file1.md"},
+                {"target": "file2.md"},
+            ],
+        }
 
         targets = parser.get_transclusion_targets(parsed_data)
 
@@ -541,17 +538,14 @@ class TestGetTransclusionTargets:
     def test_get_transclusion_targets_skips_empty_targets(self):
         """Test that empty targets are skipped."""
         parser = LinkParser()
-        parsed_data = cast(
-            dict[str, list[dict[str, object]]],
-            {
-                "markdown_links": [],
-                "transclusions": [
-                    {"target": "file1.md"},
-                    {"target": ""},
-                    {"target": "file2.md"},
-                ],
-            },
-        )
+        parsed_data: ModelDict = {
+            "markdown_links": [],
+            "transclusions": [
+                {"target": "file1.md"},
+                {"target": ""},
+                {"target": "file2.md"},
+            ],
+        }
 
         targets = parser.get_transclusion_targets(parsed_data)
 
@@ -614,10 +608,7 @@ class TestCountLinks:
     def test_count_links_with_empty_data(self):
         """Test counting with empty parsed data."""
         parser = LinkParser()
-        parsed_data = cast(
-            dict[str, list[dict[str, object]]],
-            {"markdown_links": [], "transclusions": []},
-        )
+        parsed_data: ModelDict = {"markdown_links": [], "transclusions": []}
 
         counts = parser.count_links(parsed_data)
 
@@ -629,17 +620,14 @@ class TestCountLinks:
     def test_count_links_with_markdown_links_only(self):
         """Test counting with markdown links only."""
         parser = LinkParser()
-        parsed_data = cast(
-            dict[str, list[dict[str, object]]],
-            {
-                "markdown_links": [
-                    {"target": "file1.md"},
-                    {"target": "file2.md"},
-                    {"target": "file3.md"},
-                ],
-                "transclusions": [],
-            },
-        )
+        parsed_data: ModelDict = {
+            "markdown_links": [
+                {"target": "file1.md"},
+                {"target": "file2.md"},
+                {"target": "file3.md"},
+            ],
+            "transclusions": [],
+        }
 
         counts = parser.count_links(parsed_data)
 
@@ -651,13 +639,10 @@ class TestCountLinks:
     def test_count_links_with_transclusions_only(self):
         """Test counting with transclusions only."""
         parser = LinkParser()
-        parsed_data = cast(
-            dict[str, list[dict[str, object]]],
-            {
-                "markdown_links": [],
-                "transclusions": [{"target": "file1.md"}, {"target": "file2.md"}],
-            },
-        )
+        parsed_data: ModelDict = {
+            "markdown_links": [],
+            "transclusions": [{"target": "file1.md"}, {"target": "file2.md"}],
+        }
 
         counts = parser.count_links(parsed_data)
 
@@ -669,13 +654,10 @@ class TestCountLinks:
     def test_count_links_with_both_types(self):
         """Test counting with both markdown links and transclusions."""
         parser = LinkParser()
-        parsed_data = cast(
-            dict[str, list[dict[str, object]]],
-            {
-                "markdown_links": [{"target": "file1.md"}, {"target": "file2.md"}],
-                "transclusions": [{"target": "file3.md"}, {"target": "file4.md"}],
-            },
-        )
+        parsed_data: ModelDict = {
+            "markdown_links": [{"target": "file1.md"}, {"target": "file2.md"}],
+            "transclusions": [{"target": "file3.md"}, {"target": "file4.md"}],
+        }
 
         counts = parser.count_links(parsed_data)
 
@@ -687,16 +669,13 @@ class TestCountLinks:
     def test_count_links_with_duplicate_targets(self):
         """Test counting correctly handles duplicate targets."""
         parser = LinkParser()
-        parsed_data = cast(
-            dict[str, list[dict[str, object]]],
-            {
-                "markdown_links": [{"target": "file1.md"}, {"target": "file2.md"}],
-                "transclusions": [
-                    {"target": "file1.md"},  # Duplicate
-                    {"target": "file3.md"},
-                ],
-            },
-        )
+        parsed_data: ModelDict = {
+            "markdown_links": [{"target": "file1.md"}, {"target": "file2.md"}],
+            "transclusions": [
+                {"target": "file1.md"},  # Duplicate
+                {"target": "file3.md"},
+            ],
+        }
 
         counts = parser.count_links(parsed_data)
 
@@ -718,7 +697,8 @@ class TestLinkParserEdgeCases:
         result = await parser.parse_file(content)
 
         # Should handle unicode in link text and filenames
-        assert len(result["markdown_links"]) == 2
+        markdown_links = get_list(result, "markdown_links")
+        assert len(markdown_links) == 2
 
     @pytest.mark.asyncio
     async def test_parse_file_with_nested_brackets(self):
@@ -742,8 +722,10 @@ Line 4 {{include: file4.md}}"""
 
         result = await parser.parse_file(content)
 
-        assert len(result["markdown_links"]) == 2
-        assert len(result["transclusions"]) == 2
+        markdown_links = get_list(result, "markdown_links")
+        transclusions = get_list(result, "transclusions")
+        assert len(markdown_links) == 2
+        assert len(transclusions) == 2
 
     @pytest.mark.asyncio
     async def test_parse_file_with_empty_content(self):
@@ -753,8 +735,10 @@ Line 4 {{include: file4.md}}"""
 
         result = await parser.parse_file(content)
 
-        assert result["markdown_links"] == []
-        assert result["transclusions"] == []
+        markdown_links = get_list(result, "markdown_links")
+        transclusions = get_list(result, "transclusions")
+        assert markdown_links == []
+        assert transclusions == []
 
     @pytest.mark.asyncio
     async def test_parse_file_with_only_whitespace(self):
@@ -764,8 +748,10 @@ Line 4 {{include: file4.md}}"""
 
         result = await parser.parse_file(content)
 
-        assert result["markdown_links"] == []
-        assert result["transclusions"] == []
+        markdown_links = get_list(result, "markdown_links")
+        transclusions = get_list(result, "transclusions")
+        assert markdown_links == []
+        assert transclusions == []
 
     def test_parse_transclusion_options_with_special_characters_in_values(self):
         """Test parsing options with special characters."""
@@ -784,6 +770,9 @@ Line 4 {{include: file4.md}}"""
 
         result = await parser.parse_file(content)
 
-        assert len(result["markdown_links"]) == 2
-        assert result["markdown_links"][0]["line"] == 1
-        assert result["markdown_links"][1]["line"] == 1
+        markdown_links = get_list(result, "markdown_links")
+        assert len(markdown_links) == 2
+        link0 = cast(dict[str, object], markdown_links[0])
+        link1 = cast(dict[str, object], markdown_links[1])
+        assert link0["line"] == 1
+        assert link1["line"] == 1

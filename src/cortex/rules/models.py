@@ -7,14 +7,16 @@ including context detection, git operations, and synapse management.
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
+
+from cortex.core.models import DictLikeModel
 
 # ============================================================================
 # Base Model
 # ============================================================================
 
 
-class RulesBaseModel(BaseModel):
+class RulesBaseModel(DictLikeModel):
     """Base model for rules types with strict validation."""
 
     model_config = ConfigDict(

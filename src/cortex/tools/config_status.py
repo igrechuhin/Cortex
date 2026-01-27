@@ -7,14 +7,15 @@ at import time. Used for conditional prompt registration.
 
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
+from cortex.core.models import DictLikeModel
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.tiktoken_cache import ensure_bundled_cache_available
 from cortex.managers.initialization import get_project_root
 
 
-class ProjectConfigStatus(BaseModel):
+class ProjectConfigStatus(DictLikeModel):
     """Project configuration status flags."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)

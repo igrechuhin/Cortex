@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from cortex.core.dependency_graph import DependencyGraph
+from cortex.core.models import ModelDict
 from cortex.core.token_counter import TokenCounter
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.optimization_strategies import OptimizationResult
@@ -103,7 +104,7 @@ class TestOptimizeContext:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test that optimize_context calls relevance scorer."""
         _ = await mock_context_optimizer.optimize_context(
@@ -123,7 +124,7 @@ class TestOptimizeContext:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test optimization with quality scores provided."""
         quality_scores = {"file1.md": 0.9, "file2.md": 0.8}
@@ -145,7 +146,7 @@ class TestOptimizeContext:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test optimization with priority strategy."""
         result = await mock_context_optimizer.optimize_context(
@@ -165,7 +166,7 @@ class TestOptimizeContext:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test optimization with dependency_aware strategy."""
         result = await mock_context_optimizer.optimize_context(
@@ -185,7 +186,7 @@ class TestOptimizeContext:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test optimization with section_level strategy."""
         result = await mock_context_optimizer.optimize_context(
@@ -205,7 +206,7 @@ class TestOptimizeContext:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test optimization with hybrid strategy."""
         result = await mock_context_optimizer.optimize_context(
@@ -225,7 +226,7 @@ class TestOptimizeContext:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test that unknown strategy defaults to dependency_aware."""
         result = await mock_context_optimizer.optimize_context(
@@ -245,7 +246,7 @@ class TestOptimizeContext:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test that relevance scores are added to result metadata."""
         result = await mock_context_optimizer.optimize_context(
@@ -267,7 +268,7 @@ class TestOptimizeContext:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test that integer total_score values are handled correctly."""
         # Mock scorer to return integer scores
@@ -296,7 +297,7 @@ class TestOptimizeContext:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test that missing total_score is handled with default value."""
         # Mock scorer to return results without total_score
@@ -325,7 +326,7 @@ class TestOptimizeContext:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test that non-numeric total_score is handled with default value."""
         # Mock scorer to return non-numeric scores
@@ -407,7 +408,7 @@ class TestRelevanceScoreExtraction:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test that scores are correctly extracted from nested result structure."""
         # Mock complex nested structure
@@ -443,7 +444,7 @@ class TestRelevanceScoreExtraction:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test that scores are rounded to 3 decimal places."""
         # Mock scorer with high precision scores
@@ -477,7 +478,7 @@ class TestStrategyDelegation:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test that correct parameters are passed to priority strategy."""
         _ = await mock_context_optimizer.optimize_context(
@@ -503,7 +504,7 @@ class TestStrategyDelegation:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test that task description is passed to section-level strategy."""
         task_desc = "Implement authentication feature"
@@ -527,7 +528,7 @@ class TestStrategyDelegation:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test that task description is passed to hybrid strategy."""
         task_desc = "Fix bug in user login"
@@ -553,7 +554,7 @@ class TestErrorHandling:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test handling of exceptions from relevance scorer."""
         # Mock scorer to raise exception
@@ -574,7 +575,7 @@ class TestErrorHandling:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test handling of exceptions from strategies."""
         # Mock strategy to raise exception
@@ -599,11 +600,11 @@ class TestMetadataHandling:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test that existing metadata from strategy is preserved."""
         # Mock strategy to return result with metadata
-        existing_metadata: dict[str, object] = {
+        existing_metadata: ModelDict = {
             "strategy_info": "test",
             "extra_data": 123,
         }
@@ -637,7 +638,7 @@ class TestMetadataHandling:
         self,
         mock_context_optimizer: ContextOptimizer,
         sample_files_content: dict[str, str],
-        sample_files_metadata: dict[str, dict[str, object]],
+        sample_files_metadata: dict[str, ModelDict],
     ) -> None:
         """Test handling when strategy returns None metadata."""
         # Mock strategy to return result with None metadata

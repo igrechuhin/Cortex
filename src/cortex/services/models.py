@@ -7,6 +7,8 @@ migrated from legacy dict-based shapes for better validation.
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.models import DictLikeModel
+
 # ============================================================================
 # Base Model
 # ============================================================================
@@ -27,8 +29,14 @@ class ServiceBaseModel(BaseModel):
 # ============================================================================
 
 
-class LanguageInfoModel(ServiceBaseModel):
+class LanguageInfoModel(DictLikeModel):
     """Language detection result."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        validate_assignment=True,
+        validate_default=True,
+    )
 
     language: str = Field(..., description="Detected language")
     test_framework: str | None = Field(None, description="Test framework if detected")
@@ -46,8 +54,14 @@ class LanguageInfoModel(ServiceBaseModel):
 # ============================================================================
 
 
-class CheckResultModel(ServiceBaseModel):
+class CheckResultModel(DictLikeModel):
     """Result of a single check operation."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        validate_assignment=True,
+        validate_default=True,
+    )
 
     check_type: str = Field(..., description="Type of check performed")
     success: bool = Field(..., description="Whether check succeeded")

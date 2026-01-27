@@ -147,8 +147,8 @@ Content 2
         sections = rules_manager.parse_rule_sections(content)
 
         assert len(sections) == 2
-        assert sections[0]["name"] == "Section 1"
-        assert sections[1]["name"] == "Section 2"
+        assert sections[0].name == "Section 1"
+        assert sections[1].name == "Section 2"
 
     @pytest.mark.asyncio
     async def test_get_status(self, rules_manager: RulesManager) -> None:
@@ -157,9 +157,9 @@ Content 2
 
         status = rules_manager.get_status()
 
-        assert "enabled" in status
-        assert "indexed_files" in status
-        assert "total_tokens" in status
+        assert hasattr(status, "enabled")
+        assert hasattr(status, "indexed_files")
+        assert hasattr(status, "total_tokens")
 
     @pytest.mark.asyncio
     async def test_reindex_skip_when_recent(
@@ -303,7 +303,7 @@ class TestRulesIntegration:
 
         # Get status
         status = rules_manager.get_status()
-        indexed_files = status.get("indexed_files", 0)
+        indexed_files = status.indexed_files
         assert isinstance(indexed_files, (int, float))
         assert indexed_files > 0
 

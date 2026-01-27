@@ -28,7 +28,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import HealthMetrics, IndexStats, JsonDict
+from cortex.core.models import DictLikeModel, HealthMetrics, IndexStats, JsonDict
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 
@@ -1793,8 +1793,14 @@ RulesResultUnion = (
 # ============================================================================
 
 
-class CheckResult(StrictBaseModel):
+class CheckResult(DictLikeModel):
     """Result of a single pre-commit check."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        validate_assignment=True,
+        validate_default=True,
+    )
 
     status: Literal["passed", "failed", "skipped", "error"]
     errors: int | None = None
@@ -2259,8 +2265,14 @@ ParseFileLinksResultUnion = ParseFileLinksResult | ParseFileLinksErrorResult
 # ============================================================================
 
 
-class ProjectConfigStatusModel(StrictBaseModel):
+class ProjectConfigStatusModel(DictLikeModel):
     """Project configuration status flags."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        validate_assignment=True,
+        validate_default=True,
+    )
 
     memory_bank_initialized: bool = Field(
         ..., description="Whether memory bank is initialized"

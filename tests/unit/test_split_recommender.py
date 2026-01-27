@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.core.models import ModelDict
 from cortex.refactoring.split_recommender import (
     SplitPoint,
     SplitRecommendation,
@@ -560,7 +561,7 @@ class TestNewStructureGeneration:
         assert isinstance(structure, dict)
         index: object | None = structure.get("index_file")
         assert isinstance(index, dict)
-        index_dict: dict[str, object] = cast(dict[str, object], index)
+        index_dict = cast(ModelDict, index)
         assert index_dict.get("filename") == "test.md"
         assert "purpose" in index_dict
         purpose: object | None = index_dict.get("purpose")
@@ -698,7 +699,7 @@ class TestSplitRecommendationDataclass:
         assert len(split_points_list) > 0
         sp_dict_raw: object = split_points_list[0]
         assert isinstance(sp_dict_raw, dict)
-        sp_dict: dict[str, object] = cast(dict[str, object], sp_dict_raw)
+        sp_dict = cast(ModelDict, sp_dict_raw)
 
         assert sp_dict.get("heading") == "Section 1"
         assert sp_dict.get("lines") == "1-10"
@@ -712,7 +713,7 @@ class TestHelperMethods:
 
     def test_get_section_str(self, split_recommender: SplitRecommender):
         """Test extracting string from section dict"""
-        section: dict[str, object] = {"heading": "Test Heading", "level": 1}
+        section = cast(ModelDict, {"heading": "Test Heading", "level": 1})
 
         result = split_recommender.get_section_str(section, "heading")
         assert result == "Test Heading"
@@ -722,7 +723,7 @@ class TestHelperMethods:
 
     def test_get_section_int(self, split_recommender: SplitRecommender):
         """Test extracting int from section dict"""
-        section: dict[str, object] = {"level": 1, "start_line": 10}
+        section = cast(ModelDict, {"level": 1, "start_line": 10})
 
         result = split_recommender.get_section_int(section, "level")
         assert result == 1
@@ -732,13 +733,13 @@ class TestHelperMethods:
 
     def test_get_section_content(self, split_recommender: SplitRecommender):
         """Test extracting content from section dict"""
-        section: dict[str, object] = {"content": "Test content"}
+        section = cast(ModelDict, {"content": "Test content"})
 
         result = split_recommender.get_section_content(section)
         assert result == "Test content"
 
         # Test with list content
-        section_list: dict[str, object] = {"content": ["Line 1", "Line 2"]}
+        section_list = cast(ModelDict, {"content": ["Line 1", "Line 2"]})
         result = split_recommender.get_section_content(section_list)
         assert result == "Line 1\nLine 2"
 

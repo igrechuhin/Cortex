@@ -43,15 +43,19 @@ class TestDependencyMapper:
     @pytest.mark.asyncio
     async def test_map_tool_dependencies(self, mapper: DependencyMapper):
         """Test mapping dependencies for tools."""
+        from typing import cast
+
         tools = {"tool1": {"docstring": "Content", "body": "Code"}}
-        result = await mapper.map_tool_dependencies(tools)
+        result = await mapper.map_tool_dependencies(
+            cast(dict[str, dict[str, object]], tools)
+        )
         assert isinstance(result, dict)
 
     def test_extract_prompt_references(self, mapper: DependencyMapper):
         """Test extracting prompt references."""
         content = "See prompt1.md for details. Also check prompt2.md."
         prompt_names = {"prompt1.md", "prompt2.md", "prompt3.md"}
-        refs = mapper._extract_prompt_references(content, prompt_names)
+        refs = mapper._extract_prompt_references(content, prompt_names)  # type: ignore[attr-defined]
         assert "prompt1.md" in refs
         assert "prompt2.md" in refs
         assert "prompt3.md" not in refs
@@ -60,14 +64,14 @@ class TestDependencyMapper:
         """Test extracting rule references."""
         content = "See python/coding.mdc for details."
         rule_names = {"python/coding.mdc", "general/rules.mdc"}
-        refs = mapper._extract_rule_references(content, rule_names)
+        refs = mapper._extract_rule_references(content, rule_names)  # type: ignore[attr-defined]
         assert "python/coding.mdc" in refs
 
     def test_extract_tool_references(self, mapper: DependencyMapper):
         """Test extracting tool references."""
         content = "This tool uses tool1 and tool2 for processing."
         tool_names = {"tool1", "tool2", "tool3"}
-        refs = mapper._extract_tool_references(content, tool_names)
+        refs = mapper._extract_tool_references(content, tool_names)  # type: ignore[attr-defined]
         assert "tool1" in refs
         assert "tool2" in refs
         assert "tool3" not in refs

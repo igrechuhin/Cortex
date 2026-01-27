@@ -11,9 +11,11 @@ Tests quality score calculation including:
 """
 
 from datetime import datetime, timedelta
+from typing import cast
 
 import pytest
 
+from cortex.core.models import ModelDict
 from cortex.validation.quality_metrics import QualityMetrics
 from cortex.validation.schema_validator import SchemaValidator
 
@@ -178,23 +180,31 @@ class TestOverallScoreCalculation:
     ) -> None:
         """Test overall score calculation with perfect inputs."""
         # Add token counts to metadata to reach optimal range (20k-80k)
-        metadata_with_optimal_tokens: dict[str, dict[str, object]] = {
-            "memorybankinstructions.md": {
-                "last_modified": recent_metadata["memorybankinstructions.md"][
-                    "last_modified"
-                ],
-                "token_count": 25000,  # In optimal range
-            },
-            "projectBrief.md": {
-                "last_modified": recent_metadata["projectBrief.md"]["last_modified"],
-                "token_count": 20000,  # In optimal range
-            },
+        metadata_with_optimal_tokens: dict[str, ModelDict] = {
+            "memorybankinstructions.md": cast(
+                ModelDict,
+                {
+                    "last_modified": recent_metadata["memorybankinstructions.md"][
+                        "last_modified"
+                    ],
+                    "token_count": 25000,  # In optimal range
+                },
+            ),
+            "projectBrief.md": cast(
+                ModelDict,
+                {
+                    "last_modified": recent_metadata["projectBrief.md"][
+                        "last_modified"
+                    ],
+                    "token_count": 20000,  # In optimal range
+                },
+            ),
         }
 
         result = await quality_metrics.calculate_overall_score(
             files_content=perfect_files_content,
-            files_metadata=metadata_with_optimal_tokens,
-            duplication_data=no_duplications,
+            files_metadata=metadata_with_optimal_tokens,  # type: ignore[arg-type] - ModelDict is compatible
+            duplication_data=cast(ModelDict, no_duplications),
         )
 
         assert isinstance(result.overall_score, (int, float))
@@ -215,8 +225,10 @@ class TestOverallScoreCalculation:
         """Test overall score calculation with poor inputs."""
         result = await quality_metrics.calculate_overall_score(
             files_content=incomplete_files_content,
-            files_metadata=stale_metadata,
-            duplication_data=with_duplications,
+            files_metadata={
+                k: cast(ModelDict, v) for k, v in stale_metadata.items()
+            },  # type: ignore[arg-type] - ModelDict is compatible
+            duplication_data=cast(ModelDict, with_duplications),
         )
 
         assert isinstance(result.overall_score, (int, float))
@@ -237,8 +249,10 @@ class TestOverallScoreCalculation:
         """Test breakdown contains all expected categories."""
         result = await quality_metrics.calculate_overall_score(
             files_content=perfect_files_content,
-            files_metadata=recent_metadata,
-            duplication_data=no_duplications,
+            files_metadata={
+                k: cast(ModelDict, v) for k, v in recent_metadata.items()
+            },  # type: ignore[arg-type] - ModelDict is compatible
+            duplication_data=cast(ModelDict, no_duplications),
         )
 
         breakdown = result.breakdown
@@ -262,14 +276,17 @@ class TestOverallScoreCalculation:
         no_duplications: dict[str, object],
     ) -> None:
         """Test overall score with link validation data."""
-        link_validation: dict[str, object] = {
-            "broken_links": [{"source": "file1.md", "target": "missing.md"}]
-        }
+        link_validation = cast(
+            ModelDict,
+            {"broken_links": [{"source": "file1.md", "target": "missing.md"}]},
+        )
 
         result = await quality_metrics.calculate_overall_score(
             files_content=perfect_files_content,
-            files_metadata=recent_metadata,
-            duplication_data=no_duplications,
+            files_metadata={
+                k: cast(ModelDict, v) for k, v in recent_metadata.items()
+            },  # type: ignore[arg-type] - ModelDict is compatible
+            duplication_data=cast(ModelDict, no_duplications),
             link_validation=link_validation,
         )
 
@@ -288,8 +305,10 @@ class TestOverallScoreCalculation:
         """Test recommendations are generated for issues."""
         result = await quality_metrics.calculate_overall_score(
             files_content=incomplete_files_content,
-            files_metadata=stale_metadata,
-            duplication_data=with_duplications,
+            files_metadata={
+                k: cast(ModelDict, v) for k, v in stale_metadata.items()
+            },  # type: ignore[arg-type] - ModelDict is compatible
+            duplication_data=cast(ModelDict, with_duplications),
         )
 
         recommendations_list = result.recommendations
@@ -316,7 +335,7 @@ class TestFileScoreCalculation:
             "## Structure\n\n"
             "File structure."
         )
-        metadata: dict[str, object] = recent_metadata["memorybankinstructions.md"]
+        metadata = cast(ModelDict, recent_metadata["memorybankinstructions.md"])
 
         result = await quality_metrics.calculate_file_score(
             file_name="memorybankinstructions.md", content=content, metadata=metadata
@@ -338,7 +357,7 @@ class TestFileScoreCalculation:
     ) -> None:
         """Test file score calculation for poor file."""
         content = "# File\n\nMinimal content."
-        metadata: dict[str, object] = stale_metadata["memorybankinstructions.md"]
+        metadata = cast(ModelDict, stale_metadata["memorybankinstructions.md"])
 
         result = await quality_metrics.calculate_file_score(
             file_name="memorybankinstructions.md", content=content, metadata=metadata
@@ -391,7 +410,9 @@ class TestConsistencyCalculation:
         self, quality_metrics: QualityMetrics, no_duplications: dict[str, object]
     ) -> None:
         """Test consistency with no duplications or broken links."""
-        score: float = quality_metrics.calculate_consistency(no_duplications)
+        score: float = quality_metrics.calculate_consistency(
+            cast(ModelDict, no_duplications)
+        )
 
         assert score == 100.0
 
@@ -399,7 +420,9 @@ class TestConsistencyCalculation:
         self, quality_metrics: QualityMetrics, with_duplications: dict[str, object]
     ) -> None:
         """Test consistency penalized by duplications."""
-        score: float = quality_metrics.calculate_consistency(with_duplications)
+        score: float = quality_metrics.calculate_consistency(
+            cast(ModelDict, with_duplications)
+        )
 
         # 3 duplicates * 5 points = 15 point penalty
         assert score == 85.0
@@ -408,11 +431,12 @@ class TestConsistencyCalculation:
         self, quality_metrics: QualityMetrics, no_duplications: dict[str, object]
     ) -> None:
         """Test consistency penalized by broken links."""
-        link_validation: dict[str, object] = {
-            "broken_links": [{"source": "a.md"}, {"source": "b.md"}]
-        }
+        link_validation = cast(
+            ModelDict,
+            {"broken_links": [{"source": "a.md"}, {"source": "b.md"}]},
+        )
         score: float = quality_metrics.calculate_consistency(
-            no_duplications, link_validation
+            cast(ModelDict, no_duplications), link_validation
         )
 
         # 2 broken links * 3 points = 6 point penalty
@@ -420,7 +444,7 @@ class TestConsistencyCalculation:
 
     def test_consistency_minimum_zero(self, quality_metrics: QualityMetrics) -> None:
         """Test consistency score doesn't go below zero."""
-        many_duplications: dict[str, object] = {"duplicates_found": 50}
+        many_duplications = cast(ModelDict, {"duplicates_found": 50})
         score: float = quality_metrics.calculate_consistency(many_duplications)
 
         assert score == 0.0
@@ -435,7 +459,9 @@ class TestFreshnessCalculation:
         recent_metadata: dict[str, dict[str, object]],
     ) -> None:
         """Test freshness with recently updated files."""
-        score: float = quality_metrics.calculate_freshness(recent_metadata)
+        score: float = quality_metrics.calculate_freshness(
+            {k: cast(ModelDict, v) for k, v in recent_metadata.items()}  # type: ignore[arg-type] - ModelDict is compatible
+        )
 
         assert score == 100.0
 
@@ -445,34 +471,42 @@ class TestFreshnessCalculation:
         stale_metadata: dict[str, dict[str, object]],
     ) -> None:
         """Test freshness with old files."""
-        score: float = quality_metrics.calculate_freshness(stale_metadata)
+        score: float = quality_metrics.calculate_freshness(
+            {k: cast(ModelDict, v) for k, v in stale_metadata.items()}  # type: ignore[arg-type] - ModelDict is compatible
+        )
 
         assert score == 20.0
 
     def test_mixed_freshness(self, quality_metrics: QualityMetrics) -> None:
         """Test freshness with mixed file ages."""
         now = datetime.now()
-        metadata: dict[str, dict[str, object]] = {
-            "recent.md": {
-                "last_modified": (now - timedelta(days=5)).isoformat(),
-                "token_count": 100,
-            },
-            "old.md": {
-                "last_modified": (now - timedelta(days=200)).isoformat(),
-                "token_count": 100,
-            },
+        metadata: dict[str, ModelDict] = {
+            "recent.md": cast(
+                ModelDict,
+                {
+                    "last_modified": (now - timedelta(days=5)).isoformat(),
+                    "token_count": 100,
+                },
+            ),
+            "old.md": cast(
+                ModelDict,
+                {
+                    "last_modified": (now - timedelta(days=200)).isoformat(),
+                    "token_count": 100,
+                },
+            ),
         }
-        score: float = quality_metrics.calculate_freshness(metadata)
+        score: float = quality_metrics.calculate_freshness(metadata)  # type: ignore[arg-type] - ModelDict is compatible
         # Average of 100 (recent) and 20 (stale) = 60
         assert score == 60.0
 
     def test_missing_timestamps(self, quality_metrics: QualityMetrics) -> None:
         """Test freshness with missing timestamps."""
-        metadata: dict[str, dict[str, object]] = {
-            "file1.md": {"token_count": 100},
-            "file2.md": {"token_count": 100},
+        metadata: dict[str, ModelDict] = {
+            "file1.md": cast(ModelDict, {"token_count": 100}),
+            "file2.md": cast(ModelDict, {"token_count": 100}),
         }
-        score: float = quality_metrics.calculate_freshness(metadata)
+        score: float = quality_metrics.calculate_freshness(metadata)  # type: ignore[arg-type] - ModelDict is compatible
         # Should default to 50 for missing timestamps
         assert score == 50.0
 
@@ -483,10 +517,12 @@ class TestFreshnessCalculation:
 
     def test_invalid_timestamp_format(self, quality_metrics: QualityMetrics) -> None:
         """Test freshness with invalid timestamp format."""
-        metadata: dict[str, dict[str, object]] = {
-            "file.md": {"last_modified": "invalid-date", "token_count": 100}
+        metadata: dict[str, ModelDict] = {
+            "file.md": cast(
+                ModelDict, {"last_modified": "invalid-date", "token_count": 100}
+            )
         }
-        score: float = quality_metrics.calculate_freshness(metadata)
+        score: float = quality_metrics.calculate_freshness(metadata)  # type: ignore[arg-type] - ModelDict is compatible
         # Should default to 50 for invalid timestamps
         assert score == 50.0
 
@@ -497,9 +533,10 @@ class TestFileFreshnessCalculation:
     def test_file_freshness_recent(self, quality_metrics: QualityMetrics) -> None:
         """Test file freshness for recent file."""
         now = datetime.now()
-        metadata: dict[str, object] = {
-            "last_modified": (now - timedelta(days=3)).isoformat()
-        }
+        metadata = cast(
+            ModelDict,
+            {"last_modified": (now - timedelta(days=3)).isoformat()},
+        )
 
         score: float = quality_metrics.calculate_file_freshness(metadata)
         assert score == 100.0
@@ -507,9 +544,10 @@ class TestFileFreshnessCalculation:
     def test_file_freshness_stale(self, quality_metrics: QualityMetrics) -> None:
         """Test file freshness for stale file."""
         now = datetime.now()
-        metadata: dict[str, object] = {
-            "last_modified": (now - timedelta(days=200)).isoformat()
-        }
+        metadata = cast(
+            ModelDict,
+            {"last_modified": (now - timedelta(days=200)).isoformat()},
+        )
 
         score: float = quality_metrics.calculate_file_freshness(metadata)
         assert score == 20.0
@@ -518,7 +556,7 @@ class TestFileFreshnessCalculation:
         self, quality_metrics: QualityMetrics
     ) -> None:
         """Test file freshness with missing timestamp."""
-        score: float = quality_metrics.calculate_file_freshness({})
+        score: float = quality_metrics.calculate_file_freshness(cast(ModelDict, {}))
         assert score == 50.0
 
 
@@ -609,7 +647,7 @@ class TestTokenEfficiencyCalculation:
     ) -> None:
         """Test token efficiency with optimal range (20k-80k)."""
         score: float = quality_metrics.calculate_token_efficiency(
-            optimal_token_metadata
+            {k: cast(ModelDict, v) for k, v in optimal_token_metadata.items()}  # type: ignore[arg-type] - ModelDict is compatible
         )
 
         # Total: 45k tokens (optimal range)
@@ -617,25 +655,31 @@ class TestTokenEfficiencyCalculation:
 
     def test_too_few_tokens(self, quality_metrics: QualityMetrics) -> None:
         """Test token efficiency penalized for too few tokens."""
-        metadata: dict[str, dict[str, object]] = {
-            "file.md": {
-                "last_modified": datetime.now().isoformat(),
-                "token_count": 5000,
-            }
+        metadata: dict[str, ModelDict] = {
+            "file.md": cast(
+                ModelDict,
+                {
+                    "last_modified": datetime.now().isoformat(),
+                    "token_count": 5000,
+                },
+            )
         }
-        score: float = quality_metrics.calculate_token_efficiency(metadata)
+        score: float = quality_metrics.calculate_token_efficiency(metadata)  # type: ignore[arg-type] - ModelDict is compatible
         # 5k / 20k = 0.25, so 50 + (0.25 * 50) = 62.5
         assert score == 62.5
 
     def test_too_many_tokens(self, quality_metrics: QualityMetrics) -> None:
         """Test token efficiency penalized for too many tokens."""
-        metadata: dict[str, dict[str, object]] = {
-            "file.md": {
-                "last_modified": datetime.now().isoformat(),
-                "token_count": 100000,
-            }
+        metadata: dict[str, ModelDict] = {
+            "file.md": cast(
+                ModelDict,
+                {
+                    "last_modified": datetime.now().isoformat(),
+                    "token_count": 100000,
+                },
+            )
         }
-        score: float = quality_metrics.calculate_token_efficiency(metadata)
+        score: float = quality_metrics.calculate_token_efficiency(metadata)  # type: ignore[arg-type] - ModelDict is compatible
         # Excess: 20k, penalty: (20k / 1000) * 2 = 40
         assert score == 60.0
 
@@ -702,7 +746,7 @@ class TestIssueCollection:
             freshness=90.0,
             structure=90.0,
             token_efficiency=90.0,
-            duplication_data=no_duplications,
+            duplication_data=cast(ModelDict, no_duplications),
         )
 
         assert len(issues) == 0
@@ -717,7 +761,7 @@ class TestIssueCollection:
             freshness=90.0,
             structure=90.0,
             token_efficiency=90.0,
-            duplication_data=no_duplications,
+            duplication_data=cast(ModelDict, no_duplications),
         )
 
         assert len(issues) >= 1
@@ -735,7 +779,7 @@ class TestIssueCollection:
             freshness=90.0,
             structure=90.0,
             token_efficiency=90.0,
-            duplication_data=with_duplications,
+            duplication_data=cast(ModelDict, with_duplications),
         )
 
         assert len(issues) >= 1
@@ -751,7 +795,7 @@ class TestIssueCollection:
             freshness=50.0,
             structure=90.0,
             token_efficiency=90.0,
-            duplication_data=no_duplications,
+            duplication_data=cast(ModelDict, no_duplications),
         )
 
         assert len(issues) >= 1
@@ -769,7 +813,7 @@ class TestIssueCollection:
             freshness=50.0,
             structure=70.0,
             token_efficiency=60.0,
-            duplication_data=with_duplications,
+            duplication_data=cast(ModelDict, with_duplications),
         )
 
         assert len(issues) >= 4

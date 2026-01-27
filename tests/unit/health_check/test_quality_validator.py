@@ -1,5 +1,7 @@
 """Tests for quality validator."""
 
+from typing import cast
+
 from cortex.health_check.models import MergeOpportunity
 from cortex.health_check.quality_validator import QualityValidator
 
@@ -19,7 +21,8 @@ class TestQualityValidator:
         }
         result = validator.validate_merge(opportunity)
         assert result["valid"] is True
-        assert len(result["issues"]) == 0
+        issues = cast(list[str], result["issues"])
+        assert len(issues) == 0
 
     def test_validate_merge_low_similarity(self):
         """Test merge validation with low similarity."""
@@ -33,7 +36,8 @@ class TestQualityValidator:
         }
         result = validator.validate_merge(opportunity)
         assert result["valid"] is False
-        assert len(result["issues"]) > 0
+        issues = cast(list[str], result["issues"])
+        assert len(issues) > 0
 
     def test_validate_merge_negative_impact(self):
         """Test merge validation with negative quality impact."""
@@ -47,7 +51,8 @@ class TestQualityValidator:
         }
         result = validator.validate_merge(opportunity)
         assert result["valid"] is False
-        assert len(result["issues"]) > 0
+        issues = cast(list[str], result["issues"])
+        assert len(issues) > 0
 
     def test_validate_optimization_duplicate(self):
         """Test optimization validation for duplicate issue."""
@@ -56,7 +61,8 @@ class TestQualityValidator:
             "file.md", "Duplicate sections detected"
         )
         assert result["valid"] is True
-        assert len(result["warnings"]) > 0
+        warnings = cast(list[str], result["warnings"])
+        assert len(warnings) > 0
 
     def test_validate_optimization_split(self):
         """Test optimization validation for split issue."""
@@ -65,4 +71,5 @@ class TestQualityValidator:
             "file.md", "Very large file, consider splitting"
         )
         assert result["valid"] is True
-        assert len(result["warnings"]) > 0
+        warnings = cast(list[str], result["warnings"])
+        assert len(warnings) > 0

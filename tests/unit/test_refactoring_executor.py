@@ -10,6 +10,7 @@ import pytest
 from cortex.core.exceptions import ValidationError
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import ModelDict
 from cortex.linking.link_parser import LinkParser
 from cortex.refactoring.models import (
     OperationParameters,
@@ -191,13 +192,16 @@ class TestExecuteRefactoring:
             metadata_index=mock_metadata_index,
         )
 
-        suggestion: dict[str, object] = {
-            "suggestion_id": "sug-1",
-            "type": "consolidation",
-            "target_file": "nonexistent.md",
-            "files": [],
-            "sections": [],
-        }
+        suggestion = cast(
+            ModelDict,
+            {
+                "suggestion_id": "sug-1",
+                "type": "consolidation",
+                "target_file": "nonexistent.md",
+                "files": [],
+                "sections": [],
+            },
+        )
 
         # Act
         result = await executor.execute_refactoring(
@@ -242,14 +246,17 @@ class TestExecuteRefactoring:
             metadata_index=mock_metadata_index,
         )
 
-        suggestion: dict[str, object] = {
-            "suggestion_id": "sug-1",
-            "type": "split",
-            "file": "test.md",
-            "split_points": [
-                {"new_file": "part1.md", "sections": [], "content": "Content1"}
-            ],
-        }
+        suggestion = cast(
+            ModelDict,
+            {
+                "suggestion_id": "sug-1",
+                "type": "split",
+                "file": "test.md",
+                "split_points": [
+                    {"new_file": "part1.md", "sections": [], "content": "Content1"}
+                ],
+            },
+        )
 
         # Act
         result = await executor.execute_refactoring(
@@ -298,13 +305,16 @@ class TestExecuteRefactoring:
         target_file = memory_bank_dir / "target.md"
         _ = target_file.write_text("Original content")
 
-        suggestion: dict[str, object] = {
-            "suggestion_id": "sug-1",
-            "type": "reorganization",
-            "actions": [
-                {"action": "rename", "file": "target.md", "new_name": "renamed.md"}
-            ],
-        }
+        suggestion = cast(
+            ModelDict,
+            {
+                "suggestion_id": "sug-1",
+                "type": "reorganization",
+                "actions": [
+                    {"action": "rename", "file": "target.md", "new_name": "renamed.md"}
+                ],
+            },
+        )
 
         # Mock version manager
         version_manager.create_snapshot = AsyncMock(return_value="snapshot-1")
@@ -658,9 +668,10 @@ class TestExecutionHistory:
         )
 
         # Act
-        result: dict[str, object] = await executor.get_execution_history(
-            time_range_days=90
-        )
+        from cortex.refactoring.models import ExecutionHistoryResult
+
+        result = await executor.get_execution_history(time_range_days=90)
+        assert isinstance(result, ExecutionHistoryResult)
 
         # Assert
         assert result["total_executions"] == 1
@@ -785,13 +796,16 @@ class TestValidateRefactoring:
         file1 = memory_bank_dir / "file1.md"
         _ = file1.write_text("# Section\nContent")
 
-        suggestion: dict[str, object] = {
-            "suggestion_id": "sug-1",
-            "type": "consolidation",
-            "files": ["file1.md"],
-            "sections": ["Section"],
-            "target_file": "consolidated.md",
-        }
+        suggestion = cast(
+            ModelDict,
+            {
+                "suggestion_id": "sug-1",
+                "type": "consolidation",
+                "files": ["file1.md"],
+                "sections": ["Section"],
+                "target_file": "consolidated.md",
+            },
+        )
 
         # Act
         result = await executor.validate_refactoring(suggestion)
@@ -835,18 +849,21 @@ class TestValidateRefactoring:
         source = memory_bank_dir / "source.md"
         _ = source.write_text("# Part1\nContent1\n# Part2\nContent2")
 
-        suggestion: dict[str, object] = {
-            "suggestion_id": "sug-1",
-            "type": "split",
-            "file": "source.md",
-            "split_points": [
-                {
-                    "new_file": "part1.md",
-                    "sections": ["Part1"],
-                    "content": "# Part1\nContent1",
-                }
-            ],
-        }
+        suggestion = cast(
+            ModelDict,
+            {
+                "suggestion_id": "sug-1",
+                "type": "split",
+                "file": "source.md",
+                "split_points": [
+                    {
+                        "new_file": "part1.md",
+                        "sections": ["Part1"],
+                        "content": "# Part1\nContent1",
+                    }
+                ],
+            },
+        )
 
         # Act
         result = await executor.validate_refactoring(suggestion)
@@ -1121,12 +1138,15 @@ class TestExtractOperations:
             metadata_index=mock_metadata_index,
         )
 
-        suggestion: dict[str, object] = {
-            "type": "consolidation",
-            "files": ["file1.md", "file2.md"],
-            "sections": ["Section1"],
-            "target_file": "consolidated.md",
-        }
+        suggestion = cast(
+            ModelDict,
+            {
+                "type": "consolidation",
+                "files": ["file1.md", "file2.md"],
+                "sections": ["Section1"],
+                "target_file": "consolidated.md",
+            },
+        )
 
         # Act
         operations = executor.extract_operations(suggestion)
@@ -1163,13 +1183,16 @@ class TestExtractOperations:
             metadata_index=mock_metadata_index,
         )
 
-        suggestion: dict[str, object] = {
-            "type": "split",
-            "file": "large.md",
-            "split_points": [
-                {"new_file": "part1.md", "sections": [], "content": "Content1"}
-            ],
-        }
+        suggestion = cast(
+            ModelDict,
+            {
+                "type": "split",
+                "file": "large.md",
+                "split_points": [
+                    {"new_file": "part1.md", "sections": [], "content": "Content1"}
+                ],
+            },
+        )
 
         # Act
         operations = executor.extract_operations(suggestion)
@@ -1206,17 +1229,20 @@ class TestExtractOperations:
             metadata_index=mock_metadata_index,
         )
 
-        suggestion: dict[str, object] = {
-            "type": "reorganization",
-            "actions": [
-                {
-                    "action": "move",
-                    "file": "file1.md",
-                    "destination": "newdir/file1.md",
-                },
-                {"action": "rename", "file": "file2.md", "new_name": "renamed.md"},
-            ],
-        }
+        suggestion = cast(
+            ModelDict,
+            {
+                "type": "reorganization",
+                "actions": [
+                    {
+                        "action": "move",
+                        "file": "file1.md",
+                        "destination": "newdir/file1.md",
+                    },
+                    {"action": "rename", "file": "file2.md", "new_name": "renamed.md"},
+                ],
+            },
+        )
 
         # Act
         operations = executor.extract_operations(suggestion)

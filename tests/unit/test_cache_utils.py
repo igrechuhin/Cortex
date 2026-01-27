@@ -46,12 +46,12 @@ class TestClearCache:
         """Test clearing specific cache type."""
         # Arrange
         cache_dir = tmp_path / ".cortex" / ".cache" / "summaries"
-        cache_dir.mkdir(parents=True, exist_ok=True)
+        _ = cache_dir.mkdir(parents=True, exist_ok=True)
 
         # Create cache files
-        (cache_dir / "file1.json").write_text('{"data": "test1"}')
-        (cache_dir / "file2.json").write_text('{"data": "test2"}')
-        (cache_dir / "file3.json").write_text('{"data": "test3"}')
+        _ = (cache_dir / "file1.json").write_text('{"data": "test1"}')
+        _ = (cache_dir / "file2.json").write_text('{"data": "test2"}')
+        _ = (cache_dir / "file3.json").write_text('{"data": "test3"}')
 
         # Act
         deleted_count = clear_cache(tmp_path, CacheType.SUMMARIES)
@@ -66,12 +66,12 @@ class TestClearCache:
         """Test clearing entire cache directory."""
         # Arrange
         summaries_dir = tmp_path / ".cortex" / ".cache" / "summaries"
-        summaries_dir.mkdir(parents=True, exist_ok=True)
-        (summaries_dir / "file1.json").write_text('{"data": "test1"}')
+        _ = summaries_dir.mkdir(parents=True, exist_ok=True)
+        _ = (summaries_dir / "file1.json").write_text('{"data": "test1"}')
 
         relevance_dir = tmp_path / ".cortex" / ".cache" / "relevance"
-        relevance_dir.mkdir(parents=True, exist_ok=True)
-        (relevance_dir / "file2.json").write_text('{"data": "test2"}')
+        _ = relevance_dir.mkdir(parents=True, exist_ok=True)
+        _ = (relevance_dir / "file2.json").write_text('{"data": "test2"}')
 
         # Act
         deleted_count = clear_cache(tmp_path)
@@ -85,11 +85,11 @@ class TestClearCache:
         """Test that clearing cache preserves directory structure."""
         # Arrange
         cache_dir = tmp_path / ".cortex" / ".cache" / "summaries"
-        cache_dir.mkdir(parents=True, exist_ok=True)
-        (cache_dir / "file1.json").write_text('{"data": "test1"}')
+        _ = cache_dir.mkdir(parents=True, exist_ok=True)
+        _ = (cache_dir / "file1.json").write_text('{"data": "test1"}')
 
         # Act
-        clear_cache(tmp_path, CacheType.SUMMARIES)
+        _ = clear_cache(tmp_path, CacheType.SUMMARIES)
 
         # Assert
         assert cache_dir.exists()  # Directory still exists
@@ -111,12 +111,12 @@ class TestGetCacheSize:
         """Test getting size of specific cache type."""
         # Arrange
         cache_dir = tmp_path / ".cortex" / ".cache" / "summaries"
-        cache_dir.mkdir(parents=True, exist_ok=True)
+        _ = cache_dir.mkdir(parents=True, exist_ok=True)
 
         content1 = '{"data": "test1"}' * 10  # ~150 bytes
         content2 = '{"data": "test2"}' * 20  # ~300 bytes
-        (cache_dir / "file1.json").write_text(content1)
-        (cache_dir / "file2.json").write_text(content2)
+        _ = (cache_dir / "file1.json").write_text(content1)
+        _ = (cache_dir / "file2.json").write_text(content2)
 
         # Act
         size = get_cache_size(tmp_path, CacheType.SUMMARIES)
@@ -129,12 +129,12 @@ class TestGetCacheSize:
         """Test getting size of entire cache directory."""
         # Arrange
         summaries_dir = tmp_path / ".cortex" / ".cache" / "summaries"
-        summaries_dir.mkdir(parents=True, exist_ok=True)
-        (summaries_dir / "file1.json").write_text('{"data": "test1"}')
+        _ = summaries_dir.mkdir(parents=True, exist_ok=True)
+        _ = (summaries_dir / "file1.json").write_text('{"data": "test1"}')
 
         relevance_dir = tmp_path / ".cortex" / ".cache" / "relevance"
-        relevance_dir.mkdir(parents=True, exist_ok=True)
-        (relevance_dir / "file2.json").write_text('{"data": "test2"}')
+        _ = relevance_dir.mkdir(parents=True, exist_ok=True)
+        _ = (relevance_dir / "file2.json").write_text('{"data": "test2"}')
 
         # Act
         size = get_cache_size(tmp_path)
@@ -158,12 +158,12 @@ class TestListCacheFiles:
         """Test listing files in specific cache type."""
         # Arrange
         cache_dir = tmp_path / ".cortex" / ".cache" / "summaries"
-        cache_dir.mkdir(parents=True, exist_ok=True)
+        _ = cache_dir.mkdir(parents=True, exist_ok=True)
 
         file1 = cache_dir / "file1.json"
         file2 = cache_dir / "file2.json"
-        file1.write_text('{"data": "test1"}')
-        file2.write_text('{"data": "test2"}')
+        _ = file1.write_text('{"data": "test1"}')
+        _ = file2.write_text('{"data": "test2"}')
 
         # Act
         files = list_cache_files(tmp_path, CacheType.SUMMARIES)
@@ -177,14 +177,14 @@ class TestListCacheFiles:
         """Test listing all cache files."""
         # Arrange
         summaries_dir = tmp_path / ".cortex" / ".cache" / "summaries"
-        summaries_dir.mkdir(parents=True, exist_ok=True)
+        _ = summaries_dir.mkdir(parents=True, exist_ok=True)
         file1 = summaries_dir / "file1.json"
-        file1.write_text('{"data": "test1"}')
+        _ = file1.write_text('{"data": "test1"}')
 
         relevance_dir = tmp_path / ".cortex" / ".cache" / "relevance"
-        relevance_dir.mkdir(parents=True, exist_ok=True)
+        _ = relevance_dir.mkdir(parents=True, exist_ok=True)
         file2 = relevance_dir / "file2.json"
-        file2.write_text('{"data": "test2"}')
+        _ = file2.write_text('{"data": "test2"}')
 
         # Act
         files = list_cache_files(tmp_path)
@@ -198,14 +198,14 @@ class TestListCacheFiles:
         """Test that cache files are returned sorted."""
         # Arrange
         cache_dir = tmp_path / ".cortex" / ".cache" / "summaries"
-        cache_dir.mkdir(parents=True, exist_ok=True)
+        _ = cache_dir.mkdir(parents=True, exist_ok=True)
 
         file_z = cache_dir / "z_file.json"
         file_a = cache_dir / "a_file.json"
         file_m = cache_dir / "m_file.json"
-        file_z.write_text('{"data": "z"}')
-        file_a.write_text('{"data": "a"}')
-        file_m.write_text('{"data": "m"}')
+        _ = file_z.write_text('{"data": "z"}')
+        _ = file_a.write_text('{"data": "a"}')
+        _ = file_m.write_text('{"data": "m"}')
 
         # Act
         files = list_cache_files(tmp_path, CacheType.SUMMARIES)
@@ -220,15 +220,15 @@ class TestListCacheFiles:
         """Test that directories are excluded from file list."""
         # Arrange
         cache_dir = tmp_path / ".cortex" / ".cache" / "summaries"
-        cache_dir.mkdir(parents=True, exist_ok=True)
+        _ = cache_dir.mkdir(parents=True, exist_ok=True)
 
         file1 = cache_dir / "file1.json"
-        file1.write_text('{"data": "test1"}')
+        _ = file1.write_text('{"data": "test1"}')
 
         subdir = cache_dir / "subdir"
-        subdir.mkdir()
+        _ = subdir.mkdir()
         file2 = subdir / "file2.json"
-        file2.write_text('{"data": "test2"}')
+        _ = file2.write_text('{"data": "test2"}')
 
         # Act
         files = list_cache_files(tmp_path, CacheType.SUMMARIES)

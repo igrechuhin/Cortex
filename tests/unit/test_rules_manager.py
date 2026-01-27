@@ -573,7 +573,9 @@ class TestGetLocalRules:
             for i in range(len(rules) - 1):
                 rule1 = rules[i]
                 rule2 = rules[i + 1]
-                assert rule1.relevance_score >= rule2.relevance_score
+                score1 = cast(float, rule1.get("relevance_score", 0.0))
+                score2 = cast(float, rule2.get("relevance_score", 0.0))
+                assert score1 >= score2
 
 
 class TestSelectWithinBudget:

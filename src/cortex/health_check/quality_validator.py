@@ -1,12 +1,15 @@
 """Quality preservation validator for health-check analysis."""
 
+from typing import cast
+
+from cortex.core.models import JsonValue, ModelDict
 from cortex.health_check.models import MergeOpportunity
 
 
 class QualityValidator:
     """Validates that merges don't reduce quality."""
 
-    def validate_merge(self, opportunity: MergeOpportunity) -> dict[str, object]:
+    def validate_merge(self, opportunity: MergeOpportunity) -> ModelDict:
         """Validate that a merge opportunity preserves quality.
 
         Args:
@@ -35,14 +38,15 @@ class QualityValidator:
         if opportunity["similarity"] >= 0.85:
             warnings.append("Very high similarity - strong candidate for merge")
 
-        return {
+        result: ModelDict = {
             "valid": len(issues) == 0,
-            "issues": issues,
-            "warnings": warnings,
+            "issues": cast(list[JsonValue], issues),
+            "warnings": cast(list[JsonValue], warnings),
             "recommendation": "proceed" if len(issues) == 0 else "review",
         }
+        return result
 
-    def validate_optimization(self, file: str, issue: str) -> dict[str, object]:
+    def validate_optimization(self, file: str, issue: str) -> ModelDict:
         """Validate that an optimization preserves quality.
 
         Args:
@@ -61,9 +65,10 @@ class QualityValidator:
         elif "split" in issue.lower():
             warnings.append("Splitting large files improves maintainability")
 
-        return {
+        result: ModelDict = {
             "valid": len(issues) == 0,
-            "issues": issues,
-            "warnings": warnings,
+            "issues": cast(list[JsonValue], issues),
+            "warnings": cast(list[JsonValue], warnings),
             "recommendation": "proceed",
         }
+        return result

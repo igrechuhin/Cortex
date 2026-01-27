@@ -10,6 +10,7 @@ import pytest
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ModelDict
+from cortex.refactoring.models import RefactoringStatus
 from cortex.refactoring.rollback_manager import RollbackManager, RollbackRecord
 
 
@@ -55,7 +56,7 @@ class TestRollbackRecord:
             rollback_id="roll-1",
             execution_id="exec-1",
             created_at="2025-01-01T12:00:00",
-            status="completed",
+            status=RefactoringStatus.COMPLETED,
             files_restored=["file1.md"],
         )
 
@@ -524,14 +525,14 @@ class TestRollbackHistory:
             rollback_id="old",
             execution_id="exec-1",
             created_at=old_date,
-            status="completed",
+            status=RefactoringStatus.COMPLETED,
         )
 
         manager.rollbacks["new"] = RollbackRecord(
             rollback_id="new",
             execution_id="exec-2",
             created_at=new_date,
-            status="completed",
+            status=RefactoringStatus.COMPLETED,
         )
 
         # Act
@@ -974,7 +975,7 @@ class TestSaveRollbacks:
             rollback_id="roll-1",
             execution_id="exec-1",
             created_at="2025-01-01T12:00:00",
-            status="completed",
+            status=RefactoringStatus.COMPLETED,
         )
 
         # Act

@@ -23,7 +23,7 @@ class TestAnalyzeSessionLogs:
         result = analyze_session_logs(tmp_path)
 
         # Assert
-        assert result["status"] == "no_data"
+        assert result.status == "no_data"
 
     def test_analyzes_session_logs(self, tmp_path: Path) -> None:
         """Test that session logs are analyzed."""
@@ -57,9 +57,9 @@ class TestAnalyzeSessionLogs:
         result = analyze_session_logs(tmp_path)
 
         # Assert
-        assert result["status"] == "success"
-        assert result["new_sessions_analyzed"] == 1
-        assert result["new_entries_added"] == 1
+        assert result.status == "success"
+        assert result.new_sessions_analyzed == 1
+        assert result.new_entries_added == 1
 
     def test_skips_already_analyzed_sessions(self, tmp_path: Path) -> None:
         """Test that already analyzed sessions are skipped."""
@@ -96,8 +96,8 @@ class TestAnalyzeSessionLogs:
         result = analyze_session_logs(tmp_path)
 
         # Assert
-        assert result["new_sessions_analyzed"] == 0
-        assert result["new_entries_added"] == 0
+        assert result.new_sessions_analyzed == 0
+        assert result.new_entries_added == 0
 
     def test_extracts_task_patterns(self, tmp_path: Path) -> None:
         """Test that task patterns are extracted correctly."""
@@ -143,8 +143,10 @@ class TestAnalyzeSessionLogs:
         result = analyze_session_logs(tmp_path)
 
         # Assert
-        assert result["status"] == "success"
-        statistics = cast(dict[str, object], result["statistics"])
+        assert result.status == "success"
+        statistics_raw = result.statistics
+        assert statistics_raw is not None
+        statistics = cast(dict[str, object], statistics_raw.model_dump(mode="python"))
         patterns = cast(dict[str, int], statistics["common_task_patterns"])
         assert "security" in patterns
         assert "implement/add" in patterns
@@ -165,8 +167,8 @@ class TestAnalyzeCurrentSession:
             result = analyze_current_session(tmp_path)
 
             # Assert
-            assert result["status"] == "no_data"
-            assert result["session_id"] == "current_test_empty"
+            assert result.status == "no_data"
+            assert result.session_id == "current_test_empty"
         finally:
             if original:
                 os.environ[env_key] = original
@@ -210,11 +212,13 @@ class TestAnalyzeCurrentSession:
             result = analyze_current_session(tmp_path)
 
             # Assert
-            assert result["status"] == "success"
-            assert result["session_id"] == "current_test_123"
-            current = cast(dict[str, object], result["current_session"])
+            assert result.status == "success"
+            assert result.session_id == "current_test_123"
+            current_raw = result.current_session
+            assert current_raw is not None
+            current = cast(dict[str, object], current_raw.model_dump(mode="python"))
             assert current["calls_analyzed"] == 1
-            assert result["global_statistics_updated"] is True
+            assert result.global_statistics_updated is True
         finally:
             if original:
                 os.environ[env_key] = original
@@ -270,8 +274,10 @@ class TestAnalyzeCurrentSession:
             result = analyze_current_session(tmp_path)
 
             # Assert
-            assert result["status"] == "success"
-            current = cast(dict[str, object], result["current_session"])
+            assert result.status == "success"
+            current_raw = result.current_session
+            assert current_raw is not None
+            current = cast(dict[str, object], current_raw.model_dump(mode="python"))
             stats = cast(dict[str, object], current["statistics"])
             assert stats["calls_count"] == 2
             assert stats["avg_token_utilization"] == 0.5  # (0.4 + 0.6) / 2
@@ -292,7 +298,7 @@ class TestGetContextStatistics:
         result = get_context_statistics(tmp_path)
 
         # Assert
-        assert result["status"] == "no_data"
+        assert result.status == "no_data"
 
     def test_returns_statistics(self, tmp_path: Path) -> None:
         """Test that statistics are returned."""
@@ -318,10 +324,12 @@ class TestGetContextStatistics:
         result = get_context_statistics(tmp_path)
 
         # Assert
-        assert result["status"] == "success"
-        assert result["total_sessions"] == 5
-        assert result["total_calls"] == 10
-        statistics = cast(dict[str, object], result["statistics"])
+        assert result.status == "success"
+        assert result.total_sessions == 5
+        assert result.total_calls == 10
+        statistics_raw = result.statistics
+        assert statistics_raw is not None
+        statistics = cast(dict[str, object], statistics_raw.model_dump(mode="python"))
         assert statistics["avg_token_utilization"] == 0.65
 
 
@@ -389,8 +397,10 @@ class TestInsightGeneration:
         result = analyze_session_logs(tmp_path)
 
         # Assert
-        assert result["status"] == "success"
-        insights = cast(dict[str, object], result["insights"])
+        assert result.status == "success"
+        insights_raw = result.insights
+        assert insights_raw is not None
+        insights = cast(dict[str, object], insights_raw.model_dump(mode="python"))
         task_recs = cast(dict[str, object], insights["task_type_recommendations"])
         fix_debug = cast(dict[str, object], task_recs.get("fix/debug", {}))
         notes = cast(str, fix_debug.get("notes", ""))
@@ -443,8 +453,10 @@ class TestInsightGeneration:
         result = analyze_session_logs(tmp_path)
 
         # Assert
-        assert result["status"] == "success"
-        insights = cast(dict[str, object], result["insights"])
+        assert result.status == "success"
+        insights_raw = result.insights
+        assert insights_raw is not None
+        insights = cast(dict[str, object], insights_raw.model_dump(mode="python"))
         file_eff = cast(dict[str, object], insights["file_effectiveness"])
         assert "high_relevance.md" in file_eff
         assert "low_relevance.md" in file_eff
@@ -513,8 +525,10 @@ class TestInsightGeneration:
         result = get_context_statistics(tmp_path)
 
         # Assert
-        assert result["status"] == "success"
-        insights = cast(dict[str, object], result["insights"])
+        assert result.status == "success"
+        insights_raw = result.insights
+        assert insights_raw is not None
+        insights = cast(dict[str, object], insights_raw.model_dump(mode="python"))
         task_recs = cast(dict[str, object], insights["task_type_recommendations"])
         assert "fix/debug" in task_recs
         assert "implement/add" in task_recs
@@ -567,8 +581,10 @@ class TestInsightGeneration:
         result = analyze_session_logs(tmp_path)
 
         # Assert
-        assert result["status"] == "success"
-        insights = cast(dict[str, object], result["insights"])
+        assert result.status == "success"
+        insights_raw = result.insights
+        assert insights_raw is not None
+        insights = cast(dict[str, object], insights_raw.model_dump(mode="python"))
         patterns = cast(list[str], insights["learned_patterns"])
         assert len(patterns) >= 1
         # Should mention utilization or frequently loaded file
@@ -619,8 +635,10 @@ class TestInsightGeneration:
         result = analyze_session_logs(tmp_path)
 
         # Assert
-        assert result["status"] == "success"
-        insights = cast(dict[str, object], result["insights"])
+        assert result.status == "success"
+        insights_raw = result.insights
+        assert insights_raw is not None
+        insights = cast(dict[str, object], insights_raw.model_dump(mode="python"))
         budget_recs = cast(dict[str, int], insights["budget_recommendations"])
         assert "fix/debug" in budget_recs
         assert "implement/add" in budget_recs
@@ -660,9 +678,10 @@ class TestInsightGeneration:
         result = analyze_session_logs(tmp_path)
 
         # Assert
-        assert result["status"] == "success"
-        assert "insights" in result
-        insights = cast(dict[str, object], result["insights"])
+        assert result.status == "success"
+        insights_raw = result.insights
+        assert insights_raw is not None
+        insights = cast(dict[str, object], insights_raw.model_dump(mode="python"))
         assert "task_type_recommendations" in insights
         assert "file_effectiveness" in insights
         assert "learned_patterns" in insights
@@ -713,9 +732,10 @@ class TestInsightGeneration:
         result = get_context_statistics(tmp_path)
 
         # Assert
-        assert result["status"] == "success"
-        assert "insights" in result
-        insights = cast(dict[str, object], result["insights"])
+        assert result.status == "success"
+        insights_raw = result.insights
+        assert insights_raw is not None
+        insights = cast(dict[str, object], insights_raw.model_dump(mode="python"))
         assert "task_type_recommendations" in insights
         task_recs = cast(dict[str, object], insights["task_type_recommendations"])
         assert "fix/debug" in task_recs

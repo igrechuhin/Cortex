@@ -22,6 +22,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.core.models import ModelDict
 from cortex.managers.types import ManagersDict
 from cortex.optimization.models import RulesManagerStatusModel
 from cortex.tools.rules_operations import (
@@ -45,7 +46,7 @@ def _get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object:
 
 
 @pytest.fixture(autouse=True)
-def _patch_get_manager() -> object:
+def _patch_get_manager() -> object:  # pyright: ignore[reportUnusedFunction]
     """Patch strict get_manager() to allow MagicMocks in tool tests."""
     with patch(
         "cortex.tools.rules_operations.get_manager", side_effect=_get_manager_helper
@@ -352,7 +353,7 @@ def test_extract_all_rules_all_categories() -> None:
     }
 
     # Act
-    result = extract_all_rules(cast(dict[str, object], rules_dict))
+    result = extract_all_rules(cast(ModelDict, rules_dict))
 
     # Assert
     assert len(result) == 5
@@ -369,7 +370,7 @@ def test_extract_all_rules_some_categories() -> None:
     }
 
     # Act
-    result = extract_all_rules(cast(dict[str, object], rules_dict))
+    result = extract_all_rules(cast(ModelDict, rules_dict))
 
     # Assert
     assert len(result) == 2
@@ -379,7 +380,7 @@ def test_extract_all_rules_some_categories() -> None:
 def test_extract_all_rules_empty() -> None:
     """Test extract_all_rules with empty dictionary."""
     # Arrange
-    rules_dict: dict[str, object] = {}
+    rules_dict: ModelDict = {}
 
     # Act
     result = extract_all_rules(rules_dict)
@@ -398,7 +399,7 @@ def test_extract_all_rules_non_list_values() -> None:
     }
 
     # Act
-    result = extract_all_rules(cast(dict[str, object], rules_dict))
+    result = extract_all_rules(cast(ModelDict, rules_dict))
 
     # Assert
     assert len(result) == 1
@@ -413,11 +414,11 @@ def test_extract_all_rules_non_list_values() -> None:
 def test_calculate_total_tokens_from_dict() -> None:
     """Test calculate_total_tokens using total_tokens from dict."""
     # Arrange
-    rules_dict = {"total_tokens": 1500}
-    all_rules: list[dict[str, object]] = []
+    rules_dict: ModelDict = {"total_tokens": 1500}
+    all_rules: list[ModelDict] = []
 
     # Act
-    result = calculate_total_tokens(cast(dict[str, object], rules_dict), all_rules)
+    result = calculate_total_tokens(rules_dict, all_rules)
 
     # Assert
     assert result == 1500
@@ -426,17 +427,17 @@ def test_calculate_total_tokens_from_dict() -> None:
 def test_calculate_total_tokens_from_rules() -> None:
     """Test calculate_total_tokens by summing rules."""
     # Arrange
-    rules_dict = {"total_tokens": None}  # Non-int/float value triggers rule summing
-    all_rules = [
+    rules_dict: ModelDict = {
+        "total_tokens": None
+    }  # Non-int/float value triggers rule summing
+    all_rules: list[ModelDict] = [
         {"tokens": 500},
         {"tokens": 700},
         {"tokens": 300},
     ]
 
     # Act
-    result = calculate_total_tokens(
-        cast(dict[str, object], rules_dict), cast(list[dict[str, object]], all_rules)
-    )
+    result = calculate_total_tokens(rules_dict, all_rules)
 
     # Assert
     assert result == 1500
@@ -445,10 +446,10 @@ def test_calculate_total_tokens_from_rules() -> None:
 def test_calculate_total_tokens_mixed_types() -> None:
     """Test calculate_total_tokens with mixed token types."""
     # Arrange
-    rules_dict = {
+    rules_dict: ModelDict = {
         "total_tokens": "invalid"
     }  # Non-int/float value triggers rule summing
-    all_rules = [
+    all_rules: list[ModelDict] = [
         {"tokens": 500},
         {"tokens": 700.5},  # Float
         {"tokens": "invalid"},  # Invalid type
@@ -456,9 +457,7 @@ def test_calculate_total_tokens_mixed_types() -> None:
     ]
 
     # Act
-    result = calculate_total_tokens(
-        cast(dict[str, object], rules_dict), cast(list[dict[str, object]], all_rules)
-    )
+    result = calculate_total_tokens(rules_dict, all_rules)
 
     # Assert
     assert result == 1200  # 500 + 700 (rounded from 700.5)
@@ -467,8 +466,8 @@ def test_calculate_total_tokens_mixed_types() -> None:
 def test_calculate_total_tokens_zero() -> None:
     """Test calculate_total_tokens with no tokens."""
     # Arrange
-    rules_dict: dict[str, object] = {}
-    all_rules: list[dict[str, object]] = []
+    rules_dict: ModelDict = {}
+    all_rules: list[ModelDict] = []
 
     # Act
     result = calculate_total_tokens(rules_dict, all_rules)
@@ -536,7 +535,7 @@ async def test_handle_get_relevant_operation_defaults(
 def test_build_get_relevant_response() -> None:
     """Test build_get_relevant_response constructs correct JSON."""
     # Arrange
-    all_rules = [
+    all_rules: list[ModelDict] = [
         {"file": "test1.mdc", "tokens": 500},
         {"file": "test2.mdc", "tokens": 700},
     ]
@@ -547,20 +546,24 @@ def test_build_get_relevant_response() -> None:
         last_indexed="2026-01-04T10:30:00Z",
         total_tokens=15234,
     )
-    relevant_rules_dict = {
+    relevant_rules_dict: ModelDict = {
         "context": {"filtered_count": 5},
         "source": "indexed",
     }
+    all_rules: list[ModelDict] = [
+        {"id": 1, "tokens": 100},
+        {"id": 2, "tokens": 200},
+    ]
 
     # Act
     result = build_get_relevant_response(
         "Test task",
         5000,
         0.7,
-        cast(list[dict[str, object]], all_rules),
+        all_rules,
         1200,
         status,
-        cast(dict[str, object], relevant_rules_dict),
+        relevant_rules_dict,
     )
 
     # Assert
@@ -732,7 +735,10 @@ async def test_rules_index_operation_force(
         # Assert
         result_dict = json.loads(result)
         assert result_dict["status"] == "success"
-        mock_managers_enabled.rules_manager.index_rules.assert_called_with(force=True)
+        managers = cast(ManagersDict, mock_managers_enabled)
+        assert managers.rules_manager is not None
+        if hasattr(managers.rules_manager, "index_rules"):
+            managers.rules_manager.index_rules.assert_called_with(force=True)  # type: ignore
 
 
 @pytest.mark.asyncio

@@ -16,7 +16,6 @@ Test Coverage:
 
 import shutil
 from pathlib import Path
-from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -111,8 +110,8 @@ class TestGetMigrationInfo:
 
         info = await manager.get_migration_info()
 
-        assert info["needs_migration"] is False
-        reason = str(info.get("reason", ""))
+        assert info.needs_migration is False
+        reason = str(info.reason or "")
         assert "No .cortex/memory-bank directory" in reason
 
     @pytest.mark.asyncio
@@ -123,8 +122,8 @@ class TestGetMigrationInfo:
 
         info = await manager.get_migration_info()
 
-        assert info["needs_migration"] is False
-        reason = str(info.get("reason", ""))
+        assert info.needs_migration is False
+        reason = str(info.reason or "")
         assert "No markdown files" in reason
 
     @pytest.mark.asyncio
@@ -138,8 +137,8 @@ class TestGetMigrationInfo:
 
         info = await manager.get_migration_info()
 
-        assert info["needs_migration"] is False
-        reason = str(info.get("reason", ""))
+        assert info.needs_migration is False
+        reason = str(info.reason or "")
         assert "Already migrated" in reason
 
     @pytest.mark.asyncio
@@ -156,22 +155,16 @@ class TestGetMigrationInfo:
 
         info = await manager.get_migration_info()
 
-        assert info["needs_migration"] is True
-        assert info["files_found"] == 2
-        file_names_raw: object | None = info.get("file_names", [])
-        if isinstance(file_names_raw, list):
-            file_names: list[str] = [
-                str(item) for item in cast(list[object], file_names_raw)
-            ]
-        else:
-            file_names = []
+        assert info.needs_migration is True
+        assert info.files_found == 2
+        file_names = info.file_names
         assert "file1.md" in file_names
         assert "file2.md" in file_names
-        total_size = info.get("total_size_bytes", 0)
-        estimated = info.get("estimated_tokens", 0)
+        total_size = info.total_size_bytes or 0
+        estimated = info.estimated_tokens or 0
         assert isinstance(total_size, int) and total_size > 0
         assert isinstance(estimated, int) and estimated > 0
-        assert "backup_location" in info
+        assert hasattr(info, "backup_location")
 
 
 class TestCreateBackup:
@@ -470,9 +463,9 @@ class TestMigrate:
 
                 result = await manager.migrate(auto_backup=False)
 
-                assert result["status"] == "success"
-                assert result["files_migrated"] == 1
-                assert "details" in result
+                assert result.status == "success"
+                assert result.files_migrated == 1
+                assert result.details is not None
 
     @pytest.mark.asyncio
     async def test_migrate_raises_on_verification_failure(self, tmp_path: Path) -> None:
@@ -557,8 +550,8 @@ class TestVerifyMigration:
 
         result = await manager.verify_migration(md_files)
 
-        assert result["success"] is False
-        error = str(result.get("error", ""))
+        assert result.success is False
+        error = str(result.error or "")
         assert "Index file not created" in error
 
     @pytest.mark.asyncio
@@ -571,8 +564,8 @@ class TestVerifyMigration:
 
         result = await manager.verify_migration(md_files)
 
-        assert result["success"] is False
-        error = str(result.get("error", ""))
+        assert result.success is False
+        error = str(result.error or "")
         assert "History directory not created" in error
 
     @pytest.mark.asyncio
@@ -594,8 +587,8 @@ class TestVerifyMigration:
 
             result = await manager.verify_migration(md_files)
 
-            assert result["success"] is False
-            error = str(result.get("error", ""))
+            assert result.success is False
+            error = str(result.error or "")
             assert "not found in index" in error
 
     @pytest.mark.asyncio
@@ -627,8 +620,8 @@ class TestVerifyMigration:
 
             result = await manager.verify_migration(md_files)
 
-            assert result["success"] is False
-            error = str(result.get("error", ""))
+            assert result.success is False
+            error = str(result.error or "")
             assert "Snapshot" in error
 
     @pytest.mark.asyncio
@@ -664,10 +657,10 @@ class TestVerifyMigration:
 
             result = await manager.verify_migration(md_files)
 
-            assert result["success"] is True
-            assert result["files_verified"] == 1
-            assert result["index_valid"] is True
-            assert result["snapshots_created"] is True
+            assert result.success is True
+            assert result.files_verified == 1
+            assert result.index_valid is True
+            assert result.snapshots_created is True
 
 
 class TestCleanupOldBackups:
@@ -751,8 +744,8 @@ class TestGetBackupList:
         backups = await manager.get_backup_list()
 
         assert len(backups) == 2
-        assert any(b["timestamp"] == "20240101_120000" for b in backups)
-        assert any(b["timestamp"] == "20240102_130000" for b in backups)
+        assert any(b.timestamp == "20240101_120000" for b in backups)
+        assert any(b.timestamp == "20240102_130000" for b in backups)
 
     @pytest.mark.asyncio
     async def test_get_backup_list_includes_size_and_timestamp(
@@ -769,11 +762,11 @@ class TestGetBackupList:
 
         assert len(backups) == 1
         backup_info = backups[0]
-        assert backup_info.get("timestamp") == "20240101_120000"
-        size_bytes = backup_info.get("size_bytes", 0)
+        assert backup_info.timestamp == "20240101_120000"
+        size_bytes = backup_info.size_bytes
         assert isinstance(size_bytes, int) and size_bytes > 0
-        assert backup_info.get("created") is not None
-        assert backup_info.get("path") == str(backup)
+        assert backup_info.created is not None
+        assert backup_info.path == str(backup)
 
     @pytest.mark.asyncio
     async def test_get_backup_list_handles_invalid_timestamps(
@@ -789,7 +782,7 @@ class TestGetBackupList:
         backups = await manager.get_backup_list()
 
         assert len(backups) == 1
-        assert backups[0]["created"] is None  # Can't parse timestamp
+        assert backups[0].created is None  # Can't parse timestamp
 
     @pytest.mark.asyncio
     async def test_get_backup_list_returns_empty_when_no_backups(

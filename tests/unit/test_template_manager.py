@@ -7,10 +7,12 @@ Tests template generation, plan/rule creation, and file generation.
 
 from datetime import datetime
 from pathlib import Path
+from typing import cast
 from unittest.mock import patch
 
 import pytest
 
+from cortex.core.models import ModelDict
 from cortex.structure.template_manager import TemplateManager
 
 # ============================================================================
@@ -451,11 +453,20 @@ class TestInteractiveProjectSetup:
 
         # Assert
         assert isinstance(questions, list)
-        choice_questions = [q for q in questions if q["type"] == "choice"]  # type: ignore[misc]
-        for question in choice_questions:  # type: ignore[assignment]
-            assert "options" in question
-            assert isinstance(question["options"], list)
-            assert len(question["options"]) > 0  # type: ignore[arg-type]
+        from typing import cast
+
+        from cortex.core.models import ModelDict
+
+        choice_questions = [
+            cast(ModelDict, q)
+            for q in questions
+            if isinstance(q, dict) and q.get("type") == "choice"
+        ]
+        for question in choice_questions:
+            options = question.get("options")
+            assert options is not None
+            assert isinstance(options, list)
+            assert len(options) > 0
 
 
 # ============================================================================
@@ -472,7 +483,7 @@ class TestGenerateInitialFiles:
         manager = TemplateManager(tmp_path)
         knowledge_dir = tmp_path / "knowledge"
         knowledge_dir.mkdir(parents=True, exist_ok=True)
-        project_info: dict[str, object] = {"project_name": "Test Project"}
+        project_info = cast(ModelDict, {"project_name": "Test Project"})
         templates = {"projectBrief.md": "# {project_name}"}
 
         # Act
@@ -493,13 +504,16 @@ class TestGenerateInitialFiles:
         manager = TemplateManager(tmp_path)
         knowledge_dir = tmp_path / "knowledge"
         knowledge_dir.mkdir(parents=True, exist_ok=True)
-        project_info: dict[str, object] = {
-            "project_type": "web",
-            "primary_language": "Python",
-            "frameworks": "Django",
-            "team_size": "Solo",
-            "development_process": "Agile/Scrum",
-        }
+        project_info = cast(
+            ModelDict,
+            {
+                "project_type": "web",
+                "primary_language": "Python",
+                "frameworks": "Django",
+                "team_size": "Solo",
+                "development_process": "Agile/Scrum",
+            },
+        )
         templates: dict[str, str] = {}
 
         # Act
@@ -522,7 +536,7 @@ class TestGenerateInitialFiles:
         manager = TemplateManager(tmp_path)
         knowledge_dir = tmp_path / "knowledge"
         knowledge_dir.mkdir(parents=True, exist_ok=True)
-        project_info: dict[str, object] = {"project_name": "Test Project"}
+        project_info = cast(ModelDict, {"project_name": "Test Project"})
         templates = {"memorybankinstructions.md": "# Instructions\n{project_name}"}
 
         # Act
@@ -538,7 +552,7 @@ class TestGenerateInitialFiles:
         manager = TemplateManager(tmp_path)
         knowledge_dir = tmp_path / "knowledge"
         knowledge_dir.mkdir(parents=True, exist_ok=True)
-        project_info: dict[str, object] = {}
+        project_info = cast(ModelDict, {})
         templates: dict[str, str] = {}  # Empty templates
 
         # Act
@@ -558,7 +572,7 @@ class TestGenerateInitialFiles:
         manager = TemplateManager(tmp_path)
         knowledge_dir = tmp_path / "knowledge"
         knowledge_dir.mkdir(parents=True, exist_ok=True)
-        project_info: dict[str, object] = {}
+        project_info = cast(ModelDict, {})
         templates = {"projectBrief.md": "Content"}
 
         # Make directory read-only to cause write error
@@ -585,10 +599,13 @@ class TestGenerateInitialFiles:
         manager = TemplateManager(tmp_path)
         knowledge_dir = tmp_path / "knowledge"
         knowledge_dir.mkdir(parents=True, exist_ok=True)
-        project_info: dict[str, object] = {
-            "project_name": "My Project",
-            "author": "John Doe",
-        }
+        project_info = cast(
+            ModelDict,
+            {
+                "project_name": "My Project",
+                "author": "John Doe",
+            },
+        )
         templates = {
             "projectBrief.md": "# {project_name}\nAuthor: {author}",
             "memorybankinstructions.md": "Project: {project_name}",
@@ -620,7 +637,7 @@ class TestCustomizeTemplate:
         # Arrange
         manager = TemplateManager(tmp_path)
         template = "Project: {project_name}, Author: {author}"
-        project_info: dict[str, object] = {"project_name": "Test", "author": "John"}
+        project_info = cast(ModelDict, {"project_name": "Test", "author": "John"})
 
         # Act
         result = manager.customize_template(template, project_info)
@@ -636,7 +653,7 @@ class TestCustomizeTemplate:
         # Arrange
         manager = TemplateManager(tmp_path)
         template = "Project: {project_name}"
-        project_info: dict[str, object] = {"author": "John"}  # Missing project_name
+        project_info = cast(ModelDict, {"author": "John"})  # Missing project_name
 
         # Act
         result = manager.customize_template(template, project_info)
@@ -649,7 +666,7 @@ class TestCustomizeTemplate:
         # Arrange
         manager = TemplateManager(tmp_path)
         template = "Project: {project_name}"
-        project_info: dict[str, object] = {"project_name": "Test", "extra": "value"}
+        project_info = cast(ModelDict, {"project_name": "Test", "extra": "value"})
 
         # Act
         result = manager.customize_template(template, project_info)
@@ -663,7 +680,7 @@ class TestCustomizeTemplate:
         # Arrange
         manager = TemplateManager(tmp_path)
         template = "Number: {count}, Boolean: {flag}"
-        project_info: dict[str, object] = {"count": 42, "flag": True}
+        project_info = cast(ModelDict, {"count": 42, "flag": True})
 
         # Act
         result = manager.customize_template(template, project_info)
@@ -685,13 +702,16 @@ class TestGenerateTechContext:
         """Test generate_tech_context includes all project info fields."""
         # Arrange
         manager = TemplateManager(tmp_path)
-        project_info: dict[str, object] = {
-            "project_type": "web",
-            "primary_language": "Python",
-            "frameworks": "Django, React",
-            "team_size": "2-5",
-            "development_process": "Agile/Scrum",
-        }
+        project_info = cast(
+            ModelDict,
+            {
+                "project_type": "web",
+                "primary_language": "Python",
+                "frameworks": "Django, React",
+                "team_size": "2-5",
+                "development_process": "Agile/Scrum",
+            },
+        )
 
         # Act
         content = manager.generate_tech_context(project_info)
@@ -708,7 +728,7 @@ class TestGenerateTechContext:
         """Test generate_tech_context handles missing project info fields."""
         # Arrange
         manager = TemplateManager(tmp_path)
-        project_info: dict[str, object] = {}  # Empty
+        project_info = cast(ModelDict, {})  # Empty
 
         # Act
         content = manager.generate_tech_context(project_info)
@@ -721,7 +741,7 @@ class TestGenerateTechContext:
         """Test generate_tech_context has all expected sections."""
         # Arrange
         manager = TemplateManager(tmp_path)
-        project_info: dict[str, object] = {}
+        project_info = cast(ModelDict, {})
 
         # Act
         content = manager.generate_tech_context(project_info)
@@ -745,13 +765,16 @@ class TestGenerateTechContext:
         """Test generate_tech_context uses actual project info values."""
         # Arrange
         manager = TemplateManager(tmp_path)
-        project_info: dict[str, object] = {
-            "project_type": "mobile",
-            "primary_language": "Swift",
-            "frameworks": "SwiftUI",
-            "team_size": "Solo",
-            "development_process": "Continuous",
-        }
+        project_info = cast(
+            ModelDict,
+            {
+                "project_type": "mobile",
+                "primary_language": "Swift",
+                "frameworks": "SwiftUI",
+                "team_size": "Solo",
+                "development_process": "Continuous",
+            },
+        )
 
         # Act
         content = manager.generate_tech_context(project_info)

@@ -1,6 +1,7 @@
 """Tests for advanced caching functionality."""
 
 import time
+from typing import cast
 
 import pytest
 
@@ -8,6 +9,7 @@ from cortex.core.advanced_cache import (
     AdvancedCacheManager,
     create_cache_for_manager,
 )
+from cortex.core.models import ModelDict
 
 
 class TestAdvancedCacheManager:
@@ -42,8 +44,10 @@ class TestAdvancedCacheManager:
     def test_set_and_get_value(self, cache_manager: AdvancedCacheManager):
         """Test setting and getting cache value."""
         # Arrange
+        from cortex.core.models import JsonValue
+
         key = "test_key"
-        value = {"data": "test_value"}
+        value: JsonValue = {"data": "test_value"}
 
         # Act
         cache_manager.set(key, value)
@@ -135,7 +139,8 @@ class TestAdvancedCacheManager:
         assert stats["hits"] == 2
         assert stats["misses"] == 2
         assert stats["hit_rate"] == 0.5
-        assert stats["size"] > 0
+        size = cast(int, stats["size"])
+        assert size > 0
 
     def test_reset_stats_clears_counters(self, cache_manager: AdvancedCacheManager):
         """Test statistics reset."""
@@ -317,7 +322,7 @@ class TestCreateCacheForManager:
     def test_create_cache_with_custom_config(self):
         """Test creating cache with custom configuration."""
         # Arrange
-        config: dict[str, object] = {"ttl_seconds": 1800, "lru_max_size": 500}
+        config = cast(ModelDict, {"ttl_seconds": 1800, "lru_max_size": 500})
 
         # Act
         cache = create_cache_for_manager("token_counter", config)

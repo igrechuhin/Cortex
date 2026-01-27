@@ -57,12 +57,14 @@ class DictLikeModel(BaseModel):
 # ============================================================================
 
 
-class JsonDict(BaseModel):
+class JsonDict(DictLikeModel):
     """Pydantic model for JSON dictionary structures.
 
     This model replaces `ModelDict` for type-safe JSON dictionary handling.
     It allows arbitrary keys and values, making it suitable for JSON data.
     Uses extra="allow" to accept any keys dynamically.
+    Inherits from DictLikeModel to support dict-like access
+    (__getitem__, __contains__, etc.).
     """
 
     model_config = ConfigDict(extra="allow", validate_assignment=True)
@@ -197,7 +199,7 @@ class DependencyEdge(BaseModel):
     strength: str = Field(description="Edge strength (strong or medium)")
 
 
-class DependencyGraph(BaseModel):
+class DependencyGraph(DictLikeModel):
     """Dependency graph export."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
@@ -229,7 +231,7 @@ class TransclusionEdge(BaseModel):
     type: str = Field(description="Edge type (always transclusion)")
 
 
-class TransclusionGraph(BaseModel):
+class TransclusionGraph(DictLikeModel):
     """Transclusion graph export."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
@@ -250,7 +252,7 @@ class ReferenceEdge(BaseModel):
     type: str = Field(description="Edge type (always reference)")
 
 
-class ReferenceGraph(BaseModel):
+class ReferenceGraph(DictLikeModel):
     """Reference graph export."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
@@ -597,7 +599,7 @@ class AccessPatternModel(BaseModel):
     last_access: float = Field(..., ge=0.0, description="Last access timestamp")
 
 
-class WarmingStrategyModel(BaseModel):
+class WarmingStrategyModel(DictLikeModel):
     """Cache warming strategy configuration."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
@@ -608,7 +610,7 @@ class WarmingStrategyModel(BaseModel):
     max_items: int = Field(..., ge=0, description="Maximum items to warm")
 
 
-class CacheWarmingResultModel(BaseModel):
+class CacheWarmingResultModel(DictLikeModel):
     """Result of cache warming operation."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
@@ -898,7 +900,7 @@ class HealthMetrics(BaseModel):
 # ============================================================================
 
 
-class GitCommandResult(BaseModel):
+class GitCommandResult(DictLikeModel):
     """Result of a git command execution."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
@@ -1071,7 +1073,7 @@ class ParsedMarkdownSection(BaseModel):
 # ============================================================================
 
 
-class ConnectionHealth(BaseModel):
+class ConnectionHealth(DictLikeModel):
     """MCP connection health metrics."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)

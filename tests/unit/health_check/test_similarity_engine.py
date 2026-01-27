@@ -278,7 +278,7 @@ class TestSimilarityEngine:
         engine = SimilarityEngine(token_counter=mock_counter)
         content1 = "test content one"
         content2 = "test content two"
-        similarity = engine._token_similarity(content1, content2)
+        similarity = engine._token_similarity(content1, content2)  # type: ignore[attr-defined]
         assert 0.0 <= similarity <= 1.0
 
     def test_token_similarity_fallback_on_encoding_error(self):
@@ -290,7 +290,7 @@ class TestSimilarityEngine:
         engine = SimilarityEngine(token_counter=mock_counter)
         content1 = "test content one"
         content2 = "test content two"
-        similarity = engine._token_similarity(content1, content2)
+        similarity = engine._token_similarity(content1, content2)  # type: ignore[attr-defined]
         assert 0.0 <= similarity <= 1.0
 
     def test_token_similarity_empty_tokens(self):
@@ -301,11 +301,11 @@ class TestSimilarityEngine:
         mock_counter.encoding = mock_encoding
         engine = SimilarityEngine(token_counter=mock_counter)
         # Both empty
-        similarity = engine._token_similarity("", "")
+        similarity = engine._token_similarity("", "")  # type: ignore[attr-defined]
         assert similarity == 1.0
         # One empty
         mock_encoding.encode.side_effect = [[], [1, 2, 3]]
-        similarity = engine._token_similarity("", "content")
+        similarity = engine._token_similarity("", "content")  # type: ignore[attr-defined]
         assert similarity == 0.0
 
     def test_meets_min_length_exception_fallback(self):
@@ -314,7 +314,7 @@ class TestSimilarityEngine:
         mock_counter.count_tokens.side_effect = Exception("Token counting error")
         engine = SimilarityEngine(token_counter=mock_counter, min_content_length=10)
         # Should fallback to length-based check when token counting fails
-        result = engine._meets_min_length("short", "this is longer content")
+        result = engine._meets_min_length("short", "this is longer content")  # type: ignore[attr-defined]
         assert result is False  # "short" is less than 10 chars
-        result = engine._meets_min_length("this is longer", "this is also longer")
+        result = engine._meets_min_length("this is longer", "this is also longer")  # type: ignore[attr-defined]
         assert result is True  # Both are >= 10 chars

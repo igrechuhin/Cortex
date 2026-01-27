@@ -8,6 +8,7 @@ import pytest
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import ModelDict
 from cortex.refactoring.execution_validator import ExecutionValidator
 from cortex.refactoring.models import (
     OperationParameters,
@@ -122,7 +123,7 @@ class TestExtractOperations:
         }
 
         # Act
-        operations = validator.extract_operations(cast(dict[str, object], suggestion))
+        operations = validator.extract_operations(cast(ModelDict, suggestion))
 
         # Assert
         assert len(operations) == 1
@@ -164,7 +165,7 @@ class TestExtractOperations:
         }
 
         # Act
-        operations = validator.extract_operations(cast(dict[str, object], suggestion))
+        operations = validator.extract_operations(cast(ModelDict, suggestion))
 
         # Assert
         assert len(operations) == 2
@@ -199,7 +200,7 @@ class TestExtractOperations:
         }
 
         # Act
-        operations = validator.extract_operations(cast(dict[str, object], suggestion))
+        operations = validator.extract_operations(cast(ModelDict, suggestion))
 
         # Assert
         assert len(operations) == 3
@@ -225,7 +226,7 @@ class TestExtractOperations:
         suggestion = {"suggestion_id": "sug-4"}
 
         # Act
-        operations = validator.extract_operations(cast(dict[str, object], suggestion))
+        operations = validator.extract_operations(cast(ModelDict, suggestion))
 
         # Assert
         assert len(operations) == 0
@@ -259,15 +260,13 @@ class TestValidateRefactoring:
 
         # Act
         result = await validator.validate_refactoring(
-            cast(dict[str, object], suggestion), dry_run=True
+            cast(ModelDict, suggestion), dry_run=True
         )
 
         # Assert
-        assert result["valid"] is False
-        issues_val = result.get("issues", [])
-        issues = cast(list[str], issues_val) if isinstance(issues_val, list) else []
-        assert len(issues) > 0
-        assert any("does not exist" in issue for issue in issues)
+        assert result.valid is False
+        assert len(result.issues) > 0
+        assert any("does not exist" in issue for issue in result.issues)
 
     @pytest.mark.asyncio
     async def test_validate_with_existing_file_creation(
@@ -297,14 +296,13 @@ class TestValidateRefactoring:
         }
 
         # Act
-        suggestion_typed: dict[str, object] = cast(dict[str, object], suggestion)
-        result = await validator.validate_refactoring(suggestion_typed, dry_run=True)
+        result = await validator.validate_refactoring(
+            cast(ModelDict, suggestion), dry_run=True
+        )
 
         # Assert
-        assert result["valid"] is False
-        issues_val = result.get("issues", [])
-        issues = cast(list[str], issues_val) if isinstance(issues_val, list) else []
-        assert any("already exists" in issue for issue in issues)
+        assert result.valid is False
+        assert any("already exists" in issue for issue in result.issues)
 
     @pytest.mark.asyncio
     async def test_validate_with_uncommitted_changes_warning(
@@ -339,16 +337,13 @@ class TestValidateRefactoring:
         }
 
         # Act
-        suggestion_typed: dict[str, object] = cast(dict[str, object], suggestion)
-        result = await validator.validate_refactoring(suggestion_typed, dry_run=True)
+        result = await validator.validate_refactoring(
+            cast(ModelDict, suggestion), dry_run=True
+        )
 
         # Assert
-        warnings_val = result.get("warnings", [])
-        warnings = (
-            cast(list[str], warnings_val) if isinstance(warnings_val, list) else []
-        )
-        assert len(warnings) > 0
-        assert any("uncommitted changes" in warn for warn in warnings)
+        assert len(result.warnings) > 0
+        assert any("uncommitted changes" in warn for warn in result.warnings)
 
     @pytest.mark.asyncio
     async def test_validate_with_token_budget_impact_warning(
@@ -374,16 +369,13 @@ class TestValidateRefactoring:
         }
 
         # Act
-        suggestion_typed: dict[str, object] = cast(dict[str, object], suggestion)
-        result = await validator.validate_refactoring(suggestion_typed, dry_run=True)
+        result = await validator.validate_refactoring(
+            cast(ModelDict, suggestion), dry_run=True
+        )
 
         # Assert
-        warnings_val = result.get("warnings", [])
-        warnings = (
-            cast(list[str], warnings_val) if isinstance(warnings_val, list) else []
-        )
-        assert len(warnings) > 0
-        assert any("increase token usage" in warn for warn in warnings)
+        assert len(result.warnings) > 0
+        assert any("increase token usage" in warn for warn in result.warnings)
 
     @pytest.mark.asyncio
     async def test_validate_with_complexity_increase_warning(
@@ -410,16 +402,13 @@ class TestValidateRefactoring:
         }
 
         # Act
-        suggestion_typed: dict[str, object] = cast(dict[str, object], suggestion)
-        result = await validator.validate_refactoring(suggestion_typed, dry_run=True)
+        result = await validator.validate_refactoring(
+            cast(ModelDict, suggestion), dry_run=True
+        )
 
         # Assert
-        warnings_val = result.get("warnings", [])
-        warnings = (
-            cast(list[str], warnings_val) if isinstance(warnings_val, list) else []
-        )
-        assert len(warnings) > 0
-        assert any("increase complexity" in warn for warn in warnings)
+        assert len(result.warnings) > 0
+        assert any("increase complexity" in warn for warn in result.warnings)
 
     @pytest.mark.asyncio
     async def test_validate_dependency_integrity_check(
@@ -454,16 +443,13 @@ class TestValidateRefactoring:
         }
 
         # Act
-        suggestion_typed: dict[str, object] = cast(dict[str, object], suggestion)
-        result = await validator.validate_refactoring(suggestion_typed, dry_run=False)
+        result = await validator.validate_refactoring(
+            cast(ModelDict, suggestion), dry_run=False
+        )
 
         # Assert
-        warnings_val = result.get("warnings", [])
-        warnings = (
-            cast(list[str], warnings_val) if isinstance(warnings_val, list) else []
-        )
-        assert len(warnings) > 0
-        assert any("may have links to target.md" in warn for warn in warnings)
+        assert len(result.warnings) > 0
+        assert any("may have links to target.md" in warn for warn in result.warnings)
 
     @pytest.mark.asyncio
     async def test_validate_returns_operations_count(
@@ -491,12 +477,13 @@ class TestValidateRefactoring:
         }
 
         # Act
-        suggestion_typed: dict[str, object] = cast(dict[str, object], suggestion)
-        result = await validator.validate_refactoring(suggestion_typed, dry_run=True)
+        result = await validator.validate_refactoring(
+            cast(ModelDict, suggestion), dry_run=True
+        )
 
         # Assert
-        assert result.get("operations_count") == 2
-        assert result.get("dry_run") is True
+        assert result.operations_count == 2
+        assert result.dry_run is True
 
 
 class TestGetAllMemoryBankFiles:

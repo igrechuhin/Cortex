@@ -138,10 +138,15 @@ Table definitions and relationships.
         assert len(sections) > 0
         # Authentication section should score highest
         auth_section = next(
-            (s for s in sections if "Authentication" in str(s.get("section", ""))), None
+            (
+                s
+                for s in sections
+                if s.section is not None and "Authentication" in s.section
+            ),
+            None,
         )
         assert auth_section is not None
-        score = auth_section.get("score", 0)
+        score = auth_section.score
         assert isinstance(score, (int, float))
         assert float(score) > 0
 

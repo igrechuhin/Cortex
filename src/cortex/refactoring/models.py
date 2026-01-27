@@ -9,16 +9,16 @@ from datetime import datetime
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
-from cortex.core.models import ModelDict
+from cortex.core.models import DictLikeModel, ModelDict
 
 # ============================================================================
 # Base Model
 # ============================================================================
 
 
-class RefactoringBaseModel(BaseModel):
+class RefactoringBaseModel(DictLikeModel):
     """Base model for refactoring types with strict validation."""
 
     model_config = ConfigDict(
@@ -859,8 +859,14 @@ class CleanupExpiredApprovalsResult(RefactoringBaseModel):
     message: str = Field(..., description="Human-readable message")
 
 
-class ApprovalRequestResult(RefactoringBaseModel):
+class ApprovalRequestResult(DictLikeModel):
     """Result of an approval request operation."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        validate_assignment=True,
+        validate_default=True,
+    )
 
     approval_id: str = Field(..., description="Approval ID")
     status: str = Field(..., description="Request status")
@@ -1786,16 +1792,28 @@ class AdaptationConfigModel(RefactoringBaseModel):
     )
 
 
-class AdaptationValidationResult(RefactoringBaseModel):
+class AdaptationValidationResult(DictLikeModel):
     """Result of adaptation configuration validation."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        validate_assignment=True,
+        validate_default=True,
+    )
 
     valid: bool = Field(..., description="Whether configuration is valid")
     issues: list[str] = Field(default_factory=list, description="Validation issues")
     warnings: list[str] = Field(default_factory=list, description="Validation warnings")
 
 
-class AdaptationSummary(RefactoringBaseModel):
+class AdaptationSummary(DictLikeModel):
     """Summary of adaptation configuration settings."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        validate_assignment=True,
+        validate_default=True,
+    )
 
     learning_enabled: bool = Field(..., description="Whether learning is enabled")
     learning_rate: str = Field(..., description="Learning rate setting")

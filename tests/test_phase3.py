@@ -14,6 +14,7 @@ from typing import cast
 import pytest
 from pydantic import ValidationError
 
+from cortex.core.models import ModelDict
 from cortex.validation.duplication_detector import DuplicationDetector
 from cortex.validation.quality_metrics import QualityMetrics
 from cortex.validation.schema_validator import SchemaValidator
@@ -46,17 +47,11 @@ These are the requirements.
 These are the criteria.
 """
 
-        from typing import cast
+        result = await validator.validate_file("projectBrief.md", content)
 
-        result_raw = await validator.validate_file("projectBrief.md", content)
-        result: dict[str, object] = cast(dict[str, object], result_raw)
-
-        assert result.get("valid") is True
-        errors_raw = result.get("errors", [])
-        errors = cast(list[object], errors_raw) if isinstance(errors_raw, list) else []
-        assert len(errors) == 0
-        score = result.get("score", 0)
-        assert isinstance(score, (int, float)) and score >= 90
+        assert result.valid is True
+        assert len(result.errors) == 0
+        assert isinstance(result.score, (int, float)) and result.score >= 90
 
     @pytest.mark.asyncio
     async def test_validate_missing_sections(self):
@@ -71,23 +66,11 @@ This is the overview.
 These are the goals.
 """
 
-        from typing import cast
+        result = await validator.validate_file("projectBrief.md", content)
 
-        result_raw = await validator.validate_file("projectBrief.md", content)
-        result: dict[str, object] = cast(dict[str, object], result_raw)
-
-        assert result.get("valid") is False
-        errors_raw = result.get("errors", [])
-        errors = cast(list[object], errors_raw) if isinstance(errors_raw, list) else []
-        assert len(errors) == 2  # Missing Core Requirements and Success Criteria
-        error_messages = [
-            (
-                str(cast(dict[str, object], e).get("message", ""))
-                if isinstance(e, dict)
-                else str(e)
-            )
-            for e in errors
-        ]
+        assert result.valid is False
+        assert len(result.errors) == 2  # Missing Core Requirements and Success Criteria
+        error_messages = [e.message for e in result.errors]
         assert any("Core Requirements" in msg for msg in error_messages)
         assert any("Success Criteria" in msg for msg in error_messages)
 
@@ -303,30 +286,32 @@ Criteria content.
 """
         }
 
-        files_metadata: dict[str, dict[str, object]] = {
-            "projectBrief.md": {
-                "token_count": 5000,
-                "last_modified": "2025-12-19T10:00:00",
-            }
+        files_metadata: dict[str, ModelDict] = {
+            "projectBrief.md": cast(
+                ModelDict,
+                {
+                    "token_count": 5000,
+                    "last_modified": "2025-12-19T10:00:00",
+                },
+            )
         }
 
-        duplication_data: dict[str, object] = {
-            "duplicates_found": 0,
-            "exact_duplicates": [],
-            "similar_content": [],
-        }
+        duplication_data = cast(
+            ModelDict,
+            {
+                "duplicates_found": 0,
+                "exact_duplicates": [],
+                "similar_content": [],
+            },
+        )
 
         result = await metrics.calculate_overall_score(
-            files_content, files_metadata, duplication_data
+            files_content, files_metadata, duplication_data  # type: ignore[arg-type] - ModelDict is compatible
         )
 
-        overall_score_raw = result.get("overall_score", 0)
-        overall_score = (
-            overall_score_raw if isinstance(overall_score_raw, (int, float)) else 0
-        )
-        assert overall_score >= 80
-        assert result.get("grade") in ["A", "B"]
-        assert result.get("status") in ["healthy", "warning"]
+        assert result.overall_score >= 80
+        assert result.grade in ["A", "B"]
+        assert result.status in ["healthy", "warning"]
 
     @pytest.mark.asyncio
     async def test_calculate_overall_score_with_issues(self):
@@ -341,38 +326,32 @@ Just an overview.
 """  # Missing required sections
         }
 
-        files_metadata: dict[str, dict[str, object]] = {
-            "projectBrief.md": {
-                "token_count": 100,
-                "last_modified": "2024-01-01T10:00:00",  # Old
-            }
+        files_metadata: dict[str, ModelDict] = {
+            "projectBrief.md": cast(
+                ModelDict,
+                {
+                    "token_count": 100,
+                    "last_modified": "2024-01-01T10:00:00",  # Old
+                },
+            )
         }
 
-        duplication_data: dict[str, object] = {
-            "duplicates_found": 3,
-            "exact_duplicates": [{"file1": "a", "file2": "b"}],
-            "similar_content": [],
-        }
+        duplication_data = cast(
+            ModelDict,
+            {
+                "duplicates_found": 3,
+                "exact_duplicates": [{"file1": "a", "file2": "b"}],
+                "similar_content": [],
+            },
+        )
 
         result = await metrics.calculate_overall_score(
-            files_content, files_metadata, duplication_data
+            files_content, files_metadata, duplication_data  # type: ignore[arg-type] - ModelDict is compatible
         )
 
-        overall_score_raw = result.get("overall_score", 0)
-        overall_score = (
-            overall_score_raw if isinstance(overall_score_raw, (int, float)) else 0
-        )
-        assert overall_score < 80
-        issues_raw = result.get("issues", [])
-        recommendations_raw = result.get("recommendations", [])
-        issues = cast(list[object], issues_raw) if isinstance(issues_raw, list) else []
-        recommendations = (
-            cast(list[object], recommendations_raw)
-            if isinstance(recommendations_raw, list)
-            else []
-        )
-        assert len(issues) > 0
-        assert len(recommendations) > 0
+        assert result.overall_score < 80
+        assert len(result.issues) > 0
+        assert len(result.recommendations) > 0
 
     @pytest.mark.asyncio
     async def test_calculate_file_score(self):
@@ -394,20 +373,21 @@ Requirements here.
 Criteria here.
 """
 
-        metadata: dict[str, object] = {
-            "token_count": 3000,
-            "last_modified": "2025-12-19T10:00:00",
-        }
+        metadata = cast(
+            ModelDict,
+            {
+                "token_count": 3000,
+                "last_modified": "2025-12-19T10:00:00",
+            },
+        )
 
         result = await metrics.calculate_file_score(
             "projectBrief.md", content, metadata
         )
 
-        score_raw = result.get("score", 0)
-        score = score_raw if isinstance(score_raw, (int, float)) else 0
-        assert score >= 70
-        assert result.get("grade") in ["A", "B", "C", "D", "F"]
-        assert "validation" in result
+        assert result.score >= 70
+        assert result.grade in ["A", "B", "C", "D", "F"]
+        assert result.validation is not None
 
 
 # ============================================================================
@@ -555,42 +535,45 @@ Test everything.
 """,
         }
 
-        files_metadata: dict[str, dict[str, object]] = {
-            "projectBrief.md": {
-                "token_count": 3000,
-                "last_modified": "2025-12-19T10:00:00",
-            },
-            "activeContext.md": {
-                "token_count": 2000,
-                "last_modified": "2025-12-19T09:00:00",
-            },
+        files_metadata: dict[str, ModelDict] = {
+            "projectBrief.md": cast(
+                ModelDict,
+                {
+                    "token_count": 3000,
+                    "last_modified": "2025-12-19T10:00:00",
+                },
+            ),
+            "activeContext.md": cast(
+                ModelDict,
+                {
+                    "token_count": 2000,
+                    "last_modified": "2025-12-19T09:00:00",
+                },
+            ),
         }
 
         # Validate all files
-        validation_results: dict[str, dict[str, object]] = {}
+        from cortex.validation.models import ValidationResult
+
+        validation_results: dict[str, ValidationResult] = {}
         for fname, content in files_content.items():
-            result_raw = await validator.validate_file(fname, content)
-            result = cast(dict[str, object], result_raw)
+            result = await validator.validate_file(fname, content)
             validation_results[fname] = result
 
         # Check duplications
-        duplication_data = await detector.scan_all_files(files_content)
+        duplication_scan_result = await detector.scan_all_files(files_content)
+        # Convert DuplicationScanResult to ModelDict for calculate_overall_score
+        duplication_data = cast(ModelDict, duplication_scan_result.model_dump())
 
         # Calculate quality score
         quality_data = await metrics.calculate_overall_score(
-            files_content, files_metadata, duplication_data
+            files_content, files_metadata, duplication_data  # type: ignore[arg-type] - ModelDict is compatible
         )
 
         # Assertions
-        assert all(
-            cast(bool, r.get("valid", False)) for r in validation_results.values()
-        )
-        overall_score_raw = quality_data.get("overall_score", 0)
-        overall_score = (
-            overall_score_raw if isinstance(overall_score_raw, (int, float)) else 0
-        )
-        assert overall_score >= 70
-        assert quality_data.get("grade") in ["A", "B", "C", "D", "F"]
+        assert all(r.valid for r in validation_results.values())
+        assert quality_data.overall_score >= 70
+        assert quality_data.grade in ["A", "B", "C", "D", "F"]
 
 
 if __name__ == "__main__":

@@ -12,11 +12,13 @@ Tests for:
 
 import json
 from pathlib import Path
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from cortex.core.manager_registry import ManagerRegistry
+from cortex.core.models import ModelDict
 from cortex.core.responses import error_response, success_response
 from tests.helpers.managers import make_test_managers
 
@@ -37,10 +39,13 @@ class TestResponses:
     def test_success_response_complex_data(self) -> None:
         """Test success response with complex data."""
         # Arrange
-        data: dict[str, object] = {
-            "files": ["a.md", "b.md"],
-            "stats": {"total": 100, "used": 50},
-        }
+        data = cast(
+            ModelDict,
+            {
+                "files": ["a.md", "b.md"],
+                "stats": {"total": 100, "used": 50},
+            },
+        )
 
         # Act
         result = success_response(data)
@@ -130,7 +135,7 @@ class TestManagerRegistry:
             result = await registry.get_managers(tmp_path)
 
             # Assert
-            assert "fs" in result
+            assert hasattr(result, "fs") or "fs" in dict(result)
             assert registry.has_managers(tmp_path)
 
     @pytest.mark.asyncio
@@ -196,7 +201,7 @@ class TestMCPToolValidator:
         from cortex.core.mcp_tool_validator import validate_mcp_tool_response
 
         # Arrange
-        response = {"status": "success", "data": "test"}
+        response: ModelDict = {"status": "success", "data": "test"}
         # Create .cortex directory for project detection
         (tmp_path / ".cortex").mkdir()
 
@@ -212,7 +217,7 @@ class TestMCPToolValidator:
         from cortex.core.mcp_tool_validator import validate_mcp_tool_response
 
         # Arrange
-        response = {"status": "error", "error": "Type errors found"}
+        response: ModelDict = {"status": "error", "error": "Type errors found"}
         (tmp_path / ".cortex").mkdir()
 
         # Act - error status is valid, not a tool failure

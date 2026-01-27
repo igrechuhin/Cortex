@@ -15,6 +15,7 @@ This test module covers:
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -29,6 +30,7 @@ from cortex.analysis.pattern_types import (
     FileStatsEntry,
     TaskPatternEntry,
 )
+from cortex.core.models import JsonValue
 
 
 class TestPatternAnalyzerInitialization:
@@ -907,7 +909,7 @@ class TestHelperFunctions:
         }
 
         # Act
-        log = normalize_access_log(raw_data)
+        log = normalize_access_log(cast(JsonValue, raw_data))
 
         # Assert
         assert isinstance(log, AccessLog)

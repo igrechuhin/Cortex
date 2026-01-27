@@ -5,10 +5,12 @@ Detects project language(s), test frameworks, and build tools from project struc
 
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
+
+from cortex.core.models import DictLikeModel
 
 
-class LanguageInfo(BaseModel):
+class LanguageInfo(DictLikeModel):
     """Language detection result."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)

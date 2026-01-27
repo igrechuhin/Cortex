@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-01-27T13:05:15.039153",
+  "last_updated": "2026-01-27T22:06:53.843935",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 5826,
-      "token_count": 1355,
+      "size_bytes": 6281,
+      "token_count": 1468,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-27T13:05:15.036206",
-      "content_hash": "sha256:434a28e17fcd6d46873992d807141d15f363a1e48b0854ba57b253c83d0cfe1c",
+      "last_modified": "2026-01-27T21:01:13.382112",
+      "content_hash": "sha256:a2535f1374d6e7c563601e406cc7148ee0f6ddc6d71433723a2d5ec83b75d815",
       "sections": [
         {
           "title": "## Current Status (2026-01-27)",
@@ -31,14 +31,14 @@
         {
           "title": "## Future Enhancements",
           "level": 2,
-          "line_start": 27,
-          "line_end": 27,
+          "line_start": 29,
+          "line_end": 29,
           "content_hash": null
         }
       ],
       "read_count": 2,
-      "write_count": 13,
-      "last_read": "2026-01-27T13:05:15.036206",
+      "write_count": 14,
+      "last_read": "2026-01-27T21:01:13.382112",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -206,6 +206,17 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Added plan entry for Roadmap Sync & Validation Error UX improvements and linked new plan file."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-27T21:01:13.381660",
+          "content_hash": "sha256:a2535f1374d6e7c563601e406cc7148ee0f6ddc6d71433723a2d5ec83b75d815",
+          "size_bytes": 6281,
+          "token_count": 1468,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Added new plan: Enhance Tool Descriptions with USE WHEN and EXAMPLES"
         }
       ]
     },
@@ -380,14 +391,14 @@
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 10483,
-      "token_count": 2592,
+      "size_bytes": 16327,
+      "token_count": 4051,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-26T18:25:29.042872",
-      "content_hash": "sha256:9c3864686827a61865736a2e608e20cd618bede88fbbfe39c55b36cf6123fc4f",
+      "last_modified": "2026-01-27T22:06:53.842209",
+      "content_hash": "sha256:d2060175a03302ace51d8cb0f3e924908a188a9bb8d148b32535cbd2208c1cbf",
       "sections": [
         {
-          "title": "## Current Focus (2026-01-26)",
+          "title": "## Current Focus (2026-01-27)",
           "level": 2,
           "line_start": 3,
           "line_end": 3,
@@ -403,58 +414,58 @@
         {
           "title": "### Recently Completed",
           "level": 2,
-          "line_start": 33,
-          "line_end": 33,
+          "line_start": 98,
+          "line_end": 98,
           "content_hash": null
         },
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 117,
-          "line_end": 117,
+          "line_start": 196,
+          "line_end": 196,
           "content_hash": null
         },
         {
           "title": "## Code Quality Standards",
           "level": 2,
-          "line_start": 129,
-          "line_end": 129,
+          "line_start": 208,
+          "line_end": 208,
           "content_hash": null
         },
         {
           "title": "## Project Structure",
           "level": 2,
-          "line_start": 137,
-          "line_end": 137,
+          "line_start": 216,
+          "line_end": 216,
           "content_hash": null
         },
         {
           "title": "## Context for AI Assistants",
           "level": 2,
-          "line_start": 157,
-          "line_end": 157,
+          "line_start": 236,
+          "line_end": 236,
           "content_hash": null
         },
         {
           "title": "### Key Files",
           "level": 2,
-          "line_start": 159,
-          "line_end": 159,
+          "line_start": 238,
+          "line_end": 238,
           "content_hash": null
         },
         {
           "title": "### Testing Approach",
           "level": 2,
-          "line_start": 167,
-          "line_end": 167,
+          "line_start": 246,
+          "line_end": 246,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 7,
-      "last_read": "2026-01-26T18:25:29.042872",
+      "write_count": 8,
+      "last_read": "2026-01-27T22:06:53.842209",
       "last_write": "2026-01-26T08:21:45.157617",
-      "current_version": 9,
+      "current_version": 10,
       "version_history": [
         {
           "version": 3,
@@ -532,6 +543,17 @@
           "snapshot_path": ".cortex/history/activeContext_v9.md",
           "changed_sections": [],
           "change_description": "Updated active context to reflect Step 2 completion and set focus on Step 3"
+        },
+        {
+          "version": 10,
+          "timestamp": "2026-01-27T22:06:53.841859",
+          "content_hash": "sha256:d2060175a03302ace51d8cb0f3e924908a188a9bb8d148b32535cbd2208c1cbf",
+          "size_bytes": 16327,
+          "token_count": 4051,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v10.md",
+          "changed_sections": [],
+          "change_description": "Updated via MCP"
         }
       ]
     },
@@ -622,8 +644,8 @@
   },
   "totals": {
     "total_files": 5,
-    "total_size_bytes": 23557,
-    "total_tokens": 5546,
-    "last_full_scan": "2026-01-27T13:05:15.036234"
+    "total_size_bytes": 29856,
+    "total_tokens": 7118,
+    "last_full_scan": "2026-01-27T22:06:53.842236"
   }
 }

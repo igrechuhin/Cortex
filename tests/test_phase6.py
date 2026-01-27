@@ -48,13 +48,13 @@ async def test_context_detection():
             project_files=None,
         )
 
-        detected_languages = context.get("detected_languages")
+        detected_languages = context.detected_languages
         assert isinstance(detected_languages, (list, set, tuple))
         assert "python" in detected_languages
-        detected_frameworks = context.get("detected_frameworks")
+        detected_frameworks = context.detected_frameworks
         assert isinstance(detected_frameworks, (list, set, tuple))
         assert "django" in detected_frameworks
-        assert context["task_type"] == "authentication"
+        assert context.task_type == "authentication"
         print("✓ Python/Django context detected")
 
         # Test Swift context
@@ -63,13 +63,13 @@ async def test_context_detection():
             project_files=None,
         )
 
-        detected_languages = context.get("detected_languages")
+        detected_languages = context.detected_languages
         assert isinstance(detected_languages, (list, set, tuple))
         assert "swift" in detected_languages
-        detected_frameworks = context.get("detected_frameworks")
+        detected_frameworks = context.detected_frameworks
         assert isinstance(detected_frameworks, (list, set, tuple))
         assert "swiftui" in detected_frameworks
-        assert context["task_type"] == "ui"
+        assert context.task_type == "ui"
         print("✓ Swift/SwiftUI context detected")
 
         # Test with project files
@@ -78,10 +78,10 @@ async def test_context_detection():
             task_description="Test the authentication system", project_files=test_files
         )
 
-        detected_languages = context.get("detected_languages")
+        detected_languages = context.detected_languages
         assert isinstance(detected_languages, (list, set, tuple))
         assert "python" in detected_languages
-        assert context.get("task_type") == "testing"
+        assert context.task_type == "testing"
         print("✓ Context detection from project files works")
 
 
@@ -94,18 +94,22 @@ async def test_get_relevant_categories():
 
         manager = SynapseManager(project_root=project_root)
 
-        context = {
-            "detected_languages": ["python"],
-            "detected_frameworks": ["django"],
-            "task_type": "authentication",
-            "categories_to_load": ["generic", "python", "authentication"],
-        }
+        from cortex.rules.models import DetectedContext
 
-        context_dict: dict[str, object] = {
-            "detected_languages": context["detected_languages"],
-            "detected_frameworks": context["detected_frameworks"],
-            "task_type": context["task_type"],
-            "categories_to_load": context["categories_to_load"],
+        context = DetectedContext(
+            detected_languages=["python"],
+            detected_frameworks=["django"],
+            task_type="authentication",
+            categories_to_load=["generic", "python", "authentication"],
+        )
+
+        from cortex.core.models import ModelDict
+
+        context_dict: ModelDict = {
+            "detected_languages": list(context.detected_languages),
+            "detected_frameworks": list(context.detected_frameworks),
+            "task_type": context.task_type,
+            "categories_to_load": list(context.categories_to_load),
         }
         categories = await manager.get_relevant_categories(context=context_dict)
 
@@ -167,8 +171,8 @@ async def test_rules_manifest_loading():
         loaded_manifest = await manager.load_rules_manifest()
 
         assert loaded_manifest is not None
-        assert loaded_manifest["version"] == "1.0"
-        categories = loaded_manifest.get("categories")
+        assert loaded_manifest.version == "1.0"
+        categories = loaded_manifest.categories
         assert isinstance(categories, dict)
         assert "generic" in categories
         assert "python" in categories
@@ -224,9 +228,9 @@ async def test_load_category():
         rules = await manager.load_category("generic")
 
         assert len(rules) == 1
-        assert rules[0]["file"] == "coding-standards.md"
-        assert rules[0]["content"] == rule_content
-        assert rules[0]["priority"] == 100
+        assert rules[0].file == "coding-standards.md"
+        assert rules[0].content == rule_content
+        assert rules[0].priority == 100
         print("✓ Category rules loaded successfully")
 
 
@@ -250,11 +254,13 @@ async def test_merge_rules():
         ]
 
         # Test local overrides shared
-        shared_rules_typed: list[dict[str, object]] = [
-            {k: v for k, v in rule.items()} for rule in shared_rules
+        from cortex.core.models import ModelDict
+
+        shared_rules_typed: list[ModelDict] = [
+            cast(ModelDict, {k: v for k, v in rule.items()}) for rule in shared_rules
         ]
-        local_rules_typed: list[dict[str, object]] = [
-            {k: v for k, v in rule.items()} for rule in local_rules
+        local_rules_typed: list[ModelDict] = [
+            cast(ModelDict, {k: v for k, v in rule.items()}) for rule in local_rules
         ]
         merged = await manager.merge_rules(
             shared_rules=shared_rules_typed,

@@ -34,7 +34,7 @@ class TestRuleAnalyzer:
     async def test_get_categories(self, analyzer: RuleAnalyzer):
         """Test getting rule categories."""
         rules = {"category1": {"rule1.mdc": "content"}, "category2": {}}
-        categories = analyzer._get_categories(rules)
+        categories = analyzer._get_categories(rules)  # type: ignore[attr-defined]
         assert "category1" in categories
         assert "category2" in categories
 
@@ -47,7 +47,7 @@ class TestRuleAnalyzer:
                 "rule2.mdc": "This is test content.",
             }
         }
-        opportunities = analyzer._find_within_category_opportunities(rules)
+        opportunities = analyzer._find_within_category_opportunities(rules)  # type: ignore[attr-defined]
         assert len(opportunities) > 0
 
     @pytest.mark.asyncio
@@ -57,7 +57,7 @@ class TestRuleAnalyzer:
             "python": {"rule1.mdc": "This is test content."},
             "typescript": {"rule2.mdc": "This is test content."},
         }
-        opportunities = analyzer._find_cross_category_opportunities(rules)
+        opportunities = analyzer._find_cross_category_opportunities(rules)  # type: ignore[attr-defined]
         # May or may not find opportunities depending on similarity
         assert isinstance(opportunities, list)
 
@@ -67,7 +67,7 @@ class TestRuleAnalyzer:
         rules = {
             "python": {"rule1.mdc": "Small rule content."},
         }
-        opportunities = await analyzer._find_optimization_opportunities(rules)
+        opportunities = await analyzer._find_optimization_opportunities(rules)  # type: ignore[attr-defined]
         assert isinstance(opportunities, list)
 
     @pytest.mark.asyncio
@@ -75,14 +75,14 @@ class TestRuleAnalyzer:
         """Test scanning rules when files exist."""
         rules_dir = tmp_path / ".cortex" / "synapse" / "rules"
         python_dir = rules_dir / "python"
-        python_dir.mkdir(parents=True)
+        _ = python_dir.mkdir(parents=True)
         test_file = python_dir / "test.mdc"
-        test_file.write_text("# Test Rule\nRule content here")
+        _ = test_file.write_text("# Test Rule\nRule content here")
 
         # Update analyzer's rules_dir to point to our test directory
         analyzer.rules_dir = rules_dir
 
-        rules = await analyzer._scan_rules()
+        rules = await analyzer._scan_rules()  # type: ignore[attr-defined]
         assert "python" in rules
         assert "test.mdc" in rules["python"]
         assert "Rule content here" in rules["python"]["test.mdc"]

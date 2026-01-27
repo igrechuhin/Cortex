@@ -7,17 +7,22 @@ migrated from legacy dict-based shapes for better validation and IDE support.
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
 # Import FileOrganizationResult from core.models to avoid duplication
-from cortex.core.models import FileOrganizationResult as CoreFileOrganizationResult
+from cortex.core.models import (
+    DictLikeModel,
+)
+from cortex.core.models import (
+    FileOrganizationResult as CoreFileOrganizationResult,
+)
 
 # ============================================================================
 # Base Model
 # ============================================================================
 
 
-class AnalysisBaseModel(BaseModel):
+class AnalysisBaseModel(DictLikeModel):
     """Base model for analysis types with strict validation."""
 
     model_config = ConfigDict(

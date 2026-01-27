@@ -2,6 +2,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from cortex.structure.lifecycle.symlinks import CursorSymlinkManager
+from cortex.structure.models import SymlinkEntry
 from cortex.structure.structure_config import StructureConfig
 
 
@@ -77,7 +78,7 @@ def test_create_symlink_when_link_is_directory_records_error(tmp_path: Path) -> 
     link = tmp_path / "link"
     link.mkdir()  # directory blocks replacement
 
-    created = []
+    created: list[SymlinkEntry] = []
     errors: list[str] = []
 
     # Act
@@ -134,10 +135,10 @@ def test_create_symlink_when_unlink_fails_records_error(tmp_path: Path) -> None:
     link = tmp_path / "link"
     _ = link.write_text("x", encoding="utf-8")
 
-    created = []
+    created: list[SymlinkEntry] = []
     errors: list[str] = []
 
-    def _raise(*_args, **_kwargs) -> None:
+    def _raise(*_args: object, **_kwargs: object) -> None:
         raise PermissionError("nope")
 
     # Act
@@ -158,7 +159,7 @@ def test_create_symlink_windows_directory_uses_mklink_junction(tmp_path: Path) -
     target.mkdir()
     link = tmp_path / "link_dir"
 
-    created = []
+    created: list[SymlinkEntry] = []
     errors: list[str] = []
 
     with (
@@ -186,7 +187,7 @@ def test_create_symlink_windows_file_uses_mklink_file(tmp_path: Path) -> None:
     _ = target.write_text("x", encoding="utf-8")
     link = tmp_path / "link_file.txt"
 
-    created = []
+    created: list[SymlinkEntry] = []
     errors: list[str] = []
 
     with (

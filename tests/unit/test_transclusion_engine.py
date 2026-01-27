@@ -683,8 +683,12 @@ class TestHelperMethods:
 
     def test_make_cache_key_with_options(self, engine: TransclusionEngine) -> None:
         """Test creating cache key with options."""
+        from typing import cast
+
+        from cortex.core.models import ModelDict
+
         options: dict[str, object] = {"lines": 5, "recursive": True}
-        key = engine.make_cache_key("file.md", None, options)
+        key = engine.make_cache_key("file.md", None, cast(ModelDict, options))
         # Options should be sorted tuple
         assert key[0] == "file.md"
         assert key[1] == ""
@@ -693,11 +697,15 @@ class TestHelperMethods:
 
     def test_make_cache_key_options_sorted(self, engine: TransclusionEngine) -> None:
         """Test that options are sorted for consistent keys."""
+        from typing import cast
+
+        from cortex.core.models import ModelDict
+
         options1: dict[str, object] = {"lines": 5, "recursive": True}
         options2: dict[str, object] = {"recursive": True, "lines": 5}
 
-        key1 = engine.make_cache_key("file.md", None, options1)
-        key2 = engine.make_cache_key("file.md", None, options2)
+        key1 = engine.make_cache_key("file.md", None, cast(ModelDict, options1))
+        key2 = engine.make_cache_key("file.md", None, cast(ModelDict, options2))
         # Should produce same key regardless of order
         assert key1 == key2
 
@@ -705,9 +713,13 @@ class TestHelperMethods:
         self, engine: TransclusionEngine
     ) -> None:
         """Test building directive pattern without section."""
+        from typing import cast
+
+        from cortex.core.models import ModelDict
+
         trans: dict[str, object] = {"target": "file.md"}
 
-        pattern = engine.build_directive_pattern(trans)
+        pattern = engine.build_directive_pattern(cast(ModelDict, trans))
         # Pattern should be a regex that matches the directive
         assert r"\{\{include:" in pattern
         assert r"\}\}" in pattern
@@ -718,9 +730,13 @@ class TestHelperMethods:
         self, engine: TransclusionEngine
     ) -> None:
         """Test building directive pattern with section."""
+        from typing import cast
+
+        from cortex.core.models import ModelDict
+
         trans: dict[str, object] = {"target": "file.md", "section": "Section"}
 
-        pattern = engine.build_directive_pattern(trans)
+        pattern = engine.build_directive_pattern(cast(ModelDict, trans))
         # Pattern should contain escaped versions
         assert r"\{\{include:" in pattern
         assert "#" in pattern

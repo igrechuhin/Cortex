@@ -3,6 +3,7 @@
 import json
 import tempfile
 from pathlib import Path
+from typing import cast
 
 from cortex.services.language_detector import LanguageDetector
 
@@ -21,7 +22,8 @@ class TestLanguageDetector:
 
             assert result is not None
             assert result["language"] == "python"
-            assert result["confidence"] > 0.8
+            confidence = cast(float, result["confidence"])
+            assert confidence > 0.8
 
     def test_detect_python_from_requirements_txt(self) -> None:
         """Test Python detection from requirements.txt."""

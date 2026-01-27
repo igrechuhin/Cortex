@@ -10,6 +10,7 @@ from typing import cast
 import pytest
 
 from cortex.core.exceptions import IndexCorruptedError
+from cortex.core.models import ModelDict
 from cortex.core.security import (
     CommitMessageSanitizer,
     HTMLEscaper,
@@ -137,7 +138,7 @@ class TestJSONIntegrity:
         """Test saving and loading JSON with integrity checks."""
         with tempfile.TemporaryDirectory() as tmpdir:
             test_file = Path(tmpdir) / "test.json"
-            test_data: dict[str, object] = {"key": "value", "number": 42}
+            test_data = cast(ModelDict, {"key": "value", "number": 42})
 
             # Save with integrity
             await JSONIntegrity.save_with_integrity(test_file, test_data)
@@ -151,7 +152,7 @@ class TestJSONIntegrity:
         """Test loading detects tampered data."""
         with tempfile.TemporaryDirectory() as tmpdir:
             test_file = Path(tmpdir) / "test.json"
-            test_data: dict[str, object] = {"key": "value"}
+            test_data = cast(ModelDict, {"key": "value"})
 
             # Save with integrity
             await JSONIntegrity.save_with_integrity(test_file, test_data)
@@ -296,7 +297,7 @@ class TestRateLimiter:
         """Test saving and loading empty JSON data."""
         with tempfile.TemporaryDirectory() as tmpdir:
             test_file = Path(tmpdir) / "empty.json"
-            test_data: dict[str, object] = {}
+            test_data = cast(ModelDict, {})
 
             # Save empty data with integrity
             await JSONIntegrity.save_with_integrity(test_file, test_data)
@@ -600,10 +601,13 @@ class TestHTMLEscaper:
     def test_escape_dict_simple(self):
         """Test recursive escaping of dictionary values."""
         # Arrange
-        data: dict[str, object] = {
-            "title": "<script>alert('XSS')</script>",
-            "count": 42,
-        }
+        data = cast(
+            ModelDict,
+            {
+                "title": "<script>alert('XSS')</script>",
+                "count": 42,
+            },
+        )
 
         # Act
         result = HTMLEscaper.escape_dict(data)
@@ -617,12 +621,15 @@ class TestHTMLEscaper:
     def test_escape_dict_nested(self):
         """Test recursive escaping of nested dictionaries."""
         # Arrange
-        data: dict[str, object] = {
-            "user": {
-                "name": "<b>John</b>",
-                "email": "john@example.com",
+        data = cast(
+            ModelDict,
+            {
+                "user": {
+                    "name": "<b>John</b>",
+                    "email": "john@example.com",
+                },
             },
-        }
+        )
 
         # Act
         result = HTMLEscaper.escape_dict(data)
@@ -639,9 +646,12 @@ class TestHTMLEscaper:
     def test_escape_dict_with_list(self):
         """Test recursive escaping of lists in dictionaries."""
         # Arrange
-        data: dict[str, object] = {
-            "items": ["<script>", "safe", "<img onerror='alert(1)'>"],
-        }
+        data = cast(
+            ModelDict,
+            {
+                "items": ["<script>", "safe", "<img onerror='alert(1)'>"],
+            },
+        )
 
         # Act
         result = HTMLEscaper.escape_dict(data)
@@ -649,19 +659,24 @@ class TestHTMLEscaper:
         # Assert
         items = result.get("items")
         assert isinstance(items, list)
-        assert "<" not in items[0]
+        item0 = items[0]
+        assert isinstance(item0, str)
+        assert "<" not in item0
         assert items[1] == "safe"
 
     def test_escape_dict_preserves_types(self):
         """Test that non-string types are preserved."""
         # Arrange
-        data: dict[str, object] = {
-            "string": "<tag>",
-            "number": 123,
-            "float": 3.14,
-            "boolean": True,
-            "none": None,
-        }
+        data = cast(
+            ModelDict,
+            {
+                "string": "<tag>",
+                "number": 123,
+                "float": 3.14,
+                "boolean": True,
+                "none": None,
+            },
+        )
 
         # Act
         result = HTMLEscaper.escape_dict(data)

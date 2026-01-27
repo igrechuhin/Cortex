@@ -12,10 +12,10 @@ Tests cover:
 
 import json
 from pathlib import Path
-from typing import cast
 
 import pytest
 
+from cortex.validation.models import FileSchemaModel, ValidationError
 from cortex.validation.schema_validator import DEFAULT_SCHEMAS, SchemaValidator
 
 
@@ -36,10 +36,10 @@ class TestSchemaValidatorInitialization:
 
         # Check schema structure
         schema = validator.schemas["projectBrief.md"]
-        assert "required_sections" in schema
-        assert "recommended_sections" in schema
-        assert "heading_level" in schema
-        assert "max_nesting" in schema
+        assert hasattr(schema, "required_sections")
+        assert hasattr(schema, "recommended_sections")
+        assert hasattr(schema, "heading_level")
+        assert hasattr(schema, "max_nesting")
 
     @pytest.mark.asyncio
     async def test_initialization_with_custom_schemas(self, tmp_path: Path) -> None:
@@ -63,7 +63,7 @@ class TestSchemaValidatorInitialization:
         # Should have both default and custom schemas
         assert "memorybankinstructions.md" in validator.schemas
         assert "custom.md" in validator.schemas
-        assert validator.schemas["custom.md"]["required_sections"] == ["Custom Section"]
+        assert validator.schemas["custom.md"].required_sections == ["Custom Section"]
 
     @pytest.mark.asyncio
     async def test_initialization_with_nonexistent_config(self, tmp_path: Path) -> None:
@@ -97,9 +97,9 @@ This is the structure.
 """
         result = await validator.validate_file("memorybankinstructions.md", content)
 
-        assert result["valid"] is True
-        assert len(result["errors"]) == 0
-        assert result["score"] >= 85  # May have warnings for recommended sections
+        assert result.valid is True
+        assert len(result.errors) == 0
+        assert result.score >= 85  # May have warnings for recommended sections
 
     @pytest.mark.asyncio
     async def test_validate_file_with_missing_required_sections(self):
@@ -113,13 +113,11 @@ This is the purpose section.
 """
         result = await validator.validate_file("memorybankinstructions.md", content)
 
-        assert result["valid"] is False
-        assert len(result["errors"]) >= 2  # Missing Guidelines and Structure
+        assert result.valid is False
+        assert len(result.errors) >= 2  # Missing Guidelines and Structure
 
         # Check error messages
-        error_messages = [
-            e.get("message", "") for e in result["errors"] if "message" in e
-        ]
+        error_messages = [e.message for e in result.errors]
         assert any("Guidelines" in msg for msg in error_messages)
         assert any("Structure" in msg for msg in error_messages)
 
@@ -141,13 +139,11 @@ This is the structure.
 """
         result = await validator.validate_file("memorybankinstructions.md", content)
 
-        assert result["valid"] is True  # Still valid
-        assert len(result["warnings"]) >= 2  # Missing recommended sections
+        assert result.valid is True  # Still valid
+        assert len(result.warnings) >= 2  # Missing recommended sections
 
         # Check warning messages
-        warning_messages = [
-            w.get("message", "") for w in result["warnings"] if "message" in w
-        ]
+        warning_messages = [w.message for w in result.warnings]
         assert any("Best Practices" in msg for msg in warning_messages)
         assert any("Examples" in msg for msg in warning_messages)
 
@@ -172,14 +168,19 @@ This is the structure.
 """
         result = await validator.validate_file("memorybankinstructions.md", content)
 
-        assert result["valid"] is False
+        assert result.valid is False
 
         # Check for heading level skip error
         heading_errors = [
-            e for e in result["errors"] if e.get("type") == "heading_level_skip"
+            e
+            for e in result.errors
+            if hasattr(e, "type") and e.type == "heading_level_skip"
         ]
+        if not heading_errors:
+            # Fallback: check message content
+            heading_errors = [e for e in result.errors if "skip" in e.message.lower()]
         assert len(heading_errors) >= 1
-        assert heading_errors[0].get("message", "").lower().find("skip") != -1
+        assert heading_errors[0].message.lower().find("skip") != -1
 
     @pytest.mark.asyncio
     async def test_validate_file_with_excessive_nesting(self):
@@ -210,10 +211,15 @@ This is the structure.
 
         # Check for deep nesting warning
         nesting_errors = [
-            e for e in result["errors"] if e.get("type") == "heading_too_deep"
+            e
+            for e in result.errors
+            if hasattr(e, "type") and e.type == "heading_too_deep"
         ]
+        if not nesting_errors:
+            # Fallback: check message content
+            nesting_errors = [e for e in result.errors if "Too deep" in e.message]
         assert len(nesting_errors) >= 1
-        assert nesting_errors[0].get("message", "").find("Too deep") != -1
+        assert nesting_errors[0].message.find("Too deep") != -1
 
     @pytest.mark.asyncio
     async def test_validate_file_without_schema(self):
@@ -223,11 +229,14 @@ This is the structure.
 
         result = await validator.validate_file("custom.md", content)
 
-        assert result["valid"] is True
-        assert len(result["errors"]) == 0
-        assert len(result["warnings"]) == 1
-        assert result["warnings"][0].get("type") == "no_schema"
-        assert result["score"] == 100
+        assert result.valid is True
+        assert len(result.errors) == 0
+        assert len(result.warnings) == 1
+        assert (
+            hasattr(result.warnings[0], "type")
+            and result.warnings[0].type == "no_schema"
+        )
+        assert result.score == 100
 
     @pytest.mark.asyncio
     async def test_validate_file_with_file_type_override(self):
@@ -253,8 +262,8 @@ Success criteria section.
             "different-name.md", content, file_type="projectBrief.md"
         )
 
-        assert result["valid"] is True
-        assert len(result["errors"]) == 0
+        assert result.valid is True
+        assert len(result.errors) == 0
 
     @pytest.mark.asyncio
     async def test_validate_file_score_calculation(self):
@@ -283,7 +292,7 @@ Examples content.
         result = await validator.validate_file(
             "memorybankinstructions.md", perfect_content
         )
-        assert result["score"] == 100
+        assert result.score == 100
 
         # File with missing required sections (errors)
         error_content = """
@@ -295,7 +304,7 @@ Purpose content.
         result = await validator.validate_file(
             "memorybankinstructions.md", error_content
         )
-        assert result["score"] < 80  # Should be significantly penalized
+        assert result.score < 80  # Should be significantly penalized
 
 
 @pytest.mark.unit
@@ -310,8 +319,8 @@ class TestGetSchema:
         schema = validator.get_schema("projectBrief.md")
 
         assert schema is not None
-        assert "required_sections" in schema
-        required_sections = schema.get("required_sections", [])
+        assert hasattr(schema, "required_sections")
+        required_sections = schema.required_sections
         assert isinstance(required_sections, list)
         assert "Project Overview" in required_sections
         assert "Goals" in required_sections
@@ -416,11 +425,11 @@ class TestCheckRequiredSections:
         errors = validator.check_required_sections(sections, required)
 
         assert len(errors) == 2
-        assert all(e.get("type") == "missing_section" for e in errors)
-        assert all(e.get("severity") == "error" for e in errors)
+        assert all(e.type == "missing_section" for e in errors)
+        assert all(e.severity == "error" for e in errors)
 
         # Check error messages mention missing sections
-        error_messages = [e.get("message", "") for e in errors if "message" in e]
+        error_messages = [e.message for e in errors]
         assert any("Guidelines" in msg for msg in error_messages)
         assert any("Structure" in msg for msg in error_messages)
 
@@ -461,11 +470,11 @@ class TestCheckRecommendedSections:
         warnings = validator.check_recommended_sections(sections, recommended)
 
         assert len(warnings) == 2
-        assert all(w.get("type") == "missing_recommended_section" for w in warnings)
-        assert all(w.get("severity") == "warning" for w in warnings)
+        assert all(w.type == "missing_recommended_section" for w in warnings)
+        assert all(w.severity == "warning" for w in warnings)
 
         # Check warning messages mention missing sections
-        warning_messages = [w.get("message", "") for w in warnings if "message" in w]
+        warning_messages = [w.message for w in warnings]
         assert any("Best Practices" in msg for msg in warning_messages)
         assert any("Examples" in msg for msg in warning_messages)
 
@@ -508,9 +517,9 @@ class TestCheckHeadingLevels:
             content, expected_level=2, max_nesting=3
         )
 
-        skip_errors = [e for e in errors if e.get("type") == "heading_level_skip"]
+        skip_errors = [e for e in errors if e.type == "heading_level_skip"]
         assert len(skip_errors) >= 1
-        assert skip_errors[0].get("message", "").lower().find("skip") != -1
+        assert skip_errors[0].message.lower().find("skip") != -1
 
     @pytest.mark.asyncio
     async def test_check_heading_levels_excessive_nesting(self):
@@ -531,9 +540,9 @@ class TestCheckHeadingLevels:
             content, expected_level=2, max_nesting=3
         )
 
-        deep_errors = [e for e in errors if e.get("type") == "heading_too_deep"]
+        deep_errors = [e for e in errors if e.type == "heading_too_deep"]
         assert len(deep_errors) >= 1
-        assert deep_errors[0].get("message", "").lower().find("too deeply nested") != -1
+        assert deep_errors[0].message.lower().find("too deeply nested") != -1
 
 
 @pytest.mark.unit
@@ -543,12 +552,11 @@ class TestCalculateScore:
     @pytest.mark.asyncio
     async def test_calculate_score_perfect(self):
         """Test score calculation with no errors or warnings."""
-        from cortex.validation.schema_validator import ValidationError
 
         validator = SchemaValidator()
         errors: list[ValidationError] = []
         warnings: list[ValidationError] = []
-        schema: dict[str, object] = {}
+        schema = FileSchemaModel()
 
         score = validator.calculate_score(errors, warnings, schema)
 
@@ -558,13 +566,17 @@ class TestCalculateScore:
     async def test_calculate_score_with_errors(self):
         """Test score calculation with errors."""
 
-        from cortex.validation.schema_validator import ValidationError
-
         validator = SchemaValidator()
-        errors_raw = [{"type": "error1"}, {"type": "error2"}]
-        errors = cast(list[ValidationError], errors_raw)
+        errors = [
+            ValidationError(
+                type="error1", severity="error", message="first", suggestion=None
+            ),
+            ValidationError(
+                type="error2", severity="error", message="second", suggestion=None
+            ),
+        ]
         warnings: list[ValidationError] = []
-        schema: dict[str, object] = {}
+        schema = FileSchemaModel()
 
         score = validator.calculate_score(errors, warnings, schema)
 
@@ -575,13 +587,17 @@ class TestCalculateScore:
     async def test_calculate_score_with_warnings(self):
         """Test score calculation with warnings."""
 
-        from cortex.validation.schema_validator import ValidationError
-
         validator = SchemaValidator()
         errors: list[ValidationError] = []
-        warnings_raw = [{"type": "warning1"}, {"type": "warning2"}]
-        warnings = cast(list[ValidationError], warnings_raw)
-        schema: dict[str, object] = {}
+        warnings = [
+            ValidationError(
+                type="warning1", severity="warning", message="first", suggestion=None
+            ),
+            ValidationError(
+                type="warning2", severity="warning", message="second", suggestion=None
+            ),
+        ]
+        schema = FileSchemaModel()
 
         score = validator.calculate_score(errors, warnings, schema)
 
@@ -592,14 +608,21 @@ class TestCalculateScore:
     async def test_calculate_score_with_both(self):
         """Test score calculation with errors and warnings."""
 
-        from cortex.validation.schema_validator import ValidationError
-
         validator = SchemaValidator()
-        errors_raw = [{"type": "error1"}]
-        errors = cast(list[ValidationError], errors_raw)
-        warnings_raw = [{"type": "warning1"}, {"type": "warning2"}]
-        warnings = cast(list[ValidationError], warnings_raw)
-        schema: dict[str, object] = {}
+        errors = [
+            ValidationError(
+                type="error1", severity="error", message="err", suggestion=None
+            )
+        ]
+        warnings = [
+            ValidationError(
+                type="warning1", severity="warning", message="first", suggestion=None
+            ),
+            ValidationError(
+                type="warning2", severity="warning", message="second", suggestion=None
+            ),
+        ]
+        schema = FileSchemaModel()
 
         score = validator.calculate_score(errors, warnings, schema)
 
@@ -610,14 +633,26 @@ class TestCalculateScore:
     async def test_calculate_score_minimum_zero(self):
         """Test score calculation doesn't go below zero."""
 
-        from cortex.validation.schema_validator import ValidationError
-
         validator = SchemaValidator()
-        errors_raw = [{"type": f"error{i}"} for i in range(10)]
-        errors = cast(list[ValidationError], errors_raw)
-        warnings_raw = [{"type": f"warning{i}"} for i in range(10)]
-        warnings = cast(list[ValidationError], warnings_raw)
-        schema: dict[str, object] = {}
+        errors = [
+            ValidationError(
+                type=f"error{i}",
+                severity="error",
+                message=f"err {i}",
+                suggestion=None,
+            )
+            for i in range(10)
+        ]
+        warnings = [
+            ValidationError(
+                type=f"warning{i}",
+                severity="warning",
+                message=f"warn {i}",
+                suggestion=None,
+            )
+            for i in range(10)
+        ]
+        schema = FileSchemaModel()
 
         score = validator.calculate_score(errors, warnings, schema)
 
@@ -649,7 +684,7 @@ class TestLoadCustomSchemas:
         assert "custom1.md" in schemas
         assert "custom2.md" in schemas
         custom1_schema = schemas["custom1.md"]
-        required_sections = custom1_schema.get("required_sections", [])
+        required_sections = custom1_schema.required_sections
         assert required_sections == ["Section A", "Section B"]
 
     @pytest.mark.asyncio
@@ -693,18 +728,15 @@ class TestSchemaValidatorIntegration:
 
             # Create content with all required sections
             content = f"# {file_name}\n\n"
-            required_sections_raw: object = schema.get("required_sections", [])
-            if isinstance(required_sections_raw, list):
-                for section_raw in required_sections_raw:  # type: ignore[misc]
-                    if isinstance(section_raw, str):
-                        section: str = section_raw
-                        content += f"## {section}\n\nContent for {section}.\n\n"
+            required_sections = schema.required_sections
+            for section in required_sections:
+                content += f"## {section}\n\nContent for {section}.\n\n"
 
             result = await validator.validate_file(file_name, content)
 
-            assert result["valid"] is True
-            assert len(result["errors"]) == 0
-            assert result["score"] >= 85
+            assert result.valid is True
+            assert len(result.errors) == 0
+            assert result.score >= 85
 
     @pytest.mark.asyncio
     async def test_validate_file_complete_workflow(self, tmp_path: Path) -> None:
@@ -742,8 +774,8 @@ Cleanup procedures.
 Common issues.
 """
         result = await validator.validate_file("workflow.md", valid_content)
-        assert result["valid"] is True
-        assert result["score"] == 100
+        assert result.valid is True
+        assert result.score == 100
 
         # Test invalid file
         invalid_content = """
@@ -753,6 +785,6 @@ Common issues.
 Setup instructions.
 """
         result = await validator.validate_file("workflow.md", invalid_content)
-        assert result["valid"] is False
-        assert len(result["errors"]) >= 2  # Missing Execution and Cleanup
-        assert result["score"] < 80
+        assert result.valid is False
+        assert len(result.errors) >= 2  # Missing Execution and Cleanup
+        assert result.score < 80

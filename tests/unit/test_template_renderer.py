@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from cortex.structure.template_renderer import (
@@ -89,7 +91,7 @@ def test_generate_tech_context_includes_project_info_defaults() -> None:
     assert "Python" in content
 
 
-def test_generate_initial_files_writes_expected_files(tmp_path) -> None:
+def test_generate_initial_files_writes_expected_files(tmp_path: Path) -> None:
     # Arrange
     knowledge_dir = tmp_path / "knowledge"
     knowledge_dir.mkdir(parents=True)
@@ -109,7 +111,7 @@ def test_generate_initial_files_writes_expected_files(tmp_path) -> None:
     assert (knowledge_dir / "memorybankinstructions.md").exists()
 
 
-def test_generate_initial_files_when_write_fails_reports_errors(tmp_path) -> None:
+def test_generate_initial_files_when_write_fails_reports_errors(tmp_path: Path) -> None:
     # Arrange
     knowledge_dir = tmp_path / "not-a-dir"
     project_info = {"name": "Cortex"}

@@ -11,6 +11,7 @@ Note: dict[str, object] is acceptable in tests when:
 For new test code, prefer using Pydantic models directly.
 """
 
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
 from cortex.core.models import JsonValue, ModelDict
@@ -34,3 +35,75 @@ RawJSONDict = ModelDict
 
 # Type alias for raw JSON list data in tests.
 RawJSONList = list[JsonValue]
+
+
+def assert_is_list(
+    value: JsonValue, error_msg: str = "Expected list"
+) -> list[JsonValue]:
+    """Assert that a JsonValue is a list and return it typed as list.
+
+    Args:
+        value: JsonValue to check
+        error_msg: Error message if assertion fails
+
+    Returns:
+        The value typed as list[JsonValue]
+
+    Raises:
+        AssertionError: If value is not a list
+    """
+    assert isinstance(value, list), error_msg
+    return cast(list[JsonValue], value)
+
+
+def assert_is_dict(value: JsonValue, error_msg: str = "Expected dict") -> ModelDict:
+    """Assert that a JsonValue is a dict and return it typed as ModelDict.
+
+    Args:
+        value: JsonValue to check
+        error_msg: Error message if assertion fails
+
+    Returns:
+        The value typed as ModelDict
+
+    Raises:
+        AssertionError: If value is not a dict
+    """
+    assert isinstance(value, dict), error_msg
+    return cast(ModelDict, value)
+
+
+def get_list(value: JsonValue, key: str) -> list[JsonValue]:
+    """Get a list value from a ModelDict with type narrowing.
+
+    Args:
+        value: ModelDict containing the value
+        key: Key to look up
+
+    Returns:
+        The value as list[JsonValue]
+
+    Raises:
+        AssertionError: If value is not a dict or key doesn't contain a list
+    """
+    assert isinstance(value, dict), f"Expected dict, got {type(value)}"
+    item = value[key]
+    return assert_is_list(item, f"Expected {key} to be a list")
+
+
+def get_dict(value: JsonValue, key: str) -> ModelDict:
+    """Get a dict value from a ModelDict with type narrowing.
+
+    Args:
+        value: ModelDict containing the value
+        key: Key to look up
+
+    Returns:
+        The value as ModelDict
+
+    Raises:
+        AssertionError: If value is not a dict or key doesn't contain a dict
+    """
+    assert isinstance(value, dict), f"Expected dict, got {type(value)}"
+    item = value[key]
+    return assert_is_dict(item, f"Expected {key} to be a dict")

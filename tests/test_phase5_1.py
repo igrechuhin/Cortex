@@ -13,7 +13,6 @@ import shutil
 import tempfile
 from collections.abc import Generator
 from pathlib import Path
-from typing import cast
 
 import pytest
 
@@ -110,7 +109,7 @@ async def test_pattern_analyzer_initialization(
     """Test PatternAnalyzer initialization."""
     assert pattern_analyzer is not None
     assert pattern_analyzer.access_data is not None
-    assert "version" in pattern_analyzer.access_data
+    assert pattern_analyzer.access_data.version is not None
 
 
 @pytest.mark.asyncio
@@ -124,14 +123,10 @@ async def test_record_access(pattern_analyzer: PatternAnalyzer) -> None:
     )
 
     # Verify access was recorded
-    from typing import cast
-
-    accesses = cast(list[object], pattern_analyzer.access_data["accesses"])
-    assert len(accesses) == 1
-    file_stats = cast(dict[str, object], pattern_analyzer.access_data["file_stats"])
-    assert "memorybankinstructions.md" in file_stats
-    file_stat = cast(dict[str, object], file_stats["memorybankinstructions.md"])
-    assert cast(int, file_stat["total_accesses"]) == 1
+    assert len(pattern_analyzer.access_data.accesses) == 1
+    assert "memorybankinstructions.md" in pattern_analyzer.access_data.file_stats
+    file_stat = pattern_analyzer.access_data.file_stats["memorybankinstructions.md"]
+    assert file_stat.total_accesses == 1
 
 
 @pytest.mark.asyncio
@@ -187,7 +182,7 @@ async def test_get_unused_files(pattern_analyzer: PatternAnalyzer) -> None:
 
     # Since we just accessed projectBrief.md, it shouldn't be in unused list
     # But other files should be (they were never accessed)
-    unused_names = [u["file"] for u in unused]
+    unused_names = [u.file for u in unused]
     assert "projectBrief.md" not in unused_names
 
 
@@ -208,8 +203,8 @@ async def test_get_task_patterns(pattern_analyzer: PatternAnalyzer) -> None:
     patterns = await pattern_analyzer.get_task_patterns(time_range_days=30)
 
     assert len(patterns) > 0
-    assert patterns[0]["task_id"] == "task-001"
-    assert patterns[0]["file_count"] == 2
+    assert patterns[0].task_id == "task-001"
+    assert patterns[0].file_count == 2
 
 
 @pytest.mark.asyncio
@@ -222,9 +217,8 @@ async def test_get_temporal_patterns(pattern_analyzer: PatternAnalyzer) -> None:
     # Get temporal patterns
     temporal = await pattern_analyzer.get_temporal_patterns(time_range_days=30)
 
-    assert "time_range_days" in temporal
-    assert "total_accesses" in temporal
-    assert temporal["total_accesses"] == 10
+    assert temporal.time_range_days is not None
+    assert temporal.total_accesses == 10
 
 
 # ============================================================================
@@ -247,11 +241,10 @@ async def test_analyze_file_organization(
     """Test file organization analysis."""
     result = await structure_analyzer.analyze_file_organization()
 
-    assert result["status"] == "analyzed"
-    assert "file_count" in result
-    assert result["file_count"] == 7  # Number of files in fixture
-    assert "total_size_bytes" in result
-    assert "avg_size_bytes" in result
+    assert result.status == "analyzed"
+    assert result.file_count == 7  # Number of files in fixture
+    assert result.total_size_bytes is not None
+    assert result.avg_size_bytes is not None
 
 
 @pytest.mark.asyncio
@@ -276,14 +269,12 @@ async def test_measure_complexity_metrics(
     """Test complexity metrics measurement."""
     result = await structure_analyzer.measure_complexity_metrics()
 
-    assert result["status"] == "analyzed"
-    assert "metrics" in result
-    metrics = cast(dict[str, object], result["metrics"])
-    assert "max_dependency_depth" in metrics
-    assert "cyclomatic_complexity" in metrics
-    assert "assessment" in result
-    assessment = cast(dict[str, object], result["assessment"])
-    assert "score" in assessment
+    assert result.status == "analyzed"
+    assert result.metrics is not None
+    assert result.metrics.max_dependency_depth is not None
+    assert result.metrics.cyclomatic_complexity is not None
+    assert result.assessment is not None
+    assert result.assessment.score is not None
 
 
 @pytest.mark.asyncio
@@ -321,11 +312,12 @@ async def test_generate_insights(
         include_reasoning=True,
     )
 
-    assert "status" not in insights or insights.get("status") != "error"
-    assert "generated_at" in insights
-    assert "total_insights" in insights
-    assert "insights" in insights
-    assert "summary" in insights
+    # InsightsResultDict doesn't have a status field, check summary instead
+    assert insights.summary.status is not None
+    assert insights.generated_at is not None
+    assert insights.total_insights is not None
+    assert insights.insights is not None
+    assert insights.summary is not None
 
 
 @pytest.mark.asyncio
@@ -344,7 +336,7 @@ async def test_generate_organization_insights(insight_engine: InsightEngine) -> 
 
     assert isinstance(insights, list)
     # Should detect large files
-    large_file_insights = [i for i in insights if i.get("id") == "large_files"]
+    large_file_insights = [i for i in insights if i.id == "large_files"]
     assert len(large_file_insights) > 0
 
 
@@ -503,17 +495,15 @@ async def test_full_analysis_workflow(temp_project: Path) -> None:
     assert len(usage_patterns) > 0
 
     organization = await structure_analyzer.analyze_file_organization()
-    assert organization["status"] == "analyzed"
+    assert organization.status == "analyzed"
 
     insights = await insight_engine.generate_insights(min_impact_score=0.3)
-    total_insights = insights.get("total_insights", 0)
+    total_insights = insights.total_insights
     assert isinstance(total_insights, int)
     assert total_insights >= 0
 
     # Export insights
-    markdown_report = await insight_engine.export_insights(
-        cast(dict[str, object], insights), format="markdown"
-    )
+    markdown_report = await insight_engine.export_insights(insights, format="markdown")
     assert "Memory Bank Insights Report" in markdown_report
 
 

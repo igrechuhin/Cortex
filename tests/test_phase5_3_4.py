@@ -51,12 +51,12 @@ if __name__ == "__main__":
 
         # Test configuration validation
         validation = adaptation_config.validate()
-        assert validation["valid"]
+        assert validation.valid
 
         # Test configuration methods
         summary = adaptation_config.get_summary()
-        assert "learning_enabled" in summary
-        assert "learning_rate" in summary
+        assert summary.learning_enabled is not None
+        assert summary.learning_rate is not None
 
         print("   ✓ Adaptation Config working correctly")
     except Exception as e:
@@ -69,8 +69,10 @@ if __name__ == "__main__":
         memory_bank_dir = Path("./test_memory_bank")
         memory_bank_dir.mkdir(parents=True, exist_ok=True)
 
+        from cortex.core.models import ModelDict
+
         learning_engine = LearningEngine(
-            memory_bank_dir=memory_bank_dir, config={"enabled": True}
+            memory_bank_dir=memory_bank_dir, config=cast(ModelDict, {"enabled": True})
         )
 
         assert learning_engine is not None
@@ -84,7 +86,7 @@ if __name__ == "__main__":
     # Test 4: Approval Manager initialization
     print("\n4. Testing Approval Manager initialization...")
     try:
-        approval_manager = ApprovalManager(memory_bank_dir=memory_bank_dir, config={})
+        approval_manager = ApprovalManager(memory_bank_dir=memory_bank_dir, config=None)
 
         assert approval_manager is not None
         assert len(approval_manager.approvals) == 0
@@ -110,9 +112,8 @@ if __name__ == "__main__":
 
         # Test summary
         summary = adaptation_config.get_summary()
-        assert "learning_enabled" in summary
-        assert "learning_rate" in summary
-        assert summary["learning_rate"] == "aggressive"
+        assert summary.learning_enabled is not None
+        assert summary.learning_rate == "aggressive"
 
         print("   ✓ Configuration operations working correctly")
     except Exception as e:
@@ -141,13 +142,13 @@ if __name__ == "__main__":
                 suggestion_details={"similarity_threshold": 0.8},
             )
 
-            assert result["status"] == "recorded"
+            assert result.status == "recorded"
             assert len(learning_engine.data_manager.feedback_records) == 1
 
             # Get insights
             insights = await learning_engine.get_learning_insights()
-            assert insights["total_feedback"] == 1
-            assert insights["approved"] == 1
+            assert insights.total_feedback == 1
+            assert insights.approved == 1
 
             return True
 
@@ -165,7 +166,7 @@ if __name__ == "__main__":
 
         async def test_approval_workflow():
             approval_manager = ApprovalManager(
-                memory_bank_dir=memory_bank_dir, config={}
+                memory_bank_dir=memory_bank_dir, config=None
             )
 
             # Request approval
@@ -175,8 +176,8 @@ if __name__ == "__main__":
                 auto_apply=False,
             )
 
-            assert result["status"] == "success" or result.get("approval_id")
-            _ = result.get("approval_id")  # approval_id assigned but not used
+            assert result.status == "success" or result.approval_id is not None
+            _ = result.approval_id  # approval_id assigned but not used
 
             # Approve suggestion
             approve_result = await approval_manager.approve_suggestion(
@@ -185,12 +186,12 @@ if __name__ == "__main__":
                 auto_apply=False,
             )
 
-            assert approve_result["status"] == "approved"
+            assert approve_result.status == "approved"
 
             # Get pending approvals
             pending = await approval_manager.get_pending_approvals()
             # Note: might be 0 if auto-approved
-            assert "count" in pending
+            assert pending.count is not None
 
             return True
 
@@ -212,11 +213,16 @@ if __name__ == "__main__":
             )
 
             # Create a suggestion
-            suggestion: dict[str, object] = {
-                "type": "consolidation",
-                "confidence": 0.6,
-                "similarity_threshold": 0.8,
-            }
+            from cortex.core.models import ModelDict
+
+            suggestion = cast(
+                ModelDict,
+                {
+                    "type": "consolidation",
+                    "confidence": 0.6,
+                    "similarity_threshold": 0.8,
+                },
+            )
 
             # Adjust confidence based on learning
             (
@@ -253,25 +259,19 @@ if __name__ == "__main__":
 
         # Valid configuration
         validation = adaptation_config.validate()
-        assert validation["valid"]
-        issues_raw = validation.get("issues", [])
-        assert isinstance(issues_raw, list)
-        issues = cast(list[str], issues_raw)
-        assert len(issues) == 0
+        assert validation.valid
+        assert len(validation.issues) == 0
 
         # Set invalid configuration
         adaptation_config.set("self_evolution.learning.learning_rate", "invalid_rate")
         validation = adaptation_config.validate()
-        assert not validation["valid"]
-        issues_raw = validation.get("issues", [])
-        assert isinstance(issues_raw, list)
-        issues = cast(list[str], issues_raw)
-        assert len(issues) > 0
+        assert not validation.valid
+        assert len(validation.issues) > 0
 
         # Reset to defaults
         adaptation_config.reset_to_defaults()
         validation = adaptation_config.validate()
-        assert validation["valid"]
+        assert validation.valid
 
         print("   ✓ Configuration validation working")
     except Exception as e:
@@ -290,11 +290,11 @@ if __name__ == "__main__":
             # Get insights
             insights = await learning_engine.get_learning_insights()
 
-            assert "learning_enabled" in insights
-            assert "total_feedback" in insights
-            assert "learned_patterns" in insights
-            assert "recommendations" in insights
-            assert isinstance(insights["recommendations"], list)
+            assert insights.learning_enabled is not None
+            assert insights.total_feedback is not None
+            assert insights.learned_patterns is not None
+            assert insights.recommendations is not None
+            assert isinstance(insights.recommendations, list)
 
             return True
 

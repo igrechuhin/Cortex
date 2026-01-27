@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -11,7 +12,7 @@ from cortex.tools.validation_helpers import (
 
 
 @pytest.mark.asyncio
-async def test_read_all_memory_bank_files_reads_markdown_files(tmp_path) -> None:
+async def test_read_all_memory_bank_files_reads_markdown_files(tmp_path: Path) -> None:
     # Arrange
     memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
     memory_bank_dir.mkdir(parents=True, exist_ok=True)
@@ -24,7 +25,7 @@ async def test_read_all_memory_bank_files_reads_markdown_files(tmp_path) -> None
 
     fs_manager = MagicMock()
 
-    async def _read_file(path):
+    async def _read_file(path: Path) -> tuple[str, str]:
         name = path.name
         if name == "a.md":
             return "# A", "h1"
@@ -49,7 +50,11 @@ def test_generate_duplication_fixes_creates_transclusion_suggestions() -> None:
     }
 
     # Act
-    fixes = generate_duplication_fixes(duplications_data)
+    from typing import cast
+
+    from cortex.core.models import ModelDict
+
+    fixes = generate_duplication_fixes(cast(ModelDict, duplications_data))
 
     # Assert
     assert len(fixes) == 2
@@ -65,7 +70,11 @@ def test_generate_duplication_fixes_ignores_invalid_entries() -> None:
     }
 
     # Act
-    fixes = generate_duplication_fixes(duplications_data)
+    from typing import cast
+
+    from cortex.core.models import ModelDict
+
+    fixes = generate_duplication_fixes(cast(ModelDict, duplications_data))
 
     # Assert
     assert fixes == []
@@ -85,7 +94,11 @@ def test_generate_duplication_fixes_when_exact_not_list_still_processes_similar(
     }
 
     # Act
-    fixes = generate_duplication_fixes(duplications_data)
+    from typing import cast
+
+    from cortex.core.models import ModelDict
+
+    fixes = generate_duplication_fixes(cast(ModelDict, duplications_data))
 
     # Assert
     assert len(fixes) == 1
@@ -102,7 +115,11 @@ def test_generate_duplication_fixes_when_similar_not_list_returns_only_exact_fix
     }
 
     # Act
-    fixes = generate_duplication_fixes(duplications_data)
+    from typing import cast
+
+    from cortex.core.models import ModelDict
+
+    fixes = generate_duplication_fixes(cast(ModelDict, duplications_data))
 
     # Assert
     assert len(fixes) == 1

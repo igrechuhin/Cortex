@@ -1,7 +1,6 @@
 """Tests for analysis operations module."""
 
 import json
-from collections.abc import Sequence
 from pathlib import Path
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -591,20 +590,26 @@ class TestConvertOpportunitiesToDict:
         """Test converting object opportunities without to_dict method."""
 
         # Arrange
-        class SimpleOpp:
-            pass
-
-        opp = SimpleOpp()
+        opp = ConsolidationOpportunity(
+            opportunity_id="test",
+            opportunity_type="similar_content",
+            affected_files=["file1.md", "file2.md"],
+            common_content="common",
+            similarity_score=0.8,
+            token_savings=100,
+            suggested_action="extract",
+            extraction_target="shared.md",
+            transclusion_syntax=["{{include:shared.md}}"],
+            details={},
+        )
         opportunities = [opp]
 
         # Act
-        result = convert_opportunities_to_dict(
-            cast(Sequence[ConsolidationOpportunity | dict[str, object]], opportunities)
-        )
+        result = convert_opportunities_to_dict(opportunities)
 
         # Assert
         assert len(result) == 1
-        assert result[0] == {}
+        assert result[0]["opportunity_id"] == "test"
 
 
 class TestConvertRecommendationsToDict:
@@ -661,20 +666,24 @@ class TestConvertRecommendationsToDict:
         """Test converting object recommendations without to_dict method."""
 
         # Arrange
-        class SimpleRec:
-            pass
-
-        rec = SimpleRec()
+        rec = SplitRecommendation(
+            recommendation_id="test",
+            file_path="test.md",
+            reason="too large",
+            split_strategy="by_sections",
+            split_points=[],
+            estimated_impact={},
+            new_structure={},
+            maintain_dependencies=True,
+        )
         recommendations = [rec]
 
         # Act
-        result = convert_recommendations_to_dict(
-            cast(Sequence[SplitRecommendation | dict[str, object]], recommendations)
-        )
+        result = convert_recommendations_to_dict(recommendations)
 
         # Assert
         assert len(result) == 1
-        assert result[0] == {}
+        assert result[0]["recommendation_id"] == "test"
 
 
 class TestSuggestConsolidation:

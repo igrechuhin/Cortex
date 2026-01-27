@@ -2,11 +2,11 @@
 
 import json
 from pathlib import Path
-from typing import cast
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
+from cortex.core.models import ModelDict
 from cortex.rules.context_detector import ContextDetector
 from cortex.rules.models import GitCommandResult
 from cortex.rules.synapse_manager import SynapseManager
@@ -66,7 +66,7 @@ class TestInitializeSharedRules:
         # Create rules directory and manifest
         manager.rules_path.mkdir(parents=True, exist_ok=True)
         manifest_file = manager.rules_path / "rules-manifest.json"
-        manifest_data: dict[str, object] = {
+        manifest_data: ModelDict = {
             "version": "1.0",
             "categories": {"generic": {"rules": []}},
         }
@@ -76,8 +76,8 @@ class TestInitializeSharedRules:
         result = await manager.initialize_synapse(repo_url, force=False)
 
         # Assert
-        assert result["status"] == "success"
-        assert result["repo_url"] == repo_url
+        assert result.status == "success"
+        assert result.repo_url == repo_url
 
     @pytest.mark.asyncio
     async def test_initialize_updates_existing_submodule(self, temp_project_root: Path):
@@ -108,10 +108,9 @@ class TestInitializeSharedRules:
         result = await manager.initialize_synapse(repo_url, force=False)
 
         # Assert
-        assert result["status"] == "success"
-        assert result["action"] == "updated_existing"
-        categories_found = result.get("categories_found")
-        assert isinstance(categories_found, list)
+        assert result.status == "success"
+        assert result.action == "updated_existing"
+        categories_found = result.categories_found or []
         assert "python" in categories_found
         assert "generic" in categories_found
 
@@ -140,7 +139,7 @@ class TestInitializeSharedRules:
         result = await manager.initialize_synapse(repo_url, force=True)
 
         # Assert
-        assert result["status"] == "success"
+        assert result.status == "success"
 
     @pytest.mark.asyncio
     async def test_initialize_handles_git_failure(self, temp_project_root: Path):
@@ -164,8 +163,8 @@ class TestInitializeSharedRules:
         result = await manager.initialize_synapse(repo_url, force=False)
 
         # Assert
-        assert result["status"] == "error"
-        assert "error" in result
+        assert result.status == "error"
+        assert result.error is not None
 
 
 class TestSyncSharedRules:
@@ -197,9 +196,9 @@ class TestSyncSharedRules:
         result = await manager.sync_synapse(pull=True, push=False)
 
         # Assert
-        assert result["status"] == "success"
-        assert result["pulled"] is True
-        assert result["pushed"] is False
+        assert result.status == "success"
+        assert result.pulled is True
+        assert result.pushed is False
 
     @pytest.mark.asyncio
     async def test_sync_pushes_changes(self, temp_project_root: Path):
@@ -223,8 +222,8 @@ class TestSyncSharedRules:
         result = await manager.sync_synapse(pull=False, push=True)
 
         # Assert
-        assert result["status"] == "success"
-        assert result["pushed"] is True
+        assert result.status == "success"
+        assert result.pushed is True
 
     @pytest.mark.asyncio
     async def test_sync_detects_changes(self, temp_project_root: Path):
@@ -258,12 +257,11 @@ class TestSyncSharedRules:
         result = await manager.sync_synapse(pull=True, push=False)
 
         # Assert
-        assert result["status"] == "success"
-        changes = result.get("changes")
-        assert isinstance(changes, dict)
-        assert "python/style.md" in changes["added"]
-        assert "generic/best-practices.md" in changes["modified"]
-        assert "old-file.md" in changes["deleted"]
+        assert result.status == "success"
+        changes = result.changes
+        assert "python/style.md" in changes.added
+        assert "generic/best-practices.md" in changes.modified
+        assert "old-file.md" in changes.deleted
 
     @pytest.mark.asyncio
     async def test_sync_without_submodule_returns_error(self, temp_project_root: Path):
@@ -275,8 +273,8 @@ class TestSyncSharedRules:
         result = await manager.sync_synapse(pull=True, push=False)
 
         # Assert
-        assert result["status"] == "error"
-        error_msg = result.get("error")
+        assert result.status == "error"
+        error_msg = result.error
         assert isinstance(error_msg, str)
         assert "not found" in error_msg or "not initialized" in error_msg
 
@@ -306,9 +304,8 @@ class TestLoadRulesManifest:
 
         # Assert
         assert result is not None
-        assert result["version"] == "1.0"
-        categories = result.get("categories")
-        assert isinstance(categories, dict)
+        assert result.version == "1.0"
+        categories = result.categories
         assert "python" in categories
         assert "generic" in categories
         assert manager.manifest == result
@@ -360,9 +357,9 @@ class TestDetectContext:
         context = await manager.detect_context(task)
 
         # Assert
-        assert "detected_languages" in context
-        assert "detected_frameworks" in context
-        assert "categories_to_load" in context
+        assert isinstance(context.detected_languages, list)
+        assert isinstance(context.detected_frameworks, list)
+        assert isinstance(context.categories_to_load, list)
 
     @pytest.mark.asyncio
     async def test_detect_context_with_files(self, temp_project_root: Path):
@@ -375,7 +372,7 @@ class TestDetectContext:
         context = await manager.detect_context("Test task", project_files=files)
 
         # Assert
-        languages = context.get("detected_languages")
+        languages = context.detected_languages
         assert isinstance(languages, list)
         assert "python" in languages
 
@@ -388,11 +385,11 @@ class TestGetRelevantCategories:
         """Test getting relevant categories delegates to detector."""
         # Arrange
         manager = SynapseManager(project_root=temp_project_root)
-        context: dict[str, object] = {
-            "languages": {"python"},
-            "frameworks": {"django"},
+        context: ModelDict = {
+            "languages": ["python"],
+            "frameworks": ["django"],
             "task_type": "testing",
-            "categories_to_load": {"generic", "python", "django", "testing"},
+            "categories_to_load": ["generic", "python", "django", "testing"],
         }
 
         # Act
@@ -435,20 +432,21 @@ class TestLoadCategory:
                 }
             },
         }
-        manager.manifest = cast(dict[str, object], manifest_data)
+        setattr(manager, "manifest", manifest_data)
 
         # Act
         rules = await manager.load_category("python")
 
         # Assert
         assert len(rules) == 1
-        assert rules[0]["category"] == "python"
-        assert rules[0]["file"] == "style.md"
-        assert rules[0]["priority"] == 80
-        content = rules[0].get("content")
+        rule = rules[0]
+        assert rule.category == "python"
+        assert rule.file == "style.md"
+        assert rule.priority == 80
+        content = rule.content
         assert isinstance(content, str)
         assert "PEP 8" in content
-        assert rules[0]["source"] == "shared"
+        assert rule.source == "shared"
 
     @pytest.mark.asyncio
     async def test_load_category_returns_empty_if_not_found(
@@ -457,7 +455,7 @@ class TestLoadCategory:
         """Test loading returns empty list for nonexistent category."""
         # Arrange
         manager = SynapseManager(project_root=temp_project_root)
-        manager.manifest = {"version": "1.0", "categories": {}}
+        setattr(manager, "manifest", {"version": "1.0", "categories": {}})
 
         # Act
         rules = await manager.load_category("nonexistent")
@@ -476,7 +474,7 @@ class TestLoadCategory:
 
         # Create manifest in rules directory
         manifest_file = manager.rules_path / "rules-manifest.json"
-        manifest_data: dict[str, object] = {
+        manifest_data: ModelDict = {
             "version": "1.0",
             "categories": {"generic": {"rules": []}},
         }
@@ -487,8 +485,7 @@ class TestLoadCategory:
 
         # Assert
         assert manager.manifest is not None
-        categories = manager.manifest.get("categories")
-        assert isinstance(categories, dict)
+        categories = manager.manifest.categories
         assert "generic" in categories
 
     @pytest.mark.asyncio
@@ -508,7 +505,7 @@ class TestLoadCategory:
                 "python": {"rules": [{"file": "missing.md", "priority": 50}]}
             },
         }
-        manager.manifest = manifest_data
+        setattr(manager, "manifest", manifest_data)
 
         # Act
         rules = await manager.load_category("python")
@@ -526,12 +523,12 @@ class TestMergeRules:
         # Arrange
         manager = SynapseManager(project_root=temp_project_root)
 
-        shared_rules: list[dict[str, object]] = [
+        shared_rules: list[ModelDict] = [
             {"file": "style.md", "priority": 50, "source": "shared"},
             {"file": "patterns.md", "priority": 60, "source": "shared"},
         ]
 
-        local_rules: list[dict[str, object]] = [
+        local_rules: list[ModelDict] = [
             {"file": "style.md", "priority": 90, "source": "local"},
         ]
 
@@ -553,11 +550,11 @@ class TestMergeRules:
         # Arrange
         manager = SynapseManager(project_root=temp_project_root)
 
-        shared_rules: list[dict[str, object]] = [
+        shared_rules: list[ModelDict] = [
             {"file": "security.md", "priority": 95, "source": "shared"},
         ]
 
-        local_rules: list[dict[str, object]] = [
+        local_rules: list[ModelDict] = [
             {"file": "security.md", "priority": 70, "source": "local"},
         ]
 
@@ -576,11 +573,11 @@ class TestMergeRules:
         # Arrange
         manager = SynapseManager(project_root=temp_project_root)
 
-        shared_rules: list[dict[str, object]] = [
+        shared_rules: list[ModelDict] = [
             {"file": "rule1.md", "priority": 80, "source": "shared"},
         ]
 
-        local_rules: list[dict[str, object]] = [
+        local_rules: list[ModelDict] = [
             {"file": "rule2.md", "priority": 90, "source": "local"},
         ]
 
@@ -638,7 +635,7 @@ class TestUpdateSharedRule:
         )
 
         # Assert
-        assert result["status"] == "success"
+        assert result.status == "success"
         rule_path = python_dir / "new-rule.md"
         assert rule_path.exists()
 
@@ -670,7 +667,7 @@ class TestUpdateSharedRule:
         )
 
         # Assert
-        assert result["status"] == "success"
+        assert result.status == "success"
         assert "Updated Content" in rule_file.read_text()
 
     @pytest.mark.asyncio
@@ -705,7 +702,7 @@ class TestUpdateSharedRule:
         )
 
         # Assert
-        assert result["status"] == "success"
+        assert result.status == "success"
         # Should have add, commit, push commands
         assert len(git_calls) >= 3
         cmd_strings: list[str] = [" ".join(cmd) for cmd in git_calls]
@@ -726,12 +723,12 @@ class TestCreateSharedRule:
 
         # Create manifest in rules directory
         manifest_file = manager.rules_path / "rules-manifest.json"
-        manifest_data: dict[str, object] = {
+        manifest_data: ModelDict = {
             "version": "1.0",
             "categories": {"python": {"rules": []}},
         }
         _ = manifest_file.write_text(json.dumps(manifest_data))
-        manager.manifest = manifest_data
+        setattr(manager, "manifest", manifest_data)
 
         # Create category directory in rules_path
         python_dir = manager.rules_path / "python"
@@ -753,7 +750,7 @@ class TestCreateSharedRule:
         )
 
         # Assert
-        assert result["status"] == "success"
+        assert result.status == "success"
         rule_path = python_dir / "new-rule.md"
         assert rule_path.exists()
 
@@ -784,8 +781,8 @@ class TestRunGitCommand:
             result = await manager.run_git_command(["git", "status"])
 
             # Assert
-            assert result["success"] is True
-            stdout = result.get("stdout")
+            assert result.success is True
+            stdout = result.stdout
             assert isinstance(stdout, str)
             assert "Success output" in stdout
 
@@ -805,12 +802,12 @@ class TestRunGitCommand:
             result = await manager.run_git_command(["git", "invalid-command"])
 
             # Assert
-            assert result["success"] is False
-            stderr = result.get("stderr")
+            assert result.success is False
+            stderr = result.stderr
             assert isinstance(stderr, str)
             assert "Error occurred" in stderr
             # When git command fails, we get returncode and stderr but not "error" key
-            assert result.get("returncode") == 1
+            assert result.returncode == 1
 
 
 class TestEdgeCases:
@@ -821,7 +818,7 @@ class TestEdgeCases:
         """Test loading category with invalid manifest data."""
         # Arrange
         manager = SynapseManager(project_root=temp_project_root)
-        manager.manifest = {"version": "1.0", "categories": "not-a-dict"}
+        setattr(manager, "manifest", {"version": "1.0", "categories": "not-a-dict"})
 
         # Act
         rules = await manager.load_category("python")
@@ -835,10 +832,8 @@ class TestEdgeCases:
         # Arrange
         manager = SynapseManager(project_root=temp_project_root)
 
-        shared_rules: list[dict[str, object]] = [
-            {"file": "rule1.md", "source": "shared"}
-        ]
-        local_rules: list[dict[str, object]] = [{"file": "rule2.md", "source": "local"}]
+        shared_rules: list[ModelDict] = [{"file": "rule1.md", "source": "shared"}]
+        local_rules: list[ModelDict] = [{"file": "rule2.md", "source": "local"}]
 
         # Act - should handle missing priority gracefully
         merged = await manager.merge_rules(
@@ -878,16 +873,11 @@ class TestEdgeCases:
         result = await manager.sync_synapse(pull=True, push=False)
 
         # Assert
-        assert result["status"] == "success"
-        changes_raw = result.get("changes")
-        assert isinstance(changes_raw, dict)
-        changes: dict[str, list[str]] = cast(dict[str, list[str]], changes_raw)
-        added = changes.get("added", [])
-        modified = changes.get("modified", [])
-        deleted = changes.get("deleted", [])
-        assert isinstance(added, list)
-        assert isinstance(modified, list)
-        assert isinstance(deleted, list)
-        assert len(added) == 0
-        assert len(modified) == 0
-        assert len(deleted) == 0
+        assert result.status == "success"
+        changes = result.changes
+        assert isinstance(changes.added, list)
+        assert isinstance(changes.modified, list)
+        assert isinstance(changes.deleted, list)
+        assert len(changes.added) == 0
+        assert len(changes.modified) == 0
+        assert len(changes.deleted) == 0

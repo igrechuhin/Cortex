@@ -106,6 +106,7 @@ class TestFileOrganizationAnalysis:
         # Assert
         assert result.status == "empty"
         assert result.file_count == 0
+        assert result.issues is not None
         assert len(result.issues) > 0
         assert "No files found" in result.issues[0]
 
@@ -170,6 +171,7 @@ class TestFileOrganizationAnalysis:
         result = await analyzer.analyze_file_organization()
 
         # Assert
+        assert result.issues is not None
         assert any("very large" in issue for issue in result.issues)
 
     @pytest.mark.asyncio
@@ -198,6 +200,7 @@ class TestFileOrganizationAnalysis:
         result = await analyzer.analyze_file_organization()
 
         # Assert
+        assert result.issues is not None
         assert any("very small" in issue for issue in result.issues)
 
 
@@ -240,7 +243,9 @@ class TestAntiPatternDetection:
         oversized = [p for p in result if p.type == "oversized_file"]
         assert len(oversized) > 0
         assert oversized[0].severity == "high"
-        assert "oversized.md" in oversized[0].file
+        file_name = oversized[0].file
+        assert isinstance(file_name, str)
+        assert "oversized.md" in file_name
 
     @pytest.mark.asyncio
     async def test_detects_orphaned_files(
@@ -276,7 +281,9 @@ class TestAntiPatternDetection:
         orphaned = [p for p in result if p.type == "orphaned_file"]
         assert len(orphaned) > 0
         assert orphaned[0].severity == "medium"
-        assert "orphan.md" in orphaned[0].file
+        file_name = orphaned[0].file
+        assert isinstance(file_name, str)
+        assert "orphan.md" in file_name
 
     @pytest.mark.asyncio
     async def test_detects_excessive_dependencies(

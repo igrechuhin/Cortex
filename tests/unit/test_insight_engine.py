@@ -18,8 +18,8 @@ from unittest.mock import AsyncMock
 import pytest
 import pytest_mock
 
-from cortex.analysis.insight_engine import InsightDict, InsightEngine
-from cortex.analysis.insight_types import InsightsResultDict
+from cortex.analysis.insight_engine import InsightEngine
+from cortex.analysis.insight_types import InsightDict, InsightsResultDict
 from cortex.analysis.models import (
     AntiPatternInfo,
     CoAccessPattern,

@@ -32,10 +32,10 @@ class TestScanCodebaseTodos:
 
             # Assert
             assert len(todos) == 1
-            assert todos[0]["file_path"] == "src/module.py"
-            assert todos[0]["line"] == 1
-            assert "TODO" in todos[0]["snippet"]
-            assert todos[0]["category"] == "todo"
+            assert todos[0].file_path == "src/module.py"
+            assert todos[0].line == 1
+            assert "TODO" in todos[0].snippet
+            assert todos[0].category == "todo"
 
     def test_scan_todos_finds_javascript_todos(self):
         """Test scanning finds JavaScript TODO comments."""
@@ -52,7 +52,7 @@ class TestScanCodebaseTodos:
 
             # Assert
             assert len(todos) == 1
-            assert todos[0]["file_path"] == "src/module.js"
+            assert todos[0].file_path == "src/module.js"
 
     def test_scan_todos_excludes_test_files(self):
         """Test scanning excludes test files."""
@@ -71,7 +71,7 @@ class TestScanCodebaseTodos:
 
             # Assert
             assert len(todos) == 1  # Only production.py included, test_file excluded
-            assert todos[0]["file_path"] == "src/production.py"
+            assert todos[0].file_path == "src/production.py"
 
     def test_scan_todos_excludes_example_files(self):
         """Test scanning excludes example files."""
@@ -122,7 +122,7 @@ class TestScanCodebaseTodos:
 
             # Assert
             assert len(todos) == 1
-            assert todos[0]["file_path"] == "scripts/script.py"
+            assert todos[0].file_path == "scripts/script.py"
 
 
 class TestParseRoadmapReferences:
@@ -138,8 +138,8 @@ class TestParseRoadmapReferences:
 
         # Assert
         assert len(references) == 1
-        assert references[0]["file_path"] == "src/file.py"
-        assert references[0]["line"] is None
+        assert references[0].file_path == "src/file.py"
+        assert references[0].line is None
 
     def test_parse_references_finds_line_numbers(self):
         """Test parsing finds file path with line number."""
@@ -151,8 +151,8 @@ class TestParseRoadmapReferences:
 
         # Assert
         assert len(references) == 1
-        assert references[0]["file_path"] == "src/file.py"
-        assert references[0]["line"] == 42
+        assert references[0].file_path == "src/file.py"
+        assert references[0].line == 42
 
     def test_parse_references_tracks_phase(self):
         """Test parsing tracks current phase context."""
@@ -169,8 +169,8 @@ class TestParseRoadmapReferences:
 
         # Assert
         assert len(references) == 2
-        assert references[0]["phase"] == "Phase 1: Foundation"
-        assert references[1]["phase"] == "Phase 2: Implementation"
+        assert references[0].phase == "Phase 1: Foundation"
+        assert references[1].phase == "Phase 2: Implementation"
 
     def test_parse_references_normalizes_paths(self):
         """Test parsing normalizes file paths."""
@@ -182,8 +182,8 @@ class TestParseRoadmapReferences:
 
         # Assert
         assert len(references) == 2
-        assert references[0]["file_path"] == "src/file.py"
-        assert references[1]["file_path"] == "src/file.py"
+        assert references[0].file_path == "src/file.py"
+        assert references[1].file_path == "src/file.py"
 
     def test_parse_references_finds_multiple_formats(self):
         """Test parsing finds various file format references."""
@@ -195,9 +195,7 @@ class TestParseRoadmapReferences:
 
         # Assert
         assert len(references) == 3
-        assert all(
-            ref["file_path"].endswith((".py", ".ts", ".go")) for ref in references
-        )
+        assert all(ref.file_path.endswith((".py", ".ts", ".go")) for ref in references)
 
 
 class TestValidateRoadmapSync:
@@ -221,9 +219,9 @@ class TestValidateRoadmapSync:
             result = validate_roadmap_sync(project_root, roadmap_content)
 
             # Assert
-            assert result["valid"] is True
-            assert len(result["missing_roadmap_entries"]) == 0
-            assert len(result["invalid_references"]) == 0
+            assert result.valid is True
+            assert len(result.missing_roadmap_entries) == 0
+            assert len(result.invalid_references) == 0
 
     def test_validate_sync_missing_todo_entry(self):
         """Test validation fails when TODO is not tracked."""
@@ -241,9 +239,9 @@ class TestValidateRoadmapSync:
             result = validate_roadmap_sync(project_root, roadmap_content)
 
             # Assert
-            assert result["valid"] is False
-            assert len(result["missing_roadmap_entries"]) == 1
-            assert result["missing_roadmap_entries"][0]["file_path"] == "src/module.py"
+            assert result.valid is False
+            assert len(result.missing_roadmap_entries) == 1
+            assert result.missing_roadmap_entries[0].file_path == "src/module.py"
 
     def test_validate_sync_invalid_reference(self):
         """Test validation fails when roadmap references missing file."""
@@ -259,9 +257,9 @@ class TestValidateRoadmapSync:
             result = validate_roadmap_sync(project_root, roadmap_content)
 
             # Assert
-            assert result["valid"] is False
-            assert len(result["invalid_references"]) == 1
-            assert result["invalid_references"][0]["file_path"] == "src/missing.py"
+            assert result.valid is False
+            assert len(result.invalid_references) == 1
+            assert result.invalid_references[0].file_path == "src/missing.py"
 
     def test_validate_sync_line_number_warning(self):
         """Test validation warns when line number exceeds file length."""
@@ -279,9 +277,9 @@ class TestValidateRoadmapSync:
             result = validate_roadmap_sync(project_root, roadmap_content)
 
             # Assert
-            assert result["valid"] is True  # Warning doesn't fail validation
-            assert len(result["warnings"]) == 1
-            assert "exceeds file length" in result["warnings"][0]
+            assert result.valid is True  # Warning doesn't fail validation
+            assert len(result.warnings) == 1
+            assert "exceeds file length" in result.warnings[0]
 
     def test_validate_sync_valid_line_number(self):
         """Test validation passes when line number is valid."""
@@ -299,8 +297,8 @@ class TestValidateRoadmapSync:
             result = validate_roadmap_sync(project_root, roadmap_content)
 
             # Assert
-            assert result["valid"] is True
-            assert len(result["warnings"]) == 0
+            assert result.valid is True
+            assert len(result.warnings) == 0
 
     def test_validate_sync_multiple_issues(self):
         """Test validation detects multiple synchronization issues."""
@@ -325,10 +323,10 @@ class TestValidateRoadmapSync:
             result = validate_roadmap_sync(project_root, roadmap_content)
 
             # Assert
-            assert result["valid"] is False
-            assert len(result["missing_roadmap_entries"]) == 1
-            assert len(result["invalid_references"]) == 1  # missing.py
-            assert len(result["warnings"]) >= 1  # other.py:100 exceeds file length
+            assert result.valid is False
+            assert len(result.missing_roadmap_entries) == 1
+            assert len(result.invalid_references) == 1  # missing.py
+            assert len(result.warnings) >= 1  # other.py:100 exceeds file length
 
     def test_validate_sync_file_matching_with_consistent_case(self):
         """Test validation matches files when casing is consistent."""
@@ -349,5 +347,5 @@ class TestValidateRoadmapSync:
             # Assert
             # The file "module.py" is matched because roadmap contains
             # "module.py" (same case)
-            assert result["valid"] is True  # Matching case succeeds
-            assert len(result["missing_roadmap_entries"]) == 0
+            assert result.valid is True  # Matching case succeeds
+            assert len(result.missing_roadmap_entries) == 0

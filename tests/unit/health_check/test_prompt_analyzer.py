@@ -33,7 +33,7 @@ class TestPromptAnalyzer:
     async def test_extract_sections(self, analyzer: PromptAnalyzer):
         """Test section extraction from markdown."""
         content = "# Header 1\nContent 1\n## Header 2\nContent 2"
-        sections = analyzer._extract_sections(content)
+        sections = analyzer._extract_sections(content)  # type: ignore[attr-defined]
         assert len(sections) == 2
         assert "Content 1" in sections[0]
         assert "Content 2" in sections[1]
@@ -45,7 +45,7 @@ class TestPromptAnalyzer:
             "prompt1.md": "This is test content.",
             "prompt2.md": "This is test content.",
         }
-        opportunities = await analyzer._find_merge_opportunities(prompts)
+        opportunities = await analyzer._find_merge_opportunities(prompts)  # type: ignore[attr-defined]
         assert len(opportunities) > 0
         assert opportunities[0]["files"] == ["prompt1.md", "prompt2.md"]
 
@@ -57,7 +57,7 @@ class TestPromptAnalyzer:
         # Create content that will exceed 50000 tokens (roughly 125k chars)
         large_content = "This is a test sentence. " * 5000  # ~125k chars
         prompts = {"large.md": large_content}
-        opportunities = await analyzer._find_optimization_opportunities(prompts)
+        opportunities = await analyzer._find_optimization_opportunities(prompts)  # type: ignore[attr-defined]
         # May or may not find opportunities depending on token count
         assert isinstance(opportunities, list)
 
@@ -66,7 +66,7 @@ class TestPromptAnalyzer:
         """Test checking for large prompts."""
         # Create content that will exceed 50000 tokens (roughly 125k chars)
         large_content = "This is a test sentence. " * 5000  # ~125k chars
-        opportunities = analyzer._check_large_prompt("large.md", large_content)
+        opportunities = analyzer._check_large_prompt("large.md", large_content)  # type: ignore[attr-defined]
         # May or may not find opportunities depending on token count
         assert isinstance(opportunities, list)
 
@@ -74,7 +74,7 @@ class TestPromptAnalyzer:
     async def test_check_duplicate_sections(self, analyzer: PromptAnalyzer):
         """Test checking for duplicate sections."""
         content = "# Section 1\nSame content\n## Section 2\nSame content"
-        opportunities = analyzer._check_duplicate_sections("test.md", content)
+        opportunities = analyzer._check_duplicate_sections("test.md", content)  # type: ignore[attr-defined]
         # May or may not find duplicates depending on similarity threshold
         assert isinstance(opportunities, list)
 
@@ -87,7 +87,7 @@ class TestPromptAnalyzer:
             "prompt1.md": "This is completely different content.",
             "prompt2.md": "This is also completely different content.",
         }
-        opportunities = await analyzer._find_merge_opportunities(prompts)
+        opportunities = await analyzer._find_merge_opportunities(prompts)  # type: ignore[attr-defined]
         # Should not find opportunities due to low similarity
         assert isinstance(opportunities, list)
 
@@ -95,7 +95,7 @@ class TestPromptAnalyzer:
     async def test_extract_sections_no_headings(self, analyzer: PromptAnalyzer):
         """Test section extraction with no headings."""
         content = "Just plain content without headings."
-        sections = analyzer._extract_sections(content)
+        sections = analyzer._extract_sections(content)  # type: ignore[attr-defined]
         assert len(sections) == 1
         assert "Just plain content without headings." in sections[0]
 
@@ -105,13 +105,13 @@ class TestPromptAnalyzer:
     ):
         """Test scanning prompts when files exist."""
         prompts_dir = tmp_path / ".cortex" / "synapse" / "prompts"
-        prompts_dir.mkdir(parents=True)
+        _ = prompts_dir.mkdir(parents=True)
         test_file = prompts_dir / "test.md"
-        test_file.write_text("# Test Prompt\nContent here")
+        _ = test_file.write_text("# Test Prompt\nContent here")
 
         # Update analyzer's prompts_dir to point to our test directory
         analyzer.prompts_dir = prompts_dir
 
-        prompts = await analyzer._scan_prompts()
+        prompts = await analyzer._scan_prompts()  # type: ignore[attr-defined]
         assert "test.md" in prompts
         assert "Content here" in prompts["test.md"]

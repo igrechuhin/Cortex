@@ -10,6 +10,7 @@ from typing import cast
 
 import pytest
 
+from cortex.core.models import ModelDict
 from cortex.optimization.optimization_config import (
     DEFAULT_OPTIMIZATION_CONFIG,
     OptimizationConfig,
@@ -160,8 +161,8 @@ class TestConfigMerging:
         """Test merge_configs correctly merges nested dictionaries."""
         # Arrange
         config = OptimizationConfig(temp_project_root)
-        default: dict[str, object] = {"a": {"b": 1, "c": 2}, "d": 3}
-        user: dict[str, object] = {"a": {"b": 10}, "e": 4}
+        default = cast(ModelDict, {"a": {"b": 1, "c": 2}, "d": 3})
+        user = cast(ModelDict, {"a": {"b": 10}, "e": 4})
 
         # Act
         result = config.merge_configs(default, user)
@@ -179,8 +180,8 @@ class TestConfigMerging:
         """Test merge_configs replaces non-dict values."""
         # Arrange
         config = OptimizationConfig(temp_project_root)
-        default: dict[str, object] = {"key": [1, 2, 3]}
-        user: dict[str, object] = {"key": [4, 5]}
+        default = cast(ModelDict, {"key": [1, 2, 3]})
+        user = cast(ModelDict, {"key": [4, 5]})
 
         # Act
         result = config.merge_configs(default, user)

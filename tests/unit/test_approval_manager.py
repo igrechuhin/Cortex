@@ -8,7 +8,7 @@ from typing import cast
 import pytest
 
 from cortex.refactoring.approval_manager import ApprovalManager
-from cortex.refactoring.models import ApprovalModel
+from cortex.refactoring.models import ApprovalConditions, ApprovalModel
 from cortex.refactoring.models import ApprovalStatus as ApprovalStatusEnum
 
 
@@ -291,10 +291,11 @@ class TestPreferenceManagement:
         manager = ApprovalManager(memory_bank_dir=memory_bank_dir)
 
         # Act
+        conditions = ApprovalConditions(min_confidence=0.8)
         result = await manager.add_preference(
             pattern_type="consolidation",
             auto_approve=True,
-            conditions={"min_confidence": 0.8},
+            conditions=conditions,
         )
 
         # Assert

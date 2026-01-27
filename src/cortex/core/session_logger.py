@@ -12,6 +12,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.models import DictLikeModel
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 
@@ -44,7 +45,7 @@ class LoadContextLogEntry(BaseModel):
     )
 
 
-class SessionLog(BaseModel):
+class SessionLog(DictLikeModel):
     """Structure for the entire session log."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)

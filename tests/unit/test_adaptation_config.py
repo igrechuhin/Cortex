@@ -23,7 +23,9 @@ class TestAdaptationConfigInitialization:
     def test_initialization_with_base_config(self):
         """Test initialization with base configuration."""
         # Arrange
-        base: dict[str, object] = {"self_evolution": {"learning": {"enabled": False}}}
+        from cortex.core.models import ModelDict
+
+        base: ModelDict = {"self_evolution": {"learning": {"enabled": False}}}
 
         # Act
         config = AdaptationConfig(base_config=base)
@@ -463,8 +465,10 @@ class TestConfigurationManagement:
     def test_update_merges_configuration(self):
         """Test update merges new configuration."""
         # Arrange
+        from cortex.core.models import ModelDict
+
         config = AdaptationConfig()
-        updates: dict[str, object] = {"learning": {"enabled": False}}
+        updates: ModelDict = {"learning": {"enabled": False}}
 
         # Act
         config.update(updates)

@@ -1,6 +1,8 @@
 from pathlib import Path
+from typing import cast
 from unittest.mock import patch
 
+from cortex.core.models import ModelDict
 from cortex.structure.structure_migration import StructureMigrationManager
 
 
@@ -15,12 +17,13 @@ def test_migrate_cursor_default_when_cursorrules_exists_copies_to_rules_dir(
     report: dict[str, object] = {"files_migrated": 0, "file_mappings": [], "errors": []}
 
     # Act
-    manager._migrate_cursor_default(report)  # noqa: SLF001 (unit-testing internal)
+    manager._migrate_cursor_default(report)  # type: ignore[attr-defined]  # noqa: SLF001 (unit-testing internal)
 
     # Assert
     assert report["files_migrated"] == 1
-    mappings = report["file_mappings"]
-    assert isinstance(mappings, list)
+    mappings_raw = report.get("file_mappings")
+    assert isinstance(mappings_raw, list)
+    mappings: list[dict[str, object]] = cast(list[dict[str, object]], mappings_raw)
     assert len(mappings) == 1
     dest = tmp_path / ".cortex" / "rules" / "local" / "main.cursorrules"
     assert dest.exists()
@@ -33,16 +36,17 @@ def test_create_backup_if_requested_when_mkdir_fails_records_error(
     manager = StructureMigrationManager(tmp_path)
     report: dict[str, object] = {"errors": "not a list"}  # exercise type-guard branch
 
-    def _raise(*_args, **_kwargs) -> None:
+    def _raise(*_args: object, **_kwargs: object) -> None:
         raise PermissionError("nope")
 
     # Act
     with patch("pathlib.Path.mkdir", side_effect=_raise):
-        manager._create_backup_if_requested(report, backup=True)  # noqa: SLF001
+        manager._create_backup_if_requested(report, backup=True)  # type: ignore[attr-defined]  # noqa: SLF001
 
     # Assert
-    errors = report.get("errors")
-    assert isinstance(errors, list)
+    errors_raw = report.get("errors")
+    assert isinstance(errors_raw, list)
+    errors: list[str] = cast(list[str], errors_raw)
     assert any("Failed to create backup" in str(e) for e in errors)
 
 
@@ -60,9 +64,9 @@ def test_migrate_memory_bank_files_copies_standard_files(tmp_path: Path) -> None
     }
 
     # Act
-    manager._migrate_memory_bank_files(  # noqa: SLF001
+    manager._migrate_memory_bank_files(  # type: ignore[attr-defined]  # noqa: SLF001
         memory_bank_dir,
-        migration_data,
+        cast(ModelDict, migration_data),
     )
 
     # Assert
@@ -85,7 +89,9 @@ def test_migrate_plans_copies_cursor_plans(tmp_path: Path) -> None:
     }
 
     # Act
-    manager._migrate_plans(plans_dir, migration_data)  # noqa: SLF001
+    manager._migrate_plans(  # type: ignore[reportPrivateUsage]
+        plans_dir, cast(ModelDict, migration_data)
+    )  # noqa: SLF001
 
     # Assert
     assert (plans_dir / "plan.md").exists()
@@ -105,7 +111,9 @@ def test_migrate_cursorrules_copies_rules_file(tmp_path: Path) -> None:
     }
 
     # Act
-    manager._migrate_cursorrules(rules_dir, migration_data)  # noqa: SLF001
+    manager._migrate_cursorrules(  # type: ignore[reportPrivateUsage]
+        rules_dir, cast(ModelDict, migration_data)
+    )  # noqa: SLF001
 
     # Assert
     assert (rules_dir / "main.cursorrules").exists()
@@ -186,7 +194,9 @@ def test_archive_legacy_files_if_requested_sets_archive_location(
     report: dict[str, object] = {"files_migrated": 1}
 
     # Act
-    manager._archive_legacy_files_if_requested(report, archive=True)  # noqa: SLF001
+    manager._archive_legacy_files_if_requested(  # type: ignore[reportPrivateUsage]
+        cast(ModelDict, report), archive=True
+    )  # noqa: SLF001
 
     # Assert
     archive_location = report.get("archive_location")

@@ -11,6 +11,7 @@ from typing import cast
 
 import pytest
 
+from cortex.core.models import ModelDict
 from cortex.refactoring.models import (
     ActionDetails,
     RefactoringActionModel,
@@ -34,7 +35,7 @@ def refactoring_engine(tmp_path: Path):
 
 
 @pytest.fixture
-def sample_insight() -> dict[str, str | float | list[str]]:
+def sample_insight() -> ModelDict:
     """Sample insight data"""
     return {
         "title": "Duplicate Content Found",
@@ -48,7 +49,7 @@ def sample_insight() -> dict[str, str | float | list[str]]:
 
 
 @pytest.fixture
-def sample_structure_data() -> dict[str, object]:
+def sample_structure_data() -> ModelDict:
     """Sample structure analysis data"""
     return {
         "anti_patterns": {
@@ -161,11 +162,11 @@ class TestGenerateSuggestions:
     async def test_generate_from_insights(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test generating suggestions from insights"""
         suggestions = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], [sample_insight])
+            insights=[sample_insight]
         )
 
         assert len(suggestions) > 0
@@ -177,7 +178,7 @@ class TestGenerateSuggestions:
         self, refactoring_engine: RefactoringEngine
     ):
         """Test that low confidence suggestions are filtered"""
-        low_confidence_insight: dict[str, str | float | list[str]] = {
+        low_confidence_insight: ModelDict = {
             "title": "Minor Issue",
             "description": "Low impact issue",
             "category": "redundancy",
@@ -188,7 +189,7 @@ class TestGenerateSuggestions:
         }
 
         suggestions = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], [low_confidence_insight])
+            insights=[low_confidence_insight]
         )
 
         assert len(suggestions) == 0
@@ -201,7 +202,7 @@ class TestGenerateSuggestions:
         refactoring_engine.max_suggestions_per_run = 2
 
         # Create multiple high-confidence insights
-        insights: list[dict[str, str | float | list[str]]] = [
+        insights: list[ModelDict] = [
             {
                 "title": f"Issue {i}",
                 "description": f"Description {i}",
@@ -214,9 +215,7 @@ class TestGenerateSuggestions:
             for i in range(5)
         ]
 
-        suggestions = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], insights)
-        )
+        suggestions = await refactoring_engine.generate_suggestions(insights=insights)
 
         assert len(suggestions) == 2  # Limited to max_suggestions_per_run
 
@@ -225,7 +224,7 @@ class TestGenerateSuggestions:
         self, refactoring_engine: RefactoringEngine
     ):
         """Test that suggestions are sorted correctly"""
-        insights: list[dict[str, str | float | list[str]]] = [
+        insights: list[ModelDict] = [
             {
                 "title": "Low Priority",
                 "description": "Low priority issue",
@@ -255,9 +254,7 @@ class TestGenerateSuggestions:
             },
         ]
 
-        suggestions = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], insights)
-        )
+        suggestions = await refactoring_engine.generate_suggestions(insights=insights)
 
         # High priority should come first
         assert suggestions[0].priority == RefactoringPriority.HIGH
@@ -268,12 +265,12 @@ class TestGenerateSuggestions:
     async def test_filters_by_categories(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test filtering by categories"""
         # Only request split suggestions
         suggestions = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], [sample_insight]),
+            insights=[sample_insight],
             categories=["split"],
         )
 
@@ -286,11 +283,11 @@ class TestGenerateSuggestions:
     async def test_stores_generated_suggestions(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test that generated suggestions are stored"""
         suggestions = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], [sample_insight])
+            insights=[sample_insight]
         )
 
         assert len(refactoring_engine.suggestions) == len(suggestions)
@@ -301,7 +298,7 @@ class TestGenerateSuggestions:
     async def test_generates_organization_suggestions_from_structure(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_structure_data: dict[str, object],
+        sample_structure_data: ModelDict,
     ):
         """Test generating organization suggestions from structure data"""
         suggestions = await refactoring_engine.generate_suggestions(
@@ -322,11 +319,11 @@ class TestGenerateFromInsight:
     async def test_creates_consolidation_suggestion(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test creating consolidation suggestion"""
         suggestion = await refactoring_engine.generate_from_insight(
-            cast(dict[str, object], sample_insight), RefactoringType.CONSOLIDATION
+            sample_insight, RefactoringType.CONSOLIDATION
         )
 
         assert suggestion is not None
@@ -339,7 +336,7 @@ class TestGenerateFromInsight:
         self, refactoring_engine: RefactoringEngine
     ):
         """Test creating split suggestion"""
-        insight: dict[str, str | float | list[str]] = {
+        insight: ModelDict = {
             "title": "Large File",
             "description": "File is too large",
             "category": "organization",
@@ -350,7 +347,7 @@ class TestGenerateFromInsight:
         }
 
         suggestion = await refactoring_engine.generate_from_insight(
-            cast(dict[str, object], insight), RefactoringType.SPLIT
+            insight, RefactoringType.SPLIT
         )
 
         assert suggestion is not None
@@ -361,7 +358,7 @@ class TestGenerateFromInsight:
         self, refactoring_engine: RefactoringEngine
     ):
         """Test that severity is mapped to priority correctly"""
-        insights: list[dict[str, str | float | list[str]]] = [
+        insights: list[ModelDict] = [
             {
                 "title": "High Severity",
                 "description": "High issue",
@@ -392,13 +389,13 @@ class TestGenerateFromInsight:
         ]
 
         high_suggestion = await refactoring_engine.generate_from_insight(
-            cast(dict[str, object], insights[0]), RefactoringType.CONSOLIDATION
+            insights[0], RefactoringType.CONSOLIDATION
         )
         medium_suggestion = await refactoring_engine.generate_from_insight(
-            cast(dict[str, object], insights[1]), RefactoringType.CONSOLIDATION
+            insights[1], RefactoringType.CONSOLIDATION
         )
         low_suggestion = await refactoring_engine.generate_from_insight(
-            cast(dict[str, object], insights[2]), RefactoringType.CONSOLIDATION
+            insights[2], RefactoringType.CONSOLIDATION
         )
 
         assert high_suggestion is not None
@@ -413,7 +410,7 @@ class TestGenerateFromInsight:
         self, refactoring_engine: RefactoringEngine
     ):
         """Test that None is returned for invalid insight"""
-        invalid_insights: list[dict[str, object]] = [
+        invalid_insights: list[ModelDict] = [
             {},  # Empty
             {"title": "No Files"},  # No affected_files
             {"affected_files": ["file.md"]},  # No title
@@ -429,39 +426,41 @@ class TestGenerateFromInsight:
     async def test_calculates_estimated_impact(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test that estimated impact is calculated"""
         suggestion = await refactoring_engine.generate_from_insight(
-            cast(dict[str, object], sample_insight), RefactoringType.CONSOLIDATION
+            sample_insight, RefactoringType.CONSOLIDATION
         )
 
         assert suggestion is not None
         impact = suggestion.estimated_impact
-        assert "token_savings" in impact
-        assert "files_affected" in impact
-        assert "complexity_reduction" in impact
-        assert "maintainability_improvement" in impact
-        affected_files = sample_insight["affected_files"]
-        assert isinstance(affected_files, list)
-        assert impact["files_affected"] == len(affected_files)
+        assert hasattr(impact, "token_savings")
+        assert hasattr(impact, "files_affected")
+        assert hasattr(impact, "complexity_reduction")
+        affected_files_raw = sample_insight["affected_files"]
+        assert isinstance(affected_files_raw, list)
+        affected_files = cast(list[str], affected_files_raw)
+        assert impact.files_affected == len(affected_files)
 
     @pytest.mark.asyncio
     async def test_includes_metadata(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test that metadata is included in suggestion"""
         suggestion = await refactoring_engine.generate_from_insight(
-            cast(dict[str, object], sample_insight), RefactoringType.CONSOLIDATION
+            sample_insight, RefactoringType.CONSOLIDATION
         )
 
         assert suggestion is not None
-        assert "source" in suggestion.metadata
-        assert suggestion.metadata["source"] == "insight"
-        assert "insight_category" in suggestion.metadata
-        assert suggestion.metadata["insight_category"] == sample_insight["category"]
+        assert hasattr(suggestion.metadata, "source")
+        assert suggestion.metadata.source == "insight"
+        assert hasattr(suggestion.metadata, "insight_category")
+        category_raw = sample_insight["category"]
+        assert isinstance(category_raw, str)
+        assert suggestion.metadata.insight_category == category_raw
 
 
 class TestGenerateActions:
@@ -524,31 +523,31 @@ class TestBuildReasoning:
     def test_includes_insight_description(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test that reasoning includes insight description"""
         reasoning = refactoring_engine.build_reasoning(
-            cast(dict[str, object], sample_insight), RefactoringType.CONSOLIDATION
+            sample_insight, RefactoringType.CONSOLIDATION
         )
 
-        description = sample_insight["description"]
-        assert isinstance(description, str)
-        assert description in reasoning
+        description_raw = sample_insight["description"]
+        assert isinstance(description_raw, str)
+        assert description_raw in reasoning
 
     def test_includes_type_specific_reasoning(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test type-specific reasoning"""
         consolidation_reasoning = refactoring_engine.build_reasoning(
-            cast(dict[str, object], sample_insight), RefactoringType.CONSOLIDATION
+            sample_insight, RefactoringType.CONSOLIDATION
         )
         split_reasoning = refactoring_engine.build_reasoning(
-            cast(dict[str, object], sample_insight), RefactoringType.SPLIT
+            sample_insight, RefactoringType.SPLIT
         )
         reorg_reasoning = refactoring_engine.build_reasoning(
-            cast(dict[str, object], sample_insight), RefactoringType.REORGANIZATION
+            sample_insight, RefactoringType.REORGANIZATION
         )
 
         assert "Consolidating" in consolidation_reasoning
@@ -557,13 +556,13 @@ class TestBuildReasoning:
 
     def test_includes_high_impact_note(self, refactoring_engine: RefactoringEngine):
         """Test that high impact is noted"""
-        high_impact_insight: dict[str, str | float] = {
+        high_impact_insight: ModelDict = {
             "description": "Major issue",
             "impact_score": 0.85,
         }
 
         reasoning = refactoring_engine.build_reasoning(
-            cast(dict[str, object], high_impact_insight), RefactoringType.CONSOLIDATION
+            high_impact_insight, RefactoringType.CONSOLIDATION
         )
 
         assert "high potential impact" in reasoning
@@ -576,7 +575,7 @@ class TestOrganizationSuggestions:
     async def test_suggests_orphaned_file_integration(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_structure_data: dict[str, object],
+        sample_structure_data: ModelDict,
     ):
         """Test suggestion for orphaned files"""
         suggestions = await refactoring_engine.generate_organization_suggestions(
@@ -593,14 +592,14 @@ class TestOrganizationSuggestions:
         self, refactoring_engine: RefactoringEngine
     ):
         """Test that multiple orphaned files are needed"""
-        structure_data: dict[str, dict[str, list[str]]] = {
+        structure_data: ModelDict = {
             "anti_patterns": {
                 "orphaned_files": ["file1.md", "file2.md"],  # Only 2 files
             }
         }
 
         suggestions = await refactoring_engine.generate_organization_suggestions(
-            cast(dict[str, object], structure_data)
+            structure_data
         )
 
         # Should not generate suggestion for < 3 orphaned files
@@ -610,7 +609,7 @@ class TestOrganizationSuggestions:
     async def test_limits_actions_for_orphaned_files(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_structure_data: dict[str, object],
+        sample_structure_data: ModelDict,
     ):
         """Test that actions are limited for orphaned files"""
         suggestions = await refactoring_engine.generate_organization_suggestions(
@@ -653,11 +652,11 @@ class TestGetSuggestion:
     async def test_returns_stored_suggestion(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test retrieving stored suggestion"""
         suggestions = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], [sample_insight])
+            insights=[sample_insight]
         )
         suggestion_id = suggestions[0].suggestion_id
 
@@ -683,11 +682,11 @@ class TestPreviewRefactoring:
     async def test_preview_includes_suggestion_details(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test that preview includes suggestion details"""
         suggestions = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], [sample_insight])
+            insights=[sample_insight]
         )
         suggestion_id = suggestions[0].suggestion_id
 
@@ -704,11 +703,11 @@ class TestPreviewRefactoring:
     async def test_preview_includes_actions(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test that preview includes action details"""
         suggestions = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], [sample_insight])
+            insights=[sample_insight]
         )
         suggestion_id = suggestions[0].suggestion_id
 
@@ -728,11 +727,11 @@ class TestPreviewRefactoring:
     async def test_preview_with_diff(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test preview with diff enabled"""
         suggestions = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], [sample_insight])
+            insights=[sample_insight]
         )
         suggestion_id = suggestions[0].suggestion_id
 
@@ -753,11 +752,11 @@ class TestPreviewRefactoring:
     async def test_preview_without_diff(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test preview with diff disabled"""
         suggestions = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], [sample_insight])
+            insights=[sample_insight]
         )
         suggestion_id = suggestions[0].suggestion_id
 
@@ -792,7 +791,7 @@ class TestGetAllSuggestions:
         self, refactoring_engine: RefactoringEngine
     ):
         """Test getting all suggestions without filters"""
-        insights = [
+        insights: list[ModelDict] = [
             {
                 "title": f"Issue {i}",
                 "description": f"Desc {i}",
@@ -805,9 +804,7 @@ class TestGetAllSuggestions:
             for i in range(3)
         ]
 
-        _ = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], insights)
-        )
+        _ = await refactoring_engine.generate_suggestions(insights=insights)
         all_suggestions = await refactoring_engine.get_all_suggestions()
 
         assert len(all_suggestions) == 3
@@ -815,7 +812,7 @@ class TestGetAllSuggestions:
     @pytest.mark.asyncio
     async def test_filters_by_type(self, refactoring_engine: RefactoringEngine):
         """Test filtering by refactoring type"""
-        insights = [
+        insights: list[ModelDict] = [
             {
                 "title": "Consolidation Issue",
                 "description": "Duplicate content",
@@ -836,9 +833,7 @@ class TestGetAllSuggestions:
             },
         ]
 
-        _ = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], insights)
-        )
+        _ = await refactoring_engine.generate_suggestions(insights=insights)
         consolidation_suggestions = await refactoring_engine.get_all_suggestions(
             filter_by_type=RefactoringType.CONSOLIDATION
         )
@@ -851,7 +846,7 @@ class TestGetAllSuggestions:
     @pytest.mark.asyncio
     async def test_filters_by_priority(self, refactoring_engine: RefactoringEngine):
         """Test filtering by priority"""
-        insights = [
+        insights: list[ModelDict] = [
             {
                 "title": "High Priority",
                 "description": "High issue",
@@ -872,9 +867,7 @@ class TestGetAllSuggestions:
             },
         ]
 
-        _ = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], insights)
-        )
+        _ = await refactoring_engine.generate_suggestions(insights=insights)
         high_priority = await refactoring_engine.get_all_suggestions(
             filter_by_priority=RefactoringPriority.HIGH
         )
@@ -886,7 +879,7 @@ class TestGetAllSuggestions:
         """Test filtering by minimum confidence"""
         refactoring_engine.min_confidence = 0.0  # Allow all for test
 
-        insights: list[dict[str, str | float | list[str]]] = [
+        insights: list[ModelDict] = [
             {
                 "title": f"Issue {i}",
                 "description": f"Desc {i}",
@@ -899,9 +892,7 @@ class TestGetAllSuggestions:
             for i in range(3)
         ]
 
-        _ = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], insights)
-        )
+        _ = await refactoring_engine.generate_suggestions(insights=insights)
         high_confidence = await refactoring_engine.get_all_suggestions(
             min_confidence=0.85
         )
@@ -916,12 +907,10 @@ class TestExportSuggestions:
     async def test_export_json_format(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test exporting suggestions as JSON"""
-        _ = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], [sample_insight])
-        )
+        _ = await refactoring_engine.generate_suggestions(insights=[sample_insight])
         export = await refactoring_engine.export_suggestions(output_format="json")
 
         # Should be valid JSON
@@ -935,12 +924,10 @@ class TestExportSuggestions:
     async def test_export_markdown_format(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test exporting suggestions as Markdown"""
-        _ = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], [sample_insight])
-        )
+        _ = await refactoring_engine.generate_suggestions(insights=[sample_insight])
         export = await refactoring_engine.export_suggestions(output_format="markdown")
 
         assert "# Refactoring Suggestions" in export
@@ -952,12 +939,10 @@ class TestExportSuggestions:
     async def test_export_text_format(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test exporting suggestions as text"""
-        _ = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], [sample_insight])
-        )
+        _ = await refactoring_engine.generate_suggestions(insights=[sample_insight])
         export = await refactoring_engine.export_suggestions(output_format="text")
 
         assert "REFACTORING SUGGESTIONS" in export
@@ -987,12 +972,10 @@ class TestClearSuggestions:
     async def test_clears_all_suggestions(
         self,
         refactoring_engine: RefactoringEngine,
-        sample_insight: dict[str, str | float | list[str]],
+        sample_insight: ModelDict,
     ):
         """Test that all suggestions are cleared"""
-        _ = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], [sample_insight])
-        )
+        _ = await refactoring_engine.generate_suggestions(insights=[sample_insight])
         assert len(refactoring_engine.suggestions) > 0
 
         await refactoring_engine.clear_suggestions()

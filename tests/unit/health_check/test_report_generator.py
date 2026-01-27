@@ -97,7 +97,7 @@ class TestReportGenerator:
         self, generator: ReportGenerator, sample_report: HealthCheckReport
     ):
         """Test generating report header."""
-        lines = generator._generate_header(sample_report)
+        lines = generator._generate_header(sample_report)  # type: ignore[attr-defined]
         assert len(lines) > 0
         assert "# Health-Check Analysis Report" in lines[0]
 
@@ -105,7 +105,7 @@ class TestReportGenerator:
         self, generator: ReportGenerator, sample_report: HealthCheckReport
     ):
         """Test generating prompts section."""
-        lines = generator._generate_prompts_section(sample_report)
+        lines = generator._generate_prompts_section(sample_report)  # type: ignore[attr-defined]
         assert "## Prompts Analysis" in lines[0]
         assert "Total" in "".join(lines)
 
@@ -113,21 +113,21 @@ class TestReportGenerator:
         self, generator: ReportGenerator, sample_report: HealthCheckReport
     ):
         """Test generating rules section."""
-        lines = generator._generate_rules_section(sample_report)
+        lines = generator._generate_rules_section(sample_report)  # type: ignore[attr-defined]
         assert "## Rules Analysis" in lines[0]
 
     def test_generate_tools_section(
         self, generator: ReportGenerator, sample_report: HealthCheckReport
     ):
         """Test generating tools section."""
-        lines = generator._generate_tools_section(sample_report)
+        lines = generator._generate_tools_section(sample_report)  # type: ignore[attr-defined]
         assert "## Tools Analysis" in lines[0]
 
     def test_generate_recommendations_section(
         self, generator: ReportGenerator, sample_report: HealthCheckReport
     ):
         """Test generating recommendations section."""
-        lines = generator._generate_recommendations_section(sample_report)
+        lines = generator._generate_recommendations_section(sample_report)  # type: ignore[attr-defined]
         assert "## Recommendations" in lines[0]
         assert "Recommendation 1" in "".join(lines)
 
@@ -136,13 +136,13 @@ class TestReportGenerator:
     ):
         """Test generating recommendations section with no recommendations."""
         sample_report["recommendations"] = []
-        lines = generator._generate_recommendations_section(sample_report)
+        lines = generator._generate_recommendations_section(sample_report)  # type: ignore[attr-defined]
         assert len(lines) == 0
 
     def test_generate_prompts_section_with_merge_opportunities(
         self, generator: ReportGenerator, sample_report: HealthCheckReport
     ):
         """Test generating prompts section with merge opportunities."""
-        lines = generator._generate_prompts_section(sample_report)
+        lines = generator._generate_prompts_section(sample_report)  # type: ignore[attr-defined]
         assert "### Merge Opportunities" in "".join(lines)
         assert "prompt1.md" in "".join(lines)
