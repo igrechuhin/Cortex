@@ -6,6 +6,7 @@ and that the initialization system properly coordinates dependencies.
 """
 
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -38,6 +39,7 @@ class TestManagerCoordination:
         token_counter = TokenCounter()
         token_count = token_counter.count_tokens(content)
         sections = file_system.parse_sections(content)
+        section_dicts = [section.model_dump(mode="json") for section in sections]
         await metadata_index.update_file_metadata(
             file_name="test.md",
             path=file_path,
@@ -45,7 +47,7 @@ class TestManagerCoordination:
             size_bytes=len(content.encode("utf-8")),
             token_count=token_count,
             content_hash=content_hash,
-            sections=sections,
+            sections=section_dicts,
         )
 
         # Act: Check metadata through metadata_index
@@ -97,6 +99,7 @@ class TestManagerCoordination:
         # Update metadata_index manually (integration test responsibility)
         token_count = token_counter.count_tokens(content)
         sections = file_system.parse_sections(content)
+        section_dicts = [section.model_dump(mode="json") for section in sections]
         await metadata_index.update_file_metadata(
             file_name="test.md",
             path=file_path,
@@ -104,7 +107,7 @@ class TestManagerCoordination:
             size_bytes=len(content.encode("utf-8")),
             token_count=token_count,
             content_hash=content_hash,
-            sections=sections,
+            sections=section_dicts,
         )
 
         # Assert 1: Metadata index updated
@@ -173,6 +176,7 @@ class TestManagerCoordination:
         # Update metadata_index manually
         token_count1 = token_counter.count_tokens(content1)
         sections = file_system.parse_sections(content1)
+        section_dicts = [section.model_dump(mode="json") for section in sections]
         await metadata_index.update_file_metadata(
             file_name="test.md",
             path=file_path,
@@ -180,7 +184,7 @@ class TestManagerCoordination:
             size_bytes=len(content1.encode("utf-8")),
             token_count=token_count1,
             content_hash=content_hash1,
-            sections=sections,
+            sections=section_dicts,
         )
 
         # Act: Create snapshot
@@ -201,7 +205,7 @@ class TestManagerCoordination:
             size_bytes=len(content1.encode("utf-8")),
             token_count=token_count1,
             content_hash=content_hash1,
-            sections=sections,
+            sections=section_dicts,
         )
         # Manually set current_version in metadata (in production, this
         # would be done by the tool layer)
@@ -209,9 +213,8 @@ class TestManagerCoordination:
         if data and "files" in data:
             files = data["files"]
             if isinstance(files, dict) and "test.md" in files:
-                file_metadata = files["test.md"]
-                if isinstance(file_metadata, dict):
-                    file_metadata["current_version"] = 1
+                file_metadata = cast(dict[str, object], files["test.md"])
+                file_metadata["current_version"] = 1
         _ = await metadata_index.save()
 
         # Assert: Metadata updated
@@ -226,6 +229,7 @@ class TestManagerCoordination:
         content_hash2 = file_system.compute_hash(content2)
         token_count2 = token_counter.count_tokens(content2)
         sections2 = file_system.parse_sections(content2)
+        section_dicts2 = [section.model_dump(mode="json") for section in sections2]
         _ = await version_manager.create_snapshot(
             file_path=file_path,
             version=2,
@@ -243,15 +247,14 @@ class TestManagerCoordination:
             size_bytes=len(content2.encode("utf-8")),
             token_count=token_count2,
             content_hash=content_hash2,
-            sections=sections2,
+            sections=section_dicts2,
         )
         data = metadata_index.get_data()
         if data and "files" in data:
             files = data["files"]
             if isinstance(files, dict) and "test.md" in files:
-                file_metadata = files["test.md"]
-                if isinstance(file_metadata, dict):
-                    file_metadata["current_version"] = 2
+                file_metadata = cast(dict[str, object], files["test.md"])
+                file_metadata["current_version"] = 2
         _ = await metadata_index.save()
 
         # Assert: Version incremented
@@ -303,6 +306,7 @@ class TestManagerInitialization:
         content1 = "# Test 1"
         hash1 = await file_system.write_file(file1_path, content1)
         sections1 = file_system.parse_sections(content1)
+        section_dicts1 = [section.model_dump(mode="json") for section in sections1]
         await metadata_index.update_file_metadata(
             file_name="test1.md",
             path=file1_path,
@@ -310,7 +314,7 @@ class TestManagerInitialization:
             size_bytes=len(content1.encode("utf-8")),
             token_count=token_counter.count_tokens(content1),
             content_hash=hash1,
-            sections=sections1,
+            sections=section_dicts1,
         )
 
         # Act 2: Create another file
@@ -318,6 +322,7 @@ class TestManagerInitialization:
         content2 = "# Test 2"
         hash2 = await file_system.write_file(file2_path, content2)
         sections2 = file_system.parse_sections(content2)
+        section_dicts2 = [section.model_dump(mode="json") for section in sections2]
         await metadata_index.update_file_metadata(
             file_name="test2.md",
             path=file2_path,
@@ -325,7 +330,7 @@ class TestManagerInitialization:
             size_bytes=len(content2.encode("utf-8")),
             token_count=token_counter.count_tokens(content2),
             content_hash=hash2,
-            sections=sections2,
+            sections=section_dicts2,
         )
 
         # Assert: Both files tracked

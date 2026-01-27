@@ -2,7 +2,7 @@
   "typeCheckingMode": "strict",
   "pythonVersion": "3.13",
 
-  "include": ["src", ".cortex/synapse/scripts/python"],
+  "include": ["src", "tests", ".cortex/synapse/scripts/python"],
   "extraPaths": ["scripts", ".cortex/synapse/scripts/python"],
 
   "exclude": [
@@ -11,8 +11,6 @@
     "**/.pytest_cache",
     "**/.mypy_cache",
     "**/node_modules",
-    "tests",
-    "**/tests/**",
     ".venv"
   ],
 

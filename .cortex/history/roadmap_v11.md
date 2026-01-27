@@ -22,6 +22,8 @@
 
 - 🔄 **Phase 21: Health-Check and Optimization Analysis System - Step 1: Create Health-Check Analysis Module** - IN PROGRESS (2026-01-26) - Created `src/cortex/health_check/` module with all core components: PromptAnalyzer, RuleAnalyzer, ToolAnalyzer, SimilarityEngine, DependencyMapper, QualityValidator, ReportGenerator. All files within size limits (largest: 292 lines), all functions within length limits. Type checking: 0 errors, 0 warnings. Tests: 51 tests passing (7 similarity_engine, 5 quality_validator, 8 prompt_analyzer, 6 rule_analyzer, 8 tool_analyzer, 10 report_generator, 7 dependency_mapper). Code formatted with Black, all quality gates passing. Next: Step 2 (Implement Similarity Detection Engine enhancements).
 
+- 🔄 **Plan: Roadmap Sync & Validation Error UX Improvements** - PLANNED (2026-01-27) - See `../plans/roadmap-sync-validation-error-ux.md` for full design and testing strategy to clarify roadmap_sync semantics, improve path resolution for Phase plan references, and enrich MCP error messages for invalid references while preserving existing TODO tracking behavior.
+
 ## Future Enhancements
 
 - **Commit Workflow Parallelization (Steps 9–11)** - PLANNED - Implement a constrained parallelization block for commit Steps 9–11 (timestamp-validator, roadmap-sync-validator, submodule handling) based on the commit-parallelization analysis in the quality reviews. Keep Steps 0–8 and 12–14 strictly sequential, run Steps 9–11 in a structured TaskGroup, aggregate their results, and ensure Step 12 runs only after all three complete successfully. This work is tracked in the Phase 56 commit workflow parallelization plan.

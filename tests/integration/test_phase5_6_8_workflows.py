@@ -7,16 +7,17 @@ shared rules (Phase 6), and project structure (Phase 8) modules.
 
 from datetime import datetime
 from pathlib import Path
-from typing import cast
 
 import pytest
 
-from cortex.analysis.insight_engine import InsightDict, InsightEngine
+from cortex.analysis.insight_engine import InsightEngine
+from cortex.analysis.insight_types import InsightDict
 from cortex.analysis.pattern_analyzer import PatternAnalyzer
 from cortex.analysis.structure_analyzer import StructureAnalyzer
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import ModelDict
 from cortex.refactoring.consolidation_detector import ConsolidationDetector
 from cortex.refactoring.refactoring_engine import RefactoringEngine
 from cortex.refactoring.reorganization_planner import ReorganizationPlanner
@@ -68,14 +69,17 @@ class TestPhase5Integration:
 
         # Act: Analyze and generate insights
         insights_result = await insight_engine.generate_insights(min_impact_score=0.1)
-        insights_list: list[InsightDict] = insights_result.get("insights", [])
+        pydantic_insights: list[InsightDict] = insights_result.insights
+        insights_list: list[ModelDict] = [
+            insight.model_dump(mode="json") for insight in pydantic_insights
+        ]
 
         # Generate refactoring suggestions from insights
-        structure_data: dict[str, object] = {
+        structure_data: ModelDict = {
             "large_file.md": {"size": len(large_content), "sections": 100}
         }
         suggestions = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], insights_list),
+            insights=insights_list,
             structure_data=structure_data,
         )
 
@@ -219,12 +223,12 @@ Large section about topic {i + 1} with detailed content.
         )
 
         # Provide structure data and dependency graph (required for plan creation)
-        structure_data: dict[str, object] = {
+        structure_data: ModelDict = {
             "organization": {"type": "flat"},
             "complexity_metrics": {"max_dependency_depth": 1},
             "anti_patterns": {"orphaned_files": []},
         }
-        dependency_graph: dict[str, object] = {
+        dependency_graph: ModelDict = {
             "dependencies": {},
         }
 
@@ -269,33 +273,17 @@ class TestPhase6Integration:
         )
 
         # Assert
-        languages_python_raw = python_context.get("detected_languages", [])
-        languages_python: list[str] = cast(
-            list[str],
-            (languages_python_raw if isinstance(languages_python_raw, list) else []),
-        )
-        frameworks_python_raw = python_context.get("detected_frameworks", [])
-        frameworks_python: list[str] = cast(
-            list[str],
-            (frameworks_python_raw if isinstance(frameworks_python_raw, list) else []),
-        )
+        languages_python: list[str] = list(python_context.detected_languages)
+        frameworks_python: list[str] = list(python_context.detected_frameworks)
         assert "python" in languages_python
         assert "django" in frameworks_python
-        assert python_context.get("task_type") is not None
+        assert python_context.task_type is not None
 
-        languages_swift_raw = swift_context.get("detected_languages", [])
-        languages_swift: list[str] = cast(
-            list[str],
-            languages_swift_raw if isinstance(languages_swift_raw, list) else [],
-        )
-        frameworks_swift_raw = swift_context.get("detected_frameworks", [])
-        frameworks_swift: list[str] = cast(
-            list[str],
-            (frameworks_swift_raw if isinstance(frameworks_swift_raw, list) else []),
-        )
+        languages_swift: list[str] = list(swift_context.detected_languages)
+        frameworks_swift: list[str] = list(swift_context.detected_frameworks)
         assert "swift" in languages_swift
         assert "swiftui" in frameworks_swift
-        assert swift_context.get("task_type") is not None
+        assert swift_context.task_type is not None
 
     async def test_shared_rules_integration_workflow(
         self, temp_project_root: Path, tmp_path: Path
@@ -366,10 +354,7 @@ class TestPhase6Integration:
 
         # Assert
         assert loaded is not None
-        languages_raw = context.get("detected_languages", [])
-        languages: list[str] = cast(
-            list[str], languages_raw if isinstance(languages_raw, list) else []
-        )
+        languages: list[str] = list(context.detected_languages)
         assert "python" in languages
 
 
@@ -437,7 +422,7 @@ class TestPhase8Integration:
         detected_type = structure_manager.detect_legacy_structure()
 
         # Migrate if needed
-        result: dict[str, object] | None = None
+        result: ModelDict | None = None
         if detected_type:
             result = await structure_manager.migrate_legacy_structure(
                 detected_type, backup=False
@@ -578,7 +563,10 @@ This section contains detailed information that is duplicated across files.
         # Act: Complete workflow
         # 1. Generate insights
         insights_result = await insight_engine.generate_insights(min_impact_score=0.1)
-        insights_list: list[InsightDict] = insights_result.get("insights", [])
+        pydantic_insights: list[InsightDict] = insights_result.insights
+        insights_list: list[ModelDict] = [
+            insight.model_dump(mode="json") for insight in pydantic_insights
+        ]
 
         # 2. Detect consolidation opportunities
         consolidation_ops = await consolidation_detector.detect_opportunities(
@@ -586,11 +574,11 @@ This section contains detailed information that is duplicated across files.
         )
 
         # 3. Generate refactoring suggestions
-        structure_data: dict[str, object] = {
+        structure_data: ModelDict = {
             "large.md": {"size": len(large_content), "sections": 50}
         }
         suggestions = await refactoring_engine.generate_suggestions(
-            insights=cast(list[dict[str, object]], insights_list),
+            insights=insights_list,
             structure_data=structure_data,
         )
 
@@ -625,7 +613,7 @@ This section contains detailed information that is duplicated across files.
         setup_result = await structure_manager.create_structure(force=False)
 
         # 2. Generate initial files
-        project_info: dict[str, object] = {
+        project_info: ModelDict = {
             "name": "Test Project",
             "type": "library",
             "languages": ["Python"],

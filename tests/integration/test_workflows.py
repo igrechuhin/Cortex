@@ -13,6 +13,7 @@ import pytest
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import ModelDict
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.linking.link_parser import LinkParser
@@ -59,7 +60,19 @@ Check [Active Context](activeContext.md#current-work) for status.
         links = await link_parser.parse_file(content)
 
         # Assert
-        all_links = links["markdown_links"] + links["transclusions"]
+        markdown_links_raw = links.get("markdown_links", [])
+        transclusions_raw = links.get("transclusions", [])
+        markdown_links: list[ModelDict] = (
+            cast(list[ModelDict], markdown_links_raw)
+            if isinstance(markdown_links_raw, list)
+            else []
+        )
+        transclusions: list[ModelDict] = (
+            cast(list[ModelDict], transclusions_raw)
+            if isinstance(transclusions_raw, list)
+            else []
+        )
+        all_links = markdown_links + transclusions
         assert len(all_links) >= 2
         assert any(link.get("target") == "projectBrief.md" for link in all_links)
         assert any(link.get("target") == "activeContext.md" for link in all_links)
@@ -139,8 +152,8 @@ Check [Active Context](activeContext.md#current-work) for status.
 
         # Assert: All links valid
         broken_links_raw = validation.get("broken_links", [])
-        broken_links = (
-            cast(list[dict[str, object]], broken_links_raw)
+        broken_links: list[ModelDict] = (
+            cast(list[ModelDict], broken_links_raw)
             if isinstance(broken_links_raw, list)
             else []
         )
@@ -155,8 +168,8 @@ Check [Active Context](activeContext.md#current-work) for status.
 
         # Assert: Link is now broken
         broken_links_raw = validation.get("broken_links", [])
-        broken_links = (
-            cast(list[dict[str, object]], broken_links_raw)
+        broken_links: list[ModelDict] = (
+            cast(list[ModelDict], broken_links_raw)
             if isinstance(broken_links_raw, list)
             else []
         )
@@ -210,8 +223,8 @@ See [Active Context](activeContext.md) for details.
         result = await schema_validator.validate_file("projectBrief.md", file_content)
 
         # Assert
-        assert result["valid"]
-        assert len(result["errors"]) == 0
+        assert result.valid
+        assert len(result.errors) == 0
 
     async def test_quality_metrics_with_linked_files(
         self, temp_project_root: Path, sample_memory_bank_files: dict[str, Path]
@@ -235,13 +248,18 @@ See [Active Context](activeContext.md) for details.
         source_path = memory_bank_dir / "source.md"
         source_content, _ = await file_system.read_file(source_path)
         source_metadata = await metadata_index.get_file_metadata("source.md")
+        metadata_for_score: ModelDict = (
+            cast(ModelDict, source_metadata)
+            if isinstance(source_metadata, dict)
+            else {}
+        )
         metrics = await quality_metrics.calculate_file_score(
-            "source.md", source_content, source_metadata or {}
+            "source.md", source_content, metadata_for_score
         )
 
         # Assert
-        assert metrics["file_name"] == "source.md"
-        score = metrics.get("score", 0)
+        assert metrics.file_name == "source.md"
+        score = metrics.score
         assert isinstance(score, (int, float))
         assert int(score) >= 0
         assert int(score) <= 100
@@ -290,31 +308,17 @@ content length for the duplication detector to identify it.
         duplications = await duplication_detector.scan_all_files(files_content)
 
         # Assert: Should detect duplicate sections
-        duplicates_found = duplications.get("duplicates_found", 0)
-        assert isinstance(duplicates_found, (int, float))
-        assert int(duplicates_found) > 0
+        duplicates_found = duplications.duplicates_found
+        assert isinstance(duplicates_found, int)
+        assert duplicates_found > 0
 
         # Check for exact duplicates or similar content
-        exact_raw = duplications.get("exact_duplicates", [])
-        exact = (
-            cast(list[dict[str, object]], exact_raw)
-            if isinstance(exact_raw, list)
-            else []
-        )
-        similar_raw = duplications.get("similar_content", [])
-        similar = (
-            cast(list[dict[str, object]], similar_raw)
-            if isinstance(similar_raw, list)
-            else []
-        )
+        exact = duplications.exact_duplicates
+        similar = duplications.similar_content
 
         # Should have either exact duplicates or similar content with high similarity
         has_exact = len(exact) > 0
-        has_similar = any(
-            isinstance(item.get("similarity"), (int, float))
-            and float(cast(float, item.get("similarity", 0.0))) >= 0.85
-            for item in similar
-        )
+        has_similar = any(entry.similarity >= 0.85 for entry in similar)
         assert (
             has_exact or has_similar
         ), "Should detect either exact duplicates or similar content"
@@ -364,8 +368,8 @@ class TestPhase3Phase4Integration:
 
         # Assert: file1 should have higher relevance
         assert len(scores) == 2
-        file1_score = scores.get("file1.md", {})
-        file2_score = scores.get("file2.md", {})
+        file1_score = scores.get("file1.md")
+        file2_score = scores.get("file2.md")
         assert isinstance(file1_score, dict)
         assert isinstance(file2_score, dict)
         file1_total = file1_score.get("total_score", 0.0)
@@ -397,8 +401,18 @@ class TestPhase3Phase4Integration:
         # Act: Calculate quality for both
         high_content, _ = await file_system.read_file(high_path)
         low_content, _ = await file_system.read_file(low_path)
-        high_metadata = await metadata_index.get_file_metadata("high.md") or {}
-        low_metadata = await metadata_index.get_file_metadata("low.md") or {}
+        high_metadata_raw = await metadata_index.get_file_metadata("high.md")
+        low_metadata_raw = await metadata_index.get_file_metadata("low.md")
+        high_metadata: ModelDict = (
+            cast(ModelDict, high_metadata_raw)
+            if isinstance(high_metadata_raw, dict)
+            else {}
+        )
+        low_metadata: ModelDict = (
+            cast(ModelDict, low_metadata_raw)
+            if isinstance(low_metadata_raw, dict)
+            else {}
+        )
 
         high_metrics = await quality_metrics.calculate_file_score(
             "high.md", high_content, high_metadata
@@ -408,8 +422,8 @@ class TestPhase3Phase4Integration:
         )
 
         # Assert: High quality file should have better score
-        high_score = high_metrics.get("score", 0)
-        low_score = low_metrics.get("score", 0)
+        high_score = high_metrics.score
+        low_score = low_metrics.score
         assert isinstance(high_score, (int, float))
         assert isinstance(low_score, (int, float))
         assert int(high_score) >= int(low_score)
@@ -460,19 +474,10 @@ class TestPhase4Phase5Integration:
         analysis = await structure_analyzer.analyze_file_organization()
 
         # Assert: Should identify large file
-        # analyze_file_organization returns largest_files, not file_sizes
-        largest_files_raw = analysis.get("largest_files", [])
-        largest_files = (
-            cast(list[dict[str, object]], largest_files_raw)
-            if isinstance(largest_files_raw, list)
-            else []
-        )
+        largest_files = analysis.largest_files
         assert isinstance(largest_files, list)
         assert len(largest_files) > 0
-        assert any(
-            isinstance(file_info, dict) and file_info.get("file") == "large.md"
-            for file_info in largest_files
-        )
+        assert any(file_info.file == "large.md" for file_info in largest_files)
 
     async def test_optimization_before_refactoring_execution(
         self, temp_project_root: Path, sample_memory_bank_files: dict[str, Path]
@@ -545,13 +550,25 @@ See [Project Brief](projectBrief.md) for context.
 
         # Act 3: Parse links
         parsed = await link_parser.parse_file(content)
-        all_links = parsed["markdown_links"] + parsed["transclusions"]
+        markdown_links_raw = parsed.get("markdown_links", [])
+        transclusions_raw = parsed.get("transclusions", [])
+        markdown_links: list[ModelDict] = (
+            cast(list[ModelDict], markdown_links_raw)
+            if isinstance(markdown_links_raw, list)
+            else []
+        )
+        transclusions: list[ModelDict] = (
+            cast(list[ModelDict], transclusions_raw)
+            if isinstance(transclusions_raw, list)
+            else []
+        )
+        all_links = markdown_links + transclusions
         assert len(all_links) > 0
 
         # Act 4: Validate schema
         file_content, _ = await file_system.read_file(file_path)
         validation = await schema_validator.validate_file("new.md", file_content)
-        assert validation["valid"]
+        assert validation.valid
 
         # Act 5: Count tokens
         tokens = await token_counter.count_tokens_in_file(file_path)
@@ -620,8 +637,13 @@ See [Project Brief](projectBrief.md) for context.
 
         # Act 1: Validate quality
         file_content, _ = await file_system.read_file(file_path)
-        metadata = await metadata_index.get_file_metadata("doc.md") or {}
-        _ = await quality_metrics.calculate_file_score("doc.md", file_content, metadata)
+        metadata_raw = await metadata_index.get_file_metadata("doc.md")
+        metadata_for_score: ModelDict = (
+            cast(ModelDict, metadata_raw) if isinstance(metadata_raw, dict) else {}
+        )
+        _ = await quality_metrics.calculate_file_score(
+            "doc.md", file_content, metadata_for_score
+        )
 
         # Act 2: Check if optimization needed (based on quality score)
         token_count = token_counter.count_tokens(file_content)
@@ -690,7 +712,7 @@ New content.
         validation = await schema_validator.validate_file("doc.md", file_content)
 
         # Assert: Validation passes, version history exists
-        assert validation["valid"]
+        assert validation.valid
         version_count = await version_manager.get_version_count("doc.md")
         assert version_count >= 2
 
