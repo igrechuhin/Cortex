@@ -25,12 +25,19 @@ from cortex.core.version_manager import VersionManager
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
+from cortex.tools.file_operation_helpers import (
+    build_invalid_operation_error,
+    build_missing_parameters_error,
+    build_new_file_creation_error,
+    build_read_error_response,
+    build_write_error_response,
+)
 
 
 @mcp.tool()
 async def manage_file(
-    file_name: str,
-    operation: Literal["read", "write", "metadata"],
+    file_name: str | None = None,
+    operation: Literal["read", "write", "metadata"] | None = None,
     content: str | None = None,
     project_root: str | None = None,
     include_metadata: bool = False,
@@ -239,10 +246,18 @@ async def manage_file(
         - Write operations update both the file content and metadata index
           atomically
     """
+    missing_params: list[str] = []
+    if not file_name:
+        missing_params.append("file_name")
+    if not operation:
+        missing_params.append("operation")
+    if missing_params:
+        return build_missing_parameters_error(missing_params)
+
     try:
         return await _execute_file_operation(
-            file_name,
-            operation,
+            cast(str, file_name),
+            cast(Literal["read", "write", "metadata"], operation),
             content,
             project_root,
             include_metadata,
@@ -304,25 +319,6 @@ def _validate_file_path(
         return (None, error_json)
 
 
-def _build_read_error_response(file_name: str, root: Path) -> str:
-    """Build error response for read operation when file doesn't exist."""
-    available_files = [
-        f.name
-        for f in get_cortex_path(root, CortexResourceType.MEMORY_BANK).glob("*.md")
-        if f.is_file()
-    ]
-    return json.dumps(
-        {
-            "status": "error",
-            "error": f"File {file_name} does not exist",
-            "file_name": file_name,
-            "available_files": available_files,
-            "context": {"file_name": file_name, "available_files": available_files},
-        },
-        indent=2,
-    )
-
-
 async def _handle_read_operation(
     file_path: Path,
     file_name: str,
@@ -333,7 +329,7 @@ async def _handle_read_operation(
 ) -> str:
     """Handle read operation."""
     if not file_path.exists():
-        return _build_read_error_response(file_name, root)
+        return build_read_error_response(file_name, root)
 
     content_str, _ = await fs_manager.read_file(file_path)
     response: ModelDict = {
@@ -348,6 +344,20 @@ async def _handle_read_operation(
     return json.dumps(response, indent=2)
 
 
+def _validate_write_request(
+    file_path: Path, file_name: str, content: str | None
+) -> str | None:
+    """Validate write request parameters."""
+    if content is None:
+        return json.dumps(
+            {"status": "error", "error": "Content is required for write operation"},
+            indent=2,
+        )
+    if not file_path.exists():
+        return build_new_file_creation_error(file_name, file_path.parent)
+    return validate_write_content(content)
+
+
 async def _handle_write_operation(
     file_path: Path,
     file_name: str,
@@ -359,15 +369,32 @@ async def _handle_write_operation(
     version_manager: VersionManager,
 ) -> str:
     """Handle write operation."""
-    if content is None:
-        return json.dumps(
-            {"status": "error", "error": "Content is required for write operation"},
-            indent=2,
-        )
-    validation_error = validate_write_content(content)
-    if validation_error:
+    if validation_error := _validate_write_request(file_path, file_name, content):
         return validation_error
+    assert content is not None
+    return await _execute_write_with_error_handling(
+        file_path,
+        file_name,
+        content,
+        change_description,
+        fs_manager,
+        metadata_index,
+        token_counter,
+        version_manager,
+    )
 
+
+async def _execute_write_with_error_handling(
+    file_path: Path,
+    file_name: str,
+    content: str,
+    change_description: str | None,
+    fs_manager: FileSystemManager,
+    metadata_index: MetadataIndex,
+    token_counter: TokenCounter,
+    version_manager: VersionManager,
+) -> str:
+    """Execute write flow with error handling."""
     try:
         return await _execute_write_flow(
             file_path,
@@ -571,84 +598,6 @@ async def _execute_write_flow(
     )
 
     return build_write_response(file_name, version_info, token_counter, content)
-
-
-def _get_file_conflict_details(
-    error: FileConflictError,
-) -> tuple[str, dict[str, str]]:
-    """Get action_required and context for FileConflictError."""
-    action_required = (
-        f"File '{error.file_name}' was modified externally. "
-        "Read the file again to get the latest content, review changes, "
-        "and merge your changes before writing. "
-        "Use 'manage_file(operation=\"read\")' to get current content."
-    )
-    context = {
-        "file_name": error.file_name,
-        "expected_hash": error.expected_hash[:8] + "...",
-        "actual_hash": error.actual_hash[:8] + "...",
-    }
-    return action_required, context
-
-
-def _get_lock_timeout_details(
-    error: FileLockTimeoutError,
-) -> tuple[str, dict[str, str | int]]:
-    """Get action_required and context for FileLockTimeoutError."""
-    action_required = (
-        f"Could not acquire lock for '{error.file_name}' after "
-        f"{error.timeout_seconds}s. Wait and retry, check for stale lock "
-        "files in memory-bank directory, or verify no other process is "
-        "accessing the file. "
-        "If locks are stale, remove .lock files manually."
-    )
-    context = {
-        "file_name": error.file_name,
-        "timeout_seconds": error.timeout_seconds,
-    }
-    return action_required, context
-
-
-def build_write_error_response(
-    error: FileConflictError | FileLockTimeoutError | GitConflictError,
-) -> str:
-    """Build error response for write operation with recovery suggestions."""
-    if isinstance(error, FileConflictError):
-        action_required, context = _get_file_conflict_details(error)
-    elif isinstance(error, FileLockTimeoutError):
-        action_required, context = _get_lock_timeout_details(error)
-    else:
-        # error must be GitConflictError based on type signature
-        action_required = (
-            f"File '{error.file_name}' contains Git conflict markers. "
-            "Resolve the Git merge conflict first by removing conflict markers "
-            "(<<<<<<<, =======, >>>>>>>) and choosing the desired content. "
-            "Then retry the write operation."
-        )
-        context = {"file_name": error.file_name}
-    return json.dumps(
-        {
-            "status": "error",
-            "error": str(error),
-            "error_type": type(error).__name__,
-            "context": context,
-            "suggestion": action_required,
-        },
-        indent=2,
-    )
-
-
-def build_invalid_operation_error(operation: str) -> str:
-    """Build error response for invalid operation."""
-    valid_operations = ["read", "write", "metadata"]
-    return json.dumps(
-        {
-            "status": "error",
-            "error": f"Invalid operation: {operation}",
-            "valid_operations": valid_operations,
-        },
-        indent=2,
-    )
 
 
 async def _initialize_managers(

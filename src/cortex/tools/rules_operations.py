@@ -8,15 +8,22 @@ Total: 1 tool
 """
 
 import json
-from typing import Literal, cast
+from typing import Literal
 
 from cortex.core.models import ModelDict
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
-from cortex.optimization.models import RulesManagerStatusModel
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.rules_manager import RulesManager
 from cortex.server import mcp
+from cortex.tools.rules_operation_helpers import (
+    build_get_relevant_response,
+    build_invalid_operation_error,
+    build_missing_rules_parameters_error,
+    calculate_total_tokens,
+    extract_all_rules,
+    resolve_config_defaults,
+)
 
 
 async def check_rules_enabled(
@@ -82,84 +89,6 @@ async def validate_get_relevant_params(task_description: str | None) -> str | No
     return None
 
 
-def resolve_config_defaults(
-    optimization_config: OptimizationConfig,
-    max_tokens: int | None,
-    min_relevance_score: float | None,
-) -> tuple[int, float]:
-    """Resolve configuration defaults for get_relevant operation.
-
-    Args:
-        optimization_config: Optimization configuration
-        max_tokens: Maximum tokens for rules (optional)
-        min_relevance_score: Minimum relevance score (optional)
-
-    Returns:
-        Tuple of (max_tokens, min_relevance_score) with defaults applied
-    """
-    resolved_max_tokens = (
-        max_tokens
-        if max_tokens is not None
-        else optimization_config.get_rules_max_tokens()
-    )
-    resolved_min_score = (
-        min_relevance_score
-        if min_relevance_score is not None
-        else optimization_config.get_rules_min_relevance()
-    )
-    return resolved_max_tokens, resolved_min_score
-
-
-def extract_all_rules(
-    relevant_rules: ModelDict,
-) -> list[ModelDict]:
-    """Extract all rules from the relevant rules payload.
-
-    Args:
-        relevant_rules: Rules result model containing rules by category
-
-    Returns:
-        List of all rules combined from all categories
-    """
-    all_rules: list[ModelDict] = []
-    generic_rules = relevant_rules.get("generic_rules", [])
-    language_rules = relevant_rules.get("language_rules", [])
-    local_rules = relevant_rules.get("local_rules", [])
-    if isinstance(generic_rules, list):
-        all_rules.extend([r for r in generic_rules if isinstance(r, dict)])
-    if isinstance(language_rules, list):
-        all_rules.extend([r for r in language_rules if isinstance(r, dict)])
-    if isinstance(local_rules, list):
-        all_rules.extend([r for r in local_rules if isinstance(r, dict)])
-    return all_rules
-
-
-def calculate_total_tokens(
-    relevant_rules: ModelDict, all_rules: list[ModelDict]
-) -> int:
-    """Calculate total tokens from rules.
-
-    Args:
-        relevant_rules: Rules result model containing total_tokens
-        all_rules: List of all rules
-
-    Returns:
-        Total tokens count
-    """
-    total_tokens = relevant_rules.get("total_tokens")
-    if isinstance(total_tokens, int) and total_tokens > 0:
-        return total_tokens
-
-    computed = 0
-    for rule in all_rules:
-        tokens = rule.get("tokens")
-        if isinstance(tokens, int):
-            computed += tokens
-        elif isinstance(tokens, float):
-            computed += int(tokens)
-    return computed
-
-
 async def handle_get_relevant_operation(
     rules_manager: RulesManager,
     optimization_config: OptimizationConfig,
@@ -204,35 +133,6 @@ async def handle_get_relevant_operation(
     )
 
 
-def build_get_relevant_response(
-    task_description: str,
-    max_tokens: int,
-    min_score: float,
-    all_rules: list[ModelDict],
-    total_tokens: int,
-    status: RulesManagerStatusModel,
-    relevant_rules: ModelDict,
-) -> str:
-    """Build response for get_relevant operation."""
-    status_payload = cast(ModelDict, status.model_dump(mode="json"))
-    return json.dumps(
-        {
-            "status": "success",
-            "operation": "get_relevant",
-            "task_description": task_description,
-            "max_tokens": max_tokens,
-            "min_relevance_score": min_score,
-            "rules_count": len(all_rules),
-            "total_tokens": total_tokens,
-            "rules": all_rules,
-            "rules_manager_status": status_payload,
-            "rules_context": relevant_rules.get("context"),
-            "rules_source": relevant_rules.get("source"),
-        },
-        indent=2,
-    )
-
-
 async def dispatch_operation(
     operation: Literal["index", "get_relevant"],
     rules_manager: RulesManager,
@@ -272,19 +172,12 @@ async def dispatch_operation(
             min_relevance_score,
         )
     else:
-        return json.dumps(
-            {
-                "status": "error",
-                "error": f"Invalid operation: {operation}",
-                "valid_operations": ["index", "get_relevant"],
-            },
-            indent=2,
-        )
+        return build_invalid_operation_error(operation)
 
 
 @mcp.tool()
 async def rules(
-    operation: Literal["index", "get_relevant"],
+    operation: Literal["index", "get_relevant"] | None = None,
     project_root: str | None = None,
     force: bool = False,
     task_description: str | None = None,
@@ -546,20 +439,36 @@ async def rules(
         - Index results include cache_hit flag indicating whether cached index used
           or fresh indexing performed
     """
+    if operation is None:
+        return build_missing_rules_parameters_error()
+    return await _execute_rules_operation(
+        operation,
+        project_root,
+        force,
+        task_description,
+        max_tokens,
+        min_relevance_score,
+    )
+
+
+async def _execute_rules_operation(
+    operation: Literal["index", "get_relevant"],
+    project_root: str | None,
+    force: bool,
+    task_description: str | None,
+    max_tokens: int | None,
+    min_relevance_score: float | None,
+) -> str:
+    """Execute rules operation with error handling."""
     try:
         root = get_project_root(project_root)
         mgrs = await get_managers(root)
-
         rules_manager = await get_manager(mgrs, "rules_manager", RulesManager)
         optimization_config = await get_manager(
             mgrs, "optimization_config", OptimizationConfig
         )
-
-        # Check if rules are enabled
         if error_msg := await check_rules_enabled(optimization_config):
             return error_msg
-
-        # Dispatch to operation handler
         return await dispatch_operation(
             operation,
             rules_manager,
@@ -569,7 +478,6 @@ async def rules(
             max_tokens,
             min_relevance_score,
         )
-
     except Exception as e:
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},

@@ -1,13 +1,13 @@
 {
-  "last_updated": "2026-01-28T17:36",
-  "total_sessions_analyzed": 1,
-  "total_load_context_calls": 2,
-  "avg_token_utilization": 0.227,
+  "last_updated": "2026-01-28T17:58",
+  "total_sessions_analyzed": 2,
+  "total_load_context_calls": 3,
+  "avg_token_utilization": 0.222,
   "avg_files_selected": 10.0,
-  "avg_relevance_score": 0.52,
+  "avg_relevance_score": 0.536,
   "common_task_patterns": {
     "fix/debug": 1,
-    "other": 1
+    "other": 2
   },
   "insights": {
     "task_type_recommendations": {
@@ -25,7 +25,7 @@
         "notes": "Low utilization - consider smaller token budgets; Limited data - insights will improve with more samples"
       },
       "other": {
-        "calls_count": 1,
+        "calls_count": 2,
         "recommended_budget": 15000,
         "essential_files": [
           "activeContext.md",
@@ -33,15 +33,15 @@
           "phase-60-improve-manage-file-discoverability.plan.md",
           "progress.md"
         ],
-        "avg_utilization": 0.232,
-        "avg_relevance": 0.506,
+        "avg_utilization": 0.221,
+        "avg_relevance": 0.536,
         "notes": "Low utilization - consider smaller token budgets; Limited data - insights will improve with more samples"
       }
     },
     "file_effectiveness": {
       "activeContext.md": {
-        "times_selected": 2,
-        "avg_relevance": 0.779,
+        "times_selected": 3,
+        "avg_relevance": 0.789,
         "task_types_used": [
           "fix/debug",
           "other"
@@ -49,7 +49,7 @@
         "recommendation": "High value - prioritize for loading"
       },
       "techContext.md": {
-        "times_selected": 2,
+        "times_selected": 3,
         "avg_relevance": 0.5,
         "task_types_used": [
           "fix/debug",
@@ -58,8 +58,8 @@
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "roadmap.md": {
-        "times_selected": 2,
-        "avg_relevance": 0.645,
+        "times_selected": 3,
+        "avg_relevance": 0.643,
         "task_types_used": [
           "fix/debug",
           "other"
@@ -67,8 +67,8 @@
         "recommendation": "Moderate value - include when relevant"
       },
       "file.md": {
-        "times_selected": 2,
-        "avg_relevance": 0.245,
+        "times_selected": 3,
+        "avg_relevance": 0.339,
         "task_types_used": [
           "fix/debug",
           "other"
@@ -76,7 +76,7 @@
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "projectBrief.md": {
-        "times_selected": 2,
+        "times_selected": 3,
         "avg_relevance": 0.5,
         "task_types_used": [
           "fix/debug",
@@ -85,8 +85,8 @@
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "phase-60-improve-manage-file-discoverability.plan.md": {
-        "times_selected": 2,
-        "avg_relevance": 0.629,
+        "times_selected": 3,
+        "avg_relevance": 0.621,
         "task_types_used": [
           "fix/debug",
           "other"
@@ -94,7 +94,7 @@
         "recommendation": "Moderate value - include when relevant"
       },
       "tmp-mcp-test.md": {
-        "times_selected": 2,
+        "times_selected": 3,
         "avg_relevance": 0.24,
         "task_types_used": [
           "fix/debug",
@@ -103,7 +103,7 @@
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "progress.md": {
-        "times_selected": 2,
+        "times_selected": 3,
         "avg_relevance": 0.584,
         "task_types_used": [
           "fix/debug",
@@ -112,7 +112,7 @@
         "recommendation": "Moderate value - include when relevant"
       },
       "systemPatterns.md": {
-        "times_selected": 2,
+        "times_selected": 3,
         "avg_relevance": 0.5,
         "task_types_used": [
           "fix/debug",
@@ -121,7 +121,7 @@
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "productContext.md": {
-        "times_selected": 2,
+        "times_selected": 3,
         "avg_relevance": 0.5,
         "task_types_used": [
           "fix/debug",
@@ -132,8 +132,8 @@
     },
     "learned_patterns": [
       "Average 22% budget utilization - ~38k tokens unused per call",
-      "'activeContext.md' is most frequently loaded (2/2 calls)",
-      "Most common task type: 'fix/debug' (1 calls)"
+      "'activeContext.md' is most frequently loaded (3/3 calls)",
+      "Most common task type: 'other' (2 calls)"
     ],
     "budget_recommendations": {
       "fix/debug": 15000,
@@ -205,6 +205,39 @@
         "tmp-mcp-test.md": 0.24,
         "file.md": 0.245,
         "phase-60-improve-manage-file-discoverability.plan.md": 0.631
+      }
+    },
+    {
+      "session_id": "3df67b66821d",
+      "timestamp": "2026-01-28T17:58",
+      "task_description": "Enhance Cortex MCP tool descriptions with explicit USE WHEN triggers and EXAMPLES sections as described in the enhance-tool-descriptions plan.",
+      "token_budget": 50000,
+      "total_tokens": 10544,
+      "utilization": 0.21088,
+      "files_selected": 10,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.567,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "activeContext.md",
+        "productContext.md",
+        "roadmap.md",
+        "file.md",
+        "phase-60-improve-manage-file-discoverability.plan.md",
+        "tmp-mcp-test.md",
+        "projectBrief.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.638,
+        "progress.md": 0.585,
+        "activeContext.md": 0.807,
+        "tmp-mcp-test.md": 0.24,
+        "file.md": 0.526,
+        "phase-60-improve-manage-file-discoverability.plan.md": 0.604
       }
     }
   ]

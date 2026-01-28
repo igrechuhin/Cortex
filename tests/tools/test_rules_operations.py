@@ -901,3 +901,30 @@ async def test_rules_default_project_root(
         result_dict = json.loads(result)
         assert result_dict["status"] == "success"
         mock_get_root.assert_called_once_with(None)
+
+
+@pytest.mark.asyncio
+async def test_rules_missing_operation_returns_friendly_error(
+    mock_managers_enabled: dict[str, Any],
+) -> None:
+    """rules() should return structured error when operation is missing."""
+    # Arrange
+    with (
+        patch(
+            "cortex.tools.rules_operations.get_project_root",
+            return_value=Path("/tmp/test"),
+        ),
+        patch(
+            "cortex.tools.rules_operations.get_managers",
+            AsyncMock(return_value=mock_managers_enabled),
+        ),
+    ):
+        # Act
+        result = await rules()  # type: ignore[call-arg]
+
+        # Assert
+        result_dict = json.loads(result)
+        assert result_dict["status"] == "error"
+        assert "missing required parameter" in result_dict["error"].lower()
+        assert result_dict["details"]["missing"] == ["operation"]
+        assert "operation_values" in result_dict["details"]

@@ -170,14 +170,22 @@ class TestManageFile:
         file_name = "projectBrief.md"
         content = "# Updated Project Brief"
 
+        # Ensure file exists (manage_file only allows modifying existing files)
+        temp_memory_bank.parent.mkdir(parents=True, exist_ok=True)
+        if not temp_memory_bank.exists():
+            temp_memory_bank.write_text("# Project Brief\n\nInitial content.\n")
+
         # Mock managers
         mock_fs = AsyncMock()
         mock_fs.write_file = AsyncMock(return_value="newhash123")
+        mock_fs.read_file = AsyncMock(return_value=("# Initial content", "oldhash"))
         mock_fs.parse_sections = MagicMock(
             return_value=[{"title": "Project Brief", "content": content}]
         )
         mock_fs.construct_safe_path = MagicMock(return_value=temp_memory_bank)
         mock_fs.compute_hash = MagicMock(return_value="newhash123")
+        # Mock exists() to return True so validation passes
+        mock_fs.validate_path = MagicMock(return_value=True)
         mock_index = AsyncMock()
         mock_index.get_expected_hash = AsyncMock(return_value="oldhash")
         mock_index.update_file_metadata = AsyncMock()

@@ -20,6 +20,12 @@ Recent `/cortex/commit` and Synapse update work surfaced several recurring issue
 
 These issues did not break the final commit after fixes, but they indicate gaps in Synapse prompts/rules that can and should be closed.
 
+A follow-up session optimization review (`session-optimization-2026-01-28T18-31.md`) highlighted additional patterns:
+
+- Tests asserting on raw decoded JSON dicts instead of using small Pydantic v2 models for MCP JSON responses.
+- Coverage gate “fail-under=90” noise when running narrow, file-scoped test targets where the modified modules already exceed coverage targets.
+- Brittle assumptions about session artifacts (transcripts, `load_context` traces) that can lead to “no_data” analysis results even when rich signals (Memory Bank updates, tool calls, diffs) exist.
+
 ## Scope
 
 In scope:
@@ -108,10 +114,49 @@ Out of scope:
   - Prioritize high-value memory bank files (`activeContext.md`, `roadmap.md`, `progress.md`, and phase-specific plans) and treat consistently low-relevance files (`file.md`, `tmp-mcp-test.md`, `projectBrief.md`, `systemPatterns.md`, `productContext.md`, `techContext.md`) as optional for fix/debug workflows.
   - Document in Synapse prompts how to interpret `file_effectiveness` recommendations (high / moderate / lower relevance) when constructing context for different task types.
 
-## Dependencies
+### 7. Incorporate Post-Commit Session Optimization Recommendations (2026-01-28T02)
 
-- **Phase 56** – Commit workflow parallelization (Steps 9–11)  
-- **Phase 57** – Fix markdown_lint MCP tool timeout  
+- Extend this phase to also cover the additional patterns and recommendations identified in the post-commit analysis `session-optimization-2026-01-28T02.md`:
+  - **Roadmap ↔ plan coupling**: Ensure roadmap prompts/agents require a concrete plan file (or DRY wrapper) for every PLANNED phase, so roadmap_sync never reports references to non-existent plans (e.g., Phase 60).
+  - **Review addenda and MD024**: Update session-review / analyze-session prompts to recommend suffixed headings (e.g., “(Context Effectiveness Pass)”) when appending additional analysis passes to an existing review file, preventing duplicate-heading (`MD024`) violations that propagate through memory-bank transclusions.
+  - **Timely plan archiving**: Strengthen guidance in `plan-archiver` and related prompts so completed plans are archived to `archive/PhaseX/` as soon as their status becomes COMPLETE, rather than waiting for a later `/cortex/commit` run.
+  - **Workflow-only sessions and `analyze_context_effectiveness()`**: Clarify in session-optimization prompts/agents that “no_data” from `analyze_context_effectiveness(analyze_all_sessions=False)` is expected for workflow/quality-only sessions (like `/cortex/commit` that do not call `load_context`), and suggest using commit-tool outputs and memory-bank diffs as alternative signals in those cases.
+
+### 8. Normalize Session Review Filename Conventions
+
+- Define and document a single canonical filename pattern for session optimization reviews in Synapse prompts and agents (e.g., `session-optimization-YYYY-MM-DDTHH-MM.md`), and ensure all new review files are created via helpers that follow this pattern.
+- Update any review/analysis prompts (including session-optimization agents) to:
+  - Treat the timestamp suffix after `T` as a full time-of-day component (hours and minutes), not a bare counter.
+  - Recommend deriving this suffix from the actual session time (e.g., `T17-58`), avoiding ad-hoc names like `T02` that don’t encode a true timestamp.
+- Where appropriate, add a brief lint/check step or helper that can detect obviously malformed review filenames (e.g., `TNN` with no minutes) and suggest renaming them to match the canonical pattern before they are referenced in plans, roadmap entries, or memory-bank files.
+
+### 9. Make Pydantic v2 the Default for JSON Assertions in Tests
+
+- Align Synapse prompts and rules with `python-pydantic-standards.mdc` by adding a **“Testing JSON Responses”** subsection that:
+  - Prohibits asserting on raw `dict` shapes for MCP JSON responses in tests.
+  - Requires small Pydantic v2 `BaseModel` types and `model_validate_json()` / `model_validate()` for structured JSON produced by tools like `manage_file`, `rules`, and `execute_pre_commit_checks`.
+- Update test-writing guidance in prompts (`commit.md`, `review.md`, `create-plan.md`) to:
+  - Include a short example mirroring the new `ManageFileErrorResponse` pattern from `tests/tools/test_file_operations.py`.
+  - Explicitly instruct agents to prefer Pydantic models over dicts when validating structured JSON contracts.
+
+### 10. Clarify Coverage Handling for Focused Work
+
+- Extend commit / implement prompts with a short **“Coverage Interpretation”** note that:
+  - Emphasizes that new or modified code must meet ≥95% coverage for this phase’s changes, even when running focused tests.
+  - Explains that global `fail-under=90` failures dominated by untouched modules should be logged as technical debt in `progress.md` / `activeContext.md` (and, where appropriate, new coverage-raising phases), not “fixed ad hoc” during unrelated, narrow tasks.
+- Add explicit examples showing how to:
+  - Record such coverage debt in the Memory Bank (including suggested wording).
+  - Reference the relevant coverage-improvement plan from roadmap entries instead of attempting broad, unscheduled coverage work.
+
+### 11. Harden Session-Analysis Prompts Against Missing Telemetry and Fragile Transcript Paths
+
+- Update session-optimization agents (e.g., `session-optimization-analyzer.md` and related prompts) to:
+  - Treat `analyze_context_effectiveness()` returning `status: "no_data"` as expected for workflow-only sessions and fall back to Memory Bank diffs, git/file diffs, and recent MCP tool invocations.
+  - Discover transcripts dynamically by listing `agent-transcripts` directories and selecting the most recent transcript whose recorded `rootdir` matches the current project, instead of relying on hardcoded transcript IDs or paths.
+- Add guidance for a **“multi-signal”** analysis approach that:
+  - Prioritizes Memory Bank files (`progress.md`, `activeContext.md`, phase plans) and structured tool responses as primary signals.
+  - Uses transcripts and `load_context` traces as helpful but optional inputs rather than single points of failure for session optimization.
+
 - **Phase 60** – Improve `manage_file` discoverability and error UX  
 - **Roadmap Sync & Validation Error UX plan** (`roadmap-sync-validation-error-ux.md`)  
 - **Enhance Tool Descriptions plan** (`enhance-tool-descriptions.plan.md`)  

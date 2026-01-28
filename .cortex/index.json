@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-01-28T17:39:59.968645",
+  "last_updated": "2026-01-28T18:03:47.345636",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 7867,
-      "token_count": 1851,
+      "size_bytes": 8229,
+      "token_count": 1921,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-28T17:39:59.967628",
-      "content_hash": "sha256:ee3ae9f2b3b31fa79889b239fbe04589215e85826be59d28c4038af04fb690ce",
+      "last_modified": "2026-01-28T18:03:47.343942",
+      "content_hash": "sha256:bbd60e6c035cfe062aa78f33f1449c5557a72270891a36bf4a5d029da534f35d",
       "sections": [
         {
           "title": "## Current Status (2026-01-28)",
@@ -37,8 +37,8 @@
         }
       ],
       "read_count": 2,
-      "write_count": 20,
-      "last_read": "2026-01-28T17:39:59.967628",
+      "write_count": 22,
+      "last_read": "2026-01-28T18:03:47.343942",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -283,6 +283,28 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Enriched Phase 62 roadmap entry with session-optimization context and context-budget/memory-bank selection tuning scope"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T18:00:47.415098",
+          "content_hash": "sha256:515a0feb7e231e158e1d2b14afbe848bb6d2a3fe1a49fcd5a26387dd0d3729fd",
+          "size_bytes": 7963,
+          "token_count": 1870,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Enrich Phase 62 roadmap entry to reference both initial and post-commit session optimization reports and the expanded scope of Synapse hardening work."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T18:03:47.343444",
+          "content_hash": "sha256:bbd60e6c035cfe062aa78f33f1449c5557a72270891a36bf4a5d029da534f35d",
+          "size_bytes": 8229,
+          "token_count": 1921,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Expanded Phase 60 scope to cover rules.tool argument validation and generalized friendly error UX for required MCP tool parameters."
         }
       ]
     },
@@ -909,8 +931,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 46648,
-    "total_tokens": 10540,
-    "last_full_scan": "2026-01-28T17:39:59.967646"
+    "total_size_bytes": 47010,
+    "total_tokens": 10610,
+    "last_full_scan": "2026-01-28T18:03:47.343969"
   }
 }

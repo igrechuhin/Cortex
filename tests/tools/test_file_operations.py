@@ -6,10 +6,11 @@ achieve 100% coverage.
 
 import json
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pydantic import BaseModel
 
 from cortex.core.exceptions import (
     FileConflictError,
@@ -28,6 +29,18 @@ from cortex.tools.file_operations import (
     validate_write_content,
 )
 from tests.helpers.managers import make_test_managers
+
+
+class ManageFileErrorDetails(BaseModel):
+    missing: list[str]
+    required: list[str]
+    operation_values: list[str]
+
+
+class ManageFileErrorResponse(BaseModel):
+    status: Literal["error"]
+    error: str
+    details: ManageFileErrorDetails
 
 
 @pytest.mark.asyncio
@@ -408,6 +421,51 @@ class TestManageFileEdgeCases:
                 result = json.loads(result_str)
                 assert result["status"] == "error"
                 assert "Content is required" in result["error"]
+
+    async def test_manage_file_missing_both_required_parameters_returns_friendly_error(
+        self,
+    ) -> None:
+        """manage_file() should return structured error when both parameters missing."""
+        # Act
+        result_str = await manage_file()  # type: ignore[call-arg]
+
+        # Assert
+        payload = ManageFileErrorResponse.model_validate_json(result_str)
+        assert payload.status == "error"
+        assert "missing required parameters" in payload.error.lower()
+        assert payload.details.missing == ["file_name", "operation"]
+        assert payload.details.required == ["file_name", "operation"]
+        assert payload.details.operation_values == ["read", "write", "metadata"]
+
+    async def test_manage_file_missing_file_name_only_returns_friendly_error(
+        self,
+    ) -> None:
+        """manage_file() should return structured error when file_name is missing."""
+        # Act
+        result_str = await manage_file(operation="read")
+
+        # Assert
+        payload = ManageFileErrorResponse.model_validate_json(result_str)
+        assert payload.status == "error"
+        assert "missing required parameters" in payload.error.lower()
+        assert payload.details.missing == ["file_name"]
+        assert payload.details.required == ["file_name", "operation"]
+        assert payload.details.operation_values == ["read", "write", "metadata"]
+
+    async def test_manage_file_missing_operation_only_returns_friendly_error(
+        self,
+    ) -> None:
+        """manage_file() should return structured error when operation is missing."""
+        # Act
+        result_str = await manage_file(file_name="projectBrief.md")
+
+        # Assert
+        payload = ManageFileErrorResponse.model_validate_json(result_str)
+        assert payload.status == "error"
+        assert "missing required parameters" in payload.error.lower()
+        assert payload.details.missing == ["operation"]
+        assert payload.details.required == ["file_name", "operation"]
+        assert payload.details.operation_values == ["read", "write", "metadata"]
 
 
 @pytest.mark.asyncio
@@ -987,3 +1045,47 @@ class TestEdgeCasesForCoverage:
                 assert result["status"] == "error"
                 assert "Invalid operation" in result["error"]
                 assert "valid_operations" in result
+
+    async def test_manage_file_write_disallows_new_memory_bank_files(self):
+        """Test write operation does not create new Memory Bank files."""
+        # Arrange
+        file_name = "newfile.md"
+        content = "New content for nonexistent file"
+
+        mock_parent = MagicMock()
+        mock_parent.glob.return_value = []
+
+        mock_path = MagicMock(spec=Path)
+        mock_path.exists.return_value = False
+        mock_path.name = file_name
+        mock_path.parent = mock_parent
+
+        mock_fs = AsyncMock()
+        mock_fs.construct_safe_path = MagicMock(return_value=mock_path)
+
+        mock_managers_dict = {
+            "fs": mock_fs,
+            "index": AsyncMock(),
+            "tokens": MagicMock(),
+            "versions": AsyncMock(),
+        }
+
+        with patch(
+            "cortex.tools.file_operations.get_managers",
+            return_value=make_test_managers(**mock_managers_dict),
+        ):
+            with patch(
+                "cortex.tools.file_operations.get_project_root",
+                return_value=Path("/tmp/test"),
+            ):
+                # Act
+                result_str = await manage_file(
+                    file_name=file_name,
+                    operation="write",
+                    content=content,
+                )
+
+                # Assert
+                result = json.loads(result_str)
+                assert result["status"] == "error"
+                assert "Cannot create new Memory Bank file" in result["error"]

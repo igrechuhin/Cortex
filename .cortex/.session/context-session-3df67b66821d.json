@@ -1,0 +1,66 @@
+{
+  "session_id": "3df67b66821d",
+  "session_start": "2026-01-28T17:58",
+  "load_context_calls": [
+    {
+      "timestamp": "2026-01-28T17:58",
+      "task_description": "Enhance Cortex MCP tool descriptions with explicit USE WHEN triggers and EXAMPLES sections as described in the enhance-tool-descriptions plan.",
+      "token_budget": 50000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "activeContext.md",
+        "productContext.md",
+        "roadmap.md",
+        "file.md",
+        "phase-60-improve-manage-file-discoverability.plan.md",
+        "tmp-mcp-test.md",
+        "projectBrief.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "progress.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 10544,
+      "utilization": 0.21088,
+      "excluded_files": [],
+      "relevance_scores": {
+        "roadmap.md": 0.638,
+        "progress.md": 0.585,
+        "activeContext.md": 0.807,
+        "tmp-mcp-test.md": 0.24,
+        "file.md": 0.526,
+        "phase-60-improve-manage-file-discoverability.plan.md": 0.604
+      }
+    },
+    {
+      "timestamp": "2026-01-28T18:05",
+      "task_description": "Implement next roadmap step from roadmap.md, honoring Blockers (ASAP Priority) first, then planned phases like Phase 60/62/manage_file discoverability and Synapse session optimization.",
+      "token_budget": 50000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "activeContext.md",
+        "productContext.md",
+        "roadmap.md",
+        "file.md",
+        "phase-60-improve-manage-file-discoverability.plan.md",
+        "tmp-mcp-test.md",
+        "projectBrief.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "progress.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 10789,
+      "utilization": 0.21578,
+      "excluded_files": [],
+      "relevance_scores": {
+        "roadmap.md": 0.608,
+        "progress.md": 0.548,
+        "activeContext.md": 0.73,
+        "tmp-mcp-test.md": 0.24,
+        "file.md": 0.245,
+        "phase-60-improve-manage-file-discoverability.plan.md": 0.464
+      }
+    }
+  ]
+}

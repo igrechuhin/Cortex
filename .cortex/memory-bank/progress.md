@@ -2,6 +2,39 @@
 
 ## 2026-01-28
 
+- ✅ **Commit Procedure: Fixed Quality Violations and Test Failures** - COMPLETE (2026-01-28)
+  - **Problem**: Quality violations (file sizes, function lengths) and test failures blocking commit
+  - **Solution**: Extracted helper modules and fixed test setup issues
+  - **Implementation**:
+    - Fixed line length violation in `tests/tools/test_file_operations.py` (docstring exceeded 88 characters)
+    - Fixed function length violations by extracting helper functions:
+      - `dispatch_operation()` → extracted `_build_invalid_operation_error()` helper
+      - `rules()` → extracted `_execute_rules_operation()` helper
+      - `_handle_write_operation()` → extracted `_execute_write_with_error_handling()` and `_validate_write_request()` helpers
+    - Fixed file size violations by extracting helper modules:
+      - Created `src/cortex/tools/file_operation_helpers.py` with error-building functions (`build_missing_parameters_error`, `build_new_file_creation_error`, `build_read_error_response`, `build_write_error_response`, `build_invalid_operation_error`, and helper functions `_get_file_conflict_details`, `_get_lock_timeout_details`)
+      - Created `src/cortex/tools/rules_operation_helpers.py` with helper functions (`resolve_config_defaults`, `extract_all_rules`, `calculate_total_tokens`, `build_get_relevant_response`, `build_invalid_operation_error`, `build_missing_rules_parameters_error`)
+      - Reduced `file_operations.py` from 423 lines to under 400 lines
+      - Reduced `rules_operations.py` from 415 lines to under 400 lines
+    - Fixed type errors:
+      - Added `assert content is not None` in `_handle_write_operation()` to satisfy type checker after validation
+      - Made `_build_invalid_operation_error()` public (removed leading underscore) in helpers module to fix private usage error
+    - Fixed test failures:
+      - `test_version_history_workflow` in `tests/integration/test_mcp_tools_integration.py`: Added file creation before write operations (manage_file only allows modifying existing Memory Bank files)
+      - `test_manage_file_write_success` in `tests/tools/test_consolidated.py`: Added file creation and `read_file` mock to fix "not enough values to unpack" error
+  - **Results**:
+    - All quality checks passing: 0 file size violations, 0 function length violations
+    - All type checks passing: 0 errors, 0 warnings
+    - All tests passing: 2866 passed, 0 failed, 100% pass rate, 90.1% coverage (above 90% threshold)
+    - All formatting checks passing
+    - All markdown lint checks passing (0 errors)
+  - **Impact**: Commit procedure can proceed, all quality gates met, code refactored for maintainability
+
+- ✅ **Phase 60: Improve `manage_file` Discoverability and Error UX** - COMPLETE (2026-01-28)
+  - Implemented structured, friendly validation errors for `manage_file` when required parameters (`file_name`, `operation`) are missing or invalid, and generalized the same pattern to the `rules` tool (`operation` required) to replace opaque Pydantic `Field required` errors with actionable JSON responses.
+  - Added focused tests in `tests/tools/test_file_operations.py` and `tests/tools/test_rules_operations.py` to cover missing-parameter and invalid-operation scenarios and verify the new error shapes.
+  - Updated `docs/api/tools.md` with a dedicated `manage_file` section (USE WHEN, REQUIRED PARAMETERS, Error UX, and EXAMPLES) and tightened Synapse prompts (`commit.md`, `review.md`) with MCP TOOL USAGE guidance for `manage_file` and `rules`.
+
 - ✅ **Phase 61: Investigate `execute_pre_commit_checks` MCP Output Handling Failure** - COMPLETE (2026-01-28)
   - **Problem**: During `/cortex/commit` in Cursor, the `execute_pre_commit_checks` MCP tool reported "large output written to: agent-tools/*.txt" and the structured JSON result was not available to the agent. The spill file itself was inaccessible in the IDE sandbox, blocking verification of fix-errors, formatting, type checking, quality checks, and tests.
   - **Solution**: Updated `src/cortex/tools/pre_commit_tools.py` so that `execute_pre_commit_checks` and `fix_quality_issues` always return a compact, structured JSON payload regardless of log size:

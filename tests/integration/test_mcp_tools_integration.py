@@ -211,6 +211,16 @@ class TestMCPToolWorkflows:
         # Initialize
         _ = await _initialize_memory_bank_helper(project_root_str)
 
+        # Create test.md file first (manage_file only allows modifying existing files)
+        from pathlib import Path
+
+        from tests.helpers.path_helpers import ensure_test_cortex_structure
+
+        root = Path(project_root_str)
+        memory_bank_dir = ensure_test_cortex_structure(root)
+        test_file = memory_bank_dir / "test.md"
+        test_file.write_text("# Test\n\nInitial content.\n")
+
         # Act 1: Write file (creates version 1)
         content1 = "# Version 1\n\nInitial content."
         await manage_file(

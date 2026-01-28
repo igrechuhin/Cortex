@@ -164,6 +164,201 @@ Returns comprehensive metadata including token counts, sections, version history
 
 ---
 
+### manage_file
+
+Unified Memory Bank file management tool for read/write/metadata operations.
+
+**USE WHEN:**
+
+- You need a **single entry point** to read, write, or query metadata for Memory Bank files (instead of separate read/write/metadata tools).
+- You are building **automated workflows** (commit, roadmap, review) that must safely read/write `.cortex/memory-bank/*.md` with versioning and conflict detection.
+- You want **structured error responses** for missing/invalid parameters or file/path issues (safe path construction, conflict, lock, or Git conflicts).
+
+**REQUIRED PARAMETERS:**
+
+- `file_name` (str) - Name of the file within the Memory Bank directory.
+  - Examples: `"projectBrief.md"`, `"activeContext.md"`, `"systemPatterns.md"`.
+  - Must be a safe filename (no `..`, `/`, `\` or path traversal).
+- `operation` (str enum) - Operation to perform:
+  - `"read"` - Read file content (optionally with metadata).
+  - `"write"` - Write content with versioning and metadata updates.
+  - `"metadata"` - Return metadata only (no file content).
+
+**Optional Parameters:**
+
+- `content` (str | None) - Content to write (required when `operation="write"`).
+- `project_root` (str | None) - Absolute project root; defaults to current working directory.
+- `include_metadata` (bool) - When `operation="read"`, include metadata block.
+- `change_description` (str | None) - Human-friendly description stored in version history.
+
+**Description:**
+
+`manage_file` is the canonical Memory Bank file tool used by higher-level workflows and prompts (roadmap, commit, review). It:
+
+- Resolves `.cortex/memory-bank/` via `get_cortex_path()` and validates `file_name` with safe path construction.
+- Provides **rich error responses** for:
+  - Missing required parameters (`file_name`, `operation`) with `details.missing`, `details.required`, and `details.operation_values`.
+  - Invalid operations (`operation` not in `["read", "write", "metadata"]`) with `valid_operations` and a usage `hint`.
+  - Invalid file names and path traversal attempts.
+  - Non-existent files (including an `available_files` list for discovery).
+  - Write-time conflicts (file conflict, lock timeout, Git conflict) with recovery suggestions.
+- Treats Memory Bank files as a **fixed, user-controlled set**: write operations **cannot create new files** under `.cortex/memory-bank/` and will return a structured error if the target file does not already exist.
+- For writes, it:
+  - Computes file metrics (size, tokens, hash).
+  - Creates a new version snapshot with metadata.
+  - Updates the metadata index (sections, version history).
+
+**Error UX:**
+
+- Missing required parameters:
+
+  ```json
+  {
+    "status": "error",
+    "error": "Missing required parameters: file_name, operation",
+    "details": {
+      "missing": ["file_name", "operation"],
+      "required": ["file_name", "operation"],
+      "operation_values": ["read", "write", "metadata"]
+    },
+    "hint": "Call manage_file(file_name=..., operation=...) for read/write/metadata operations. See docs/api/tools.md#manage_file."
+  }
+  ```
+
+- Invalid operation value:
+
+  ```json
+  {
+    "status": "error",
+    "error": "Invalid operation: delete",
+    "valid_operations": ["read", "write", "metadata"],
+    "hint": "Use one of: 'read', 'write', or 'metadata' for the operation parameter."
+  }
+  ```
+
+- Attempt to create a new Memory Bank file (disallowed):
+
+  ```json
+  {
+    "status": "error",
+    "error": "Cannot create new Memory Bank file via manage_file: newfile.md does not exist. Only existing Memory Bank files may be modified.",
+    "file_name": "newfile.md",
+    "available_files": [
+      "projectBrief.md",
+      "productContext.md",
+      "activeContext.md",
+      "systemPatterns.md",
+      "techContext.md",
+      "progress.md",
+      "roadmap.md"
+    ],
+    "hint": "Memory Bank files are managed as a fixed set under .cortex/memory-bank/. Create new files there manually (with explicit user approval) before using manage_file(operation=\"write\") to modify them."
+  }
+  ```
+
+**Returns:**
+
+- **Read operation (`operation="read"`):**
+
+  ```json
+  {
+    "status": "success",
+    "file_name": "projectBrief.md",
+    "content": "# Project Brief\n\n## Overview\n...",
+    "metadata": {
+      "size_bytes": 2048,
+      "token_count": 512,
+      "content_hash": "e3b0c442...",
+      "sections": [
+        {"heading": "## Overview", "level": 2},
+        {"heading": "## Goals", "level": 2}
+      ],
+      "version_history": [
+        {
+          "version": 1,
+          "timestamp": "2026-01-04T10:00:00Z",
+          "change_description": "Initial version"
+        }
+      ]
+    }
+  }
+  ```
+
+- **Write operation (`operation="write"`):**
+
+  ```json
+  {
+    "status": "success",
+    "file_name": "activeContext.md",
+    "message": "File activeContext.md written successfully",
+    "snapshot_id": "/path/to/.cortex/history/activeContext.md.v3.snapshot",
+    "version": 3,
+    "tokens": 128
+  }
+  ```
+
+- **Metadata operation (`operation="metadata"`):**
+
+  ```json
+  {
+    "status": "success",
+    "file_name": "systemPatterns.md",
+    "metadata": {
+      "size_bytes": 4096,
+      "token_count": 1024,
+      "content_hash": "f7c3bc1d...",
+      "sections": [
+        {"heading": "## Architecture Patterns", "level": 2},
+        {"heading": "## Design Principles", "level": 2}
+      ],
+      "version_history": [
+        {
+          "version": 1,
+          "timestamp": "2026-01-03T14:00:00Z",
+          "change_description": "Initial patterns documentation"
+        }
+      ]
+    }
+  }
+  ```
+
+**EXAMPLES:**
+
+- **Example 1 – Read file with metadata:**
+
+  ```python
+  await manage_file(
+      file_name="projectBrief.md",
+      operation="read",
+      include_metadata=True,
+  )
+  ```
+
+- **Example 2 – Write file with versioning:**
+
+  ```python
+  await manage_file(
+      file_name="activeContext.md",
+      operation="write",
+      content=(
+          "# Active Context\n\n"
+          "## Current Work\n\nImplementing DRY linking..."
+      ),
+      change_description="Updated current work focus",
+  )
+  ```
+
+- **Example 3 – Get metadata only:**
+
+  ```python
+  await manage_file(
+      file_name="systemPatterns.md",
+      operation="metadata",
+  )
+  ```
+
+---
+
 ### get_dependency_graph
 
 Get the Memory Bank dependency graph.
