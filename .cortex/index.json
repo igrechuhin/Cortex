@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-01-28T18:03:47.345636",
+  "last_updated": "2026-01-28T22:12:05.309967",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 8229,
-      "token_count": 1921,
+      "size_bytes": 9243,
+      "token_count": 2175,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-28T18:03:47.343942",
-      "content_hash": "sha256:bbd60e6c035cfe062aa78f33f1449c5557a72270891a36bf4a5d029da534f35d",
+      "last_modified": "2026-01-28T22:12:05.308775",
+      "content_hash": "sha256:fe38e4e71494f02d10b2257d0c12d2ef21bc6ad3ddf5a986ac3fc79c36e55d61",
       "sections": [
         {
           "title": "## Current Status (2026-01-28)",
@@ -31,14 +31,14 @@
         {
           "title": "## Future Enhancements",
           "level": 2,
-          "line_start": 35,
-          "line_end": 35,
+          "line_start": 38,
+          "line_end": 38,
           "content_hash": null
         }
       ],
       "read_count": 2,
-      "write_count": 22,
-      "last_read": "2026-01-28T18:03:47.343942",
+      "write_count": 26,
+      "last_read": "2026-01-28T22:12:05.308775",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -305,6 +305,50 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Expanded Phase 60 scope to cover rules.tool argument validation and generalized friendly error UX for required MCP tool parameters."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T21:26:44.743801",
+          "content_hash": "sha256:ac6aea090314cdbad40a60f7b2124832c9d238370dd8a331732472033417c20d",
+          "size_bytes": 8830,
+          "token_count": 2078,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Link session optimization review report"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T21:27:56.912934",
+          "content_hash": "sha256:fa3fe17f45f0c33d1ad8636dc3cbde9d445885b6c579b72dea470e94ad426e85",
+          "size_bytes": 8917,
+          "token_count": 2106,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Fix roadmap references to existing paths"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T21:29:03.421041",
+          "content_hash": "sha256:eb68e201532f8442c7ff69d88c0487fce572072e7194c1b4a3d8bbd9381e3000",
+          "size_bytes": 8811,
+          "token_count": 2066,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Avoid unsupported .cortex/ references in roadmap"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T22:12:05.308342",
+          "content_hash": "sha256:fe38e4e71494f02d10b2257d0c12d2ef21bc6ad3ddf5a986ac3fc79c36e55d61",
+          "size_bytes": 9243,
+          "token_count": 2175,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Marked Phase 62 as COMPLETE - all 14 steps implemented"
         }
       ]
     },
@@ -931,8 +975,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 47010,
-    "total_tokens": 10610,
-    "last_full_scan": "2026-01-28T18:03:47.343969"
+    "total_size_bytes": 48024,
+    "total_tokens": 10864,
+    "last_full_scan": "2026-01-28T22:12:05.308800"
   }
 }

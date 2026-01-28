@@ -1,0 +1,32 @@
+{
+  "session_id": "caacf4f90597",
+  "session_start": "2026-01-28T22:05",
+  "load_context_calls": [
+    {
+      "timestamp": "2026-01-28T22:05",
+      "task_description": "Phase 62: Synapse Session Optimization - Harden Prompts and Rules. CRITICAL priorities: Harden commit.md against unauthorized git writes, make Step 11 submodule handling deterministic, enforce roadmap_sync as true commit gate, and fix tooling/process mismatch.",
+      "token_budget": 50000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "file.md",
+        "roadmap.md",
+        "productContext.md",
+        "projectBrief.md",
+        "activeContext.md",
+        "techContext.md",
+        "progress.md",
+        "systemPatterns.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 9269,
+      "utilization": 0.18538,
+      "excluded_files": [],
+      "relevance_scores": {
+        "roadmap.md": 0.645,
+        "progress.md": 0.592,
+        "activeContext.md": 0.81,
+        "file.md": 0.244
+      }
+    }
+  ]
+}

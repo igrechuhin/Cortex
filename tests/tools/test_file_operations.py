@@ -17,9 +17,11 @@ from cortex.core.exceptions import (
     FileLockTimeoutError,
     GitConflictError,
 )
-from cortex.tools.file_operations import (
+from cortex.tools.file_operation_helpers import (
     build_invalid_operation_error,
     build_write_error_response,
+)
+from cortex.tools.file_operations import (
     build_write_response,
     compute_file_metrics,
     create_version_snapshot,

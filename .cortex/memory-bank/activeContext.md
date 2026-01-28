@@ -6,6 +6,17 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
+- ✅ **Commit Procedure: Fixed Type Errors in Test Files** - COMPLETE (2026-01-28)
+  - Fixed 8 type errors in test files:
+    - Fixed 2 unused call result errors by assigning to `_`:
+      - `test_mcp_tools_integration.py:221`: `test_file.write_text()` result
+      - `test_consolidated.py:175`: `temp_memory_bank.write_text()` result
+    - Fixed 6 import errors by updating imports to use helper modules:
+      - `test_file_operations.py`: Updated imports from `cortex.tools.file_operations` to `cortex.tools.file_operation_helpers` for `build_invalid_operation_error` and `build_write_error_response`
+      - `test_rules_operations.py`: Updated imports from `cortex.tools.rules_operations` to `cortex.tools.rules_operation_helpers` for `build_get_relevant_response`, `calculate_total_tokens`, `extract_all_rules`, and `resolve_config_defaults`
+  - All type checks passing: 0 errors, 0 warnings
+  - All tests passing: 2868 passed, 2 skipped, 100% pass rate, 90.10% coverage
+
 - ✅ **Commit Procedure: Fixed Quality Violations and Test Failures** - COMPLETE (2026-01-28)
   - Fixed line length violation in `test_file_operations.py` (docstring exceeded 88 characters)
   - Fixed function length violations by extracting helper functions:

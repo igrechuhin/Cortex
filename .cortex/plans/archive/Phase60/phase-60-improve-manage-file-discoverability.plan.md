@@ -2,10 +2,11 @@
 
 ## Status
 
-- Status: PLANNED
+- Status: ✅ COMPLETE (2026-01-28)
 - Priority: High (developer ergonomics, MCP UX)
 - Owner: Cortex maintainers
 - Start Date: 2026-01-28
+- Completion Date: 2026-01-28
 
 ## Goal
 

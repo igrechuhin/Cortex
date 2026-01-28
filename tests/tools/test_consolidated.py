@@ -173,7 +173,7 @@ class TestManageFile:
         # Ensure file exists (manage_file only allows modifying existing files)
         temp_memory_bank.parent.mkdir(parents=True, exist_ok=True)
         if not temp_memory_bank.exists():
-            temp_memory_bank.write_text("# Project Brief\n\nInitial content.\n")
+            _ = temp_memory_bank.write_text("# Project Brief\n\nInitial content.\n")
 
         # Mock managers
         mock_fs = AsyncMock()

@@ -25,15 +25,17 @@ import pytest
 from cortex.core.models import ModelDict
 from cortex.managers.types import ManagersDict
 from cortex.optimization.models import RulesManagerStatusModel
-from cortex.tools.rules_operations import (
+from cortex.tools.rules_operation_helpers import (
     build_get_relevant_response,
     calculate_total_tokens,
+    extract_all_rules,
+    resolve_config_defaults,
+)
+from cortex.tools.rules_operations import (
     check_rules_enabled,
     dispatch_operation,
-    extract_all_rules,
     handle_get_relevant_operation,
     handle_index_operation,
-    resolve_config_defaults,
     rules,
     validate_get_relevant_params,
 )

@@ -219,7 +219,7 @@ class TestMCPToolWorkflows:
         root = Path(project_root_str)
         memory_bank_dir = ensure_test_cortex_structure(root)
         test_file = memory_bank_dir / "test.md"
-        test_file.write_text("# Test\n\nInitial content.\n")
+        _ = test_file.write_text("# Test\n\nInitial content.\n")
 
         # Act 1: Write file (creates version 1)
         content1 = "# Version 1\n\nInitial content."
