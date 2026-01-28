@@ -87,11 +87,11 @@ def suggest_consolidation(files: list[File]) -> list[Suggestion]:
 
 ### Use Cases
 
-**Use Case 1: Threshold Learning**
+### Use Case 1: Threshold Learning
 
 User consistently rejects consolidation suggestions with similarity < 0.85:
 
-```
+```text
 Suggestion 1: Consolidate A + B (similarity=0.75) → Rejected
 Suggestion 2: Consolidate C + D (similarity=0.78) → Rejected
 Suggestion 3: Consolidate E + F (similarity=0.82) → Rejected
@@ -100,11 +100,11 @@ Suggestion 4: Consolidate G + H (similarity=0.88) → Accepted
 Learning: User's threshold is ~0.85, not 0.75
 ```
 
-**Use Case 2: Pattern Preferences**
+### Use Case 2: Pattern Preferences
 
 User prefers splitting by domain, not by size:
 
-```
+```text
 Suggestion 1: Split file by size (200 lines) → Rejected
 Suggestion 2: Split file by domain (API vs UI) → Accepted
 Suggestion 3: Split file by size (250 lines) → Rejected
@@ -113,22 +113,22 @@ Suggestion 4: Split file by domain (Data vs Logic) → Accepted
 Learning: User prefers domain-based splitting
 ```
 
-**Use Case 3: Project-Specific Patterns**
+### Use Case 3: Project-Specific Patterns
 
 Different projects have different conventions:
 
-```
+```text
 Project A: Accept consolidation at 0.7 similarity
 Project B: Accept consolidation at 0.9 similarity
 
 Learning: Store per-project preferences
 ```
 
-**Use Case 4: Confidence Scoring**
+### Use Case 4: Confidence Scoring
 
 Show confidence in suggestions based on historical data:
 
-```
+```text
 Suggestion: Consolidate X + Y (similarity=0.82)
   Historical similar suggestions: 5 accepted, 2 rejected
   Confidence: 71% (5/7)

@@ -317,27 +317,27 @@ Systematically investigate the CI failure by:
 
 ## Risks & Mitigation
 
-**Risk 1: Environment differences not reproducible locally**
+### Risk 1: Environment differences not reproducible locally
 
 - **Mitigation:** Use exact same Python version and tool versions as CI
 - **Detection:** Compare tool versions and dependency resolution
 
-**Risk 2: Intermittent failures**
+### Risk 2: Intermittent failures
 
 - **Mitigation:** Run checks multiple times to verify consistency
 - **Detection:** Monitor for flaky tests or non-deterministic behavior
 
-**Risk 3: Missing files or uncommitted changes**
+### Risk 3: Missing files or uncommitted changes
 
 - **Mitigation:** Verify all changes are committed before investigating
 - **Detection:** `git status` and `git diff` checks
 
-**Risk 4: Coverage threshold violations**
+### Risk 4: Coverage threshold violations
 
 - **Mitigation:** Run coverage checks locally before committing
 - **Detection:** `pytest --cov-fail-under=90` will fail if coverage drops
 
-**Risk 5: Version-specific issues**
+### Risk 5: Version-specific issues
 
 - **Mitigation:** Pin tool versions in `pyproject.toml` or `requirements.txt`
 - **Detection:** Compare tool versions between local and CI

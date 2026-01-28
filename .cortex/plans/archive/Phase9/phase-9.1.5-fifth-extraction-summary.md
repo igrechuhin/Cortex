@@ -64,7 +64,7 @@ The function performs three distinct actions (approve, apply, rollback) that wer
 
 ### Before Extraction
 
-```
+```text
 apply_refactoring()        [130 lines]
 ├─ action == "approve"     [22 lines]
 ├─ action == "apply"       [83 lines]
@@ -77,7 +77,7 @@ apply_refactoring()        [130 lines]
 
 ### After Extraction
 
-```
+```text
 apply_refactoring()                    [44 lines - main entry point]
 ├─ _approve_refactoring()              [7 lines]
 ├─ _apply_approved_refactoring()       [24 lines - orchestrator]
@@ -141,13 +141,13 @@ $ uv run pytest tests/integration/ -v
 
 ## Complexity Analysis
 
-### Before Extraction
+### Before Extraction (Fifth Extraction)
 
 - **Cyclomatic Complexity:** 15 (multiple nested conditions)
 - **Cognitive Complexity:** 28 (high mental load)
 - **Function Dependencies:** 5 managers accessed directly
 
-### After Extraction
+### After Extraction (Fifth Extraction)
 
 - **Cyclomatic Complexity:** 5 (main function), 2-4 (helpers)
 - **Cognitive Complexity:** 8 (main), 3-6 (helpers)

@@ -174,10 +174,10 @@ pytest tests/unit/test_validation_config.py::TestValidateConfig::test_validate_i
 3. Fix validation or update test expectations
 
 ```bash
-pytest tests/unit/test_validation_config.py::TestValidateConfig::test_validate_invalid_quality_weights_sum -vv
+   pytest tests/unit/test_validation_config.py::TestValidateConfig::test_validate_invalid_quality_weights_sum -vv
 ```
 
-#### Success Criteria
+#### Success Criteria (Test Fixes)
 
 - ✅ All 1920 tests passing (100% pass rate)
 - ✅ No test skips or xfails without justification
@@ -203,7 +203,7 @@ pytest tests/unit/test_validation_config.py::TestValidateConfig::test_validate_i
 
 #### Fix Strategy
 
-**Option A: Single f-string (RECOMMENDED)**
+##### Option A: Single f-string (RECOMMENDED)
 
 ```python
 # Before
@@ -219,9 +219,9 @@ raise ValueError(
 )
 ```
 
-**Option B: Explicit concatenation**
+##### Option B: Explicit concatenation
 
-```python
+```python>
 # After (alternative)
 raise ValueError(
     "File path validation failed" +
@@ -230,7 +230,7 @@ raise ValueError(
 )
 ```
 
-**Option C: Multi-line f-string**
+##### Option C: Multi-line f-string
 
 ```python
 # After (if message is very long)
@@ -257,7 +257,7 @@ raise ValueError(
    pytest tests/unit/test_file_system.py -v
    ```
 
-#### Success Criteria
+#### Success Criteria (String Concatenation Fixes)
 
 - ✅ Zero implicit string concatenation warnings
 - ✅ All error messages still readable and informative

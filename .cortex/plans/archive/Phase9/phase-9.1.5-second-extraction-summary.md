@@ -62,7 +62,7 @@
 
 The extraction follows a **component-based pattern** where each validation type (schema, duplications, quality) has dedicated helper functions:
 
-```
+```text
 validate() [Main Entry Point - 59 lines]
 ├── Schema Validation
 │   ├── _validate_schema_single_file()

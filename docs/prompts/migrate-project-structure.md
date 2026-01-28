@@ -10,7 +10,7 @@ This prompt template guides you through migrating your project to the standardiz
 
 ## Prompt
 
-```
+```text
 Please migrate my project structure at [PROJECT_ROOT] to the standardized format.
 
 I need you to:
@@ -127,7 +127,7 @@ After successful migration:
 
 If you need to rollback:
 
-```
+```text
 Please rollback the project structure migration.
 ```
 

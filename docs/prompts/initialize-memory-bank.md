@@ -9,7 +9,7 @@ This prompt template guides you through initializing a Memory Bank in your proje
 
 ## Prompt
 
-```
+```text
 Please initialize a Memory Bank in my project at [PROJECT_ROOT].
 
 I need you to:

@@ -71,7 +71,7 @@ Phase 9.8 focuses on achieving maintainability excellence by reducing code compl
 
 #### 9.8.1.2: Simplify Complex Conditionals
 
-**Pattern 1: Guard Clauses**
+##### Pattern 1: Guard Clauses
 
 Replace deeply nested if statements with early returns:
 
@@ -117,7 +117,7 @@ def process_file(self, file_path: str) -> dict[str, object]:
     return self._process_content(content)
 ```
 
-**Pattern 2: Extract Condition Logic**
+##### Pattern 2: Extract Condition Logic
 
 Replace complex boolean expressions with named functions:
 
@@ -146,7 +146,7 @@ if self._should_split(file):
     self._mark_for_split(file)
 ```
 
-**Pattern 3: Strategy Pattern for Switch-like Logic**
+##### Pattern 3: Strategy Pattern for Switch-like Logic
 
 Replace long if-elif chains with strategy dispatch:
 

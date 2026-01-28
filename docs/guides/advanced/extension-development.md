@@ -34,7 +34,7 @@ Cortex supports several extension types:
 
 ### Extension Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                    MCP Tools Layer                      │
 │              (User-facing API endpoints)                │
@@ -124,7 +124,7 @@ async def my_custom_tool(
             "param2": 42
           }
         }
-        ```
+```text
     """
     try:
         # Get project root and managers
@@ -339,7 +339,7 @@ __version__ = "1.0.0"
 
 MCP (Model Context Protocol) uses JSON-RPC 2.0 over stdio for communication:
 
-```
+```text
 ┌─────────────┐                           ┌─────────────┐
 │             │   JSON-RPC Request        │             │
 │  MCP Client │ ───────────────────────>  │  MCP Server │
@@ -1434,7 +1434,7 @@ markers =
 
 ### Package Structure
 
-```
+```text
 my-extension/
 ├── README.md
 ├── LICENSE

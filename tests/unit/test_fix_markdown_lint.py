@@ -14,6 +14,7 @@ import pytest
 from cortex.core.models import GitCommandResult
 from cortex.tools.markdown_operations import (
     _find_markdownlint_command,
+    _get_all_markdown_files,  # type: ignore[reportPrivateUsage]
     _get_modified_markdown_files,
     _run_command,
     _run_markdownlint_fix,
@@ -726,6 +727,58 @@ class TestHelperFunctions:
         assert "file.md" in errors[0]
         assert "file2.md" in errors[1]
 
+    def test_is_cached_clean_entry(self) -> None:
+        """Test _is_cached_clean_entry helper for cache reuse logic."""
+        from cortex.tools.markdown_operations import (  # type: ignore[reportPrivateUsage]
+            MarkdownLintFileCache,
+            _is_cached_clean_entry,
+        )
+
+        cache_entry = MarkdownLintFileCache(
+            path="docs/file.md",
+            content_hash="sha256:abc",
+            last_checked="2026-01-28T12:00:00",
+            status="clean",
+        )
+
+        assert _is_cached_clean_entry(cache_entry, "sha256:abc", dry_run=False) is True
+        assert _is_cached_clean_entry(cache_entry, "sha256:xyz", dry_run=False) is False
+        assert _is_cached_clean_entry(cache_entry, "sha256:abc", dry_run=True) is False
+        assert _is_cached_clean_entry(None, "sha256:abc", dry_run=False) is False
+
+
+class TestGetAllMarkdownFiles:
+    """Tests for _get_all_markdown_files helper."""
+
+    @pytest.mark.asyncio
+    async def test_get_all_markdown_files_excludes_archived_plans(
+        self, tmp_path: Path
+    ) -> None:
+        """Ensure archived plans are excluded from all-files scan.
+
+        This matches CI behavior and prevents timeouts when many archived
+        plan files exist.
+        """
+        # Arrange
+        project_root = tmp_path
+        docs_dir = project_root / "docs"
+        plans_archive_dir = project_root / ".cortex" / "plans" / "archive"
+        docs_dir.mkdir(parents=True)
+        plans_archive_dir.mkdir(parents=True)
+
+        kept_file = docs_dir / "kept.md"
+        archived_file = plans_archive_dir / "archived.md"
+        _ = kept_file.write_text("# Kept\n", encoding="utf-8")
+        _ = archived_file.write_text("# Archived\n", encoding="utf-8")
+
+        # Act
+        files = await _get_all_markdown_files(project_root)
+
+        # Assert
+        file_strs = {str(p) for p in files}
+        assert str(kept_file) in file_strs
+        assert str(archived_file) not in file_strs
+
     def test_calculate_statistics(self):
         """Test _calculate_statistics helper."""
         from cortex.tools.markdown_operations import (  # type: ignore[reportPrivateUsage]
@@ -744,3 +797,89 @@ class TestHelperFunctions:
         assert files_fixed == 1
         assert files_with_errors == 1
         assert files_unchanged == 1
+
+
+class TestMarkdownlintBatchHelpers:
+    """Tests for batching helpers used by markdown lint tool."""
+
+    @pytest.mark.asyncio
+    async def test_run_markdownlint_for_files_empty_returns_initial(
+        self, tmp_path: Path
+    ):
+        """_run_markdownlint_for_files returns initial results when no files to lint."""
+        from cortex.tools.markdown_operations import (  # type: ignore[reportPrivateUsage]
+            FileResult,
+            _run_markdownlint_for_files,
+        )
+
+        initial = [FileResult(file="a.md", fixed=False, errors=[], error_message=None)]
+        results = await _run_markdownlint_for_files(
+            files_to_lint=[],
+            initial_results=initial,
+            root_path=tmp_path,
+            markdownlint_cmd=["markdownlint-cli2"],
+            config_path=None,
+            dry_run=False,
+        )
+
+        assert results == initial
+
+    @pytest.mark.asyncio
+    async def test_run_markdownlint_with_cache_uses_helpers(self, tmp_path: Path):
+        """_run_markdownlint_with_cache wires cache, filtering, and execution."""
+        from cortex.tools.markdown_operations import (  # type: ignore[reportPrivateUsage]
+            MarkdownLintFileCache,
+            MarkdownLintIndex,
+            _run_markdownlint_with_cache,
+        )
+
+        index = MarkdownLintIndex(
+            files={
+                "docs/file.md": MarkdownLintFileCache(
+                    path="docs/file.md",
+                    content_hash="sha256:old",
+                    last_checked=None,
+                    status="dirty",
+                )
+            }
+        )
+
+        with (
+            patch(
+                "cortex.tools.markdown_operations._load_markdown_lint_index",
+                new_callable=AsyncMock,
+                return_value=index,
+            ) as mock_load,
+            patch(
+                "cortex.tools.markdown_operations._filter_files_for_linting",
+                new_callable=AsyncMock,
+                return_value=(
+                    [tmp_path / "docs" / "file.md"],
+                    [],
+                    {"docs/file.md": "sha256:new"},
+                ),
+            ) as mock_filter,
+            patch(
+                "cortex.tools.markdown_operations._run_markdownlint_for_files",
+                new_callable=AsyncMock,
+                return_value=[],
+            ) as mock_run_files,
+            patch(
+                "cortex.tools.markdown_operations._update_markdown_lint_cache_from_results",
+                new_callable=AsyncMock,
+            ) as mock_update,
+        ):
+            result_json = await _run_markdownlint_with_cache(
+                root_path=tmp_path,
+                files=[tmp_path / "docs" / "file.md"],
+                markdownlint_cmd=["markdownlint-cli2"],
+                config_path=None,
+                dry_run=False,
+            )
+
+        parsed = json.loads(result_json)
+        assert parsed["success"] is True
+        mock_load.assert_called_once()
+        mock_filter.assert_called_once()
+        mock_run_files.assert_called_once()
+        mock_update.assert_called_once()

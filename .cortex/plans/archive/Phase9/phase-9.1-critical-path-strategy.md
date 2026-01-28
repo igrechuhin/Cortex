@@ -103,7 +103,7 @@ Split top 10 files using logical module boundaries:
 
 #### 1. insight_engine.py (1,051 → 3 files) - 1.5h
 
-```
+```text
 analysis/
 ├── insight_generator.py (~400 lines)
 │   └── Core insight generation logic
@@ -121,7 +121,7 @@ analysis/
 
 #### 2. container.py (948 → 3 files) - 1.5h
 
-```
+```text
 core/
 ├── service_container.py (~350 lines)
 │   └── Core service registration and retrieval
@@ -133,7 +133,7 @@ core/
 
 #### 3. shared_rules_manager.py (883 → 2 files) - 1h
 
-```
+```text
 rules/
 ├── rules_repository.py (~450 lines)
 │   └── Git operations, rule loading, category management
@@ -143,7 +143,7 @@ rules/
 
 #### 4. refactoring_executor.py (867 → 2 files) - 1h
 
-```
+```text
 refactoring/
 ├── refactoring_executor.py (~450 lines)
 │   └── Execution workflow, validation, rollback
@@ -153,7 +153,7 @@ refactoring/
 
 #### 5. template_manager.py (858 → 2 files) - 1h
 
-```
+```text
 structure/
 ├── template_engine.py (~450 lines)
 │   └── Template rendering, variable substitution
@@ -163,7 +163,7 @@ structure/
 
 #### 6. initialization.py (785 → 2 files) - 1h
 
-```
+```text
 managers/
 ├── core_managers.py (~400 lines)
 │   └── Core service initialization
@@ -173,7 +173,7 @@ managers/
 
 #### 7. reorganization_planner.py (778 → 2 files) - 1h
 
-```
+```text
 refactoring/
 ├── reorganization_analyzer.py (~400 lines)
 │   └── Structure analysis, category inference
@@ -183,7 +183,7 @@ refactoring/
 
 #### 8. pattern_analyzer.py (769 → 2 files) - 1h
 
-```
+```text
 analysis/
 ├── access_tracker.py (~400 lines)
 │   └── Log recording, access pattern tracking
@@ -193,7 +193,7 @@ analysis/
 
 #### 9. structure_lifecycle.py (765 → 2 files) - 1h
 
-```
+```text
 structure/
 ├── structure_lifecycle.py (~400 lines)
 │   └── Setup, validation, housekeeping
@@ -203,7 +203,7 @@ structure/
 
 #### 10. structure_analyzer.py (724 → 2 files) - 1h
 
-```
+```text
 analysis/
 ├── structure_analyzer.py (~400 lines)
 │   └── File organization, dependency analysis

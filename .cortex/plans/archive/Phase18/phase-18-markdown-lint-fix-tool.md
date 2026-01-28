@@ -226,7 +226,7 @@ These errors are detected by the IDE's markdownlint extension but require manual
 
 ### File Structure
 
-```
+```text
 scripts/
   └── fix_markdown_lint.py    # Main script
 
@@ -393,7 +393,7 @@ Based on the user's error examples:
 
 **Total**: 8-12 hours
 
-## Dependencies
+## Dependencies (Markdown Lint Tool)
 
 - **External**: markdownlint-cli2 (npm package)
 - **Internal**: None (standalone script)

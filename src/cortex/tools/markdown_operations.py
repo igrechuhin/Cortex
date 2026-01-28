@@ -10,10 +10,13 @@ Total: 2 tools
 """
 
 import asyncio
+import hashlib
 import json
-import re
+from datetime import UTC, datetime
+from importlib import import_module
 from pathlib import Path
 
+import aiofiles
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_SECONDS
@@ -21,6 +24,7 @@ from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import GitCommandResult
 from cortex.managers.initialization import get_project_root
 from cortex.server import mcp
+from cortex.tools.roadmap_corruption import CorruptionMatch
 
 
 class FileResult(BaseModel):
@@ -48,6 +52,33 @@ class FixMarkdownLintResult(BaseModel):
         default_factory=lambda: list[FileResult](), description="File results"
     )
     error_message: str | None = Field(default=None, description="Error message if any")
+
+
+class MarkdownLintFileCache(BaseModel):
+    """Cache entry for a single markdown file."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    path: str = Field(description="Relative file path from project root")
+    content_hash: str = Field(description="File content hash (sha256:...)")
+    last_checked: str | None = Field(
+        default=None, description="UTC timestamp when file was last linted"
+    )
+    status: str = Field(
+        default="clean",
+        description="Lint status: 'clean' (no errors) or 'dirty' (errors present)",
+    )
+
+
+class MarkdownLintIndex(BaseModel):
+    """On-disk index for markdown lint cache."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    version: str = Field(default="1.0", description="Schema version")
+    files: dict[str, MarkdownLintFileCache] = Field(
+        default_factory=dict, description="Map of relative path to cache entry"
+    )
 
 
 def _create_error_result(error: str) -> GitCommandResult:
@@ -154,6 +185,8 @@ async def _get_all_markdown_files(project_root: Path) -> list[Path]:
         "/.coverage",
         "/.cortex/history/",  # Version history files
         "/.cortex/snapshots/",  # Snapshot files
+        "/.cortex/plans/archive/",  # Archived plans (matches CI)
+        ".cortex/plans/archive/",  # Also match relative paths
     ]
     for pattern in ("**/*.md", "**/*.mdc"):
         for file_path in project_root.rglob(pattern):
@@ -164,6 +197,51 @@ async def _get_all_markdown_files(project_root: Path) -> list[Path]:
             if file_path.is_file() and file_path not in files:
                 files.append(file_path)
     return sorted(set(files))
+
+
+def _get_markdown_lint_cache_path(project_root: Path) -> Path:
+    """Get path to markdown lint cache file."""
+    cache_dir = project_root / ".cortex" / ".cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    return cache_dir / "markdown-lint-index.json"
+
+
+async def _load_markdown_lint_index(cache_path: Path) -> MarkdownLintIndex:
+    """Load markdown lint index from disk."""
+    if not cache_path.exists():
+        return MarkdownLintIndex()
+    try:
+        async with aiofiles.open(cache_path, encoding="utf-8") as f:
+            data = await f.read()
+        return MarkdownLintIndex.model_validate_json(data)
+    except Exception:
+        # On parse/read error, use a fresh index instead of failing.
+        return MarkdownLintIndex()
+
+
+async def _save_markdown_lint_index(cache_path: Path, index: MarkdownLintIndex) -> None:
+    """Persist markdown lint index to disk."""
+    if not cache_path.parent.exists():
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+    async with aiofiles.open(cache_path, "w", encoding="utf-8") as f:
+        _ = await f.write(index.model_dump_json(indent=2))
+
+
+async def _calculate_file_hash(file_path: Path) -> str | None:
+    """Calculate sha256 hash for a file."""
+    if not file_path.is_file():
+        return None
+    digest = hashlib.sha256()
+    try:
+        async with aiofiles.open(file_path, "rb") as f:
+            while True:
+                chunk = await f.read(8192)
+                if not chunk:
+                    break
+                digest.update(chunk)
+        return f"sha256:{digest.hexdigest()}"
+    except Exception:
+        return None
 
 
 async def _get_modified_markdown_files(
@@ -226,6 +304,31 @@ async def _find_markdownlint_command() -> list[str] | None:
     return None
 
 
+def _find_markdownlint_config(project_root: Path) -> Path | None:
+    """Find markdownlint config file in project root.
+
+    Checks for .markdownlint-cli2.yaml first (supports ignore patterns),
+    then falls back to .markdownlint.json.
+
+    Args:
+        project_root: Root directory of the project
+
+    Returns:
+        Path to config file if found, None otherwise
+    """
+    # Prefer .markdownlint-cli2.yaml (supports ignore patterns)
+    yaml_config = project_root / ".markdownlint-cli2.yaml"
+    if yaml_config.exists():
+        return yaml_config
+
+    # Fall back to .markdownlint.json
+    json_config = project_root / ".markdownlint.json"
+    if json_config.exists():
+        return json_config
+
+    return None
+
+
 def _parse_markdownlint_errors(stderr: str) -> list[str]:
     """Parse markdownlint errors from stderr."""
     errors: list[str] = []
@@ -284,6 +387,7 @@ async def _run_markdownlint_fix(
         project_root: Root directory of the project
         markdownlint_cmd: Command to use (e.g., ["markdownlint-cli2"] or
         ["npx", "--yes", "markdownlint-cli2"])
+        config_path: Optional path to config file (e.g., .markdownlint-cli2.yaml)
         dry_run: If True, only check without fixing (default: False)
 
     Returns:
@@ -291,6 +395,7 @@ async def _run_markdownlint_fix(
     """
     relative_path = file_path.relative_to(project_root)
     cmd = markdownlint_cmd.copy()
+
     if not dry_run:
         cmd.append("--fix")
     cmd.append(str(relative_path))
@@ -349,16 +454,17 @@ def _create_empty_success_response() -> str:
 
 async def _validate_markdown_prerequisites(
     root_path: Path,
-) -> tuple[str | None, list[str] | None]:
+) -> tuple[str | None, list[str] | None, Path | None]:
     """Validate git repository and markdownlint availability.
 
     Returns:
-        Tuple of (error_response_string_or_none, markdownlint_command_or_none)
-        If error_response is not None, markdownlint_command will be None.
+        Tuple of (error_response_string_or_none, markdownlint_command_or_none,
+        config_path_or_none). If error_response is not None, markdownlint_command
+        and config_path will be None.
     """
     git_check = await _run_command(["git", "rev-parse", "--git-dir"], cwd=root_path)
     if not _result_success(git_check):
-        return _create_error_response("Not in a git repository"), None
+        return _create_error_response("Not in a git repository"), None, None
 
     markdownlint_cmd = await _find_markdownlint_command()
     if markdownlint_cmd is None:
@@ -369,9 +475,77 @@ async def _validate_markdown_prerequisites(
                 + "or ensure npx is available (npx will auto-install it)"
             ),
             None,
+            None,
         )
 
-    return None, markdownlint_cmd
+    config_path = _find_markdownlint_config(root_path)
+    return None, markdownlint_cmd, config_path
+
+
+async def _get_markdown_files_to_process(
+    root_path: Path, check_all_files: bool, include_untracked_markdown: bool
+) -> list[Path]:
+    """Get list of markdown files to process."""
+    if check_all_files:
+        return await _get_all_markdown_files(root_path)
+    return await _get_modified_markdown_files(root_path, include_untracked_markdown)
+
+
+def _is_cached_clean_entry(
+    cache_entry: MarkdownLintFileCache | None,
+    content_hash: str,
+    dry_run: bool,
+) -> bool:
+    """Return True if cache entry indicates a clean file we can skip."""
+    return (
+        cache_entry is not None
+        and cache_entry.content_hash == content_hash
+        and cache_entry.status == "clean"
+        and not dry_run
+    )
+
+
+async def _filter_files_for_linting(
+    project_root: Path,
+    files: list[Path],
+    index: MarkdownLintIndex,
+    dry_run: bool,
+) -> tuple[list[Path], list[FileResult], dict[str, str]]:
+    """Filter files using lint cache and prepare initial results.
+
+    Returns:
+        A tuple of:
+        - files_to_lint: files that still need markdownlint to run
+        - initial_results: FileResult entries for cached-clean files
+        - file_hashes: mapping of relative path -> content hash
+    """
+    files_to_lint: list[Path] = []
+    initial_results: list[FileResult] = []
+    file_hashes: dict[str, str] = {}
+
+    for file_path in files:
+        rel_path = str(file_path.relative_to(project_root))
+        content_hash = await _calculate_file_hash(file_path)
+        if content_hash is None:
+            files_to_lint.append(file_path)
+            continue
+
+        file_hashes[rel_path] = content_hash
+        cache_entry = index.files.get(rel_path)
+        if _is_cached_clean_entry(cache_entry, content_hash, dry_run):
+            initial_results.append(
+                FileResult(
+                    file=rel_path,
+                    fixed=False,
+                    errors=[],
+                    error_message=None,
+                )
+            )
+            continue
+
+        files_to_lint.append(file_path)
+
+    return files_to_lint, initial_results, file_hashes
 
 
 async def _process_markdown_files(
@@ -389,7 +563,11 @@ async def _process_markdown_files(
     for i in range(0, len(files), batch_size):
         batch = files[i : i + batch_size]
         batch_results = await _process_batch(
-            batch, root_path, markdownlint_cmd, dry_run, semaphore
+            batch,
+            root_path,
+            markdownlint_cmd,
+            dry_run,
+            semaphore,
         )
         results.extend(batch_results)
 
@@ -410,7 +588,10 @@ async def _process_batch(
             return None
         async with semaphore:
             return await _run_markdownlint_fix(
-                file_path, root_path, markdownlint_cmd, dry_run
+                file_path,
+                root_path,
+                markdownlint_cmd,
+                dry_run,
             )
 
     raw_results = await asyncio.gather(
@@ -463,6 +644,123 @@ def _build_fix_response(results: list[FileResult]) -> str:
     return json.dumps(script_result.model_dump(), indent=2)
 
 
+async def _update_markdown_lint_cache_from_results(
+    index: MarkdownLintIndex,
+    cache_path: Path,
+    results: list[FileResult],
+    file_hashes: dict[str, str],
+) -> None:
+    """Update markdown lint cache with latest hashes and statuses."""
+    now = datetime.now(UTC).isoformat(timespec="seconds")
+    for result in results:
+        file_path = result.file
+        content_hash = file_hashes.get(file_path)
+        if content_hash is None:
+            continue
+        status = "clean" if result.error_message is None else "dirty"
+        index.files[file_path] = MarkdownLintFileCache(
+            path=file_path,
+            content_hash=content_hash,
+            last_checked=now,
+            status=status,
+        )
+    await _save_markdown_lint_index(cache_path, index)
+
+
+async def _run_markdownlint_for_files(
+    files_to_lint: list[Path],
+    initial_results: list[FileResult],
+    root_path: Path,
+    markdownlint_cmd: list[str],
+    config_path: Path | None,
+    dry_run: bool,
+) -> list[FileResult]:
+    """Run markdownlint for the given files and combine with initial results."""
+    if not files_to_lint:
+        return initial_results
+
+    cmd_with_config = markdownlint_cmd.copy()
+    if config_path is not None:
+        config_relative = config_path.relative_to(root_path)
+        cmd_with_config.extend(["--config", str(config_relative)])
+
+    lint_results = await _process_markdown_files(
+        files_to_lint,
+        root_path,
+        cmd_with_config,
+        dry_run,
+        max_concurrent=5,
+        batch_size=50,
+    )
+    return [*initial_results, *lint_results]
+
+
+async def _fix_markdown_lint_impl(
+    project_root: str | None,
+    include_untracked_markdown: bool,
+    dry_run: bool,
+    check_all_files: bool,
+) -> str:
+    """Core implementation for fix_markdown_lint MCP tool."""
+    root_path = Path(get_project_root(project_root))
+
+    validation_error, markdownlint_cmd, config_path = (
+        await _validate_markdown_prerequisites(root_path)
+    )
+    if validation_error:
+        return validation_error
+    assert markdownlint_cmd is not None
+
+    files = await _get_markdown_files_to_process(
+        root_path,
+        check_all_files,
+        include_untracked_markdown,
+    )
+    if not files:
+        return _create_empty_success_response()
+
+    return await _run_markdownlint_with_cache(
+        root_path,
+        files,
+        markdownlint_cmd,
+        config_path,
+        dry_run,
+    )
+
+
+async def _run_markdownlint_with_cache(
+    root_path: Path,
+    files: list[Path],
+    markdownlint_cmd: list[str],
+    config_path: Path | None,
+    dry_run: bool,
+) -> str:
+    """Run markdownlint with cache handling and build response JSON."""
+    cache_path = _get_markdown_lint_cache_path(root_path)
+    index = await _load_markdown_lint_index(cache_path)
+    files_to_lint, initial_results, file_hashes = await _filter_files_for_linting(
+        root_path,
+        files,
+        index,
+        dry_run,
+    )
+    results = await _run_markdownlint_for_files(
+        files_to_lint,
+        initial_results,
+        root_path,
+        markdownlint_cmd,
+        config_path,
+        dry_run,
+    )
+    await _update_markdown_lint_cache_from_results(
+        index,
+        cache_path,
+        results,
+        file_hashes,
+    )
+    return _build_fix_response(results)
+
+
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_SECONDS)
 async def fix_markdown_lint(
@@ -473,445 +771,38 @@ async def fix_markdown_lint(
 ) -> str:
     """Fix markdownlint errors in markdown files.
 
-    Automatically scans markdown files in the working copy,
-    detects markdownlint errors, and fixes them automatically.
+    Scans markdown files in the working copy, runs `markdownlint-cli2`,
+    and optionally applies `--fix` to resolve reported issues.
 
-    Args:
-        project_root: Path to project root directory. If None, uses current directory.
-        include_untracked_markdown: Include untracked markdown files (default: False)
-        dry_run: Check for errors without fixing them (default: False)
-        check_all_files: Check all markdown files in project, not just
-            modified ones (default: False). When True, scans all .md and
-            .mdc files in the project instead of only git-modified files.
-
-    Returns:
-        JSON string with fix results containing:
-        - success: Whether operation succeeded
-        - files_processed: Number of files processed
-        - files_fixed: Number of files with fixes applied
-        - files_unchanged: Number of files unchanged
-        - files_with_errors: Number of files with unfixable errors
-        - results: List of FileResult objects with per-file details
-        - error_message: Error message if operation failed
-
-    Examples:
-        Example 1: Fix markdownlint errors in modified files
-        >>> await fix_markdown_lint()
-        {
-          "success": true,
-          "files_processed": 3,
-          "files_fixed": 2,
-          "files_unchanged": 1,
-          "files_with_errors": 0,
-          "results": [
-            {
-              "file": "README.md",
-              "fixed": true,
-              "errors": ["Fixed trailing spaces"],
-              "error_message": null
-            }
-          ],
-          "error_message": null
-        }
-
-        Example 2: Check all markdown files for errors
-        >>> await fix_markdown_lint(check_all_files=True)
-        {
-          "success": true,
-          "files_processed": 45,
-          "files_fixed": 12,
-          "files_unchanged": 33,
-          "files_with_errors": 0,
-          "results": [...],
-          "error_message": null
-        }
-
-        Example 3: Check for errors without fixing (dry-run)
-        >>> await fix_markdown_lint(dry_run=True, check_all_files=True)
-        {
-          "success": true,
-          "files_processed": 45,
-          "files_fixed": 0,
-          "files_unchanged": 33,
-          "files_with_errors": 12,
-          "results": [...],
-          "error_message": null
-        }
-
-    Note:
-        - Automatically detects markdownlint-cli2: checks PATH first, then
-          tries npx as fallback
-        - If not found, install with: npm install -g markdownlint-cli2
-        - npx fallback works without global installation (auto-installs on
-          first use)
-        - When check_all_files=False: Only processes files tracked by git
-          (staged, unstaged, optionally untracked)
-        - When check_all_files=True: Processes all .md and .mdc files in
-          the project (excludes .git, node_modules, venv, etc.)
-        - Only processes .md and .mdc files
-        - Returns error if not in a git repository (when check_all_files=False)
-        - Returns error if markdownlint-cli2 is not available via PATH or npx
+    The return value is a JSON string encoded from `FixMarkdownLintResult`
+    with aggregate counts and per-file `FileResult` entries.
     """
     try:
-        root_path = Path(get_project_root(project_root))
-
-        # Validate prerequisites and get markdownlint command
-        validation_error, markdownlint_cmd = await _validate_markdown_prerequisites(
-            root_path
+        return await _fix_markdown_lint_impl(
+            project_root,
+            include_untracked_markdown,
+            dry_run,
+            check_all_files,
         )
-        if validation_error:
-            return validation_error
-        assert markdownlint_cmd is not None  # Type narrowing
-
-        # Get and process files
-        if check_all_files:
-            files = await _get_all_markdown_files(root_path)
-        else:
-            files = await _get_modified_markdown_files(
-                root_path, include_untracked_markdown
-            )
-        if not files:
-            return _create_empty_success_response()
-
-        # Use batching and concurrency for large file sets
-        # Process in batches of 50 with max 5 concurrent to avoid timeout
-        results = await _process_markdown_files(
-            files, root_path, markdownlint_cmd, dry_run, max_concurrent=5, batch_size=50
-        )
-        return _build_fix_response(results)
-
     except Exception as e:
+        # Normal error path: return structured JSON error instead of crashing MCP
         return _create_error_response(str(e))
+    except BaseException as e:  # pragma: no cover - defensive guardrail
+        # Defensive: catch SystemExit/KeyboardInterrupt-style errors so the
+        # MCP server doesn't terminate with a closed-connection error.
+        return _create_error_response(f"Fatal markdown lint error: {e!r}")
 
 
-class CorruptionMatch(BaseModel):
-    """A detected corruption match."""
+def _detect_roadmap_corruption(  # pyright: ignore[unused-function]
+    content: str,
+) -> list[CorruptionMatch]:
+    """Proxy to roadmap corruption detection helper for test compatibility.
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
-
-    line_num: int = Field(ge=1, description="Line number")
-    original: str = Field(description="Original corrupted text")
-    fixed: str = Field(description="Fixed text")
-    pattern: str = Field(description="Pattern that matched")
-
-
-class FixRoadmapCorruptionResult(BaseModel):
-    """Result of roadmap corruption fixing operation."""
-
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
-
-    success: bool = Field(description="Whether operation succeeded")
-    file_name: str = Field(description="File name")
-    corruption_count: int = Field(ge=0, description="Number of corruptions found")
-    fixes_applied: list[CorruptionMatch] = Field(
-        default_factory=lambda: list[CorruptionMatch](),
-        description="List of fixes applied",
-    )
-    error_message: str | None = Field(default=None, description="Error message if any")
-
-
-def _detect_pattern1(lines: list[str], matches: list[CorruptionMatch]) -> None:
-    """Detect pattern 1: missing space/newline after completion date
-    followed by capital."""
-    pattern = re.compile(r"(Target completion:)(\d{4}-\d{2}-\d{2})([A-Za-z])")
-    for i, line in enumerate(lines, 1):
-        for m in pattern.finditer(line):
-            if m.group(3).isupper():
-                matches.append(
-                    CorruptionMatch(
-                        line_num=i,
-                        original=m.group(0),
-                        fixed=f"{m.group(1)} {m.group(2)}\n- [Phase",
-                        pattern="missing_space_newline_after_completion_date",
-                    )
-                )
-
-
-def _detect_pattern6_and_7(lines: list[str], matches: list[CorruptionMatch]) -> None:
-    """Detect patterns 6 and 7: missing newline before phase links."""
-    p6 = re.compile(r"(Target completion:)(\d{4}-\d{2}-\d{2})( - \[Phase)")
-    for i, line in enumerate(lines, 1):
-        for m in p6.finditer(line):
-            matches.append(
-                CorruptionMatch(
-                    line_num=i,
-                    original=m.group(0),
-                    fixed=f"{m.group(1)} {m.group(2)}\n{m.group(3)}",
-                    pattern="missing_newline_before_phase_link",
-                )
-            )
-    p7 = re.compile(r"(Target completion:)(\d{4}-\d{2}-\d{2})(Phase)")
-    for i, line in enumerate(lines, 1):
-        for m in p7.finditer(line):
-            matches.append(
-                CorruptionMatch(
-                    line_num=i,
-                    original=m.group(0),
-                    fixed=f"{m.group(1)} {m.group(2)}\n- [{m.group(3)}",
-                    pattern="missing_space_newline_before_phase",
-                )
-            )
-
-
-def _detect_completion_date_primary(
-    lines: list[str], matches: list[CorruptionMatch]
-) -> None:
-    """Detect primary completion date patterns (1, 6, 7)."""
-    _detect_pattern1(lines, matches)
-    _detect_pattern6_and_7(lines, matches)
-
-
-def _detect_completion_date_secondary(
-    lines: list[str], matches: list[CorruptionMatch]
-) -> None:
-    """Detect secondary completion date patterns (10, 11)."""
-    p10 = re.compile(r"(Target completion: \d{4}-\d{2}-\d{2}) (\[Conditional)")
-    for i, line in enumerate(lines, 1):
-        for m in p10.finditer(line):
-            matches.append(
-                CorruptionMatch(
-                    line_num=i,
-                    original=m.group(0),
-                    fixed=f"{m.group(1)}\n- {m.group(2)}",
-                    pattern="missing_newline_before_conditional",
-                )
-            )
-    p11 = re.compile(r"(Target completion:)(\d{4}-\d{2}-\d{2})([^ -])")
-    for i, line in enumerate(lines, 1):
-        for m in p11.finditer(line):
-            already_added = any(
-                existing.line_num == i and existing.original == m.group(0)
-                for existing in matches
-            )
-            if not already_added:
-                matches.append(
-                    CorruptionMatch(
-                        line_num=i,
-                        original=m.group(0),
-                        fixed=f"{m.group(1)} {m.group(2)}{m.group(3)}",
-                        pattern="missing_space_after_completion_colon",
-                    )
-                )
-
-
-def _detect_completion_date_patterns(
-    lines: list[str], matches: list[CorruptionMatch]
-) -> None:
-    """Detect all 'Target completion:' date corruption patterns."""
-    _detect_completion_date_primary(lines, matches)
-    _detect_completion_date_secondary(lines, matches)
-
-
-def _detect_phase_patterns(lines: list[str], matches: list[CorruptionMatch]) -> None:
-    """Detect corruption patterns related to Phase references."""
-    # Pattern 2: "Phase X% rate" -> "Phase X: Validate"
-    pattern2 = re.compile(r"Phase (\d+)% rate")
-    for i, line in enumerate(lines, 1):
-        for match in pattern2.finditer(line):
-            matches.append(
-                CorruptionMatch(
-                    line_num=i,
-                    original=match.group(0),
-                    fixed=f"Phase {match.group(1)}: Validate",
-                    pattern="corrupted_phase_number",
-                )
-            )
-    # Pattern 4: Missing newline before "-Phase"
-    pattern4 = re.compile(r"([^\n])-Phase (\d+)")
-    for i, line in enumerate(lines, 1):
-        for match in pattern4.finditer(line):
-            before = match.group(1)
-            phase_num = match.group(2)
-            fixed = (
-                f"{before}\n- [Phase {phase_num}"
-                if before.strip().endswith(")")
-                else f"{before} - [Phase {phase_num}"
-            )
-            matches.append(
-                CorruptionMatch(
-                    line_num=i,
-                    original=match.group(0),
-                    fixed=fixed,
-                    pattern="missing_newline_before_phase",
-                )
-            )
-
-
-def _detect_score_patterns(lines: list[str], matches: list[CorruptionMatch]) -> None:
-    """Detect corruption patterns related to score formats."""
-    # Pattern 5: "X.710 to Y.Z+" -> "X.7/10 to Y.Z+/10"
-    pattern5 = re.compile(r"(\d+)\.(\d)(\d+) to (\d+)\.(\d+)\+")
-    for i, line in enumerate(lines, 1):
-        for match in pattern5.finditer(line):
-            if match.group(3) == "10":
-                matches.append(
-                    CorruptionMatch(
-                        line_num=i,
-                        original=match.group(0),
-                        fixed=(
-                            f"{match.group(1)}.{match.group(2)}/10 to "
-                            f"{match.group(4)}.{match.group(5)}+/10"
-                        ),
-                        pattern="corrupted_score_format",
-                    )
-                )
-    # Pattern 12: "8.710" -> "8.7/10" standalone
-    pattern12 = re.compile(r"(\d+)\.(\d)(10)(\s|$)")
-    for i, line in enumerate(lines, 1):
-        for match in pattern12.finditer(line):
-            matches.append(
-                CorruptionMatch(
-                    line_num=i,
-                    original=match.group(0),
-                    fixed=f"{match.group(1)}.{match.group(2)}/10{match.group(4)}",
-                    pattern="corrupted_standalone_score",
-                )
-            )
-
-
-def _detect_pattern3_implemented(
-    lines: list[str], matches: list[CorruptionMatch]
-) -> None:
-    """Detect pattern 3: corrupted 'Implemented' text."""
-    pattern = re.compile(r"\bented\b")
-    for i, line in enumerate(lines, 1):
-        for match in pattern.finditer(line):
-            matches.append(
-                CorruptionMatch(
-                    line_num=i,
-                    original=match.group(0),
-                    fixed="Implemented",
-                    pattern="corrupted_implemented",
-                )
-            )
-
-
-def _detect_pattern8_and_9(lines: list[str], matches: list[CorruptionMatch]) -> None:
-    """Detect patterns 8 and 9: date-fix and archive path issues."""
-    p8 = re.compile(r"(\d{4}-\d{2}-\d{2})(Fix)")
-    for i, line in enumerate(lines, 1):
-        for m in p8.finditer(line):
-            matches.append(
-                CorruptionMatch(
-                    line_num=i,
-                    original=m.group(0),
-                    fixed=f"{m.group(1)}) - {m.group(2)}",
-                    pattern="missing_paren_space_before_fix",
-                )
-            )
-    p9 = re.compile(r"(archive/Phase \d+)(phase-\d+)")
-    for i, line in enumerate(lines, 1):
-        for m in p9.finditer(line):
-            matches.append(
-                CorruptionMatch(
-                    line_num=i,
-                    original=m.group(0),
-                    fixed=f"{m.group(1)}/{m.group(2)}",
-                    pattern="missing_slash_in_archive_path",
-                )
-            )
-
-
-def _detect_misc_patterns(lines: list[str], matches: list[CorruptionMatch]) -> None:
-    """Detect miscellaneous corruption patterns."""
-    _detect_pattern3_implemented(lines, matches)
-    _detect_pattern8_and_9(lines, matches)
-
-
-def _detect_roadmap_corruption(content: str) -> list[CorruptionMatch]:
-    """Detect all corruption patterns in roadmap content."""
-    matches: list[CorruptionMatch] = []
-    lines = content.split("\n")
-    _detect_completion_date_patterns(lines, matches)
-    _detect_phase_patterns(lines, matches)
-    _detect_score_patterns(lines, matches)
-    _detect_misc_patterns(lines, matches)
-    return matches
-
-
-def _apply_roadmap_fixes(content: str, matches: list[CorruptionMatch]) -> str:
-    """Apply fixes to roadmap content.
-
-    Args:
-        content: Original content
-        matches: List of corruption matches to fix
-
-    Returns:
-        Fixed content
+    This helper is imported in tests via private name usage.
     """
-    if not matches:
-        return content
-
-    # Sort matches by line number (descending) to avoid offset issues
-    matches_sorted = sorted(matches, key=lambda m: m.line_num, reverse=True)
-
-    lines = content.split("\n")
-    for match in matches_sorted:
-        line_idx = match.line_num - 1
-        if line_idx < len(lines):
-            line = lines[line_idx]
-            # Replace the corrupted pattern
-            if "\n" in match.fixed:
-                # Handle newline insertion - split the fix
-                parts = match.fixed.split("\n", 1)
-                lines[line_idx] = line.replace(match.original, parts[0])
-                if len(parts) > 1 and line_idx + 1 < len(lines):
-                    # Insert new line or prepend to next line
-                    if parts[1].startswith("- "):
-                        lines.insert(line_idx + 1, parts[1])
-                    else:
-                        lines[line_idx + 1] = parts[1] + lines[line_idx + 1]
-            else:
-                lines[line_idx] = line.replace(match.original, match.fixed)
-
-    return "\n".join(lines)
+    module = import_module("cortex.tools.roadmap_corruption")
+    detector = getattr(module, "_detect_roadmap_corruption")  # noqa: B009
+    return detector(content)
 
 
-def _create_roadmap_error_response(error_msg: str) -> str:
-    """Create error response for roadmap corruption."""
-    result = FixRoadmapCorruptionResult(
-        success=False,
-        file_name="roadmap.md",
-        corruption_count=0,
-        fixes_applied=[],
-        error_message=error_msg,
-    )
-    return json.dumps(result.model_dump(), indent=2)
-
-
-def _create_roadmap_success_response(matches: list[CorruptionMatch]) -> str:
-    """Create success response for roadmap corruption."""
-    result = FixRoadmapCorruptionResult(
-        success=True,
-        file_name="roadmap.md",
-        corruption_count=len(matches),
-        fixes_applied=matches,
-        error_message=None,
-    )
-    return json.dumps(result.model_dump(), indent=2)
-
-
-@mcp.tool()
-async def fix_roadmap_corruption(
-    project_root: str | None = None, dry_run: bool = False
-) -> str:
-    """Fix text corruption in roadmap.md file.
-
-    Detects and fixes corruption patterns: missing spaces/newlines, corrupted
-    text like 'ented'->'Implemented', malformed dates, corrupted scores.
-    """
-    try:
-        root_path = Path(get_project_root(project_root))
-        roadmap_path = root_path / ".cortex" / "memory-bank" / "roadmap.md"
-        if not roadmap_path.exists():
-            return _create_roadmap_error_response(
-                f"roadmap.md not found at {roadmap_path}"
-            )
-        content = roadmap_path.read_text(encoding="utf-8")
-        matches = _detect_roadmap_corruption(content)
-        if not dry_run and matches:
-            fixed_content = _apply_roadmap_fixes(content, matches)
-            _ = roadmap_path.write_text(fixed_content, encoding="utf-8")
-        return _create_roadmap_success_response(matches)
-    except Exception as e:
-        return _create_roadmap_error_response(str(e))
+_ROADMAP_CORRUPTION_HELPER = _detect_roadmap_corruption

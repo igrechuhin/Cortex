@@ -17,6 +17,8 @@ from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.constants import MCP_TOOL_TIMEOUT_VERY_COMPLEX
+from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import JsonValue, ModelDict
 from cortex.managers.initialization import get_project_root
 from cortex.server import mcp
@@ -123,6 +125,33 @@ class CheckStats(BaseModel):
     )
 
 
+_MAX_LOG_OUTPUT_LENGTH = 4000
+
+
+def _truncate_log_value(value: str, max_length: int = _MAX_LOG_OUTPUT_LENGTH) -> str:
+    """Truncate very large log strings to keep JSON responses compact."""
+    if len(value) <= max_length:
+        return value
+    truncated_chars = len(value) - max_length
+    suffix = f"\n...[truncated {truncated_chars} characters]..."
+    return value[:max_length] + suffix
+
+
+def _truncate_large_logs_in_data(obj: JsonValue) -> JsonValue:
+    """Recursively truncate large log fields in JSON-like data."""
+    if isinstance(obj, dict):
+        truncated: dict[str, JsonValue] = {}
+        for key, value in obj.items():
+            if isinstance(value, str) and key == "output":
+                truncated[key] = _truncate_log_value(value)
+            else:
+                truncated[key] = _truncate_large_logs_in_data(value)
+        return truncated
+    if isinstance(obj, list):
+        return [_truncate_large_logs_in_data(item) for item in obj]
+    return obj
+
+
 def _get_adapter(
     language_info: LanguageInfo, project_root: str | None
 ) -> PythonAdapter | None:
@@ -150,6 +179,7 @@ def _create_error_result(error: str, error_type: str = "ValueError") -> str:
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
 async def execute_pre_commit_checks(
     checks: Sequence[str] | None = None,
     language: str | None = None,
@@ -759,7 +789,9 @@ def _build_response(
         files_modified=list(set(stats.files_modified)),
         success=success,
     )
-    return json.dumps(response.model_dump(), indent=2)
+    data = response.model_dump(mode="json")
+    compact = _truncate_large_logs_in_data(data)
+    return json.dumps(compact, separators=(",", ":"))
 
 
 class FixQualityResult(BaseModel):
@@ -799,7 +831,9 @@ def _create_quality_error_response(error_message: str) -> str:
         remaining_issues=[],
         error_message=error_message,
     )
-    return json.dumps(result.model_dump(), indent=2)
+    data = result.model_dump(mode="json")
+    compact = _truncate_large_logs_in_data(data)
+    return json.dumps(compact, separators=(",", ":"))
 
 
 async def _run_quality_checks(root_str: str) -> ModelDict | str:
@@ -944,7 +978,9 @@ def _build_quality_response_json(
         files_modified,
         remaining_issues,
     )
-    return json.dumps(response.model_dump(), indent=2)
+    data = response.model_dump(mode="json")
+    compact = _truncate_large_logs_in_data(data)
+    return json.dumps(compact, separators=(",", ":"))
 
 
 @mcp.tool()

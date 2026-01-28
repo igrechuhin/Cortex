@@ -1,5 +1,28 @@
 # Progress Log
 
+## 2026-01-28
+
+- ✅ **Phase 61: Investigate `execute_pre_commit_checks` MCP Output Handling Failure** - COMPLETE (2026-01-28)
+  - **Problem**: During `/cortex/commit` in Cursor, the `execute_pre_commit_checks` MCP tool reported "large output written to: agent-tools/*.txt" and the structured JSON result was not available to the agent. The spill file itself was inaccessible in the IDE sandbox, blocking verification of fix-errors, formatting, type checking, quality checks, and tests.
+  - **Solution**: Updated `src/cortex/tools/pre_commit_tools.py` so that `execute_pre_commit_checks` and `fix_quality_issues` always return a compact, structured JSON payload regardless of log size:
+    - Introduced `_MAX_LOG_OUTPUT_LENGTH` and `_truncate_log_value()` to cap very large `output` strings while appending a clear truncation marker.
+    - Added `_truncate_large_logs_in_data()` helper that walks the response model (dicts/lists) and only truncates `output` fields, preserving counters, statuses, and structured data.
+    - Changed `_build_response()` (for `execute_pre_commit_checks`) and quality error/success JSON builders to:
+      - Use `model_dump(mode="json")` to produce a JSON-ready dict.
+      - Apply `_truncate_large_logs_in_data()` before serialization.
+      - Serialize with compact separators to minimize payload size.
+    - Ensured that check results (`results`), `checks_performed`, and aggregate stats remain fully structured even when logs are large.
+  - **Testing**:
+    - Extended `tests/unit/test_pre_commit_tools.py` with `TestLogTruncationBehavior`:
+      - `test_quality_output_is_truncated_for_large_logs()` patches `PythonAdapter.lint_code()` to return a very large `output` string and verifies that:
+        - The top-level tool status reflects the error outcome correctly.
+        - `results["quality"]["output"]` is truncated to a bounded length.
+        - The truncated output contains a clear "truncated" marker.
+    - Re-ran `pytest tests/unit/test_pre_commit_tools.py -q`; all tests in that module pass.
+  - **Impact**:
+    - Commit workflows can now reliably parse `execute_pre_commit_checks` results in Cursor without depending on `agent-tools/*.txt` spill files.
+    - Large human-readable logs are still available in truncated form for diagnostics, but no longer block access to the structured JSON contract expected by higher-level orchestration.
+
 ## 2026-01-27
 
 - ✅ **Commit Procedure: Increased Test Coverage Above 90% Threshold** - COMPLETE (2026-01-27)
@@ -183,8 +206,8 @@
     - All file size violations fixed (0 violations)
     - Coverage increased from 88.08% to 90.04% (above 90% threshold)
     - All tests passing: 2805 passed, 2 skipped, 100% pass rate, 90.04% coverage
-    - All code quality checks passing (0 violations)
-    - All type checks passing (0 errors, 0 warnings)
+    - All code quality checks passing: 0 violations
+    - All type checks passing: 0 errors, 0 warnings
     - All formatting checks passing
   - **Impact**: Commit procedure can proceed, all quality gates met, health_check module now has comprehensive test coverage
 

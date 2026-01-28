@@ -12,7 +12,7 @@ During Phase 11 tool verification, a critical bug was discovered in the `rules` 
 
 **Error:**
 
-```
+```text
 AttributeError: 'LazyManager' object has no attribute 'is_rules_enabled'
 ```
 

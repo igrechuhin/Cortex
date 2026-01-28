@@ -10,7 +10,7 @@ This prompt template guides you through migrating your Memory Bank to the latest
 
 ## Prompt
 
-```
+```text
 Please migrate my Memory Bank at [PROJECT_ROOT] to the latest format.
 
 I need you to:

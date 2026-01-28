@@ -10,7 +10,7 @@ This prompt template guides you through setting up the standardized project stru
 
 ## Prompt
 
-```
+```text
 Please setup the standardized project structure in my project at [PROJECT_ROOT].
 
 I need you to:
@@ -28,7 +28,7 @@ The assistant will:
 
 1. Create directory structure:
 
-   ```
+```text
    .cursor/
    ├── memory-bank/     # Core memory bank files
    ├── rules/           # Project-specific rules
@@ -37,11 +37,11 @@ The assistant will:
    └── integrations/    # IDE integration configs
    ```
 
-2. Generate core memory bank files from templates
-3. Create default rule files
-4. Setup plan directory with README
-5. Initialize metadata and indexes
-6. Report setup status
+1. Generate core memory bank files from templates
+2. Create default rule files
+3. Setup plan directory with README
+4. Initialize metadata and indexes
+5. Report setup status
 
 ## Expected Output
 

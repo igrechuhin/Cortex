@@ -15,7 +15,7 @@ Fix the JSON parsing error that occurs when calling `execute_pre_commit_checks` 
 
 The `execute_pre_commit_checks` MCP tool fails with a JSON parsing error when called via MCP protocol:
 
-```
+```text
 Error: Expected ',' or '}' after property value in JSON at position 14 (line 1 column 15)
 ```
 
@@ -165,7 +165,7 @@ def _build_response(...) -> str:
 
 ### Step 4: Implement Fix
 
-**Option A: Change Return Type to Dict (Preferred if Hypothesis 1 is correct)**
+#### Option A: Change Return Type to Dict (Preferred if Hypothesis 1 is correct)
 
 1. **Modify tool signature**:
 
@@ -199,7 +199,7 @@ def _build_response(...) -> str:
    - Update `_build_response()` to return dict
    - Ensure FastMCP handles dict serialization
 
-**Option B: Fix JSON String Format (If Hypothesis 2 is correct)**
+#### Option B: Fix JSON String Format (If Hypothesis 2 is correct)
 
 1. **Validate JSON before returning**:
 
@@ -218,7 +218,7 @@ def _build_response(...) -> str:
    - Ensure all values are JSON-serializable
    - Fix any TypedDict mismatches
 
-**Option C: Custom Response Handling (If Hypothesis 3 is correct)**
+#### Option C: Custom Response Handling (If Hypothesis 3 is correct)
 
 1. **Implement custom response wrapper**:
    - Check if FastMCP supports custom response serialization

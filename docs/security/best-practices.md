@@ -620,13 +620,13 @@ logger.info(
 
 ## Security Testing Guide
 
-### Overview
+### Security Testing Overview
 
 Security testing is essential for maintaining the security posture of Cortex. This guide provides practical guidance for writing and running security tests.
 
 ### Test Categories
 
-**1. Input Validation Tests**
+#### 1. Input Validation Tests
 
 Test all input validation functions with malicious inputs:
 
@@ -653,7 +653,7 @@ class TestInputValidation:
             InputValidator.validate_file_name("test<file>.md")
 ```
 
-**2. Sandbox Escape Tests**
+#### 2. Sandbox Escape Tests
 
 Test that file operations are properly sandboxed:
 
@@ -679,7 +679,7 @@ async def test_sandbox_escape_attempt():
             await fs_manager.read_file(outside_path)
 ```
 
-**3. Rate Limiting Tests**
+#### 3. Rate Limiting Tests
 
 Test that rate limiting prevents abuse:
 
@@ -704,7 +704,7 @@ async def test_rate_limiting_enforcement():
     assert elapsed >= 0.9  # Should have waited ~1 second
 ```
 
-**4. Git URL Validation Tests**
+#### 4. Git URL Validation Tests
 
 Test protection against malicious git URLs:
 

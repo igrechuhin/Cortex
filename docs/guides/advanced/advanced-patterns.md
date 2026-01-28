@@ -23,7 +23,7 @@ This guide covers advanced patterns and configurations for using Cortex in compl
 
 For monorepos with multiple projects, use a hierarchical Memory Bank structure:
 
-```
+```text
 .cursor/memory-bank/
 ├── projectBrief.md           # Root-level project overview
 ├── productContext.md          # Overall product context
@@ -233,7 +233,7 @@ For teams across multiple time zones and locations:
 
 For SaaS platforms with per-tenant customization:
 
-```
+```text
 .cursor/memory-bank/
 ├── core/                      # Shared across all tenants
 │   ├── projectBrief.md
@@ -494,7 +494,7 @@ repos:
 
 For teams with specialized roles (frontend, backend, DevOps, QA):
 
-```
+```text
 .cursor/memory-bank/
 ├── projectBrief.md           # All roles
 ├── productContext.md         # All roles
@@ -597,7 +597,7 @@ echo "\n## Active Features\n\n{{include:features/payment-system.md}}" >> .cursor
 
 **Memory Bank Merge Strategy (.gitattributes):**
 
-```
+```text
 .cursor/memory-bank/*.md merge=memory-bank-merge
 ```
 
@@ -944,7 +944,7 @@ ${RESPONSE_SCHEMA}
 
 Create a centralized knowledge base across multiple projects:
 
-```
+```text
 central-knowledge-base/
 ├── .cursor/memory-bank/
 │   ├── company/
@@ -1224,7 +1224,7 @@ class CustomValidator:
 
 ### Common Issues
 
-**Issue: Memory Bank sync conflicts in multi-repo setup**
+### Issue: Memory Bank sync conflicts in multi-repo setup
 
 Solution:
 
@@ -1236,7 +1236,7 @@ cortex sync_shared_rules --force --strategy=theirs
 cortex merge_rules --base=shared --local=current --remote=incoming
 ```
 
-**Issue: Transclusion loops detected**
+### Issue: Transclusion loops detected
 
 Solution:
 
@@ -1250,7 +1250,7 @@ Solution:
 }
 ```
 
-**Issue: CI/CD validation timeout**
+### Issue: CI/CD validation timeout
 
 Solution:
 

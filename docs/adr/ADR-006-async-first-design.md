@@ -42,7 +42,7 @@ def validate_memory_bank():
 
 **Example Timing** (50 files):
 
-```
+```text
 Sequential:
   Read file 1: 10ms  ┌──┐
   Validate 1:  5ms   ├─┐
@@ -108,35 +108,35 @@ async def read_multiple_files(paths: list[str]) -> list[str]:
 
 ### Design Space
 
-**Option 1: Fully Synchronous**
+### Option 1: Fully Synchronous
 
 - All operations blocking
 - Simple to implement
 - Poor performance
 - Poor UX
 
-**Option 2: Threading**
+### Option 2: Threading
 
 - OS threads for concurrency
 - More complex (locks, race conditions)
 - Higher overhead (thread switching)
 - GIL limits CPU parallelism
 
-**Option 3: Multiprocessing**
+### Option 3: Multiprocessing
 
 - Separate processes
 - True parallelism
 - High overhead (IPC, serialization)
 - Complex state management
 
-**Option 4: Async/Await**
+### Option 4: Async/Await
 
 - Single-threaded concurrency
 - Non-blocking I/O
 - Cooperative multitasking
 - Modern Python standard
 
-**Option 5: Hybrid**
+### Option 5: Hybrid
 
 - Async for I/O
 - Threads/processes for CPU-bound work
@@ -184,7 +184,7 @@ We will adopt an **async-first design** where:
 
 **Async Layers**:
 
-```
+```text
 MCP Server (async)
     ↓
 Tool Handlers (async)
@@ -198,7 +198,7 @@ I/O Operations (async)
 
 ### Implementation Patterns
 
-**Pattern 1: Async File I/O**
+### Pattern 1: Async File I/O
 
 ```python
 import aiofiles
@@ -227,7 +227,7 @@ class FileSystemManager:
         )
 ```
 
-**Pattern 2: Concurrent Operations with gather()**
+### Pattern 2: Concurrent Operations with gather()
 
 ```python
 async def validate_all_files(files: list[str]) -> dict[str, list[ValidationError]]:
@@ -248,7 +248,7 @@ async def validate_all_files(files: list[str]) -> dict[str, list[ValidationError
     return errors
 ```
 
-**Pattern 3: Rate Limiting with Semaphore**
+### Pattern 3: Rate Limiting with Semaphore
 
 ```python
 async def read_files_with_limit(
@@ -267,7 +267,7 @@ async def read_files_with_limit(
     ])
 ```
 
-**Pattern 4: Timeout Support**
+### Pattern 4: Timeout Support
 
 ```python
 async def validate_with_timeout(
@@ -279,7 +279,7 @@ async def validate_with_timeout(
         return await validate_file(file)
 ```
 
-**Pattern 5: CPU-Bound Work**
+### Pattern 5: CPU-Bound Work
 
 ```python
 async def analyze_patterns(content: str) -> list[Pattern]:
@@ -300,7 +300,7 @@ def _analyze_patterns_sync(content: str) -> list[Pattern]:
     return patterns
 ```
 
-**Pattern 6: Progress Reporting**
+### Pattern 6: Progress Reporting
 
 ```python
 async def validate_with_progress(
@@ -316,7 +316,7 @@ async def validate_with_progress(
     return errors
 ```
 
-**Pattern 7: TaskGroup for Structured Concurrency**
+### Pattern 7: TaskGroup for Structured Concurrency
 
 ```python
 async def process_files_structured(files: list[str]) -> dict[str, object]:
@@ -394,7 +394,7 @@ if __name__ == "__main__":
 
 ### Error Handling
 
-**Pattern 1: Try-Except in Async**
+### Pattern 1: Try-Except in Async
 
 ```python
 async def read_file_safe(path: str) -> str | None:
@@ -410,7 +410,7 @@ async def read_file_safe(path: str) -> str | None:
         raise
 ```
 
-**Pattern 2: Exception Groups (Python 3.11+)**
+### Pattern 2: Exception Groups (Python 3.11+)
 
 ```python
 async def validate_all_with_exceptions(files: list[str]) -> dict[str, object]:
@@ -430,7 +430,7 @@ async def validate_all_with_exceptions(files: list[str]) -> dict[str, object]:
         raise
 ```
 
-**Pattern 3: Graceful Degradation**
+### Pattern 3: Graceful Degradation
 
 ```python
 async def get_file_metadata_best_effort(
@@ -454,7 +454,7 @@ async def get_file_metadata_best_effort(
 
 ### Performance Optimizations
 
-**Optimization 1: Batching**
+### Optimization 1: Batching
 
 ```python
 async def process_in_batches(
@@ -472,7 +472,7 @@ async def process_in_batches(
     return results
 ```
 
-**Optimization 2: Caching**
+### Optimization 2: Caching
 
 ```python
 from functools import lru_cache
@@ -497,7 +497,7 @@ class FileSystemManager:
         return content
 ```
 
-**Optimization 3: Lazy Evaluation**
+### Optimization 3: Lazy Evaluation
 
 ```python
 async def get_file_list_lazy(directory: str) -> AsyncIterator[str]:

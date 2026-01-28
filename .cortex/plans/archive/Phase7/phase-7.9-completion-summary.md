@@ -43,7 +43,7 @@ Successfully implemented full lazy loading for manager initialization, reducing 
 
 **Test Results:**
 
-```
+```text
 tests/unit/test_lazy_manager.py::test_lazy_manager_initialization PASSED
 tests/unit/test_lazy_manager.py::test_lazy_manager_concurrent_access PASSED
 tests/unit/test_lazy_manager.py::test_lazy_manager_invalidate PASSED
@@ -116,13 +116,13 @@ Always initialized immediately for reliability:
 
 ### Lazy-Loaded Managers (Priority 2-4)
 
-**Phase 2: Linking (Priority 2 - Frequent)**
+#### Phase 2: Linking (Priority 2 - Frequent)
 
 - `link_parser` - LinkParser
 - `transclusion` - TransclusionEngine
 - `link_validator` - LinkValidator
 
-**Phase 4: Optimization (Priority 2 - Frequent)**
+#### Phase 4: Optimization (Priority 2 - Frequent)
 
 - `optimization_config` - OptimizationConfig
 - `relevance_scorer` - RelevanceScorer
@@ -131,20 +131,20 @@ Always initialized immediately for reliability:
 - `summarization_engine` - SummarizationEngine
 - `rules_manager` - RulesManager
 
-**Phase 5.1: Analysis (Priority 3 - Occasional)**
+#### Phase 5.1: Analysis (Priority 3 - Occasional)
 
 - `pattern_analyzer` - PatternAnalyzer
 - `structure_analyzer` - StructureAnalyzer
 - `insight_engine` - InsightEngine
 
-**Phase 5.2: Refactoring (Priority 3 - Occasional)**
+#### Phase 5.2: Refactoring (Priority 3 - Occasional)
 
 - `refactoring_engine` - RefactoringEngine
 - `consolidation_detector` - ConsolidationDetector
 - `split_recommender` - SplitRecommender
 - `reorganization_planner` - ReorganizationPlanner
 
-**Phase 5.3-5.4: Execution (Priority 4 - Rare)**
+#### Phase 5.3-5.4: Execution (Priority 4 - Rare)
 
 - `refactoring_executor` - RefactoringExecutor
 - `approval_manager` - ApprovalManager
@@ -286,7 +286,7 @@ Existing code works without modification:
 
 ### Lazy Loading Flow
 
-```
+```text
 User Request → MCP Tool
     ↓
 get_managers(project_root)

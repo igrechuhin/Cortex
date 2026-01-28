@@ -339,7 +339,7 @@ cortex analyze_token_distribution --output=tokens.json
 
 **Cache Architecture:**
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                     L1 Cache (Memory)                   │
 │                   Fast, Small (50MB)                    │
@@ -1290,7 +1290,7 @@ cortex detect_leaks \
 
 ### Common Performance Issues
 
-**Issue: High memory usage**
+### Issue: High memory usage
 
 Solutions:
 
@@ -1299,7 +1299,7 @@ Solutions:
 - Use streaming for large files
 - Optimize token budget
 
-**Issue: Slow validation**
+### Issue: Slow validation
 
 Solutions:
 
@@ -1308,7 +1308,7 @@ Solutions:
 - Parallelize validation tasks
 - Optimize duplication detection
 
-**Issue: Cache thrashing**
+### Issue: Cache thrashing
 
 Solutions:
 

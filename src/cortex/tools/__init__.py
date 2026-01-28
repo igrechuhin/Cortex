@@ -47,6 +47,7 @@ from . import (
     pre_commit_tools,  # noqa: F401
     prompts,  # noqa: F401
     refactoring_operations,  # noqa: F401
+    roadmap_corruption,  # noqa: F401
     rules_operations,  # noqa: F401
     synapse_prompts,  # noqa: F401  # Dynamic Synapse prompts registration
     synapse_tools,  # noqa: F401
@@ -74,6 +75,7 @@ __all__ = [
     "phase5_refactoring",
     "phase5_execution",
     "synapse_tools",
+    "roadmap_corruption",
     "phase8_structure",
     "pre_commit_tools",
     "prompts",

@@ -400,7 +400,7 @@ gtimeout -k 5 300 ./.venv/bin/pytest tests/unit/test_security.py \
 - ⏱️ 27.26 seconds
 - 📊 19% overall coverage
 
-### Test Coverage
+### Test Coverage (Phase 9.8)
 
 | Module | Coverage | Tests |
 |--------|----------|-------|

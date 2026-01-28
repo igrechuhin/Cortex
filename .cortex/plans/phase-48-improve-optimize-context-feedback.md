@@ -149,7 +149,7 @@ Add entry to `.cortex/synapse/prompts/prompts-manifest.json`:
 
 ### Prompt Flow
 
-```
+```text
 1. RECALL PHASE
    └── AI recalls optimize_context calls from session
        ├── Task descriptions used

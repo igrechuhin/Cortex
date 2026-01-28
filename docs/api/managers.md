@@ -637,7 +637,7 @@ Remove old versions beyond retention limit.
 
 **Snapshot File Naming:**
 
-```
+```text
 .memory-bank-history/
   projectBrief_v1.md
   projectBrief_v2.md

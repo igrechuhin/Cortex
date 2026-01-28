@@ -85,11 +85,11 @@ class RefactoringEngine:
 
 ### Problem Space
 
-**Challenge 1: Manager Dependencies**
+### Challenge 1: Manager Dependencies
 
 Many managers depend on other managers:
 
-```
+```text
 RefactoringEngine
     ↓ depends on
 PatternAnalyzer
@@ -106,7 +106,7 @@ Without clear interfaces:
 - Circular dependencies possible
 - Hard to reason about dependencies
 
-**Challenge 2: Testing Complexity**
+### Challenge 2: Testing Complexity
 
 With concrete class dependencies:
 
@@ -129,7 +129,7 @@ async def test_refactoring_engine():
     result = await engine.analyze()
 ```
 
-**Challenge 3: Implementation Flexibility**
+### Challenge 3: Implementation Flexibility
 
 Want to support different implementations:
 
@@ -140,7 +140,7 @@ Want to support different implementations:
 
 Without interfaces, must modify all dependent code.
 
-**Challenge 4: Type System Evolution**
+### Challenge 4: Type System Evolution
 
 Python's type system has evolved:
 
@@ -213,7 +213,7 @@ class FileSystemManager:
 
 ### Use Case Analysis
 
-**Use Case 1: Testing with Fakes**
+### Use Case 1: Testing with Fakes
 
 Want to test RefactoringEngine without real file system:
 
@@ -233,7 +233,7 @@ class FakeFileSystem:
 engine = RefactoringEngine(FakeFileSystem())
 ```
 
-**Use Case 2: Multiple Implementations**
+### Use Case 2: Multiple Implementations
 
 Want to support different storage backends:
 
@@ -249,7 +249,7 @@ class S3FileSystem:
 # Both satisfy FileSystemProtocol automatically
 ```
 
-**Use Case 3: Gradual Migration**
+### Use Case 3: Gradual Migration
 
 Want to add new methods without breaking existing code:
 

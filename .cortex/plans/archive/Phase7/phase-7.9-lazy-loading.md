@@ -392,7 +392,7 @@ async def my_tool(file_path: str) -> dict[str, object]:
     return result
 ```
 
-**Better: Helper Function**
+#### Better: Helper Function
 
 ```python
 async def get_manager(managers: dict[str, object], name: str, type_: type[T]) -> T:
@@ -519,14 +519,14 @@ async def test_mcp_tools_work_with_lazy_managers():
 
 **Before:**
 
-```
+```text
 Initialization: 50ms
 Memory: 20MB
 ```
 
 **After (Expected):**
 
-```
+```text
 Core only: 15ms (70% faster)
 Full lazy: 20ms (60% faster)
 Memory: 8MB (60% reduction)

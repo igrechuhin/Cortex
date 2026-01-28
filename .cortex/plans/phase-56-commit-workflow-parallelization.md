@@ -175,4 +175,3 @@ Design tests (unit + integration) that assert:
 - Documentation:
   - `commit.md` updated to reflect the parallel block and concurrency rules.
   - Memory bank (roadmap, progress, activeContext) updated to record this work.
-

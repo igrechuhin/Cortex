@@ -88,16 +88,16 @@ All metrics ≥9.8/10 🎯
 - String operations in loops → Join operations
 - Repeated lookups → Cache results
 
-#### Implementation Plan
+#### Implementation Plan (Performance Optimization)
 
-**Week 1: High-Severity Fixes**
+##### Week 1: High-Severity Fixes
 
 - Days 1-2: Fix dependency_graph.py (4 issues)
 - Day 3: Verify structure_analyzer.py optimization
 - Day 4: Benchmarking and validation
 - Day 5: Documentation and testing
 
-**Week 2 (Optional): Medium-Severity**
+##### Week 2 (Optional): Medium-Severity
 
 - Prioritize high-impact medium-severity issues
 - Focus on hot paths (file I/O, token counting)
@@ -133,9 +133,9 @@ All metrics ≥9.8/10 🎯
    - etc.
    - Action: Document why these are 0% (require MCP server runtime)
 
-#### Implementation Plan
+#### Implementation Plan (Test Coverage)
 
-**Phase A: Critical Gap - rules_operations.py**
+##### Phase A: Critical Gap - rules_operations.py
 
 Create `tests/unit/test_rules_operations.py`:
 
@@ -184,7 +184,7 @@ class TestContextDetection:
 
 Estimated: **30-40 tests, 700-800 lines**
 
-**Phase B: Edge Case Coverage**
+##### Phase B: Edge Case Coverage
 
 Add edge case tests for existing modules:
 
@@ -196,7 +196,7 @@ Add edge case tests for existing modules:
 
 Estimated: **20-25 tests**
 
-**Phase C: Integration Tests**
+##### Phase C: Integration Tests
 
 Add end-to-end workflow tests:
 
@@ -206,7 +206,7 @@ Add end-to-end workflow tests:
 
 Estimated: **10-15 integration tests**
 
-#### Success Criteria
+#### Success Criteria (Test Coverage)
 
 - ✅ Overall coverage: 85% → 90%+
 - ✅ rules_operations.py: 20% → 85%+
@@ -244,13 +244,13 @@ Estimated: **10-15 integration tests**
    - Custom integration guide
    - Troubleshooting guide (exists - expand)
 
-#### Implementation Plan
+#### Implementation Plan (Documentation)
 
-**Phase A: API Reference Documentation**
+##### Phase A: API Reference Documentation
 
 Create `docs/api/` structure:
 
-```
+```text
 docs/api/
 ├── core.md (500 lines)
 │   ├── FileSystemManager
@@ -277,11 +277,11 @@ docs/api/
 
 **Total:** ~2,450 lines of API documentation
 
-**Phase B: Architecture Decision Records**
+##### Phase B: Architecture Decision Records
 
 Create `docs/architecture/decisions/`:
 
-```
+```text
 docs/architecture/decisions/
 ├── 001-protocol-based-architecture.md
 ├── 002-service-initialization-order.md
@@ -297,7 +297,7 @@ Each ADR: 200-300 lines
 
 **Total:** ~2,000 lines of ADRs
 
-**Phase C: Advanced Guides**
+##### Phase C: Advanced Guides
 
 Expand existing guides:
 
@@ -321,7 +321,7 @@ Expand existing guides:
 
 **Total:** ~1,800 lines of guides
 
-#### Success Criteria
+#### Success Criteria (Documentation)
 
 - ✅ Complete API reference (2,450 lines)
 - ✅ 8 ADRs documented (2,000 lines)
@@ -354,9 +354,9 @@ Expand existing guides:
    - Gap: Not comprehensive
    - Fix: Expand to cover all security features (see Milestone 10.3.3)
 
-#### Implementation Plan
+#### Implementation Plan (Security)
 
-**Task 1: MCP Tool Rate Limiting (Optional)**
+##### Task 1: MCP Tool Rate Limiting (Optional)
 
 ```python
 # src/cortex/security.py
@@ -381,17 +381,17 @@ class ToolRateLimiter:
         return True
 ```
 
-**Task 2: Input Validation Audit**
+##### Task 2: Input Validation Audit
 
 - Review all public API entry points
 - Ensure path validation, type validation, range validation
 - Add missing validations
 
-**Task 3: Security Documentation**
+##### Task 3: Security Documentation
 
 - See Milestone 10.3.3 Phase C
 
-#### Success Criteria
+#### Success Criteria (Security)
 
 - ✅ Optional tool rate limiting implemented
 - ✅ All input validation paths audited
@@ -408,57 +408,57 @@ class ToolRateLimiter:
 
 #### Areas for Polish
 
-**1. Architecture (9.5 → 9.8)**
+##### 1. Architecture (9.5 → 9.8)
 
 - Review protocol coverage (currently 61%)
 - Add missing protocols if needed
 - Document architectural patterns
 
-**2. Code Style (9.6 → 9.8)**
+##### 2. Code Style (9.6 → 9.8)
 
 - Review naming consistency
 - Add missing algorithm comments
 - Ensure all design decisions documented
 
-**3. Error Handling (9.5 → 9.8)**
+##### 3. Error Handling (9.5 → 9.8)
 
 - Review error message quality
 - Ensure actionable error messages
 - Add error recovery examples
 
-**4. Rules Compliance (9.0 → 9.8)**
+##### 4. Rules Compliance (9.0 → 9.8)
 
 - Final verification of all rules
 - Update CI/CD enforcement
 - Document compliance status
 
-**5. Maintainability (9.5 → 9.8)**
+##### 5. Maintainability (9.5 → 9.8)
 
 - Review function complexity
 - Ensure all functions <30 lines
 - Final code organization review
 
-#### Implementation Plan
+#### Implementation Plan (Final Polish)
 
-**Day 1: Architecture & Code Style Review**
+##### Day 1: Architecture & Code Style Review
 
 - Protocol coverage analysis
 - Naming consistency audit
 - Documentation review
 
-**Day 2: Error Handling & Rules Compliance**
+##### Day 2: Error Handling & Rules Compliance
 
 - Error message quality review
 - Rules compliance verification
 - CI/CD enforcement update
 
-**Day 3: Final Validation**
+##### Day 3: Final Validation
 
 - Run all quality checks
 - Comprehensive testing
 - Generate quality report
 
-#### Success Criteria
+#### Success Criteria (Final Polish)
 
 - ✅ All metrics ≥9.8/10
 - ✅ Zero compliance violations

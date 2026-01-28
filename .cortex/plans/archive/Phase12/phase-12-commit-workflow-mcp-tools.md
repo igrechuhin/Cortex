@@ -199,7 +199,7 @@ None (can be implemented incrementally)
 - [productContext.md](../memory-bank/productContext.md) - Architectural principles
 - [roadmap.md](../memory-bank/roadmap.md) - Roadmap entry
 
-## Notes
+## Notes (Implementation)
 
 - Updated `commit.md` with architectural notes documenting this improvement (2026-01-12)
 - Memory bank operations should use existing `manage_file()` tool (already language-agnostic)

@@ -114,7 +114,7 @@ For a typical project with:
 
 **Before Optimization:**
 
-```
+```text
 Per call: 100 files × 5 deps × 2 loops = 1,000 operations
 10 calls: 1,000 × 10 = 10,000 operations total
 Time: ~50ms per call = 500ms total
@@ -122,7 +122,7 @@ Time: ~50ms per call = 500ms total
 
 **After Optimization (Best Case - High Cache Hit Rate):**
 
-```
+```text
 First call: 1,000 operations (cache miss) = 50ms
 Next 9 calls: Cache hits = 0.1ms each = 0.9ms
 Total time: 50ms + 0.9ms = 50.9ms
@@ -132,7 +132,7 @@ Improvement: 500ms → 50.9ms = 90% reduction ✅
 
 **After Optimization (Worst Case - All Cache Misses):**
 
-```
+```text
 All 10 calls: Cache misses = 50ms each = 500ms
 Plus cache overhead: ~0.5ms per hash computation = 5ms
 Total time: 500ms + 5ms = 505ms
@@ -162,7 +162,7 @@ Improvement: 500ms → 505ms = ~1% overhead (acceptable) ✅
 
 **Results:**
 
-```
+```text
 33 tests collected
 33 tests PASSED ✅
 0 tests FAILED
@@ -237,7 +237,7 @@ Pass rate: 100%
 
 ### Phase 10.3.1 Continues (Day 3)
 
-**Day 3: pattern_analyzer.py Optimization**
+#### Day 3: pattern_analyzer.py Optimization
 
 - Implement time-windowing for `_calculate_recent_patterns()`
 - Use set-based operations instead of nested loops

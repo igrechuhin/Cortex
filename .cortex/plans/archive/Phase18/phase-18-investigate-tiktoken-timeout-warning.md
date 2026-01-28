@@ -16,7 +16,7 @@ Investigate and resolve the Tiktoken encoding load timeout warning that occurs w
 
 **Observed Warning:**
 
-```
+```text
 Tiktoken encoding 'cl100k_base' load timed out after 5.0s. Falling back to word-based estimation.
 ```
 
@@ -177,7 +177,7 @@ def _load_tiktoken_with_timeout(
 
 ### Current Architecture
 
-```
+```text
 TokenCounter.__init__()
   └─> _check_tiktoken_available()  # Check if tiktoken is installed
   └─> encoding_impl = None  # Lazy initialization
@@ -190,7 +190,7 @@ TokenCounter.encoding (property)
 
 ### Potential Solutions
 
-**Solution 1: Increase Timeout with Retry**
+#### Solution 1: Increase Timeout with Retry
 
 ```python
 def _load_tiktoken_with_timeout(
@@ -207,7 +207,7 @@ def _load_tiktoken_with_timeout(
             # ... fallback ...
 ```
 
-**Solution 2: Pre-load at Startup**
+#### Solution 2: Pre-load at Startup
 
 ```python
 # In container_factory.py or manager initialization
@@ -215,7 +215,7 @@ token_counter = TokenCounter()
 await token_counter.ensure_encoding_loaded()  # Pre-load encoding
 ```
 
-**Solution 3: Async Loading**
+#### Solution 3: Async Loading
 
 ```python
 async def _load_tiktoken_async(self) -> object | None:

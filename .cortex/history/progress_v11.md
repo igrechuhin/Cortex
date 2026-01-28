@@ -1,6 +1,149 @@
 # Progress Log
 
+## 2026-01-28
+
+- ✅ **Phase 61: Investigate `execute_pre_commit_checks` MCP Output Handling Failure** - COMPLETE (2026-01-28)
+  - **Problem**: During `/cortex/commit` in Cursor, the `execute_pre_commit_checks` MCP tool reported "large output written to: agent-tools/*.txt" and the structured JSON result was not available to the agent. The spill file itself was inaccessible in the IDE sandbox, blocking verification of fix-errors, formatting, type checking, quality checks, and tests.
+  - **Solution**: Updated `src/cortex/tools/pre_commit_tools.py` so that `execute_pre_commit_checks` and `fix_quality_issues` always return a compact, structured JSON payload regardless of log size:
+    - Introduced `_MAX_LOG_OUTPUT_LENGTH` and `_truncate_log_value()` to cap very large `output` strings while appending a clear truncation marker.
+    - Added `_truncate_large_logs_in_data()` helper that walks the response model (dicts/lists) and only truncates `output` fields, preserving counters, statuses, and structured data.
+    - Changed `_build_response()` (for `execute_pre_commit_checks`) and quality error/success JSON builders to:
+      - Use `model_dump(mode="json")` to produce a JSON-ready dict.
+      - Apply `_truncate_large_logs_in_data()` before serialization.
+      - Serialize with compact separators to minimize payload size.
+    - Ensured that check results (`results`), `checks_performed`, and aggregate stats remain fully structured even when logs are large.
+  - **Testing**:
+    - Extended `tests/unit/test_pre_commit_tools.py` with `TestLogTruncationBehavior`:
+      - `test_quality_output_is_truncated_for_large_logs()` patches `PythonAdapter.lint_code()` to return a very large `output` string and verifies that:
+        - The top-level tool status reflects the error outcome correctly.
+        - `results["quality"]["output"]` is truncated to a bounded length.
+        - The truncated output contains a clear "truncated" marker.
+    - Re-ran `pytest tests/unit/test_pre_commit_tools.py -q`; all tests in that module pass.
+  - **Impact**:
+    - Commit workflows can now reliably parse `execute_pre_commit_checks` results in Cursor without depending on `agent-tools/*.txt` spill files.
+    - Large human-readable logs are still available in truncated form for diagnostics, but no longer block access to the structured JSON contract expected by higher-level orchestration.
+
+## 2026-01-27
+
+- ✅ **Commit Procedure: Increased Test Coverage Above 90% Threshold** - COMPLETE (2026-01-27)
+  - **Problem**: Test coverage at 89.99% (below 90% threshold) blocking commit
+  - **Solution**: Added 3 tests for `check_approval_status` function in `phase5_execution_helpers.py` to increase coverage
+  - **Implementation**:
+    - Added `test_check_approval_status_no_approvals()` - Tests empty approvals list case
+    - Added `test_check_approval_status_approved()` - Tests approved status case
+    - Added `test_check_approval_status_applied()` - Tests applied status case
+    - Created new test class `TestPhase5ExecutionHelpers` in `tests/tools/test_phase5_execution.py`
+    - Fixed ApprovalModel field usage (used `created_at` and `suggestion_type` instead of `timestamp` and `approver`)
+  - **Results**:
+    - Coverage increased from 89.99% to 90.05% (above 90% threshold)
+    - Tests run increased from 2850 to 2853 (3 new tests)
+    - All tests passing: 2853 passed, 0 failed, 100% pass rate, 90.05% coverage
+    - All code quality checks passing (0 violations)
+    - All type checks passing (0 errors, 0 warnings)
+    - All formatting checks passing
+  - **Impact**: Commit procedure can proceed, all quality gates met, coverage above 90% threshold
+
 ## 2026-01-26
+
+- ✅ **Enhanced Python Adapter Ruff Fix with Verification** - COMPLETE (2026-01-26)
+  - **Problem**: Ruff auto-fix might leave unfixable errors that cause CI failures
+  - **Solution**: Enhanced `_run_ruff_fix()` to include verification step that matches CI workflow exactly
+  - **Implementation**:
+    - Split `_run_ruff_fix()` into two steps: auto-fix and verification
+    - Added `_execute_ruff_fix_command()` - Executes `ruff check --select F,E,W --fix src/ tests/`
+    - Added `_execute_ruff_verify_command()` - Executes `ruff check --select F,E,W src/ tests/` (matches CI exactly)
+    - Verification step ensures no errors remain after auto-fix
+    - Combined outputs show both fix and verification results
+  - **Results**:
+    - All tests passing: 2850 passed, 0 failed, 100% pass rate, 90.02% coverage
+    - All code quality checks passing (0 violations)
+    - All type checks passing (0 errors, 0 warnings)
+    - All formatting checks passing
+  - **Impact**: Prevents CI failures by ensuring ruff errors are fully resolved, not just auto-fixed
+
+- ✅ **Enhanced CI Workflow with Additional Pyright Error Patterns** - COMPLETE (2026-01-26)
+  - **Problem**: CI workflow missing some pyright error patterns for comprehensive type checking
+  - **Solution**: Added two new pyright error patterns to CI workflow
+  - **Implementation**:
+    - Added `reportOptionalSubscript` to `.github/workflows/quality.yml` - Detects optional subscript access issues
+    - Added `reportCallIssue` to `.github/workflows/quality.yml` - Detects call-related type issues
+  - **Results**:
+    - All tests passing: 2850 passed, 0 failed, 100% pass rate, 90.02% coverage
+    - All code quality checks passing (0 violations)
+    - All type checks passing (0 errors, 0 warnings)
+  - **Impact**: Improved type safety enforcement in CI pipeline, catches more type errors before merge
+
+- ✅ **Commit Procedure: Fixed Function Length Violation in Python Adapter** - COMPLETE (2026-01-26)
+  - **Problem**: Function length violation in `python_adapter.py` (`_run_ruff_fix()` had 34 lines, exceeding 30-line limit by 4 lines) blocking commit
+  - **Solution**: Fixed function length violation by extracting helper functions
+  - **Implementation**:
+    - Fixed `python_adapter.py:_run_ruff_fix()` (34 lines → under 30): Extracted three helper functions:
+      - `_execute_ruff_command()` - Executes ruff check command and returns output
+      - `_create_lint_result()` - Creates lint check result from output and errors
+      - `_create_lint_error_result()` - Creates lint check result for error case
+  - **Results**:
+    - All function length violations fixed (0 violations)
+    - All tests passing: 2850 passed, 0 failed, 100% pass rate, 90% coverage
+    - All code quality checks passing (0 violations)
+    - All type checks passing (0 errors, 0 warnings)
+    - All formatting checks passing
+  - **Impact**: Commit procedure can proceed, all quality gates met, function length compliance achieved
+
+- ✅ **Commit Procedure: Fixed Test Failures** - COMPLETE (2026-01-26)
+  - **Problem**: 2 test failures blocking commit:
+    - `test_update_file_metadata` in `test_file_operations.py`: AssertionError - expected `version_info` but got `version_info.model_dump(mode="json")`
+    - `test_setup_validation_managers_success` in `test_validation_operations.py`: AttributeError - module doesn't have `get_managers` attribute (wrong patch path)
+  - **Solution**: Fixed both test failures:
+    - Updated `test_update_file_metadata` to expect `version_info.model_dump(mode="json")` instead of `version_info` (matches actual implementation in `update_file_metadata` function)
+    - Fixed `test_setup_validation_managers_success`:
+      - Changed patch path from `cortex.tools.validation_operations.get_managers` to `cortex.tools.validation_dispatch.initialization.get_managers`
+      - Changed patch path from `cortex.tools.validation_operations.get_manager` to `cortex.tools.validation_dispatch.get_manager`
+      - Added all 6 mocks in `side_effect` for all `get_manager` calls (fs_manager, metadata_index, schema_validator, duplication_detector, quality_metrics, validation_config)
+  - **Results**:
+    - All tests passing: 2850 passed, 0 failed, 100% pass rate, 90.01% coverage
+    - All code quality checks passing (0 violations)
+    - All type checks passing (0 errors, 0 warnings)
+    - All formatting checks passing
+  - **Impact**: Commit procedure can proceed, all quality gates met, all tests passing
+
+- ✅ **Commit Procedure: Fixed Type Error and Increased Test Coverage** - COMPLETE (2026-01-26)
+  - **Problem**: Type error in `python_adapter.py` (implicit string concatenation at line 433) and coverage at 89.99% (below 90% threshold) blocking commit
+  - **Solution**: Fixed type error by adding explicit parentheses around f-string concatenation and added comprehensive tests for `_build_test_errors` method to increase coverage
+  - **Implementation**:
+    - Fixed `python_adapter.py:_build_test_errors()` (line 433): Added explicit parentheses around f-string concatenation to resolve implicit string concatenation error
+    - Added 4 new tests to increase coverage:
+      - `test_build_test_errors_success()` - Tests success case (no errors)
+      - `test_build_test_errors_failure_no_coverage()` - Tests failure without coverage
+      - `test_build_test_errors_failure_low_coverage()` - Tests failure with coverage below threshold
+      - `test_build_test_errors_failure_coverage_above_threshold()` - Tests failure with coverage above threshold
+  - **Results**:
+    - All type errors fixed (0 errors, 0 warnings)
+    - Coverage increased from 89.99% to 90.01% (above 90% threshold)
+    - All tests passing: 2834 passed, 0 failed, 100% pass rate, 90.01% coverage
+    - All code quality checks passing (0 violations)
+    - All type checks passing (0 errors, 0 warnings)
+    - All formatting checks passing
+  - **Impact**: Commit procedure can proceed, all quality gates met, coverage above 90% threshold
+
+- ✅ **Commit Procedure: Fixed Function Length Violation and Increased Test Coverage** - COMPLETE (2026-01-26)
+  - **Problem**: Function length violation in `similarity_engine.py` (`_get_stop_words()` had 51 lines, exceeding 30-line limit) and coverage at 89.95% (below 90% threshold) blocking commit
+  - **Solution**: Fixed function length violation by moving stop words to private constant and added comprehensive tests to increase coverage to exactly 90.0%
+  - **Implementation**:
+    - Fixed `similarity_engine.py:_get_stop_words()` (51 lines → under 30): Moved stop words set to private constant `_STOP_WORDS` at bottom of file, following project standards for private constants
+    - Added 5 new tests to increase coverage:
+      - `test_stop_words_filtering()` - Tests stop words filtering in keyword extraction
+      - `test_token_similarity_fallback_when_encoding_none()` - Tests fallback to Jaccard similarity when encoding is None (covers line 90)
+      - `test_token_similarity_fallback_on_encoding_error()` - Tests fallback on encoding errors (covers lines 95-97)
+      - `test_token_similarity_empty_tokens()` - Tests edge cases with empty token sets (covers lines 100, 102)
+      - `test_meets_min_length_exception_fallback()` - Tests exception fallback in minimum length check (covers lines 201-205)
+  - **Results**:
+    - All function length violations fixed (0 violations)
+    - Coverage increased from 89.95% to 90.0% (exactly at threshold)
+    - All tests passing: 2830 passed, 0 failed, 100% pass rate, 90.0% coverage
+    - All code quality checks passing (0 violations)
+    - All type checks passing (0 errors, 0 warnings)
+    - All formatting checks passing
+  - **Impact**: Commit procedure can proceed, all quality gates met, coverage exactly at 90% threshold
 
 - ✅ **Phase 21 Step 2: Implement Similarity Detection Engine enhancements** - COMPLETE (2026-01-26)
   - **Goal**: Enhance SimilarityEngine with comprehensive similarity detection capabilities for health-check analysis
@@ -63,8 +206,8 @@
     - All file size violations fixed (0 violations)
     - Coverage increased from 88.08% to 90.04% (above 90% threshold)
     - All tests passing: 2805 passed, 2 skipped, 100% pass rate, 90.04% coverage
-    - All code quality checks passing (0 violations)
-    - All type checks passing (0 errors, 0 warnings)
+    - All code quality checks passing: 0 violations
+    - All type checks passing: 0 errors, 0 warnings
     - All formatting checks passing
   - **Impact**: Commit procedure can proceed, all quality gates met, health_check module now has comprehensive test coverage
 

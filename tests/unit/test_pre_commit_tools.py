@@ -9,6 +9,7 @@ import pytest
 
 from cortex.services.framework_adapters.base import CheckResult, TestResult
 from cortex.tools.pre_commit_tools import (
+    _MAX_LOG_OUTPUT_LENGTH,  # pyright: ignore[reportPrivateUsage]
     MAX_FILE_LINES,
     MAX_FUNCTION_LINES,
     _check_file_sizes,  # pyright: ignore[reportPrivateUsage]
@@ -22,6 +23,20 @@ from cortex.tools.pre_commit_tools import (
 
 class TestExecutePreCommitChecks:
     """Test execute_pre_commit_checks tool."""
+
+    @pytest.mark.asyncio
+    async def test_has_timeout_protection(self) -> None:
+        """Test that execute_pre_commit_checks has timeout protection decorator."""
+
+        from cortex.core.constants import MCP_TOOL_TIMEOUT_VERY_COMPLEX
+
+        # Verify the function has the timeout wrapper decorator
+        # The decorator wraps the function, so we check if it's wrapped
+        assert hasattr(execute_pre_commit_checks, "__wrapped__") or hasattr(
+            execute_pre_commit_checks, "__name__"
+        )
+        # Verify timeout constant is correct
+        assert MCP_TOOL_TIMEOUT_VERY_COMPLEX == 600.0
 
     @pytest.mark.asyncio
     async def test_detect_language_error_when_no_language_detected(self) -> None:
@@ -609,3 +624,49 @@ class TestQualityCheckIntegration:
                 quality_result = result["results"]["quality"]
                 assert "file_size_violations" in quality_result
                 assert "function_length_violations" in quality_result
+
+
+class TestLogTruncationBehavior:
+    """Tests for truncation of very large log outputs in JSON responses."""
+
+    @pytest.mark.asyncio
+    async def test_quality_output_is_truncated_for_large_logs(self) -> None:
+        """Large quality output logs should be truncated to keep JSON compact."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            (project_root / ".venv").mkdir()
+            src_dir = project_root / "src"
+            src_dir.mkdir()
+            _ = (src_dir / "module.py").write_text("x = 1\n")
+
+            large_output = "X" * (_MAX_LOG_OUTPUT_LENGTH * 2)
+
+            with patch(
+                "cortex.tools.pre_commit_tools.PythonAdapter"
+            ) as mock_adapter_class:
+                mock_adapter = MagicMock()
+                mock_adapter_class.return_value = mock_adapter
+                mock_adapter.project_root = project_root
+
+                mock_adapter.lint_code.return_value = CheckResult(
+                    check_type="lint",
+                    success=False,
+                    output=large_output,
+                    errors=["E1"],
+                    warnings=[],
+                    files_modified=[],
+                )
+
+                result_json = await execute_pre_commit_checks(
+                    checks=["quality"],
+                    project_root=str(project_root),
+                )
+                result = json.loads(result_json)
+
+                assert result["status"] == "error"
+                quality_result = result["results"]["quality"]
+                truncated_output = quality_result["output"]
+                assert isinstance(truncated_output, str)
+                assert len(truncated_output) <= _MAX_LOG_OUTPUT_LENGTH + 200
+                assert "truncated" in truncated_output

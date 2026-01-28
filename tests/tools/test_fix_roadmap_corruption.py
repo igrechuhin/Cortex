@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from cortex.tools.markdown_operations import fix_roadmap_corruption
+from cortex.tools.roadmap_corruption import fix_roadmap_corruption
 
 
 @pytest.mark.asyncio
@@ -14,7 +14,7 @@ class TestFixRoadmapCorruption:
     ) -> None:
         # Arrange
         with patch(
-            "cortex.tools.markdown_operations.get_project_root",
+            "cortex.tools.roadmap_corruption.get_project_root",
             return_value=str(tmp_path),
         ):
             # Act
@@ -37,7 +37,7 @@ class TestFixRoadmapCorruption:
         _ = roadmap_path.write_text(original, encoding="utf-8")
 
         with patch(
-            "cortex.tools.markdown_operations.get_project_root",
+            "cortex.tools.roadmap_corruption.get_project_root",
             return_value=str(tmp_path),
         ):
             # Act
@@ -61,7 +61,7 @@ class TestFixRoadmapCorruption:
         _ = roadmap_path.write_text(original, encoding="utf-8")
 
         with patch(
-            "cortex.tools.markdown_operations.get_project_root",
+            "cortex.tools.roadmap_corruption.get_project_root",
             return_value=str(tmp_path),
         ):
             # Act

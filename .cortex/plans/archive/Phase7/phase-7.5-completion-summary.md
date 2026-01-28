@@ -318,7 +318,7 @@ All documentation was:
 
 ### Documentation Structure
 
-```
+```text
 docs/
 ├── index.md                          # Central hub
 ├── getting-started.md                # Quick start

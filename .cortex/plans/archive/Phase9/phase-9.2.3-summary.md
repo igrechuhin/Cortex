@@ -20,7 +20,7 @@ Created automated dependency analysis tool ([scripts/analyze_dependencies.py](..
 
 **Output:**
 
-```
+```text
 === Circular Dependencies ===
 Found 23 circular dependency cycle(s)
 
@@ -120,7 +120,7 @@ insight_engine: InsightEngineProtocol  # or 'InsightEngine' as string
 
 Established clear layer hierarchy:
 
-```
+```text
 L0: core           → Foundation (file system, metadata, exceptions)
 L1: linking        → Link parsing, transclusion
 L2: validation     → Schema, duplication, quality

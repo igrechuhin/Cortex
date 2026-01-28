@@ -194,7 +194,7 @@
 7. `static-analyzer` - **UPDATED** - Linting only (no type checking)
 8. `timestamp-validator` ⭐ **NEW** - Validates memory bank timestamps
 
-### Code Review Agents (8)
+### Code Review Agents Summary (8)
 
 1. `bug-detector` - Finds potential bugs
 2. `consistency-checker` - **UPDATED** - Cross-file consistency only
@@ -216,7 +216,7 @@
 1. `roadmap-implementer` - Implements roadmap steps
 2. `roadmap-sync-validator` ⭐ **NEW** - Validates roadmap-codebase sync
 
-### Analysis Agents (2)
+### Analysis Agents Summary (2)
 
 1. `context-effectiveness-analyzer` - Analyzes context usage
 2. `session-optimization-analyzer` - Analyzes session for optimization

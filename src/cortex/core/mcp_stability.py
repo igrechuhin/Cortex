@@ -245,19 +245,37 @@ async def _execute_with_retry[T](
 
     if last_exception:
         raise RuntimeError(
-            (
-                f"MCP tool {func_name} failed after "
-                f"{MCP_CONNECTION_RETRY_ATTEMPTS} attempts"
-            )
+            f"MCP tool {func_name} failed after "
+            + f"{MCP_CONNECTION_RETRY_ATTEMPTS} attempts"
         ) from last_exception
 
     raise RuntimeError(f"MCP tool {func_name} failed unexpectedly")
 
 
+def _to_timeout_value(value: JsonValue | None) -> float | None:
+    """Convert JsonValue to a valid timeout value.
+
+    Ensures we only accept float-compatible values and ignore invalid ones.
+    """
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            logger.warning("Invalid timeout value %r, falling back to defaults", value)
+            return None
+    logger.warning("Unsupported timeout type %s, falling back to defaults", type(value))
+    return None
+
+
 async def with_mcp_stability[T](
     func: Callable[..., Awaitable[T]],
     *args: JsonValue,
-    timeout: float = MCP_TOOL_TIMEOUT_SECONDS,
+    timeout: JsonValue | None = None,
+    stability_timeout: JsonValue | None = None,
     **kwargs: JsonValue,
 ) -> T:
     """Execute MCP tool with stability protections.
@@ -271,7 +289,8 @@ async def with_mcp_stability[T](
     Args:
         func: Async function to execute
         *args: Positional arguments for func
-        timeout: Maximum execution time in seconds
+        timeout: Maximum execution time in seconds (public API)
+        stability_timeout: Internal timeout override (used by wrappers)
         **kwargs: Keyword arguments for func
 
     Returns:
@@ -282,8 +301,27 @@ async def with_mcp_stability[T](
         RuntimeError: If resource limits exceeded or connection fails
     """
     semaphore = _get_semaphore()
-    kwargs_model = MCPToolArguments.model_validate(kwargs)
-    return await _execute_with_retry(func, semaphore, timeout, args, kwargs_model)
+
+    stability_timeout_value = _to_timeout_value(stability_timeout)
+    timeout_value = _to_timeout_value(timeout)
+
+    effective_timeout = (
+        stability_timeout_value or timeout_value or float(MCP_TOOL_TIMEOUT_SECONDS)
+    )
+
+    func_kwargs = {
+        key: value
+        for key, value in kwargs.items()
+        if key not in {"timeout", "stability_timeout"}
+    }
+    kwargs_model = MCPToolArguments.model_validate(func_kwargs)
+    return await _execute_with_retry(
+        func,
+        semaphore,
+        effective_timeout,
+        args,
+        kwargs_model,
+    )
 
 
 def mcp_tool_wrapper[T](
@@ -312,7 +350,9 @@ def mcp_tool_wrapper[T](
         @functools.wraps(func)
         async def wrapper(*args: JsonValue, **kwargs: JsonValue) -> T:
             """Wrapped function with stability protections."""
-            return await with_mcp_stability(func, *args, timeout=timeout, **kwargs)
+            return await with_mcp_stability(
+                func, *args, stability_timeout=timeout, **kwargs
+            )
 
         # Explicitly preserve signature for FastMCP
         # FastMCP uses inspect.signature() which needs the original signature
@@ -351,7 +391,7 @@ async def execute_tool_with_stability[T](
         TimeoutError: If operation exceeds timeout
         RuntimeError: If resource limits exceeded or connection fails
     """
-    return await with_mcp_stability(func, *args, timeout=timeout, **kwargs)
+    return await with_mcp_stability(func, *args, stability_timeout=timeout, **kwargs)
 
 
 async def check_connection_health() -> ConnectionHealth:

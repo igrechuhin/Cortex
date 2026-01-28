@@ -36,7 +36,7 @@ The massive `configure()` function was handling 3 components (validation, optimi
 
 **Extraction Pattern:**
 
-```
+```text
 configure() (225 lines)
 ├─ Dispatcher logic (28 lines) ✅
 ├─ _configure_validation() (18 lines) ✅

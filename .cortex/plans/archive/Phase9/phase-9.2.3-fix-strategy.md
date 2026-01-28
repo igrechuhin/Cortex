@@ -193,7 +193,7 @@ python3 scripts/analyze_dependencies.py
 
 **Expected Output:**
 
-```
+```text
 === Circular Dependencies ===
 ✅ No circular dependencies found!
 

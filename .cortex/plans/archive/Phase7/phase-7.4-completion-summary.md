@@ -234,7 +234,7 @@ The container is fully implemented and tested, providing a clean path forward wh
 
 ### Code Organization
 
-```
+```text
 src/cortex/
 ├── protocols.py          ⭐ NEW - Protocol definitions
 ├── container.py          ⭐ NEW - DI container

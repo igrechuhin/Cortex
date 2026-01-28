@@ -116,7 +116,7 @@ We will implement a **defense-in-depth security model** with multiple layers:
 
 ### Security Architecture
 
-**Layer 1: Input Validation**
+### Layer 1: Input Validation
 
 All user inputs validated before processing:
 
@@ -176,7 +176,7 @@ class SecurityValidator:
         return True
 ```
 
-**Layer 2: Path Traversal Protection**
+### Layer 2: Path Traversal Protection
 
 All file paths validated against base directory:
 
@@ -227,7 +227,7 @@ class PathValidator:
             return False
 ```
 
-**Layer 3: Secure File Operations**
+### Layer 3: Secure File Operations
 
 Atomic operations with conflict detection:
 
@@ -322,7 +322,7 @@ class SecureFileSystem:
         return self._locks[key]
 ```
 
-**Layer 4: Transclusion Security**
+### Layer 4: Transclusion Security
 
 Prevent infinite loops and unauthorized file access:
 
@@ -434,7 +434,7 @@ class SecureTransclusionEngine:
         return content
 ```
 
-**Layer 5: Resource Limits**
+### Layer 5: Resource Limits
 
 Prevent resource exhaustion:
 
@@ -483,7 +483,7 @@ class ResourceLimiter:
             return await f.read()
 ```
 
-**Layer 6: Privacy Protection**
+### Layer 6: Privacy Protection
 
 No telemetry, local-only by default:
 

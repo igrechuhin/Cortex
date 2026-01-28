@@ -11,7 +11,7 @@ This prompt template guides you through setting up shared rules via Git submodul
 
 ## Prompt
 
-```
+```text
 Please setup shared rules in my project at [PROJECT_ROOT].
 
 I want to use shared rules from: [SHARED_RULES_REPO_URL]
@@ -76,7 +76,7 @@ The assistant will:
 
 The shared rules repository should have this structure:
 
-```
+```text
 shared-rules/
 ├── README.md
 ├── python-security.mdc
@@ -106,7 +106,7 @@ After successful setup:
 
 To update shared rules later:
 
-```
+```text
 Please sync my shared rules from the remote repository.
 ```
 

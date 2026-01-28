@@ -1,6 +1,6 @@
 # Roadmap: MCP Memory Bank
 
-## Current Status (2026-01-27)
+## Current Status (2026-01-28)
 
 ### Active Work
 
@@ -22,9 +22,15 @@
 
 - 🔄 **Phase 21: Health-Check and Optimization Analysis System - Step 1: Create Health-Check Analysis Module** - IN PROGRESS (2026-01-26) - Created `src/cortex/health_check/` module with all core components: PromptAnalyzer, RuleAnalyzer, ToolAnalyzer, SimilarityEngine, DependencyMapper, QualityValidator, ReportGenerator. All files within size limits (largest: 292 lines), all functions within length limits. Type checking: 0 errors, 0 warnings. Tests: 51 tests passing (7 similarity_engine, 5 quality_validator, 8 prompt_analyzer, 6 rule_analyzer, 8 tool_analyzer, 10 report_generator, 7 dependency_mapper). Code formatted with Black, all quality gates passing. Next: Step 2 (Implement Similarity Detection Engine enhancements).
 
+- 🔄 **Phase 57: Fix markdown_lint MCP Tool Timeout** - IN PROGRESS (2026-01-27) - **FIX-ASAP** - The `fix_markdown_lint` MCP tool times out after 300s when `check_all_files=True` because it processes archived plans. Fixed by adding `.cortex/plans/archive/` to exclusion list in `_get_all_markdown_files()` to match CI behavior. See `../plans/phase-57-fix-markdown-lint-timeout.md` for details.
+
 - 🔄 **Plan: Roadmap Sync & Validation Error UX Improvements** - PLANNED (2026-01-27) - See `../plans/roadmap-sync-validation-error-ux.md` for full design and testing strategy to clarify roadmap_sync semantics, improve path resolution for Phase plan references, and enrich MCP error messages for invalid references while preserving existing TODO tracking behavior.
 
 - 🔄 **Plan: Enhance Tool Descriptions with USE WHEN and EXAMPLES** - PLANNED (2026-01-27) - See `../plans/enhance-tool-descriptions.plan.md` for comprehensive plan to improve all 53+ Cortex MCP tool descriptions by adding explicit "USE WHEN" triggers and "EXAMPLES" sections, following the pattern used in doc-mcp, taiga-ui-mcp, and react-mcp. This significantly improves tool discoverability for LLMs by making it clear when and how to use each tool.
+
+- 🔄 **Phase 60: Improve `manage_file` Discoverability and Error UX** - PLANNED (2026-01-28) - See `../plans/phase-60-improve-manage-file-discoverability.plan.md` for investigation and implementation steps to make `manage_file` required parameters (`file_name`, `operation`) more discoverable, and to improve error responses when they are missing or invalid, especially in commit and memory-bank workflows.
+
+- ✅ **Phase 61: Investigate `execute_pre_commit_checks` MCP Output Handling Failure** - COMPLETE (2026-01-28) - Updated `execute_pre_commit_checks` and `fix_quality_issues` MCP tools to always return compact, structured JSON results even when underlying checks produce very large textual logs. Added recursive log truncation for large `output` fields (preserving structured counts and statuses) so commit workflows can reliably parse `checks_performed`, `results`, and `stats` without relying on `agent-tools/*.txt` spill files. Added tests in `tests/unit/test_pre_commit_tools.py` to cover large-output scenarios and verify that quality results remain usable after truncation.
 
 ## Future Enhancements
 

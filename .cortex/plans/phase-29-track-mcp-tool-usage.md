@@ -191,7 +191,7 @@ def track_tool_usage(func: Callable) -> Callable:
 
 **Approach Options**:
 
-**Option A: Decorator Chain**
+#### Option A: Decorator Chain
 
 ```python
 from cortex.core.tool_wrapper import track_tool_usage
@@ -202,7 +202,7 @@ async def my_tool(...):
     ...
 ```
 
-**Option B: Registration Wrapper**
+#### Option B: Registration Wrapper
 
 ```python
 def register_tracked_tool(mcp_server, func):
@@ -211,7 +211,7 @@ def register_tracked_tool(mcp_server, func):
     mcp_server.tool()(tracked_func)
 ```
 
-**Option C: FastMCP Monkey-Patch**
+#### Option C: FastMCP Monkey-Patch
 
 - Intercept FastMCP's tool registration to add tracking automatically
 - Most transparent but requires framework knowledge
@@ -425,7 +425,7 @@ class ToolUsageStats(TypedDict):
 
 ### Storage Structure
 
-```
+```text
 .cortex/
 └── .cache/
     └── usage/

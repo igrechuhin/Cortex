@@ -262,7 +262,7 @@ def get_preference_recommendation(pref) -> str:
 
 ---
 
-## Backward Compatibility
+## Backward Compatibility (Learning Engine Split)
 
 ### Preserved Public API
 
@@ -372,7 +372,7 @@ uv run isort src/cortex/refactoring/learning_*.py
 
 ---
 
-## Files Modified
+## Files Modified (Learning Engine Split)
 
 ### New Files Created
 

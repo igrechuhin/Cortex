@@ -245,14 +245,12 @@ def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
 
 | Module | Operation | Before | After | Improvement |
 |--------|-----------|--------|-------|-------------|
-| **rules_indexer.py** |
-| File pattern matching | List creation every call | Frozenset at import | **100%** |
-| File scanning | O(dirs × patterns²) | O(dirs + patterns) | **40-60%** |
-| Regex compilation | Per invocation | Module-level | **30-50%** |
-| Section parsing | String operations | Pre-compiled regex | **20-30%** |
-| **insight_formatter.py** |
-| List allocations | Dynamic growth | Pre-allocated capacity | **20-30%** |
-| Recommendation formatting | Individual appends | Batch extend | **15-25%** |
+| **rules_indexer.py** | File pattern matching | List creation every call | Frozenset at import | **100%** |
+| **rules_indexer.py** | File scanning | O(dirs × patterns²) | O(dirs + patterns) | **40-60%** |
+| **rules_indexer.py** | Regex compilation | Per invocation | Module-level | **30-50%** |
+| **rules_indexer.py** | Section parsing | String operations | Pre-compiled regex | **20-30%** |
+| **insight_formatter.py** | List allocations | Dynamic growth | Pre-allocated capacity | **20-30%** |
+| **insight_formatter.py** | Recommendation formatting | Individual appends | Batch extend | **15-25%** |
 
 **Overall Expected:**
 
@@ -324,7 +322,7 @@ def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
 
 ### Style Compliance
 
-#### rules_indexer.py
+#### rules_indexer.py (Style)
 
 - ✅ **Formatted with black** (100% compliance)
 - ✅ **Type hints:** 100% coverage
@@ -332,7 +330,7 @@ def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
 - ✅ **File size:** 430 lines (<400 limit... needs verification)
 - ✅ **Python 3.13+ features:** frozenset, pre-compiled regex
 
-#### insight_formatter.py
+#### insight_formatter.py (Style)
 
 - ✅ **Formatted with black** (100% compliance)
 - ✅ **Type hints:** 100% coverage
@@ -342,13 +340,13 @@ def _format_insights_text(self, insights_list: list[InsightDict]) -> list[str]:
 
 ### Documentation
 
-#### rules_indexer.py
+#### rules_indexer.py (Documentation)
 
 - ✅ **Module docstring updated** with optimization notes
 - ✅ **Performance characteristics documented** (Big-O)
 - ✅ **Module-level constants documented** with purpose
 
-#### insight_formatter.py
+#### insight_formatter.py (Documentation)
 
 - ✅ **Module docstring updated** with optimization notes
 - ✅ **Method docstrings updated** with performance characteristics

@@ -83,13 +83,13 @@ Current tool registration doesn't align with MCP protocol semantics:
 
 ### Step 1: Audit All Tools (4-6 hours)
 
-**Task 1.1: Inventory All Tools**
+#### Task 1.1: Inventory All Tools
 
 - List all 53+ tools currently registered
 - Document each tool's purpose and operation type
 - Create spreadsheet or markdown table with categorization
 
-**Task 1.2: Categorize Each Tool**
+#### Task 1.2: Categorize Each Tool
 
 - For each tool, determine:
   - Is it read-only? → Resource candidate
@@ -97,7 +97,7 @@ Current tool registration doesn't align with MCP protocol semantics:
   - Is it hybrid? → Needs special handling
 - Document decision rationale for each tool
 
-**Task 1.3: Identify Hybrid Operations**
+#### Task 1.3: Identify Hybrid Operations
 
 - List tools that can do both read and write
 - Examples:
@@ -113,28 +113,28 @@ Current tool registration doesn't align with MCP protocol semantics:
 
 ### Step 2: Design Resource API (3-4 hours)
 
-**Task 2.1: Research FastMCP 2.0 Resource Support**
+#### Task 2.1: Research FastMCP 2.0 Resource Support
 
 - Verify FastMCP 2.0 supports `@mcp.resource()` decorator
 - Review FastMCP 2.0 documentation for Resource API
 - Check existing codebase for any Resource examples
 - Test Resource registration syntax
 
-**Task 2.2: Design Resource API Pattern**
+#### Task 2.2: Design Resource API Pattern
 
 - Define Resource decorator pattern (e.g., `@mcp.resource()`)
 - Design Resource response format (should match current Tool responses for compatibility)
 - Define Resource URI/identifier pattern
 - Document Resource vs Tool naming conventions
 
-**Task 2.3: Design Hybrid Operation Strategy**
+#### Task 2.3: Design Hybrid Operation Strategy
 
 - For `manage_file`: Split into `get_file` (Resource) and `write_file` (Tool)?
 - For `configure`: Split into `get_config` (Resource) and `update_config` (Tool)?
 - Or: Keep single operation but register as both Resource and Tool?
 - Document recommended approach
 
-**Task 2.4: Plan Backward Compatibility**
+#### Task 2.4: Plan Backward Compatibility
 
 - Strategy A: Keep Tools as-is, add Resources alongside (gradual migration)
 - Strategy B: Transform immediately, maintain Tool aliases temporarily
@@ -150,14 +150,14 @@ Current tool registration doesn't align with MCP protocol semantics:
 
 ### Step 3: Implement Resources (8-12 hours)
 
-**Task 3.1: Create Resource Registration Infrastructure**
+#### Task 3.1: Create Resource Registration Infrastructure
 
 - Add Resource registration support to `server.py`
 - Create Resource decorator wrapper (if needed)
 - Update tool registration system to support Resources
 - Add Resource listing/querying capabilities
 
-**Task 3.2: Transform Read-Only Tools to Resources**
+#### Task 3.2: Transform Read-Only Tools to Resources
 
 - Start with Phase 1 Foundation tools:
   - `get_memory_bank_stats` → Resource
@@ -187,7 +187,7 @@ Current tool registration doesn't align with MCP protocol semantics:
   - `get_synapse_rules` → Resource
   - `get_synapse_prompts` → Resource
 
-**Task 3.3: Handle Hybrid Operations**
+#### Task 3.3: Handle Hybrid Operations
 
 - Implement split operations for hybrid tools:
   - `get_file` (Resource) and `write_file` (Tool) for `manage_file`
@@ -195,7 +195,7 @@ Current tool registration doesn't align with MCP protocol semantics:
 - Or implement parameter-based registration
 - Update function signatures and implementations
 
-**Task 3.4: Update Tool Registrations**
+#### Task 3.4: Update Tool Registrations
 
 - Keep write operations as Tools:
   - `rollback_file_version` → Tool
@@ -220,21 +220,21 @@ Current tool registration doesn't align with MCP protocol semantics:
 
 ### Step 4: Update Tests and Documentation (4-6 hours)
 
-**Task 4.1: Add Resource Tests**
+#### Task 4.1: Add Resource Tests
 
 - Create test infrastructure for Resources
 - Add tests for each Resource operation
 - Verify Resource responses match expected format
 - Test Resource listing and querying
 
-**Task 4.2: Update Existing Tests**
+#### Task 4.2: Update Existing Tests
 
 - Update tests that call read-only operations to use Resources
 - Update tests that call write operations to use Tools
 - Verify all existing tests still pass
 - Add tests for hybrid operation splits
 
-**Task 4.3: Update Documentation**
+#### Task 4.3: Update Documentation
 
 - Update API documentation to distinguish Resources vs Tools
 - Update tool reference documentation
@@ -251,27 +251,27 @@ Current tool registration doesn't align with MCP protocol semantics:
 
 ### Step 5: Verification and Migration (2-4 hours)
 
-**Task 5.1: Verify Resource Functionality**
+#### Task 5.1: Verify Resource Functionality
 
 - Test all Resources work correctly via MCP protocol
 - Verify Resource responses are properly formatted
 - Test Resource listing and discovery
 - Verify Resource caching (if applicable)
 
-**Task 5.2: Verify Tool Functionality**
+#### Task 5.2: Verify Tool Functionality
 
 - Test all Tools still work correctly
 - Verify write operations function as expected
 - Test hybrid operation splits
 - Verify backward compatibility (if maintained)
 
-**Task 5.3: Performance Testing**
+#### Task 5.3: Performance Testing
 
 - Compare Resource vs Tool performance (if measurable)
 - Verify no performance regressions
 - Test Resource caching benefits (if applicable)
 
-**Task 5.4: Client Compatibility**
+#### Task 5.4: Client Compatibility
 
 - Test with existing MCP clients
 - Verify Resources are discoverable
@@ -326,7 +326,7 @@ async def rollback_file_version(
 
 ### Hybrid Operation Strategy
 
-**Option A: Split Operations (Recommended)**
+#### Option A: Split Operations (Recommended)
 
 ```python
 # Resource for read
@@ -351,7 +351,7 @@ async def write_file(
     # Write implementation...
 ```
 
-**Option B: Parameter-Based (Alternative)**
+#### Option B: Parameter-Based (Alternative)
 
 ```python
 # Single operation, registered as both Resource and Tool

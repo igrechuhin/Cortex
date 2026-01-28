@@ -246,7 +246,7 @@ Address issues in priority order:
 **Effort:** Medium (4-6 hours)  
 **Impact:** Medium - Security improvements
 
-**Issue 4.1: Command Injection in Commit Messages (MEDIUM)**
+#### Issue 4.1: Command Injection in Commit Messages (MEDIUM)
 
 **Location:** Git commit operations  
 **Risk:** User-provided commit messages not sanitized before git operations
@@ -278,7 +278,7 @@ Address issues in priority order:
 
 ---
 
-**Issue 4.2: XSS in Exported Content (LOW)**
+#### Issue 4.2: XSS in Exported Content (LOW)
 
 **Location:** JSON exports  
 **Risk:** No HTML escaping for exported content
@@ -309,7 +309,7 @@ Address issues in priority order:
 
 ---
 
-**Issue 4.3: ReDoS in Regex Patterns (LOW)**
+#### Issue 4.3: ReDoS in Regex Patterns (LOW)
 
 **Location:** User-provided regex patterns  
 **Risk:** Malicious regex patterns could cause denial of service

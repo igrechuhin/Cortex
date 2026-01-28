@@ -197,7 +197,7 @@ Evaluate migrating from MCP SDK's FastMCP 1.0 to FastMCP 2.0 standalone package 
 4. **Test commit procedure**: Verify JSON serialization error is resolved
 5. **Update documentation**: Note FastMCP 2.0 usage and FunctionTool behavior
 
-### Recommendation
+### Recommendation (FastMCP 2.0 Migration)
 
 **PROCEED WITH FULL MIGRATION**: POC shows FastMCP 2.0 works correctly with our wrapper. The enhanced serialization handling should resolve the JSON parsing errors. Migration is straightforward - mostly import changes and wrapper update (already done).
 

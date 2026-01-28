@@ -120,7 +120,7 @@ We will implement a **hybrid storage architecture** combining:
 
 **Write Path**:
 
-```
+```text
 User Write Request
     ↓
 FileSystemManager.write_file()
@@ -135,7 +135,7 @@ Success Response
 
 **Read Path**:
 
-```
+```text
 Metadata Query
     ↓
 MetadataIndex.get_metadata()
@@ -151,7 +151,7 @@ Read from disk + validate hash
 
 **External Change Detection**:
 
-```
+```text
 File Modified Externally
     ↓
 FileWatcher detects change

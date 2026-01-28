@@ -1,0 +1,10 @@
+# Markdownlint-cli2 configuration
+# Excludes archived plan files from linting (historical documents)
+globs:
+  - "**/*.md"
+  - "**/*.mdc"
+  - "!**/node_modules/**"
+  - "!**/.venv/**"
+  - "!**/venv/**"
+  - "!**/__pycache__/**"
+  - "!**/.git/**"

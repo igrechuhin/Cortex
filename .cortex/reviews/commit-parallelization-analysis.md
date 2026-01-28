@@ -12,7 +12,7 @@ The commit workflow delegates work to specialized subagents. This analysis ident
 
 ### Sequential Chain (Steps 0-4): Code Quality Pipeline
 
-```
+```text
 Step 0: error-fixer
   ↓ (must fix errors before quality check)
 Step 0.5: quality-checker (preflight)
@@ -37,7 +37,7 @@ Step 4: test-executor
 
 ### Documentation Pipeline (Steps 5-10): Potential Parallelization Zone
 
-```
+```text
 Step 5: memory-bank-updater (activeContext.md, progress.md, roadmap.md)
   ↓ (Step 6 is part of Step 5 - same agent, sequential)
 Step 6: memory-bank-updater (roadmap.md updates)
@@ -188,13 +188,13 @@ Step 10: roadmap-sync-validator (validates roadmap sync)
 
 ### Current Sequential Flow
 
-```
+```text
 0 → 0.5 → 1 → 1.5 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14
 ```
 
 ### Optimized Parallel Flow
 
-```
+```text
 0 → 0.5 → 1 → 1.5 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → [9 || 10] → 11 → 12 → 13 → 14
                                                       ↑ parallel
 ```

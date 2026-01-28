@@ -64,14 +64,14 @@ error_response(
 
 Added 12 new exception classes organized by phase:
 
-**Phase 4 Enhancement & Phase 6: Rules**
+#### Phase 4 Enhancement & Phase 6: Rules
 
 - `RulesError` - Base exception for rules-related errors
 - `RulesIndexingError` - Rule indexing failures
 - `SharedRulesError` - Shared rules operation failures
 - `SharedRulesGitError` - Git operation failures for shared rules
 
-**Phase 5: Refactoring and Learning**
+#### Phase 5: Refactoring and Learning
 
 - `RefactoringError` - Base exception for refactoring errors
 - `RefactoringValidationError` - Refactoring validation failures
@@ -80,7 +80,7 @@ Added 12 new exception classes organized by phase:
 - `LearningError` - Learning engine errors
 - `ApprovalError` - Approval management failures
 
-**Phase 8: Project Structure**
+#### Phase 8: Project Structure
 
 - `StructureError` - Base exception for structure errors
 - `StructureMigrationError` - Structure migration failures

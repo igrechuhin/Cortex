@@ -92,7 +92,7 @@ Updated [tools/**init**.py](../src/cortex/tools/__init__.py):
 
 ### Code Organization
 
-```
+```text
 tools/
 ├── file_operations.py          (238 lines) - File I/O operations
 ├── validation_operations.py    (255 lines) - Validation checks

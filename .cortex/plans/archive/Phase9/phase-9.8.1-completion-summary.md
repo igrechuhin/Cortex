@@ -362,7 +362,7 @@ gtimeout -k 5 300 ./.venv/bin/pytest tests/unit/ \
 - ⏱️ 11.20 seconds
 - 📊 19% overall coverage
 
-### Test Coverage
+### Test Coverage (Phase 9.8.1)
 
 | Module | Coverage | Tests |
 |--------|----------|-------|

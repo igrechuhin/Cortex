@@ -58,7 +58,7 @@ This phase addresses **4 CRITICAL file size violations** that block production r
 
 **Current Structure:**
 
-```
+```text
 protocols.py (2,234 lines)
 ├── FileSystemProtocol (~300 lines)
 ├── MetadataProtocol (~250 lines)
@@ -72,7 +72,7 @@ protocols.py (2,234 lines)
 
 **Target Structure:**
 
-```
+```text
 core/protocols/ (new directory)
 ├── __init__.py (100 lines) - Re-export all protocols for backward compatibility
 ├── file_system.py (300 lines) - FileSystemProtocol
@@ -86,14 +86,14 @@ core/protocols/ (new directory)
 
 #### Implementation Strategy
 
-**Step 1: Create Directory Structure**
+##### Step 1: Create Directory Structure
 
 ```bash
 mkdir -p src/cortex/core/protocols
 touch src/cortex/core/protocols/__init__.py
 ```
 
-**Step 2: Extract Protocols by Domain**
+##### Step 2: Extract Protocols by Domain
 
 Extract in this order (lowest dependencies first):
 
@@ -129,7 +129,7 @@ Extract in this order (lowest dependencies first):
 6. **optimization.py** (400 lines)
 7. **refactoring.py** (350 lines)
 
-**Step 3: Create Backward-Compatible **init**.py**
+##### Step 3: Create Backward-Compatible **init**.py
 
 ```python
 """
@@ -165,7 +165,7 @@ __all__ = [
 ]
 ```
 
-**Step 4: Update All Import Statements**
+##### Step 4: Update All Import Statements
 
 No changes needed! Existing code uses:
 
@@ -175,7 +175,7 @@ from cortex.core.protocols import FileSystemProtocol
 
 This still works because `__init__.py` re-exports everything.
 
-**Step 5: Verification**
+##### Step 5: Verification (Protocols Split)
 
 1. **Run tests:** `pytest tests/ -v`
 2. **Check imports:** All 46+ modules import successfully
@@ -229,7 +229,7 @@ This still works because `__init__.py` re-exports everything.
 **Effort:** High (2-3 days)
 **Impact:** Maintainability 7.5/10 → 8.5/10
 
-#### Current State Analysis
+#### Current State Analysis (Phase 4 Optimization)
 
 **File:** [src/cortex/tools/phase4_optimization.py](../src/cortex/tools/phase4_optimization.py)
 
@@ -238,11 +238,11 @@ This still works because `__init__.py` re-exports everything.
 - **Content:** 4 MCP tool handlers + helpers
 - **Problem:** Multiple concerns in single file
 
-#### Architecture
+#### Architecture (Phase 4 Optimization)
 
 **Current Structure:**
 
-```
+```text
 phase4_optimization.py (1,554 lines)
 ├── optimize_context() [handler + 300 lines helpers]
 ├── load_progressive_context() [handler + 250 lines helpers]
@@ -253,7 +253,7 @@ phase4_optimization.py (1,554 lines)
 
 **Target Structure:**
 
-```
+```text
 tools/
 ├── phase4_optimization.py (150 lines) - MCP handlers only, delegates to helpers
 ├── optimization/
@@ -265,16 +265,16 @@ tools/
 │   └── optimization_helpers.py (350 lines) - Shared utilities
 ```
 
-#### Implementation Strategy
+#### Implementation Strategy (Phase 4 Optimization)
 
-**Step 1: Create Directory Structure**
+##### Step 1: Create Directory Structure (Phase 4 Optimization)
 
 ```bash
 mkdir -p src/cortex/tools/optimization
 touch src/cortex/tools/optimization/__init__.py
 ```
 
-**Step 2: Extract Tool Modules**
+##### Step 2: Extract Tool Modules
 
 1. **context_optimizer_tool.py** (350 lines)
 
@@ -299,7 +299,7 @@ touch src/cortex/tools/optimization/__init__.py
 4. **relevance_scorer_tool.py** (250 lines)
 5. **optimization_helpers.py** (350 lines) - Shared utilities
 
-**Step 3: Refactor MCP Handlers (Thin Orchestrators)**
+##### Step 3: Refactor MCP Handlers (Thin Orchestrators)
 
 Update `phase4_optimization.py` to be thin handlers:
 
@@ -333,7 +333,7 @@ async def optimize_context(
 # Similar thin handlers for other tools...
 ```
 
-**Step 4: Update Tests**
+##### Step 4: Update Tests
 
 Update test imports:
 
@@ -349,13 +349,19 @@ from cortex.tools.optimization.context_optimizer_tool import (
 )
 ```
 
-**Step 5: Verification**
+##### Step 5: Verification
 
 1. Run tool tests: `pytest tests/tools/test_phase4_optimization.py -v`
 2. Check line counts: All files <400 lines
 3. Verify MCP tools still work
 
-#### Success Criteria
+##### Step 5: Verification (Phase 4 Optimization)
+
+1. Run tool tests: `pytest tests/tools/test_phase4_optimization.py -v`
+2. Check line counts: All files <400 lines
+3. Verify MCP tools still work
+
+#### Success Criteria (Phase 4 Optimization)
 
 - ✅ All optimization files <400 lines
 - ✅ MCP tools still functional
@@ -371,7 +377,7 @@ from cortex.tools.optimization.context_optimizer_tool import (
 **Effort:** Medium (1-2 days)
 **Impact:** Maintainability 8.5/10 → 9.0/10
 
-#### Current State Analysis
+#### Current State Analysis (Reorganization Planner)
 
 **File:** [src/cortex/refactoring/reorganization_planner.py](../src/cortex/refactoring/reorganization_planner.py)
 
@@ -380,9 +386,9 @@ from cortex.tools.optimization.context_optimizer_tool import (
 - **Content:** Reorganization planning logic
 - **Problem:** Multiple responsibilities (analysis, strategy, execution planning)
 
-#### Target Structure
+#### Target Structure (Reorganization Planner)
 
-```
+```text
 refactoring/
 ├── reorganization_planner.py (250 lines) - Orchestrator
 ├── reorganization/
@@ -392,9 +398,9 @@ refactoring/
 │   └── executor.py (300 lines) - Execution planning (action generation, validation)
 ```
 
-#### Implementation Strategy
+#### Implementation Strategy (Reorganization Planner)
 
-**Step 1: Extract Analysis Logic**
+##### Step 1: Extract Analysis Logic
 
 ```python
 # reorganization/analyzer.py (350 lines)
@@ -412,7 +418,7 @@ class ReorganizationAnalyzer:
         ...
 ```
 
-**Step 2: Extract Strategy Logic**
+##### Step 2: Extract Strategy Logic
 
 ```python
 # reorganization/strategies.py (400 lines)
@@ -429,7 +435,7 @@ class ByComplexity:
         ...
 ```
 
-**Step 3: Extract Execution Planning**
+##### Step 3: Extract Execution Planning
 
 ```python
 # reorganization/executor.py (300 lines)
@@ -447,7 +453,7 @@ class ExecutionPlanner:
         ...
 ```
 
-**Step 4: Refactor Orchestrator**
+##### Step 4: Refactor Orchestrator (Reorganization Planner)
 
 ```python
 # reorganization_planner.py (250 lines)
@@ -471,7 +477,7 @@ class ReorganizationPlanner:
         return {"issues": issues, "actions": actions, "scores": scores}
 ```
 
-#### Success Criteria
+#### Success Criteria (Reorganization Planner)
 
 - ✅ All reorganization files <400 lines
 - ✅ Clear separation of concerns
@@ -486,7 +492,7 @@ class ReorganizationPlanner:
 **Effort:** Medium (1-2 days)
 **Impact:** Maintainability 9.0/10 → 9.5/10
 
-#### Current State Analysis
+#### Current State Analysis (Structure Lifecycle)
 
 **File:** [src/cortex/structure/structure_lifecycle.py](../src/cortex/structure/structure_lifecycle.py)
 
@@ -495,9 +501,9 @@ class ReorganizationPlanner:
 - **Content:** Structure lifecycle management
 - **Problem:** Multiple lifecycle stages in single file
 
-#### Target Structure
+#### Target Structure (Structure Lifecycle)
 
-```
+```text
 structure/
 ├── structure_lifecycle.py (200 lines) - Orchestrator
 ├── lifecycle/
@@ -507,9 +513,9 @@ structure/
 │   └── migration.py (350 lines) - Migration operations (legacy detection, conversion)
 ```
 
-#### Implementation Strategy
+#### Implementation Strategy (Structure Lifecycle)
 
-**Step 1: Extract Setup Operations**
+##### Step 1: Extract Setup Operations
 
 ```python
 # lifecycle/setup.py (350 lines)
@@ -531,7 +537,7 @@ class StructureSetup:
         ...
 ```
 
-**Step 2: Extract Validation Operations**
+##### Step 2: Extract Validation Operations
 
 ```python
 # lifecycle/validation.py (300 lines)
@@ -549,7 +555,7 @@ class StructureValidator:
         ...
 ```
 
-**Step 3: Extract Migration Operations**
+##### Step 3: Extract Migration Operations
 
 ```python
 # lifecycle/migration.py (350 lines)
@@ -567,7 +573,7 @@ class StructureMigration:
         ...
 ```
 
-**Step 4: Refactor Orchestrator**
+##### Step 4: Refactor Orchestrator (Structure Lifecycle)
 
 ```python
 # structure_lifecycle.py (200 lines)
@@ -597,7 +603,7 @@ class StructureLifecycle:
         return await self.migration.migrate_from_legacy(legacy_type)
 ```
 
-#### Success Criteria
+#### Success Criteria (Structure Lifecycle)
 
 - ✅ All structure files <400 lines
 - ✅ Clear lifecycle separation

@@ -168,7 +168,7 @@ def list_cache_files(project_root: Path, cache_type: str | None = None) -> list[
 
 ### Cache Directory Structure
 
-```
+```text
 .cortex/
 ├── .cache/                    # Unified cache directory
 │   ├── summaries/             # SummarizationEngine cache

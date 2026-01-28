@@ -241,22 +241,22 @@ Systematically investigate the CI failure by:
 
 ## Risks & Mitigation
 
-**Risk 1: Missing files not committed**
+### Risk 1: Missing files not committed
 
 - **Mitigation:** Verify all new modules are in git before investigating
 - **Detection:** `git ls-files | grep validation` and `git status`
 
-**Risk 2: Import errors from refactoring**
+### Risk 2: Import errors from refactoring
 
 - **Mitigation:** Test all imports before committing
 - **Detection:** Run `pyright src/` and check for import errors
 
-**Risk 3: Test failures from import changes**
+### Risk 3: Test failures from import changes
 
 - **Mitigation:** Update all test imports to use new modules
 - **Detection:** Run full test suite before committing
 
-**Risk 4: File size or function length violations**
+### Risk 4: File size or function length violations
 
 - **Mitigation:** Run quality check scripts before committing
 - **Detection:** `check_file_sizes.py` and `check_function_lengths.py`

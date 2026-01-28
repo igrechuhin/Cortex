@@ -109,7 +109,7 @@ For a typical project with:
 
 **Before Optimization:**
 
-```
+```text
 Comparisons: 100 × 100 files × 10 × 10 sections = 100,000 section comparisons
 Each comparison: SequenceMatcher on ~500 bytes = ~0.1ms
 Total time: 100,000 × 0.1ms = 10 seconds
@@ -117,7 +117,7 @@ Total time: 100,000 × 0.1ms = 10 seconds
 
 **After Optimization (Best Case - Many Duplicates):**
 
-```
+```text
 Hash computations: 1,000 sections × 0.01ms = 10ms
 Hash comparisons: 100,000 × 0.001ms = 100ms
 Unique comparisons: ~10% = 10,000 × 0.1ms = 1 second
@@ -128,7 +128,7 @@ Improvement: 10s → 1.11s = 90% reduction ✅
 
 **After Optimization (Worst Case - All Unique):**
 
-```
+```text
 Hash computations: 1,000 × 0.01ms = 10ms
 Hash comparisons: 100,000 × 0.001ms = 100ms
 Unique comparisons: 100% = 100,000 × 0.1ms = 10 seconds
@@ -159,7 +159,7 @@ Improvement: 10s → 10.11s = ~0% (negligible overhead) ✅
 
 **Results:**
 
-```
+```text
 62 tests collected
 62 tests PASSED ✅
 0 tests FAILED
@@ -205,13 +205,13 @@ Pass rate: 100%
 
 ### Phase 10.3.1 Continues (Days 2-3)
 
-**Day 2: relevance_scorer.py Optimization**
+#### Day 2: relevance_scorer.py Optimization
 
 - Add `@lru_cache` to `calculate_dependency_scores()`
 - Implement cache invalidation
 - Expected: 60-80% improvement
 
-**Day 3: pattern_analyzer.py Optimization**
+#### Day 3: pattern_analyzer.py Optimization
 
 - Implement time-windowing for `_calculate_recent_patterns()`
 - Use set-based operations

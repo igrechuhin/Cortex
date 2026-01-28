@@ -10,7 +10,7 @@ This prompt template guides you through setting up Cursor IDE integration.
 
 ## Prompt
 
-```
+```text
 Please setup Cursor IDE integration in my project at [PROJECT_ROOT].
 
 I need you to:
@@ -137,21 +137,21 @@ After successful setup:
 
 ### MCP Server Not Connecting
 
-```
+```text
 Please check the MCP server configuration in .cursor/mcp.json.
 The server should be running and accessible.
 ```
 
 ### Tools Not Appearing
 
-```
+```text
 Please verify that the MCP server is properly registered.
 Check Cursor's settings → MCP Servers.
 ```
 
 ### Configuration Errors
 
-```
+```text
 Please validate the configuration files:
 1. .cursor/config.json syntax
 2. .cursor/mcp.json format
@@ -162,7 +162,7 @@ Please validate the configuration files:
 
 Test your integration:
 
-```
+```text
 Please test my Cursor integration by:
 1. Getting memory bank stats
 2. Validating the structure

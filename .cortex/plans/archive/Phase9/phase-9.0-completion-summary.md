@@ -34,7 +34,7 @@ Successfully reorganized the flat `src/cortex/` structure from **56 files in roo
 
 ### Before: Flat Structure (Poor Discoverability)
 
-```
+```text
 src/cortex/  (56 files in root)
 ├── exceptions.py
 ├── file_system.py
@@ -50,7 +50,7 @@ src/cortex/  (56 files in root)
 
 ### After: Organized Hierarchy (Clear Boundaries)
 
-```
+```text
 src/cortex/
 ├── __init__.py                  # Main package exports
 ├── main.py                      # Entry point

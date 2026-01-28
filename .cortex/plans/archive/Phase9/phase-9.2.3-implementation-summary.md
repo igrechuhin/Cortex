@@ -167,7 +167,7 @@ Added 7 new protocol definitions (lines 660-929, +269 lines):
 
 **Dependency Analysis Results:**
 
-```
+```text
 === Circular Dependencies ===
 Found 21 circular dependency cycle(s):
 1. optimization → core → optimization
@@ -570,14 +570,14 @@ The analyzer still shows `core → managers` dependency due to deferred imports 
 
 ## Architecture Impact Summary
 
-### Before Implementation
+### Before Implementation (Module Coupling)
 
 - 23 circular dependency cycles
 - 7 layer boundary violations
 - Core layer had module-level imports from: analysis, linking, managers, optimization, refactoring
 - Architecture score: 9.0/10
 
-### After Implementation
+### After Implementation (Module Coupling)
 
 - 14 circular dependency cycles (-39%)
 - 2 layer boundary violations (-71%)

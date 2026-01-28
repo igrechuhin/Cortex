@@ -28,21 +28,21 @@ Successfully fixed **2 integration test failures** (not 6 as initially estimated
 
 #### Test 1: test_validation_workflow (2 bugs)
 
-**Bug 1: LazyManager AttributeError**
+##### Bug 1: LazyManager AttributeError
 
 - **Issue:** Code was calling `duplication_detector.scan_all_files()` on a LazyManager wrapper
 - **Location:** [validation_operations.py:223-224](../src/cortex/tools/validation_operations.py#L223-L224)
 - **Cause:** Direct cast from `mgrs["duplication_detector"]` instead of using `get_manager()` helper
 - **Impact:** Quality validation completely broken
 
-**Bug 2: Duplications Response Format**
+##### Bug 2: Duplications Response Format
 
 - **Issue:** Code tried to iterate over dict as if it were a list
 - **Location:** [validation_operations.py:152](../src/cortex/tools/validation_operations.py#L152)
 - **Cause:** `scan_all_files()` returns `dict[str, object]` with keys `exact_duplicates`, `similar_content`, but code assumed it returned a list
 - **Impact:** Duplications validation completely broken
 
-**Bug 3: Response Structure**
+##### Bug 3: Response Structure
 
 - **Issue:** Quality validation response nested `overall_score` under `score` key, but tests expected it at root
 - **Cause:** Phase 7.10 API changes not reflected in response format
@@ -50,7 +50,7 @@ Successfully fixed **2 integration test failures** (not 6 as initially estimated
 
 #### Test 2: test_version_history_workflow
 
-**Bug: Version History Not Persisted**
+##### Bug: Version History Not Persisted
 
 - **Issue:** `get_version_history()` returned 0 versions after 2 writes
 - **Location:** [file_operations.py:141-150](../src/cortex/tools/file_operations.py#L141-L150)
@@ -210,7 +210,7 @@ if file_meta:
 
 ### Before Fixes
 
-```
+```text
 2 failed, 46 passed in 5.64s
 ```
 
@@ -221,7 +221,7 @@ if file_meta:
 
 ### After Fixes
 
-```
+```text
 48 passed in 5.06s
 ✅ 100% pass rate
 ```

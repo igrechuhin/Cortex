@@ -9,7 +9,7 @@ This prompt template guides you through checking if your Memory Bank needs migra
 
 ## Prompt
 
-```
+```text
 Please check if my Memory Bank at [PROJECT_ROOT] needs migration.
 
 I need you to:

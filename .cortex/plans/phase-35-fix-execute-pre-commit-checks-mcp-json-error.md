@@ -13,7 +13,7 @@ Fix the JSON parsing error that occurs when calling `execute_pre_commit_checks()
 
 During commit procedure execution, the `execute_pre_commit_checks()` MCP tool fails with:
 
-```
+```text
 Error: Expected ',' or '}' after property value in JSON at position 14 (line 1 column 15)
 ```
 

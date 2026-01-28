@@ -349,7 +349,7 @@ await rate_limiter.acquire()  # Throttles if needed
 
 ### Security Tests Output
 
-```
+```text
 tests/unit/test_security.py::TestInputValidator::test_validate_file_name_valid PASSED
 tests/unit/test_security.py::TestInputValidator::test_validate_file_name_empty PASSED
 tests/unit/test_security.py::TestInputValidator::test_validate_file_name_path_traversal PASSED
@@ -377,7 +377,7 @@ tests/unit/test_security.py::TestRateLimiter::test_rate_limiter_window_expiry PA
 
 ### Code Coverage
 
-```
+```text
 src/cortex/security.py    100      3     38      4    95%
 ```
 

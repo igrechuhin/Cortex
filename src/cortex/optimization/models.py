@@ -7,9 +7,9 @@ migrated from dataclass and legacy dict-based shapes for better validation.
 
 from typing import Literal
 
-from pydantic import ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from cortex.core.models import DictLikeModel
+from cortex.core.models import DictLikeModel, JsonValue
 
 # ============================================================================
 # Base Model
@@ -115,6 +115,40 @@ class FileMetadataForScoring(OptimizationBaseModel):
     )
     sections: list[str] = Field(default_factory=list, description="Section headings")
     priority: int | None = Field(default=None, ge=0, description="Loading priority")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize_sections(cls, data: JsonValue) -> JsonValue:
+        """Normalize section metadata into a list of headings.
+
+        Some metadata sources (e.g. Memory Bank
+        `manage_file(..., include_metadata=True)`)
+        provide `sections` as a list of objects like:
+          {"title": "## Current Status", "level": 2, ...}
+        while scoring code expects a simple list of headings.
+        """
+        if isinstance(data, BaseModel):
+            data = data.model_dump(mode="python")
+
+        if not isinstance(data, dict):
+            return data
+
+        sections_obj = data.get("sections")
+        if not isinstance(sections_obj, list):
+            return data
+
+        normalized: list[JsonValue] = []
+        for item in sections_obj:
+            if isinstance(item, str):
+                normalized.append(item)
+                continue
+            if isinstance(item, dict):
+                title_obj = item.get("title") or item.get("heading")
+                if isinstance(title_obj, str):
+                    normalized.append(title_obj)
+
+        data["sections"] = normalized
+        return data
 
 
 # ============================================================================

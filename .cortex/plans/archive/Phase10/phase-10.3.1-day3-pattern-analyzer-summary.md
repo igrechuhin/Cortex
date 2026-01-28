@@ -121,7 +121,7 @@ For a typical project that grows over time:
 
 **Before Optimization (Large Project - 100,000 entries):**
 
-```
+```text
 _calculate_recent_patterns(): 100,000 entries × 5 files/task = 500,000 operations
 get_access_frequency(): 100,000 entries = 100,000 operations
 Total: 600,000 operations
@@ -130,7 +130,7 @@ Time: ~300ms per analysis call
 
 **After Optimization (Large Project - 100,000 entries):**
 
-```
+```text
 _calculate_recent_patterns(): 10,000 entries × 5 files/task = 50,000 operations
 get_access_frequency(): 10,000 entries = 10,000 operations
 Total: 60,000 operations
@@ -169,7 +169,7 @@ Time: ~30ms per analysis call = 90% faster ✅
 
 **Results:**
 
-```
+```text
 35 tests collected
 35 tests PASSED ✅
 0 tests FAILED
@@ -242,13 +242,13 @@ Test execution time: 16.91s → 12.08s (28% faster)
 
 ### Phase 10.3.1 Continues (Days 4-5)
 
-**Day 4: link_parser.py and rules_indexer.py Optimization**
+#### Day 4: link_parser.py and rules_indexer.py Optimization
 
 - Compile regex patterns at module level
 - Implement rules file caching
 - Expected: 30-50% improvement in parsing, 40-60% in indexing
 
-**Day 5: insight_formatter.py and Final Polish**
+#### Day 5: insight_formatter.py and Final Polish
 
 - String builder optimization
 - Final performance validation

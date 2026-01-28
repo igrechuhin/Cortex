@@ -150,7 +150,7 @@ This pattern:
 - Conflict detection
 - Version history
 
-## Code Quality
+## Code Quality (Third Extraction)
 
 ### Before Extraction
 

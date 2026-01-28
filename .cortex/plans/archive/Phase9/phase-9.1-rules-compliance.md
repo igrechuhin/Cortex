@@ -114,7 +114,7 @@ Phase 9.1 addresses **critical rules violations** that are blocking 9.8/10 achie
 
 **Proposed Split:**
 
-```
+```text
 tools/
 ├── file_operations.py (~300 lines)
 │   └── manage_file(operation="read" | "write" | "metadata")
@@ -234,14 +234,14 @@ tools/
 
 ### 9.1.4: Complete TODO Implementations (2-4 hours)
 
-**Option A: Complete Implementation (4h)**
+#### Option A: Complete Implementation (4h)
 
 - Implement transclusion integration in refactoring operations
 - Add section content replacement via transclusion
 - Add section removal from original file
 - Add comprehensive tests
 
-**Option B: Verify & Remove (2h) - RECOMMENDED**
+#### Option B: Verify & Remove (2h) - RECOMMENDED
 
 - Verify refactoring works without transclusion features
 - Add tests to confirm current functionality

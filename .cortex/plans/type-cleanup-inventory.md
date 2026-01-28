@@ -1,4 +1,4 @@
-## Type Cleanup Inventory (Phase 53)
+# Type Cleanup Inventory (Phase 53)
 
 **Date:** 2026-01-23  
 **Source Plan:** `phase-53-type-safety-cleanup.md`  

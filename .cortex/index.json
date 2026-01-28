@@ -1,21 +1,21 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-01-27T22:06:53.843935",
+  "last_updated": "2026-01-28T16:03:42.161411",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 6281,
-      "token_count": 1468,
+      "size_bytes": 7771,
+      "token_count": 1819,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-27T21:01:13.382112",
-      "content_hash": "sha256:a2535f1374d6e7c563601e406cc7148ee0f6ddc6d71433723a2d5ec83b75d815",
+      "last_modified": "2026-01-28T16:02:25.513541",
+      "content_hash": "sha256:5d482bb4e8e8b6523a2c14c9c0db17affbd0a576af4a4f8bf167d40f4af82041",
       "sections": [
         {
-          "title": "## Current Status (2026-01-27)",
+          "title": "## Current Status (2026-01-28)",
           "level": 2,
           "line_start": 3,
           "line_end": 3,
@@ -31,14 +31,14 @@
         {
           "title": "## Future Enhancements",
           "level": 2,
-          "line_start": 29,
-          "line_end": 29,
+          "line_start": 35,
+          "line_end": 35,
           "content_hash": null
         }
       ],
       "read_count": 2,
-      "write_count": 14,
-      "last_read": "2026-01-27T21:01:13.382112",
+      "write_count": 16,
+      "last_read": "2026-01-28T16:02:25.513541",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -217,29 +217,65 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Added new plan: Enhance Tool Descriptions with USE WHEN and EXAMPLES"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T14:02:05.766647",
+          "content_hash": "sha256:06b04b3caa07e49e41e92f907af6e48c79c1a4d0f02c513da37c5b863345d816",
+          "size_bytes": 7090,
+          "token_count": 1677,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Add Phase 60 plan entry for manage_file discoverability and error UX"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T16:02:25.513059",
+          "content_hash": "sha256:5d482bb4e8e8b6523a2c14c9c0db17affbd0a576af4a4f8bf167d40f4af82041",
+          "size_bytes": 7771,
+          "token_count": 1819,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Marked Phase 61 execute_pre_commit_checks output handling blocker as COMPLETE with structured JSON + log truncation implementation details"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 7041,
-      "token_count": 1550,
+      "size_bytes": 18471,
+      "token_count": 4218,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-26T18:24:38.909831",
-      "content_hash": "sha256:2b4a68664bbb8ffe32c414f3161a1ee9cc2cbb1f16886f58297435411727fc4c",
+      "last_modified": "2026-01-28T16:03:16.866454",
+      "content_hash": "sha256:3eabcf9b4dfc92f864db9f4430b92fe896aaab1f0b624c0ca7e364305d6776fc",
       "sections": [
         {
-          "title": "## 2026-01-26",
+          "title": "## 2026-01-28",
           "level": 2,
           "line_start": 3,
           "line_end": 3,
           "content_hash": null
+        },
+        {
+          "title": "## 2026-01-27",
+          "level": 2,
+          "line_start": 26,
+          "line_end": 26,
+          "content_hash": null
+        },
+        {
+          "title": "## 2026-01-26",
+          "level": 2,
+          "line_start": 46,
+          "line_end": 46,
+          "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 13,
-      "last_read": "2026-01-26T18:24:38.909831",
+      "write_count": 14,
+      "last_read": "2026-01-28T16:03:16.866454",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -385,20 +421,31 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Added progress entry for Phase 21 Step 2 completion"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T16:03:16.866076",
+          "content_hash": "sha256:3eabcf9b4dfc92f864db9f4430b92fe896aaab1f0b624c0ca7e364305d6776fc",
+          "size_bytes": 18471,
+          "token_count": 4218,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added 2026-01-28 progress entry for Phase 61 execute_pre_commit_checks JSON/log truncation fix"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 16327,
-      "token_count": 4051,
+      "size_bytes": 8793,
+      "token_count": 2151,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-27T22:06:53.842209",
-      "content_hash": "sha256:d2060175a03302ace51d8cb0f3e924908a188a9bb8d148b32535cbd2208c1cbf",
+      "last_modified": "2026-01-28T16:03:42.160178",
+      "content_hash": "sha256:fe9aebc69568bcba44362286e029caebf02ed688242eca896a54d6031e311a69",
       "sections": [
         {
-          "title": "## Current Focus (2026-01-27)",
+          "title": "## Current Focus (2026-01-28)",
           "level": 2,
           "line_start": 3,
           "line_end": 3,
@@ -414,58 +461,30 @@
         {
           "title": "### Recently Completed",
           "level": 2,
-          "line_start": 98,
-          "line_end": 98,
+          "line_start": 93,
+          "line_end": 93,
           "content_hash": null
         },
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 196,
-          "line_end": 196,
+          "line_start": 113,
+          "line_end": 113,
           "content_hash": null
         },
         {
-          "title": "## Code Quality Standards",
+          "title": "## Next Focus",
           "level": 2,
-          "line_start": 208,
-          "line_end": 208,
-          "content_hash": null
-        },
-        {
-          "title": "## Project Structure",
-          "level": 2,
-          "line_start": 216,
-          "line_end": 216,
-          "content_hash": null
-        },
-        {
-          "title": "## Context for AI Assistants",
-          "level": 2,
-          "line_start": 236,
-          "line_end": 236,
-          "content_hash": null
-        },
-        {
-          "title": "### Key Files",
-          "level": 2,
-          "line_start": 238,
-          "line_end": 238,
-          "content_hash": null
-        },
-        {
-          "title": "### Testing Approach",
-          "level": 2,
-          "line_start": 246,
-          "line_end": 246,
+          "line_start": 122,
+          "line_end": 122,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 8,
-      "last_read": "2026-01-27T22:06:53.842209",
+      "write_count": 9,
+      "last_read": "2026-01-28T16:03:42.160178",
       "last_write": "2026-01-26T08:21:45.157617",
-      "current_version": 10,
+      "current_version": 11,
       "version_history": [
         {
           "version": 3,
@@ -554,6 +573,17 @@
           "snapshot_path": ".cortex/history/activeContext_v10.md",
           "changed_sections": [],
           "change_description": "Updated via MCP"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T16:03:42.159440",
+          "content_hash": "sha256:fe9aebc69568bcba44362286e029caebf02ed688242eca896a54d6031e311a69",
+          "size_bytes": 8793,
+          "token_count": 2151,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context to reflect completion of Phase 61 execute_pre_commit_checks output handling and adjusted current focus date to 2026-01-28"
         }
       ]
     },
@@ -627,6 +657,153 @@
         }
       ],
       "last_read": "2026-01-27T12:18:46.245981"
+    },
+    "phase-60-improve-manage-file-discoverability.plan.md": {
+      "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/phase-60-improve-manage-file-discoverability.plan.md",
+      "exists": true,
+      "read_count": 0,
+      "write_count": 1,
+      "current_version": 1,
+      "version_history": [
+        {
+          "version": 1,
+          "timestamp": "2026-01-28T14:01:17.462425",
+          "content_hash": "sha256:daa2be8a755921700e5653f2bf41b4b9b0b51ff9d990968ed7463e1ea837f32f",
+          "size_bytes": 13018,
+          "token_count": 2814,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/phase-60-improve-manage-file-discoverability.plan_v1.md",
+          "changed_sections": [],
+          "change_description": "Add Phase 60 plan to improve manage_file discoverability and error UX"
+        }
+      ],
+      "size_bytes": 13018,
+      "token_count": 2814,
+      "token_model": "cl100k_base",
+      "last_modified": "2026-01-28T14:01:17.462757",
+      "content_hash": "sha256:daa2be8a755921700e5653f2bf41b4b9b0b51ff9d990968ed7463e1ea837f32f",
+      "sections": [
+        {
+          "title": "## Status",
+          "level": 2,
+          "line_start": 3,
+          "line_end": 3,
+          "content_hash": null
+        },
+        {
+          "title": "## Goal",
+          "level": 2,
+          "line_start": 10,
+          "line_end": 10,
+          "content_hash": null
+        },
+        {
+          "title": "## Context",
+          "level": 2,
+          "line_start": 18,
+          "line_end": 18,
+          "content_hash": null
+        },
+        {
+          "title": "## Problem Statement",
+          "level": 2,
+          "line_start": 25,
+          "line_end": 25,
+          "content_hash": null
+        },
+        {
+          "title": "## Approach",
+          "level": 2,
+          "line_start": 43,
+          "line_end": 43,
+          "content_hash": null
+        },
+        {
+          "title": "## Implementation Steps",
+          "level": 2,
+          "line_start": 60,
+          "line_end": 60,
+          "content_hash": null
+        },
+        {
+          "title": "### Phase 60.1: Investigation & Baseline",
+          "level": 2,
+          "line_start": 62,
+          "line_end": 62,
+          "content_hash": null
+        },
+        {
+          "title": "### Phase 60.2: Targeted UX Improvements for `manage_file`",
+          "level": 2,
+          "line_start": 91,
+          "line_end": 91,
+          "content_hash": null
+        },
+        {
+          "title": "### Phase 60.3: Optional Generalization to Other Tools",
+          "level": 2,
+          "line_start": 134,
+          "line_end": 134,
+          "content_hash": null
+        },
+        {
+          "title": "## Testing Strategy (95%+ Coverage Target)",
+          "level": 2,
+          "line_start": 154,
+          "line_end": 154,
+          "content_hash": null
+        },
+        {
+          "title": "### Unit Tests",
+          "level": 2,
+          "line_start": 158,
+          "line_end": 158,
+          "content_hash": null
+        },
+        {
+          "title": "### Integration Tests",
+          "level": 2,
+          "line_start": 176,
+          "line_end": 176,
+          "content_hash": null
+        },
+        {
+          "title": "### Acceptance Criteria",
+          "level": 2,
+          "line_start": 198,
+          "line_end": 198,
+          "content_hash": null
+        },
+        {
+          "title": "## Risks and Mitigations",
+          "level": 2,
+          "line_start": 205,
+          "line_end": 205,
+          "content_hash": null
+        },
+        {
+          "title": "## Timeline",
+          "level": 2,
+          "line_start": 223,
+          "line_end": 223,
+          "content_hash": null
+        },
+        {
+          "title": "## Dependencies",
+          "level": 2,
+          "line_start": 229,
+          "line_end": 229,
+          "content_hash": null
+        },
+        {
+          "title": "## Success Criteria",
+          "level": 2,
+          "line_start": 235,
+          "line_end": 235,
+          "content_hash": null
+        }
+      ],
+      "last_read": "2026-01-28T14:01:17.462757"
     }
   },
   "dependency_graph": {
@@ -643,9 +820,9 @@
     "sessions_count": 0
   },
   "totals": {
-    "total_files": 5,
-    "total_size_bytes": 29856,
-    "total_tokens": 7118,
-    "last_full_scan": "2026-01-27T22:06:53.842236"
+    "total_files": 6,
+    "total_size_bytes": 48260,
+    "total_tokens": 11051,
+    "last_full_scan": "2026-01-28T16:03:42.160197"
   }
 }

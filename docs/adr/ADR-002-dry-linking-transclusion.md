@@ -111,7 +111,7 @@ Transclusion (coined by Ted Nelson) is the inclusion of content from one documen
 
 ### Use Case Analysis
 
-**Use Case 1: Shared Configuration**
+### Use Case 1: Shared Configuration
 
 ```markdown
 <!-- projectBrief.md -->
@@ -121,7 +121,7 @@ Transclusion (coined by Ted Nelson) is the inclusion of content from one documen
 {{include:.cursor/config/tech-stack.md}}
 ```
 
-**Use Case 2: Progressive Detail**
+### Use Case 2: Progressive Detail
 
 ```markdown
 <!-- README.md -->
@@ -132,7 +132,7 @@ Transclusion (coined by Ted Nelson) is the inclusion of content from one documen
 {{include:docs/architecture-overview.md}}
 ```
 
-**Use Case 3: Modular Documentation**
+### Use Case 3: Modular Documentation
 
 ```markdown
 <!-- systemPatterns.md -->
@@ -143,7 +143,7 @@ Transclusion (coined by Ted Nelson) is the inclusion of content from one documen
 {{include:patterns/api.md}}
 ```
 
-**Use Case 4: Version-Specific Content**
+### Use Case 4: Version-Specific Content
 
 ```markdown
 <!-- migration-guide.md -->
@@ -756,7 +756,7 @@ async def resolve_transclusions_parallel(
 
 **Clear Error Messages**:
 
-```
+```text
 TransclusionError: Failed to resolve {{include:missing.md}}
   File: projectBrief.md, Line: 42
   Reason: Target file not found

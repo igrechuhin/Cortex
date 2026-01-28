@@ -41,7 +41,7 @@ The error format "Expected ',' or '}' after property value in JSON at position 1
 
 During commit procedure execution, Step 0 (Fix Errors) calls `execute_pre_commit_checks()` MCP tool without parameters (using defaults). The tool call fails with:
 
-```
+```text
 Error: Expected ',' or '}' after property value in JSON at position 14 (line 1 column 15)
 ```
 

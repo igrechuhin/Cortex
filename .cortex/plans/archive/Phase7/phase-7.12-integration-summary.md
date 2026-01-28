@@ -444,7 +444,7 @@ await fs_manager.read_file(file_path)
 
 ### Security Tests Output
 
-```
+```text
 tests/unit/test_security.py::TestInputValidator::test_validate_file_name_valid PASSED
 tests/unit/test_security.py::TestInputValidator::test_validate_file_name_empty PASSED
 tests/unit/test_security.py::TestInputValidator::test_validate_file_name_path_traversal PASSED
@@ -472,7 +472,7 @@ tests/unit/test_security.py::TestRateLimiter::test_rate_limiter_window_expiry PA
 
 ### File System Tests Output
 
-```
+```text
 tests/unit/test_file_system.py - 43 tests PASSED
 All validation, read/write, locking, and utility operations working correctly
 Rate limiting integrated seamlessly
