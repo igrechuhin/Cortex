@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-01-28T16:03:42.161411",
+  "last_updated": "2026-01-28T17:39:59.968645",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 7771,
-      "token_count": 1819,
+      "size_bytes": 7867,
+      "token_count": 1851,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-28T16:02:25.513541",
-      "content_hash": "sha256:5d482bb4e8e8b6523a2c14c9c0db17affbd0a576af4a4f8bf167d40f4af82041",
+      "last_modified": "2026-01-28T17:39:59.967628",
+      "content_hash": "sha256:ee3ae9f2b3b31fa79889b239fbe04589215e85826be59d28c4038af04fb690ce",
       "sections": [
         {
           "title": "## Current Status (2026-01-28)",
@@ -37,8 +37,8 @@
         }
       ],
       "read_count": 2,
-      "write_count": 16,
-      "last_read": "2026-01-28T16:02:25.513541",
+      "write_count": 20,
+      "last_read": "2026-01-28T17:39:59.967628",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -239,17 +239,61 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Marked Phase 61 execute_pre_commit_checks output handling blocker as COMPLETE with structured JSON + log truncation implementation details"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T17:06:13.784471",
+          "content_hash": "sha256:00a4292449c270aea623a397eea9acb5d2809efb78ed1aab69c68bc95e5e6fb1",
+          "size_bytes": 8167,
+          "token_count": 1913,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Add Phase 62 Synapse session optimization plan to roadmap"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T17:14:54.358448",
+          "content_hash": "sha256:30ebef616c29ed1941c235651e42ade6abffa7aabe0385271c1f5c34404e1ed2",
+          "size_bytes": 8143,
+          "token_count": 1902,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Mark Phase 57 markdown_lint timeout fix as COMPLETE and align Active Work section with implemented phases."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T17:33:00.876175",
+          "content_hash": "sha256:1fa4a94a4932a573c11b70c3375bf5f8164454b5b033a75b743fca027c947d37",
+          "size_bytes": 7770,
+          "token_count": 1834,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Marked roadmap sync & validation error UX improvements roadmap item as COMPLETE and documented implementation details"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T17:39:59.967350",
+          "content_hash": "sha256:ee3ae9f2b3b31fa79889b239fbe04589215e85826be59d28c4038af04fb690ce",
+          "size_bytes": 7867,
+          "token_count": 1851,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Enriched Phase 62 roadmap entry with session-optimization context and context-budget/memory-bank selection tuning scope"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 18471,
-      "token_count": 4218,
+      "size_bytes": 21580,
+      "token_count": 4905,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-28T16:03:16.866454",
-      "content_hash": "sha256:3eabcf9b4dfc92f864db9f4430b92fe896aaab1f0b624c0ca7e364305d6776fc",
+      "last_modified": "2026-01-28T17:33:56.676820",
+      "content_hash": "sha256:8414ef019795f5fd5b019c5ea1ecdf262681d4c9b02be41a596c0d77391388b1",
       "sections": [
         {
           "title": "## 2026-01-28",
@@ -261,21 +305,21 @@
         {
           "title": "## 2026-01-27",
           "level": 2,
-          "line_start": 26,
-          "line_end": 26,
+          "line_start": 50,
+          "line_end": 50,
           "content_hash": null
         },
         {
           "title": "## 2026-01-26",
           "level": 2,
-          "line_start": 46,
-          "line_end": 46,
+          "line_start": 70,
+          "line_end": 70,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 14,
-      "last_read": "2026-01-28T16:03:16.866454",
+      "write_count": 16,
+      "last_read": "2026-01-28T17:33:56.676820",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -432,17 +476,39 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Added 2026-01-28 progress entry for Phase 61 execute_pre_commit_checks JSON/log truncation fix"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T17:15:37.817511",
+          "content_hash": "sha256:d56105b79dcf80e025cc741ca83fb199612798b6801e7cb9621da9be24c5f20c",
+          "size_bytes": 19724,
+          "token_count": 4509,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Add Phase 57 markdown_lint timeout fix to progress log for 2026-01-28."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T17:33:56.676485",
+          "content_hash": "sha256:8414ef019795f5fd5b019c5ea1ecdf262681d4c9b02be41a596c0d77391388b1",
+          "size_bytes": 21580,
+          "token_count": 4905,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Logged completion of roadmap sync & validation error UX improvements work"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 8793,
-      "token_count": 2151,
+      "size_bytes": 3976,
+      "token_count": 921,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-28T16:03:42.160178",
-      "content_hash": "sha256:fe9aebc69568bcba44362286e029caebf02ed688242eca896a54d6031e311a69",
+      "last_modified": "2026-01-28T17:34:19.803180",
+      "content_hash": "sha256:bc20184d49de9dc68e62d3db9ebe980319dbb3868be6ece97003b50d94984d82",
       "sections": [
         {
           "title": "## Current Focus (2026-01-28)",
@@ -461,28 +527,28 @@
         {
           "title": "### Recently Completed",
           "level": 2,
-          "line_start": 93,
-          "line_end": 93,
+          "line_start": 34,
+          "line_end": 34,
           "content_hash": null
         },
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 113,
-          "line_end": 113,
+          "line_start": 39,
+          "line_end": 39,
           "content_hash": null
         },
         {
           "title": "## Next Focus",
           "level": 2,
-          "line_start": 122,
-          "line_end": 122,
+          "line_start": 45,
+          "line_end": 45,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 9,
-      "last_read": "2026-01-28T16:03:42.160178",
+      "write_count": 11,
+      "last_read": "2026-01-28T17:34:19.803180",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -584,6 +650,28 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Updated active context to reflect completion of Phase 61 execute_pre_commit_checks output handling and adjusted current focus date to 2026-01-28"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T17:16:05.968107",
+          "content_hash": "sha256:c09433dc1d2fe950f376f7202d70b13464dd0be06cc7074a7e8aa37e678f1945",
+          "size_bytes": 9422,
+          "token_count": 2302,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Reflect completion of Phase 57 markdown_lint timeout fix in active context and recently completed work."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-28T17:34:19.802414",
+          "content_hash": "sha256:bc20184d49de9dc68e62d3db9ebe980319dbb3868be6ece97003b50d94984d82",
+          "size_bytes": 3976,
+          "token_count": 921,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context after completing roadmap sync & validation UX improvements step"
         }
       ]
     },
@@ -821,8 +909,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 48260,
-    "total_tokens": 11051,
-    "last_full_scan": "2026-01-28T16:03:42.160197"
+    "total_size_bytes": 46648,
+    "total_tokens": 10540,
+    "last_full_scan": "2026-01-28T17:39:59.967646"
   }
 }

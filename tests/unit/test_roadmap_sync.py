@@ -14,6 +14,54 @@ from cortex.validation.roadmap_sync import (
 )
 
 
+class TestValidateRoadmapSyncEnhancements:
+    """Additional tests for roadmap synchronization enhancements."""
+
+    def test_sync_result_includes_total_todos_found(self) -> None:
+        """SyncValidationResult should report total_todos_found."""
+        # Arrange
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            src_dir = project_root / "src"
+            _ = src_dir.mkdir()
+            prod_file = src_dir / "module.py"
+            _ = prod_file.write_text("# TODO: Implement feature\n")
+
+            roadmap_content = (
+                "## Phase 1\n" + "See `src/module.py` for TODO implementation.\n"
+            )
+
+            # Act
+            result = validate_roadmap_sync(project_root, roadmap_content)
+
+            # Assert
+            assert result.valid is True
+            assert result.total_todos_found == 1
+
+    def test_validate_sync_resolves_plans_references_via_cortex_structure(self) -> None:
+        """plans/ references should resolve via .cortex/plans."""
+        # Arrange
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            cortex_dir = project_root / ".cortex"
+            plans_dir = cortex_dir / "plans"
+            plans_dir.mkdir(parents=True)
+            plan_file = plans_dir / "phase-21-health-check-optimization.md"
+            _ = plan_file.write_text("# Plan content\n")
+
+            roadmap_content = (
+                "## Phase 21\n"
+                "See `../plans/phase-21-health-check-optimization.md` for details.\n"
+            )
+
+            # Act
+            result = validate_roadmap_sync(project_root, roadmap_content)
+
+            # Assert
+            assert result.valid is True
+            assert len(result.invalid_references) == 0
+
+
 class TestScanCodebaseTodos:
     """Tests for scanning codebase for TODO markers."""
 

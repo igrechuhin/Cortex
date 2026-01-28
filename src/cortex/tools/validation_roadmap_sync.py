@@ -49,6 +49,7 @@ def _build_roadmap_sync_success_response(
             "invalid_references": invalid_refs,
             "warnings": warnings,
             "summary": {
+                "total_todos_found": result.total_todos_found,
                 "missing_entries_count": len(missing_entries),
                 "invalid_references_count": len(invalid_refs),
                 "warnings_count": len(warnings),

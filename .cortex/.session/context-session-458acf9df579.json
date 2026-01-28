@@ -1,0 +1,66 @@
+{
+  "session_id": "458acf9df579",
+  "session_start": "2026-01-28T17:13",
+  "load_context_calls": [
+    {
+      "timestamp": "2026-01-28T17:13",
+      "task_description": "Phase 57: Fix markdown_lint MCP Tool Timeout - The `fix_markdown_lint` MCP tool times out after 300s when `check_all_files=True` because it processes archived plans. Fixed by adding `.cortex/plans/archive/` to exclusion list in `_get_all_markdown_files()` to match CI behavior.",
+      "token_budget": 50000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "activeContext.md",
+        "techContext.md",
+        "roadmap.md",
+        "file.md",
+        "projectBrief.md",
+        "phase-60-improve-manage-file-discoverability.plan.md",
+        "tmp-mcp-test.md",
+        "progress.md",
+        "systemPatterns.md",
+        "productContext.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 11145,
+      "utilization": 0.2229,
+      "excluded_files": [],
+      "relevance_scores": {
+        "roadmap.md": 0.648,
+        "progress.md": 0.625,
+        "activeContext.md": 0.825,
+        "tmp-mcp-test.md": 0.24,
+        "file.md": 0.245,
+        "phase-60-improve-manage-file-discoverability.plan.md": 0.628
+      }
+    },
+    {
+      "timestamp": "2026-01-28T17:19",
+      "task_description": "Roadmap Sync & Validation Error UX Improvements \u2013 clarify roadmap_sync semantics, improve path resolution for Phase plan references, and enrich MCP error messages for invalid references while preserving TODO tracking behavior.",
+      "token_budget": 50000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "activeContext.md",
+        "techContext.md",
+        "roadmap.md",
+        "file.md",
+        "projectBrief.md",
+        "phase-60-improve-manage-file-discoverability.plan.md",
+        "tmp-mcp-test.md",
+        "progress.md",
+        "systemPatterns.md",
+        "productContext.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 11576,
+      "utilization": 0.23152,
+      "excluded_files": [],
+      "relevance_scores": {
+        "roadmap.md": 0.642,
+        "progress.md": 0.542,
+        "activeContext.md": 0.734,
+        "tmp-mcp-test.md": 0.24,
+        "file.md": 0.245,
+        "phase-60-improve-manage-file-discoverability.plan.md": 0.631
+      }
+    }
+  ]
+}

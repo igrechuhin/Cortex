@@ -1718,3 +1718,4 @@ class TestHandleRoadmapSyncValidation:
         assert result_data["check_type"] == "roadmap_sync"
         assert "valid" in result_data
         assert "summary" in result_data
+        assert result_data["summary"]["total_todos_found"] == 0

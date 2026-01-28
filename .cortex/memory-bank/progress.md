@@ -23,6 +23,30 @@
     - Commit workflows can now reliably parse `execute_pre_commit_checks` results in Cursor without depending on `agent-tools/*.txt` spill files.
     - Large human-readable logs are still available in truncated form for diagnostics, but no longer block access to the structured JSON contract expected by higher-level orchestration.
 
+- ✅ **Phase 57: Fix `fix_markdown_lint` MCP Tool Timeout** - COMPLETE (2026-01-28)
+  - **Problem**: The `fix_markdown_lint` MCP tool timed out after 300 seconds when `check_all_files=True` because it processed archived plans under `.cortex/plans/archive/`, causing 600+ markdown files and hundreds of lints to be scanned on every run.
+  - **Solution**: Updated `_get_all_markdown_files()` in `src/cortex/tools/markdown_operations.py` to exclude `.cortex/plans/archive/`, matching the CI workflow’s exclusion of archived plans when running markdown lint checks.
+  - **Implementation**:
+    - Added `.cortex/plans/archive/` to the exclusion list (for absolute paths) and an additional pattern without a leading slash to cover relative paths.
+    - Ensured that only active plans and other non-archived markdown files are included when `check_all_files=True`.
+    - Added `TestGetAllMarkdownFiles.test_get_all_markdown_files_excludes_archived_plans` in `tests/unit/test_fix_markdown_lint.py` to verify that archived plans are excluded while other markdown files remain included.
+  - **Verification**:
+    - `fix_markdown_lint(check_all_files=True)` now completes within the 300s timeout window.
+    - Tool behavior matches CI (archived plans excluded, active files still fully scanned).
+
+- ✅ **Phase: Roadmap Sync & Validation Error UX Improvements** - COMPLETE (2026-01-28)
+  - **Goal**: Clarify roadmap_sync semantics, improve path resolution for Phase plan references, and enrich MCP error messages for invalid references while preserving TODO tracking behavior.
+  - **Implementation**:
+    - Updated `src/cortex/validation/roadmap_sync.py` to resolve `plans/...` and `../plans/...` references using `get_cortex_path(project_root, CortexResourceType.PLANS)` instead of assuming project-root-relative paths, so roadmap references like ``../plans/phase-21-health-check-optimization.md`` correctly map to `.cortex/plans/...`.
+    - Added structure-aware missing-file warnings that include the normalized reference, the resolved path (relative to project root when possible), and phase context, making invalid reference diagnostics more actionable.
+    - Extended `SyncValidationResult` with a `total_todos_found` field and updated `src/cortex/tools/validation_roadmap_sync.py` to surface this in the `summary.total_todos_found` field for the `validate(check_type="roadmap_sync")` MCP tool.
+  - **Testing**:
+    - Updated `tests/tools/test_validation_operations.py::TestHandleRoadmapSyncValidation.test_handle_roadmap_sync_validation_success` to assert that `summary.total_todos_found` is present and equals 0 for a roadmap with no production TODOs.
+    - Verified that existing `tests/unit/test_roadmap_sync.py` coverage exercises the new structure-aware path resolution and summary handling.
+  - **Impact**:
+    - Roadmap sync validation now treats Phase plan references consistently with the Cortex directory structure, reducing false-positive invalid references for `.cortex/plans/...` links.
+    - MCP consumers (including `/cortex/commit`) can rely on `total_todos_found` and more descriptive warnings to explain roadmap_sync failures.
+
 ## 2026-01-27
 
 - ✅ **Commit Procedure: Increased Test Coverage Above 90% Threshold** - COMPLETE (2026-01-27)
@@ -58,7 +82,6 @@
     - All tests passing: 2850 passed, 0 failed, 100% pass rate, 90.02% coverage
     - All code quality checks passing (0 violations)
     - All type checks passing (0 errors, 0 warnings)
-    - All formatting checks passing
   - **Impact**: Prevents CI failures by ensuring ruff errors are fully resolved, not just auto-fixed
 
 - ✅ **Enhanced CI Workflow with Additional Pyright Error Patterns** - COMPLETE (2026-01-26)

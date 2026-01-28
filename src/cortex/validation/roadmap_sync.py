@@ -10,6 +10,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
 
 class TodoItem(BaseModel):
     """Represents a TODO item found in the codebase."""
@@ -39,6 +41,10 @@ class SyncValidationResult(BaseModel):
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
     valid: bool = Field(description="Whether validation passed")
+    total_todos_found: int = Field(
+        ge=0,
+        description="Total TODOs found in production code",
+    )
     missing_roadmap_entries: list[TodoItem] = Field(
         default_factory=lambda: list[TodoItem](),
         description="TODOs not tracked in roadmap",
@@ -197,6 +203,43 @@ def _check_todos_in_roadmap(
     return missing_entries
 
 
+def _resolve_reference_path(project_root: Path, ref: RoadmapReference) -> Path:
+    """Resolve roadmap reference path using Cortex structure.
+
+    Args:
+        project_root: Root directory of the project
+        ref: Roadmap reference to resolve
+
+    Returns:
+        Absolute path to referenced file, using structure-aware resolution
+        for plans/ references.
+    """
+    if ref.file_path.startswith("plans/"):
+        plans_root = get_cortex_path(project_root, CortexResourceType.PLANS)
+        relative_plan_path = (
+            Path(ref.file_path.split("/", 1)[1]) if "/" in ref.file_path else Path()
+        )
+        return plans_root / relative_plan_path
+
+    return project_root / ref.file_path
+
+
+def _format_missing_reference_warning(
+    ref: RoadmapReference, resolved_path: Path, project_root: Path
+) -> str:
+    """Create a human-readable warning for a missing reference target."""
+    try:
+        display_path = resolved_path.relative_to(project_root)
+    except ValueError:
+        display_path = resolved_path
+
+    phase_text = f" in phase '{ref.phase}'" if ref.phase else ""
+    return (
+        f"Invalid reference `{ref.file_path}`{phase_text} "
+        f"(resolved to `{display_path}` but file does not exist)"
+    )
+
+
 def _validate_roadmap_references(
     references: list[RoadmapReference], project_root: Path
 ) -> tuple[list[RoadmapReference], list[str]]:
@@ -213,14 +256,17 @@ def _validate_roadmap_references(
     warnings: list[str] = []
 
     for ref in references:
-        file_path = project_root / ref.file_path
-        if not file_path.exists():
+        resolved_path = _resolve_reference_path(project_root, ref)
+        if not resolved_path.exists():
             invalid_refs.append(ref)
+            warnings.append(
+                _format_missing_reference_warning(ref, resolved_path, project_root)
+            )
             continue
 
         if ref.line is not None:
             try:
-                content = file_path.read_text(encoding="utf-8")
+                content = resolved_path.read_text(encoding="utf-8")
                 total_lines = len(content.splitlines())
                 if ref.line > total_lines:
                     warning_msg = (
@@ -256,6 +302,7 @@ def validate_roadmap_sync(
 
     return SyncValidationResult(
         valid=valid,
+        total_todos_found=len(todos),
         missing_roadmap_entries=missing_entries,
         invalid_references=invalid_refs,
         warnings=warnings,
