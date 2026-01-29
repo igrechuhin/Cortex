@@ -6,8 +6,8 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
-- 🔄 **Phase 56: Commit Workflow Parallelization (Steps 9–11)** - IN PROGRESS (2026-01-29)
-  - Step model and prompt updates done: commit_workflow_model.py (step metadata, parallel block 9–11), commit.md Concurrency rules and parallel block annotation, unit tests. Remaining: optional integration tests, final memory bank/docs updates.
+- ✅ **Phase 56: Commit Workflow Parallelization (Steps 9–11)** - COMPLETE (2026-01-29)
+  - Step model and prompt updates, unit tests, integration tests for prompt–model alignment (`test_commit_workflow_prompt_alignment.py`), and memory bank/docs updates done. Phase 56 plan and roadmap marked COMPLETE.
 
 - ✅ **Plan: Enhance Tool Descriptions with USE WHEN and EXAMPLES** - COMPLETE (2026-01-29)
   - Added USE WHEN, EXAMPLES, and RETURNS sections to all Cortex MCP tool docstrings (Phase 1–8 and utility tools). Plan file todos updated. All 461 tool tests passing.
@@ -51,7 +51,6 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Next Focus
 
-- **Phase 56 (Commit Workflow Parallelization)** is IN PROGRESS: step model + commit.md concurrency rules + tests done; optional integration tests and final docs remain.
+- **Phase 56 (Commit Workflow Parallelization)** is COMPLETE (2026-01-29). Next roadmap items: Multi-Language Pre-Commit Support, Multi-Language Validation Support.
 - **Enhance Tool Descriptions** plan is COMPLETE (2026-01-29). Remaining plan todo: validate-discoverability (test tool discoverability with enhanced descriptions).
-- Next roadmap items after Phase 56: Multi-Language Pre-Commit Support, Multi-Language Validation Support.
 - Continue Phase 21 health-check enhancements when prioritized.
