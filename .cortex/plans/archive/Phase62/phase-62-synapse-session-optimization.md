@@ -1,6 +1,6 @@
 # Phase 62: Synapse Session Optimization – Harden Prompts and Rules
 
-**Status**: Planning  
+**Status**: COMPLETE (2026-01-29)  
 **Phase**: 62  
 **Owner**: Cortex MCP / Synapse  
 **Created**: 2026-01-28  
@@ -56,27 +56,19 @@ Out of scope:
 
 ## Implementation Steps
 
-### 0. Harden `commit.md` Against Unauthorized Git Writes (CRITICAL PRIORITY)
+### 0. Harden `commit.md` Against Unauthorized Git Writes (CRITICAL PRIORITY) — ✅ IMPLEMENTED (2026-01-29)
 
 - **Target**: `.cortex/synapse/prompts/commit.md`
-- **Changes**:
-  - Add an explicit precondition gate at the very beginning of the commit workflow:
-    - **"ONLY run this commit workflow when the user explicitly invoked `/cortex/commit` command. NEVER commit or push based on implicit assumptions like 'as always' or 'user expects this'."**
-  - Add a "Git Write Safety" section before Step 0:
-    - **"Branch safety rule": Default to a feature branch; NEVER push to `main` unless explicitly requested by the user.**
-    - **"Pre-commit checks": Before any `git add`, `git commit`, or `git push`, verify:**
-      - User explicitly requested commit/push (via `/cortex/commit` or explicit "commit"/"push" instruction)
-      - Current branch is not `main` (unless user explicitly requested push to `main`)
-      - All validation gates have passed
-  - Add explicit checks in Step 13 (Commit) and Step 14 (Push):
-    - **Step 13**: "Before committing, verify user explicitly requested commit. If not, STOP and ask for confirmation."
-    - **Step 14**: "Before pushing, verify user explicitly requested push. If pushing to `main`, require explicit confirmation."
+- **Changes** (all applied):
+  - Added explicit precondition gate at the very beginning: ONLY run when user explicitly invoked `/cortex/commit`; NEVER commit or push based on implicit assumptions.
+  - "Git Write Safety" section (with Branch Safety Rule and Git Write Preconditions) present before Step 0; fixed corrupted "Git Write Preconditions" subsection to list the three mandatory checks and reference Step 13/14.
+  - Step 13 and Step 14 already contain mandatory precondition checks (user explicitly requested commit/push; branch check; push to `main` requires explicit confirmation).
 - **Expected impact**: Prevents the single most costly failure mode (unapproved commits/pushes to `main`).
 
-### 1. Make Step 11 Submodule Handling Deterministic (HIGH PRIORITY)
+### 1. Make Step 11 Submodule Handling Deterministic (HIGH PRIORITY) — ✅ IMPLEMENTED (2026-01-29)
 
 - **Target**: `.cortex/synapse/prompts/commit.md` (Step 11 section)
-- **Changes**: Replace prose with an explicit, minimal command sequence and strict decision rule:
+- **Changes** (all applied): Replaced prose with an explicit, minimal command sequence and strict decision rule:
   - **Step 11.1**: Check parent repo status: `git status --porcelain`
     - If output contains `m .cortex/synapse` (dirty submodule), proceed to Step 11.2.
     - If no `m .cortex/synapse`, skip to Step 12.
@@ -90,15 +82,14 @@ Out of scope:
   - **Step 11.4**: Update parent repo submodule pointer:
     - `git add .cortex/synapse`
     - Verify with: `git diff --submodule=log -- .cortex/synapse` (should show pointer movement)
-- **Expected impact**: Eliminates the "pointer looks clean but submodule is dirty" blind spot.
+  - **Step 11.5 - Verify submodule is clean (CRITICAL - NEW)** — ✅ IMPLEMENTED (2026-01-29):
+    - **MANDATORY**: After Step 11.4, verify no uncommitted changes remain:
 
-### 2. Enforce Roadmap Sync as a True Commit Gate (HIGH PRIORITY)
+### 2. Enforce roadmap_sync as a True Commit Gate (HIGH PRIORITY) — ✅ IMPLEMENTED (2026-01-29)
 
-- **Targets**:
-  - `.cortex/synapse/prompts/commit.md` (Step 10)
-  - `.cortex/synapse/agents/roadmap-sync-validator.md`
-- **Changes**:
-  - **In Step 10**: Add explicit blocking rule:
+- **Target**: `.cortex/synapse/prompts/commit.md` (Step 10), `.cortex/synapse/agents/roadmap-sync-validator.md`
+- **Changes** (all applied):
+  - **In Step 10**: Explicit blocking rule present:
     - **"If `validate(check_type="roadmap_sync")` returns `valid: false`, STOP the commit workflow immediately. Do NOT proceed to Step 11. This is a hard gate, not a warning."**
   - **In roadmap-sync-validator agent**: Add remediation playbook:
     - **"When `valid: false` is returned, the agent MUST:**
@@ -108,21 +99,23 @@ Out of scope:
     - `missing_roadmap_entries`: ALWAYS blocks commit
     - `invalid_references` to non-existent files: ALWAYS blocks commit
     - `invalid_references` that are path-style mismatches where target exists: Log warning, create follow-up plan, but allow commit if TODO tracking is correct
-- **Expected impact**: Prevents "validator bypass culture" and maintains integrity of memory bank process.
+- **Expected impact**: Prevents "validator bypass culture" and maintains integrity of memory bank process. Commit.md Step 10 and roadmap-sync-validator agent already contain blocking rule, remediation playbook, and blocking vs non-blocking criteria.
 
-### 3. Update Plan Archiver to Use Preferred Tool Primitives (MEDIUM-HIGH PRIORITY)
+### 3. Update Plan Archiver to Use Preferred Tool Primitives (MEDIUM-HIGH PRIORITY) — ✅ IMPLEMENTED (2026-01-29)
 
 - **Target**: `.cortex/synapse/agents/plan-archiver.md`
-- **Changes**:
-  - Replace shell `find`/`grep` instructions with preferred tool primitives:
+- **Changes** (all applied):
+  - Replaced shell `find`/`grep` with preferred tool primitives:
     - **"Use `Glob` tool to find plan files**: `Glob(pattern="phase-*.md*", path=".cortex/plans")`**
     - **"Use `Grep` tool to search for status markers**: `Grep(pattern="Status.*COMPLETE", path=".cortex/plans", files=["phase-*.md"])`**
   - Ensure archiving logic ignores non-plan files like `README.md`, `STATUS.md`, `QUICK_START.md`
   - Add explicit guidance: **"NEVER use shell `find` or `grep` for file operations. Use standard tools (`Glob`, `Grep`, `Read`, `LS`) instead."**
-- **Expected impact**: More reliable archiving detection and better consistency with repo tool policies.
+- **Expected impact**: More reliable archiving detection and better consistency with repo tool policies. Plan-archiver already uses Glob/Grep, "NEVER use shell find or grep", and excludes non-plan files.
 
-### 4. Strengthen Python JSON-Boundary Typing Rules
+### 4. Strengthen Python JSON-Boundary Typing Rules — ✅ IMPLEMENTED (2026-01-29)
 
+- **Rules**: `.cortex/synapse/rules/python/python-coding-standards.mdc` already contains **"JsonValue at MCP Boundaries"** with `_to_timeout_value()` pattern and `with_mcp_stability` examples.
+- **Tests**: Added `TestJsonValueTimeoutNormalization` in `tests/unit/test_mcp_stability_timeouts.py` (numeric string timeout accepted and enforced; invalid string falls back to default).
 - Update `python-coding-standards.mdc` to add a dedicated subsection (e.g., **“JsonValue at MCP Boundaries”**) that:
   - Requires helpers like `_to_timeout_value()` to normalize `JsonValue` inputs (timeouts, metadata, tool params) into concrete Python types before use.
   - States that cross-cutting utilities must either:
@@ -131,9 +124,10 @@ Out of scope:
   - Includes `with_mcp_stability`-style examples demonstrating the correct pattern.
 - Cross-check other MCP utilities that consume `JsonValue` and ensure they follow the same pattern.
 
-### 5. Clarify Roadmap Sync Blocking Semantics (Updated with Gate Enforcement)
+### 5. Clarify Roadmap Sync Blocking Semantics (Updated with Gate Enforcement) — ✅ IMPLEMENTED (2026-01-29)
 
-- Update `roadmap-sync-validator.md` and the roadmap-sync prompt to:
+- **Target**: `.cortex/synapse/agents/roadmap-sync-validator.md` (Result Interpretation and blocking criteria already present).
+- **Changes** (all applied): roadmap-sync-validator and commit.md Step 10 already distinguish:
   - Distinguish clearly between:
     - **missing_roadmap_entries** (always critical, MUST block commit),
     - **invalid_references** to non-existent files (critical, MUST block commit),
@@ -143,29 +137,30 @@ Out of scope:
     - Allows commits to proceed when only benign path-style mismatches are present, while logging a warning and creating/updating a small follow-up plan to normalize paths.
 - Ensure future `/cortex/commit` logic treats roadmap-sync results according to this clarified policy.
 
-### 6. Enforce Sequential Final Validation Gate Ordering
+### 6. Enforce Sequential Final Validation Gate Ordering — ✅ IMPLEMENTED (2026-01-29)
 
 - Update `code-formatter.md`, `quality-checker.md`, and `commit.md` to:
   - Add explicit bullets under Step 12 (Final Validation Gate):
     - “NEVER run `fix_formatting.py` and `check_formatting.py` in parallel. They MUST run sequentially: first fix, then check.”
     - “Do not interleave other state-changing operations between final formatting fix and check.”
+
   - Optionally, recommend a single combined invocation (fix then check) as the canonical pattern.
 - If needed, add a short note in `plan-archiver`/other agents referencing that Step 12 must be treated as atomic/sequential for formatting.
 
-### 7. Improve `manage_file` Usage Guidance
+### 6.5. Add Immediate Markdown Lint Validation (NEW - MEDIUM PRIORITY) — ✅ IMPLEMENTED (2026-01-29)
 
-- Update `memory-bank-updater.md` and any prompts that call `manage_file` to:
-  - Add a “Correct `manage_file` Usage” section with:
-    - Minimal read example:
-      - `manage_file(file_name="activeContext.md", operation="read", include_metadata=False)`
-    - Minimal write example including `change_description`.
-    - Explicit warning: “`file_name` and `operation` are REQUIRED. Calling `manage_file` without these is a protocol violation and will raise a validation error.”
-  - Add an anti-pattern callout:
-    - “NEVER call `manage_file({})` or omit `file_name`/`operation`; this indicates a missing plan step or a bug in the orchestration prompt.”
-- Ensure commit and memory-bank prompts show at least one full, correct usage example.
+- **Target**: `.cortex/synapse/prompts/commit.md` - Step 12
 
-### 8. Elevate MCP Validation Errors in Error-Fixer and Commit Prompt
+- **Changes**: Add immediate markdown lint validation before submodule handling or after modifying markdown files:
+  - **Option A**: Add Step 12.0 before Step 12.1:
 
+- Add an anti-pattern callout:
+  - “NEVER call `manage_file({})` or omit `file_name`/`operation`; this indicates a missing plan step or a bug in the orchestration prompt.”
+**Step 7** — ✅ IMPLEMENTED (2026-01-29): Anti-pattern added in commit.md; commit and memory-bank prompts show full usage examples.
+
+### 8. Elevate MCP Validation Errors in Error-Fixer and Commit Prompt — ✅ IMPLEMENTED (2026-01-29)
+
+- **Changes** (all applied): error-fixer.md has "MCP Validation Errors (FIX-ASAP)" section; commit.md checklist includes "Scan for MCP validation errors".
 - Update `error-fixer.md` to:
   - Treat MCP argument validation errors (e.g., Pydantic missing fields, wrong types) as **FIX-ASAP** issues.
   - Instruct agents to:
@@ -176,14 +171,15 @@ Out of scope:
   - Add a checklist item before or within Step 0/Step 12:
     - “Scan recent MCP tool invocations for validation errors; if present, update prompts/rules to eliminate them before proceeding.”
 
-### 9. Tune Context Budgets and Memory Bank Selection Using Session Insights
+### 9. Tune Context Budgets and Memory Bank Selection Using Session Insights — ✅ IMPLEMENTED (2026-01-29)
 
+- **Changes** (all applied): implement-next-roadmap-step.md has task-aware token budgets, memory bank file selection, and file_effectiveness interpretation.
 - Use `analyze_context_effectiveness()` insights from the 2026-01-28 session to:
   - Update context-loading prompts so **fix/debug** and similar narrow tasks default to a smaller token budget (e.g., ~15,000 tokens instead of 50,000), increasing only when utilization regularly exceeds ~70%.
   - Prioritize high-value memory bank files (`activeContext.md`, `roadmap.md`, `progress.md`, and phase-specific plans) and treat consistently low-relevance files (`file.md`, `tmp-mcp-test.md`, `projectBrief.md`, `systemPatterns.md`, `productContext.md`, `techContext.md`) as optional for fix/debug workflows.
-  - Document in Synapse prompts how to interpret `file_effectiveness` recommendations (high / moderate / lower relevance) when constructing context for different task types.
+  - **Changes** (all applied): implement-next-roadmap-step.md has task-aware token budgets (fix/debug 15k, small 20–30k, architecture 40–50k), memory bank file selection (high/moderate/lower), and file_effectiveness interpretation.
 
-### 10. Incorporate Post-Commit Session Optimization Recommendations (2026-01-28T02)
+### 10. Incorporate Post-Commit Session Optimization Recommendations (2026-01-28T02) — ✅ IMPLEMENTED (2026-01-29)
 
 - Extend this phase to also cover the additional patterns and recommendations identified in the post-commit analysis `session-optimization-2026-01-28T02.md`:
   - **Roadmap ↔ plan coupling**: Ensure roadmap prompts/agents require a concrete plan file (or DRY wrapper) for every PLANNED phase, so roadmap_sync never reports references to non-existent plans (e.g., Phase 60).
@@ -191,33 +187,29 @@ Out of scope:
   - **Timely plan archiving**: Strengthen guidance in `plan-archiver` and related prompts so completed plans are archived to `archive/PhaseX/` as soon as their status becomes COMPLETE, rather than waiting for a later `/cortex/commit` run.
   - **Workflow-only sessions and `analyze_context_effectiveness()`**: Clarify in session-optimization prompts/agents that “no_data” from `analyze_context_effectiveness(analyze_all_sessions=False)` is expected for workflow/quality-only sessions (like `/cortex/commit` that do not call `load_context`), and suggest using commit-tool outputs and memory-bank diffs as alternative signals in those cases.
 
-### 11. Normalize Session Review Filename Conventions
+### 11. Normalize Session Review Filename Conventions — ✅ IMPLEMENTED (2026-01-29)
 
 - Define and document a single canonical filename pattern for session optimization reviews in Synapse prompts and agents (e.g., `session-optimization-YYYY-MM-DDTHH-MM.md`), and ensure all new review files are created via helpers that follow this pattern.
 - Update any review/analysis prompts (including session-optimization agents) to:
   - Treat the timestamp suffix after `T` as a full time-of-day component (hours and minutes), not a bare counter.
   - Recommend deriving this suffix from the actual session time (e.g., `T17-58`), avoiding ad-hoc names like `T02` that don’t encode a true timestamp.
-- Where appropriate, add a brief lint/check step or helper that can detect obviously malformed review filenames (e.g., `TNN` with no minutes) and suggest renaming them to match the canonical pattern before they are referenced in plans, roadmap entries, or memory-bank files.
+- **Changes** (all applied): session-optimization-analyzer and analyze-session-optimization.md document canonical pattern (session-optimization-YYYY-MM-DDTHH-MM.md), timestamp suffix (HH-MM), and malformed-filename detection/suggestions.
 
-### 12. Make Pydantic v2 the Default for JSON Assertions in Tests
+### 12. Make Pydantic v2 the Default for JSON Assertions in Tests — ✅ IMPLEMENTED (2026-01-29)
 
 - Align Synapse prompts and rules with `python-pydantic-standards.mdc` by adding a **“Testing JSON Responses”** subsection that:
   - Prohibits asserting on raw `dict` shapes for MCP JSON responses in tests.
   - Requires small Pydantic v2 `BaseModel` types and `model_validate_json()` / `model_validate()` for structured JSON produced by tools like `manage_file`, `rules`, and `execute_pre_commit_checks`.
-- Update test-writing guidance in prompts (`commit.md`, `review.md`, `create-plan.md`) to:
-  - Include a short example mirroring the new `ManageFileErrorResponse` pattern from `tests/tools/test_file_operations.py`.
-  - Explicitly instruct agents to prefer Pydantic models over dicts when validating structured JSON contracts.
+- **Changes** (all applied): python-pydantic-standards.mdc has "Testing JSON Responses" subsection; implement-next-roadmap-step, review.md, and create-plan.md reference Pydantic v2 and ManageFileErrorResponse pattern; commit.md has language-agnostic "Testing MCP JSON in tests" note.
 
-### 13. Clarify Coverage Handling for Focused Work
+### 13. Clarify Coverage Handling for Focused Work — ✅ IMPLEMENTED (2026-01-29)
 
 - Extend commit / implement prompts with a short **“Coverage Interpretation”** note that:
   - Emphasizes that new or modified code must meet ≥95% coverage for this phase’s changes, even when running focused tests.
   - Explains that global `fail-under=90` failures dominated by untouched modules should be logged as technical debt in `progress.md` / `activeContext.md` (and, where appropriate, new coverage-raising phases), not “fixed ad hoc” during unrelated, narrow tasks.
-- Add explicit examples showing how to:
-  - Record such coverage debt in the Memory Bank (including suggested wording).
-  - Reference the relevant coverage-improvement plan from roadmap entries instead of attempting broad, unscheduled coverage work.
+- **Changes** (all applied): implement-next-roadmap-step and commit.md have "Coverage Interpretation for Focused Work" with recording coverage debt wording and reference to coverage-improvement plans.
 
-### 14. Harden Session-Analysis Prompts Against Missing Telemetry and Fragile Transcript Paths
+### 14. Harden Session-Analysis Prompts Against Missing Telemetry and Fragile Transcript Paths — ✅ IMPLEMENTED (2026-01-29)
 
 - Update session-optimization agents (e.g., `session-optimization-analyzer.md` and related prompts) to:
   - Treat `analyze_context_effectiveness()` returning `status: "no_data"` as expected for workflow-only sessions and fall back to Memory Bank diffs, git/file diffs, and recent MCP tool invocations.
@@ -225,6 +217,7 @@ Out of scope:
 - Add guidance for a **“multi-signal”** analysis approach that:
   - Prioritizes Memory Bank files (`progress.md`, `activeContext.md`, phase plans) and structured tool responses as primary signals.
   - Uses transcripts and `load_context` traces as helpful but optional inputs rather than single points of failure for session optimization.
+- **Changes** (all applied): session-optimization-analyzer has Multi-Signal Analysis, no_data handling, dynamic transcript discovery; analyze-session-optimization.md has no_data fallback.
 
 - **Phase 60** – Improve `manage_file` discoverability and error UX  
 - **Roadmap Sync & Validation Error UX plan** (`roadmap-sync-validation-error-ux.md`)  
@@ -252,24 +245,42 @@ This phase coordinates and amplifies those efforts by turning concrete session f
     - `None`, `int`, `float`, numeric strings, and invalid strings.
   - Test roadmap-sync with mixed valid/invalid references.
 - **Coverage Target**:
-  - Achieve ≥95% coverage for all new helper logic and any new code paths added to validators, agents, or prompts-adjacent scripts.
+  - Achieve ≥95% coverae for all new helper logic and any new code paths added to validators, agents, or prompts-adjacent scripts.
   - Ensure no reduction in existing coverage for related modules.
 
 ## Risks and Mitigations
 
-- **Risk**: Over-constraining roadmap-sync behavior and blocking legitimate commits.  
+- **Risk**: Over-costraining roadmap-sync behavior and blocking legitimate commits.  
   - **Mitigation**: Clearly separate critical vs. non-critical issues and document behavior in both agents and prompts.
 
-- **Risk**: Inconsistent application of JsonValue normalization patterns across existing utilities.  
-  - **Mitigation**: Add explicit rules, examples, and a small inventory of MCP boundary helpers to audit.
+- **Risk**: Inconsisten application of JsonValue normalization patterns across existing utilities.  
+  - **Mitigaion**:Add explicit rules, examples, and a small inventory of MCP boundary helpers to audit.
 
 - **Risk**: Increased complexity in commit prompts.  
-  - **Mitigation**: Keep new wording concise and focused on sequencing/semantics, avoiding redundant detail already covered in agents.
+  - **Mitigation**: Kee new wording concise and focused on sequencing/semantics, avoiding redundant detail already covered in agents.
 
 ## Timeline (Rough, Updated with Critical Priorities)
 
-- **Day 1 (CRITICAL)**: Harden `commit.md` against unauthorized git writes (Step 0) and make Step 11 submodule handling deterministic (Step 1). These address the highest-severity failures.
-- **Day 2 (HIGH)**: Enforce roadmap_sync as a true commit gate (Step 2) and update plan archiver to use preferred tool primitives (Step 3).
-- **Day 3**: Update Python rules for JSON-boundary typing (Step 4) and clarify roadmap-sync blocking semantics (Step 5).
-- **Day 4**: Update agents/prompts for final gate ordering (Step 6), `manage_file` usage (Step 7), and MCP validation error handling (Step 8).
-- **Day 5**: Incorporate remaining recommendations (Steps 9–14), add/update tests, run full commit pipeline, and validate behavior under typical and edge-case scenarios.  
+- **Day 1 (CRITICAL)**:
+  - Harden `mit.d` against unauthorized git writes (Step 0) — ✅ Step 0 implemented 2026-01-29
+  - Make Step 11 submodule handling deterministic (Step 1) **+ Add Step 11.5 validation (CRITICAL - NEW)** — ✅ Step 11.5 implemented 2026-01-29
+  - Strengthen Step 11 validation requirements (enhancement to Step 1)
+  These address the highest-severity failures including the newly discovered submodule validation gap.
+- **Day 2 (H)**:
+  - Enforce roadmap_sync as a true commit gate (Step 2)
+  - Update plan archiver to use preferred tool primitives (Step 3)
+  - Add MCP tool failure investigation section (enhancement to Step 8)
+- **Day 3**:
+  - Update Python rules for JSON-boundary typing (Step 4)
+  - Clarify roadmap-sync blocking semantics (Step 5)
+  - Add immediate markdown lint validation (Step 6.5 - NEW)
+- **Day 4**:
+  - Update agents/prompts for final gate ordering (Step 6)
+  - `manage_file` usage (Step 7)
+  - MCP validation error handling (Step 8)
+- **Day 5**:
+  - Incorporate remaining recommendations (Steps 9–14)
+  - Add/update tests
+  - Run full commit pipeline
+  - Validate behavior under typical and edge-case scenarios
+  - **Test Step 11.5 validation** to ensure it catches uncommitted submodule changes  

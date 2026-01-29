@@ -1,15 +1,60 @@
 # Active Context: Cortex
 
-## Current Focus (2026-01-28)
+## Current Focus (2026-01-29)
 
 See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
+- ✅ **Phase 62: Step 0 – Harden commit.md Against Unauthorized Git Writes** - COMPLETE (2026-01-29)
+  - Strengthened precondition at top of `commit.md` to require explicit `/cortex/commit` and "NEVER commit or push based on implicit assumptions".
+  - Fixed corrupted "Git Write Preconditions" subsection to list three mandatory checks and reference Step 13/14. Step 13/14 already had mandatory precondition checks.
+
+- ✅ **Phase 62: Steps 6 & 6.5 – Sequential Step 12 and Markdown Re-validation** - COMPLETE (2026-01-29)
+  - Step 6: Added Step 12 sequential execution bullets to `code-formatter.md` and `quality-checker.md` (fix then check, never in parallel).
+  - Step 6.5: Added Step 12.0 in `commit.md` (re-validate markdown files modified during Steps 0-11 before Step 12.1); updated checklists and validation results.
+
+- ✅ **Phase 62: Step 11.5 Submodule Validation** - COMPLETE (2026-01-29)
+  - Added mandatory Step 11.5 in `commit.md` after Step 11.4: verify submodule is clean (`git -C .cortex/synapse status --porcelain`); if non-empty, BLOCK COMMIT. Addresses critical process violation from session-optimization-2026-01-28T23-21.
+  - Phase 62 plan and roadmap updated to reflect Step 11.5 implementation.
+
+- ✅ **Commit Procedure: Fixed Type Errors in Test Files** - COMPLETE (2026-01-28)
+  - Fixed 8 type errors in test files:
+    - Fixed 2 unused call result errors by assigning to `_`:
+      - `test_mcp_tools_integration.py:221`: `test_file.write_text()` result
+      - `test_consolidated.py:175`: `temp_memory_bank.write_text()` result
+    - Fixed 6 import errors by updating imports to use helper modules:
+      - `test_file_operations.py`: Updated imports from `cortex.tools.file_operations` to `cortex.tools.file_operation_helpers` for `build_invalid_operation_error` and `build_write_error_response`
+      - `test_rules_operations.py`: Updated imports from `cortex.tools.rules_operations` to `cortex.tools.rules_operation_helpers` for `build_get_relevant_response`, `calculate_total_tokens`, `extract_all_rules`, and `resolve_config_defaults`
+  - All type checks passing: 0 errors, 0 warnings
+  - All tests passing: 2868 passed, 2 skipped, 100% pass rate, 90.10% coverage
+
+- ✅ **Commit Procedure: Fixed Quality Violations and Test Failures** - COMPLETE (2026-01-28)
+  - Fixed line length violation in `test_file_operations.py` (docstring exceeded 88 characters)
+  - Fixed function length violations by extracting helper functions:
+    - `dispatch_operation()` in `rules_operations.py` (34 → 30 lines) via `_build_invalid_operation_error()`
+    - `rules()` in `rules_operations.py` (32 → 30 lines) via `_execute_rules_operation()`
+    - `_handle_write_operation()` in `file_operations.py` (32 → 30 lines) via `_execute_write_with_error_handling()` and `_validate_write_request()`
+  - Fixed file size violations by extracting helper modules:
+    - Created `file_operation_helpers.py` with error-building functions (reduced `file_operations.py` from 423 to under 400 lines)
+    - Created `rules_operation_helpers.py` with helper functions (reduced `rules_operations.py` from 415 to under 400 lines)
+  - Fixed type errors:
+    - Added assertion for `content` parameter in `_handle_write_operation()` to satisfy type checker
+    - Made `_build_invalid_operation_error()` public in helpers module to fix private usage error
+  - Fixed test failures:
+    - `test_version_history_workflow`: Added file creation before write operations (manage_file only allows modifying existing files)
+    - `test_manage_file_write_success`: Added file creation and `read_file` mock to fix "not enough values to unpack" error
+  - All tests passing: 2866 passed, 0 failed, 100% pass rate, 90.1% coverage
+  - All quality gates passing: 0 file size violations, 0 function length violations, 0 type errors
+
+- ✅ **Phase 60: Improve `manage_file` Discoverability and Error UX** - COMPLETE (2026-01-28)
+  - `manage_file` and `rules` now return structured, friendly JSON errors when required parameters are missing or invalid (including `details.missing`, `details.required`, `operation_values`, and usage hints), replacing opaque Pydantic validation traces in commit and memory-bank workflows.
+  - Synapse prompts (`commit.md`, `review.md`) and `docs/api/tools.md` include USE WHEN / EXAMPLES guidance for `manage_file` and `rules`, making it much easier for agents to discover required parameters and invoke these tools correctly.
+
 - ✅ **Phase 61: Investigate `execute_pre_commit_checks` MCP Output Handling Failure** - COMPLETE (2026-01-28)
   - `execute_pre_commit_checks` and `fix_quality_issues` now always return compact, structured JSON results, even when underlying checks produce very large textual logs.
   - Large `output` fields in check results are truncated via `_MAX_LOG_OUTPUT_LENGTH` and `_truncate_log_value()` with a clear "truncated" marker, while structured fields (`checks_performed`, `results`, `total_errors`, `total_warnings`, `files_modified`) remain intact.
-  - This removes the commit pipeline’s dependency on `agent-tools/*.txt` spill files and ensures higher-level workflows in Cursor can reliably parse pre-commit results.
+  - This removes the commit pipeline's dependency on `agent-tools/*.txt` spill files and ensures higher-level workflows in Cursor can reliably parse pre-commit results.
   - New tests in `tests/unit/test_pre_commit_tools.py` cover large-output scenarios and verify that quality results remain usable after truncation.
 
 - ✅ **Phase: Roadmap Sync & Validation Error UX Improvements** - COMPLETE (2026-01-28)
@@ -44,5 +89,6 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Next Focus
 
-- Continue Phase 21 health-check enhancements (dependency mapping, quality preservation, MCP tool integration).
+- **Phase 62**: Remaining work per `.cortex/plans/phase-62-synapse-session-optimization.md` is focused on later steps (9–14): context budget tuning, post-commit recommendations, session review filename conventions, Pydantic v2 testing defaults, coverage interpretation guidance, and session-analysis robustness.
+- Continue Phase 21 health-check enhancements (dependency mapping, quality preservation, MCP tool integration) when prioritized.
 - Plan focused work to raise coverage in under-tested analysis/structure modules before re-enabling strict global coverage gates in day-to-day workflows.

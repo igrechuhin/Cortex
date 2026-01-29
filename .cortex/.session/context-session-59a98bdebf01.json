@@ -1,0 +1,32 @@
+{
+  "session_id": "59a98bdebf01",
+  "session_start": "2026-01-29T12:52",
+  "load_context_calls": [
+    {
+      "timestamp": "2026-01-29T12:52",
+      "task_description": "Implement the next uncompleted step from Phase 62: Synapse Session Optimization \u2013 Harden Prompts and Rules",
+      "token_budget": 30000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "activeContext.md",
+        "productContext.md",
+        "progress.md",
+        "file.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "roadmap.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 10302,
+      "utilization": 0.3434,
+      "excluded_files": [],
+      "relevance_scores": {
+        "roadmap.md": 0.633,
+        "progress.md": 0.599,
+        "activeContext.md": 0.78,
+        "file.md": 0.241
+      }
+    }
+  ]
+}

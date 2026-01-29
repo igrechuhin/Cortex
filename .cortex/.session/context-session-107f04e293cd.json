@@ -1,0 +1,58 @@
+{
+  "session_id": "107f04e293cd",
+  "session_start": "2026-01-29T12:24",
+  "load_context_calls": [
+    {
+      "timestamp": "2026-01-29T12:24",
+      "task_description": "Implement the next roadmap step (respecting Blockers (ASAP Priority) section) from roadmap.md",
+      "token_budget": 20000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "activeContext.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "techContext.md",
+        "file.md",
+        "progress.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 11264,
+      "utilization": 0.5632,
+      "excluded_files": [],
+      "relevance_scores": {
+        "roadmap.md": 0.618,
+        "progress.md": 0.557,
+        "activeContext.md": 0.729,
+        "file.md": 0.598
+      }
+    },
+    {
+      "timestamp": "2026-01-29T12:32",
+      "task_description": "Phase 62 - Step 2: Enforce roadmap_sync as a true commit gate by updating commit.md Step 10 and the roadmap-sync-validator agent semantics and remediation.",
+      "token_budget": 20000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "activeContext.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "techContext.md",
+        "file.md",
+        "progress.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 11264,
+      "utilization": 0.5632,
+      "excluded_files": [],
+      "relevance_scores": {
+        "roadmap.md": 0.64,
+        "progress.md": 0.589,
+        "activeContext.md": 0.818,
+        "file.md": 0.241
+      }
+    }
+  ]
+}

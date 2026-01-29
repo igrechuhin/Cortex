@@ -1,6 +1,93 @@
 # Progress Log
 
+## 2026-01-29
+
+- ✅ **Commit Procedure: Fixed Markdown Lint and Archived Phase 62 Plan** - COMPLETE (2026-01-29)
+  - Fixed markdown lint errors in `.cortex/reviews/session-optimization-2026-01-28T23-21.md` (MD012, MD029, MD022, MD032, MD007); re-ran `fix_markdown_lint(check_all_files=True)` — success, 0 files with errors.
+  - Archived completed plan `phase-62-synapse-session-optimization.md` to `.cortex/plans/archive/Phase62/`; updated roadmap.md Phase 62 plan link to archive path.
+
+- ✅ **Phase 62: Synapse Session Optimization – Full Implementation** - COMPLETE (2026-01-29)
+  - Implemented all remaining Phase 62 steps (2–14): verified/added Step 2 (roadmap_sync gate), Step 3 (plan archiver Glob/Grep), Step 5 (roadmap-sync blocking semantics), Step 7 (manage_file anti-pattern in commit.md), Step 8 (error-fixer MCP validation FIX-ASAP; commit checklist), Step 9 (context budgets in implement prompt), Step 10 (roadmap-plan coupling, MD024, timely archiving, no_data fallback), Step 11 (session review filename conventions in session-optimization-analyzer and analyze-session-optimization), Step 12 (Pydantic v2 testing in commit/review/create-plan; commit.md Testing MCP JSON note), Step 13 (coverage interpretation already in implement/commit), Step 14 (session-optimization-analyzer Multi-Signal Analysis, no_data handling, dynamic transcript discovery). Plan and roadmap updated; Phase 62 status set to COMPLETE.
+
+- ✅ **Phase 62: Step 1 – Make Step 11 Submodule Handling Deterministic** - COMPLETE (2026-01-29)
+  - Added strict decision rule to Step 11 in `.cortex/synapse/prompts/commit.md`: execute sub-steps 11.1→11.5 in order; do not run in parallel or reorder.
+  - Step 11 already had explicit command sequence (11.1–11.5); plan and roadmap now mark Step 1 as implemented.
+
+- ✅ **Phase 62: Step 4 – Strengthen Python JSON-Boundary Typing Rules** - COMPLETE (2026-01-29)
+  - Verified `.cortex/synapse/rules/python/python-coding-standards.mdc` already contains **"JsonValue at MCP Boundaries"** with `_to_timeout_value()` pattern and `with_mcp_stability` examples.
+  - Added `TestJsonValueTimeoutNormalization` in `tests/unit/test_mcp_stability_timeouts.py`: numeric string timeout accepted and enforced; invalid string falls back to default.
+  - Phase 62 plan updated to mark Step 4 as implemented.
+
+- ✅ **Phase 62: Step 2 Roadmap Sync Gate and Step 3 Plan Archiver Validation** - VERIFIED COMPLETE (2026-01-29)
+  - Confirmed `.cortex/synapse/prompts/commit.md` Step 10 blocking rule and `.cortex/synapse/agents/roadmap-sync-validator.md` result interpretation match Phase 62 plan Step 2 semantics (hard gate on `valid: false`, with clear blocking vs non-blocking categories).
+  - Verified `.cortex/synapse/agents/plan-archiver.md` uses `Glob`/`Grep` and standard tools (`Glob`, `Grep`, `Read`, `LS`) instead of shell `find`/`grep`, and excludes archive/non-plan files, matching Phase 62 plan Step 3.
+  - Updated Phase 62 plan and activeContext Next Focus to reflect these steps as complete.
+
+- ✅ **Phase 62: Step 0 – Harden commit.md Against Unauthorized Git Writes** - COMPLETE (2026-01-29)
+  - Strengthened precondition at top of `.cortex/synapse/prompts/commit.md` to require explicit `/cortex/commit` and "NEVER commit or push based on implicit assumptions like 'as always' or 'user expects this'".
+  - Fixed corrupted "Git Write Preconditions" subsection to list three mandatory checks and reference Step 13/14. Step 13/14 already had mandatory precondition checks.
+  - Phase 62 plan and roadmap updated to mark Step 0 as implemented.
+
+- ✅ **Phase 62: Steps 6 & 6.5 – Sequential Step 12 and Markdown Re-validation** - COMPLETE (2026-01-29)
+  - **Step 6**: Added "Step 12 Sequential Execution (MANDATORY)" to `.cortex/synapse/agents/code-formatter.md` and `quality-checker.md`: never run fix_formatting.py and check_formatting.py in parallel; must run sequentially (first fix, then check).
+  - **Step 6.5**: Added Step 12.0 in `.cortex/synapse/prompts/commit.md`: re-validate markdown files modified during Steps 0-11 before Step 12.1; updated execution verification list, checklist, validation results, and pre-commit summary to include Step 12.0.
+  - Phase 62 plan updated to mark Step 6 and Step 6.5 as implemented.
+
+- ✅ **Phase 62: Step 11.5 Submodule Validation** - COMPLETE (2026-01-29)
+  - Added mandatory Step 11.5 in `.cortex/synapse/prompts/commit.md` after Step 11.4: verify submodule is clean (`git -C .cortex/synapse status --porcelain`); if non-empty, BLOCK COMMIT.
+  - Addresses critical process violation from session-optimization-2026-01-28T23-21 (uncommitted Synapse submodule changes after Step 11).
+  - Phase 62 plan updated to mark Step 11.5 as implemented.
+
 ## 2026-01-28
+
+- ✅ **Commit Procedure: Fixed Type Errors in Test Files** - COMPLETE (2026-01-28)
+  - **Problem**: 8 type errors in test files blocking commit (2 unused call results, 6 incorrect imports)
+  - **Solution**: Fixed unused call results by assigning to `_` and updated imports to use helper modules
+  - **Implementation**:
+    - Fixed unused call result errors:
+      - `tests/integration/test_mcp_tools_integration.py:221`: Assigned `test_file.write_text()` result to `_`
+      - `tests/tools/test_consolidated.py:175`: Assigned `temp_memory_bank.write_text()` result to `_`
+    - Fixed import errors by updating to use helper modules:
+      - `tests/tools/test_file_operations.py`: Changed imports from `cortex.tools.file_operations` to `cortex.tools/file_operation_helpers` for `build_invalid_operation_error` and `build_write_error_response`
+      - `tests/tools/test_rules_operations.py`: Changed imports from `cortex.tools.rules_operations` to `cortex.tools/rules_operation_helpers` for `build_get_relevant_response`, `calculate_total_tokens`, `extract_all_rules`, and `resolve_config_defaults`
+  - **Results**:
+    - All type checks passing: 0 errors, 0 warnings (verified via `check_types.py` script)
+    - All tests passing: 2868 passed, 2 skipped, 100% pass rate, 90.10% coverage (above 90% threshold)
+    - All quality checks passing: 0 file size violations, 0 function length violations
+  - **Impact**: Commit procedure can proceed, all type errors resolved, test imports aligned with refactored helper modules
+
+- ✅ **Commit Procedure: Fixed Quality Violations and Test Failures** - COMPLETE (2026-01-28)
+  - **Problem**: Quality violations (file sizes, function lengths) and test failures blocking commit
+  - **Solution**: Extracted helper modules and fixed test setup issues
+  - **Implementation**:
+    - Fixed line length violation in `tests/tools/test_file_operations.py` (docstring exceeded 88 characters)
+    - Fixed function length violations by extracting helper functions:
+      - `dispatch_operation()` → extracted `_build_invalid_operation_error()` helper
+      - `rules()` → extracted `_execute_rules_operation()` helper
+      - `_handle_write_operation()` → extracted `_execute_write_with_error_handling()` and `_validate_write_request()` helpers
+    - Fixed file size violations by extracting helper modules:
+      - Created `src/cortex/tools/file_operation_helpers.py` with error-building functions (`build_missing_parameters_error`, `build_new_file_creation_error`, `build_read_error_response`, `build_write_error_response`, `build_invalid_operation_error`, and helper functions `_get_file_conflict_details`, `_get_lock_timeout_details`)
+      - Created `src/cortex/tools/rules_operation_helpers.py` with helper functions (`resolve_config_defaults`, `extract_all_rules`, `calculate_total_tokens`, `build_get_relevant_response`, `build_invalid_operation_error`, `build_missing_rules_parameters_error`)
+      - Reduced `file_operations.py` from 423 lines to under 400 lines
+      - Reduced `rules_operations.py` from 415 lines to under 400 lines
+    - Fixed type errors:
+      - Added `assert content is not None` in `_handle_write_operation()` to satisfy type checker after validation
+      - Made `_build_invalid_operation_error()` public (removed leading underscore) in helpers module to fix private usage error
+    - Fixed test failures:
+      - `test_version_history_workflow` in `tests/integration/test_mcp_tools_integration.py`: Added file creation before write operations (manage_file only allows modifying existing Memory Bank files)
+      - `test_manage_file_write_success` in `tests/tools/test_consolidated.py`: Added file creation and `read_file` mock to fix "not enough values to unpack" error
+  - **Results**:
+    - All quality checks passing: 0 file size violations, 0 function length violations
+    - All type checks passing: 0 errors, 0 warnings
+    - All tests passing: 2866 passed, 0 failed, 100% pass rate, 90.1% coverage (above 90% threshold)
+    - All formatting checks passing
+    - All markdown lint checks passing (0 errors)
+  - **Impact**: Commit procedure can proceed, all quality gates met, code refactored for maintainability
+
+- ✅ **Phase 60: Improve `manage_file` Discoverability and Error UX** - COMPLETE (2026-01-28)
+  - Implemented structured, friendly validation errors for `manage_file` when required parameters (`file_name`, `operation`) are missing or invalid, and generalized the pattern to the `rules` tool (`operation` required) to replace opaque Pydantic `Field required` errors with actionable JSON responses.
+  - Added focused tests in `tests/tools/test_file_operations.py` and `tests/tools/test_rules_operations.py` to cover missing-parameter and invalid-operation scenarios and verify the new error shapes.
+  - Updated `docs/api/tools.md` with a dedicated `manage_file` section (USE WHEN, REQUIRED PARAMETERS, Error UX, and EXAMPLES) and tightened Synapse prompts (`commit.md`, `review.md`) with MCP TOOL USAGE guidance for these tools.
 
 - ✅ **Phase 61: Investigate `execute_pre_commit_checks` MCP Output Handling Failure** - COMPLETE (2026-01-28)
   - **Problem**: During `/cortex/commit` in Cursor, the `execute_pre_commit_checks` MCP tool reported "large output written to: agent-tools/*.txt" and the structured JSON result was not available to the agent. The spill file itself was inaccessible in the IDE sandbox, blocking verification of fix-errors, formatting, type checking, quality checks, and tests.
@@ -25,7 +112,7 @@
 
 - ✅ **Phase 57: Fix `fix_markdown_lint` MCP Tool Timeout** - COMPLETE (2026-01-28)
   - **Problem**: The `fix_markdown_lint` MCP tool timed out after 300 seconds when `check_all_files=True` because it processed archived plans under `.cortex/plans/archive/`, causing 600+ markdown files and hundreds of lints to be scanned on every run.
-  - **Solution**: Updated `_get_all_markdown_files()` in `src/cortex/tools/markdown_operations.py` to exclude `.cortex/plans/archive/`, matching the CI workflow’s exclusion of archived plans when running markdown lint checks.
+  - **Solution**: Updated `_get_all_markdown_files()` in `src/cortex/tools/markdown_operations.py` to exclude `.cortex/plans/archive/`, matching the CI workflow's exclusion of archived plans when running markdown lint checks.
   - **Implementation**:
     - Added `.cortex/plans/archive/` to the exclusion list (for absolute paths) and an additional pattern without a leading slash to cover relative paths.
     - Ensured that only active plans and other non-archived markdown files are included when `check_all_files=True`.
@@ -167,72 +254,6 @@
     - All type checks passing (0 errors, 0 warnings)
     - All formatting checks passing
   - **Impact**: Commit procedure can proceed, all quality gates met, coverage exactly at 90% threshold
-
-- ✅ **Phase 21 Step 2: Implement Similarity Detection Engine enhancements** - COMPLETE (2026-01-26)
-  - **Goal**: Enhance SimilarityEngine with comprehensive similarity detection capabilities for health-check analysis
-  - **Implementation**:
-    - Added configuration parameters to SimilarityEngine:
-      - `high_threshold` (default: 0.75) and `medium_threshold` (default: 0.60) for similarity confidence levels
-      - `min_content_length` (default: 100 tokens) for minimum content length filtering
-      - Section weights: `heading_weight` (1.5), `code_weight` (1.2), `text_weight` (1.0) for importance weighting
-    - Implemented semantic similarity methods:
-      - `calculate_semantic_similarity()` - Combines keyword, topic, and intent similarity
-      - `_keyword_similarity()` - Keyword extraction and matching using stop word filtering
-      - `_topic_similarity()` - Topic modeling using word frequency analysis
-      - `_intent_similarity()` - Intent analysis using pattern matching for common operations
-    - Implemented functional similarity methods:
-      - `calculate_functional_similarity()` - Combines parameter, return type, and usage pattern similarity
-      - `_parameter_overlap()` - Parameter overlap analysis for functions/tools
-      - `_return_type_similarity()` - Return type comparison with type normalization
-      - `_usage_pattern_similarity()` - Usage pattern matching using Jaccard similarity
-    - Added cosine similarity calculation:
-      - `_cosine_similarity()` - Cosine similarity for vectorized content using word frequency vectors
-      - `_vectorize_content()` - Content vectorization using word frequency
-    - Enhanced section similarity:
-      - Updated `calculate_section_similarity()` with importance weighting based on section type (headings, code, text)
-      - Added `_get_section_weight()` to determine section importance
-    - Enhanced content similarity:
-      - Updated `calculate_content_similarity()` to include cosine similarity in weighted average
-      - Added `_meets_min_length()` to filter content below minimum length threshold
-  - **Results**:
-    - All functions within length limits (all under 30 lines)
-    - Type checking: 0 errors, 0 warnings (pyright)
-    - Tests: 27 tests passing (100% pass rate) covering all new functionality:
-      - Configuration parameters (1 test)
-      - Semantic similarity (3 tests)
-      - Functional similarity (5 tests)
-      - Cosine similarity (1 test)
-      - Section weighting (2 tests)
-      - Minimum content length (2 tests)
-      - Keyword/intent/topic extraction (3 tests)
-      - Parameter overlap (3 tests)
-    - Code formatted with Black
-  - **Note**: File size is 573 lines (exceeds 400 line limit) - may need optimization in future by extracting stop words to constants or splitting into helper modules
-  - **Impact**: SimilarityEngine now provides comprehensive similarity detection with semantic, functional, and content-based analysis for health-check system
-
-- ✅ **Commit Procedure: Fixed Function Length Violations and Added Health-Check Tests** - COMPLETE (2026-01-26)
-  - **Problem**: 4 function length violations in `health_check` module and coverage below 90% threshold (88.08%) blocking commit
-  - **Solution**: Fixed function length violations by extracting helper functions and added comprehensive tests for health_check module
-  - **Implementation**:
-    - Fixed `prompt_analyzer.py:_find_optimization_opportunities()` (32 lines → under 30): Extracted `_check_large_prompt()` and `_check_duplicate_sections()` helpers
-    - Fixed `rule_analyzer.py:_find_merge_opportunities()` (44 lines → under 30): Extracted `_find_within_category_opportunities()` and `_find_cross_category_opportunities()` helpers
-    - Fixed `tool_analyzer.py:_find_consolidation_opportunities()` (38 lines → under 30): Extracted `_calculate_param_overlap()` and `_calculate_body_similarity()` helpers
-    - Fixed `report_generator.py:generate_markdown_report()` (49 lines → under 30): Extracted `_generate_header()`, `_generate_prompts_section()`, `_generate_rules_section()`, `_generate_tools_section()`, and `_generate_recommendations_section()` helpers
-    - Added comprehensive tests for health_check module:
-      - `test_prompt_analyzer.py`: 8 tests covering prompt analysis, section extraction, merge/optimization opportunities
-      - `test_rule_analyzer.py`: 6 tests covering rule analysis, category handling, merge opportunities
-      - `test_tool_analyzer.py`: 8 tests covering tool analysis, parameter overlap, body similarity, consolidation opportunities
-      - `test_report_generator.py`: 10 tests covering markdown/JSON report generation, section generation
-      - `test_dependency_mapper.py`: 7 tests covering dependency mapping for prompts, rules, and tools
-  - **Results**:
-    - All function length violations fixed (0 violations)
-    - All file size violations fixed (0 violations)
-    - Coverage increased from 88.08% to 90.04% (above 90% threshold)
-    - All tests passing: 2805 passed, 2 skipped, 100% pass rate, 90.04% coverage
-    - All code quality checks passing: 0 violations
-    - All type checks passing: 0 errors, 0 warnings
-    - All formatting checks passing
-  - **Impact**: Commit procedure can proceed, all quality gates met, health_check module now has comprehensive test coverage
 
 - 🔄 **[Phase 21: Health-Check and Optimization Analysis System - Step 1: Create Health-Check Analysis Module](../plans/phase-21-health-check-optimization.md)** - IN PROGRESS (2026-01-26)
   - **Goal**: Create comprehensive health-check system that analyzes prompts, rules, and MCP tools for merge/optimization opportunities

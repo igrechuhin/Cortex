@@ -1,0 +1,32 @@
+{
+  "session_id": "8563b2630403",
+  "session_start": "2026-01-29T13:32",
+  "load_context_calls": [
+    {
+      "timestamp": "2026-01-29T13:32",
+      "task_description": "Phase 62 Step 1: Make Step 11 submodule handling deterministic in commit.md; Synapse session optimization",
+      "token_budget": 25000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "file.md",
+        "productContext.md",
+        "techContext.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "progress.md",
+        "activeContext.md",
+        "projectBrief.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 10548,
+      "utilization": 0.42192,
+      "excluded_files": [],
+      "relevance_scores": {
+        "roadmap.md": 0.641,
+        "progress.md": 0.615,
+        "activeContext.md": 0.831,
+        "file.md": 0.241
+      }
+    }
+  ]
+}

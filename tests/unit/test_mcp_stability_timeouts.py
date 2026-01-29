@@ -189,6 +189,39 @@ class TestTimeoutEdgeCases:
                 slow_operation, timeout=timeout, delay=timeout * 2
             )
 
+
+class TestJsonValueTimeoutNormalization:
+    """Test JsonValue timeout normalization behavior."""
+
+    @pytest.mark.asyncio
+    async def test_timeout_accepts_numeric_string(self) -> None:
+        """Test that numeric string timeouts are accepted and enforced."""
+        # Arrange
+        timeout_str = "0.2"
+        delay = float(timeout_str) + 0.2
+
+        # Act & Assert
+        with pytest.raises(TimeoutError):
+            _ = await with_mcp_stability(
+                slow_operation,
+                timeout=timeout_str,
+                delay=delay,
+            )
+
+    @pytest.mark.asyncio
+    async def test_timeout_invalid_string_falls_back_to_default(self) -> None:
+        """Test that invalid timeout strings fall back to default timeout."""
+
+        # Arrange
+        async def very_fast() -> str:
+            return "instant"
+
+        # Act
+        result = await with_mcp_stability(very_fast, timeout="not-a-number")
+
+        # Assert
+        assert result == "instant"
+
     @pytest.mark.asyncio
     async def test_timeout_with_exception_handling(self) -> None:
         """Test that timeout errors are properly handled."""

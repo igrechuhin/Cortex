@@ -164,8 +164,8 @@ def _parse_untracked_files(stdout: str, project_root: Path, files: list[Path]) -
                 files.append(file_path)
 
 
-async def _get_all_markdown_files(project_root: Path) -> list[Path]:
-    """Get all markdown files in the project.
+def _collect_markdown_files_sync(project_root: Path) -> list[Path]:
+    """Synchronous file discovery for markdown files (run off event loop).
 
     Args:
         project_root: Root directory of the project
@@ -190,13 +190,21 @@ async def _get_all_markdown_files(project_root: Path) -> list[Path]:
     ]
     for pattern in ("**/*.md", "**/*.mdc"):
         for file_path in project_root.rglob(pattern):
-            # Skip common directories that shouldn't be linted
             file_str = str(file_path)
             if any(part in file_str for part in exclude_parts):
                 continue
             if file_path.is_file() and file_path not in files:
                 files.append(file_path)
     return sorted(set(files))
+
+
+async def _get_all_markdown_files(project_root: Path) -> list[Path]:
+    """Get all markdown files in the project (non-blocking).
+
+    Runs synchronous rglob in a thread so the event loop stays responsive
+    and the MCP tool timeout can cancel the operation if needed.
+    """
+    return await asyncio.to_thread(_collect_markdown_files_sync, project_root)
 
 
 def _get_markdown_lint_cache_path(project_root: Path) -> Path:

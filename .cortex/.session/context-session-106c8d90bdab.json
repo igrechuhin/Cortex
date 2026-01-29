@@ -1,0 +1,58 @@
+{
+  "session_id": "106c8d90bdab",
+  "session_start": "2026-01-29T11:05",
+  "load_context_calls": [
+    {
+      "timestamp": "2026-01-29T11:05",
+      "task_description": "Phase 62 Synapse session optimization: next step is either Step 0 (harden commit.md against unauthorized git writes), Step 2 (enforce roadmap_sync as true commit gate), or Step 3 (plan archiver use preferred tool primitives). Need current state of commit.md and plan.",
+      "token_budget": 20000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "techContext.md",
+        "projectBrief.md",
+        "productContext.md",
+        "roadmap.md",
+        "file.md",
+        "progress.md",
+        "activeContext.md",
+        "systemPatterns.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 10413,
+      "utilization": 0.52065,
+      "excluded_files": [],
+      "relevance_scores": {
+        "roadmap.md": 0.644,
+        "progress.md": 0.599,
+        "activeContext.md": 0.814,
+        "file.md": 0.573
+      }
+    },
+    {
+      "timestamp": "2026-01-29T11:18",
+      "task_description": "Phase 62 Step 0: Harden commit.md against unauthorized git writes - add precondition gate, Git Write Safety section, explicit checks in Step 13 Commit and Step 14 Push",
+      "token_budget": 25000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "techContext.md",
+        "projectBrief.md",
+        "productContext.md",
+        "roadmap.md",
+        "file.md",
+        "progress.md",
+        "activeContext.md",
+        "systemPatterns.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 10891,
+      "utilization": 0.43564,
+      "excluded_files": [],
+      "relevance_scores": {
+        "roadmap.md": 0.645,
+        "progress.md": 0.616,
+        "activeContext.md": 0.837,
+        "file.md": 0.585
+      }
+    }
+  ]
+}

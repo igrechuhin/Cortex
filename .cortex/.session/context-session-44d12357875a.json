@@ -1,0 +1,32 @@
+{
+  "session_id": "44d12357875a",
+  "session_start": "2026-01-29T10:52",
+  "load_context_calls": [
+    {
+      "timestamp": "2026-01-29T10:52",
+      "task_description": "Add Step 11.5 submodule validation to commit.md: verify submodule is clean after Step 11.4, block commit if uncommitted changes",
+      "token_budget": 20000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "activeContext.md",
+        "techContext.md",
+        "roadmap.md",
+        "progress.md",
+        "projectBrief.md",
+        "productContext.md",
+        "file.md",
+        "systemPatterns.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 10114,
+      "utilization": 0.5057,
+      "excluded_files": [],
+      "relevance_scores": {
+        "roadmap.md": 0.644,
+        "progress.md": 0.599,
+        "activeContext.md": 0.776,
+        "file.md": 0.242
+      }
+    }
+  ]
+}
