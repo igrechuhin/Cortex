@@ -13,6 +13,15 @@ from cortex.server import mcp
 async def check_mcp_connection_health() -> str:
     """Check MCP connection health and resource utilization.
 
+    USE WHEN: User wants connection status, user needs health check,
+    user requests connection health, user wants to monitor MCP server.
+
+    EXAMPLES: 'check MCP connection health', 'get connection status',
+    'check server health', 'monitor MCP connection'.
+
+    RETURNS: JSON with connection status, resource metrics, and health
+    indicators.
+
     Returns connection health metrics including:
     - Connection status (healthy/unhealthy)
     - Current concurrent operations

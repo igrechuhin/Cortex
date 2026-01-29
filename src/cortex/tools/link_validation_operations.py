@@ -22,6 +22,15 @@ async def validate_links(
     """Validate all markdown links and transclusion directives to ensure
     they point to existing targets.
 
+    USE WHEN: User wants to check link integrity, user reports broken links,
+    user needs to validate references, user requests link validation.
+
+    EXAMPLES: 'validate links', 'check for broken links', 'validate
+    transclusions in projectBrief.md'.
+
+    RETURNS: JSON with validation results: valid links, broken links, and
+    missing targets.
+
     Performs comprehensive link validation by checking:
     - Target files exist in the memory-bank directory or project
     - Referenced sections exist in target markdown files

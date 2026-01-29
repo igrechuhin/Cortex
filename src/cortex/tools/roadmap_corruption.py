@@ -328,6 +328,14 @@ async def fix_roadmap_corruption(
 ) -> str:
     """Fix text corruption in roadmap.md file.
 
+    USE WHEN: User reports roadmap corruption, user needs roadmap fix,
+    user requests corruption repair, user wants to fix roadmap.
+
+    EXAMPLES: 'fix roadmap corruption', 'repair roadmap.md', 'fix
+    corrupted roadmap', 'restore roadmap formatting'.
+
+    RETURNS: JSON with fix status, changes made, and roadmap health.
+
     Detects and fixes corruption patterns: missing spaces/newlines, corrupted
     text like 'ented'->'Implemented', malformed dates, corrupted scores.
     """

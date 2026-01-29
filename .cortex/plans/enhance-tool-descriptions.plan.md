@@ -4,52 +4,52 @@ overview: Improve Cortex MCP tool descriptions by adding explicit "USE WHEN" tri
 todos:
   - id: analyze-current-descriptions
     content: Analyze current tool descriptions across all tool files and identify gaps
-    status: pending
+    status: completed
   - id: review-reference-patterns
     content: Review tool description patterns from doc-mcp, taiga-ui-mcp, and react-mcp
-    status: pending
+    status: completed
   - id: design-description-template
     content: Design standardized description template with USE WHEN, EXAMPLES, RETURNS sections
-    status: pending
+    status: completed
   - id: update-phase1-foundation-tools
     content: Enhance Phase 1 foundation tool descriptions (manage_file, get_memory_bank_stats, get_version_history, rollback_file_version, get_dependency_graph, cleanup_metadata_index)
-    status: pending
+    status: completed
   - id: update-phase2-linking-tools
     content: Enhance Phase 2 linking tool descriptions (parse_file_links, validate_links, resolve_transclusions, get_link_graph)
-    status: pending
+    status: completed
   - id: update-phase3-validation-tools
     content: Enhance Phase 3 validation tool descriptions (validate, get_validation_report)
-    status: pending
+    status: completed
   - id: update-phase4-optimization-tools
     content: Enhance Phase 4 optimization tool descriptions (load_context, load_progressive_context, summarize_content, get_relevance_scores)
-    status: pending
+    status: completed
   - id: update-phase5-analysis-tools
     content: Enhance Phase 5 analysis tool descriptions (analyze, analyze_context_effectiveness, get_context_usage_statistics)
-    status: pending
+    status: completed
   - id: update-phase5-refactoring-tools
     content: Enhance Phase 5 refactoring tool descriptions (suggest_refactoring, apply_refactoring, provide_feedback)
-    status: pending
+    status: completed
   - id: update-phase6-synapse-tools
     content: Enhance Phase 6 Synapse tool descriptions (sync_synapse, get_synapse_rules, get_synapse_prompts, update_synapse_rule, update_synapse_prompt)
-    status: pending
+    status: completed
   - id: update-phase8-structure-tools
     content: Enhance Phase 8 structure tool descriptions (check_structure_health, get_structure_info)
-    status: pending
+    status: completed
   - id: update-configuration-tools
     content: Enhance configuration tool descriptions (configure, get_config_status)
-    status: pending
+    status: completed
   - id: update-pre-commit-tools
     content: Enhance pre-commit tool descriptions (execute_pre_commit_checks, fix_quality_issues)
-    status: pending
+    status: completed
   - id: update-markdown-tools
     content: Enhance markdown tool descriptions (fix_markdown_lint, fix_roadmap_corruption)
-    status: pending
+    status: completed
   - id: update-rules-tools
     content: Enhance rules tool descriptions (rules operation)
-    status: pending
+    status: completed
   - id: update-connection-health-tools
     content: Enhance connection health tool descriptions (check_mcp_connection_health)
-    status: pending
+    status: completed
   - id: validate-discoverability
     content: Test tool discoverability with enhanced descriptions
     status: pending

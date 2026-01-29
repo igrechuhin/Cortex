@@ -101,6 +101,16 @@ async def configure(
 ) -> str:
     """Configure Memory Bank validation, optimization, and learning settings.
 
+    USE WHEN: User wants to configure settings, user needs to change
+    configuration, user requests configuration update, user wants to
+    customize behavior.
+
+    EXAMPLES: 'configure validation settings', 'set optimization
+    parameters', 'update refactoring config', 'view current
+    configuration'.
+
+    RETURNS: JSON with configuration status and updated settings.
+
     This unified configuration tool manages three core Memory Bank components:
     - Validation: Control schema validation, duplication detection, quality
       metrics, and token budgets

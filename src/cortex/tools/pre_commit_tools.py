@@ -190,6 +190,16 @@ async def execute_pre_commit_checks(
 ) -> str:
     """Execute pre-commit checks with language auto-detection.
 
+    USE WHEN: User wants pre-commit checks, user needs quality
+    validation, user requests pre-commit validation, user wants to
+    check before commit.
+
+    EXAMPLES: 'execute pre-commit checks', 'run quality checks',
+    'check formatting and linting', 'run pre-commit validation'.
+
+    RETURNS: JSON with check results, errors found, and pass/fail
+    status.
+
     Args:
         checks: List of checks to perform. Options: "fix_errors",
             "format", "type_check", "quality", "tests". If None, performs
@@ -989,6 +999,15 @@ async def fix_quality_issues(
     include_untracked_markdown: bool = True,
 ) -> str:
     """Automatically fix code quality issues on-the-go.
+
+    USE WHEN: User wants auto-fix, user needs quality fixes, user
+    requests automatic fixes, user wants to fix code quality.
+
+    EXAMPLES: 'fix quality issues', 'auto-fix formatting', 'fix
+    linting errors', 'fix markdown issues'.
+
+    RETURNS: JSON with fixes applied, files modified, and remaining
+    issues.
 
     This tool provides lightweight, automatic quality fixes to prevent
     error accumulation. It fixes type errors, formatting issues, linting

@@ -22,6 +22,16 @@ async def analyze_context_effectiveness(
 ) -> str:
     """Analyze load_context calls and update usage statistics.
 
+    USE WHEN: User wants to optimize context loading, user needs usage
+    statistics, user requests context analysis, user wants to improve
+    context selection.
+
+    EXAMPLES: 'analyze context effectiveness', 'get context usage stats',
+    'analyze context loading patterns'.
+
+    RETURNS: JSON with context usage statistics and optimization
+    recommendations.
+
     By default, analyzes only the CURRENT session's load_context calls.
     Use analyze_all_sessions=True to analyze all historical sessions.
 
@@ -54,6 +64,14 @@ async def get_context_usage_statistics(
     project_root: str | None = None,
 ) -> str:
     """Get current context usage statistics.
+
+    USE WHEN: User wants usage statistics, user needs context metrics,
+    user requests usage data, user wants to monitor context usage.
+
+    EXAMPLES: 'get context usage statistics', 'show context metrics',
+    'get context usage data'.
+
+    RETURNS: JSON with context usage statistics and metrics.
 
     Returns aggregated statistics from previous load_context analyses
     including average token utilization, file selection patterns,

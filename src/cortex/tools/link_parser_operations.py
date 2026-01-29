@@ -23,6 +23,16 @@ async def parse_file_links(file_name: str, project_root: str | None = None) -> s
     """Parse and extract all markdown links and transclusion directives
     from a Memory Bank file.
 
+    USE WHEN: User needs to find all links in a file, user wants to extract
+    transclusions, user requests link parsing, user needs to analyze file
+    references.
+
+    EXAMPLES: 'parse links in projectBrief.md', 'extract transclusions from
+    activeContext.md', 'find all links in roadmap.md'.
+
+    RETURNS: JSON with arrays of markdown links and transclusion directives
+    found in the file.
+
     Scans the specified file for two types of links:
     - Markdown links: Standard [text](target) format for references
     - Transclusion directives: {{include:file.md}} or

@@ -59,6 +59,16 @@ async def rollback_file_version(
 ) -> str:
     """Rollback a Memory Bank file to a previous version.
 
+    USE WHEN: User wants to undo changes, user needs to restore previous
+    version, user requests rollback to specific version, user wants to revert
+    file.
+
+    EXAMPLES: 'rollback projectBrief.md to version 3', 'restore
+    activeContext.md version 5', 'revert roadmap.md to previous version'.
+
+    RETURNS: JSON with success status, rolled back version number, and file
+    content.
+
     Restores content from a snapshot and creates a new version entry.
     This is a safe operation that preserves history - the rollback itself
     becomes a new version, allowing you to undo the rollback if needed.

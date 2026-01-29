@@ -43,8 +43,17 @@ async def cleanup_metadata_index(
 ) -> CleanupMetadataIndexResultUnion:
     """Clean up stale entries from metadata index.
 
-    Validates index consistency with filesystem and removes entries for files
-    that no longer exist on disk. Supports dry-run mode.
+    USE WHEN: User reports index corruption, user needs to fix stale
+    metadata, user wants to clean up index, user requests index maintenance.
+
+    EXAMPLES: 'cleanup metadata index', 'fix stale index entries', 'repair
+    corrupted index'.
+
+    RETURNS: JSON with cleanup results: entries removed, entries kept, and
+    dry-run preview if enabled.
+
+    Validates index consistency with filesystem and removes entries for
+    files that no longer exist on disk. Supports dry-run mode.
     """
     try:
         root = get_project_root(project_root)

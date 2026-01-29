@@ -28,6 +28,16 @@ async def get_memory_bank_stats(
 ) -> str:
     """Get overall Memory Bank statistics and analytics.
 
+    USE WHEN: User asks about project status, user needs memory bank
+    statistics, user wants to check file counts or token usage, user requests
+    system overview.
+
+    EXAMPLES: 'get memory bank stats', 'show project statistics', 'how many
+    files in memory bank', 'what is the token usage'.
+
+    RETURNS: JSON with file counts, token usage, version history stats, and
+    system health metrics.
+
     Returns comprehensive statistics about token usage, file sizes,
     version history, usage patterns, token budget status, and optionally
     refactoring history. This is the primary tool for monitoring Memory

@@ -51,8 +51,16 @@ def format_prompts_list(
 
 @mcp.tool()
 async def sync_synapse(pull: bool = True, push: bool = False) -> str:
-    """
-    Sync Synapse repository with remote using git operations.
+    """Sync Synapse repository with remote using git operations.
+
+    USE WHEN: User wants to sync shared rules, user needs to update Synapse,
+    user requests Synapse sync, user wants to pull/push changes.
+
+    EXAMPLES: 'sync Synapse repository', 'pull Synapse updates', 'push
+    Synapse changes', 'sync shared rules'.
+
+    RETURNS: JSON with sync status, changes pulled/pushed, and operation
+    results.
 
     This tool synchronizes the local Synapse git submodule with the remote
     repository. When pulling, it fetches the latest rules and prompts from
@@ -155,8 +163,15 @@ async def sync_synapse(pull: bool = True, push: bool = False) -> str:
 async def update_synapse_rule(
     category: str, file: str, content: str, commit_message: str
 ) -> str:
-    """
-    Update a Synapse rule file and push changes to all projects.
+    """Update a Synapse rule file and push changes to all projects.
+
+    USE WHEN: User wants to update shared rule, user needs to modify rule,
+    user requests rule update, user wants to push rule changes.
+
+    EXAMPLES: 'update Synapse rule python-security', 'modify shared rule',
+    'update rule and push'.
+
+    RETURNS: JSON with update status, changes made, and push results.
 
     This tool modifies a rule file in the Synapse repository, commits the
     changes with a descriptive message, and pushes to the remote repository.
@@ -254,8 +269,15 @@ async def get_synapse_rules(
     rule_priority: str = "local_overrides_shared",
     context_aware: bool = True,
 ) -> str:
-    """
-    Get intelligently selected rules based on task context and project characteristics.
+    """Get intelligently selected rules from task context and project.
+
+    USE WHEN: User needs relevant rules, user wants Synapse rules, user
+    requests rule retrieval, user needs coding standards.
+
+    EXAMPLES: 'get Synapse rules for Python', 'get relevant rules for task',
+    'get coding standards', 'get rules for refactoring'.
+
+    RETURNS: JSON with relevant rules, relevance scores, and rule content.
 
     This tool analyzes your task description and project files to automatically
     select the most relevant coding rules from both Synapse and local sources.
@@ -430,8 +452,15 @@ def _build_all_prompts_response(
 
 @mcp.tool()
 async def get_synapse_prompts(category: str | None = None) -> str:
-    """
-    Get prompts from Synapse repository.
+    """Get prompts from Synapse repository.
+
+    USE WHEN: User needs Synapse prompts, user wants prompt templates,
+    user requests prompts, user needs workflow prompts.
+
+    EXAMPLES: 'get Synapse prompts', 'get prompts for commit', 'get
+    prompts by category', 'get workflow prompts'.
+
+    RETURNS: JSON with prompts, categories, and prompt content.
 
     This tool retrieves prompts from the Synapse repository, optionally
     filtered by category. Prompts are shared across projects and can be
@@ -534,8 +563,16 @@ async def get_synapse_prompts(category: str | None = None) -> str:
 async def update_synapse_prompt(
     category: str, file: str, content: str, commit_message: str
 ) -> str:
-    """
-    Update a Synapse prompt file and push changes to all projects.
+    """Update a Synapse prompt file and push changes to all projects.
+
+    USE WHEN: User wants to update shared prompt, user needs to modify
+    prompt, user requests prompt update, user wants to push prompt
+    changes.
+
+    EXAMPLES: 'update Synapse prompt commit', 'modify shared prompt',
+    'update prompt and push'.
+
+    RETURNS: JSON with update status, changes made, and push results.
 
     This tool modifies a prompt file in the Synapse repository, commits the
     changes with a descriptive message, and pushes to the remote repository.

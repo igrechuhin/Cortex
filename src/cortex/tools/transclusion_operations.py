@@ -36,6 +36,16 @@ async def resolve_transclusions(
     """Resolve all {{include:}} transclusion directives in a file by
     replacing them with actual content.
 
+    USE WHEN: User needs expanded file content, user wants to see
+    transcluded content, user requests transclusion resolution, user needs
+    full file content without transclusions.
+
+    EXAMPLES: 'resolve transclusions in projectBrief.md', 'expand
+    transclusions', 'get full content with transclusions resolved'.
+
+    RETURNS: JSON with resolved content where all {{include:}} directives
+    are replaced with actual file content.
+
     Reads the specified file and recursively resolves all transclusion
     directives by replacing them with the actual content from referenced
     files. Supports nested transclusions where included files can themselves

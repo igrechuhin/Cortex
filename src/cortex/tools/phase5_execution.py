@@ -55,8 +55,16 @@ async def apply_refactoring(
     preserve_manual_changes: bool = True,
     project_root: str | None = None,
 ) -> str:
-    """
-    Apply refactoring operations: approve suggestions, execute changes, or rollback.
+    """Apply refactoring operations: approve suggestions, execute changes, or rollback.
+
+    USE WHEN: User wants to apply refactoring, user needs to approve
+    changes, user requests rollback, user wants to execute refactoring.
+
+    EXAMPLES: 'apply refactoring suggestion X', 'approve refactoring Y',
+    'rollback refactoring Z'.
+
+    RETURNS: JSON with execution status, changes applied, and rollback
+    information.
 
     This unified tool consolidates three refactoring execution workflows into a single
     interface controlled by the action parameter. It provides a complete lifecycle for
@@ -442,8 +450,15 @@ async def provide_feedback(
     adjust_preferences: bool = True,
     project_root: str | None = None,
 ) -> str:
-    """
-    Provide feedback on refactoring suggestions to improve future recommendations.
+    """Provide feedback on refactoring suggestions to improve future recommendations.
+
+    USE WHEN: User wants to give feedback, user needs to rate suggestions,
+    user requests feedback submission, user wants to improve learning.
+
+    EXAMPLES: 'provide feedback on suggestion X', 'rate refactoring Y',
+    'submit feedback for improvement'.
+
+    RETURNS: JSON with feedback submission status and learning updates.
 
     This tool captures user feedback on refactoring suggestions to train the learning
     engine. The system analyzes patterns in feedback to adjust confidence thresholds,

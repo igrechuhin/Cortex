@@ -269,6 +269,16 @@ async def suggest_refactoring(
     """Generate intelligent refactoring suggestions to improve Memory Bank
     structure and efficiency.
 
+    USE WHEN: User wants refactoring suggestions, user needs consolidation
+    ideas, user requests reorganization suggestions, user wants to improve
+    structure.
+
+    EXAMPLES: 'suggest refactoring for consolidation', 'find files to split',
+    'suggest reorganization', 'get refactoring opportunities'.
+
+    RETURNS: JSON with refactoring suggestions, similarity scores, and
+    recommendations.
+
     This consolidated tool provides three types of refactoring suggestions to
     help optimize your Memory Bank:
 

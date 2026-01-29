@@ -1,8 +1,10 @@
 # Roadmap: MCP Memory Bank
 
-## Current Status (2026-01-28)
+## Current Status (2026-01-29)
 
 ### Active Work
+
+- ✅ **Plan: Enhance Tool Descriptions with USE WHEN and EXAMPLES** - COMPLETE (2026-01-29) - Added USE WHEN, EXAMPLES, and RETURNS sections to all Cortex MCP tool docstrings across Phase 1–8 and utility tools (manage_file, get_memory_bank_stats, get_version_history, rollback_file_version, get_dependency_graph, cleanup_metadata_index; parse_file_links, validate_links, resolve_transclusions, get_link_graph; validate; load_context, load_progressive_context, summarize_content, get_relevance_scores; analyze, analyze_context_effectiveness, get_context_usage_statistics; suggest_refactoring, apply_refactoring, provide_feedback; sync_synapse, get_synapse_rules, get_synapse_prompts, update_synapse_rule, update_synapse_prompt; check_structure_health, get_structure_info; configure; execute_pre_commit_checks, fix_quality_issues; fix_markdown_lint, fix_roadmap_corruption; rules; check_mcp_connection_health). Plan file todos updated. All 461 tool tests passing.
 
 - ✅ **Commit Procedure: Fixed Type Errors in Test Files** - COMPLETE (2026-01-28) - Fixed 8 type errors in test files: 2 unused call result errors (assigned to `_`) and 6 import errors (updated imports to use helper modules `file_operation_helpers` and `rules_operation_helpers`). All type checks passing (0 errors, 0 warnings). All tests passing (2868 passed, 2 skipped), coverage at 90.10%. All code quality gates passing.
 
@@ -29,8 +31,6 @@
 - ✅ **Phase 57: Fix markdown_lint MCP Tool Timeout** - COMPLETE (2026-01-28) - **FIX-ASAP (resolved)** - The `fix_markdown_lint` MCP tool previously timed out after 300s when `check_all_files=True` because it processed archived plans. This is now fixed by excluding `.cortex/plans/archive/` in `_get_all_markdown_files()` to match CI behavior. See `../plans/archive/Phase57/phase-57-fix-markdown-lint-timeout.md` for implementation and verification details.
 
 - ✅ **Phase: Roadmap Sync & Validation Error UX Improvements** - COMPLETE (2026-01-28) - Implemented structure-aware path resolution for `plans/` references in `src/cortex/validation/roadmap_sync.py` using `get_cortex_path(..., CortexResourceType.PLANS)`, enriched roadmap sync warnings for missing files with phase/context details, and updated `src/cortex/tools/validation_roadmap_sync.py` to include `total_todos_found` in the summary. Added and updated tests in `tests/unit/test_roadmap_sync.py` and `tests/tools/test_validation_operations.py` to cover the new behavior. All roadmap sync tests passing; global coverage gate remains governed by the full test suite.
-
-- 🔄 **Plan: Enhance Tool Descriptions with USE WHEN and EXAMPLES** - PLANNED (2026-01-27) - See `../plans/enhance-tool-descriptions.plan.md` for comprehensive plan to improve all 53+ Cortex MCP tool descriptions by adding explicit "USE WHEN" triggers and "EXAMPLES" sections, following the pattern used in doc-mcp, taiga-ui-mcp, and react-mcp. This significantly improves tool discoverability for LLMs by making it clear when and how to use each tool.
 
 - ✅ **Phase 60: Improve `manage_file` Discoverability and Error UX** - COMPLETE (2026-01-28) - Implemented structured, friendly validation errors for `manage_file` (missing `file_name`/`operation` and invalid `operation` values), generalized the pattern to the `rules` MCP tool (missing `operation`), added focused tests in `tests/tools/test_file_operations.py` and `tests/tools/test_rules_operations.py`, and updated `docs/api/tools.md` plus Synapse prompts (commit/review) with explicit USE WHEN / EXAMPLES guidance for these tools.
 

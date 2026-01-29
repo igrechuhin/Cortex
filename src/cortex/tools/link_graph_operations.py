@@ -25,6 +25,16 @@ async def get_link_graph(
     """Build and return a dependency graph showing how Memory Bank files
     reference each other through links.
 
+    USE WHEN: User asks about file relationships, user needs link
+    visualization, user wants to see transclusion tree, user requests link
+    graph.
+
+    EXAMPLES: 'get link graph', 'show file link relationships', 'visualize
+    transclusion tree'.
+
+    RETURNS: JSON graph structure with nodes (files) and edges
+    (links/transclusions).
+
     Analyzes all Memory Bank files to construct a directed graph where:
     - Nodes represent files in the memory-bank directory
     - Edges represent links between files (markdown links and/or

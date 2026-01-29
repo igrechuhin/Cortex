@@ -21,6 +21,16 @@ async def get_dependency_graph(
 ) -> str:
     """Get the Memory Bank dependency graph.
 
+    USE WHEN: User asks about file dependencies, user needs to understand
+    file relationships, user wants to see transclusion tree, user requests
+    dependency visualization.
+
+    EXAMPLES: 'get dependency graph', 'show file dependencies', 'what files
+    depend on projectBrief.md', 'visualize transclusion tree'.
+
+    RETURNS: JSON graph structure with nodes (files) and edges
+    (dependencies/transclusions).
+
     Shows relationships between files and their loading priority. The graph
     is built from static dependencies (projectBrief → other files) and
     dynamic dependencies (markdown links and transclusions).

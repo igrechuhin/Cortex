@@ -1,0 +1,32 @@
+{
+  "session_id": "11e58b65bb92",
+  "session_start": "2026-01-29T14:57",
+  "load_context_calls": [
+    {
+      "timestamp": "2026-01-29T14:57",
+      "task_description": "Enhance Cortex MCP tool descriptions with USE WHEN triggers and EXAMPLES sections for all 53+ tools",
+      "token_budget": 30000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "activeContext.md",
+        "projectBrief.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "file.md",
+        "productContext.md",
+        "progress.md",
+        "roadmap.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 10682,
+      "utilization": 0.35606666666666664,
+      "excluded_files": [],
+      "relevance_scores": {
+        "roadmap.md": 0.644,
+        "progress.md": 0.632,
+        "activeContext.md": 0.818,
+        "file.md": 0.53
+      }
+    }
+  ]
+}

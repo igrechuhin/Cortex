@@ -186,6 +186,14 @@ async def rules(
 ) -> str:
     """Manage custom rules for Memory Bank with indexing and intelligent retrieval.
 
+    USE WHEN: User wants to index rules, user needs relevant rules,
+    user requests rule retrieval, user wants rule indexing.
+
+    EXAMPLES: 'index rules', 'get relevant rules for task', 'get rules
+    for Python', 'index project rules'.
+
+    RETURNS: JSON with indexed rules or relevant rules with scores.
+
     This consolidated tool provides two key operations for custom rules management:
 
     1. **index**: Discovers and indexes custom rules from configured rules folders

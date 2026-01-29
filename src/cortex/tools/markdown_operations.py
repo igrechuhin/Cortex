@@ -779,6 +779,14 @@ async def fix_markdown_lint(
 ) -> str:
     """Fix markdownlint errors in markdown files.
 
+    USE WHEN: User wants markdown fixes, user needs lint fixes, user
+    requests markdown lint fix, user wants to fix markdown errors.
+
+    EXAMPLES: 'fix markdown lint', 'fix markdown errors', 'auto-fix
+    markdown', 'fix markdown formatting'.
+
+    RETURNS: JSON with fixes applied, files modified, and lint results.
+
     Scans markdown files in the working copy, runs `markdownlint-cli2`,
     and optionally applies `--fix` to resolve reported issues.
 

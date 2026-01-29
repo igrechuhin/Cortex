@@ -33,6 +33,17 @@ async def load_context(
 ) -> str:
     """Load relevant context for a task within token budget.
 
+    USE WHEN: User starts a task, user needs project context, user requests
+    relevant files, user wants context for specific task, user needs memory
+    bank content.
+
+    EXAMPLES: 'load context for refactoring task', 'get relevant files for
+    feature X', 'load context with 5000 token budget', 'get context for bug
+    fix'.
+
+    RETURNS: JSON with selected files, their content, relevance scores, and
+    token usage.
+
     This tool should be called at the START of any task to:
     - Load memory bank files relevant to the task
     - Load applicable rules and patterns
@@ -67,7 +78,19 @@ async def load_progressive_context(
     loading_strategy: str = "by_relevance",
     project_root: str | None = None,
 ) -> str:
-    """Load context progressively based on strategy."""
+    """Load context progressively based on relevance, loading files
+    incrementally as needed.
+
+    USE WHEN: User needs incremental context loading, user wants progressive
+    file loading, user requests staged context, user needs context in
+    batches.
+
+    EXAMPLES: 'load progressive context for task', 'get context
+    progressively', 'load context in stages'.
+
+    RETURNS: JSON with progressive context batches, each with files and
+    relevance scores.
+    """
     try:
         root = phase4_opt.get_project_root(project_root)
         mgrs = await phase4_opt.get_managers(root)
@@ -88,7 +111,17 @@ async def summarize_content(
     strategy: str = "extract_key_sections",
     project_root: str | None = None,
 ) -> str:
-    """Summarize Memory Bank content to reduce token usage."""
+    """Summarize Memory Bank content to reduce token usage while preserving
+    key information.
+
+    USE WHEN: User needs to reduce token count, user wants content summary,
+    user requests token optimization, user needs condensed content.
+
+    EXAMPLES: 'summarize projectBrief.md', 'reduce token usage for
+    activeContext.md', 'summarize content by 50%'.
+
+    RETURNS: JSON with summarized content and token reduction metrics.
+    """
     try:
         root = phase4_opt.get_project_root(project_root)
         mgrs = await phase4_opt.get_managers(root)
@@ -106,7 +139,18 @@ async def get_relevance_scores(
     project_root: str | None = None,
     include_sections: bool = False,
 ) -> str:
-    """Get relevance scores for all Memory Bank files."""
+    """Get relevance scores for Memory Bank files based on task description.
+
+    USE WHEN: User wants to know file relevance, user needs relevance
+    ranking, user requests relevance scores, user wants to prioritize
+    files.
+
+    EXAMPLES: 'get relevance scores for refactoring task', 'score files for
+    feature X', 'rank files by relevance'.
+
+    RETURNS: JSON with files ranked by relevance scores and detailed scoring
+    breakdown.
+    """
     try:
         root = phase4_opt.get_project_root(project_root)
         mgrs = await phase4_opt.get_managers(root)

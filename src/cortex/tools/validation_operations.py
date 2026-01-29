@@ -32,6 +32,16 @@ async def validate(
     """Run validation checks on Memory Bank files for schema compliance,
     duplications, quality metrics, or timestamps.
 
+    USE WHEN: User wants to validate memory bank, user needs quality check,
+    user reports schema issues, user requests validation, user wants to check
+    for duplicates.
+
+    EXAMPLES: 'validate schema', 'check for duplications', 'validate quality
+    metrics', 'validate infrastructure consistency', 'check timestamp format',
+    'validate roadmap sync'.
+
+    RETURNS: JSON with validation results, errors found, and suggested fixes.
+
     This consolidated validation tool performs six types of checks:
     - schema: Validates file structure against Memory Bank schema
       (required sections, frontmatter)

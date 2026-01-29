@@ -21,6 +21,16 @@ async def get_version_history(
 ) -> str:
     """Get version history for a Memory Bank file.
 
+    USE WHEN: User asks about file history, user needs to see previous
+    versions, user wants to track changes to a file, user requests version
+    information.
+
+    EXAMPLES: 'get version history for projectBrief.md', 'show changes to
+    activeContext.md', 'what versions exist for roadmap.md'.
+
+    RETURNS: JSON array of version objects with timestamps, change
+    descriptions, and version numbers.
+
     Returns list of versions with timestamps, change types, and descriptions.
     Versions are sorted by version number in descending order (newest first).
 

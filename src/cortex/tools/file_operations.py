@@ -45,6 +45,16 @@ async def manage_file(
 ) -> str:
     """Manage Memory Bank file operations: read, write, or get metadata.
 
+    USE WHEN: User needs to read/write memory bank files, user requests file
+    content, user needs file metadata, user wants to update project context
+    files.
+
+    EXAMPLES: 'read projectBrief.md', 'update activeContext.md', 'get metadata
+    for roadmap.md', 'write new content to systemPatterns.md'.
+
+    RETURNS: JSON with file content (read), success status (write), or metadata
+    object (metadata operation).
+
     This unified tool handles all file operations within the Memory Bank system,
     providing version control, conflict detection, and metadata tracking. All files
     are stored in the memory-bank/ directory relative to the project root.

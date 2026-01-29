@@ -1,21 +1,21 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-01-29T14:01:02.412366",
+  "last_updated": "2026-01-29T15:20:22.943359",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 10951,
-      "token_count": 2652,
+      "size_bytes": 9875,
+      "token_count": 2330,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-29T11:21:30.553703",
-      "content_hash": "sha256:688b2729d2cfb9e3cd7aa52e6cb55003b3c261deb6dccae9e285ba6c244443ea",
+      "last_modified": "2026-01-29T15:05:41.949979",
+      "content_hash": "sha256:e075f309ec1e026e4f5a8dea22a46b1c0033e83e460491c5975a8d39e4432b2d",
       "sections": [
         {
-          "title": "## Current Status (2026-01-28)",
+          "title": "## Current Status (2026-01-29)",
           "level": 2,
           "line_start": 3,
           "line_end": 3,
@@ -31,14 +31,14 @@
         {
           "title": "## Future Enhancements",
           "level": 2,
-          "line_start": 43,
-          "line_end": 43,
+          "line_start": 39,
+          "line_end": 39,
           "content_hash": null
         }
       ],
       "read_count": 2,
-      "write_count": 28,
-      "last_read": "2026-01-29T11:21:30.553703",
+      "write_count": 29,
+      "last_read": "2026-01-29T15:05:41.949979",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -371,17 +371,28 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Phase 62 Step 0 (harden commit.md against unauthorized git writes) marked as implemented (2026-01-29)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-29T15:05:41.941918",
+          "content_hash": "sha256:e075f309ec1e026e4f5a8dea22a46b1c0033e83e460491c5975a8d39e4432b2d",
+          "size_bytes": 9875,
+          "token_count": 2330,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Marked Enhance Tool Descriptions roadmap step as COMPLETE (2026-01-29)"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 25996,
-      "token_count": 6119,
+      "size_bytes": 7933,
+      "token_count": 2026,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-29T14:01:02.410492",
-      "content_hash": "sha256:a738a3df63432ab9fe6ec60a8278024f893e50c5dc060c4bb518f8164ac2f9df",
+      "last_modified": "2026-01-29T15:20:22.941713",
+      "content_hash": "sha256:8fc93b4a70d0a98408c20334c3a16fba6981e11927454a4bc2483ced6023e89e",
       "sections": [
         {
           "title": "## 2026-01-29",
@@ -393,28 +404,14 @@
         {
           "title": "## 2026-01-28",
           "level": 2,
-          "line_start": 41,
-          "line_end": 41,
-          "content_hash": null
-        },
-        {
-          "title": "## 2026-01-27",
-          "level": 2,
-          "line_start": 137,
-          "line_end": 137,
-          "content_hash": null
-        },
-        {
-          "title": "## 2026-01-26",
-          "level": 2,
-          "line_start": 157,
-          "line_end": 157,
+          "line_start": 56,
+          "line_end": 56,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 19,
-      "last_read": "2026-01-29T14:01:02.410492",
+      "write_count": 21,
+      "last_read": "2026-01-29T15:20:22.941713",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -626,17 +623,39 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Added commit procedure progress: markdown lint fix, Phase 62 plan archived"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-29T15:06:30.445177",
+          "content_hash": "sha256:a12abe64abe5bc4006e8efe38845810cc469b3726a0faaa0ac7513b43c750c32",
+          "size_bytes": 7570,
+          "token_count": 1922,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for Enhance Tool Descriptions roadmap step"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-29T15:20:22.941239",
+          "content_hash": "sha256:8fc93b4a70d0a98408c20334c3a16fba6981e11927454a4bc2483ced6023e89e",
+          "size_bytes": 7933,
+          "token_count": 2026,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added commit progress entry for E501 fix and pipeline run"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 8746,
-      "token_count": 2071,
+      "size_bytes": 3519,
+      "token_count": 917,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-29T12:43:24.685533",
-      "content_hash": "sha256:249038954c37414ee086e230cbe1fafdcada4fca15e188f71d7b934b18012120",
+      "last_modified": "2026-01-29T15:07:05.542800",
+      "content_hash": "sha256:03e46ead99e91c7226b88fbe527fec4095ecea5485f3826a94d431706ccec59f",
       "sections": [
         {
           "title": "## Current Focus (2026-01-29)",
@@ -655,28 +674,28 @@
         {
           "title": "### Recently Completed",
           "level": 2,
-          "line_start": 79,
-          "line_end": 79,
+          "line_start": 37,
+          "line_end": 37,
           "content_hash": null
         },
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 84,
-          "line_end": 84,
+          "line_start": 42,
+          "line_end": 42,
           "content_hash": null
         },
         {
           "title": "## Next Focus",
           "level": 2,
-          "line_start": 90,
-          "line_end": 90,
+          "line_start": 48,
+          "line_end": 48,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 14,
-      "last_read": "2026-01-29T12:43:24.685533",
+      "write_count": 15,
+      "last_read": "2026-01-29T15:07:05.542800",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -833,6 +852,17 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Align activeContext with Phase 62 progress: mark roadmap_sync gate/plan-archiver work as complete and narrow next-focus list to remaining Phase 62 steps."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-29T15:07:05.542107",
+          "content_hash": "sha256:03e46ead99e91c7226b88fbe527fec4095ecea5485f3826a94d431706ccec59f",
+          "size_bytes": 3519,
+          "token_count": 917,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context after Enhance Tool Descriptions completion"
         }
       ]
     },
@@ -1070,8 +1100,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 58918,
-    "total_tokens": 13705,
-    "last_full_scan": "2026-01-29T14:01:02.410529"
+    "total_size_bytes": 34552,
+    "total_tokens": 8136,
+    "last_full_scan": "2026-01-29T15:20:22.941749"
   }
 }

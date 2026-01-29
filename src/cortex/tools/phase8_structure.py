@@ -45,6 +45,15 @@ async def check_structure_health(
 ) -> str:
     """Analyze project structure health and optionally perform cleanup operations.
 
+    USE WHEN: User wants structure health check, user needs to fix
+    structure issues, user requests structure validation, user wants
+    cleanup actions.
+
+    EXAMPLES: 'check structure health', 'fix structure issues',
+    'validate project structure', 'perform structure cleanup'.
+
+    RETURNS: JSON with health score, issues found, and cleanup results.
+
     Performs comprehensive health checks on the MCP Memory Bank project structure,
     verifying that all required directories exist, symlinks are valid, configuration
     files are present, and files are properly organized. Optionally performs cleanup
@@ -490,6 +499,16 @@ async def perform_cleanup_actions(
 @mcp.tool()
 async def get_structure_info(project_root: str | None = None) -> str:
     """Get current project structure configuration, paths, and status information.
+
+    USE WHEN: User needs structure paths, user wants structure
+    configuration, user requests structure info, user needs path
+    information.
+
+    EXAMPLES: 'get structure info', 'show structure paths', 'get structure
+    configuration', 'get memory bank path'.
+
+    RETURNS: JSON with structure version, paths, configuration, and
+    health status.
 
     Retrieves comprehensive information about the MCP Memory Bank project structure,
     including the structure version, all configured component paths (memory bank,

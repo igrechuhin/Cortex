@@ -137,6 +137,15 @@ async def analyze(
     """Analyze Memory Bank usage patterns, file structure, and generate
     optimization insights.
 
+    USE WHEN: User wants pattern analysis, user needs insights, user
+    requests analysis, user wants to find refactoring opportunities.
+
+    EXAMPLES: 'analyze memory bank patterns', 'find refactoring
+    opportunities', 'analyze project structure', 'get insights about
+    documentation'.
+
+    RETURNS: JSON with analysis results, patterns found, and insights.
+
     This consolidated tool provides three types of analysis to help
     understand and optimize your Memory Bank:
 
