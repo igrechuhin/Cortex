@@ -2,6 +2,18 @@
 
 ## 2026-01-29
 
+- **Commit: Pre-commit pipeline and Phase 55 plan archival** - COMPLETE (2026-01-29)
+  - Steps 0–4 passed: fix_errors, format, markdown lint (178 files, 5 fixed), type_check (0 errors, 0 warnings), quality (0 violations), tests (2898 passed, 90.08% coverage). Archived Phase 55 plan to `.cortex/plans/archive/Phase55/phase-55-improve-implementation-prompt-quality-gates.md`; updated roadmap.md Phase 55 plan links to archive path.
+
+- ✅ **Phase 55: Improve Implementation Prompt Quality Gates** - COMPLETE (2026-01-29)
+  - Added quality gates to `.cortex/synapse/prompts/implement-next-roadmap-step.md`: Step 3.5 Pydantic/TypedDict prohibition and pre-implementation checklist; Step 2 load_context error handling; Step 4 mandatory format and type-check steps, ReadLints before Step 4.5; Step 4.6 implicit-concatenation check; token budget 15k–20k for narrow steps. Python coding standards (`.cortex/synapse/rules/python/python-coding-standards.mdc`): TypedDict FORBIDDEN and validation step. Integration tests in `tests/integration/test_implement_prompt_quality_gates.py` (10 tests). Plan and roadmap updated.
+
+- ✅ **Phase 63: Harden create-plan roadmap writes (full content and verification)** - COMPLETE (2026-01-29)
+  - Added full-content-only rule in `.cortex/synapse/prompts/create-plan.md` Step 6 (roadmap write must be complete, unabridged; never truncate/summarize existing bullets).
+  - Added post-write verification in create-plan.md Step 7: re-read roadmap, confirm new entry present and all existing entries unchanged; restore-and-repeat if truncation found.
+  - Added "Roadmap writes" subsection in `.cortex/synapse/agents/memory-bank-updater.md`: always pass full file content for roadmap.md writes; never truncate or summarize existing entries.
+  - No production code changes; prompt and agent doc edits only.
+
 - ✅ **Multi-Language Pre-Commit Support** - COMPLETE (2026-01-29)
   - Adapter registry (_ADAPTER_REGISTRY, SUPPORTED_LANGUAGES) and FrameworkAdapter typing in `src/cortex/tools/pre_commit_tools.py`;_adapter returns adapter from registry; quality check language-aware (Python-only file/function size checks); error message uses SUPPORTED_LANGUAGES. Tests: TestAdapterRegistry (supported_languages, get_adapter for python, get_adapter returns None for typescript). 31 pre_commit_tools unit tests passing.
 

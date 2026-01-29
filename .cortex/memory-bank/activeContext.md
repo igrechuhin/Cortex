@@ -6,6 +6,9 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
+- ✅ **Phase 55: Improve Implementation Prompt Quality Gates** - COMPLETE (2026-01-29)
+  - Added quality gates to implement-next-roadmap-step.md (Step 3.5 Pydantic/TypedDict and checklist; Step 2 load_context error handling; Step 4 format/type/ReadLints; Step 4.6 implicit-concatenation; token budget). Python rules: TypedDict FORBIDDEN. Integration tests in test_implement_prompt_quality_gates.py. Plan and roadmap updated.
+
 - ✅ **Phase 56: Commit Workflow Parallelization (Steps 9–11)** - COMPLETE (2026-01-29)
   - Step model and prompt updates, unit tests, integration tests for prompt–model alignment (`test_commit_workflow_prompt_alignment.py`), and memory bank/docs updates done. Phase 56 plan and roadmap marked COMPLETE.
 
@@ -53,5 +56,5 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 ## Next Focus
 
 - **Phase 63: Harden create-plan roadmap writes** is COMPLETE (2026-01-29). Full-content rule and post-write verification added to create-plan and memory-bank-updater.
-- **Multi-Language Pre-Commit Support** is COMPLETE (2026-01-29). Next roadmap item: Multi-Language Validation Support (additional language adapters in validation operations).
-- **Phase 55** (implementation prompt quality gates) and **Enhance Tool Descriptions** plan remain; continue Phase 21 health-check enhancements when prioritized.
+- **Phase 55: Improve Implementation Prompt Quality Gates** is COMPLETE (2026-01-29). Quality gates added to implement prompt and Python rules; integration tests added.
+- **Multi-Language Pre-Commit Support** is COMPLETE (2026-01-29). Next roadmap item: **Multi-Language Validation Support** (additional language adapters in validation operations). Continue Phase 21 health-check enhancements when prioritized.
