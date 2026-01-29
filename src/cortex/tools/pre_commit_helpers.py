@@ -3,9 +3,102 @@
 Extracted to keep pre_commit_tools.py under 400 lines.
 """
 
-from typing import cast
+import json
+from collections.abc import Sequence
+from typing import Literal, cast
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import JsonValue, ModelDict
+from cortex.managers.initialization import get_project_root
+from cortex.services.framework_adapters.base import (
+    CheckResult,
+    TestResult,
+)
+from cortex.services.language_detector import LanguageDetector, LanguageInfo
+
+
+class FileSizeViolation(BaseModel):
+    """File size violation details."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    file: str = Field(description="File path")
+    lines: int = Field(ge=0, description="Number of lines")
+    max_lines: int = Field(ge=0, description="Maximum allowed lines")
+    excess: int = Field(ge=0, description="Excess lines over limit")
+
+
+class FunctionLengthViolation(BaseModel):
+    """Function length violation details."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    file: str = Field(description="File path")
+    function: str = Field(description="Function name")
+    line: int = Field(ge=1, description="Line number")
+    lines: int = Field(ge=0, description="Number of lines")
+    max_lines: int = Field(ge=0, description="Maximum allowed lines")
+    excess: int = Field(ge=0, description="Excess lines over limit")
+
+
+class QualityCheckResult(BaseModel):
+    """Result of quality check including file size and function length."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    check_type: str = Field(description="Type of check")
+    success: bool = Field(description="Whether check succeeded")
+    output: str = Field(description="Check output")
+    errors: list[str] = Field(default_factory=list, description="List of errors")
+    warnings: list[str] = Field(default_factory=list, description="List of warnings")
+    files_modified: list[str] = Field(
+        default_factory=list, description="List of modified files"
+    )
+    file_size_violations: list[FileSizeViolation] = Field(
+        default_factory=lambda: cast(list[FileSizeViolation], []),
+        description="File size violations",
+    )
+    function_length_violations: list[FunctionLengthViolation] = Field(
+        default_factory=lambda: cast(list[FunctionLengthViolation], []),
+        description="Function length violations",
+    )
+
+
+class CheckStats(BaseModel):
+    """Statistics for pre-commit checks."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    total_errors: int = Field(ge=0, description="Total number of errors")
+    total_warnings: int = Field(ge=0, description="Total number of warnings")
+    files_modified: list[str] = Field(
+        default_factory=list, description="List of modified files"
+    )
+    checks_performed: list[str] = Field(
+        default_factory=list, description="List of checks performed"
+    )
+
+
+class PreCommitResult(BaseModel):
+    """Result of pre-commit checks execution."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    status: Literal["success", "error"] = Field(description="Operation status")
+    language: str | None = Field(default=None, description="Detected language")
+    checks_performed: list[str] = Field(
+        default_factory=list, description="List of checks performed"
+    )
+    results: dict[str, CheckResult | TestResult | QualityCheckResult] = Field(
+        default_factory=dict, description="Check results by check name"
+    )
+    total_errors: int = Field(ge=0, description="Total number of errors")
+    total_warnings: int = Field(ge=0, description="Total number of warnings")
+    files_modified: list[str] = Field(
+        default_factory=list, description="List of modified files"
+    )
+    success: bool = Field(description="Whether all checks passed")
 
 
 def extract_dict_from_object(
@@ -144,3 +237,84 @@ def collect_remaining_issues(fix_errors_result: ModelDict) -> list[str]:
         remaining_issues.append(issue)
 
     return remaining_issues
+
+
+def create_error_result(error: str, error_type: str = "ValueError") -> str:
+    """Create error response JSON."""
+    return json.dumps(
+        {"status": "error", "error": error, "error_type": error_type},
+        indent=2,
+    )
+
+
+def get_project_root_str(project_root: str | None) -> str:
+    """Get project root as string."""
+    root = get_project_root(project_root)
+    return str(root)
+
+
+def unsupported_language_result(
+    language: str, supported_languages: tuple[str, ...]
+) -> str:
+    """Return error JSON for unsupported language."""
+    supported = ", ".join(supported_languages)
+    msg = (
+        f"Language '{language}' is not yet supported. "
+        + f"Supported languages: {supported}"
+    )
+    return create_error_result(msg)
+
+
+def detect_or_use_language(language: str | None, root_str: str) -> LanguageInfo | str:
+    """Detect language or use provided language."""
+    if language is None:
+        detector = LanguageDetector(root_str)
+        language_info = detector.detect_language()
+        if language_info is None:
+            return create_error_result(
+                "Could not detect project language. Please specify language parameter."
+            )
+        return language_info
+    detected_language = language.lower()
+    return LanguageInfo(
+        language=detected_language,
+        test_framework=None,
+        formatter=None,
+        linter=None,
+        type_checker=None,
+        build_tool=None,
+        confidence=0.5,
+    )
+
+
+def determine_checks_to_perform(checks: Sequence[str] | None) -> list[str]:
+    """Determine which checks to perform."""
+    default_checks = ["fix_errors", "quality", "format", "type_check", "tests"]
+    return list(checks) if checks else default_checks
+
+
+MAX_LOG_OUTPUT_LENGTH = 4000
+
+
+def truncate_log_value(value: str, max_length: int = MAX_LOG_OUTPUT_LENGTH) -> str:
+    """Truncate very large log strings to keep JSON responses compact."""
+    if len(value) <= max_length:
+        return value
+    truncated_chars = len(value) - max_length
+    suffix = f"\n...[truncated {truncated_chars} characters]..."
+    return value[:max_length] + suffix
+
+
+def truncate_large_logs_in_data(obj: JsonValue) -> JsonValue:
+    """Recursively truncate large log fields in JSON-like data."""
+    if isinstance(obj, dict):
+        truncated: dict[str, JsonValue] = {}
+        for key, value in obj.items():
+            if isinstance(value, str) and key == "output":
+                truncated[key] = truncate_log_value(value)
+            else:
+                truncated[key] = truncate_large_logs_in_data(value)
+        return truncated
+    if isinstance(obj, list):
+        return [truncate_large_logs_in_data(item) for item in obj]
+    return obj

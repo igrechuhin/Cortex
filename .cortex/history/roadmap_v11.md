@@ -18,7 +18,7 @@
 
 - ✅ **Commit Procedure: Fixed Function Length Violation in Python Adapter** - COMPLETE (2026-01-26) - Fixed function length violation in `src/cortex/services/framework_adapters/python_adapter.py` by refactoring `_run_ruff_fix` function (34 lines → under 30) via extracting helper functions. All tests passing (2850 passed, 0 failed), coverage at 90%. All code quality gates passing.
 
-- ✅ **Commit Procedure: Fixed Test Failures** - COMPLETE (2026-01-26) - Fixed 2 test failures: `test_update_file_metadata` (updated assertion to expect `version_info.model_dump(mode="json")`) and `test_setup_validation_managers_success` (fixed patch paths and added all 6 mocks). All tests passing (2850 passed, 0 failed), coverage at 90.01%. All code quality gates passing.
+- ✅ **Commit Procedure: Fixed Test Failures** - COMPLETE (2026-01-26) - Fixed 2 test failures: `test_update_file_metadata` (updated assertion to expect `version_info.model_dump(mode="json")`) and `test_setup_validation_managers_success` (fixed patch paths and all 6 mocks). All tests passing (2850 passed, 0 failed), coverage at 90.01%. All code quality gates passing.
 
 - ✅ **Commit Procedure: Fixed Type Error and Increased Test Coverage** - COMPLETE (2026-01-26) - Fixed type error in `src/cortex/services/framework_adapters/python_adapter.py` (implicit string concatenation) by adding explicit parentheses. Added 4 new tests for `_build_test_errors` method to increase coverage from 89.99% to 90.01% (above threshold). All tests passing (2834 passed, 0 failed), coverage at 90.01%. All code quality gates passing.
 
@@ -38,8 +38,12 @@
 
 ## Future Enhancements
 
-- **Commit Workflow Parallelization (Steps 9–11)** - PLANNED - Implement a constrained parallelization block for commit Steps 9–11 (timestamp-validator, roadmap-sync-validator, submodule handling) based on the commit-parallelization analysis in the quality reviews. Keep Steps 0–8 and 12–14 strictly sequential, run Steps 9–11 in a structured TaskGroup, aggregate their results, and ensure Step 12 runs only after all three complete successfully. This work is tracked in the Phase 56 commit workflow parallelization plan.
+- ✅ **Commit Workflow Parallelization (Steps 9–11)** - COMPLETE (2026-01-29) - Plan: `.cortex/plans/archive/Phase56/phase-56-commit-workflow-parallelization.md`.
 
-- **Multi-Language Pre-Commit Support** - PLANNED - Add support for additional language adapters beyond Python - Currently only Python adapter is implemented - Location: src/cortex/tools/pre_commit_tools.py line 138 - TODO: Add other language adapters as needed (e.g., JavaScript/TypeScript, Rust, Go, Java, etc.) - This would enable pre-commit checks for multi-language projects
+- ✅ **Multi-Language Pre-Commit Support** - COMPLETE (2026-01-29) - Added adapter registry (_ADAPTER_REGISTRY, SUPPORTED_LANGUAGES) and FrameworkAdapter typing in pre_commit_tools; quality check runs Python-specific file/function checks only when language is python; unsupported-language error lists supported languages from registry. Unit tests for_adapter and SUPPORTED_LANGUAGES. Adding TypeScript/JavaScript/Rust/Go/Java adapters: implement FrameworkAdapter and register inAPTER_REGISTRY.
+
+- **Phase 55: Improve Implementation Prompt Quality Gates** - PLANNED - Add quality gates to implement-next-roadmap-step.md: Pydantic/format/type checks (Phase 21 session), implicit-concatenation check in Step 4.6, run ReadLints before Step 4.5, optional token budget (session-optimization 2026-01-29). Plan: `../plans/phase-55-improve-implementation-prompt-quality-gates.md`.
+
+- **Phase 63: Harden create-plan roadmap writes (full content and verification)** - PLANNED - Require full, unabridged roadmap content for manage_file(write) in create-plan and memory-bank-updater; add post-write verification for no unintended truncation. Plan: `../plans/phase-63-harden-create-plan-roadmap-writes.md`.
 
 - **Multi-Language Validation Support** - PLANNED - Add support for additional language adapters in validation operations - Currently validation operations may need language-specific adapters - Location: src/cortex/tools/validation_operations.py line 351 - TODO: Add other language adapters as needed (e.g., JavaScript/TypeScript, Rust, Go, Java, etc.) - This would enable validation checks for multi-language projects

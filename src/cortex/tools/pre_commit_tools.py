@@ -11,7 +11,7 @@ Total: 2 tools
 
 import ast
 import json
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Literal, cast
 
@@ -20,141 +20,51 @@ from pydantic import BaseModel, ConfigDict, Field
 from cortex.core.constants import MCP_TOOL_TIMEOUT_VERY_COMPLEX
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import JsonValue, ModelDict
-from cortex.managers.initialization import get_project_root
 from cortex.server import mcp
-from cortex.services.framework_adapters.base import CheckResult, TestResult
+from cortex.services.framework_adapters.base import (
+    CheckResult,
+    FrameworkAdapter,
+    TestResult,
+)
 from cortex.services.framework_adapters.python_adapter import PythonAdapter
-from cortex.services.language_detector import LanguageDetector, LanguageInfo
+from cortex.services.language_detector import LanguageInfo
 
-# Import markdown operations for markdown lint fixing
 # No circular import: markdown_operations doesn't import pre_commit_tools
 from cortex.tools.markdown_operations import fix_markdown_lint  # noqa: F401
 from cortex.tools.pre_commit_helpers import (
+    CheckStats,
+    FileSizeViolation,
+    FunctionLengthViolation,
+    PreCommitResult,
+    QualityCheckResult,
     collect_remaining_issues,
+    create_error_result,
+    detect_or_use_language,
+    determine_checks_to_perform,
     extract_check_results,
     extract_dict_from_object,
     extract_int_from_object,
     extract_list_from_object,
+    get_project_root_str,
+    truncate_large_logs_in_data,
+    unsupported_language_result,
 )
+
+# Adapter registry: language -> factory(project_root) -> FrameworkAdapter.
+# Add new languages by implementing FrameworkAdapter and registering here.
+_ADAPTER_REGISTRY: dict[str, Callable[[str | None], FrameworkAdapter]] = {
+    "python": lambda root: PythonAdapter(root),
+}
+SUPPORTED_LANGUAGES: tuple[str, ...] = tuple(_ADAPTER_REGISTRY.keys())
 
 # Constants for quality checks
 MAX_FILE_LINES = 400
 MAX_FUNCTION_LINES = 30
 
 
-class FileSizeViolation(BaseModel):
-    """File size violation details."""
-
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
-
-    file: str = Field(description="File path")
-    lines: int = Field(ge=0, description="Number of lines")
-    max_lines: int = Field(ge=0, description="Maximum allowed lines")
-    excess: int = Field(ge=0, description="Excess lines over limit")
-
-
-class FunctionLengthViolation(BaseModel):
-    """Function length violation details."""
-
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
-
-    file: str = Field(description="File path")
-    function: str = Field(description="Function name")
-    line: int = Field(ge=1, description="Line number")
-    lines: int = Field(ge=0, description="Number of lines")
-    max_lines: int = Field(ge=0, description="Maximum allowed lines")
-    excess: int = Field(ge=0, description="Excess lines over limit")
-
-
-class QualityCheckResult(BaseModel):
-    """Result of quality check including file size and function length."""
-
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
-
-    check_type: str = Field(description="Type of check")
-    success: bool = Field(description="Whether check succeeded")
-    output: str = Field(description="Check output")
-    errors: list[str] = Field(default_factory=list, description="List of errors")
-    warnings: list[str] = Field(default_factory=list, description="List of warnings")
-    files_modified: list[str] = Field(
-        default_factory=list, description="List of modified files"
-    )
-    file_size_violations: list[FileSizeViolation] = Field(
-        default_factory=lambda: list[FileSizeViolation](),
-        description="File size violations",
-    )
-    function_length_violations: list[FunctionLengthViolation] = Field(
-        default_factory=lambda: list[FunctionLengthViolation](),
-        description="Function length violations",
-    )
-
-
-class PreCommitResult(BaseModel):
-    """Result of pre-commit checks execution."""
-
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
-
-    status: Literal["success", "error"] = Field(description="Operation status")
-    language: str | None = Field(default=None, description="Detected language")
-    checks_performed: list[str] = Field(
-        default_factory=list, description="List of checks performed"
-    )
-    results: dict[str, CheckResult | TestResult | QualityCheckResult] = Field(
-        default_factory=dict, description="Check results by check name"
-    )
-    total_errors: int = Field(ge=0, description="Total number of errors")
-    total_warnings: int = Field(ge=0, description="Total number of warnings")
-    files_modified: list[str] = Field(
-        default_factory=list, description="List of modified files"
-    )
-    success: bool = Field(description="Whether all checks passed")
-
-
-class CheckStats(BaseModel):
-    """Statistics for pre-commit checks."""
-
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
-
-    total_errors: int = Field(ge=0, description="Total number of errors")
-    total_warnings: int = Field(ge=0, description="Total number of warnings")
-    files_modified: list[str] = Field(
-        default_factory=list, description="List of modified files"
-    )
-    checks_performed: list[str] = Field(
-        default_factory=list, description="List of checks performed"
-    )
-
-
-_MAX_LOG_OUTPUT_LENGTH = 4000
-
-
-def _truncate_log_value(value: str, max_length: int = _MAX_LOG_OUTPUT_LENGTH) -> str:
-    """Truncate very large log strings to keep JSON responses compact."""
-    if len(value) <= max_length:
-        return value
-    truncated_chars = len(value) - max_length
-    suffix = f"\n...[truncated {truncated_chars} characters]..."
-    return value[:max_length] + suffix
-
-
-def _truncate_large_logs_in_data(obj: JsonValue) -> JsonValue:
-    """Recursively truncate large log fields in JSON-like data."""
-    if isinstance(obj, dict):
-        truncated: dict[str, JsonValue] = {}
-        for key, value in obj.items():
-            if isinstance(value, str) and key == "output":
-                truncated[key] = _truncate_log_value(value)
-            else:
-                truncated[key] = _truncate_large_logs_in_data(value)
-        return truncated
-    if isinstance(obj, list):
-        return [_truncate_large_logs_in_data(item) for item in obj]
-    return obj
-
-
 def _get_adapter(
     language_info: LanguageInfo, project_root: str | None
-) -> PythonAdapter | None:
+) -> FrameworkAdapter | None:
     """Get framework adapter for detected language.
 
     Args:
@@ -162,20 +72,12 @@ def _get_adapter(
         project_root: Project root directory.
 
     Returns:
-        Framework adapter instance or None if not supported.
+        Framework adapter instance or None if language not in registry.
     """
-    if language_info.language == "python":
-        return PythonAdapter(project_root)
-    # TODO: Add other language adapters as needed
-    return None
-
-
-def _create_error_result(error: str, error_type: str = "ValueError") -> str:
-    """Create error response JSON."""
-    return json.dumps(
-        {"status": "error", "error": error, "error_type": error_type},
-        indent=2,
-    )
+    factory = _ADAPTER_REGISTRY.get(language_info.language)
+    if factory is None:
+        return None
+    return factory(project_root)
 
 
 @mcp.tool()
@@ -328,71 +230,36 @@ async def execute_pre_commit_checks(
         }
     """
     try:
-        root_str = _get_project_root_str(project_root)
-        language_info = _detect_or_use_language(language, root_str)
+        root_str = get_project_root_str(project_root)
+        language_info = detect_or_use_language(language, root_str)
         if isinstance(language_info, str):
             return language_info
 
         adapter = _get_adapter(language_info, root_str)
         if adapter is None:
-            return _create_error_result(
-                f"Language '{language_info.language}' is not yet supported. "
-                + "Supported languages: python"
+            return unsupported_language_result(
+                language_info.language, SUPPORTED_LANGUAGES
             )
 
-        checks_to_perform = _determine_checks_to_perform(checks)
+        checks_to_perform = determine_checks_to_perform(checks)
         results, stats = _execute_all_checks(
-            adapter, checks_to_perform, strict_mode, timeout, coverage_threshold
+            adapter,
+            language_info.language,
+            checks_to_perform,
+            strict_mode,
+            timeout,
+            coverage_threshold,
         )
 
         return _build_response(results, stats, language_info.language)
 
     except Exception as e:
-        return _create_error_result(str(e), type(e).__name__)
-
-
-def _get_project_root_str(project_root: str | None) -> str:
-    """Get project root as string."""
-    root = get_project_root(project_root)
-    return str(root)
-
-
-def _detect_or_use_language(language: str | None, root_str: str) -> LanguageInfo | str:
-    """Detect language or use provided language."""
-    if language is None:
-        detector = LanguageDetector(root_str)
-        language_info = detector.detect_language()
-        if language_info is None:
-            return _create_error_result(
-                "Could not detect project language. Please specify language parameter."
-            )
-        return language_info
-    else:
-        detected_language = language.lower()
-        return LanguageInfo(
-            language=detected_language,
-            test_framework=None,
-            formatter=None,
-            linter=None,
-            type_checker=None,
-            build_tool=None,
-            confidence=0.5,
-        )
-
-
-def _determine_checks_to_perform(checks: Sequence[str] | None) -> list[str]:
-    """Determine which checks to perform."""
-    # Default ordering is optimized for fast feedback:
-    # - fix_errors first (can resolve obvious failures cheaply)
-    # - quality early (file sizes / function lengths fail-fast before expensive steps)
-    # - formatting and type checking next
-    # - tests last (most expensive)
-    default_checks = ["fix_errors", "quality", "format", "type_check", "tests"]
-    return list(checks) if checks else default_checks
+        return create_error_result(str(e), type(e).__name__)
 
 
 def _execute_all_checks(
-    adapter: PythonAdapter,
+    adapter: FrameworkAdapter,
+    language: str,
     checks_to_perform: list[str],
     strict_mode: bool,
     timeout: int | None,
@@ -408,7 +275,7 @@ def _execute_all_checks(
     )
 
     _process_fix_errors_check(adapter, checks_to_perform, strict_mode, results, stats)
-    _process_quality_check(adapter, checks_to_perform, results, stats)
+    _process_quality_check(adapter, language, checks_to_perform, results, stats)
     _process_format_check(adapter, checks_to_perform, results, stats)
     _process_type_check(adapter, checks_to_perform, results, stats)
     _process_tests_check(
@@ -419,7 +286,7 @@ def _execute_all_checks(
 
 
 def _process_fix_errors_check(
-    adapter: PythonAdapter,
+    adapter: FrameworkAdapter,
     checks_to_perform: list[str],
     strict_mode: bool,
     results: dict[str, CheckResult | TestResult | QualityCheckResult],
@@ -436,7 +303,7 @@ def _process_fix_errors_check(
 
 
 def _process_format_check(
-    adapter: PythonAdapter,
+    adapter: FrameworkAdapter,
     checks_to_perform: list[str],
     results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
@@ -451,7 +318,7 @@ def _process_format_check(
 
 
 def _process_type_check(
-    adapter: PythonAdapter,
+    adapter: FrameworkAdapter,
     checks_to_perform: list[str],
     results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
@@ -465,21 +332,22 @@ def _process_type_check(
 
 
 def _process_quality_check(
-    adapter: PythonAdapter,
+    adapter: FrameworkAdapter,
+    language: str,
     checks_to_perform: list[str],
     results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
 ) -> None:
     """Process quality check if requested."""
     if "quality" in checks_to_perform:
-        quality_result = _execute_quality(adapter)
+        quality_result = _execute_quality(adapter, language)
         results["quality"] = quality_result
         stats.checks_performed.append("quality")
         stats.total_errors += len(quality_result.errors)
 
 
 def _process_tests_check(
-    adapter: PythonAdapter,
+    adapter: FrameworkAdapter,
     checks_to_perform: list[str],
     timeout: int | None,
     coverage_threshold: float,
@@ -496,7 +364,7 @@ def _process_tests_check(
 
 
 def _execute_fix_errors(
-    adapter: PythonAdapter,
+    adapter: FrameworkAdapter,
     strict_mode: bool,
 ) -> CheckResult:
     """Execute fix_errors check."""
@@ -507,12 +375,12 @@ def _execute_fix_errors(
     )
 
 
-def _execute_format(adapter: PythonAdapter) -> CheckResult:
+def _execute_format(adapter: FrameworkAdapter) -> CheckResult:
     """Execute format check."""
     return adapter.format_code()
 
 
-def _execute_type_check(adapter: PythonAdapter) -> CheckResult:
+def _execute_type_check(adapter: FrameworkAdapter) -> CheckResult:
     """Execute type_check check."""
     return adapter.type_check()
 
@@ -743,12 +611,15 @@ def _build_quality_output(
     return "\n".join(parts)
 
 
-def _execute_quality(adapter: PythonAdapter) -> QualityCheckResult:
-    """Execute quality check including linting, file sizes, and function lengths."""
+def _execute_quality(adapter: FrameworkAdapter, language: str) -> QualityCheckResult:
+    """Execute quality check: linting; for Python only, file sizes and function lengths."""
     lint_result = adapter.lint_code()
     project_root = adapter.project_root
-    file_violations = _check_file_sizes(project_root)
-    func_violations = _check_function_lengths(project_root)
+    file_violations: list[FileSizeViolation] = []
+    func_violations: list[FunctionLengthViolation] = []
+    if language == "python":
+        file_violations = _check_file_sizes(project_root)
+        func_violations = _check_function_lengths(project_root)
 
     errors = _build_quality_errors(lint_result.errors, file_violations, func_violations)
     output = _build_quality_output(lint_result.output, file_violations, func_violations)
@@ -769,7 +640,7 @@ def _execute_quality(adapter: PythonAdapter) -> QualityCheckResult:
 
 
 def _execute_tests(
-    adapter: PythonAdapter,
+    adapter: FrameworkAdapter,
     timeout: int | None,
     coverage_threshold: float,
 ) -> TestResult:
@@ -800,7 +671,7 @@ def _build_response(
         success=success,
     )
     data = response.model_dump(mode="json")
-    compact = _truncate_large_logs_in_data(data)
+    compact = truncate_large_logs_in_data(data)
     return json.dumps(compact, separators=(",", ":"))
 
 
@@ -842,7 +713,7 @@ def _create_quality_error_response(error_message: str) -> str:
         error_message=error_message,
     )
     data = result.model_dump(mode="json")
-    compact = _truncate_large_logs_in_data(data)
+    compact = truncate_large_logs_in_data(data)
     return json.dumps(compact, separators=(",", ":"))
 
 
@@ -989,7 +860,7 @@ def _build_quality_response_json(
         remaining_issues,
     )
     data = response.model_dump(mode="json")
-    compact = _truncate_large_logs_in_data(data)
+    compact = truncate_large_logs_in_data(data)
     return json.dumps(compact, separators=(",", ":"))
 
 
@@ -1067,7 +938,7 @@ async def fix_quality_issues(
         }
     """
     try:
-        root_str = _get_project_root_str(project_root)
+        root_str = get_project_root_str(project_root)
 
         # Fix errors and extract statistics
         fix_errors_result = await _run_quality_checks(root_str)

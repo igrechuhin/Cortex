@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-01-29T17:05:14.957046",
+  "last_updated": "2026-01-29T18:15:13.259620",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 9875,
-      "token_count": 2330,
+      "size_bytes": 10326,
+      "token_count": 2461,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-29T15:05:41.949979",
-      "content_hash": "sha256:e075f309ec1e026e4f5a8dea22a46b1c0033e83e460491c5975a8d39e4432b2d",
+      "last_modified": "2026-01-29T18:15:13.257897",
+      "content_hash": "sha256:727a58fa5387908759ab6dde256267411f7df3d74de2e0f795a98d0ee224e78d",
       "sections": [
         {
           "title": "## Current Status (2026-01-29)",
@@ -37,8 +37,8 @@
         }
       ],
       "read_count": 2,
-      "write_count": 29,
-      "last_read": "2026-01-29T15:05:41.949979",
+      "write_count": 32,
+      "last_read": "2026-01-29T18:15:13.257897",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -382,17 +382,50 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Marked Enhance Tool Descriptions roadmap step as COMPLETE (2026-01-29)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-29T17:54:08.582564",
+          "content_hash": "sha256:1d5838f0bd933f255eee78cb4df7b9ce44031735b7241b9996e4aa6f09d60f38",
+          "size_bytes": 9936,
+          "token_count": 2348,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Marked Multi-Language Pre-Commit Support as COMPLETE (2026-01-29)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-29T18:06:55.636691",
+          "content_hash": "sha256:739ce479e44057b4748d4288ccd93d108b7199e0dbca11ccb654ab1c0e9d68ed",
+          "size_bytes": 8304,
+          "token_count": 1999,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Added Phase 55 plan: Improve Implementation Prompt Quality Gates (enriched with session-optimization 2026-01-29)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-29T18:15:13.257343",
+          "content_hash": "sha256:727a58fa5387908759ab6dde256267411f7df3d74de2e0f795a98d0ee224e78d",
+          "size_bytes": 10326,
+          "token_count": 2461,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Added new plan: Phase 63 Harden create-plan roadmap writes (full content and verification)"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 9902,
-      "token_count": 2515,
+      "size_bytes": 11240,
+      "token_count": 2835,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-29T17:04:49.486684",
-      "content_hash": "sha256:ab6d5f0471379302df77a84d585223dc34c9487830f577858407d686f28a5bc1",
+      "last_modified": "2026-01-29T17:55:18.565634",
+      "content_hash": "sha256:4c882af211346835898f1271ddb9f3dfa53fa799649eadb8d00df196edad5b84",
       "sections": [
         {
           "title": "## 2026-01-29",
@@ -404,14 +437,14 @@
         {
           "title": "## 2026-01-28",
           "level": 2,
-          "line_start": 67,
-          "line_end": 67,
+          "line_start": 76,
+          "line_end": 76,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 23,
-      "last_read": "2026-01-29T17:04:49.486684",
+      "write_count": 24,
+      "last_read": "2026-01-29T17:55:18.565634",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -667,17 +700,28 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Added commit progress: fixed 39 reportImplicitStringConcatenation type errors; 1 plan moved to archive"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-29T17:55:18.564645",
+          "content_hash": "sha256:4c882af211346835898f1271ddb9f3dfa53fa799649eadb8d00df196edad5b84",
+          "size_bytes": 11240,
+          "token_count": 2835,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for Multi-Language Pre-Commit Support (2026-01-29)"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 4100,
-      "token_count": 1061,
+      "size_bytes": 3966,
+      "token_count": 1032,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-29T17:05:14.953043",
-      "content_hash": "sha256:293cb84892c23147dd7107ffbb7fc617c0a2e2fe955eac7315651ad43d69791a",
+      "last_modified": "2026-01-29T17:55:40.312675",
+      "content_hash": "sha256:38c33397a56712d51f8846119237c84902a7a3f5b5e10011d07b289682ec05f7",
       "sections": [
         {
           "title": "## Current Focus (2026-01-29)",
@@ -716,8 +760,8 @@
         }
       ],
       "read_count": 0,
-      "write_count": 16,
-      "last_read": "2026-01-29T17:05:14.953043",
+      "write_count": 17,
+      "last_read": "2026-01-29T17:55:40.312675",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -896,6 +940,17 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Added commit: fixed 39 type errors; updated project health"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-29T17:55:40.312349",
+          "content_hash": "sha256:38c33397a56712d51f8846119237c84902a7a3f5b5e10011d07b289682ec05f7",
+          "size_bytes": 3966,
+          "token_count": 1032,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context after Multi-Language Pre-Commit Support completion (2026-01-29)"
         }
       ]
     },
@@ -1133,8 +1188,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 37102,
-    "total_tokens": 8769,
-    "last_full_scan": "2026-01-29T17:05:14.953061"
+    "total_size_bytes": 38757,
+    "total_tokens": 9191,
+    "last_full_scan": "2026-01-29T18:15:13.257926"
   }
 }

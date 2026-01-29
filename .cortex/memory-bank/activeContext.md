@@ -39,6 +39,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
+- ✅ **Phase 63: Harden create-plan roadmap writes** - COMPLETE (2026-01-29)
 - ✅ **Commit: Fixed 39 reportImplicitStringConcatenation type errors** - COMPLETE (2026-01-29)
 - ✅ **Plan: Enhance Tool Descriptions with USE WHEN and EXAMPLES** - COMPLETE (2026-01-29)
 - ✅ **Phase 62: Synapse Session Optimization** - COMPLETE (2026-01-29)
@@ -51,6 +52,6 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Next Focus
 
-- **Phase 56 (Commit Workflow Parallelization)** is COMPLETE (2026-01-29). Next roadmap items: Multi-Language Pre-Commit Support, Multi-Language Validation Support.
-- **Enhance Tool Descriptions** plan is COMPLETE (2026-01-29). Remaining plan todo: validate-discoverability (test tool discoverability with enhanced descriptions).
-- Continue Phase 21 health-check enhancements when prioritized.
+- **Phase 63: Harden create-plan roadmap writes** is COMPLETE (2026-01-29). Full-content rule and post-write verification added to create-plan and memory-bank-updater.
+- **Multi-Language Pre-Commit Support** is COMPLETE (2026-01-29). Next roadmap item: Multi-Language Validation Support (additional language adapters in validation operations).
+- **Phase 55** (implementation prompt quality gates) and **Enhance Tool Descriptions** plan remain; continue Phase 21 health-check enhancements when prioritized.

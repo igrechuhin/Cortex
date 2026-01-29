@@ -30,6 +30,20 @@ Improve the `implement-next-roadmap-step.md` prompt to prevent common mistake pa
 
 **Impact**: These patterns slowed development, required iterative fixes, and violated critical project rules. Adding quality gates will prevent 100% of TypedDict violations, 80%+ of type errors, and 100% of formatting issues.
 
+### New Input (2026-01-29)
+
+Session optimization analysis (`.cortex/reviews/session-optimization-2026-01-29T18-00.md`) from the **implement-next-roadmap-step** session (Multi-Language Pre-Commit Support) identified additional patterns:
+
+1. **Implicit string concatenation** — Error message in `pre_commit_tools.py` used two adjacent f-strings; Pyright `reportImplicitStringConcatenation` flagged it. Rule already exists in `.cortex/synapse/rules/python/python-coding-standards.mdc` (~line 173) but Step 4.6 does not list "multi-line strings / implicit concatenation" as an explicit check.
+2. **Lint/type check not invoked proactively** — Violation was found via ReadLints later; implement prompt does not explicitly require "run ReadLints or fix_quality_issues after code edits" before Step 4.5.
+3. **Token budget** — Session used 25k budget with ~24.5% utilization; for narrow implement steps, 20k or 15k–20k may suffice.
+
+**Additional recommendations to incorporate**:
+
+- **Rec 1 (High)**: Add explicit implicit-concatenation check to Step 4.6 "Verify type system compliance".
+- **Rec 2 (Medium)**: Require "run ReadLints / fix_quality_issues before Step 4.5" in Step 4.
+- **Rec 3 (Low)**: Optionally tighten token budget guidance for implement/add (e.g. 20k or 15k–20k for narrow steps).
+
 ## Approach
 
 Update `implement-next-roadmap-step.md` prompt with mandatory quality gates at critical points in the workflow:
@@ -107,7 +121,6 @@ Update `implement-next-roadmap-step.md` prompt with mandatory quality gates at c
    ...
 
 3. **MANDATORY: Run type checking immediately after code creation** (before writing tests):
-   - **For Python**: Run `.venv/bin/pyright src/cortex/{new_module}/ --pythonversion 3.13`
    - **BLOCKING**: Fix ALL type errors before proceeding to test writing
    - **Common type errors to fix**:
      - Unused imports: Remove or use them
@@ -206,6 +219,44 @@ Update `implement-next-roadmap-step.md` prompt with mandatory quality gates at c
 
 **Testing**: Verify prompt includes checklist format with TypedDict prohibition.
 
+### Step 7: Add Explicit Implicit-Concatenation Check to Step 4.6 (HIGH — 2026-01-29)
+
+**Target**: `.cortex/synapse/prompts/implement-next-roadmap-step.md` — Step 4.6 "Verify Code Conformance to Rules", under "Verify type system compliance".
+
+**Change**: Add a bullet to the "Verify type system compliance" list:
+
+```markdown
+- **Multi-line string messages**: Do not use adjacent string literals (implicit concatenation). Use a single f-string or explicit `+` / `str.join()` (Pyright `reportImplicitStringConcatenation` is error).
+```
+
+**Expected Impact**: Reduces recurrence when agents manually verify rules; reinforces `python-coding-standards.mdc` at verification time.
+
+**Testing**: Verify Step 4.6 includes the multi-line string / implicit concatenation bullet.
+
+### Step 8: Require Run-Linter-After-Edits in Step 4 (MEDIUM — 2026-01-29)
+
+**Target**: `.cortex/synapse/prompts/implement-next-roadmap-step.md` — Step 4 "Implement the Step", after the "Fix any errors or issues" sub-bullets and before Step 4.5.
+
+**Change**: Add an explicit sub-step:
+
+```markdown
+- **Before Step 4.5**, run ReadLints on all new/modified files (or call `fix_quality_issues(project_root=...)`) and fix any reported type or lint errors.
+```
+
+**Expected Impact**: Catches type/lint regressions (e.g. implicit string concatenation) earlier in the implement flow, aligning with AGENTS.md.
+
+**Testing**: Verify Step 4 includes the "Before Step 4.5, run ReadLints…" requirement.
+
+### Step 9: Optional — Tighten Token Budget for Implement/Add (LOW — 2026-01-29)
+
+**Target**: `.cortex/synapse/prompts/implement-next-roadmap-step.md` — "Task-Aware Token Budget Selection" (or equivalent) where implement/add is described.
+
+**Change**: For "Small feature/refactor", suggest 20000 or 20000–25000 and note that 25000 often yields ~25% utilization; consider 15000–20000 for narrow implement steps when high-value files (activeContext, roadmap, progress) are sufficient.
+
+**Expected Impact**: Minor; reduces unused context tokens for implement/add sessions when relevance is high.
+
+**Testing**: Verify token budget guidance mentions 15k–20k for narrow implement steps.
+
 ## Dependencies
 
 - **Phase 54**: Clarify MCP Tool Error Handling Classification (COMPLETE) - Provides error classification framework
@@ -220,6 +271,9 @@ Update `implement-next-roadmap-step.md` prompt with mandatory quality gates at c
 - ✅ Step 2 includes non-critical error handling guidance with alternatives
 - ✅ Rules file includes explicit TypedDict prohibition
 - ✅ Step 3.5 includes pre-implementation checklist
+- ✅ Step 4.6 includes explicit implicit-concatenation / multi-line string check (2026-01-29)
+- ✅ Step 4 includes "run ReadLints / fix_quality_issues before Step 4.5" (2026-01-29)
+- ✅ Token budget guidance optionally tightened for implement/add (2026-01-29)
 - ✅ All changes tested and verified
 - ✅ Prompt updated and ready for use
 
@@ -235,6 +289,9 @@ Update `implement-next-roadmap-step.md` prompt with mandatory quality gates at c
    - Verify Step 4 includes type checking step
    - Verify Step 2 includes error handling guidance
    - Verify Step 3.5 includes checklist
+   - Verify Step 4.6 includes implicit-concatenation / multi-line string bullet
+   - Verify Step 4 includes run ReadLints / fix_quality_issues before Step 4.5
+   - Verify token budget guidance for implement/add (optional)
 
 2. **Test Rules Updates**:
    - Verify rules file includes TypedDict prohibition
@@ -284,13 +341,15 @@ Update `implement-next-roadmap-step.md` prompt with mandatory quality gates at c
 - **Step 4**: Add error handling guidance (1 hour)
 - **Step 5**: Strengthen rules (30 minutes)
 - **Step 6**: Add checklist (30 minutes)
+- **Step 7-8**: Add Step 4.6 implicit-concatenation check and Step 4 run-linter-before-4.5 (30 minutes — 2026-01-29)
+- **Step 9**: Optional token budget tightening (15 minutes — 2026-01-29)
 - **Testing**: Comprehensive testing (2 hours)
-- **Total**: ~6 hours
+- **Total**: ~6.5–7 hours
 
 ## Notes
 
-- All recommendations from session optimization analysis are incorporated
+- All recommendations from session optimization analyses (2026-01-26 and 2026-01-29) are incorporated
 - Changes are additive (no breaking changes)
 - Quality gates are mandatory and blocking
-- Expected impact: 100% prevention of TypedDict violations, 80%+ reduction in type errors, 100% prevention of formatting issues
+- Expected impact: 100% prevention of TypedDict violations, 80%+ reduction in type errors, 100% prevention of formatting issues; fewer implicit string concatenation violations; type/lint caught earlier (Step 4)
 - Overall session efficiency improvement: 30-40% through earlier error detection

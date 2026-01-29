@@ -2,6 +2,15 @@
 
 ## 2026-01-29
 
+- ✅ **Phase 63: Harden create-plan roadmap writes (full content and verification)** - COMPLETE (2026-01-29)
+  - Added full-content-only rule in `.cortex/synapse/prompts/create-plan.md` Step 6 (roadmap write must be complete, unabridged; never truncate/summarize existing bullets).
+  - Added post-write verification in create-plan.md Step 7: re-read roadmap, confirm new entry present and all existing entries unchanged; restore-and-repeat if truncation found.
+  - Added "Roadmap writes" subsection in `.cortex/synapse/agents/memory-bank-updater.md`: always pass full file content for roadmap.md writes; never truncate or summarize existing entries.
+  - No production code changes; prompt and agent doc edits only.
+
+- ✅ **Multi-Language Pre-Commit Support** - COMPLETE (2026-01-29)
+  - Adapter registry (_ADAPTER_REGISTRY, SUPPORTED_LANGUAGES) and FrameworkAdapter typing in `src/cortex/tools/pre_commit_tools.py`;_adapter returns adapter from registry; quality check language-aware (Python-only file/function size checks); error message uses SUPPORTED_LANGUAGES. Tests: TestAdapterRegistry (supported_languages, get_adapter for python, get_adapter returns None for typescript). 31 pre_commit_tools unit tests passing.
+
 - **Commit: Pre-commit pipeline and Phase 56 plan archival** - COMPLETE (2026-01-29)
   - Steps 0–4 passed: fix_errors, format, markdown lint (176 files, 4 fixed), type_check (0 errors, 0 warnings), quality (0 violations), tests (2885 passed, 90.11% coverage). Archived Phase 56 plan to `.cortex/plans/archive/Phase56/phase-56-commit-workflow-parallelization.md`; updated roadmap.md plan link.
 

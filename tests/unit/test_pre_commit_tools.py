@@ -7,15 +7,22 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cortex.services.framework_adapters.base import CheckResult, TestResult
+from cortex.services.framework_adapters.base import (
+    CheckResult,
+    FrameworkAdapter,
+    TestResult,
+)
+from cortex.services.language_detector import LanguageInfo
+from cortex.tools.pre_commit_helpers import MAX_LOG_OUTPUT_LENGTH
 from cortex.tools.pre_commit_tools import (
-    _MAX_LOG_OUTPUT_LENGTH,  # pyright: ignore[reportPrivateUsage]
     MAX_FILE_LINES,
     MAX_FUNCTION_LINES,
+    SUPPORTED_LANGUAGES,
     _check_file_sizes,  # pyright: ignore[reportPrivateUsage]
     _check_function_lengths,  # pyright: ignore[reportPrivateUsage]
     _check_function_lengths_in_file,  # pyright: ignore[reportPrivateUsage]
     _count_file_lines,  # pyright: ignore[reportPrivateUsage]
+    _get_adapter,  # pyright: ignore[reportPrivateUsage]
     execute_pre_commit_checks,
     fix_quality_issues,
 )
@@ -53,7 +60,7 @@ class TestExecutePreCommitChecks:
 
     @pytest.mark.asyncio
     async def test_error_for_unsupported_language(self) -> None:
-        """Test error for unsupported language."""
+        """Test error for unsupported language includes supported list."""
         result_json = await execute_pre_commit_checks(
             checks=["fix_errors"],
             language="rust",
@@ -62,6 +69,8 @@ class TestExecutePreCommitChecks:
 
         assert result["status"] == "error"
         assert "not yet supported" in result["error"]
+        assert "Supported languages:" in result["error"]
+        assert "python" in result["error"]
 
     @pytest.mark.asyncio
     async def test_success_with_python_project(self) -> None:
@@ -151,7 +160,7 @@ class TestExecutePreCommitChecks:
     @pytest.mark.asyncio
     async def test_error_handling(self) -> None:
         """Test error handling in tool."""
-        with patch("cortex.tools.pre_commit_tools.get_project_root") as mock_root:
+        with patch("cortex.tools.pre_commit_tools.get_project_root_str") as mock_root:
             mock_root.side_effect = Exception("Test error")
 
             result_json = await execute_pre_commit_checks(checks=["fix_errors"])
@@ -159,6 +168,44 @@ class TestExecutePreCommitChecks:
 
             assert result["status"] == "error"
             assert "Test error" in result["error"]
+
+
+class TestAdapterRegistry:
+    """Test adapter registry and _get_adapter for multi-language support."""
+
+    def test_supported_languages_includes_python(self) -> None:
+        """Supported languages tuple includes python."""
+        assert "python" in SUPPORTED_LANGUAGES
+        assert len(SUPPORTED_LANGUAGES) >= 1
+
+    def test_get_adapter_returns_adapter_for_python(self) -> None:
+        """_get_adapter returns FrameworkAdapter for python."""
+        info = LanguageInfo(
+            language="python",
+            test_framework=None,
+            formatter=None,
+            linter=None,
+            type_checker=None,
+            build_tool=None,
+            confidence=1.0,
+        )
+        adapter = _get_adapter(info, None)
+        assert adapter is not None
+        assert isinstance(adapter, FrameworkAdapter)
+
+    def test_get_adapter_returns_none_for_unsupported_language(self) -> None:
+        """_get_adapter returns None for language not in registry."""
+        info = LanguageInfo(
+            language="typescript",
+            test_framework=None,
+            formatter=None,
+            linter=None,
+            type_checker=None,
+            build_tool=None,
+            confidence=0.8,
+        )
+        adapter = _get_adapter(info, "/some/root")
+        assert adapter is None
 
 
 class TestFixQualityIssues:
@@ -243,7 +290,7 @@ class TestFixQualityIssues:
     @pytest.mark.asyncio
     async def test_fix_quality_issues_exception_handling(self) -> None:
         """Test exception handling in fix_quality_issues."""
-        with patch("cortex.tools.pre_commit_tools._get_project_root_str") as mock_root:
+        with patch("cortex.tools.pre_commit_tools.get_project_root_str") as mock_root:
             mock_root.side_effect = Exception("Root error")
 
             result_json = await fix_quality_issues()
@@ -640,7 +687,7 @@ class TestLogTruncationBehavior:
             src_dir.mkdir()
             _ = (src_dir / "module.py").write_text("x = 1\n")
 
-            large_output = "X" * (_MAX_LOG_OUTPUT_LENGTH * 2)
+            large_output = "X" * (MAX_LOG_OUTPUT_LENGTH * 2)
 
             with patch(
                 "cortex.tools.pre_commit_tools.PythonAdapter"
@@ -668,5 +715,5 @@ class TestLogTruncationBehavior:
                 quality_result = result["results"]["quality"]
                 truncated_output = quality_result["output"]
                 assert isinstance(truncated_output, str)
-                assert len(truncated_output) <= _MAX_LOG_OUTPUT_LENGTH + 200
+                assert len(truncated_output) <= MAX_LOG_OUTPUT_LENGTH + 200
                 assert "truncated" in truncated_output

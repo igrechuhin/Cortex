@@ -1,13 +1,14 @@
 {
-  "last_updated": "2026-01-28T17:58",
-  "total_sessions_analyzed": 2,
-  "total_load_context_calls": 3,
-  "avg_token_utilization": 0.222,
-  "avg_files_selected": 10.0,
-  "avg_relevance_score": 0.536,
+  "last_updated": "2026-01-29T17:56",
+  "total_sessions_analyzed": 3,
+  "total_load_context_calls": 4,
+  "avg_token_utilization": 0.228,
+  "avg_files_selected": 9.5,
+  "avg_relevance_score": 0.558,
   "common_task_patterns": {
     "fix/debug": 1,
-    "other": 2
+    "other": 2,
+    "implement/add": 1
   },
   "insights": {
     "task_type_recommendations": {
@@ -36,51 +37,69 @@
         "avg_utilization": 0.221,
         "avg_relevance": 0.536,
         "notes": "Low utilization - consider smaller token budgets; Limited data - insights will improve with more samples"
+      },
+      "implement/add": {
+        "calls_count": 1,
+        "recommended_budget": 10000,
+        "essential_files": [
+          "activeContext.md",
+          "roadmap.md",
+          "progress.md",
+          "file.md"
+        ],
+        "avg_utilization": 0.245,
+        "avg_relevance": 0.625,
+        "notes": "Low utilization - consider smaller token budgets; Limited data - insights will improve with more samples"
       }
     },
     "file_effectiveness": {
       "activeContext.md": {
-        "times_selected": 3,
-        "avg_relevance": 0.789,
+        "times_selected": 4,
+        "avg_relevance": 0.782,
         "task_types_used": [
-          "fix/debug",
-          "other"
+          "implement/add",
+          "other",
+          "fix/debug"
         ],
         "recommendation": "High value - prioritize for loading"
       },
       "techContext.md": {
-        "times_selected": 3,
+        "times_selected": 4,
         "avg_relevance": 0.5,
         "task_types_used": [
-          "fix/debug",
-          "other"
+          "implement/add",
+          "other",
+          "fix/debug"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "roadmap.md": {
-        "times_selected": 3,
-        "avg_relevance": 0.643,
+        "times_selected": 4,
+        "avg_relevance": 0.642,
         "task_types_used": [
-          "fix/debug",
-          "other"
+          "implement/add",
+          "other",
+          "fix/debug"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "file.md": {
-        "times_selected": 3,
-        "avg_relevance": 0.339,
+        "times_selected": 4,
+        "avg_relevance": 0.389,
         "task_types_used": [
-          "fix/debug",
-          "other"
+          "implement/add",
+          "other",
+          "fix/debug"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "projectBrief.md": {
-        "times_selected": 3,
+        "times_selected": 4,
         "avg_relevance": 0.5,
         "task_types_used": [
-          "fix/debug",
-          "other"
+          "implement/add",
+          "other",
+          "fix/debug"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -88,8 +107,8 @@
         "times_selected": 3,
         "avg_relevance": 0.621,
         "task_types_used": [
-          "fix/debug",
-          "other"
+          "other",
+          "fix/debug"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -97,47 +116,51 @@
         "times_selected": 3,
         "avg_relevance": 0.24,
         "task_types_used": [
-          "fix/debug",
-          "other"
+          "other",
+          "fix/debug"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "progress.md": {
-        "times_selected": 3,
-        "avg_relevance": 0.584,
+        "times_selected": 4,
+        "avg_relevance": 0.578,
         "task_types_used": [
-          "fix/debug",
-          "other"
+          "implement/add",
+          "other",
+          "fix/debug"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "systemPatterns.md": {
-        "times_selected": 3,
+        "times_selected": 4,
         "avg_relevance": 0.5,
         "task_types_used": [
-          "fix/debug",
-          "other"
+          "implement/add",
+          "other",
+          "fix/debug"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "productContext.md": {
-        "times_selected": 3,
+        "times_selected": 4,
         "avg_relevance": 0.5,
         "task_types_used": [
-          "fix/debug",
-          "other"
+          "implement/add",
+          "other",
+          "fix/debug"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       }
     },
     "learned_patterns": [
-      "Average 22% budget utilization - ~38k tokens unused per call",
-      "'activeContext.md' is most frequently loaded (3/3 calls)",
+      "Average 22% budget utilization - ~33k tokens unused per call",
+      "'activeContext.md' is most frequently loaded (4/4 calls)",
       "Most common task type: 'other' (2 calls)"
     ],
     "budget_recommendations": {
       "fix/debug": 15000,
-      "other": 15000
+      "other": 15000,
+      "implement/add": 10000
     }
   },
   "entries": [
@@ -238,6 +261,35 @@
         "tmp-mcp-test.md": 0.24,
         "file.md": 0.526,
         "phase-60-improve-manage-file-discoverability.plan.md": 0.604
+      }
+    },
+    {
+      "session_id": "e2ff048821da",
+      "timestamp": "2026-01-29T17:47",
+      "task_description": "Add multi-language pre-commit support: extend pre-commit tools to support additional language adapters beyond Python (JavaScript/TypeScript, Rust, Go, Java). Currently only Python adapter in pre_commit_tools.py.",
+      "token_budget": 25000,
+      "total_tokens": 6124,
+      "utilization": 0.24496,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.625,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "activeContext.md",
+        "roadmap.md",
+        "techContext.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "progress.md",
+        "projectBrief.md",
+        "file.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.64,
+        "progress.md": 0.558,
+        "activeContext.md": 0.763,
+        "file.md": 0.539
       }
     }
   ]

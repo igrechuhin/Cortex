@@ -1,0 +1,32 @@
+{
+  "session_id": "6be2252b1aa5",
+  "session_start": "2026-01-29T17:29",
+  "load_context_calls": [
+    {
+      "timestamp": "2026-01-29T17:29",
+      "task_description": "Commit Workflow Parallelization Steps 9-11: optional integration tests, memory bank and docs updates",
+      "token_budget": 25000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "techContext.md",
+        "progress.md",
+        "file.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "activeContext.md",
+        "productContext.md",
+        "roadmap.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 5958,
+      "utilization": 0.23832,
+      "excluded_files": [],
+      "relevance_scores": {
+        "roadmap.md": 0.637,
+        "progress.md": 0.644,
+        "activeContext.md": 0.855,
+        "file.md": 0.24
+      }
+    }
+  ]
+}
