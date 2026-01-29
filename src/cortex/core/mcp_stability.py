@@ -107,10 +107,8 @@ async def _handle_timeout_error(
         Tuple of (error to raise if final attempt, exception to store)
     """
     logger.warning(
-        (
-            f"MCP tool {func_name} timed out after {timeout}s "
-            f"(attempt {attempt}/{MCP_CONNECTION_RETRY_ATTEMPTS})"
-        )
+        f"MCP tool {func_name} timed out after {timeout}s "
+        + f"(attempt {attempt}/{MCP_CONNECTION_RETRY_ATTEMPTS})"
     )
     if attempt == MCP_CONNECTION_RETRY_ATTEMPTS:
         error = TimeoutError(f"MCP tool {func_name} exceeded timeout of {timeout}s")
@@ -133,10 +131,8 @@ async def _handle_connection_error(
         Tuple of (error to raise if final attempt, exception to store)
     """
     logger.warning(
-        (
-            f"MCP connection error in {func_name} "
-            f"(attempt {attempt}/{MCP_CONNECTION_RETRY_ATTEMPTS}): {e}"
-        )
+        f"MCP connection error in {func_name} "
+        + f"(attempt {attempt}/{MCP_CONNECTION_RETRY_ATTEMPTS}): {e}"
     )
     if attempt == MCP_CONNECTION_RETRY_ATTEMPTS:
         error = RuntimeError(

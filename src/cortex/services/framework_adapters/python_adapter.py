@@ -278,8 +278,7 @@ class PythonAdapter(FrameworkAdapter):
     def _run_ruff_fix(self) -> CheckResult:
         """Run ruff with auto-fix, then verify no errors remain.
 
-        Matches CI workflow: ruff check --select F,E,W --fix src/ tests/
-        Then verifies: ruff check --select F,E,W src/ tests/ (matches CI check)
+        Uses pyproject.toml rule set (E, F, I, B, UP) - matches CI workflow.
         """
         try:
             # Step 1: Auto-fix errors
@@ -305,13 +304,14 @@ class PythonAdapter(FrameworkAdapter):
             return self._create_lint_error_result(str(e))
 
     def _execute_ruff_fix_command(self) -> str:
-        """Execute ruff check with --fix to auto-fix errors."""
+        """Execute ruff check with --fix to auto-fix errors.
+
+        Uses pyproject.toml rule set (E, F, I, B, UP).
+        """
         result = subprocess.run(
             [
                 self._get_command("ruff"),
                 "check",
-                "--select",
-                "F,E,W",
                 "--fix",
                 "src/",
                 "tests/",
@@ -325,14 +325,12 @@ class PythonAdapter(FrameworkAdapter):
     def _execute_ruff_verify_command(self) -> str:
         """Execute ruff check without --fix to verify no errors remain.
 
-        Matches CI workflow exactly: ruff check --select F,E,W src/ tests/
+        Uses pyproject.toml rule set - matches CI workflow.
         """
         result = subprocess.run(
             [
                 self._get_command("ruff"),
                 "check",
-                "--select",
-                "F,E,W",
                 "src/",
                 "tests/",
             ],
@@ -502,12 +500,11 @@ class PythonAdapter(FrameworkAdapter):
         if not success:
             if coverage is not None and coverage < coverage_threshold:
                 threshold_pct = coverage_threshold * 100
-                errors.append(
-                    (
-                        f"Test coverage {coverage * 100:.2f}% is below "
-                        f"required threshold {threshold_pct:.0f}%"
-                    )
+                msg = (
+                    f"Test coverage {coverage * 100:.2f}% is below "
+                    + f"required threshold {threshold_pct:.0f}%"
                 )
+                errors.append(msg)
             else:
                 errors.append("Test execution failed")
         return errors

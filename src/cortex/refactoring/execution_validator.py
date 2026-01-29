@@ -174,12 +174,11 @@ class ExecutionValidator:
         """Check token budget impact."""
         estimated_token_change = suggestion.estimated_impact.token_savings
         if estimated_token_change < -1000:
-            warnings.append(
-                (
-                    f"Refactoring may increase token usage by "
-                    f"{-estimated_token_change} tokens"
-                )
+            msg = (
+                "Refactoring may increase token usage by "
+                + f"{-estimated_token_change} tokens"
             )
+            warnings.append(msg)
 
     async def _run_validation_checks(
         self,

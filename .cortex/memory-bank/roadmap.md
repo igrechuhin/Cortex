@@ -38,7 +38,7 @@
 
 ## Future Enhancements
 
-- **Commit Workflow Parallelization (Steps 9–11)** - PLANNED - Implement a constrained parallelization block for commit Steps 9–11 (timestamp-validator, roadmap-sync-validator, submodule handling) based on the commit-parallelization analysis in the quality reviews. Keep Steps 0–8 and 12–14 strictly sequential, run Steps 9–11 in a structured TaskGroup, aggregate their results, and ensure Step 12 runs only after all three complete successfully. This work is tracked in the Phase 56 commit workflow parallelization plan.
+- **Commit Workflow Parallelization (Steps 9–11)** - IN PROGRESS (2026-01-29) - Step model and prompt updates done: added `src/cortex/validation/commit_workflow_model.py` (step metadata, parallel block 9–11), updated commit prompt with Concurrency rules and parallel block annotation, added `tests/unit/test_commit_workflow_model.py`. Orchestration is prompt-driven (no Python TaskGroup runner). Remaining: optional integration tests, memory bank/docs updates. Phase 56 plan: `.cortex/plans/phase-56-commit-workflow-parallelization.md`.
 
 - **Multi-Language Pre-Commit Support** - PLANNED - Add support for additional language adapters beyond Python - Currently only Python adapter is implemented - Location: src/cortex/tools/pre_commit_tools.py line 138 - TODO: Add other language adapters as needed (e.g., JavaScript/TypeScript, Rust, Go, Java, etc.) - This would enable pre-commit checks for multi-language projects
 

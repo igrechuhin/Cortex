@@ -418,7 +418,7 @@ class TestLoadCategory:
         _ = rule_file.write_text("# Python Style Guide\n\nUse PEP 8.")
 
         # Create manifest
-        manifest_data = {
+        manifest_data: ModelDict = {
             "version": "1.0",
             "categories": {
                 "python": {
@@ -432,7 +432,7 @@ class TestLoadCategory:
                 }
             },
         }
-        setattr(manager, "manifest", manifest_data)
+        manager.manifest = manifest_data
 
         # Act
         rules = await manager.load_category("python")
@@ -455,7 +455,7 @@ class TestLoadCategory:
         """Test loading returns empty list for nonexistent category."""
         # Arrange
         manager = SynapseManager(project_root=temp_project_root)
-        setattr(manager, "manifest", {"version": "1.0", "categories": {}})
+        manager.manifest = {"version": "1.0", "categories": {}}
 
         # Act
         rules = await manager.load_category("nonexistent")
@@ -499,13 +499,13 @@ class TestLoadCategory:
         python_dir.mkdir(parents=True, exist_ok=True)
 
         # Create manifest with missing file reference
-        manifest_data: dict[str, object] = {
+        manifest_data: ModelDict = {
             "version": "1.0",
             "categories": {
                 "python": {"rules": [{"file": "missing.md", "priority": 50}]}
             },
         }
-        setattr(manager, "manifest", manifest_data)
+        manager.manifest = manifest_data
 
         # Act
         rules = await manager.load_category("python")
@@ -728,7 +728,7 @@ class TestCreateSharedRule:
             "categories": {"python": {"rules": []}},
         }
         _ = manifest_file.write_text(json.dumps(manifest_data))
-        setattr(manager, "manifest", manifest_data)
+        manager.manifest = manifest_data
 
         # Create category directory in rules_path
         python_dir = manager.rules_path / "python"
@@ -818,7 +818,7 @@ class TestEdgeCases:
         """Test loading category with invalid manifest data."""
         # Arrange
         manager = SynapseManager(project_root=temp_project_root)
-        setattr(manager, "manifest", {"version": "1.0", "categories": "not-a-dict"})
+        manager.manifest = {"version": "1.0", "categories": "not-a-dict"}
 
         # Act
         rules = await manager.load_category("python")

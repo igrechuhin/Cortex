@@ -195,14 +195,13 @@ class TokenCounter:
             time.sleep(retry_delay)
             return True, retry_delay
         else:
-            logger.warning(
-                (
-                    f"Tiktoken encoding '{self.model}' network unavailable after "
-                    f"{max_retries + 1} attempts (final error after "
-                    f"{load_time:.2f}s): {e}. Cache may be used if available. "
-                    "Falling back to word-based estimation."
-                )
+            msg = (
+                f"Tiktoken encoding '{self.model}' network unavailable after "
+                + f"{max_retries + 1} attempts (final error after "
+                + f"{load_time:.2f}s): {e}. Cache may be used if available. "
+                + "Falling back to word-based estimation."
             )
+            logger.warning(msg)
             self._tiktoken_available = False
             return False, 0.0
 
@@ -362,12 +361,11 @@ class TokenCounter:
             try:
                 return len(encoding.encode(text))
             except Exception as e:
-                logger.warning(
-                    (
-                        f"tiktoken encoding failed: {e}. Falling back to "
-                        "word-based estimation."
-                    )
+                msg = (
+                    f"tiktoken encoding failed: {e}. Falling back to "
+                    + "word-based estimation."
                 )
+                logger.warning(msg)
                 self._tiktoken_available = False
 
         # Fallback to word-based estimation

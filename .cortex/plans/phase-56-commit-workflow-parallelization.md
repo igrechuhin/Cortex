@@ -1,8 +1,8 @@
 # Phase 56: Commit Workflow Parallelization (Steps 9–11)
 
-**Status:** PLANNING  
+**Status:** IN PROGRESS (Step 1–4 done; orchestration is prompt-driven)  
 **Owner:** Cortex MCP / Synapse commit workflow  
-**Last Updated:** 2026-01-27
+**Last Updated:** 2026-01-29
 
 ## Goal
 
@@ -42,14 +42,13 @@ This plan implements a **constrained parallelization** where only read-only vali
 
 ## Detailed Implementation Steps
 
-### 1. Model Parallelizable vs Sequential Steps
+### 1. Model Parallelizable vs Sequential Steps ✅ COMPLETED (2026-01-29)
 
-- Extend the internal representation of the commit pipeline to include:
-  - **Step metadata**: `id`, `name`, `can_run_in_parallel`, `group_id`.
-  - A grouping that marks:
-    - Steps 9, 10, 11 as `group_id="validation_parallel_block_9_11"`, `can_run_in_parallel=True`.
-    - All other steps as `can_run_in_parallel=False`.
-- Ensure this metadata is **data-only** (no behavior) so it is easy to test and reason about.
+- Extended the internal representation in `src/cortex/validation/commit_workflow_model.py`:
+  - **CommitStepMetadata**: `step_id`, `name`, `can_run_in_parallel`, `group_id`.
+  - Steps 9, 10, 11: `group_id="validation_parallel_block_9_11"`, `can_run_in_parallel=True`.
+  - All other steps: `can_run_in_parallel=False`, `group_id=None`.
+- Data-only; unit tests in `tests/unit/test_commit_workflow_model.py`.
 
 ### 2. Implement Parallel Orchestration Block for Steps 9–11
 

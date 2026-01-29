@@ -65,14 +65,12 @@ class ValidationConfig:
             error_type = type(e).__name__
             logger.warning(
                 (
-                    (
-                        f"Failed to load validation config from "
-                        f"{self.config_path}: {error_type}: {error_detail}. "
-                        "Cause: Invalid JSON format or file read error. "
-                        "Try: Fix JSON syntax errors, check file permissions, "
-                    )
-                    + ("or delete config file to use default values.")
+                    f"Failed to load validation config from "
+                    f"{self.config_path}: {error_type}: {error_detail}. "
+                    "Cause: Invalid JSON format or file read error. "
+                    "Try: Fix JSON syntax errors, check file permissions, "
                 )
+                + ("or delete config file to use default values.")
             )
             return None
 
@@ -187,15 +185,14 @@ class ValidationConfig:
                 config_dict = self.config.model_dump(mode="json")
                 _ = await f.write(json.dumps(config_dict, indent=2))
         except Exception as e:
-            raise OSError(
-                (
-                    f"Failed to save validation config to "
-                    f"{self.config_path}: {type(e).__name__}: {e}. "
-                    "Cause: File write error or permission denied. "
-                    "Try: Check directory exists and has write permissions, "
-                    "or verify disk space is available."
-                )
-            ) from e
+            msg = (
+                "Failed to save validation config to "
+                + f"{self.config_path}: {type(e).__name__}: {e}. "
+                + "Cause: File write error or permission denied. "
+                + "Try: Check directory exists and has write permissions, "
+                + "or verify disk space is available."
+            )
+            raise OSError(msg) from e
 
     def reset_to_defaults(self) -> None:
         """Reset configuration to defaults."""
@@ -219,15 +216,14 @@ class ValidationConfig:
     def _validate_enabled_type(self, errors: list[str]) -> None:
         enabled = self.config.enabled
         if not isinstance(enabled, bool):
-            errors.append(
-                (
-                    "Invalid 'enabled' value: 'enabled' must be a boolean "
-                    "(true/false). "
-                    f"Got {type(enabled).__name__}. "
-                    "Try: Set 'enabled' to true or false in "
-                    "'.cortex/validation.json'."
-                )
+            msg = (
+                "Invalid 'enabled' value: 'enabled' must be a boolean "
+                + "(true/false). "
+                + f"Got {type(enabled).__name__}. "
+                + "Try: Set 'enabled' to true or false in "
+                + "'.cortex/validation.json'."
             )
+            errors.append(msg)
 
     def _validate_quality_weights_sum(self, errors: list[str]) -> None:
         """Validate that quality weights sum to 1.0.
@@ -244,16 +240,15 @@ class ValidationConfig:
             + weights.token_efficiency
         )
         if abs(weight_sum - 1.0) > 0.01:  # Allow small floating point error
-            errors.append(
-                (
-                    f"Invalid 'quality.weights' sum: Must sum to 1.0, "
-                    f"currently {weight_sum}. "
-                    "Try: Adjust weight values so they add up to 1.0, "
-                    "e.g., {'completeness': 0.3, 'consistency': 0.3, "
-                    "'freshness': 0.2, 'structure': 0.1, "
-                    "'token_efficiency': 0.1}."
-                )
+            msg = (
+                "Invalid 'quality.weights' sum: Must sum to 1.0, "
+                + f"currently {weight_sum}. "
+                + "Try: Adjust weight values so they add up to 1.0, "
+                + "e.g., {'completeness': 0.3, 'consistency': 0.3, "
+                + "'freshness': 0.2, 'structure': 0.1, "
+                + "'token_efficiency': 0.1}."
             )
+            errors.append(msg)
 
     def is_validation_enabled(self) -> bool:
         """

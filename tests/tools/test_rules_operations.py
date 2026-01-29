@@ -537,10 +537,6 @@ async def test_handle_get_relevant_operation_defaults(
 def test_build_get_relevant_response() -> None:
     """Test build_get_relevant_response constructs correct JSON."""
     # Arrange
-    all_rules: list[ModelDict] = [
-        {"file": "test1.mdc", "tokens": 500},
-        {"file": "test2.mdc", "tokens": 700},
-    ]
     status = RulesManagerStatusModel(
         enabled=True,
         rules_folder=".cursor/rules",

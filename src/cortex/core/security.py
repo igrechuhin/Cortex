@@ -417,12 +417,11 @@ class InputValidator:
         """Check for invalid characters."""
         invalid_chars = [c for c in name if c in InputValidator.INVALID_CHARS]
         if invalid_chars:
-            raise ValueError(
-                (
-                    f"File name contains invalid characters: "
-                    f"{', '.join(repr(c) for c in invalid_chars)}"
-                )
+            msg = (
+                "File name contains invalid characters: "
+                + f"{', '.join(repr(c) for c in invalid_chars)}"
             )
+            raise ValueError(msg)
 
     @staticmethod
     def _check_reserved_names(name: str) -> None:
@@ -537,12 +536,11 @@ class InputValidator:
     def _check_git_protocol(url: str) -> None:
         """Check for allowed git protocols (HTTPS and SSH only)."""
         if not (url.startswith("https://") or url.startswith("git@")):
-            raise ValueError(
-                (
-                    f"Invalid git URL protocol: {url}. Only HTTPS and SSH "
-                    f"protocols allowed."
-                )
+            msg = (
+                f"Invalid git URL protocol: {url}. Only HTTPS and SSH "
+                + "protocols allowed."
             )
+            raise ValueError(msg)
 
     @staticmethod
     def _check_localhost_access(url: str) -> None:

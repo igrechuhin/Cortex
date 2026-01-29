@@ -203,24 +203,29 @@ def _check_todos_in_roadmap(
     return missing_entries
 
 
+def _plans_suffix(file_path: str, prefix: str) -> Path:
+    """Return Path for the part of file_path after prefix (e.g. archive/Phase62/foo)."""
+    suffix = file_path[len(prefix) :].lstrip("/")
+    return Path(suffix) if suffix else Path()
+
+
 def _resolve_reference_path(project_root: Path, ref: RoadmapReference) -> Path:
     """Resolve roadmap reference path using Cortex structure.
 
-    Args:
-        project_root: Root directory of the project
-        ref: Roadmap reference to resolve
-
-    Returns:
-        Absolute path to referenced file, using structure-aware resolution
-        for plans/ references.
+    Plans references are resolved against .cortex/plans regardless of path style:
+    - plans/..., cortex/plans/... (normalized from .cortex/plans/), .cortex/plans/...
+    all map to project_root/.cortex/plans/...
+    Other cortex/ paths (normalized from .cortex/) map to project_root/.cortex/...
     """
+    plans_root = get_cortex_path(project_root, CortexResourceType.PLANS)
     if ref.file_path.startswith("plans/"):
-        plans_root = get_cortex_path(project_root, CortexResourceType.PLANS)
-        relative_plan_path = (
-            Path(ref.file_path.split("/", 1)[1]) if "/" in ref.file_path else Path()
-        )
-        return plans_root / relative_plan_path
-
+        return plans_root / _plans_suffix(ref.file_path, "plans/")
+    if ref.file_path.startswith("cortex/plans/"):
+        return plans_root / _plans_suffix(ref.file_path, "cortex/plans/")
+    if ref.file_path.startswith(".cortex/plans/"):
+        return plans_root / _plans_suffix(ref.file_path, ".cortex/plans/")
+    if ref.file_path.startswith("cortex/"):
+        return project_root / ".cortex" / ref.file_path[7:]
     return project_root / ref.file_path
 
 

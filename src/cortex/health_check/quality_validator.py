@@ -23,12 +23,11 @@ class QualityValidator:
 
         # Check similarity threshold
         if opportunity["similarity"] < 0.60:
-            issues.append(
-                (
-                    f"Low similarity ({opportunity['similarity']:.2f}) may "
-                    "indicate different functionality"
-                )
+            msg = (
+                f"Low similarity ({opportunity['similarity']:.2f}) may "
+                + "indicate different functionality"
             )
+            issues.append(msg)
 
         # Check quality impact
         if opportunity["quality_impact"] == "negative":

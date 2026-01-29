@@ -156,12 +156,11 @@ class SplitAnalyzer:
         # Check for logical divisions (multiple top-level sections)
         top_level_sections = [s for s in sections if s["level"] == 1]
         if len(top_level_sections) > 3:
-            reasons.append(
-                (
-                    f"Multiple distinct topics ({len(top_level_sections)} "
-                    "top-level sections)"
-                )
+            msg = (
+                f"Multiple distinct topics ({len(top_level_sections)} "
+                + "top-level sections)"
             )
+            reasons.append(msg)
 
         should_split = len(reasons) > 0
 

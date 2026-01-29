@@ -142,12 +142,11 @@ class MCPToolFailureHandler:
     ) -> bool:
         """Check for JSON parsing errors."""
         if isinstance(error, json.JSONDecodeError):
-            logger.error(
-                (
-                    f"Detected JSON parsing error in {tool_name} during "
-                    f"{step_name}: {error}"
-                )
+            msg = (
+                f"Detected JSON parsing error in {tool_name} during "
+                + f"{step_name}: {error}"
             )
+            logger.error(msg)
             return True
         if isinstance(error, ValueError):
             json_keywords = [
@@ -159,12 +158,11 @@ class MCPToolFailureHandler:
                 "encoding",
             ]
             if any(kw in error_str for kw in json_keywords):
-                logger.error(
-                    (
-                        f"Detected JSON-related ValueError in {tool_name} "
-                        f"during {step_name}: {error}"
-                    )
+                msg = (
+                    f"Detected JSON-related ValueError in {tool_name} "
+                    + f"during {step_name}: {error}"
                 )
+                logger.error(msg)
                 return True
         return False
 
@@ -183,12 +181,11 @@ class MCPToolFailureHandler:
                 "broken resource",
             ]
             if any(kw in error_str for kw in connection_keywords):
-                logger.error(
-                    (
-                        f"Detected connection error in {tool_name} during "
-                        f"{step_name}: {error}"
-                    )
+                msg = (
+                    f"Detected connection error in {tool_name} during "
+                    + f"{step_name}: {error}"
                 )
+                logger.error(msg)
                 return True
         return False
 
@@ -209,12 +206,11 @@ class MCPToolFailureHandler:
             "keyerror",
         ]
         if any(kw in error_str for kw in unexpected_keywords):
-            logger.error(
-                (
-                    f"Detected unexpected behavior in {tool_name} during "
-                    f"{step_name}: {error}"
-                )
+            msg = (
+                f"Detected unexpected behavior in {tool_name} during "
+                + f"{step_name}: {error}"
             )
+            logger.error(msg)
             return True
         return False
 
@@ -261,12 +257,11 @@ class MCPToolFailureHandler:
         if self._check_unexpected_behavior(error, error_str, tool_name, step_name):
             return True
         if "fastmcp" in error_str or "mcp error" in error_str:
-            logger.error(
-                (
-                    f"Detected MCP protocol error in {tool_name} during "
-                    f"{step_name}: {error}"
-                )
+            msg = (
+                f"Detected MCP protocol error in {tool_name} during "
+                + f"{step_name}: {error}"
             )
+            logger.error(msg)
             return True
         return False
 
@@ -424,12 +419,11 @@ class MCPToolFailureHandler:
         try:
             self.add_to_roadmap(plan_path, tool_name, error)
         except Exception as roadmap_error:
-            logger.error(
-                (
-                    f"Failed to add plan to roadmap: {roadmap_error}. "
-                    f"Plan created at: {plan_path}"
-                )
+            msg = (
+                f"Failed to add plan to roadmap: {roadmap_error}. "
+                + f"Plan created at: {plan_path}"
             )
+            logger.error(msg)
 
         # Generate user notification (for logging, not returned since we raise)
         user_notification = self._generate_user_notification(

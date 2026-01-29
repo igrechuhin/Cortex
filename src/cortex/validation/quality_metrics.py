@@ -514,12 +514,11 @@ class QualityMetrics:
     ) -> None:
         """Add freshness recommendation if needed."""
         if freshness < 60:
-            recommendations.append(
-                (
-                    "Review and update stale files, especially "
-                    "activeContext.md and progress.md"
-                )
+            msg = (
+                "Review and update stale files, especially "
+                + "activeContext.md and progress.md"
             )
+            recommendations.append(msg)
 
     def _add_structure_recommendation(
         self, recommendations: list[str], structure: float
@@ -535,12 +534,11 @@ class QualityMetrics:
     ) -> None:
         """Add token efficiency recommendation if needed."""
         if token_efficiency < 70:
-            recommendations.append(
-                (
-                    "Review token usage with 'check_token_budget' and "
-                    "consider summarizing verbose sections"  # noqa: E501
-                )
+            msg = (
+                "Review token usage with 'check_token_budget' and "
+                + "consider summarizing verbose sections"  # noqa: E501
             )
+            recommendations.append(msg)
 
     def _add_general_recommendation(
         self, recommendations: list[str], issues: list[str]
@@ -689,12 +687,11 @@ class QualityMetrics:
         """Add consistency issue if duplicates found."""
         if consistency < 80:
             if duplication_data.duplicates_found > 0:
-                issues.append(
-                    (
-                        f"Found {duplication_data.duplicates_found} duplicate "
-                        f"or similar content sections"
-                    )
+                msg = (
+                    f"Found {duplication_data.duplicates_found} duplicate "
+                    + "or similar content sections"
                 )
+                issues.append(msg)
 
     def _add_freshness_issue(self, issues: list[str], freshness: float) -> None:
         """Add freshness issue if score is low."""

@@ -107,15 +107,14 @@ class MetadataIndex:
 
             # Validate schema
             if self._data is not None and not self.validate_schema(self._data):
-                raise IndexCorruptedError(
-                    (
-                        "Failed to load memory bank index: Invalid schema "
-                        "structure. Cause: Missing required fields in index "
-                        f"file at {self.index_path}. Try: Delete "
-                        "'.cortex/index.json' and run get_memory_bank_stats() "
-                        "to rebuild automatically."
-                    )
+                msg = (
+                    "Failed to load memory bank index: Invalid schema "
+                    + "structure. Cause: Missing required fields in index "
+                    + f"file at {self.index_path}. Try: Delete "
+                    + "'.cortex/index.json' and run get_memory_bank_stats() "
+                    + "to rebuild automatically."
                 )
+                raise IndexCorruptedError(msg)
 
             if self._data is None:
                 self._data = self.create_empty_index()

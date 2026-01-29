@@ -61,6 +61,29 @@ class TestValidateRoadmapSyncEnhancements:
             assert result.valid is True
             assert len(result.invalid_references) == 0
 
+    def test_validate_sync_resolves_dot_cortex_plans_archive_reference(self) -> None:
+        """Archive PhaseX refs resolve to .cortex/plans (no path-style mismatch)."""
+        # Arrange: layout is project_root/.cortex/plans/archive/Phase62/phase-62-foo.md
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            archive_dir = project_root / ".cortex" / "plans" / "archive" / "Phase62"
+            archive_dir.mkdir(parents=True)
+            plan_file = archive_dir / "phase-62-synapse-session-optimization.md"
+            _ = plan_file.write_text("# Plan content\n")
+
+            roadmap_content = (
+                "## Phase 62\n"
+                "Plan: `.cortex/plans/archive/Phase62/"
+                "phase-62-synapse-session-optimization.md`.\n"
+            )
+
+            # Act: parse→cortex/plans/archive; resolver uses .cortex/plans
+            result = validate_roadmap_sync(project_root, roadmap_content)
+
+            # Assert: valid, no invalid_references (path-style mismatch fixed)
+            assert result.valid is True
+            assert len(result.invalid_references) == 0
+
 
 class TestScanCodebaseTodos:
     """Tests for scanning codebase for TODO markers."""

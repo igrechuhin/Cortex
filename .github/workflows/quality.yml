@@ -67,14 +67,13 @@ jobs:
           echo "✅ Black formatting check passed"
           echo "::endgroup::"
 
-      - name: Lint with ruff (includes import sorting and unused imports)
+      - name: "Lint with ruff (uses pyproject.toml rule set: E, F, I, B, UP)"
         id: linting
         run: |
           echo "::group::Running Ruff linting check"
-          # Ruff F401 catches unused imports, F841 catches unused variables
-          # Run with strict checking to catch all issues
+          # Uses tool.ruff.lint.select from pyproject.toml (E, F, I, B, UP)
           # Note: .cortex/synapse/scripts/ is checked by the synapse scripts themselves
-          if ! uv run ruff check --select F,E,W src/ tests/; then
+          if ! uv run ruff check src/ tests/; then
             echo "::error::Ruff linting check failed. Run 'ruff check --fix src/ tests/' to fix auto-fixable issues."
             exit 1
           fi

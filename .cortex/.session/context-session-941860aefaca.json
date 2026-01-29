@@ -1,0 +1,32 @@
+{
+  "session_id": "941860aefaca",
+  "session_start": "2026-01-29T15:49",
+  "load_context_calls": [
+    {
+      "timestamp": "2026-01-29T15:49",
+      "task_description": "Implement commit workflow parallelization for Steps 9-11: timestamp-validator, roadmap-sync-validator, submodule handling. TaskGroup for Steps 9-11, keep Steps 0-8 and 12-14 sequential. Phase 56 plan.",
+      "token_budget": 30000,
+      "strategy": "dependency_aware",
+      "selected_files": [
+        "activeContext.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "roadmap.md",
+        "techContext.md",
+        "progress.md",
+        "file.md"
+      ],
+      "selected_sections": {},
+      "total_tokens": 5314,
+      "utilization": 0.17713333333333334,
+      "excluded_files": [],
+      "relevance_scores": {
+        "roadmap.md": 0.628,
+        "progress.md": 0.646,
+        "activeContext.md": 0.854,
+        "file.md": 0.241
+      }
+    }
+  ]
+}

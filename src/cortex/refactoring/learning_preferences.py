@@ -184,12 +184,11 @@ class PreferenceManager:
         total_feedback = feedback_stats["total"]
 
         if total_feedback < 10:
-            recommendations.append(
-                (
-                    "Collect more feedback to improve learning "
-                    "(minimum 10 suggestions needed)"
-                )
+            msg = (
+                "Collect more feedback to improve learning "
+                + "(minimum 10 suggestions needed)"
             )
+            recommendations.append(msg)
 
     def _check_confidence_threshold(self, recommendations: list[str]) -> None:
         """Check if confidence threshold is too high."""
@@ -202,13 +201,12 @@ class PreferenceManager:
             else 0.5
         )
         if min_threshold > 0.8:
-            recommendations.append(
-                (
-                    f"Confidence threshold is high ({min_threshold:.2f}). "
-                    "Few suggestions will be shown. Consider providing feedback "
-                    "on helpful low-confidence suggestions."
-                )
+            msg = (
+                f"Confidence threshold is high ({min_threshold:.2f}). "
+                + "Few suggestions will be shown. Consider providing feedback "
+                + "on helpful low-confidence suggestions."
             )
+            recommendations.append(msg)
 
     def _check_low_success_patterns(self, recommendations: list[str]) -> None:
         """Check for patterns with low success rate."""

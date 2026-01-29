@@ -245,16 +245,16 @@ This phase coordinates and amplifies those efforts by turning concrete session f
     - `None`, `int`, `float`, numeric strings, and invalid strings.
   - Test roadmap-sync with mixed valid/invalid references.
 - **Coverage Target**:
-  - Achieve ≥95% coverae for all new helper logic and any new code paths added to validators, agents, or prompts-adjacent scripts.
+  - Achieve ≥95% coverage for all new helper logic and any new code paths added to validators, agents, or prompts-adjacent scripts.
   - Ensure no reduction in existing coverage for related modules.
 
 ## Risks and Mitigations
 
-- **Risk**: Over-costraining roadmap-sync behavior and blocking legitimate commits.  
+- **Risk**: Over-constraining roadmap-sync behavior and blocking legitimate commits.  
   - **Mitigation**: Clearly separate critical vs. non-critical issues and document behavior in both agents and prompts.
 
-- **Risk**: Inconsisten application of JsonValue normalization patterns across existing utilities.  
-  - **Mitigaion**:Add explicit rules, examples, and a small inventory of MCP boundary helpers to audit.
+- **Risk**: Inconsistent application of JsonValue normalization patterns across existing utilities.  
+  - **Mitigation**:Add explicit rules, examples, and a small inventory of MCP boundary helpers to audit.
 
 - **Risk**: Increased complexity in commit prompts.  
   - **Mitigation**: Kee new wording concise and focused on sequencing/semantics, avoiding redundant detail already covered in agents.

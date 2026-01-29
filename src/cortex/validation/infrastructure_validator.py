@@ -486,12 +486,11 @@ class InfrastructureValidator:
         issues.extend(self._check_required_configs(config_dir, required_configs))
 
         if issues:
-            recommendations.append(
-                (
-                    "Ensure all required configuration files exist and are "
-                    "properly configured"
-                )
+            msg = (
+                "Ensure all required configuration files exist and are "
+                + "properly configured"
             )
+            recommendations.append(msg)
 
         return issues, recommendations
 

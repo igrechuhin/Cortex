@@ -34,6 +34,7 @@
 
   "reportUnusedCoroutine": "error",
   "reportDuplicateImport": "error",
+  "reportRedeclaration": "error",
   "reportConstantRedefinition": "error",
   "reportUnboundVariable": "error",
   "reportUndefinedVariable": "error",
