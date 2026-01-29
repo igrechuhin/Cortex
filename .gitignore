@@ -64,3 +64,4 @@ coverage.xml
 
 # Cortex backup directories
 .cortex-backup-*
+.session

@@ -27,6 +27,7 @@ from cortex.services.framework_adapters.base import (
     TestResult,
 )
 from cortex.services.framework_adapters.python_adapter import PythonAdapter
+from cortex.services.framework_adapters.stub_adapter import StubAdapter
 from cortex.services.language_detector import LanguageInfo
 
 # No circular import: markdown_operations doesn't import pre_commit_tools
@@ -51,9 +52,15 @@ from cortex.tools.pre_commit_helpers import (
 )
 
 # Adapter registry: language -> factory(project_root) -> FrameworkAdapter.
-# Add new languages by implementing FrameworkAdapter and registering here.
+# Python has full implementation; TypeScript, JavaScript, Rust, Go, Java use
+# StubAdapter until language-specific implementations are added.
 _ADAPTER_REGISTRY: dict[str, Callable[[str | None], FrameworkAdapter]] = {
     "python": lambda root: PythonAdapter(root),
+    "typescript": lambda root: StubAdapter(root, "typescript"),
+    "javascript": lambda root: StubAdapter(root, "javascript"),
+    "rust": lambda root: StubAdapter(root, "rust"),
+    "go": lambda root: StubAdapter(root, "go"),
+    "java": lambda root: StubAdapter(root, "java"),
 }
 SUPPORTED_LANGUAGES: tuple[str, ...] = tuple(_ADAPTER_REGISTRY.keys())
 

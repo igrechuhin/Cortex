@@ -2,6 +2,17 @@
 
 ## 2026-01-29
 
+- **Commit: Pre-commit pipeline and Multi-Language Validation Support** - In progress
+  - Steps 0–4 passed: fix_errors (1 fixed), format, markdown lint (177 files, 3 fixed), type_check (0 errors, 0 warnings), quality (0 violations), tests (2906 passed, 90.12% coverage).
+  - Changes: stub_adapter, pre_commit_tools, test_stub_adapter, test_pre_commit_tools, .gitignore; memory-bank and history updates.
+
+- ✅ **Multi-Language Validation Support** - COMPLETE (2026-01-29)
+  - Added `StubAdapter` in `src/cortex/services/framework_adapters/stub_adapter.py` for TypeScript, JavaScript, Rust, Go, Java; all operations return clear "not yet implemented" results.
+  - Registered stub adapters in `src/cortex/tools/pre_commit_tools.py` _ADAPTER_REGISTRY; SUPPORTED_LANGUAGES now includes 6 languages (python, typescript, javascript, rust, go, java).
+  - Replaced TODO comment with note that Python has full implementation and other languages use StubAdapter until language-specific implementations are added.
+  - Added `tests/unit/test_stub_adapter.py` (6 tests for StubAdapter). Updated `tests/unit/test_pre_commit_tools.py`: unsupported-language test uses "haskell"; added test_supported_languages_includes_stub_languages and test_get_adapter_returns_stub_for_typescript.
+  - All 2906 tests passing; pyright 0 errors, 0 warnings. Roadmap and progress updated.
+
 - **Commit: Pre-commit pipeline and Phase 55 plan archival** - COMPLETE (2026-01-29)
   - Steps 0–4 passed: fix_errors, format, markdown lint (178 files, 5 fixed), type_check (0 errors, 0 warnings), quality (0 violations), tests (2898 passed, 90.08% coverage). Archived Phase 55 plan to `.cortex/plans/archive/Phase55/phase-55-improve-implementation-prompt-quality-gates.md`; updated roadmap.md Phase 55 plan links to archive path.
 
@@ -57,7 +68,7 @@
   - Implemented all remaining Phase 62 steps (2–14): verified/added Step 2 (roadmap_sync gate), Step 3 (plan archiver Glob/Grep), Step 5 (roadmap-sync blocking semantics), Step 7 (manage_file anti-pattern in commit.md), Step 8 (error-fixer MCP validation FIX-ASAP; commit checklist), Step 9 (context budgets in implement prompt), Step 10 (roadmap-plan coupling, MD024, timely archiving, no_data fallback), Step 11 (session review filename conventions in session-optimization-analyzer and analyze-session-optimization), Step 12 (Pydantic v2 testing in commit/review/create-plan; commit.md Testing MCP JSON note), Step 13 (coverage interpretation already in implement/commit), Step 14 (session-analysis multi-signal and no_data handling). Plan and roadmap updated; Phase 62 status set to COMPLETE.
 
 - ✅ **Phase 62: Step 1 – Make Step 11 Submodule Handling Deterministic** - COMPLETE (2026-01-29)
-  - Added strict decision rule to Step 11 in `.cortex/synapse/prompts/commit.md`: execute sub-steps 11.1→11.5 in order; do not run in parallel or reorder.
+  - Added strict decision rule to Step 11 in `.cortex/synapse/prompts/commit.md`: execute sub-steps 11.1–11.5 in order; do not run in parallel or reorder.
   - Step 11 already had explicit command sequence (11.1–11.5); plan and roadmap now mark Step 1 as implemented.
 
 - ✅ **Phase 62: Step 4 – Strengthen Python JSON-Boundary Typing Rules** - COMPLETE (2026-01-29)

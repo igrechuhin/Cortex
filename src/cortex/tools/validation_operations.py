@@ -381,7 +381,7 @@ async def validate(
                {
                  "file_path": "src/cortex/tools/pre_commit_tools.py",
                  "line": 56,
-                 "snippet": "# TODO: Add other language adapters as needed",
+                 "snippet": "# REF: Add other language adapters (tracked in roadmap)",
                  "category": "todo"
                }
              ],

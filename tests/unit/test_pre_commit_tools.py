@@ -63,7 +63,7 @@ class TestExecutePreCommitChecks:
         """Test error for unsupported language includes supported list."""
         result_json = await execute_pre_commit_checks(
             checks=["fix_errors"],
-            language="rust",
+            language="haskell",
         )
         result = json.loads(result_json)
 
@@ -196,7 +196,7 @@ class TestAdapterRegistry:
     def test_get_adapter_returns_none_for_unsupported_language(self) -> None:
         """_get_adapter returns None for language not in registry."""
         info = LanguageInfo(
-            language="typescript",
+            language="haskell",
             test_framework=None,
             formatter=None,
             linter=None,
@@ -206,6 +206,29 @@ class TestAdapterRegistry:
         )
         adapter = _get_adapter(info, "/some/root")
         assert adapter is None
+
+    def test_supported_languages_includes_stub_languages(self) -> None:
+        """SUPPORTED_LANGUAGES includes TypeScript, JavaScript, Rust, Go, Java."""
+        for lang in ("typescript", "javascript", "rust", "go", "java"):
+            assert lang in SUPPORTED_LANGUAGES
+        assert len(SUPPORTED_LANGUAGES) == 6
+
+    def test_get_adapter_returns_stub_for_typescript(self) -> None:
+        """_get_adapter returns StubAdapter for typescript."""
+        from cortex.services.framework_adapters.stub_adapter import StubAdapter
+
+        info = LanguageInfo(
+            language="typescript",
+            test_framework=None,
+            formatter=None,
+            linter=None,
+            type_checker=None,
+            build_tool=None,
+            confidence=0.8,
+        )
+        adapter = _get_adapter(info, "/some/root")
+        assert adapter is not None
+        assert isinstance(adapter, StubAdapter)
 
 
 class TestFixQualityIssues:

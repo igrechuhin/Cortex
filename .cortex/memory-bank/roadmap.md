@@ -48,4 +48,6 @@
 
 - ✅ **Phase 63: Harden create-plan roadmap writes (full content and verification)** - COMPLETE (2026-01-29) - Added full-content-only rule for roadmap writes in `cortex/synapse/prompts/create-plan.md` Step 6 and `cortex/synapse/agents/memory-bank-updater.md`; added post-write verification in create-plan prompt Step 7 (confirm all existing entries unchanged, restore-and-repeat if truncation). Plan: `.cortex/plans/phase-63-harden-create-plan-roadmap-writes.md`.
 
-- **Multi-Language Validation Support** - PLANNED - Add support for additional language adapters in validation operations - Currently validation operations may need language-specific adapters - Location: src/cortex/tools/validation_operations.py line 351 - TODO: Add other language adapters as needed (e.g., JavaScript/TypeScript, Rust, Go, Java, etc.) - This would enable validation checks for multi-language projects
+- ✅ **Multi-Language Validation Support** - COMPLETE (2026-01-29) - Added StubAdapter for TypeScript, JavaScript, Rust, Go, Java and registered them in pre_commit_tools _ADAPTER_REGISTRY; SUPPORTED_LANGUAGES now includes 6 languages. Stub adapters return clear "not yet implemented" results until full implementations are added. Unit tests in tests/unit/test_stub_adapter.py and TestAdapterRegistry updates in tests/unit/test_pre_commit_tools.py. All 2906 tests passing.
+
+- **Pre-commit**: Add other language adapters as needed (src/cortex/tools/pre_commit_tools.py) – tracked; stub adapters in place; full implementations in future phases.
