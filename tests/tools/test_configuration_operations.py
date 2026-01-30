@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.core.models import JsonValue, ModelDict
+from cortex.tools.configuration_helpers import ConfigAction
 from cortex.tools.configuration_operations import (
     apply_config_updates,
     configure,
@@ -184,7 +185,7 @@ class TestValidationConfiguration:
         mgrs = make_test_managers(validation_config=mock_validation_config)
 
         # Act
-        result = await configure_validation(mgrs, "view", None, None, None)
+        result = await configure_validation(mgrs, ConfigAction.VIEW, None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -210,7 +211,7 @@ class TestValidationConfiguration:
         # Act
         result = await configure_validation(
             mgrs,
-            "update",
+            ConfigAction.UPDATE,
             settings,
             None,
             None,
@@ -236,7 +237,9 @@ class TestValidationConfiguration:
         mgrs = make_test_managers(validation_config=mock_validation_config)
 
         # Act
-        result = await configure_validation(mgrs, "update", None, "strict_mode", True)
+        result = await configure_validation(
+            mgrs, ConfigAction.UPDATE, None, "strict_mode", True
+        )
 
         # Assert
         result_data = json.loads(result)
@@ -256,7 +259,7 @@ class TestValidationConfiguration:
         mgrs = make_test_managers(validation_config=mock_validation_config)
 
         # Act
-        result = await configure_validation(mgrs, "reset", None, None, None)
+        result = await configure_validation(mgrs, ConfigAction.RESET, None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -268,12 +271,8 @@ class TestValidationConfiguration:
     @pytest.mark.asyncio
     async def test_configure_validation_unknown_action(self) -> None:
         """Test validation with unknown action returns error."""
-        # Arrange
-        mock_validation_config = MagicMock()
-        mgrs = make_test_managers(validation_config=mock_validation_config)
-
-        # Act
-        result = await configure_validation(mgrs, "unknown", None, None, None)
+        # Act: invalid action is rejected at configure() boundary before handler
+        result = await configure("validation", "unknown")
 
         # Assert
         result_data = json.loads(result)
@@ -334,7 +333,7 @@ class TestOptimizationConfiguration:
         mgrs = make_test_managers(optimization_config=mock_optimization_config)
 
         # Act
-        result = await configure_optimization(mgrs, "view", None, None, None)
+        result = await configure_optimization(mgrs, ConfigAction.VIEW, None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -356,7 +355,9 @@ class TestOptimizationConfiguration:
         settings: dict[str, JsonValue] = {"token_budget.default_budget": 90000}
 
         # Act
-        result = await configure_optimization(mgrs, "update", settings, None, None)
+        result = await configure_optimization(
+            mgrs, ConfigAction.UPDATE, settings, None, None
+        )
 
         # Assert
         result_data = json.loads(result)
@@ -374,7 +375,9 @@ class TestOptimizationConfiguration:
         mgrs = make_test_managers(optimization_config=mock_optimization_config)
 
         # Act
-        result = await configure_optimization(mgrs, "reset", None, None, None)
+        result = await configure_optimization(
+            mgrs, ConfigAction.RESET, None, None, None
+        )
 
         # Assert
         result_data = json.loads(result)
@@ -385,12 +388,8 @@ class TestOptimizationConfiguration:
     @pytest.mark.asyncio
     async def test_configure_optimization_unknown_action(self) -> None:
         """Test optimization with unknown action returns error."""
-        # Arrange
-        mock_optimization_config = MagicMock()
-        mgrs = make_test_managers(optimization_config=mock_optimization_config)
-
-        # Act
-        result = await configure_optimization(mgrs, "unknown", None, None, None)
+        # Act: invalid action is rejected at configure() boundary before handler
+        result = await configure("optimization", "unknown")
 
         # Assert
         result_data = json.loads(result)
@@ -452,7 +451,7 @@ class TestLearningConfiguration:
         )
 
         # Act
-        result = await configure_learning(mgrs, "view", None, None, None)
+        result = await configure_learning(mgrs, ConfigAction.VIEW, None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -478,7 +477,9 @@ class TestLearningConfiguration:
         settings: dict[str, JsonValue] = {"learning.enabled": True}
 
         # Act
-        result = await configure_learning(mgrs, "update", settings, None, None)
+        result = await configure_learning(
+            mgrs, ConfigAction.UPDATE, settings, None, None
+        )
 
         # Assert
         result_data = json.loads(result)
@@ -508,7 +509,9 @@ class TestLearningConfiguration:
         )
 
         # Act
-        result = await configure_learning(mgrs, "update", None, "export_patterns", True)
+        result = await configure_learning(
+            mgrs, ConfigAction.UPDATE, None, "export_patterns", True
+        )
 
         # Assert
         result_data = json.loads(result)
@@ -533,7 +536,7 @@ class TestLearningConfiguration:
         )
 
         # Act
-        result = await configure_learning(mgrs, "reset", None, None, None)
+        result = await configure_learning(mgrs, ConfigAction.RESET, None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -544,18 +547,8 @@ class TestLearningConfiguration:
     @pytest.mark.asyncio
     async def test_configure_learning_unknown_action(self) -> None:
         """Test learning with unknown action returns error."""
-        # Arrange
-        mock_learning_engine = MagicMock()
-        mock_optimization_config = MagicMock()
-        mock_optimization_config.config = {"learning": {"enabled": True}}
-
-        mgrs = make_test_managers(
-            learning_engine=mock_learning_engine,
-            optimization_config=mock_optimization_config,
-        )
-
-        # Act
-        result = await configure_learning(mgrs, "unknown", None, None, None)
+        # Act: invalid action is rejected at configure() boundary before handler
+        result = await configure("learning", "unknown")
 
         # Assert
         result_data = json.loads(result)
@@ -803,7 +796,7 @@ class TestEdgeCases:
         mgrs = make_test_managers(validation_config=mock_validation_config)
 
         # Act - no settings or key/value provided
-        result = await configure_validation(mgrs, "update", None, None, None)
+        result = await configure_validation(mgrs, ConfigAction.UPDATE, None, None, None)
 
         # Assert
         result_data = json.loads(result)
@@ -818,7 +811,9 @@ class TestEdgeCases:
         mgrs = make_test_managers(optimization_config=mock_optimization_config)
 
         # Act - no settings or key/value provided
-        result = await configure_optimization(mgrs, "update", None, None, None)
+        result = await configure_optimization(
+            mgrs, ConfigAction.UPDATE, None, None, None
+        )
 
         # Assert
         result_data = json.loads(result)
@@ -838,7 +833,7 @@ class TestEdgeCases:
         )
 
         # Act - no settings or key/value provided
-        result = await configure_learning(mgrs, "update", None, None, None)
+        result = await configure_learning(mgrs, ConfigAction.UPDATE, None, None, None)
 
         # Assert
         result_data = json.loads(result)

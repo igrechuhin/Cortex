@@ -9,16 +9,20 @@ Total: 1 tool
 
 from cortex.server import mcp
 from cortex.tools.validation_dispatch import (
-    CheckType,
     call_dispatch_validation,
     prepare_validation_managers,
 )
-from cortex.tools.validation_helpers import create_validation_error_response
+from cortex.tools.validation_helpers import (
+    ValidationCheckType,
+    create_invalid_check_type_error,
+    create_validation_error_response,
+    parse_validation_check_type,
+)
 
 
 @mcp.tool()
 async def validate(
-    check_type: CheckType,
+    check_type: str,
     file_name: str | None = None,
     project_root: str | None = None,
     strict_mode: bool = False,
@@ -429,8 +433,11 @@ async def validate(
         below 60 needs improvement
         - All validation operations are read-only and do not modify files
     """
+    parsed = parse_validation_check_type(check_type)
+    if parsed is None:
+        return create_invalid_check_type_error(check_type or "null")
     return await _execute_validation_with_error_handling(
-        check_type,
+        parsed,
         project_root,
         file_name,
         similarity_threshold,
@@ -443,7 +450,7 @@ async def validate(
 
 
 async def _execute_validation_with_error_handling(
-    check_type: CheckType,
+    check_type: ValidationCheckType,
     project_root: str | None,
     file_name: str | None,
     similarity_threshold: float | None,

@@ -2,7 +2,7 @@
 
 from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import Literal, cast
+from typing import cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -11,7 +11,10 @@ from cortex.core.metadata_index import MetadataIndex
 from cortex.managers import initialization
 from cortex.managers.manager_utils import get_manager
 from cortex.tools.validation_duplication import handle_duplications_validation
-from cortex.tools.validation_helpers import create_invalid_check_type_error
+from cortex.tools.validation_helpers import (
+    ValidationCheckType,
+    create_invalid_check_type_error,
+)
 from cortex.tools.validation_infrastructure import handle_infrastructure_validation
 from cortex.tools.validation_quality import handle_quality_validation
 from cortex.tools.validation_roadmap_sync import handle_roadmap_sync_validation
@@ -30,15 +33,6 @@ type ValidationManagers = dict[
     | DuplicationDetector
     | QualityMetrics
     | ValidationConfig,
-]
-
-type CheckType = Literal[
-    "schema",
-    "duplications",
-    "quality",
-    "infrastructure",
-    "timestamps",
-    "roadmap_sync",
 ]
 
 
@@ -175,7 +169,7 @@ def _create_validation_handlers(
 
 
 async def _dispatch_validation(
-    check_type: CheckType,
+    check_type: ValidationCheckType,
     validation_managers: ValidationManagers,
     root: Path,
     file_name: str | None,
@@ -202,7 +196,7 @@ async def _dispatch_validation(
 
 async def _execute_validation_handler(
     handlers: dict[str, Callable[[], Awaitable[str]]],
-    check_type: CheckType,
+    check_type: ValidationCheckType,
 ) -> str:
     """Execute validation handler for given check type.
 
@@ -213,8 +207,12 @@ async def _execute_validation_handler(
     Returns:
         JSON string with validation results
     """
-    handler = handlers.get(check_type)
-    return await handler() if handler else create_invalid_check_type_error(check_type)
+    handler = handlers.get(check_type.value)
+    return (
+        await handler()
+        if handler
+        else create_invalid_check_type_error(check_type.value)
+    )
 
 
 def _get_typed_validation_managers(
@@ -288,7 +286,7 @@ async def prepare_validation_managers(
 
 
 async def call_dispatch_validation(
-    check_type: CheckType,
+    check_type: ValidationCheckType,
     managers: ValidationManagers,
     root: Path,
     file_name: str | None,

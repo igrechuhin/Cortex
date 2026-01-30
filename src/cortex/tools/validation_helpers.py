@@ -1,21 +1,34 @@
 """Shared validation helper functions."""
 
 import json
+from enum import Enum
 from pathlib import Path
-from typing import Literal, cast
+from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
-CheckType = Literal[
-    "schema",
-    "duplications",
-    "quality",
-    "infrastructure",
-    "timestamps",
-    "roadmap_sync",
-]
+
+class ValidationCheckType(str, Enum):
+    """Fixed set of validate() check types. Use instead of raw strings."""
+
+    SCHEMA = "schema"
+    DUPLICATIONS = "duplications"
+    QUALITY = "quality"
+    INFRASTRUCTURE = "infrastructure"
+    TIMESTAMPS = "timestamps"
+    ROADMAP_SYNC = "roadmap_sync"
+
+
+def parse_validation_check_type(value: str | None) -> ValidationCheckType | None:
+    """Parse string to ValidationCheckType. Returns None if invalid or missing."""
+    if value is None:
+        return None
+    try:
+        return ValidationCheckType(value)
+    except ValueError:
+        return None
 
 
 async def read_all_memory_bank_files(
@@ -40,14 +53,7 @@ def create_invalid_check_type_error(check_type: str) -> str:
     Returns:
         JSON string with error response
     """
-    valid_types: list[CheckType] = [
-        "schema",
-        "duplications",
-        "quality",
-        "infrastructure",
-        "timestamps",
-        "roadmap_sync",
-    ]
+    valid_types = [e.value for e in ValidationCheckType]
     return json.dumps(
         {
             "status": "error",

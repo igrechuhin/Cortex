@@ -135,11 +135,12 @@ def build_get_relevant_response(
 
 def build_invalid_operation_error(operation: str) -> str:
     """Build error response for invalid operation."""
+    valid_operations = [op.value for op in RulesOperation]
     return json.dumps(
         {
             "status": "error",
             "error": f"Invalid operation: {operation}",
-            "valid_operations": ["index", "get_relevant"],
+            "valid_operations": valid_operations,
             "hint": (
                 "Use one of: 'index' or 'get_relevant' for the operation "
                 "parameter when calling rules()."
@@ -151,6 +152,7 @@ def build_invalid_operation_error(operation: str) -> str:
 
 def build_missing_rules_parameters_error() -> str:
     """Build error response for missing operation parameter."""
+    operation_values = [op.value for op in RulesOperation]
     return json.dumps(
         {
             "status": "error",
@@ -158,7 +160,7 @@ def build_missing_rules_parameters_error() -> str:
             "details": {
                 "missing": ["operation"],
                 "required": ["operation"],
-                "operation_values": ["index", "get_relevant"],
+                "operation_values": operation_values,
             },
             "hint": (
                 "Call rules(operation=...) with one of: 'index' or 'get_relevant'. "

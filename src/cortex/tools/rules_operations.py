@@ -8,7 +8,6 @@ Total: 1 tool
 """
 
 import json
-from typing import Literal
 
 from cortex.core.models import ModelDict
 from cortex.managers.initialization import get_managers, get_project_root
@@ -177,7 +176,7 @@ async def dispatch_operation(
 
 @mcp.tool()
 async def rules(
-    operation: Literal["index", "get_relevant"] | None = None,
+    operation: str | None = None,
     project_root: str | None = None,
     force: bool = False,
     task_description: str | None = None,

@@ -77,9 +77,12 @@ class TestImplementPromptQualityGates:
         assert "manage_file" in prompt_content and "activeContext.md" in prompt_content
 
     def test_step_4_includes_mandatory_format_step(self, prompt_content: str) -> None:
-        """Step 4 includes mandatory formatting step before type checking."""
+        """Step 4 includes mandatory formatting step before type checking (language-agnostic)."""
         assert "MANDATORY: Format code" in prompt_content
-        assert "black" in prompt_content.lower()
+        assert (
+            "execute_pre_commit_checks" in prompt_content
+            or "formatter" in prompt_content.lower()
+        )
 
     def test_step_4_includes_mandatory_type_checking_step(
         self, prompt_content: str

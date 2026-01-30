@@ -9,7 +9,7 @@ Total: 1 tool
 
 import json
 from pathlib import Path
-from typing import Literal, cast
+from typing import cast
 
 from cortex.core.exceptions import (
     FileConflictError,
@@ -38,7 +38,7 @@ from cortex.tools.file_operation_helpers import (
 @mcp.tool()
 async def manage_file(
     file_name: str | None = None,
-    operation: Literal["read", "write", "metadata"] | None = None,
+    operation: str | None = None,
     content: str | None = None,
     project_root: str | None = None,
     include_metadata: bool = False,

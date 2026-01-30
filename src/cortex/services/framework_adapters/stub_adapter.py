@@ -5,12 +5,20 @@ Returns consistent "not yet implemented" results for all operations.
 """
 
 from collections.abc import Sequence
-from typing import Literal
+from enum import Enum
 
 from .base import CheckResult, FrameworkAdapter, TestResult
 
-# Languages that use StubAdapter (must match _ADAPTER_REGISTRY in pre_commit_tools).
-StubAdapterLanguage = Literal["typescript", "javascript", "rust", "go", "java"]
+
+class StubAdapterLanguage(str, Enum):
+    """Languages that use StubAdapter (must match _ADAPTER_REGISTRY in pre_commit_tools)."""
+
+    TYPESCRIPT = "typescript"
+    JAVASCRIPT = "javascript"
+    RUST = "rust"
+    GO = "go"
+    JAVA = "java"
+
 
 _NOT_IMPLEMENTED_MSG = "Adapter registered; full implementation not yet available"
 
@@ -26,7 +34,7 @@ class StubAdapter(FrameworkAdapter):
     def __init__(
         self,
         project_root: str | None = None,
-        language: StubAdapterLanguage = "typescript",
+        language: str | StubAdapterLanguage = "typescript",
     ) -> None:
         """Initialize stub adapter.
 
@@ -35,11 +43,14 @@ class StubAdapter(FrameworkAdapter):
             language: Language identifier (typescript, javascript, rust, go, java).
         """
         super().__init__(project_root)
-        self._language: StubAdapterLanguage = language
+        if isinstance(language, StubAdapterLanguage):
+            self._language: StubAdapterLanguage = language
+        else:
+            self._language = StubAdapterLanguage(language)
 
     def _not_implemented_check(self, check_type: str) -> CheckResult:
         """Build a check result for not-implemented operation."""
-        msg = f"{self._language}: {_NOT_IMPLEMENTED_MSG}"
+        msg = f"{self._language.value}: {_NOT_IMPLEMENTED_MSG}"
         return CheckResult(
             check_type=check_type,
             success=False,
@@ -56,7 +67,7 @@ class StubAdapter(FrameworkAdapter):
         max_failures: int | None = None,
     ) -> TestResult:
         """Return stub result; tests not implemented for this language."""
-        msg = f"{self._language}: {_NOT_IMPLEMENTED_MSG}"
+        msg = f"{self._language.value}: {_NOT_IMPLEMENTED_MSG}"
         return TestResult(
             success=False,
             tests_run=0,

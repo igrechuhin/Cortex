@@ -20,6 +20,7 @@ from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.refactoring.adaptation_config import AdaptationConfig
 from cortex.refactoring.learning_engine import LearningEngine
 from cortex.server import mcp
+from cortex.tools.configuration_helpers import ConfigAction, parse_config_action
 from cortex.tools.models import LearnedPatternsResult
 from cortex.validation.validation_config import ValidationConfig
 
@@ -47,7 +48,7 @@ class ConfigProtocol(Protocol):
 ComponentHandler = Callable[
     [
         ManagersDict,
-        str,
+        ConfigAction,
         dict[str, JsonValue] | None,
         str | None,
         JsonValue | None,
@@ -250,12 +251,15 @@ async def configure(
         - Changes persist to `.cortex/{validation,optimization,learning}.json`
           and take effect immediately.
     """
+    parsed_action = parse_config_action(action)
+    if parsed_action is None:
+        return _create_invalid_action_error(action or "null")
     try:
         root = get_project_root(project_root)
         mgrs = await get_managers(root)
         handler = _get_component_handler(component)
         if handler:
-            return await handler(mgrs, action, settings, key, value)
+            return await handler(mgrs, parsed_action, settings, key, value)
 
         return _create_invalid_component_error(component)
 
@@ -297,7 +301,7 @@ def _create_configuration_exception_error(
 
 async def configure_validation(
     mgrs: ManagersDict,
-    action: str,
+    action: ConfigAction,
     settings: dict[str, JsonValue] | None,
     key: str | None,
     value: JsonValue | None,
@@ -305,29 +309,17 @@ async def configure_validation(
     """Configure validation settings."""
     validation_config = await get_manager(mgrs, "validation_config", ValidationConfig)
 
-    if action == "view":
+    if action == ConfigAction.VIEW:
         validation_dict = cast(
             ModelDict, validation_config.config.model_dump(mode="json")
         )
         return create_success_response("validation", validation_dict, message=None)
-    elif action == "update":
+    elif action == ConfigAction.UPDATE:
         return await handle_validation_update(validation_config, settings, key, value)
-    elif action == "reset":
+    elif action == ConfigAction.RESET:
         return await handle_validation_reset(validation_config)
     else:
-        return create_error_response(
-            f"Unknown action: {action}",
-            valid_actions=["view", "update", "reset"],
-            action_required=(
-                f"Use one of the valid actions: 'view', 'update', or 'reset'. "
-                f"Received: '{action}'. "
-                f"Example: {{'component': 'validation', 'action': 'view'}}"
-            ),
-            context={
-                "invalid_action": action,
-                "valid_actions": ["view", "update", "reset"],
-            },
-        )
+        return _create_invalid_action_error(action.value)
 
 
 async def handle_validation_update(
@@ -359,24 +351,25 @@ async def handle_validation_reset(validation_config: ValidationConfig) -> str:
 
 def _create_invalid_action_error(action: str) -> str:
     """Create error response for invalid action."""
+    valid_actions = [a.value for a in ConfigAction]
     return create_error_response(
         f"Unknown action: {action}",
-        valid_actions=["view", "update", "reset"],
+        valid_actions=cast(JsonValue, valid_actions),
         action_required=(
             f"Use one of the valid actions: 'view', 'update', or 'reset'. "
             f"Received: '{action}'. "
             f"Example: {{'component': 'validation', 'action': 'view'}}"
         ),
-        context={
-            "invalid_action": action,
-            "valid_actions": ["view", "update", "reset"],
-        },
+        context=cast(
+            JsonValue,
+            {"invalid_action": action, "valid_actions": valid_actions},
+        ),
     )
 
 
 async def configure_optimization(
     mgrs: ManagersDict,
-    action: str,
+    action: ConfigAction,
     settings: dict[str, JsonValue] | None,
     key: str | None,
     value: JsonValue | None,
@@ -386,18 +379,18 @@ async def configure_optimization(
         mgrs, "optimization_config", OptimizationConfig
     )
 
-    if action == "view":
+    if action == ConfigAction.VIEW:
         return create_success_response(
             "optimization", optimization_config.to_dict(), message=None
         )
-    elif action == "update":
+    elif action == ConfigAction.UPDATE:
         return await handle_optimization_update(
             optimization_config, settings, key, value
         )
-    elif action == "reset":
+    elif action == ConfigAction.RESET:
         return await handle_optimization_reset(optimization_config)
     else:
-        return _create_invalid_action_error(action)
+        return _create_invalid_action_error(action.value)
 
 
 async def handle_optimization_update(
@@ -442,7 +435,7 @@ async def _initialize_learning_components(
 
 async def configure_learning(
     mgrs: ManagersDict,
-    action: str,
+    action: ConfigAction,
     settings: dict[str, JsonValue] | None,
     key: str | None,
     value: JsonValue | None,
@@ -452,9 +445,9 @@ async def configure_learning(
         await _initialize_learning_components(mgrs)
     )
 
-    if action == "view":
+    if action == ConfigAction.VIEW:
         return handle_learning_view(learning_engine, adaptation_config)
-    elif action == "update":
+    elif action == ConfigAction.UPDATE:
         return await handle_learning_update(
             learning_engine,
             optimization_config,
@@ -463,12 +456,12 @@ async def configure_learning(
             key,
             value,
         )
-    elif action == "reset":
+    elif action == ConfigAction.RESET:
         return await handle_learning_reset(
             learning_engine, optimization_config, adaptation_config
         )
     else:
-        return _create_invalid_action_error(action)
+        return _create_invalid_action_error(action.value)
 
 
 def handle_learning_view(

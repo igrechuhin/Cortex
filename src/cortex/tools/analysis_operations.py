@@ -16,6 +16,7 @@ from cortex.analysis.structure_analyzer import StructureAnalyzer
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
+from cortex.tools.analysis_helpers import AnalysisTarget, parse_analysis_target
 
 
 async def get_managers(root: Path) -> ManagersDict:
@@ -435,13 +436,24 @@ async def analyze(
         - Export formats for insights: "json" provides structured data, "markdown"
           provides formatted documentation, "text" provides plain text summary.
     """
+    parsed_target = parse_analysis_target(target)
+    if parsed_target is None:
+        valid = [t.value for t in AnalysisTarget]
+        return json.dumps(
+            {
+                "status": "error",
+                "error": f"Invalid target: {target}",
+                "valid_targets": valid,
+            },
+            indent=2,
+        )
     try:
         root = get_project_root(project_root)
         mgrs = await get_managers(root)
         analyzers = await get_analysis_managers(mgrs)
 
         return await dispatch_analysis_target(
-            target, analyzers, time_window_days, export_format, categories
+            parsed_target, analyzers, time_window_days, export_format, categories
         )
 
     except Exception as e:
@@ -451,29 +463,51 @@ async def analyze(
         )
 
 
+def _analysis_invalid_target_response(target_display: str) -> str:
+    """Build JSON error response for invalid analysis target."""
+    valid = [t.value for t in AnalysisTarget]
+    return json.dumps(
+        {
+            "status": "error",
+            "error": f"Invalid target: {target_display}",
+            "valid_targets": valid,
+        },
+        indent=2,
+    )
+
+
+async def _execute_analysis_target(
+    target: AnalysisTarget,
+    analyzers: tuple[PatternAnalyzer, StructureAnalyzer, InsightEngine],
+    time_window_days: int | None,
+    export_format: str,
+    categories: list[str] | None,
+) -> str:
+    """Run the analysis handler for the resolved target."""
+    pattern_analyzer, structure_analyzer, insight_engine = analyzers
+    if target == AnalysisTarget.USAGE_PATTERNS:
+        window = time_window_days or 30
+        return await analyze_usage_patterns(pattern_analyzer, window)
+    if target == AnalysisTarget.STRUCTURE:
+        return await analyze_structure(structure_analyzer)
+    if target == AnalysisTarget.INSIGHTS:
+        return await analyze_insights(insight_engine, export_format, categories)
+    return _analysis_invalid_target_response(target.value)
+
+
 async def dispatch_analysis_target(
-    target: str,
+    target: str | AnalysisTarget,
     analyzers: tuple[PatternAnalyzer, StructureAnalyzer, InsightEngine],
     time_window_days: int | None,
     export_format: str,
     categories: list[str] | None,
 ) -> str:
     """Dispatch analysis to appropriate handler based on target."""
-    pattern_analyzer, structure_analyzer, insight_engine = analyzers
-
-    if target == "usage_patterns":
-        window = time_window_days or 30
-        return await analyze_usage_patterns(pattern_analyzer, window)
-    elif target == "structure":
-        return await analyze_structure(structure_analyzer)
-    elif target == "insights":
-        return await analyze_insights(insight_engine, export_format, categories)
-    else:
-        return json.dumps(
-            {
-                "status": "error",
-                "error": f"Invalid target: {target}",
-                "valid_targets": ["usage_patterns", "structure", "insights"],
-            },
-            indent=2,
-        )
+    if not isinstance(target, AnalysisTarget):
+        parsed = parse_analysis_target(target)
+        if parsed is None:
+            return _analysis_invalid_target_response(target)
+        target = parsed
+    return await _execute_analysis_target(
+        target, analyzers, time_window_days, export_format, categories
+    )

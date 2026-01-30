@@ -6,36 +6,29 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
+- 🔄 **Phase 64: Promote fixed string sets to enums** - IN PROGRESS (2026-01-30)
+  - Milestones 1–3 done: ValidationCheckType, ConfigAction, AnalysisTarget, StubAdapterLanguage enums added; file/rules/validate/configure/analyze use str at boundary and enum internally; tests updated (2951 passing).
+  - Next: Milestone 4 (docs) deferred; optional: RefactoringAction/RefactoringSuggestionType wiring in apply_refactoring/suggest_refactoring if not already done.
+
+- ✅ **Commit: Coverage at 90% (helper tests)** - COMPLETE (2026-01-30)
 - ✅ **Phase 66: Plan Creation Workflow Compliance** - COMPLETE (2026-01-30)
-  - Create-plan prompt path resolution and roadmap-update rules strengthened; memory-bank-updater note added; 8 integration tests.
-
 - ✅ **Phase 65: Commit Workflow — Cortex Tools Only** - COMPLETE (2026-01-30)
-  - Commit prompt now uses only Cortex MCP tools; no direct script invocations. Next: Phase 64.
-
 - ✅ **Commit: Function length fix and plan archival** - COMPLETE (2026-01-30)
-  - Refactored `_run_synapse_script` in pre_commit_tools; markdown lint 8 files fixed; archived Phase 65 and 66 plans. Tests 2945 passed, 90.01% coverage.
-
 - ✅ **Commit: Coverage above 90%** - COMPLETE (2026-01-30)
-- ✅ **Multi-Language Validation Support** - COMPLETE (2026-01-29)
-- ✅ **Phase 55: Improve Implementation Prompt Quality Gates** - COMPLETE (2026-01-29)
-- ✅ **Phase 56: Commit Workflow Parallelization (Steps 9–11)** - COMPLETE (2026-01-29)
-- ✅ **Plan: Enhance Tool Descriptions with USE WHEN and EXAMPLES** - COMPLETE (2026-01-29)
-- ✅ **Phase 62: Synapse Session Optimization** - COMPLETE (2026-01-29)
-- ✅ **TypeScript Pre-Commit Adapter** - COMPLETE (2026-01-29)
 
 ### Recently Completed
 
-- ✅ **Commit: Coverage above 90%** - COMPLETE (2026-01-30)
-- ✅ **TypeScript Pre-Commit Adapter** - COMPLETE (2026-01-29)
-- ✅ **Multi-Language Validation Support** - COMPLETE (2026-01-29)
+- ✅ Added tests/unit/test_configuration_helpers.py and tests/unit/test_analysis_helpers.py (parse_config_action, parse_analysis_target; invalid-value branch). Coverage 89.98% → 90%; 2951 tests passing.
+- ✅ Phase 64 Milestones 1–3 (enums for validation, config, analysis, stub adapter)
+- ✅ Phase 66, Phase 65
 
 ## Project Health
 
-- **Tests**: 2945 passing, 0 failed, coverage 90.01%.
-- **Linting/Types**: No Ruff or pyright issues.
+- **Tests**: 2951 passing; coverage 90%.
+- **Linting/Types**: Pyright 0 errors on modified files.
 - **Pre-commit adapters**: SUPPORTED_LANGUAGES = (python, typescript, javascript, rust, go, java); Python and TypeScript full implementations.
 
 ## Next Focus
 
-- **Phase 64: Promote fixed string sets to enums** - PLANNED (.cortex/plans/phase-64-promote-fixed-strings-to-enums.md).
+- **Phase 64**: Complete Milestone 4 (docs) or wire RefactoringAction/RefactoringSuggestionType in refactoring tools if needed.
 - Phase 65 and 66 plans archived to .cortex/plans/archive/Phase65/ and Phase66/.
