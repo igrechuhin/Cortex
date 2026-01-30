@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-01-30T15:47:27.200327",
+  "last_updated": "2026-01-30T18:34:16.655791",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 8817,
-      "token_count": 2119,
+      "size_bytes": 9318,
+      "token_count": 2233,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-30T15:42:29.985366",
-      "content_hash": "sha256:53e573d618dbecb3b58f398f5b2989e7b4e3d7fe9fb487b0a8d24b31df43788c",
+      "last_modified": "2026-01-30T15:59:37.678782",
+      "content_hash": "sha256:701c6eba35de3107b1dc16bf39056149478cad86cc3363b5927645b24ac957b0",
       "sections": [
         {
           "title": "## Current Status (2026-01-30)",
@@ -31,14 +31,14 @@
         {
           "title": "## Future Enhancements",
           "level": 2,
-          "line_start": 25,
-          "line_end": 25,
+          "line_start": 27,
+          "line_end": 27,
           "content_hash": null
         }
       ],
       "read_count": 2,
-      "write_count": 38,
-      "last_read": "2026-01-30T15:42:29.985366",
+      "write_count": 39,
+      "last_read": "2026-01-30T15:59:37.678782",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -481,17 +481,28 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Marked Phase 64 COMPLETE (Milestone 4 docs done)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T15:59:37.678269",
+          "content_hash": "sha256:701c6eba35de3107b1dc16bf39056149478cad86cc3363b5927645b24ac957b0",
+          "size_bytes": 9318,
+          "token_count": 2233,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Marked JavaScript Pre-Commit Adapter complete; updated Pre-commit line to Python/TypeScript/JavaScript full, Rust/Go/Java StubAdapter"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 7174,
-      "token_count": 1700,
+      "size_bytes": 9243,
+      "token_count": 2219,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-30T15:43:02.367305",
-      "content_hash": "sha256:ae3a284b94f102e8b7fe0796bf5c3d70e2f9f75dbeb5369ef01673e6f7275220",
+      "last_modified": "2026-01-30T18:34:16.654441",
+      "content_hash": "sha256:c338a9c6e9b09e4ecb31dcab3617ea3025a7b3a2220e888a074313936f5c121d",
       "sections": [
         {
           "title": "## 2026-01-30",
@@ -503,14 +514,14 @@
         {
           "title": "## 2026-01-29",
           "level": 2,
-          "line_start": 39,
-          "line_end": 39,
+          "line_start": 51,
+          "line_end": 51,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 33,
-      "last_read": "2026-01-30T15:43:02.367305",
+      "write_count": 35,
+      "last_read": "2026-01-30T18:34:16.654441",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -876,17 +887,39 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Added progress entry for Phase 64 Milestone 4 completion"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T16:00:15.595806",
+          "content_hash": "sha256:3792e92073db54dfc862ce9de93ded54be9b0fc45349d2143b4ce169944e0008",
+          "size_bytes": 8491,
+          "token_count": 2026,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for JavaScript Pre-Commit Adapter completion"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T18:34:16.654133",
+          "content_hash": "sha256:c338a9c6e9b09e4ecb31dcab3617ea3025a7b3a2220e888a074313936f5c121d",
+          "size_bytes": 9243,
+          "token_count": 2219,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added commit entry: type fixes and coverage test"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 1801,
-      "token_count": 477,
+      "size_bytes": 2846,
+      "token_count": 734,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-30T15:47:27.199020",
-      "content_hash": "sha256:bc5334eb5297fe6873294aca0be661fa146c17128ec4d2ca9e08bbb9fdaf5c03",
+      "last_modified": "2026-01-30T18:33:40.191452",
+      "content_hash": "sha256:88149c236a78d3f3110b0c9991c06cf2ea9c939f7fd71cc11538ea2ba16c54e6",
       "sections": [
         {
           "title": "## Current Focus (2026-01-30)",
@@ -905,28 +938,28 @@
         {
           "title": "### Recently Completed",
           "level": 2,
-          "line_start": 18,
-          "line_end": 18,
+          "line_start": 26,
+          "line_end": 26,
           "content_hash": null
         },
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 25,
-          "line_end": 25,
+          "line_start": 34,
+          "line_end": 34,
           "content_hash": null
         },
         {
           "title": "## Next Focus",
           "level": 2,
-          "line_start": 31,
-          "line_end": 31,
+          "line_start": 40,
+          "line_end": 40,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 25,
-      "last_read": "2026-01-30T15:47:27.199020",
+      "write_count": 27,
+      "last_read": "2026-01-30T18:33:40.191452",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -1204,6 +1237,28 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Phase 64 plan archived; active work updated for commit run"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T16:00:24.796208",
+          "content_hash": "sha256:d06de2d4255ba827f741fd4d158e2eb7b9ddf61f693b234fec313780bf58b13f",
+          "size_bytes": 2378,
+          "token_count": 614,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context after JavaScript Pre-Commit Adapter completion"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T18:33:40.190880",
+          "content_hash": "sha256:88149c236a78d3f3110b0c9991c06cf2ea9c939f7fd71cc11538ea2ba16c54e6",
+          "size_bytes": 2846,
+          "token_count": 734,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context for commit: type fixes and coverage test"
         }
       ]
     },
@@ -1441,8 +1496,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 31017,
-    "total_tokens": 7159,
-    "last_full_scan": "2026-01-30T15:47:27.199049"
+    "total_size_bytes": 34632,
+    "total_tokens": 8049,
+    "last_full_scan": "2026-01-30T18:34:16.654464"
   }
 }

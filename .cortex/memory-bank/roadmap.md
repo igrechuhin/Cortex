@@ -4,6 +4,8 @@
 
 ### Active Work
 
+- ✅ **JavaScript Pre-Commit Adapter** - COMPLETE (2026-01-30) - Added JavaScriptAdapter in src/cortex/services/framework_adapters/javascript_adapter.py (Prettier, ESLint for .js and .jsx, tsc --allowJs when configured, npm test). Registered in pre_commit_tools; javascript now uses JavaScriptAdapter instead of StubAdapter. Unit tests in tests/unit/test_javascript_adapter.py. test_get_adapter_returns_javascript_adapter_for_javascript in test_pre_commit_tools. All 2966 tests passing.
+
 - ✅ **Commit: Coverage at 90% (helper tests)** - COMPLETE (2026-01-30) - Added tests/unit/test_configuration_helpers.py and tests/unit/test_analysis_helpers.py (parse_config_action, parse_analysis_target; invalid-value branch). Coverage 89.98% → 90%; 2951 tests passing. Markdown lint fixed 2 files.
 
 - ✅ **Phase 64: Promote fixed string sets to enums** - COMPLETE (2026-01-30) - Milestones 1–4 done: ValidationCheckType, ConfigAction, AnalysisTarget, StubAdapterLanguage, FileOperation, RulesOperation, RefactoringAction, RefactoringSuggestionType enums added; file/rules tool boundaries use str; validate/configure/analyze parse to enum; tests updated. Milestone 4 (docs): docs/api/types.md Tool and Validation Enums section and str Enum pattern; Synapse python-coding-standards rule (str Enum for fixed sets, reserve Literal for one-off). Plan: .cortex/plans/archive/Phase64/phase-64-promote-fixed-strings-to-enums.md.
@@ -34,7 +36,7 @@
 
 - ✅ **TypeScript Pre-Commit Adapter** - COMPLETE (2026-01-29) - Added TypeScriptAdapter in src/cortex/services/framework_adapters/typescript_adapter.py (prettier, eslint, tsc, npm test). Registered in pre_commit_tools _ADAPTER_REGISTRY; typescript now uses TypeScriptAdapter instead of StubAdapter. Unit tests in tests/unit/test_typescript_adapter.py. TestAdapterRegistry updated (test_get_adapter_returns_typescript_adapter_for_typescript). All 2919 tests passing, coverage 90%.
 
-- **Pre-commit**: Add other language adapters as needed (src/cortex/tools/pre_commit_tools.py) – tracked; Python and TypeScript have full implementations; JavaScript, Rust, Go, Java use StubAdapter until full implementations.
+- **Pre-commit**: Add other language adapters as needed (src/cortex/tools/pre_commit_tools.py) – tracked; Python, TypeScript, and JavaScript have full implementations; Rust, Go, Java use StubAdapter until full implementations.
 
 - ✅ **Phase 65: Commit Workflow — Cortex Tools Only** - COMPLETE (2026-01-30) - Removed all direct script invocations from the commit prompt; all pre-commit and Step 12 validation are invoked via Cortex MCP tools (`execute_pre_commit_checks` with format, format_ci_parity, type_check, quality, test_naming, tests; `fix_markdown_lint`). Added check types format_ci_parity and test_naming (run synapse scripts internally). Python adapter type_check now runs on src/ and tests/ to match CI. Integration test asserts the commit prompt file contains no `.venv/bin/python .cortex/synapse/scripts`. Plan: .cortex/plans/archive/Phase65/phase-65-commit-workflow-cortex-tools-only.md.
 

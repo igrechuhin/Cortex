@@ -4,9 +4,11 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from cortex.tools.validation_helpers import (
+    ValidationCheckType,
     create_invalid_check_type_error,
     create_validation_error_response,
     generate_duplication_fixes,
+    parse_validation_check_type,
     read_all_memory_bank_files,
 )
 
@@ -40,6 +42,25 @@ async def test_read_all_memory_bank_files_reads_markdown_files(tmp_path: Path) -
     assert content["a.md"] == "# A"
     assert content["b.md"] == "# B"
     assert fs_manager.read_file.await_count == 2
+
+
+def test_parse_validation_check_type_returns_none_for_none() -> None:
+    """parse_validation_check_type returns None when value is None."""
+    assert parse_validation_check_type(None) is None
+
+
+def test_parse_validation_check_type_returns_enum_for_valid_value() -> None:
+    """parse_validation_check_type returns ValidationCheckType for valid string."""
+    assert parse_validation_check_type("schema") is ValidationCheckType.SCHEMA
+    assert (
+        parse_validation_check_type("roadmap_sync") is ValidationCheckType.ROADMAP_SYNC
+    )
+
+
+def test_parse_validation_check_type_returns_none_for_invalid_value() -> None:
+    """parse_validation_check_type returns None for invalid string."""
+    assert parse_validation_check_type("invalid_check") is None
+    assert parse_validation_check_type("") is None
 
 
 def test_generate_duplication_fixes_creates_transclusion_suggestions() -> None:

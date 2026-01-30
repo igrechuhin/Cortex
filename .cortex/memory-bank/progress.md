@@ -2,6 +2,15 @@
 
 ## 2026-01-30
 
+- **Commit: Type fixes and coverage ≥90%** - IN PROGRESS (2026-01-30)
+  - Fixed 5 Pyright errors: test_javascript_adapter (reportPrivateUsage for _type_check_success_result, _type_check_not_configured_result,ype_check_failure_result,_ye_check_exception_result); test_pre_commit_tools (unused write_text result assigned to_)
+  - Added test_run_tests_success_with_low_coverage_reports_error in test_javascript_adapter (coverage-below-threshold path). Coverage 89.95% → 90.01%; 2982 tests passing.
+  - Markdown lint fixed 2 files (progress.md, commit.md). Steps 0–4 passed: fix_errors, format, markdown lint (178 files, 2 fixed), type_check (0 errors, 0 warnings), quality (0 violations), tests (2982 passed, 90.01% coverage).
+
+- ✅ **JavaScript Pre-Commit Adapter** - COMPLETE (2026-01-30)
+  - Added JavaScriptAdapter in `src/cortex/services/framework_adapters/javascript_adapter.py`: Prettier (format), ESLint for .js/.jsx (lint, fix_errors), tsc --noEmit --allowJs when TypeScript is available (type_check; success with warning when not configured), npm test (run_tests). Registered in pre_commit_toolsDAPTER_REGISTRY; javascript now uses JavaScriptAdapter instead of StubAdapter.
+  - Unit tests in `tests/unit/test_javascript_adapter.py` (init, run_tests success/timeout/low-coverage, format success/failure, type_check success when tsc passes / when not configured / failure when errors, lint success, fix_errors, parse_tsc_errors, parse_eslint_output). test_pre_commit_tools: test_get_adapter_returns_javascript_adapter_for_javascript. All 2982 tests passing; format and type_check passed.
+
 - ✅ **Commit: Phase 64 plan archival** - COMPLETE (2026-01-30)
   - Archived phase-64-promote-fixed-strings-to-enums.md to .cortex/plans/archive/Phase64/; updated roadmap.md plan link. Markdown lint fixed 6 files (memory-bank, plan, synapse rules, docs/api/types.md). Steps 0–4 passed: fix_errors, format, markdown lint (179 files, 6 fixed), type_check (0 errors, 0 warnings), quality (0 violations), tests (2951 passed, 90% coverage). 1 plan archived.
 

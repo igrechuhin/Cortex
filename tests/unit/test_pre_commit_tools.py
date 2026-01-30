@@ -246,6 +246,35 @@ class TestRunSynapseScript:
             assert "skipped" in result.output
             assert result.errors == []
 
+    def test_resolve_synapse_python_bin_uses_python3_when_no_venv(self) -> None:
+        """When .venv/bin/python does not exist, _run_synapse_script uses python3."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            scripts_dir = root / ".cortex" / "synapse" / "scripts" / "python"
+            scripts_dir.mkdir(parents=True)
+            script_path = scripts_dir / "check_formatting_ci_parity.py"
+            _ = script_path.write_text(
+                "#!/usr/bin/env python3\nimport sys\nsys.exit(0)\n"
+            )
+
+            with patch("cortex.tools.pre_commit_tools.subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock(
+                    returncode=0,
+                    stdout="ok",
+                    stderr="",
+                )
+
+                result = _run_synapse_script(
+                    root,
+                    "python",
+                    "check_formatting_ci_parity.py",
+                    "format_ci_parity",
+                )
+
+                assert result.success is True
+                call_args = mock_run.call_args[0][0]
+                assert call_args[0] == "python3"
+
     def test_run_synapse_script_when_script_fails_returns_errors(self) -> None:
         """When script runs and returns non-zero, returns failure with output."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -276,6 +305,67 @@ class TestRunSynapseScript:
 
                 assert result.success is False
                 assert len(result.errors) >= 1
+
+    def test_run_synapse_script_when_script_fails_with_empty_output_uses_exit_code(
+        self,
+    ) -> None:
+        """When script returns non-zero with empty output, error shows exit code."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            scripts_dir = root / ".cortex" / "synapse" / "scripts" / "python"
+            scripts_dir.mkdir(parents=True)
+            script_path = scripts_dir / "check_formatting_ci_parity.py"
+            _ = script_path.write_text("#!/usr/bin/env python3\n")
+            (root / ".venv").mkdir()
+            (root / ".venv" / "bin").mkdir()
+            python_bin = root / ".venv" / "bin" / "python"
+            _ = python_bin.write_text("")
+            python_bin.chmod(0o755)
+
+            with patch("cortex.tools.pre_commit_tools.subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock(
+                    returncode=2,
+                    stdout="",
+                    stderr="",
+                )
+
+                result = _run_synapse_script(
+                    root,
+                    "python",
+                    "check_formatting_ci_parity.py",
+                    "format_ci_parity",
+                )
+
+                assert result.success is False
+                assert len(result.errors) == 1
+                assert "Exit code 2" in result.errors[0]
+
+    def test_run_synapse_script_when_subprocess_raises_returns_exception_result(
+        self,
+    ) -> None:
+        """When subprocess execution raises, returns failure with exception message."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            scripts_dir = root / ".cortex" / "synapse" / "scripts" / "python"
+            scripts_dir.mkdir(parents=True)
+            script_path = scripts_dir / "check_formatting_ci_parity.py"
+            _ = script_path.write_text("#!/usr/bin/env python3\n")
+
+            with patch(
+                "cortex.tools.pre_commit_tools._execute_synapse_script_subprocess"
+            ) as mock_exec:
+                mock_exec.side_effect = OSError("python not found")
+
+                result = _run_synapse_script(
+                    root,
+                    "python",
+                    "check_formatting_ci_parity.py",
+                    "format_ci_parity",
+                )
+
+                assert result.success is False
+                assert len(result.errors) == 1
+                assert "python not found" in result.errors[0]
 
 
 class TestAdapterRegistry:
@@ -339,6 +429,25 @@ class TestAdapterRegistry:
         adapter = _get_adapter(info, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, TypeScriptAdapter)
+
+    def test_get_adapter_returns_javascript_adapter_for_javascript(self) -> None:
+        """_get_adapter returns JavaScriptAdapter for javascript."""
+        from cortex.services.framework_adapters.javascript_adapter import (
+            JavaScriptAdapter,
+        )
+
+        info = LanguageInfo(
+            language="javascript",
+            test_framework=None,
+            formatter=None,
+            linter=None,
+            type_checker=None,
+            build_tool=None,
+            confidence=0.8,
+        )
+        adapter = _get_adapter(info, "/some/root")
+        assert adapter is not None
+        assert isinstance(adapter, JavaScriptAdapter)
 
 
 class TestFixQualityIssues:

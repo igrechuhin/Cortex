@@ -27,6 +27,7 @@ from cortex.services.framework_adapters.base import (
     FrameworkAdapter,
     TestResult,
 )
+from cortex.services.framework_adapters.javascript_adapter import JavaScriptAdapter
 from cortex.services.framework_adapters.python_adapter import PythonAdapter
 from cortex.services.framework_adapters.stub_adapter import StubAdapter
 from cortex.services.framework_adapters.typescript_adapter import TypeScriptAdapter
@@ -56,12 +57,12 @@ from cortex.tools.pre_commit_helpers import (
 )
 
 # Adapter registry: language -> factory(project_root) -> FrameworkAdapter.
-# Python and TypeScript have full implementations; JavaScript, Rust, Go, Java
+# Python, TypeScript, and JavaScript have full implementations; Rust, Go, Java
 # use StubAdapter until language-specific implementations are added.
 _ADAPTER_REGISTRY: dict[str, Callable[[str | None], FrameworkAdapter]] = {
     "python": lambda root: PythonAdapter(root),
     "typescript": lambda root: TypeScriptAdapter(root),
-    "javascript": lambda root: StubAdapter(root, "javascript"),
+    "javascript": lambda root: JavaScriptAdapter(root),
     "rust": lambda root: StubAdapter(root, "rust"),
     "go": lambda root: StubAdapter(root, "go"),
     "java": lambda root: StubAdapter(root, "java"),
