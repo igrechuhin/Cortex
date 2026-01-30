@@ -3,7 +3,7 @@
 **Date**: 2026-01-29  
 **Context**: User reported that a commit session (transcript `138c59d6-adff-4b7a-8894-d200070dfa30`) "was going to succeed" but the IDE later showed five issues that had not been caught:
 
-1. **session-optimization-2026-01-28T-session.md**: MD009 (trailing spaces ×2), MD012 (multiple blank lines)
+1. **session-optimization-2026-01-28T12-00.md**: MD009 (trailing spaces ×2), MD012 (multiple blank lines)
 2. **tests/tools/test_rules_operations.py**: basedpyright `reportRedeclaration` (variable `all_rules` shadowed)
 3. **src/cortex/core/mcp_stability.py**: Ruff UP034 (extraneous parentheses)
 
@@ -11,7 +11,7 @@ This document explains why each was missed and recommends fixes.
 
 ---
 
-## 1. Markdown lint (session-optimization-2026-01-28T-session.md)
+## 1. Markdown lint (session-optimization-2026-01-28T12-00.md)
 
 ### What the commit workflow did (markdown)
 
@@ -22,7 +22,7 @@ This document explains why each was missed and recommends fixes.
 ### Why markdown issues were missed
 
 - **Most plausible**: The session review file **was created or overwritten after the last `fix_markdown_lint` run** in that session.
-- Session optimization reports (e.g. `session-optimization-2026-01-28T-session.md`) are often written by the session-optimization analyzer or by the same session that is running the commit. If that file is written (or saved) **after** Step 12.0, it is never passed through markdown lint in that run.
+- Session optimization reports (e.g. `session-optimization-2026-01-28T12-00.md`) are often written by the session-optimization analyzer or by the same session that is running the commit. If that file is written (or saved) **after** Step 12.0, it is never passed through markdown lint in that run.
 - So the pipeline did what it was supposed to (lint all markdown files at two points), but the file either did not exist yet or had different content at those times.
 
 ### Recommendations (markdown)

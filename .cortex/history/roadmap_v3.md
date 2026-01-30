@@ -149,7 +149,7 @@
   - Added explicit quality preflight step and reordered default check execution for fail-fast feedback
   - Scoped markdown lint defaults to modified files and made archives non-blocking by default
   - Added "MCP invocation contract" guidance to reduce missing-args churn
-  - Reference: [session-optimization-2026-01-25.md](../reviews/session-optimization-2026-01-25.md)
+  - Reference: [session-optimization-2026-01-25T00-00.md](../reviews/session-optimization-2026-01-25T00-00.md)
 
 - 🟡 **Phase 53 Blocker: Memory bank index staleness breaks `manage_file(write)`** - IN PROGRESS (2026-01-25) - `manage_file(write)` can fail with `FileConflictError` when `.cortex/index.json` metadata is stale relative to disk. Plan: [phase-53-investigate-manage-file-conflict-index-stale.md](../plans/phase-53-investigate-manage-file-conflict-index-stale.md)
 

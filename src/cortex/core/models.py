@@ -10,6 +10,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.constants import CACHE_MAX_SIZE, CACHE_TTL_SECONDS
+
 # JSON-serializable value type (Python 3.13+ recursive type alias).
 type JsonPrimitive = str | int | float | bool | None
 type JsonValue = JsonPrimitive | list[JsonValue] | dict[str, JsonValue]
@@ -1152,7 +1154,9 @@ class ManagerCacheDefaults(BaseModel):
         description="Token counter cache config",
     )
     file_system: CacheConfig = Field(
-        default_factory=lambda: CacheConfig(ttl_seconds=300, lru_max_size=100),
+        default_factory=lambda: CacheConfig(
+            ttl_seconds=CACHE_TTL_SECONDS, lru_max_size=CACHE_MAX_SIZE
+        ),
         description="File system cache config",
     )
     dependency_graph: CacheConfig = Field(

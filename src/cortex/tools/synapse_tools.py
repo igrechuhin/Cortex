@@ -18,6 +18,12 @@ import json
 from collections.abc import Sequence
 from typing import Protocol
 
+from cortex.core.constants import (
+    MCP_TOOL_TIMEOUT_EXTERNAL,
+    MCP_TOOL_TIMEOUT_FAST,
+    MCP_TOOL_TIMEOUT_MEDIUM,
+)
+from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import ModelDict
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
@@ -50,6 +56,7 @@ def format_prompts_list(
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_EXTERNAL)
 async def sync_synapse(pull: bool = True, push: bool = False) -> str:
     """Sync Synapse repository with remote using git operations.
 
@@ -160,6 +167,7 @@ async def sync_synapse(pull: bool = True, push: bool = False) -> str:
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_EXTERNAL)
 async def update_synapse_rule(
     category: str, file: str, content: str, commit_message: str
 ) -> str:
@@ -261,6 +269,7 @@ async def update_synapse_rule(
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_synapse_rules(
     task_description: str,
     max_tokens: int = 10000,
@@ -451,6 +460,7 @@ def _build_all_prompts_response(
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_synapse_prompts(category: str | None = None) -> str:
     """Get prompts from Synapse repository.
 
@@ -560,6 +570,7 @@ async def get_synapse_prompts(category: str | None = None) -> str:
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_EXTERNAL)
 async def update_synapse_prompt(
     category: str, file: str, content: str, commit_message: str
 ) -> str:

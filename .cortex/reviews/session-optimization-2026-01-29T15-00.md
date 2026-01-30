@@ -6,7 +6,7 @@
 
 ## Summary
 
-This analysis covers the commit session that completed with commit `1fbc50b`: markdown lint fixes in `.cortex/reviews/session-optimization-2026-01-28T23-21.md`, archiving of Phase 62 plan to `.cortex/plans/archive/Phase62/`, memory-bank and roadmap updates, Synapse submodule commit/push, and full Step 12 validation gate. `analyze_context_effectiveness()` returned `status: "no_data"` (expected for workflow-only sessions). Signals used: progress.md, activeContext.md, tool-hang-investigation-2026-01-29.md, and commit-flow outcomes.
+This analysis covers the commit session that completed with commit `1fbc50b`: markdown lint fixes in `.cortex/reviews/session-optimization-2026-01-28T23-21.md`, archiving of Phase 62 plan to `.cortex/plans/archive/Phase62/`, memory-bank and roadmap updates, Synapse submodule commit/push, and full Step 12 validation gate. `analyze_context_effectiveness()` returned `status: "no_data"` (expected for workflow-only sessions). Signals used: progress.md, activeContext.md, tool-hang-investigation-2026-01-29T00-00.md, and commit-flow outcomes.
 
 Three optimization areas were identified: (1) plan archiver not verifying that the source file is removed after `mv`, leading to duplicate plan files in the index; (2) roadmap_sync path resolution treating `.cortex/plans/archive/...` references as invalid when the file exists; (3) `fix_markdown_lint` blocking the event loop during file discovery (already documented in tool-hang-investigation).
 
@@ -39,7 +39,7 @@ Three optimization areas were identified: (1) plan archiver not verifying that t
 
 ### Pattern 3: fix_markdown_lint blocks event loop during file discovery
 
-**Description**: Documented in `.cortex/reviews/tool-hang-investigation-2026-01-29.md`: `_get_all_markdown_files()` uses synchronous `Path.rglob()` on the event loop with no `await`, so discovery is CPU-bound and blocks the loop. Combined with a 300s tool timeout and possible follow-up stalls (e.g. tests), the UX can feel like a “tool hung.”
+**Description**: Documented in `.cortex/reviews/tool-hang-investigation-2026-01-29T00-00.md`: `_get_all_markdown_files()` uses synchronous `Path.rglob()` on the event loop with no `await`, so discovery is CPU-bound and blocks the loop. Combined with a 300s tool timeout and possible follow-up stalls (e.g. tests), the UX can feel like a “tool hung.”
 
 **Examples**: Commit Step 12: `fix_markdown_lint(check_all_files=True, ...)` returned successfully but discovery can take tens of seconds with no progress.
 
@@ -106,6 +106,6 @@ Three optimization areas were identified: (1) plan archiver not verifying that t
 
 - **Session**: Commit procedure (fix markdown lint, archive Phase 62, submodule, Step 12, commit, push).  
 - **analyze_context_effectiveness**: `no_data` (no load_context calls).  
-- **Signals used**: progress.md, activeContext.md, tool-hang-investigation-2026-01-29.md, commit outcomes.  
+- **Signals used**: progress.md, activeContext.md, tool-hang-investigation-2026-01-29T00-00.md, commit outcomes.  
 - **Mistake patterns**: 3 (plan archive move verification, roadmap_sync path resolution, fix_markdown_lint blocking discovery).  
 - **Recommendations**: 3 (plan-archiver doc, roadmap_sync resolution, markdown_operations asyncio.to_thread).

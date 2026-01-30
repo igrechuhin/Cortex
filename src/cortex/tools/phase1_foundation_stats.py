@@ -9,6 +9,8 @@ import json
 from pathlib import Path
 from typing import Literal, cast
 
+from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.version_manager import VersionManager
@@ -20,6 +22,7 @@ from cortex.server import mcp
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_memory_bank_stats(
     project_root: str | None = None,
     include_token_budget: bool = True,

@@ -13,6 +13,7 @@ import pytest
 # pyright: reportPrivateUsage=false
 from cortex.core.models import GitCommandResult
 from cortex.tools.markdown_operations import (
+    _create_empty_success_response,  # type: ignore[reportPrivateUsage]
     _find_markdownlint_command,
     _get_all_markdown_files,  # type: ignore[reportPrivateUsage]
     _get_modified_markdown_files,
@@ -668,6 +669,64 @@ class TestFixMarkdownLintTool:
             # Assert
             assert result["success"] is False
             assert "Test error" in result["error_message"]
+
+    @pytest.mark.asyncio
+    async def test_fix_markdown_lint_check_all_files_caps_list(self, tmp_path: Path):
+        """Test that check_all_files=True caps files at MARKDOWN_LINT_MAX_FILES."""
+        # Arrange
+        from cortex.core.constants import MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL
+        from cortex.tools.markdown_operations import fix_markdown_lint
+
+        excess = 100
+        many_files = [
+            tmp_path / f"f{i}.md"
+            for i in range(MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL + excess)
+        ]
+        for p in many_files:
+            _ = p.write_text("# x\n")
+        run_markdownlint_with_cache_called_with: list[list[Path]] = []
+
+        async def capture_run_markdownlint_with_cache(
+            root_path: Path,
+            files: list[Path],
+            markdownlint_cmd: list[str],
+            config_path: Path | None,
+            dry_run: bool,
+        ) -> str:
+            run_markdownlint_with_cache_called_with.append(files)
+            return _create_empty_success_response()
+
+        with (
+            patch(
+                "cortex.tools.markdown_operations.get_project_root",
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.markdown_operations._validate_markdown_prerequisites",
+                new_callable=AsyncMock,
+                return_value=(None, ["markdownlint-cli2"], None),
+            ),
+            patch(
+                "cortex.tools.markdown_operations._get_markdown_files_to_process",
+                new_callable=AsyncMock,
+                return_value=many_files,
+            ),
+            patch(
+                "cortex.tools.markdown_operations._run_markdownlint_with_cache",
+                side_effect=capture_run_markdownlint_with_cache,
+            ),
+        ):
+            # Act
+            result_str = await fix_markdown_lint(
+                project_root=str(tmp_path), check_all_files=True
+            )
+            result = json.loads(result_str)
+
+            # Assert
+            assert result["success"] is True
+            assert len(run_markdownlint_with_cache_called_with) == 1
+            passed_files = run_markdownlint_with_cache_called_with[0]
+            assert len(passed_files) == MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL
 
 
 class TestHelperFunctions:

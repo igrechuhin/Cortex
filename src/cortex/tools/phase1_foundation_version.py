@@ -8,6 +8,8 @@ version history of Memory Bank files.
 import json
 from typing import cast
 
+from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
+from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ModelDict
 from cortex.managers import initialization
@@ -16,6 +18,7 @@ from cortex.server import mcp
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_version_history(
     file_name: str, project_root: str | None = None, limit: int = 10
 ) -> str:

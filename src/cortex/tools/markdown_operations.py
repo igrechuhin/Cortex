@@ -19,7 +19,11 @@ from pathlib import Path
 import aiofiles
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_SECONDS
+from cortex.core.constants import (
+    GIT_OPERATION_TIMEOUT_SECONDS,
+    MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL,
+    MCP_TOOL_TIMEOUT_VERY_COMPLEX,
+)
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import GitCommandResult
 from cortex.managers.initialization import get_project_root
@@ -93,14 +97,16 @@ def _create_error_result(error: str) -> GitCommandResult:
 
 
 async def _run_command(
-    cmd: list[str], cwd: Path | None = None, timeout: int = 30
+    cmd: list[str],
+    cwd: Path | None = None,
+    timeout: int = GIT_OPERATION_TIMEOUT_SECONDS,
 ) -> GitCommandResult:
     """Run a command asynchronously with timeout.
 
     Args:
         cmd: Command and arguments as list
         cwd: Working directory (default: None)
-        timeout: Timeout in seconds (default: 30)
+        timeout: Timeout in seconds (default from constants)
 
     Returns:
         GitCommandResult with success status, stdout, stderr, returncode
@@ -727,6 +733,9 @@ async def _fix_markdown_lint_impl(
     if not files:
         return _create_empty_success_response()
 
+    if check_all_files and len(files) > MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL:
+        files = files[:MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL]
+
     return await _run_markdownlint_with_cache(
         root_path,
         files,
@@ -770,7 +779,7 @@ async def _run_markdownlint_with_cache(
 
 
 @mcp.tool()
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_SECONDS)
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
 async def fix_markdown_lint(
     project_root: str | None = None,
     include_untracked_markdown: bool = False,

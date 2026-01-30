@@ -16,6 +16,7 @@ from collections.abc import Callable
 from pydantic import ConfigDict, Field
 
 from cortex.core.cache import LRUCache, TTLCache
+from cortex.core.constants import CACHE_MAX_SIZE, CACHE_TTL_SECONDS
 from cortex.core.models import (
     CacheConfig,
     DictLikeModel,
@@ -64,16 +65,16 @@ class AdvancedCacheManager:
 
     def __init__(
         self,
-        ttl_seconds: int = 300,
-        lru_max_size: int = 100,
+        ttl_seconds: int = CACHE_TTL_SECONDS,
+        lru_max_size: int = CACHE_MAX_SIZE,
         enable_prefetch: bool = True,
     ):
         """
         Initialize advanced cache manager.
 
         Args:
-            ttl_seconds: TTL for time-based cache (default: 5 minutes)
-            lru_max_size: Max size for LRU cache (default: 100 entries)
+            ttl_seconds: TTL for time-based cache (default from constants)
+            lru_max_size: Max size for LRU cache (default from constants)
             enable_prefetch: Enable predictive prefetching (default: True)
         """
         self.ttl_cache: TTLCache[JsonValue] = TTLCache(ttl_seconds)

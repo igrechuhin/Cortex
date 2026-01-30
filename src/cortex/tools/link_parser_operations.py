@@ -8,7 +8,9 @@ import json
 from pathlib import Path
 from typing import cast
 
+from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.file_system import FileSystemManager
+from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.linking.link_parser import LinkParser
@@ -19,6 +21,7 @@ from cortex.server import mcp
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def parse_file_links(file_name: str, project_root: str | None = None) -> str:
     """Parse and extract all markdown links and transclusion directives
     from a Memory Bank file.

@@ -2,6 +2,7 @@
 
 from typing import cast
 
+from cortex.core.constants import SIMILARITY_THRESHOLD_DUPLICATE
 from cortex.core.models import JsonValue, ModelDict
 from cortex.health_check.models import MergeOpportunity
 
@@ -34,7 +35,7 @@ class QualityValidator:
             issues.append("Merge would reduce quality")
 
         # High similarity is good
-        if opportunity["similarity"] >= 0.85:
+        if opportunity["similarity"] >= SIMILARITY_THRESHOLD_DUPLICATE:
             warnings.append("Very high similarity - strong candidate for merge")
 
         result: ModelDict = {

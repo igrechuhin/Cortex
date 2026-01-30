@@ -10,6 +10,7 @@ import asyncio
 from datetime import datetime
 from pathlib import Path
 
+from cortex.core.constants import GIT_OPERATION_TIMEOUT_SECONDS
 from cortex.core.models import ModelDict
 
 from ..core.retry import retry_async
@@ -165,7 +166,10 @@ class SynapseManager:
         return self.repository.last_sync
 
     async def initialize_synapse(
-        self, repo_url: str, force: bool = False, timeout: int = 30
+        self,
+        repo_url: str,
+        force: bool = False,
+        timeout: int = GIT_OPERATION_TIMEOUT_SECONDS,
     ) -> SubmoduleInitResult:
         """
         Initialize Synapse as git submodule.
@@ -173,7 +177,7 @@ class SynapseManager:
         Args:
             repo_url: Git repository URL for Synapse
             force: Force re-initialization even if exists
-            timeout: Timeout in seconds for git operations
+            timeout: Timeout in seconds for git operations (default from constants)
 
         Returns:
             Submodule initialization result model

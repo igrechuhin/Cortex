@@ -104,7 +104,7 @@ jobs:
             
             # Check for specific error rules in diagnostics, including rules that
             # some engines might not surface as \"error\" severity
-            ERROR_RULES=$(echo "$JSON_OUTPUT" | python3 -c "import sys, json; data = json.load(sys.stdin); diags = data.get('generalDiagnostics', []); important_rules = {'reportUnknownParameterType'}; rules = [d.get('rule', '') for d in diags if d.get('severity', '').lower() == 'error' or d.get('rule', '') in important_rules]; print(' '.join(sorted(set(filter(None, rules)))))" 2>/dev/null || echo \"\")
+            ERROR_RULES=$(echo "$JSON_OUTPUT" | python3 -c "import sys, json; data = json.load(sys.stdin); diags = data.get('generalDiagnostics', []); important_rules = {'reportUnknownParameterType', 'reportUnnecessaryIsInstance'}; rules = [d.get('rule', '') for d in diags if d.get('severity', '').lower() == 'error' or d.get('rule', '') in important_rules]; print(' '.join(sorted(set(filter(None, rules)))))" 2>/dev/null || echo \"\")
             
             if [ "$ERROR_COUNT" -gt 0 ] || [ "$WARNING_COUNT" -gt 0 ] || [ -n "$ERROR_RULES" ]; then
               HAS_ERROR=true
@@ -114,6 +114,7 @@ jobs:
             ERROR_PATTERNS=(
               "error:"
               "reportUnknownParameterType"
+              "reportUnnecessaryIsInstance"
               "reportArgumentType"
               "reportUnknownVariableType"
               "reportUnknownMemberType"
@@ -278,11 +279,13 @@ jobs:
           echo "::endgroup::"
 
       - name: Upload coverage to Codecov
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ env.CODECOV_TOKEN }}
         continue-on-error: true
 
       - name: Quality check summary

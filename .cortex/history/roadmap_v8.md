@@ -200,7 +200,7 @@
 
 - ✅ **Phase 53 Blocker: Cursor MCP `user-cortex` server errored (commit pipeline blocked)** - COMPLETE (2026-01-25) - Server recovered; `tools/` + `prompts/` descriptors present; verified via `check_mcp_connection_health`, `manage_file`, and `execute_pre_commit_checks` tool calls. Plan: [phase-53-investigate-cursor-mcp-user-cortex-server-error.md](../plans/phase-53-investigate-cursor-mcp-user-cortex-server-error.md)
 
-- ✅ **Phase 53 Blocker: Commit pipeline ergonomics + scoping** - COMPLETE (2026-01-26) - Updated commit workflow docs to be `.cortex`-first (`.cursor` optional), added fail-fast quality preflight, and scoped markdown lint defaults to modified files (archives non-blocking by default). Reference: [session-optimization-2026-01-25.md](../reviews/session-optimization-2026-01-25.md)
+- ✅ **Phase 53 Blocker: Commit pipeline ergonomics + scoping** - COMPLETE (2026-01-26) - Updated commit workflow docs to be `.cortex`-first (`.cursor` optional), added fail-fast quality preflight, and scoped markdown lint defaults to modified files (archives non-blocking by default). Reference: [session-optimization-2026-01-25T00-00.md](../reviews/session-optimization-2026-01-25T00-00.md)
 
 - 🟡 **Phase 53 Blocker: Memory bank index staleness breaks `manage_file(write)`** - IN PROGRESS (2026-01-25) - `manage_file(write)` can fail with `FileConflictError` when `.cortex/index.json` metadata is stale relative to disk. Plan: [phase-53-investigate-manage-file-conflict-index-stale.md](../plans/phase-53-investigate-manage-file-conflict-index-stale.md)
 

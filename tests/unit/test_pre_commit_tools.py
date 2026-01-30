@@ -2,8 +2,9 @@
 
 import json
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -15,19 +16,19 @@ from cortex.services.framework_adapters.base import (
 from cortex.services.language_detector import LanguageInfo
 from cortex.tools.pre_commit_helpers import (
     MAX_LOG_OUTPUT_LENGTH,
+    check_file_sizes,
     count_file_lines,
 )
 from cortex.tools.pre_commit_tools import (
     MAX_FILE_LINES,
     MAX_FUNCTION_LINES,
     SUPPORTED_LANGUAGES,
-    _check_file_sizes,  # pyright: ignore[reportPrivateUsage]
     _check_function_lengths,  # pyright: ignore[reportPrivateUsage]
     _check_function_lengths_in_file,  # pyright: ignore[reportPrivateUsage]
     _get_adapter,  # pyright: ignore[reportPrivateUsage]
-    _run_synapse_script,  # pyright: ignore[reportPrivateUsage]
     execute_pre_commit_checks,
     fix_quality_issues,
+    run_synapse_script,
 )
 
 
@@ -47,6 +48,54 @@ class TestExecutePreCommitChecks:
         )
         # Verify timeout constant is correct
         assert MCP_TOOL_TIMEOUT_VERY_COMPLEX == 600.0
+
+    @pytest.mark.asyncio
+    async def test_runs_adapter_checks_off_event_loop_via_to_thread(self) -> None:
+        """Verify execute_pre_commit_checks runs _execute_all_checks via asyncio.to_thread."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            (project_root / ".venv").mkdir()
+
+            with (
+                patch(
+                    "cortex.tools.pre_commit_tools.PythonAdapter",
+                ) as mock_adapter_class,
+                patch(
+                    "cortex.tools.pre_commit_tools.asyncio.to_thread",
+                    new_callable=AsyncMock,
+                ) as mock_to_thread,
+            ):
+                mock_adapter = MagicMock()
+                mock_adapter_class.return_value = mock_adapter
+                mock_result = CheckResult(
+                    check_type="fix_errors",
+                    success=True,
+                    output="Fixed",
+                    errors=[],
+                    warnings=[],
+                    files_modified=[],
+                )
+                mock_adapter.fix_errors.return_value = mock_result
+
+                async def run_sync(
+                    func: Callable[..., object], *args: object
+                ) -> object:  # run in same thread for test
+                    return func(*args)
+
+                mock_to_thread.side_effect = run_sync
+
+                result_json = await execute_pre_commit_checks(
+                    checks=["fix_errors"],
+                    project_root=str(project_root),
+                )
+                result = json.loads(result_json)
+
+                mock_to_thread.assert_called_once()
+                call_args = mock_to_thread.call_args
+                assert call_args[0][0].__name__ == "_execute_all_checks"
+                assert result["status"] == "success"
+                assert result["language"] == "python"
 
     @pytest.mark.asyncio
     async def test_detect_language_error_when_no_language_detected(self) -> None:
@@ -233,13 +282,13 @@ class TestExecutePreCommitChecks:
 
 
 class TestRunSynapseScript:
-    """Test _run_synapse_script helper."""
+    """Test run_synapse_script helper."""
 
     def test_run_synapse_script_when_script_missing_returns_skipped(self) -> None:
         """When script path does not exist, returns success with skipped message."""
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
-            result = _run_synapse_script(
+            result = run_synapse_script(
                 root, "python", "check_formatting_ci_parity.py", "format_ci_parity"
             )
             assert result.success is True
@@ -247,7 +296,7 @@ class TestRunSynapseScript:
             assert result.errors == []
 
     def test_resolve_synapse_python_bin_uses_python3_when_no_venv(self) -> None:
-        """When .venv/bin/python does not exist, _run_synapse_script uses python3."""
+        """When .venv/bin/python does not exist, run_synapse_script uses python3."""
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             scripts_dir = root / ".cortex" / "synapse" / "scripts" / "python"
@@ -257,14 +306,14 @@ class TestRunSynapseScript:
                 "#!/usr/bin/env python3\nimport sys\nsys.exit(0)\n"
             )
 
-            with patch("cortex.tools.pre_commit_tools.subprocess.run") as mock_run:
+            with patch("cortex.tools.pre_commit_synapse.subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(
                     returncode=0,
                     stdout="ok",
                     stderr="",
                 )
 
-                result = _run_synapse_script(
+                result = run_synapse_script(
                     root,
                     "python",
                     "check_formatting_ci_parity.py",
@@ -289,14 +338,14 @@ class TestRunSynapseScript:
             _ = python_bin.write_text("")
             python_bin.chmod(0o755)
 
-            with patch("cortex.tools.pre_commit_tools.subprocess.run") as mock_run:
+            with patch("cortex.tools.pre_commit_synapse.subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(
                     returncode=1,
                     stdout="stdout",
                     stderr="stderr",
                 )
 
-                result = _run_synapse_script(
+                result = run_synapse_script(
                     root,
                     "python",
                     "check_formatting_ci_parity.py",
@@ -322,14 +371,14 @@ class TestRunSynapseScript:
             _ = python_bin.write_text("")
             python_bin.chmod(0o755)
 
-            with patch("cortex.tools.pre_commit_tools.subprocess.run") as mock_run:
+            with patch("cortex.tools.pre_commit_synapse.subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(
                     returncode=2,
                     stdout="",
                     stderr="",
                 )
 
-                result = _run_synapse_script(
+                result = run_synapse_script(
                     root,
                     "python",
                     "check_formatting_ci_parity.py",
@@ -352,11 +401,11 @@ class TestRunSynapseScript:
             _ = script_path.write_text("#!/usr/bin/env python3\n")
 
             with patch(
-                "cortex.tools.pre_commit_tools._execute_synapse_script_subprocess"
+                "cortex.tools.pre_commit_synapse._execute_synapse_script_subprocess"
             ) as mock_exec:
                 mock_exec.side_effect = OSError("python not found")
 
-                result = _run_synapse_script(
+                result = run_synapse_script(
                     root,
                     "python",
                     "check_formatting_ci_parity.py",
@@ -448,6 +497,23 @@ class TestAdapterRegistry:
         adapter = _get_adapter(info, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, JavaScriptAdapter)
+
+    def test_get_adapter_returns_rust_adapter_for_rust(self) -> None:
+        """_get_adapter returns RustAdapter for rust."""
+        from cortex.services.framework_adapters.rust_adapter import RustAdapter
+
+        info = LanguageInfo(
+            language="rust",
+            test_framework=None,
+            formatter=None,
+            linter=None,
+            type_checker=None,
+            build_tool=None,
+            confidence=0.8,
+        )
+        adapter = _get_adapter(info, "/some/root")
+        assert adapter is not None
+        assert isinstance(adapter, RustAdapter)
 
 
 class TestFixQualityIssues:
@@ -712,12 +778,12 @@ class TestCountFileLines:
 
 
 class TestCheckFileSizes:
-    """Test _check_file_sizes helper function."""
+    """Test check_file_sizes helper (from pre_commit_helpers)."""
 
     def test_no_violations_when_no_src(self) -> None:
         """Test no violations when src directory doesn't exist."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            violations = _check_file_sizes(Path(tmpdir))
+            violations = check_file_sizes(Path(tmpdir))
             assert violations == []
 
     def test_no_violations_when_files_within_limit(self) -> None:
@@ -730,7 +796,7 @@ class TestCheckFileSizes:
             # Create a small file
             _ = (src_dir / "small.py").write_text("x = 1\ny = 2\n")
 
-            violations = _check_file_sizes(project_root)
+            violations = check_file_sizes(project_root)
             assert violations == []
 
     def test_detects_file_size_violation(self) -> None:
@@ -746,7 +812,7 @@ class TestCheckFileSizes:
             )
             _ = (src_dir / "large.py").write_text(large_content)
 
-            violations = _check_file_sizes(project_root)
+            violations = check_file_sizes(project_root)
             assert len(violations) == 1
             assert violations[0].file == "src/large.py"
             assert violations[0].lines > MAX_FILE_LINES
@@ -765,7 +831,7 @@ class TestCheckFileSizes:
             )
             _ = (src_dir / "test_large.py").write_text(large_content)
 
-            violations = _check_file_sizes(project_root)
+            violations = check_file_sizes(project_root)
             assert violations == []  # test files are skipped
 
 

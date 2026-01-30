@@ -75,6 +75,6 @@ So the agent ran tests directly because the commit prompt never directs the "fix
 ## References
 
 - Transcript: `agent-transcripts/3d5286b4-f4dd-4959-8004-33ac1f042f25.txt`
-- Related: `.cortex/reviews/tool-hang-investigation-2026-01-29.md` (commit workflow hang after `fix_markdown_lint`)
+- Related: `.cortex/reviews/tool-hang-investigation-2026-01-29T00-00.md` (commit workflow hang after `fix_markdown_lint`)
 - Commit workflow: `/cortex/commit`, Steps 4 (tests) and coverage threshold 90%
 - execute_pre_commit_checks: `timeout=300`, `coverage_threshold=0.9`

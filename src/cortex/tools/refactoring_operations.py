@@ -10,6 +10,11 @@ Total: 1 tool
 import json
 from typing import Literal, cast
 
+from cortex.core.constants import (
+    CONSOLIDATION_MIN_SIMILARITY,
+    MCP_TOOL_TIMEOUT_COMPLEX,
+)
+from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.protocols.token import DependencyGraphProtocol
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.types import ManagersDict
@@ -38,7 +43,7 @@ async def suggest_consolidation(
     min_similarity: float | None,
 ) -> str:
     """Generate consolidation suggestions."""
-    similarity = min_similarity or 0.80
+    similarity = min_similarity or CONSOLIDATION_MIN_SIMILARITY
     consolidation_detector.min_similarity = similarity
     opportunities = await consolidation_detector.detect_opportunities()
 
@@ -140,6 +145,7 @@ async def process_refactoring_request(
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def suggest_refactoring(
     type: Literal["consolidation", "splits", "reorganization"],
     project_root: str | None = None,

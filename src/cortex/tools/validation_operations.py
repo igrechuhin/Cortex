@@ -7,6 +7,8 @@ Total: 1 tool
 - validate: Schema/duplications/quality checks
 """
 
+from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
+from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.server import mcp
 from cortex.tools.validation_dispatch import (
     call_dispatch_validation,
@@ -21,6 +23,7 @@ from cortex.tools.validation_helpers import (
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def validate(
     check_type: str,
     file_name: str | None = None,

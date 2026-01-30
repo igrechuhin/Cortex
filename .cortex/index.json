@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-01-30T18:34:16.655791",
+  "last_updated": "2026-01-30T23:07:42.941325",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 9318,
-      "token_count": 2233,
+      "size_bytes": 10366,
+      "token_count": 2487,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-30T15:59:37.678782",
-      "content_hash": "sha256:701c6eba35de3107b1dc16bf39056149478cad86cc3363b5927645b24ac957b0",
+      "last_modified": "2026-01-30T19:25:49.654521",
+      "content_hash": "sha256:070540470def3ad559ca3051365520a9671ac55ba0e723df6bd890c47f4f35db",
       "sections": [
         {
           "title": "## Current Status (2026-01-30)",
@@ -31,14 +31,14 @@
         {
           "title": "## Future Enhancements",
           "level": 2,
-          "line_start": 27,
-          "line_end": 27,
+          "line_start": 31,
+          "line_end": 31,
           "content_hash": null
         }
       ],
       "read_count": 2,
-      "write_count": 39,
-      "last_read": "2026-01-30T15:59:37.678782",
+      "write_count": 41,
+      "last_read": "2026-01-30T19:25:49.654521",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -492,17 +492,39 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Marked JavaScript Pre-Commit Adapter complete; updated Pre-commit line to Python/TypeScript/JavaScript full, Rust/Go/Java StubAdapter"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T18:49:10.263071",
+          "content_hash": "sha256:b9c8cc5f83b4293a5e71c074b8dac8b838324182f6986445906d0cdb81e295df",
+          "size_bytes": 9828,
+          "token_count": 2355,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Marked Rust Pre-Commit Adapter as complete; updated tracked pre-commit adapters (Rust full, Go/Java stub)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T19:25:49.653396",
+          "content_hash": "sha256:070540470def3ad559ca3051365520a9671ac55ba0e723df6bd890c47f4f35db",
+          "size_bytes": 10366,
+          "token_count": 2487,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Marked session-hang fix (asyncio.to_thread for pre-commit) as completed in roadmap"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 9243,
-      "token_count": 2219,
+      "size_bytes": 3730,
+      "token_count": 999,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-30T18:34:16.654441",
-      "content_hash": "sha256:c338a9c6e9b09e4ecb31dcab3617ea3025a7b3a2220e888a074313936f5c121d",
+      "last_modified": "2026-01-30T23:07:42.938108",
+      "content_hash": "sha256:ac5a53648da96a9985467f441a42ead89ab0f57ccc139da5797eb5e948597505",
       "sections": [
         {
           "title": "## 2026-01-30",
@@ -514,14 +536,14 @@
         {
           "title": "## 2026-01-29",
           "level": 2,
-          "line_start": 51,
-          "line_end": 51,
+          "line_start": 37,
+          "line_end": 37,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 35,
-      "last_read": "2026-01-30T18:34:16.654441",
+      "write_count": 40,
+      "last_read": "2026-01-30T23:07:42.938108",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -909,17 +931,72 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Added commit entry: type fixes and coverage test"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T18:49:57.895833",
+          "content_hash": "sha256:16ab138dcd637f6dff4a66997140db7974b799fb4d2e798bb809ad5afdb81ce1",
+          "size_bytes": 10060,
+          "token_count": 2416,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for Rust Pre-Commit Adapter completion"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T19:25:06.133867",
+          "content_hash": "sha256:810b4b11ff4a282b212faa9008d78fdd2f3008d75686660ad059a88728739778",
+          "size_bytes": 10879,
+          "token_count": 2609,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for session-hang fix (asyncio.to_thread for pre-commit adapter work)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T22:46:25.091255",
+          "content_hash": "sha256:67f00ce215306357172bf8770b40f8005eefb7f6ffbb7c294bf6c5f5cc226f02",
+          "size_bytes": 3133,
+          "token_count": 843,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Progress after commit: type fix and file size compliance"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T22:57:47.073915",
+          "content_hash": "sha256:cfc0ebc3b211e720b35ced0ce52460d4e941211e13aedab7e09e21cdf1a0bb90",
+          "size_bytes": 3439,
+          "token_count": 921,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added commit progress entry for pre-commit and memory bank sync"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T23:07:42.937650",
+          "content_hash": "sha256:ac5a53648da96a9985467f441a42ead89ab0f57ccc139da5797eb5e948597505",
+          "size_bytes": 3730,
+          "token_count": 999,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Progress entry for commit pipeline run 2026-01-30"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 2846,
-      "token_count": 734,
+      "size_bytes": 2434,
+      "token_count": 611,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-30T18:33:40.191452",
-      "content_hash": "sha256:88149c236a78d3f3110b0c9991c06cf2ea9c939f7fd71cc11538ea2ba16c54e6",
+      "last_modified": "2026-01-30T19:25:19.567352",
+      "content_hash": "sha256:ca32442a292d8242dc1cd0d77c2e7c565dc8a4531efadc4b6d5050cd4523902b",
       "sections": [
         {
           "title": "## Current Focus (2026-01-30)",
@@ -938,28 +1015,28 @@
         {
           "title": "### Recently Completed",
           "level": 2,
-          "line_start": 26,
-          "line_end": 26,
+          "line_start": 20,
+          "line_end": 20,
           "content_hash": null
         },
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 34,
-          "line_end": 34,
+          "line_start": 27,
+          "line_end": 27,
           "content_hash": null
         },
         {
           "title": "## Next Focus",
           "level": 2,
-          "line_start": 40,
-          "line_end": 40,
+          "line_start": 34,
+          "line_end": 34,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 27,
-      "last_read": "2026-01-30T18:33:40.191452",
+      "write_count": 29,
+      "last_read": "2026-01-30T19:25:19.567352",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -1259,6 +1336,28 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Updated active context for commit: type fixes and coverage test"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T18:50:04.157035",
+          "content_hash": "sha256:ba2483fd9c6a500861814be87bd76fdf7c7798d29c9dd9dea3b87a57f3c5ca9a",
+          "size_bytes": 1588,
+          "token_count": 412,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context after Rust Pre-Commit Adapter completion"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T19:25:19.567067",
+          "content_hash": "sha256:ca32442a292d8242dc1cd0d77c2e7c565dc8a4531efadc4b6d5050cd4523902b",
+          "size_bytes": 2434,
+          "token_count": 611,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context after session-hang fix (asyncio.to_thread for pre-commit)"
         }
       ]
     },
@@ -1496,8 +1595,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 34632,
-    "total_tokens": 8049,
-    "last_full_scan": "2026-01-30T18:34:16.654464"
+    "total_size_bytes": 29755,
+    "total_tokens": 6960,
+    "last_full_scan": "2026-01-30T23:07:42.938132"
   }
 }

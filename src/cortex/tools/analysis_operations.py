@@ -13,6 +13,8 @@ from pathlib import Path
 from cortex.analysis.insight_engine import InsightEngine
 from cortex.analysis.pattern_analyzer import PatternAnalyzer
 from cortex.analysis.structure_analyzer import StructureAnalyzer
+from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
+from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
@@ -128,6 +130,7 @@ async def get_analysis_managers(
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def analyze(
     target: str,
     project_root: str | None = None,

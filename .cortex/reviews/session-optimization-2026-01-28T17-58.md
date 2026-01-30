@@ -103,4 +103,4 @@ This session focused on starting implementation of the “Enhance Tool Descripti
    - lower-relevance files are only pulled in when explicitly needed.
 3. Add a short “Context Tuning” maintenance guideline to the context-loader prompt, instructing future sessions to re-tune budgets and inclusion rules from updated effectiveness statistics.
 
-These changes build directly on the current session’s metrics and complement the broader optimization recommendations already recorded in `session-optimization-2026-01-28.md`, further reducing over-provisioned context and improving task-focused reasoning for roadmap implementation work.
+These changes build directly on the current session’s metrics and complement the broader optimization recommendations already recorded in `session-optimization-2026-01-28T00-00.md`, further reducing over-provisioned context and improving task-focused reasoning for roadmap implementation work.

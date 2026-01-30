@@ -179,6 +179,7 @@ The server initializes services in this order:
 
 - **Interpreter alignment**: Configure Cursor and other IDEs to use `.venv/bin/python` so type checking, completions, and MCP tool discovery match the runtime environment.
 - **Typed MCP handlers**: Define all `@mcp.tool()` handlers with explicit parameter and return types, using Pydantic models / dataclasses for JSON payloads instead of untyped dicts.
+- **Timeout wrapper (MANDATORY)**: Every `@mcp.tool()` MUST be guarded with `@mcp_tool_wrapper(timeout=...)` from `cortex.core.mcp_stability`, using a constant from `cortex.core.constants` (e.g. `MCP_TOOL_TIMEOUT_FAST`, `MCP_TOOL_TIMEOUT_MEDIUM`, `MCP_TOOL_TIMEOUT_COMPLEX`, `MCP_TOOL_TIMEOUT_VERY_COMPLEX`). Place it immediately below `@mcp.tool()`. See `.cortex/synapse/rules/python/python-mcp-development.mdc`.
 - **Thin async orchestrators**: Keep handlers as thin async functions that orchestrate calls to small, pure helper functions that contain the main business logic.
 - **JSON modeling**: Model known JSON shapes with Pydantic models / dataclasses; reserve JSON-boundary types (e.g. `JsonValue`) only where the domain is truly arbitrary JSON.
 - **Refactor focus**: Prefer refactoring pure helpers (not handlers) when using automated refactor tools to avoid breaking protocol contracts or async behavior.
@@ -275,7 +276,7 @@ All Cortex data is stored in `.cortex/` directory. For IDE compatibility, `.curs
 
 ## Common Pitfalls
 
-1. **MCP Handler Registration**: Always use `@mcp.tool()` decorator
+1. **MCP Handler Registration**: Always use `@mcp.tool()` decorator; every tool MUST also have `@mcp_tool_wrapper(timeout=...)` immediately below it (MANDATORY)
 2. **Async File Operations**: Use `aiofiles` for all file I/O, never use synchronous `open()`
 3. **Type Hints**: 100% coverage required; use Python 3.13+ built-ins (`list[str]`, `dict[str, int]`, `tuple[str, int]`, `set[str]`, `T | None`) instead of `typing` module types (MANDATORY); use concrete types instead of `object` wherever possible - investigate actual return types and use them (MANDATORY)
 4. **Line Limits**: Production files must be <400 lines, functions <30 lines

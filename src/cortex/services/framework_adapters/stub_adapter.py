@@ -15,7 +15,6 @@ class StubAdapterLanguage(str, Enum):
 
     TYPESCRIPT = "typescript"
     JAVASCRIPT = "javascript"
-    RUST = "rust"
     GO = "go"
     JAVA = "java"
 
@@ -26,21 +25,21 @@ _NOT_IMPLEMENTED_MSG = "Adapter registered; full implementation not yet availabl
 class StubAdapter(FrameworkAdapter):
     """Stub adapter for languages without full implementation.
 
-    Used for TypeScript, JavaScript, Rust, Go, Java until language-specific
-    implementations are added. All operations return a clear "not yet
-    implemented" result.
+    Used for Go, Java until language-specific implementations are added.
+    TypeScript, JavaScript, and Rust have full adapters. All operations
+    return a clear "not yet implemented" result.
     """
 
     def __init__(
         self,
         project_root: str | None = None,
-        language: str | StubAdapterLanguage = "typescript",
+        language: str | StubAdapterLanguage = "go",
     ) -> None:
         """Initialize stub adapter.
 
         Args:
             project_root: Path to project root directory.
-            language: Language identifier (typescript, javascript, rust, go, java).
+            language: Language identifier (go, java).
         """
         super().__init__(project_root)
         if isinstance(language, StubAdapterLanguage):

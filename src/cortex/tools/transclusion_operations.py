@@ -8,8 +8,9 @@ import json
 from pathlib import Path
 from typing import cast
 
+from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.file_system import FileSystemManager
-from cortex.core.mcp_stability import execute_tool_with_stability
+from cortex.core.mcp_stability import execute_tool_with_stability, mcp_tool_wrapper
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.linking.link_parser import LinkParser
@@ -30,6 +31,7 @@ from cortex.tools.models import (
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def resolve_transclusions(
     file_name: str, project_root: str | None = None, max_depth: int = 5
 ) -> str:

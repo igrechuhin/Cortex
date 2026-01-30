@@ -12,6 +12,8 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Protocol, cast
 
+from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.responses import error_response
 from cortex.managers.manager_utils import get_manager
@@ -92,6 +94,7 @@ def _get_component_handler(component: str) -> ComponentHandler | None:
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def configure(
     component: str,
     action: str = "view",

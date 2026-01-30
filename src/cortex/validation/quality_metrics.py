@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Literal, cast
 
 from cortex.core.constants import (
+    ORPHAN_FILE_THRESHOLD_DAYS,
     QUALITY_WEIGHT_COMPLETENESS,
     QUALITY_WEIGHT_CONSISTENCY,
     QUALITY_WEIGHT_EFFICIENCY,
@@ -290,7 +291,7 @@ class QualityMetrics:
         # Use early returns to reduce nesting
         if days_old <= 7:
             return 100.0
-        if days_old <= 30:
+        if days_old <= ORPHAN_FILE_THRESHOLD_DAYS:
             return 80.0
         if days_old <= 90:
             return 60.0

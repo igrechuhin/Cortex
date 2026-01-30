@@ -9,12 +9,12 @@ class TestStubAdapter:
 
     def test_run_tests_returns_not_implemented(self) -> None:
         """run_tests returns TestResult with not-implemented message."""
-        adapter = StubAdapter(None, "rust")
+        adapter = StubAdapter(None, "go")
         result = adapter.run_tests()
         assert isinstance(result, TestResult)
         assert result.success is False
         assert result.tests_run == 0
-        assert "rust" in result.output
+        assert "go" in result.output
         assert "not yet available" in result.output.lower()
         assert len(result.errors) == 1
 
@@ -57,7 +57,7 @@ class TestStubAdapter:
 
     def test_adapter_accepts_project_root(self) -> None:
         """StubAdapter accepts project_root and uses it."""
-        adapter = StubAdapter("/some/root", "rust")
+        adapter = StubAdapter("/some/root", "go")
         assert adapter.project_root is not None
         assert "some" in str(adapter.project_root) and "root" in str(
             adapter.project_root

@@ -12,6 +12,11 @@ Notes:
 import json
 from typing import Literal
 
+from cortex.core.constants import (
+    MCP_TOOL_TIMEOUT_COMPLEX,
+    MCP_TOOL_TIMEOUT_MEDIUM,
+)
+from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.types import ManagersDict
 from cortex.refactoring.approval_manager import ApprovalManager
@@ -44,6 +49,7 @@ from cortex.tools.phase5_execution_helpers import (
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def apply_refactoring(
     action: Literal["approve", "apply", "rollback"] = "apply",
     suggestion_id: str | None = None,
@@ -450,6 +456,7 @@ def _validate_apply_refactoring_params(
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def provide_feedback(
     suggestion_id: str,
     feedback_type: str,

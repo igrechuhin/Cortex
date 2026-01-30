@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from cortex.core.async_file_utils import open_async_text_file
+from cortex.core.constants import CONSOLIDATION_MIN_SIMILARITY
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.health_check.models import (
     MergeOpportunity,
@@ -170,7 +171,7 @@ class RuleAnalyzer:
                         similarity = self._check_cross_category_similarity(
                             content1, content2
                         )
-                        if similarity >= 0.80:  # Higher threshold for cross-category
+                        if similarity >= CONSOLIDATION_MIN_SIMILARITY:
                             opportunity = self._create_cross_category_opportunity(
                                 cat1, name1, cat2, name2, similarity
                             )

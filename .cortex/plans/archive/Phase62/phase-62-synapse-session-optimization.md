@@ -181,7 +181,7 @@ Out of scope:
 
 ### 10. Incorporate Post-Commit Session Optimization Recommendations (2026-01-28T02) — ✅ IMPLEMENTED (2026-01-29)
 
-- Extend this phase to also cover the additional patterns and recommendations identified in the post-commit analysis `session-optimization-2026-01-28T02.md`:
+- Extend this phase to also cover the additional patterns and recommendations identified in the post-commit analysis `session-optimization-2026-01-28T02-00.md`:
   - **Roadmap ↔ plan coupling**: Ensure roadmap prompts/agents require a concrete plan file (or DRY wrapper) for every PLANNED phase, so roadmap_sync never reports references to non-existent plans (e.g., Phase 60).
   - **Review addenda and MD024**: Update session-review / analyze-session prompts to recommend suffixed headings (e.g., “(Context Effectiveness Pass)”) when appending additional analysis passes to an existing review file, preventing duplicate-heading (`MD024`) violations that propagate through memory-bank transclusions.
   - **Timely plan archiving**: Strengthen guidance in `plan-archiver` and related prompts so completed plans are archived to `archive/PhaseX/` as soon as their status becomes COMPLETE, rather than waiting for a later `/cortex/commit` run.

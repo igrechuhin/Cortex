@@ -21,7 +21,9 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX, MCP_TOOL_TIMEOUT_FAST
 from cortex.core.file_system import FileSystemManager
+from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonDict, ModelDict
 from cortex.core.token_counter import TokenCounter
@@ -36,6 +38,7 @@ from cortex.tools.models import CleanupActionResult, CleanupReport
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def check_structure_health(
     project_root: str | None = None,
     perform_cleanup: bool = False,
@@ -497,6 +500,7 @@ async def perform_cleanup_actions(
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_structure_info(project_root: str | None = None) -> str:
     """Get current project structure configuration, paths, and status information.
 

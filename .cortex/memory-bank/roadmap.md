@@ -4,7 +4,11 @@
 
 ### Active Work
 
-- ✅ **JavaScript Pre-Commit Adapter** - COMPLETE (2026-01-30) - Added JavaScriptAdapter in src/cortex/services/framework_adapters/javascript_adapter.py (Prettier, ESLint for .js and .jsx, tsc --allowJs when configured, npm test). Registered in pre_commit_tools; javascript now uses JavaScriptAdapter instead of StubAdapter. Unit tests in tests/unit/test_javascript_adapter.py. test_get_adapter_returns_javascript_adapter_for_javascript in test_pre_commit_tools. All 2966 tests passing.
+- ✅ **Session hang: run pre-commit adapter work off event loop** - COMPLETE (2026-01-30) - Per `.cortex/reviews/session-hang-investigation-2026-01-30T15-00.md`: `execute_pre_commit_checks` now runs `_execute_all_checks` via `asyncio.to_thread()` so format, fix_errors, type_check, quality, and tests run off the event loop. Event loop stays responsive; MCP tool timeout still applies. Unit test `test_runs_adapter_checks_off_event_loop_via_to_thread` in tests/unit/test_pre_commit_tools.py. All 43 tests in that file passing.
+
+- ✅ **Rust Pre-Commit Adapter** - COMPLETE (2026-01-30) - Added RustAdapter in src/cortex/services/framework_adapters/rust_adapter.py (cargo fmt, cargo clippy, cargo check, cargo test, cargo fix). Registered in pre_commit_tools; rust now uses RustAdapter instead of StubAdapter. StubAdapterLanguage no longer includes RUST. Unit tests in tests/unit/test_rust_adapter.py; test_get_adapter_returns_rust_adapter_for_rust in tests/unit/test_pre_commit_tools.py. Stub tests updated to use go/java. All 3000 tests passing.
+
+- ✅ **JavaScript Pre-Commit Adapter** - COMPLETE (2026-01-30) - Added JavaScriptAdapter in src/cortex/services/framework_adapters/javascript_adapter.py (Prettier, ESLint for .js and .jsx, tsc --allowJs when configured, npm test). Registered in pre_commit_tools; javascript now uses JavaScriptAdapter instead of StubAdapter. Unit tests in tests/unit/test_javascript_adapter.py. test_get_adapter_returns_javascript_adapter_for_javascript in tests/unit/test_pre_commit_tools.py. All 2966 tests passing.
 
 - ✅ **Commit: Coverage at 90% (helper tests)** - COMPLETE (2026-01-30) - Added tests/unit/test_configuration_helpers.py and tests/unit/test_analysis_helpers.py (parse_config_action, parse_analysis_target; invalid-value branch). Coverage 89.98% → 90%; 2951 tests passing. Markdown lint fixed 2 files.
 
@@ -36,7 +40,7 @@
 
 - ✅ **TypeScript Pre-Commit Adapter** - COMPLETE (2026-01-29) - Added TypeScriptAdapter in src/cortex/services/framework_adapters/typescript_adapter.py (prettier, eslint, tsc, npm test). Registered in pre_commit_tools _ADAPTER_REGISTRY; typescript now uses TypeScriptAdapter instead of StubAdapter. Unit tests in tests/unit/test_typescript_adapter.py. TestAdapterRegistry updated (test_get_adapter_returns_typescript_adapter_for_typescript). All 2919 tests passing, coverage 90%.
 
-- **Pre-commit**: Add other language adapters as needed (src/cortex/tools/pre_commit_tools.py) – tracked; Python, TypeScript, and JavaScript have full implementations; Rust, Go, Java use StubAdapter until full implementations.
+- **Pre-commit**: Add other language adapters as needed (src/cortex/tools/pre_commit_tools.py) – tracked; Python, TypeScript, JavaScript, and Rust have full implementations; Go, Java use StubAdapter until full implementations.
 
 - ✅ **Phase 65: Commit Workflow — Cortex Tools Only** - COMPLETE (2026-01-30) - Removed all direct script invocations from the commit prompt; all pre-commit and Step 12 validation are invoked via Cortex MCP tools (`execute_pre_commit_checks` with format, format_ci_parity, type_check, quality, test_naming, tests; `fix_markdown_lint`). Added check types format_ci_parity and test_naming (run synapse scripts internally). Python adapter type_check now runs on src/ and tests/ to match CI. Integration test asserts the commit prompt file contains no `.venv/bin/python .cortex/synapse/scripts`. Plan: .cortex/plans/archive/Phase65/phase-65-commit-workflow-cortex-tools-only.md.
 

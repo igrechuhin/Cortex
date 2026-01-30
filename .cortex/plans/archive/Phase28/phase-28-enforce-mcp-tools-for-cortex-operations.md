@@ -12,7 +12,7 @@
 
 During a recent session, we discovered that the review process was writing files directly to `.cortex/` directory instead of using Cortex MCP tools. This led to:
 
-1. **Duplicate file issue**: `code-review-report-2026-01-15.md` appeared in both `.cortex/` root (deprecated) and `.cortex/reviews/` (correct location)
+1. **Duplicate file issue**: `code-review-report-2026-01-15T00-00.md` appeared in both `.cortex/` root (deprecated) and `.cortex/reviews/` (correct location)
 2. **Inconsistent path usage**: Review prompt was instructing AI agents to write files directly instead of using MCP tools
 3. **Missing structure integration**: `reviews` directory not included in structure config or path resolver
 
@@ -39,7 +39,7 @@ During a recent session, we discovered that the review process was writing files
 
 ### Session Findings
 
-1. **Issue**: Duplicate file `code-review-report-2026-01-15.md` in both locations
+1. **Issue**: Duplicate file `code-review-report-2026-01-15T00-00.md` in both locations
 2. **Fix Applied**:
    - Removed duplicate from `.cortex/` root
    - Added `REVIEWS` to path resolver enum
@@ -193,7 +193,7 @@ During a recent session, we discovered that the review process was writing files
 # In prompts/tools:
 1. Call `get_structure_info(project_root=None)` MCP tool
 2. Extract path from response: `structure_info.paths.reviews`
-3. Construct file path: `{reviews_path}/code-review-report-YYYY-MM-DD.md`
+3. Construct file path: `{reviews_path}/code-review-report-YYYY-MM-DDTHH-mm.md`
 4. Use `Write` tool with constructed path
 ```
 
@@ -201,7 +201,7 @@ During a recent session, we discovered that the review process was writing files
 
 ```python
 # ❌ DON'T DO THIS:
-- Hardcode `.cortex/reviews/code-review-report-2026-01-15.md`
+- Hardcode `.cortex/reviews/code-review-report-2026-01-15T00-00.md`
 - Use direct file writes without MCP tools
 - Assume directory structure
 ```

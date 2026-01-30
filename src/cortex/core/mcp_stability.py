@@ -255,9 +255,10 @@ def _to_timeout_value(value: JsonValue | None) -> float | None:
     """
     if value is None:
         return None
-    if isinstance(value, (int, float)):
+    # Recursive JsonValue narrows incorrectly in pyright/basedpyright
+    if isinstance(value, (int, float)):  # pyright: ignore[reportUnnecessaryIsInstance]
         return float(value)
-    if isinstance(value, str):
+    if isinstance(value, str):  # pyright: ignore[reportUnnecessaryIsInstance]
         try:
             return float(value)
         except ValueError:
@@ -269,10 +270,10 @@ def _to_timeout_value(value: JsonValue | None) -> float | None:
 
 async def with_mcp_stability[T](
     func: Callable[..., Awaitable[T]],
-    *args: JsonValue,
+    *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
     timeout: JsonValue | None = None,
     stability_timeout: JsonValue | None = None,
-    **kwargs: JsonValue,
+    **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
 ) -> T:
     """Execute MCP tool with stability protections.
 
@@ -340,11 +341,16 @@ def mcp_tool_wrapper[T](
     import functools
     import inspect
 
-    def decorator(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+    def decorator(
+        func: Callable[..., Awaitable[T]],
+    ) -> Callable[..., Awaitable[T]]:
         """Apply stability wrapper to function."""
 
         @functools.wraps(func)
-        async def wrapper(*args: JsonValue, **kwargs: JsonValue) -> T:
+        async def wrapper(
+            *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
+            **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
+        ) -> T:
             """Wrapped function with stability protections."""
             return await with_mcp_stability(
                 func, *args, stability_timeout=timeout, **kwargs
@@ -362,9 +368,9 @@ def mcp_tool_wrapper[T](
 
 async def execute_tool_with_stability[T](
     func: Callable[..., Awaitable[T]],
-    *args: JsonValue,
+    *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
     timeout: float = MCP_TOOL_TIMEOUT_SECONDS,
-    **kwargs: JsonValue,
+    **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
 ) -> T:
     """Execute MCP tool function with stability protections.
 

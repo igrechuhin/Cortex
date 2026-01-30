@@ -11,6 +11,7 @@ from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.constants import MAX_FILE_LINES
 from cortex.core.models import JsonValue, ModelDict
 from cortex.managers.initialization import get_project_root
 from cortex.services.framework_adapters.base import (
@@ -373,3 +374,40 @@ def count_file_lines(path: Path) -> int:
         count += 1
 
     return count
+
+
+def check_file_sizes(
+    project_root: Path,
+    max_lines: int | None = None,
+) -> list[FileSizeViolation]:
+    """Check all Python files under src for size violations."""
+    if max_lines is None:
+        max_lines = MAX_FILE_LINES
+    violations: list[FileSizeViolation] = []
+    src_dir = project_root / "src"
+    excluded_files = {"models.py"}
+
+    if not src_dir.exists():
+        return violations
+
+    for py_file in src_dir.glob("**/*.py"):
+        if "__pycache__" in str(py_file) or py_file.name.startswith("test_"):
+            continue
+        if py_file.name in excluded_files:
+            continue
+        lines = count_file_lines(py_file)
+        if lines > max_lines:
+            try:
+                relative_path = str(py_file.relative_to(project_root))
+            except ValueError:
+                relative_path = str(py_file)
+            violations.append(
+                FileSizeViolation(
+                    file=relative_path,
+                    lines=lines,
+                    max_lines=max_lines,
+                    excess=lines - max_lines,
+                )
+            )
+
+    return violations

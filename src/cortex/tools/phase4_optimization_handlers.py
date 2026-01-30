@@ -15,6 +15,12 @@ import json
 
 # Import via facade to allow test patching
 import cortex.tools.phase4_optimization as phase4_opt
+from cortex.core.constants import (
+    MCP_TOOL_TIMEOUT_COMPLEX,
+    MCP_TOOL_TIMEOUT_FAST,
+    MCP_TOOL_TIMEOUT_MEDIUM,
+)
+from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.server import mcp
 from cortex.tools.phase4_context_operations import load_context_impl
 from cortex.tools.phase4_progressive_operations import (
@@ -25,6 +31,7 @@ from cortex.tools.phase4_summarization_operations import summarize_content_impl
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def load_context(
     task_description: str,
     token_budget: int | None = None,
@@ -72,6 +79,7 @@ async def load_context(
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def load_progressive_context(
     task_description: str,
     token_budget: int | None = None,
@@ -105,6 +113,7 @@ async def load_progressive_context(
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def summarize_content(
     file_name: str | None = None,
     target_reduction: float = 0.5,
@@ -134,6 +143,7 @@ async def summarize_content(
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_relevance_scores(
     task_description: str,
     project_root: str | None = None,

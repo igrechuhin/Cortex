@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.async_file_utils import open_async_text_file
+from cortex.core.constants import CONSOLIDATION_MIN_SIMILARITY
 from cortex.core.models import JsonValue, ModelDict
 from cortex.refactoring.models import ConsolidationImpactModel
 
@@ -68,7 +69,7 @@ class ConsolidationDetector:
     def __init__(
         self,
         memory_bank_path: Path,
-        min_similarity: float = 0.80,
+        min_similarity: float = CONSOLIDATION_MIN_SIMILARITY,
         min_section_length: int = 100,
         target_reduction: float = 0.30,
     ):

@@ -11,6 +11,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.managers.initialization import get_project_root
 from cortex.server import mcp
 
@@ -323,6 +325,7 @@ def _create_roadmap_success_response(matches: list[CorruptionMatch]) -> str:
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def fix_roadmap_corruption(
     project_root: str | None = None, dry_run: bool = False
 ) -> str:

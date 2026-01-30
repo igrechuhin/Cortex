@@ -29,7 +29,7 @@ The recommendations below focus on making these workflows smoother and more robu
 
 ### Pattern 2: Duplicate Headings from Multi-Pass Session Reviews
 
-- **Description**: The session review file `session-optimization-2026-01-28.md` contained duplicate headings:
+- **Description**: The session review file `session-optimization-2026-01-28T00-00.md` contained duplicate headings:
   - `### Mistake Patterns Identified`
   - `### Root Cause Analysis`
   - `### Optimization Recommendations`

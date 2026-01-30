@@ -10,6 +10,7 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 from pathlib import Path
 
+from cortex.core.constants import GIT_OPERATION_TIMEOUT_SECONDS
 from cortex.core.security import CommitMessageSanitizer
 from cortex.rules.models import (
     GitCommandResult,
@@ -55,14 +56,14 @@ class SynapseRepository:
         ) = git_command_runner
 
     async def run_git_command(
-        self, cmd: list[str], timeout: int = 30
+        self, cmd: list[str], timeout: int = GIT_OPERATION_TIMEOUT_SECONDS
     ) -> GitCommandResult:
         """
         Run a git command asynchronously with timeout.
 
         Args:
             cmd: Command and arguments as list
-            timeout: Timeout in seconds (default: 30)
+            timeout: Timeout in seconds (default from constants)
 
         Returns:
             Git command result model
@@ -84,7 +85,7 @@ class SynapseRepository:
         self.git_command_runner = runner
 
     async def _run_git_command_internal(
-        self, cmd: list[str], timeout: int = 30
+        self, cmd: list[str], timeout: int = GIT_OPERATION_TIMEOUT_SECONDS
     ) -> GitCommandResult:
         """Internal method to run git command."""
         try:

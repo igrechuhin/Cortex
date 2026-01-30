@@ -11,7 +11,7 @@ Safely parallelize the commit procedure’s validation and submodule steps (Step
 ## Context
 
 - The current commit workflow in `commit.md` is intentionally **fully sequential** to avoid conflicts between agents that read/write shared state (especially memory bank and plans).
-- The `commit-parallelization-analysis.md` review concluded that:
+- The `commit-parallelization-analysis-2026-01-15T00-01.md` review concluded that:
   - Steps **0–8** and **12–14** must remain sequential due to strong data and ordering dependencies.
   - Steps **9 (timestamp-validator)** and **10 (roadmap-sync-validator)** are **read-only validators** and operate on different logical aspects of the memory bank/roadmap.
   - Step **11 (submodule handling)** operates on the `.cortex/synapse` submodule and is independent of memory bank state.

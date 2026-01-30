@@ -7,7 +7,9 @@ for building dependency graphs of Memory Bank file links.
 import json
 from typing import cast
 
+from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.dependency_graph import DependencyGraph
+from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.linking.link_parser import LinkParser
@@ -17,6 +19,7 @@ from cortex.server import mcp
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_link_graph(
     project_root: str | None = None,
     include_transclusions: bool = True,

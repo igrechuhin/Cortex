@@ -8,7 +8,9 @@ Memory Bank file dependencies.
 import json
 from typing import cast
 
+from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.dependency_graph import DependencyGraph, FileDependencyInfo
+from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import JsonValue, ModelDict
 from cortex.managers import initialization
 from cortex.managers.manager_utils import get_manager
@@ -16,6 +18,7 @@ from cortex.server import mcp
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_dependency_graph(
     project_root: str | None = None, format: str = "json"
 ) -> str:

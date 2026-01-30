@@ -10,15 +10,19 @@ Total: 2 tools
 """
 
 import ast
+import asyncio
 import json
-import subprocess
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_VERY_COMPLEX
+from cortex.core.constants import (
+    MAX_FILE_LINES,
+    MAX_FUNCTION_LINES,
+    MCP_TOOL_TIMEOUT_VERY_COMPLEX,
+)
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import JsonValue, ModelDict
 from cortex.server import mcp
@@ -29,6 +33,7 @@ from cortex.services.framework_adapters.base import (
 )
 from cortex.services.framework_adapters.javascript_adapter import JavaScriptAdapter
 from cortex.services.framework_adapters.python_adapter import PythonAdapter
+from cortex.services.framework_adapters.rust_adapter import RustAdapter
 from cortex.services.framework_adapters.stub_adapter import StubAdapter
 from cortex.services.framework_adapters.typescript_adapter import TypeScriptAdapter
 from cortex.services.language_detector import LanguageInfo
@@ -42,8 +47,8 @@ from cortex.tools.pre_commit_helpers import (
     PreCommitCheck,
     PreCommitResult,
     QualityCheckResult,
+    check_file_sizes,
     collect_remaining_issues,
-    count_file_lines,
     create_error_result,
     detect_or_use_language,
     determine_checks_to_perform,
@@ -55,23 +60,20 @@ from cortex.tools.pre_commit_helpers import (
     truncate_large_logs_in_data,
     unsupported_language_result,
 )
+from cortex.tools.pre_commit_synapse import run_synapse_script
 
 # Adapter registry: language -> factory(project_root) -> FrameworkAdapter.
-# Python, TypeScript, and JavaScript have full implementations; Rust, Go, Java
+# Python, TypeScript, JavaScript, and Rust have full implementations; Go, Java
 # use StubAdapter until language-specific implementations are added.
 _ADAPTER_REGISTRY: dict[str, Callable[[str | None], FrameworkAdapter]] = {
     "python": lambda root: PythonAdapter(root),
     "typescript": lambda root: TypeScriptAdapter(root),
     "javascript": lambda root: JavaScriptAdapter(root),
-    "rust": lambda root: StubAdapter(root, "rust"),
+    "rust": lambda root: RustAdapter(root),
     "go": lambda root: StubAdapter(root, "go"),
     "java": lambda root: StubAdapter(root, "java"),
 }
 SUPPORTED_LANGUAGES: tuple[str, ...] = tuple(_ADAPTER_REGISTRY.keys())
-
-# Constants for quality checks
-MAX_FILE_LINES = 400
-MAX_FUNCTION_LINES = 30
 
 
 def _get_adapter(
@@ -254,7 +256,8 @@ async def execute_pre_commit_checks(
             )
 
         checks_to_perform = determine_checks_to_perform(checks)
-        results, stats = _execute_all_checks(
+        results, stats = await asyncio.to_thread(
+            _execute_all_checks,
             adapter,
             language_info.language,
             checks_to_perform,
@@ -333,83 +336,6 @@ def _process_format_check(
         stats.files_modified.extend(format_result.files_modified)
 
 
-def _synapse_script_skipped_result(check_type: str, language: str) -> CheckResult:
-    """Return CheckResult when synapse script is missing (skipped)."""
-    return CheckResult(
-        check_type=check_type,
-        success=True,
-        output=f"No {check_type} script for language {language} (skipped)",
-        errors=[],
-        warnings=[],
-        files_modified=[],
-    )
-
-
-def _resolve_synapse_python_bin(project_root: Path) -> Path:
-    """Resolve Python binary for running synapse scripts."""
-    venv_python = project_root / ".venv" / "bin" / "python"
-    return venv_python if venv_python.exists() else Path("python3")
-
-
-def _execute_synapse_script_subprocess(
-    python_bin: Path,
-    script_path: Path,
-    project_root: Path,
-    check_type: str,
-) -> CheckResult:
-    """Run synapse script via subprocess and return CheckResult."""
-    result = subprocess.run(
-        [str(python_bin), str(script_path)],
-        cwd=project_root,
-        capture_output=True,
-        text=True,
-    )
-    output = result.stdout + result.stderr
-    success = result.returncode == 0
-    errors = [] if success else [output.strip() or f"Exit code {result.returncode}"]
-    return CheckResult(
-        check_type=check_type,
-        success=success,
-        output=output,
-        errors=errors,
-        warnings=[],
-        files_modified=[],
-    )
-
-
-def _synapse_script_exception_result(check_type: str, e: Exception) -> CheckResult:
-    """Return CheckResult when synapse script raises."""
-    return CheckResult(
-        check_type=check_type,
-        success=False,
-        output=str(e),
-        errors=[str(e)],
-        warnings=[],
-        files_modified=[],
-    )
-
-
-def _run_synapse_script(
-    project_root: Path,
-    language: str,
-    script_name: str,
-    check_type: str,
-) -> CheckResult:
-    """Run a synapse script and return CheckResult. Scripts are implementation detail."""
-    script_path = (
-        project_root / ".cortex" / "synapse" / "scripts" / language / script_name
-    )
-    if not script_path.exists():
-        return _synapse_script_skipped_result(check_type, language)
-    python_bin = _resolve_synapse_python_bin(project_root)
-    try:
-        return _execute_synapse_script_subprocess(
-            python_bin, script_path, project_root, check_type
-        )
-    except Exception as e:
-        return _synapse_script_exception_result(check_type, e)
-
-
 def _process_format_ci_parity_check(
     adapter: FrameworkAdapter,
     language: str,
@@ -421,7 +347,7 @@ def _process_format_ci_parity_check(
     if PreCommitCheck.FORMAT_CI_PARITY not in checks_to_perform:
         return
     project_root = Path(adapter.project_root)
-    result = _run_synapse_script(
+    result = run_synapse_script(
         project_root,
         language,
         "check_formatting_ci_parity.py",
@@ -443,7 +369,7 @@ def _process_test_naming_check(
     if PreCommitCheck.TEST_NAMING not in checks_to_perform:
         return
     project_root = Path(adapter.project_root)
-    result = _run_synapse_script(
+    result = run_synapse_script(
         project_root,
         language,
         "check_test_naming.py",
@@ -510,39 +436,6 @@ def _execute_fix_errors(
         auto_fix=True,
         strict_mode=strict_mode,
     )
-
-
-def _check_file_sizes(project_root: Path) -> list[FileSizeViolation]:
-    """Check all Python files for size violations."""
-    violations: list[FileSizeViolation] = []
-    src_dir = project_root / "src"
-    # Files excluded from size checks (data definition files that are inherently large)
-    excluded_files = {"models.py"}  # Pydantic model definitions
-
-    if not src_dir.exists():
-        return violations
-
-    for py_file in src_dir.glob("**/*.py"):
-        if "__pycache__" in str(py_file) or py_file.name.startswith("test_"):
-            continue
-        if py_file.name in excluded_files:
-            continue
-        lines = count_file_lines(py_file)
-        if lines > MAX_FILE_LINES:
-            try:
-                relative_path = str(py_file.relative_to(project_root))
-            except ValueError:
-                relative_path = str(py_file)
-            violations.append(
-                FileSizeViolation(
-                    file=relative_path,
-                    lines=lines,
-                    max_lines=MAX_FILE_LINES,
-                    excess=lines - MAX_FILE_LINES,
-                )
-            )
-
-    return violations
 
 
 def _get_docstring_range(
@@ -720,7 +613,7 @@ def _execute_quality(adapter: FrameworkAdapter, language: str) -> QualityCheckRe
     file_violations: list[FileSizeViolation] = []
     func_violations: list[FunctionLengthViolation] = []
     if language == "python":
-        file_violations = _check_file_sizes(project_root)
+        file_violations = check_file_sizes(project_root)
         func_violations = _check_function_lengths(project_root)
 
     errors = _build_quality_errors(lint_result.errors, file_violations, func_violations)
@@ -831,7 +724,10 @@ async def _run_quality_checks(root_str: str) -> ModelDict | str:
         strict_mode=False,
     )
     fix_errors_result_raw: JsonValue = json.loads(fix_errors_result_json)
-    if not isinstance(fix_errors_result_raw, dict):
+    # Recursive JsonValue narrows incorrectly in pyright/basedpyright
+    if not isinstance(
+        fix_errors_result_raw, dict
+    ):  # pyright: ignore[reportUnnecessaryIsInstance]
         return _create_quality_error_response("Invalid quality check response")
     fix_errors_result = cast(ModelDict, fix_errors_result_raw)
 
@@ -861,7 +757,10 @@ async def _fix_markdown_and_update_files(
         dry_run=False,
     )
     markdown_result_raw: JsonValue = json.loads(markdown_result_json)
-    if not isinstance(markdown_result_raw, dict):
+    # Recursive JsonValue narrows incorrectly in pyright/basedpyright
+    if not isinstance(
+        markdown_result_raw, dict
+    ):  # pyright: ignore[reportUnnecessaryIsInstance]
         return 0
     markdown_result = cast(ModelDict, markdown_result_raw)
     return _process_markdown_results(markdown_result, files_modified)
@@ -906,13 +805,20 @@ def _process_markdown_results(
     success_obj = markdown_result.get("success")
     if success_obj:
         files_fixed_obj = markdown_result.get("files_fixed", 0)
+        # Recursive JsonValue narrows incorrectly in pyright/basedpyright
         markdown_issues_fixed = (
-            int(files_fixed_obj) if isinstance(files_fixed_obj, (int, str)) else 0
+            int(files_fixed_obj)
+            if isinstance(files_fixed_obj, (int, str))
+            else 0  # pyright: ignore[reportUnnecessaryIsInstance]
         )
         results_obj = markdown_result.get("results", [])
-        if isinstance(results_obj, list):
+        if isinstance(
+            results_obj, list
+        ):  # pyright: ignore[reportUnnecessaryIsInstance]
             for item in cast(list[JsonValue], results_obj):
-                if isinstance(item, dict):
+                if isinstance(
+                    item, dict
+                ):  # pyright: ignore[reportUnnecessaryIsInstance]
                     file_result = cast(ModelDict, item)
                     fixed_obj = file_result.get("fixed")
                     if fixed_obj:
@@ -971,6 +877,7 @@ def _build_quality_response_json(
 
 
 @mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
 async def fix_quality_issues(
     project_root: str | None = None,
     include_untracked_markdown: bool = True,
