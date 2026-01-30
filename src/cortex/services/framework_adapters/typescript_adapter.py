@@ -241,7 +241,7 @@ class TypeScriptAdapter(FrameworkAdapter):
         try:
             result = self._run_npx(["tsc", "--noEmit"])
             output = result.stdout + result.stderr
-            errs = self._parse_tsc_errors(output)
+            errs = self.parse_tsc_errors(output)
             return CheckResult(
                 check_type="type_check",
                 success=len(errs) == 0,
@@ -260,7 +260,7 @@ class TypeScriptAdapter(FrameworkAdapter):
                 files_modified=[],
             )
 
-    def _parse_tsc_errors(self, output: str) -> list[str]:
+    def parse_tsc_errors(self, output: str) -> list[str]:
         """Extract type errors from tsc output."""
         errors: list[str] = []
         for line in output.splitlines():
@@ -283,7 +283,7 @@ class TypeScriptAdapter(FrameworkAdapter):
                 ["eslint", ".", "--ext", ".ts,.tsx,.js,.jsx", "--fix"]
             )
             output = result.stdout + result.stderr
-            errs, warns = self._parse_eslint_output(output)
+            errs, warns = self.parse_eslint_output(output)
             return CheckResult(
                 check_type="lint",
                 success=len(errs) == 0,
@@ -302,7 +302,7 @@ class TypeScriptAdapter(FrameworkAdapter):
                 files_modified=[],
             )
 
-    def _parse_eslint_output(self, output: str) -> tuple[list[str], list[str]]:
+    def parse_eslint_output(self, output: str) -> tuple[list[str], list[str]]:
         """Parse ESLint output into errors and warnings."""
         errors: list[str] = []
         warnings: list[str] = []

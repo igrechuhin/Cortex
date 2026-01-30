@@ -1,8 +1,10 @@
 # Roadmap: MCP Memory Bank
 
-## Current Status (2026-01-29)
+## Current Status (2026-01-30)
 
 ### Active Work
+
+- ✅ **Commit: Coverage above 90%** - COMPLETE (2026-01-30) - Added tests/unit/test_refactoring_operation_helpers.py; coverage 89.98% → 90.01%; 2932 tests passing.
 
 - ✅ **Phase 55: Improve Implementation Prompt Quality Gates** - COMPLETE (2026-01-29) - Added quality gates to .cortex/synapse/prompts/implement-next-roadmap-step.md: Step 3.5 Pydantic/TypedDict prohibition and pre-implementation checklist; Step 2 load_context error handling; Step 4 mandatory format and type-check steps, ReadLints before Step 4.5; Step 4.6 implicit-concatenation check; token budget 15k–20k for narrow steps. Python coding standards: TypedDict FORBIDDEN and validation step. Integration tests in tests/integration/test_implement_prompt_quality_gates.py. Plan: .cortex/plans/archive/Phase55/phase-55-improve-implementation-prompt-quality-gates.md.
 
@@ -55,3 +57,7 @@
 - **Pre-commit**: Add other language adapters as needed (src/cortex/tools/pre_commit_tools.py) – tracked; Python and TypeScript have full implementations; JavaScript, Rust, Go, Java use StubAdapter until full implementations.
 
 - **Phase 64: Promote fixed string sets to enums** - PLANNED - Replace all identified fixed string sets (Literal or raw strings) with str-subclassed enums: RulesOperation, FileOperation, RefactoringAction, RefactoringSuggestionType, ValidationCheckType, ConfigAction, AnalysisTarget, StubAdapterLanguage; optional shared QualityGrade/HealthStatus. Follows PreCommitCheck pattern. Plan: .cortex/plans/phase-64-promote-fixed-strings-to-enums.md.
+
+- ✅ **Phase 65: Commit Workflow — Cortex Tools Only** - COMPLETE (2026-01-30) - Removed all direct script invocations from the commit prompt; all pre-commit and Step 12 validation are invoked via Cortex MCP tools (`execute_pre_commit_checks` with format, format_ci_parity, type_check, quality, test_naming, tests; `fix_markdown_lint`). Added check types format_ci_parity and test_naming (run synapse scripts internally). Python adapter type_check now runs on src/ and tests/ to match CI. Integration test asserts commit.md contains no `.venv/bin/python .cortex/synapse/scripts`. Plan: .cortex/plans/phase-65-commit-workflow-cortex-tools-only.md.
+
+- ✅ **Phase 66: Plan Creation Workflow Compliance** - COMPLETE (2026-01-30) - Clarified path resolution in create-plan prompt (structure_info.paths.plans absolute, no hardcoding; Path resolution in ERROR HANDLING and IMPLEMENTATION GUIDELINES). Enforced roadmap update via manage_file only (Step 6 PROHIBITED/REQUIRED/VIOLATION; Step 7 restore via manage_file). Added memory-bank-updater "Roadmap update (plan creation)" note. Integration tests in tests/integration/test_plan_creation_workflow_compliance.py. Plan: .cortex/plans/phase-66-plan-creation-workflow-compliance.md.

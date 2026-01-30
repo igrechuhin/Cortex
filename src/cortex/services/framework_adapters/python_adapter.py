@@ -243,14 +243,10 @@ class PythonAdapter(FrameworkAdapter):
             errors.append(f"Ruff import sorting error: {e}")
 
     def type_check(self) -> CheckResult:
-        """Run pyright type checker.
-
-        Returns:
-            CheckResult with type checking details.
-        """
+        """Run pyright type checker on src/ and tests/ (matches CI scope)."""
         try:
             result = subprocess.run(
-                [self._get_command("pyright"), "src/"],
+                [self._get_command("pyright"), "src/", "tests/"],
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,

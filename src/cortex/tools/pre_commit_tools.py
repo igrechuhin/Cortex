@@ -11,6 +11,7 @@ Total: 2 tools
 
 import ast
 import json
+import subprocess
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Literal, cast
@@ -114,8 +115,8 @@ async def execute_pre_commit_checks(
 
     Args:
         checks: List of checks to perform. Options: "fix_errors",
-            "format", "type_check", "quality", "tests". If None, performs
-            all checks.
+            "format", "format_ci_parity", "type_check", "quality",
+            "test_naming", "tests". If None, performs all checks.
         language: Project language (python, typescript, javascript, rust, go).
             If None, auto-detects from project structure.
         project_root: Path to project root directory. If None, uses current directory.
@@ -287,7 +288,11 @@ def _execute_all_checks(
     _process_fix_errors_check(adapter, checks_to_perform, strict_mode, results, stats)
     _process_quality_check(adapter, language, checks_to_perform, results, stats)
     _process_format_check(adapter, checks_to_perform, results, stats)
+    _process_format_ci_parity_check(
+        adapter, language, checks_to_perform, results, stats
+    )
     _process_type_check(adapter, checks_to_perform, results, stats)
+    _process_test_naming_check(adapter, language, checks_to_perform, results, stats)
     _process_tests_check(
         adapter, checks_to_perform, timeout, coverage_threshold, results, stats
     )
@@ -325,6 +330,127 @@ def _process_format_check(
         stats.checks_performed.append(PreCommitCheck.FORMAT.value)
         stats.total_errors += len(format_result.errors)
         stats.files_modified.extend(format_result.files_modified)
+
+
+def _synapse_script_skipped_result(check_type: str, language: str) -> CheckResult:
+    """Return CheckResult when synapse script is missing (skipped)."""
+    return CheckResult(
+        check_type=check_type,
+        success=True,
+        output=f"No {check_type} script for language {language} (skipped)",
+        errors=[],
+        warnings=[],
+        files_modified=[],
+    )
+
+
+def _resolve_synapse_python_bin(project_root: Path) -> Path:
+    """Resolve Python binary for running synapse scripts."""
+    venv_python = project_root / ".venv" / "bin" / "python"
+    return venv_python if venv_python.exists() else Path("python3")
+
+
+def _execute_synapse_script_subprocess(
+    python_bin: Path,
+    script_path: Path,
+    project_root: Path,
+    check_type: str,
+) -> CheckResult:
+    """Run synapse script via subprocess and return CheckResult."""
+    result = subprocess.run(
+        [str(python_bin), str(script_path)],
+        cwd=project_root,
+        capture_output=True,
+        text=True,
+    )
+    output = result.stdout + result.stderr
+    success = result.returncode == 0
+    errors = [] if success else [output.strip() or f"Exit code {result.returncode}"]
+    return CheckResult(
+        check_type=check_type,
+        success=success,
+        output=output,
+        errors=errors,
+        warnings=[],
+        files_modified=[],
+    )
+
+
+def _synapse_script_exception_result(check_type: str, e: Exception) -> CheckResult:
+    """Return CheckResult when synapse script raises."""
+    return CheckResult(
+        check_type=check_type,
+        success=False,
+        output=str(e),
+        errors=[str(e)],
+        warnings=[],
+        files_modified=[],
+    )
+
+
+def _run_synapse_script(
+    project_root: Path,
+    language: str,
+    script_name: str,
+    check_type: str,
+) -> CheckResult:
+    """Run a synapse script and return CheckResult. Scripts are implementation detail."""
+    script_path = (
+        project_root / ".cortex" / "synapse" / "scripts" / language / script_name
+    )
+    if not script_path.exists():
+        return _synapse_script_skipped_result(check_type, language)
+    python_bin = _resolve_synapse_python_bin(project_root)
+    try:
+        return _execute_synapse_script_subprocess(
+            python_bin, script_path, project_root, check_type
+        )
+    except Exception as e:
+        return _synapse_script_exception_result(check_type, e)
+
+
+def _process_format_ci_parity_check(
+    adapter: FrameworkAdapter,
+    language: str,
+    checks_to_perform: list[PreCommitCheck],
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
+    stats: CheckStats,
+) -> None:
+    """Process format_ci_parity check if requested (runs synapse script)."""
+    if PreCommitCheck.FORMAT_CI_PARITY not in checks_to_perform:
+        return
+    project_root = Path(adapter.project_root)
+    result = _run_synapse_script(
+        project_root,
+        language,
+        "check_formatting_ci_parity.py",
+        PreCommitCheck.FORMAT_CI_PARITY.value,
+    )
+    results[PreCommitCheck.FORMAT_CI_PARITY.value] = result
+    stats.checks_performed.append(PreCommitCheck.FORMAT_CI_PARITY.value)
+    stats.total_errors += len(result.errors)
+
+
+def _process_test_naming_check(
+    adapter: FrameworkAdapter,
+    language: str,
+    checks_to_perform: list[PreCommitCheck],
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
+    stats: CheckStats,
+) -> None:
+    """Process test_naming check if requested (runs synapse script)."""
+    if PreCommitCheck.TEST_NAMING not in checks_to_perform:
+        return
+    project_root = Path(adapter.project_root)
+    result = _run_synapse_script(
+        project_root,
+        language,
+        "check_test_naming.py",
+        PreCommitCheck.TEST_NAMING.value,
+    )
+    results[PreCommitCheck.TEST_NAMING.value] = result
+    stats.checks_performed.append(PreCommitCheck.TEST_NAMING.value)
+    stats.total_errors += len(result.errors)
 
 
 def _process_type_check(

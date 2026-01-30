@@ -25,6 +25,7 @@ from cortex.tools.pre_commit_tools import (
     _check_function_lengths,  # pyright: ignore[reportPrivateUsage]
     _check_function_lengths_in_file,  # pyright: ignore[reportPrivateUsage]
     _get_adapter,  # pyright: ignore[reportPrivateUsage]
+    _run_synapse_script,  # pyright: ignore[reportPrivateUsage]
     execute_pre_commit_checks,
     fix_quality_issues,
 )
@@ -170,6 +171,111 @@ class TestExecutePreCommitChecks:
 
             assert result["status"] == "error"
             assert "Test error" in result["error"]
+
+    @pytest.mark.asyncio
+    async def test_format_ci_parity_check_when_script_missing_returns_skipped(
+        self,
+    ) -> None:
+        """format_ci_parity when script not present returns success (skipped)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            (project_root / ".venv").mkdir()
+            # No .cortex/synapse/scripts/python/check_formatting_ci_parity.py
+
+            with patch(
+                "cortex.tools.pre_commit_tools.PythonAdapter"
+            ) as mock_adapter_class:
+                mock_adapter = MagicMock()
+                mock_adapter_class.return_value = mock_adapter
+                mock_adapter.project_root = project_root
+
+                result_json = await execute_pre_commit_checks(
+                    checks=["format_ci_parity"],
+                    project_root=str(project_root),
+                    language="python",
+                )
+                result = json.loads(result_json)
+
+                assert result["status"] == "success"
+                assert "format_ci_parity" in result["checks_performed"]
+                assert result["results"]["format_ci_parity"]["success"] is True
+                assert "skipped" in result["results"]["format_ci_parity"]["output"]
+
+    @pytest.mark.asyncio
+    async def test_test_naming_check_when_script_missing_returns_skipped(
+        self,
+    ) -> None:
+        """test_naming when script not present returns success (skipped)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            (project_root / ".venv").mkdir()
+
+            with patch(
+                "cortex.tools.pre_commit_tools.PythonAdapter"
+            ) as mock_adapter_class:
+                mock_adapter = MagicMock()
+                mock_adapter_class.return_value = mock_adapter
+                mock_adapter.project_root = project_root
+
+                result_json = await execute_pre_commit_checks(
+                    checks=["test_naming"],
+                    project_root=str(project_root),
+                    language="python",
+                )
+                result = json.loads(result_json)
+
+                assert result["status"] == "success"
+                assert "test_naming" in result["checks_performed"]
+                assert result["results"]["test_naming"]["success"] is True
+                assert "skipped" in result["results"]["test_naming"]["output"]
+
+
+class TestRunSynapseScript:
+    """Test _run_synapse_script helper."""
+
+    def test_run_synapse_script_when_script_missing_returns_skipped(self) -> None:
+        """When script path does not exist, returns success with skipped message."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            result = _run_synapse_script(
+                root, "python", "check_formatting_ci_parity.py", "format_ci_parity"
+            )
+            assert result.success is True
+            assert "skipped" in result.output
+            assert result.errors == []
+
+    def test_run_synapse_script_when_script_fails_returns_errors(self) -> None:
+        """When script runs and returns non-zero, returns failure with output."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            scripts_dir = root / ".cortex" / "synapse" / "scripts" / "python"
+            scripts_dir.mkdir(parents=True)
+            script_path = scripts_dir / "check_formatting_ci_parity.py"
+            _ = script_path.write_text("#!/usr/bin/env python3\n")
+            (root / ".venv").mkdir()
+            (root / ".venv" / "bin").mkdir()
+            python_bin = root / ".venv" / "bin" / "python"
+            _ = python_bin.write_text("")
+            python_bin.chmod(0o755)
+
+            with patch("cortex.tools.pre_commit_tools.subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock(
+                    returncode=1,
+                    stdout="stdout",
+                    stderr="stderr",
+                )
+
+                result = _run_synapse_script(
+                    root,
+                    "python",
+                    "check_formatting_ci_parity.py",
+                    "format_ci_parity",
+                )
+
+                assert result.success is False
+                assert len(result.errors) >= 1
 
 
 class TestAdapterRegistry:

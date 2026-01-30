@@ -77,3 +77,17 @@ class TestCommitPromptAlignment:
         """Commit prompt mentions sequential steps 0–8 and 12–14."""
         assert "0–8" in commit_prompt_content or "0-8" in commit_prompt_content
         assert "12–14" in commit_prompt_content or "12-14" in commit_prompt_content
+
+    def test_commit_prompt_uses_tools_only_no_direct_script_invocations(
+        self, commit_prompt_content: str
+    ) -> None:
+        """Commit prompt must not instruct running pre-commit/Step 12 scripts directly.
+
+        Phase 65: All pre-commit and Step 12 operations must be via Cortex MCP tools
+        (execute_pre_commit_checks, fix_markdown_lint); no .venv/bin/python script paths.
+        """
+        forbidden = ".venv/bin/python .cortex/synapse/scripts"
+        assert forbidden not in commit_prompt_content, (
+            "Commit prompt must not contain direct script invocations; "
+            "use execute_pre_commit_checks() and fix_markdown_lint() only."
+        )

@@ -25,8 +25,10 @@ class PreCommitCheck(str, Enum):
 
     FIX_ERRORS = "fix_errors"
     FORMAT = "format"
+    FORMAT_CI_PARITY = "format_ci_parity"
     TYPE_CHECK = "type_check"
     QUALITY = "quality"
+    TEST_NAMING = "test_naming"
     TESTS = "tests"
 
 

@@ -2,6 +2,18 @@
 
 ## 2026-01-30
 
+- ✅ **Phase 66: Plan Creation Workflow Compliance** - COMPLETE (2026-01-30)
+  - Clarified path resolution in create-plan prompt: use absolute path from `structure_info.paths.plans`; no hardcoding or inferring from root + layout; added Path resolution subsection under ERROR HANDLING and IMPLEMENTATION GUIDELINES.
+  - Enforced roadmap update via manage_file only in Step 6 (PROHIBITED/REQUIRED/VIOLATION); reinforced Step 7 verification (restore via manage_file with full content, not StrReplace).
+  - Added "Roadmap update (plan creation)" note to memory-bank-updater agent.
+  - Added integration tests in tests/integration/test_plan_creation_workflow_compliance.py (8 tests). Plan status set to Completed.
+
+- ✅ **Phase 65: Commit Workflow — Cortex Tools Only** - COMPLETE (2026-01-30)
+  - Removed all direct script invocations from `.cortex/synapse/prompts/commit.md`. Step 12 and pre-commit operations now use only Cortex MCP tools: `execute_pre_commit_checks(checks=[...])` (format, format_ci_parity, type_check, quality, test_naming, tests) and `fix_markdown_lint()`.
+  - Extended `execute_pre_commit_checks` with `format_ci_parity` and `test_naming` (run synapse scripts internally via `_run_synapse_script`). Python adapter `type_check()` now runs on `src/` and `tests/` to match CI.
+  - Added unit tests for format_ci_parity/test_naming (script missing → skipped; script fails → errors) and `_run_synapse_script`. Integration test `test_commit_prompt_uses_tools_only_no_direct_script_invocations` asserts commit.md contains no `.venv/bin/python .cortex/synapse/scripts`.
+  - Plan status set to Completed. Roadmap and progress updated.
+
 - **Commit in progress** (2026-01-30)
   - Changes: .github/workflows/quality.yml, src/cortex/services/framework_adapters/python_adapter.py, .cortex/synapse (submodule); markdown lint fix on .cortex/synapse/prompts/commit.md. Steps 0–4 passed: fix_errors, format, markdown lint (179 files, 1 fixed), type_check (0 errors, 0 warnings), quality (0 violations), tests (2932 passed, 90.01% coverage). 0 plans archived.
 
