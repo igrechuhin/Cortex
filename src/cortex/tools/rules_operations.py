@@ -17,11 +17,13 @@ from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.rules_manager import RulesManager
 from cortex.server import mcp
 from cortex.tools.rules_operation_helpers import (
+    RulesOperation,
     build_get_relevant_response,
     build_invalid_operation_error,
     build_missing_rules_parameters_error,
     calculate_total_tokens,
     extract_all_rules,
+    parse_rules_operation,
     resolve_config_defaults,
 )
 
@@ -134,7 +136,7 @@ async def handle_get_relevant_operation(
 
 
 async def dispatch_operation(
-    operation: Literal["index", "get_relevant"],
+    operation: RulesOperation,
     rules_manager: RulesManager,
     optimization_config: OptimizationConfig,
     force: bool,
@@ -156,14 +158,12 @@ async def dispatch_operation(
     Returns:
         JSON string with operation result
     """
-    if operation == "index":
+    if operation == RulesOperation.INDEX:
         return await handle_index_operation(rules_manager, force)
-    elif operation == "get_relevant":
-        # Validate parameters
+    if operation == RulesOperation.GET_RELEVANT:
         if error_msg := await validate_get_relevant_params(task_description):
             return error_msg
         assert task_description is not None
-        # Handle operation
         return await handle_get_relevant_operation(
             rules_manager,
             optimization_config,
@@ -171,8 +171,8 @@ async def dispatch_operation(
             max_tokens,
             min_relevance_score,
         )
-    else:
-        return build_invalid_operation_error(operation)
+    # Defensive: unknown enum member (e.g. after adding a new RulesOperation)
+    return build_invalid_operation_error(operation.value)
 
 
 @mcp.tool()
@@ -447,10 +447,13 @@ async def rules(
         - Index results include cache_hit flag indicating whether cached index used
           or fresh indexing performed
     """
-    if operation is None:
-        return build_missing_rules_parameters_error()
+    parsed = parse_rules_operation(operation)
+    if parsed is None:
+        if operation is None:
+            return build_missing_rules_parameters_error()
+        return build_invalid_operation_error(operation)
     return await _execute_rules_operation(
-        operation,
+        parsed,
         project_root,
         force,
         task_description,
@@ -460,7 +463,7 @@ async def rules(
 
 
 async def _execute_rules_operation(
-    operation: Literal["index", "get_relevant"],
+    operation: RulesOperation,
     project_root: str | None,
     force: bool,
     task_description: str | None,

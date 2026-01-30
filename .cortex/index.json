@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-01-29T21:54:57.965781",
+  "last_updated": "2026-01-30T11:42:53.088054",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 11174,
-      "token_count": 2696,
+      "size_bytes": 12341,
+      "token_count": 2955,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-29T21:46:24.553262",
-      "content_hash": "sha256:600377e012aa418c3cfe681b646a73fe05711da1c06803dd860bcddff279303a",
+      "last_modified": "2026-01-29T22:40:05.181244",
+      "content_hash": "sha256:ef3fe994362384c25e67f0b7b7a88ceeb8a21902188491680b5bf4856e7cbf55",
       "sections": [
         {
           "title": "## Current Status (2026-01-29)",
@@ -37,8 +37,8 @@
         }
       ],
       "read_count": 2,
-      "write_count": 33,
-      "last_read": "2026-01-29T21:46:24.553262",
+      "write_count": 34,
+      "last_read": "2026-01-29T22:40:05.181244",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -426,17 +426,28 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Marked Multi-Language Validation Support as COMPLETE (2026-01-29)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-29T22:40:05.180716",
+          "content_hash": "sha256:ef3fe994362384c25e67f0b7b7a88ceeb8a21902188491680b5bf4856e7cbf55",
+          "size_bytes": 12341,
+          "token_count": 2955,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Added Phase 64 plan: Promote fixed string sets to enums"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 14427,
-      "token_count": 3603,
+      "size_bytes": 1877,
+      "token_count": 441,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-29T21:54:57.964682",
-      "content_hash": "sha256:32fcbc762442aaace9b065cfec5b472234cea5f0c8a83f093afc7872915f8149",
+      "last_modified": "2026-01-29T22:14:01.311544",
+      "content_hash": "sha256:01b1a9e9aa14fde94700b65b8ce1e4f068566e8f2e83e94e2c2f87e300cd8105",
       "sections": [
         {
           "title": "## 2026-01-29",
@@ -444,18 +455,11 @@
           "line_start": 3,
           "line_end": 3,
           "content_hash": null
-        },
-        {
-          "title": "## 2026-01-28",
-          "level": 2,
-          "line_start": 99,
-          "line_end": 99,
-          "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 27,
-      "last_read": "2026-01-29T21:54:57.964682",
+      "write_count": 28,
+      "last_read": "2026-01-29T22:14:01.311544",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -755,20 +759,31 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Progress entry for commit pipeline (stub adapter, pre-commit checks)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-29T22:14:01.311030",
+          "content_hash": "sha256:01b1a9e9aa14fde94700b65b8ce1e4f068566e8f2e83e94e2c2f87e300cd8105",
+          "size_bytes": 1877,
+          "token_count": 441,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for TypeScript Pre-Commit Adapter completion"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 5424,
-      "token_count": 1381,
+      "size_bytes": 1664,
+      "token_count": 464,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-29T21:48:14.199007",
-      "content_hash": "sha256:f237eed11128b9e0a19fd3977d4643f32d7d87af8bebef9e9e21c4ef6b463aee",
+      "last_modified": "2026-01-30T11:42:53.086649",
+      "content_hash": "sha256:6550d39c1786aec7d09c471d609d9308981251222582bd5751260b93f146449e",
       "sections": [
         {
-          "title": "## Current Focus (2026-01-29)",
+          "title": "## Current Focus (2026-01-30)",
           "level": 2,
           "line_start": 3,
           "line_end": 3,
@@ -784,28 +799,28 @@
         {
           "title": "### Recently Completed",
           "level": 2,
-          "line_start": 46,
-          "line_end": 46,
+          "line_start": 19,
+          "line_end": 19,
           "content_hash": null
         },
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 54,
-          "line_end": 54,
+          "line_start": 25,
+          "line_end": 25,
           "content_hash": null
         },
         {
           "title": "## Next Focus",
           "level": 2,
-          "line_start": 61,
-          "line_end": 61,
+          "line_start": 31,
+          "line_end": 31,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 18,
-      "last_read": "2026-01-29T21:48:14.199007",
+      "write_count": 19,
+      "last_read": "2026-01-30T11:42:53.086649",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -1006,6 +1021,17 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Updated active context after Multi-Language Validation Support completion"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T11:42:53.086169",
+          "content_hash": "sha256:6550d39c1786aec7d09c471d609d9308981251222582bd5751260b93f146449e",
+          "size_bytes": 1664,
+          "token_count": 464,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated after commit: coverage fix, 2026-01-30"
         }
       ]
     },
@@ -1243,8 +1269,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 44250,
-    "total_tokens": 10543,
-    "last_full_scan": "2026-01-29T21:54:57.964705"
+    "total_size_bytes": 29107,
+    "total_tokens": 6723,
+    "last_full_scan": "2026-01-30T11:42:53.086676"
   }
 }

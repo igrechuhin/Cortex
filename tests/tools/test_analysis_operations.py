@@ -16,7 +16,11 @@ from cortex.analysis.models import (
 )
 from cortex.core.models import DependencyGraphDict, FileOrganizationResult
 from cortex.refactoring.consolidation_detector import ConsolidationOpportunity
-from cortex.refactoring.models import ReorganizationImpactModel, ReorganizationPlanModel
+from cortex.refactoring.models import (
+    RefactoringSuggestionType,
+    ReorganizationImpactModel,
+    ReorganizationPlanModel,
+)
 from cortex.refactoring.split_recommender import SplitRecommendation
 from cortex.tools.analysis_operations import (
     analyze,
@@ -26,18 +30,20 @@ from cortex.tools.analysis_operations import (
     dispatch_analysis_target,
     get_analysis_managers,
 )
-from cortex.tools.refactoring_operations import (
+from cortex.tools.refactoring_operation_helpers import (
     convert_opportunities_to_dict,
     convert_recommendations_to_dict,
     get_refactoring_managers,
     get_structure_data,
     handle_preview_mode,
+    validate_refactoring_type,
+)
+from cortex.tools.refactoring_operations import (
     process_refactoring_request,
     suggest_consolidation,
     suggest_refactoring,
     suggest_reorganization,
     suggest_splits,
-    validate_refactoring_type,
 )
 from tests.helpers.managers import make_test_managers
 
@@ -958,7 +964,12 @@ class TestProcessRefactoringRequest:
 
             # Act
             result = await process_refactoring_request(
-                "consolidation", str(tmp_path), 0.85, None, None, None
+                RefactoringSuggestionType.CONSOLIDATION,
+                str(tmp_path),
+                0.85,
+                None,
+                None,
+                None,
             )
 
             # Assert
@@ -992,7 +1003,12 @@ class TestProcessRefactoringRequest:
 
             # Act
             result = await process_refactoring_request(
-                "splits", str(tmp_path), None, 8000, None, None
+                RefactoringSuggestionType.SPLITS,
+                str(tmp_path),
+                None,
+                8000,
+                None,
+                None,
             )
 
             # Assert
@@ -1049,7 +1065,12 @@ class TestProcessRefactoringRequest:
 
                 # Act
                 result = await process_refactoring_request(
-                    "reorganization", str(tmp_path), None, None, "category", None
+                    RefactoringSuggestionType.REORGANIZATION,
+                    str(tmp_path),
+                    None,
+                    None,
+                    "category",
+                    None,
                 )
 
             # Assert
@@ -1080,7 +1101,12 @@ class TestProcessRefactoringRequest:
 
             # Act
             result = await process_refactoring_request(
-                "consolidation", str(tmp_path), None, None, None, "consolidation_001"
+                RefactoringSuggestionType.CONSOLIDATION,
+                str(tmp_path),
+                None,
+                None,
+                None,
+                "consolidation_001",
             )
 
             # Assert

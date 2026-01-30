@@ -26,6 +26,7 @@ from cortex.core.models import ModelDict
 from cortex.managers.types import ManagersDict
 from cortex.optimization.models import RulesManagerStatusModel
 from cortex.tools.rules_operation_helpers import (
+    RulesOperation,
     build_get_relevant_response,
     calculate_total_tokens,
     extract_all_rules,
@@ -591,7 +592,7 @@ async def test_dispatch_operation_index(
     """Test dispatch_operation with index operation."""
     # Act
     result = await dispatch_operation(
-        "index",
+        RulesOperation.INDEX,
         mock_rules_manager,
         mock_optimization_config_enabled,
         False,
@@ -614,7 +615,7 @@ async def test_dispatch_operation_get_relevant(
     """Test dispatch_operation with get_relevant operation."""
     # Act
     result = await dispatch_operation(
-        "get_relevant",
+        RulesOperation.GET_RELEVANT,
         mock_rules_manager,
         mock_optimization_config_enabled,
         False,
@@ -637,7 +638,7 @@ async def test_dispatch_operation_get_relevant_missing_task(
     """Test dispatch_operation get_relevant without task_description."""
     # Act
     result = await dispatch_operation(
-        "get_relevant",
+        RulesOperation.GET_RELEVANT,
         mock_rules_manager,
         mock_optimization_config_enabled,
         False,
@@ -654,19 +655,13 @@ async def test_dispatch_operation_get_relevant_missing_task(
 
 
 @pytest.mark.asyncio
-async def test_dispatch_operation_invalid(
-    mock_rules_manager: MagicMock, mock_optimization_config_enabled: MagicMock
+async def test_rules_invalid_operation_returns_error(
+    mock_managers_enabled: dict[str, Any], mock_project_root: Path
 ) -> None:
-    """Test dispatch_operation with invalid operation."""
-    # Act
-    result = await dispatch_operation(
-        "invalid_operation",  # type: ignore[arg-type]
-        mock_rules_manager,
-        mock_optimization_config_enabled,
-        False,
-        None,
-        None,
-        None,
+    """Test rules() with invalid operation returns friendly error."""
+    # Act: invalid operation is rejected at parse before dispatch_operation
+    result = await rules(
+        operation="invalid_operation", project_root=str(mock_project_root)
     )
 
     # Assert

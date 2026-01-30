@@ -1,11 +1,29 @@
 """Helper functions for rules operations."""
 
 import json
+from enum import Enum
 from typing import cast
 
 from cortex.core.models import ModelDict
 from cortex.optimization.models import RulesManagerStatusModel
 from cortex.optimization.optimization_config import OptimizationConfig
+
+
+class RulesOperation(str, Enum):
+    """Fixed set of rules tool operations. Use instead of raw strings."""
+
+    INDEX = "index"
+    GET_RELEVANT = "get_relevant"
+
+
+def parse_rules_operation(value: str | None) -> RulesOperation | None:
+    """Parse string to RulesOperation. Returns None if invalid or missing."""
+    if value is None:
+        return None
+    try:
+        return RulesOperation(value)
+    except ValueError:
+        return None
 
 
 def resolve_config_defaults(

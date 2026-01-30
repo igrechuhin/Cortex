@@ -28,6 +28,7 @@ from cortex.services.framework_adapters.base import (
 )
 from cortex.services.framework_adapters.python_adapter import PythonAdapter
 from cortex.services.framework_adapters.stub_adapter import StubAdapter
+from cortex.services.framework_adapters.typescript_adapter import TypeScriptAdapter
 from cortex.services.language_detector import LanguageInfo
 
 # No circular import: markdown_operations doesn't import pre_commit_tools
@@ -36,9 +37,11 @@ from cortex.tools.pre_commit_helpers import (
     CheckStats,
     FileSizeViolation,
     FunctionLengthViolation,
+    PreCommitCheck,
     PreCommitResult,
     QualityCheckResult,
     collect_remaining_issues,
+    count_file_lines,
     create_error_result,
     detect_or_use_language,
     determine_checks_to_perform,
@@ -52,11 +55,11 @@ from cortex.tools.pre_commit_helpers import (
 )
 
 # Adapter registry: language -> factory(project_root) -> FrameworkAdapter.
-# Python has full implementation; TypeScript, JavaScript, Rust, Go, Java use
-# StubAdapter until language-specific implementations are added.
+# Python and TypeScript have full implementations; JavaScript, Rust, Go, Java
+# use StubAdapter until language-specific implementations are added.
 _ADAPTER_REGISTRY: dict[str, Callable[[str | None], FrameworkAdapter]] = {
     "python": lambda root: PythonAdapter(root),
-    "typescript": lambda root: StubAdapter(root, "typescript"),
+    "typescript": lambda root: TypeScriptAdapter(root),
     "javascript": lambda root: StubAdapter(root, "javascript"),
     "rust": lambda root: StubAdapter(root, "rust"),
     "go": lambda root: StubAdapter(root, "go"),
@@ -267,7 +270,7 @@ async def execute_pre_commit_checks(
 def _execute_all_checks(
     adapter: FrameworkAdapter,
     language: str,
-    checks_to_perform: list[str],
+    checks_to_perform: list[PreCommitCheck],
     strict_mode: bool,
     timeout: int | None,
     coverage_threshold: float,
@@ -294,16 +297,16 @@ def _execute_all_checks(
 
 def _process_fix_errors_check(
     adapter: FrameworkAdapter,
-    checks_to_perform: list[str],
+    checks_to_perform: list[PreCommitCheck],
     strict_mode: bool,
     results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
 ) -> None:
     """Process fix_errors check if requested."""
-    if "fix_errors" in checks_to_perform:
+    if PreCommitCheck.FIX_ERRORS in checks_to_perform:
         fix_result = _execute_fix_errors(adapter, strict_mode)
-        results["fix_errors"] = fix_result
-        stats.checks_performed.append("fix_errors")
+        results[PreCommitCheck.FIX_ERRORS.value] = fix_result
+        stats.checks_performed.append(PreCommitCheck.FIX_ERRORS.value)
         stats.total_errors += len(fix_result.errors)
         stats.total_warnings += len(fix_result.warnings)
         stats.files_modified.extend(fix_result.files_modified)
@@ -311,61 +314,61 @@ def _process_fix_errors_check(
 
 def _process_format_check(
     adapter: FrameworkAdapter,
-    checks_to_perform: list[str],
+    checks_to_perform: list[PreCommitCheck],
     results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
 ) -> None:
     """Process format check if requested."""
-    if "format" in checks_to_perform:
-        format_result = _execute_format(adapter)
-        results["format"] = format_result
-        stats.checks_performed.append("format")
+    if PreCommitCheck.FORMAT in checks_to_perform:
+        format_result = adapter.format_code()
+        results[PreCommitCheck.FORMAT.value] = format_result
+        stats.checks_performed.append(PreCommitCheck.FORMAT.value)
         stats.total_errors += len(format_result.errors)
         stats.files_modified.extend(format_result.files_modified)
 
 
 def _process_type_check(
     adapter: FrameworkAdapter,
-    checks_to_perform: list[str],
+    checks_to_perform: list[PreCommitCheck],
     results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
 ) -> None:
     """Process type_check check if requested."""
-    if "type_check" in checks_to_perform:
-        type_result = _execute_type_check(adapter)
-        results["type_check"] = type_result
-        stats.checks_performed.append("type_check")
+    if PreCommitCheck.TYPE_CHECK in checks_to_perform:
+        type_result = adapter.type_check()
+        results[PreCommitCheck.TYPE_CHECK.value] = type_result
+        stats.checks_performed.append(PreCommitCheck.TYPE_CHECK.value)
         stats.total_errors += len(type_result.errors)
 
 
 def _process_quality_check(
     adapter: FrameworkAdapter,
     language: str,
-    checks_to_perform: list[str],
+    checks_to_perform: list[PreCommitCheck],
     results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
 ) -> None:
     """Process quality check if requested."""
-    if "quality" in checks_to_perform:
+    if PreCommitCheck.QUALITY in checks_to_perform:
         quality_result = _execute_quality(adapter, language)
-        results["quality"] = quality_result
-        stats.checks_performed.append("quality")
+        results[PreCommitCheck.QUALITY.value] = quality_result
+        stats.checks_performed.append(PreCommitCheck.QUALITY.value)
         stats.total_errors += len(quality_result.errors)
 
 
 def _process_tests_check(
     adapter: FrameworkAdapter,
-    checks_to_perform: list[str],
+    checks_to_perform: list[PreCommitCheck],
     timeout: int | None,
     coverage_threshold: float,
     results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
 ) -> None:
     """Process tests check if requested."""
-    if "tests" in checks_to_perform:
+    if PreCommitCheck.TESTS in checks_to_perform:
         test_result = _execute_tests(adapter, timeout, coverage_threshold)
-        results["tests"] = test_result
-        stats.checks_performed.append("tests")
+        results[PreCommitCheck.TESTS.value] = test_result
+        stats.checks_performed.append(PreCommitCheck.TESTS.value)
         if not test_result.success:
             stats.total_errors += len(test_result.errors)
 
@@ -380,41 +383,6 @@ def _execute_fix_errors(
         auto_fix=True,
         strict_mode=strict_mode,
     )
-
-
-def _execute_format(adapter: FrameworkAdapter) -> CheckResult:
-    """Execute format check."""
-    return adapter.format_code()
-
-
-def _execute_type_check(adapter: FrameworkAdapter) -> CheckResult:
-    """Execute type_check check."""
-    return adapter.type_check()
-
-
-def _count_file_lines(path: Path) -> int:
-    """Count non-blank, non-comment, non-docstring lines in a file."""
-    try:
-        with open(path, encoding="utf-8") as f:
-            lines = f.readlines()
-    except Exception:
-        return 0
-
-    count = 0
-    in_docstring = False
-
-    for line in lines:
-        stripped = line.strip()
-        if '"""' in stripped or "'''" in stripped:
-            in_docstring = not in_docstring
-            continue
-        if in_docstring:
-            continue
-        if not stripped or stripped.startswith("#"):
-            continue
-        count += 1
-
-    return count
 
 
 def _check_file_sizes(project_root: Path) -> list[FileSizeViolation]:
@@ -432,7 +400,7 @@ def _check_file_sizes(project_root: Path) -> list[FileSizeViolation]:
             continue
         if py_file.name in excluded_files:
             continue
-        lines = _count_file_lines(py_file)
+        lines = count_file_lines(py_file)
         if lines > MAX_FILE_LINES:
             try:
                 relative_path = str(py_file.relative_to(project_root))
@@ -727,7 +695,11 @@ def _create_quality_error_response(error_message: str) -> str:
 async def _run_quality_checks(root_str: str) -> ModelDict | str:
     """Run quality checks and return result or error response."""
     fix_errors_result_json = await execute_pre_commit_checks(
-        checks=["fix_errors", "format", "type_check"],
+        checks=[
+            PreCommitCheck.FIX_ERRORS.value,
+            PreCommitCheck.FORMAT.value,
+            PreCommitCheck.TYPE_CHECK.value,
+        ],
         project_root=root_str,
         strict_mode=False,
     )

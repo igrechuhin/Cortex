@@ -18,6 +18,7 @@ from .models import (
     RefactoringOperationModel,
     RefactoringStatus,
     RefactoringSuggestionModel,
+    RefactoringType,
     RefactoringValidationResult,
 )
 
@@ -233,16 +234,16 @@ class ExecutionValidator:
         if isinstance(suggestion, dict):
             return self._extract_operations_from_legacy_dict(suggestion)
 
-        suggestion_type = suggestion.refactoring_type.value
+        suggestion_type = suggestion.refactoring_type
         suggestion_id = suggestion.suggestion_id
 
-        if suggestion_type == "consolidation":
+        if suggestion_type == RefactoringType.CONSOLIDATION:
             operations.extend(
                 _extract_consolidation_operations(suggestion, suggestion_id)
             )
-        elif suggestion_type == "split":
+        elif suggestion_type == RefactoringType.SPLIT:
             operations.extend(_extract_split_operations(suggestion, suggestion_id))
-        elif suggestion_type == "reorganization":
+        elif suggestion_type == RefactoringType.REORGANIZATION:
             operations.extend(
                 _extract_reorganization_operations(suggestion, suggestion_id)
             )
@@ -255,11 +256,11 @@ class ExecutionValidator:
         """Extract operations from legacy dict-shaped suggestions (used by tests)."""
         suggestion_type = str(suggestion.get("type", ""))
         suggestion_id = str(suggestion.get("suggestion_id", "legacy"))
-        if suggestion_type == "consolidation":
+        if suggestion_type == RefactoringType.CONSOLIDATION.value:
             return _extract_legacy_consolidation_operations(suggestion_id, suggestion)
-        if suggestion_type == "split":
+        if suggestion_type == RefactoringType.SPLIT.value:
             return _extract_legacy_split_operations(suggestion_id, suggestion)
-        if suggestion_type == "reorganization":
+        if suggestion_type == RefactoringType.REORGANIZATION.value:
             return _extract_legacy_reorganization_operations(suggestion_id, suggestion)
         return []
 

@@ -1,8 +1,10 @@
 # Roadmap: MCP Memory Bank
 
-## Current Status (2026-01-29)
+## Current Status (2026-01-30)
 
 ### Active Work
+
+- ✅ **Commit: Coverage above 90%** - COMPLETE (2026-01-30) - Added tests/unit/test_refactoring_operation_helpers.py; coverage 89.98% → 90.01%; 2932 tests passing.
 
 - ✅ **Phase 55: Improve Implementation Prompt Quality Gates** - COMPLETE (2026-01-29) - Added quality gates to .cortex/synapse/prompts/implement-next-roadmap-step.md: Step 3.5 Pydantic/TypedDict prohibition and pre-implementation checklist; Step 2 load_context error handling; Step 4 mandatory format and type-check steps, ReadLints before Step 4.5; Step 4.6 implicit-concatenation check; token budget 15k–20k for narrow steps. Python coding standards: TypedDict FORBIDDEN and validation step. Integration tests in tests/integration/test_implement_prompt_quality_gates.py. Plan: .cortex/plans/archive/Phase55/phase-55-improve-implementation-prompt-quality-gates.md.
 
@@ -50,4 +52,8 @@
 
 - ✅ **Multi-Language Validation Support** - COMPLETE (2026-01-29) - Added StubAdapter for TypeScript, JavaScript, Rust, Go, Java and registered them in pre_commit_tools _ADAPTER_REGISTRY; SUPPORTED_LANGUAGES now includes 6 languages. Stub adapters return clear "not yet implemented" results until full implementations are added. Unit tests in tests/unit/test_stub_adapter.py and TestAdapterRegistry updates in tests/unit/test_pre_commit_tools.py. All 2906 tests passing.
 
-- **Pre-commit**: Add other language adapters as needed (src/cortex/tools/pre_commit_tools.py) – tracked; stub adapters in place; full implementations in future phases.
+- ✅ **TypeScript Pre-Commit Adapter** - COMPLETE (2026-01-29) - Added TypeScriptAdapter in src/cortex/services/framework_adapters/typescript_adapter.py (prettier, eslint, tsc, npm test). Registered in pre_commit_tools _ADAPTER_REGISTRY; typescript now uses TypeScriptAdapter instead of StubAdapter. Unit tests in tests/unit/test_typescript_adapter.py. TestAdapterRegistry updated (test_get_adapter_returns_typescript_adapter_for_typescript). All 2919 tests passing, coverage 90%.
+
+- **Pre-commit**: Add other language adapters as needed (src/cortex/tools/pre_commit_tools.py) – tracked; Python and TypeScript have full implementations; JavaScript, Rust, Go, Java use StubAdapter until full implementations.
+
+- **Phase 64: Promote fixed string sets to enums** - PLANNED - Replace all identified fixed string sets (Literal or raw strings) with str-subclassed enums: RulesOperation, FileOperation, RefactoringAction, RefactoringSuggestionType, ValidationCheckType, ConfigAction, AnalysisTarget, StubAdapterLanguage; optional shared QualityGrade/HealthStatus. Follows PreCommitCheck pattern. Plan: .cortex/plans/phase-64-promote-fixed-strings-to-enums.md.

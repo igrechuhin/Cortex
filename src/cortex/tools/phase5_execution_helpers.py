@@ -10,12 +10,23 @@ from cortex.refactoring.learning_engine import LearningEngine
 from cortex.refactoring.models import (
     ApprovalModel,
     FeedbackRecordResult,
+    RefactoringAction,
     RefactoringSuggestionModel,
 )
 from cortex.refactoring.models import (
     ApprovalStatus as ApprovalStatusEnum,
 )
 from cortex.refactoring.refactoring_engine import RefactoringEngine
+
+
+def parse_refactoring_action(value: str | None) -> RefactoringAction | None:
+    """Parse string to RefactoringAction. Returns None if invalid or missing."""
+    if value is None:
+        return None
+    try:
+        return RefactoringAction(value)
+    except ValueError:
+        return None
 
 
 async def extract_feedback_managers(

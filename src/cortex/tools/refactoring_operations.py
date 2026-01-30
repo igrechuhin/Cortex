@@ -8,89 +8,29 @@ Total: 1 tool
 """
 
 import json
-from collections.abc import Sequence
 from typing import Literal, cast
 
-from cortex.analysis.structure_analyzer import StructureAnalyzer
-from cortex.core.models import ModelDict
 from cortex.core.protocols.token import DependencyGraphProtocol
 from cortex.managers.initialization import get_managers, get_project_root
-from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
-from cortex.refactoring.consolidation_detector import (
-    ConsolidationDetector,
-    ConsolidationOpportunity,
+from cortex.refactoring.consolidation_detector import ConsolidationDetector
+from cortex.refactoring.models import (
+    DependencyGraphInput,
+    MemoryBankStructureData,
+    RefactoringSuggestionType,
 )
-from cortex.refactoring.models import DependencyGraphInput, MemoryBankStructureData
 from cortex.refactoring.reorganization_planner import ReorganizationPlanner
-from cortex.refactoring.split_recommender import SplitRecommendation, SplitRecommender
+from cortex.refactoring.split_recommender import SplitRecommender
 from cortex.server import mcp
-
-
-def validate_refactoring_type(type: str) -> str | None:
-    """Validate refactoring type parameter."""
-    valid_types = ["consolidation", "splits", "reorganization"]
-    if type not in valid_types:
-        return json.dumps(
-            {
-                "status": "error",
-                "error": (
-                    f"Invalid type: {type}. Valid types: consolidation, "
-                    "splits, reorganization"
-                ),
-                "valid_types": valid_types,
-            },
-            indent=2,
-        )
-    return None
-
-
-async def get_refactoring_managers(
-    mgrs: ManagersDict,
-) -> tuple[ConsolidationDetector, SplitRecommender, ReorganizationPlanner]:
-    """Unwrap and return refactoring managers."""
-    consolidation_detector = await get_manager(
-        mgrs, "consolidation_detector", ConsolidationDetector
-    )
-    split_recommender = await get_manager(mgrs, "split_recommender", SplitRecommender)
-    reorganization_planner = await get_manager(
-        mgrs, "reorganization_planner", ReorganizationPlanner
-    )
-    return consolidation_detector, split_recommender, reorganization_planner
-
-
-def handle_preview_mode(preview_suggestion_id: str) -> str:
-    """Handle preview mode for refactoring suggestions."""
-    return json.dumps(
-        {
-            "status": "success",
-            "preview_mode": True,
-            "suggestion_id": preview_suggestion_id,
-            "message": "Preview functionality requires suggestion caching",
-            "note": "Call suggest_refactoring first to generate suggestions",
-        },
-        indent=2,
-    )
-
-
-def convert_opportunities_to_dict(
-    opportunities: Sequence[ConsolidationOpportunity],
-) -> list[ModelDict]:
-    """Convert consolidation opportunities to serializable dicts.
-
-    Args:
-        opportunities: Sequence of opportunity dataclasses
-
-    Returns:
-        List of dicts
-    """
-    items: list[ModelDict] = []
-    for opp in opportunities:
-        if hasattr(opp, "to_dict"):
-            items.append(opp.to_dict())
-        else:
-            items.append(cast(ModelDict, opp.__dict__))
-    return items
+from cortex.tools.refactoring_operation_helpers import (
+    convert_opportunities_to_dict,
+    convert_recommendations_to_dict,
+    get_refactoring_managers,
+    get_structure_data,
+    handle_preview_mode,
+    parse_refactoring_suggestion_type,
+    validate_suggest_refactoring_type,
+)
 
 
 async def suggest_consolidation(
@@ -115,26 +55,6 @@ async def suggest_consolidation(
     )
 
 
-def convert_recommendations_to_dict(
-    recommendations: Sequence[SplitRecommendation],
-) -> list[ModelDict]:
-    """Convert split recommendations to serializable dicts.
-
-    Args:
-        recommendations: Sequence of recommendation dataclasses
-
-    Returns:
-        List of dicts
-    """
-    items: list[ModelDict] = []
-    for rec in recommendations:
-        if hasattr(rec, "to_dict"):
-            items.append(rec.to_dict())
-        else:
-            items.append(cast(ModelDict, rec.__dict__))
-    return items
-
-
 async def suggest_splits(
     split_recommender: SplitRecommender,
     size_threshold: int | None,
@@ -155,38 +75,6 @@ async def suggest_splits(
         },
         indent=2,
     )
-
-
-async def get_structure_data(
-    mgrs: ManagersDict,
-) -> ModelDict:
-    """Get structure analysis data."""
-    structure_analyzer = await get_manager(
-        mgrs, "structure_analyzer", StructureAnalyzer
-    )
-    organization = await structure_analyzer.analyze_file_organization()
-    anti_patterns = await structure_analyzer.detect_anti_patterns()
-    complexity = await structure_analyzer.measure_complexity_metrics()
-
-    analysis: ModelDict = {
-        "file_organization": organization.model_dump(mode="json"),
-        "anti_patterns": [p.model_dump(mode="json") for p in anti_patterns],
-        "complexity_metrics": complexity.model_dump(mode="json"),
-    }
-
-    total_files = int(getattr(organization, "file_count", 0))
-    return {
-        "total_files": total_files,
-        "files": [],
-        "organization": "flat",
-        "categories": {},
-        "dependency_depth": 0,
-        "dependency_order": [],
-        "hub_files": [],
-        "orphaned_files": [],
-        "complexity_score": 0.0,
-        "analysis": analysis,
-    }
 
 
 async def suggest_reorganization(
@@ -223,7 +111,7 @@ async def suggest_reorganization(
 
 
 async def process_refactoring_request(
-    type: str,
+    type_enum: RefactoringSuggestionType,
     project_root: str | None,
     min_similarity: float | None,
     size_threshold: int | None,
@@ -231,7 +119,6 @@ async def process_refactoring_request(
     preview_suggestion_id: str | None,
 ) -> str:
     """Process refactoring suggestion request."""
-    # Get managers
     root = get_project_root(project_root)
     mgrs = await get_managers(root)
     (
@@ -240,18 +127,15 @@ async def process_refactoring_request(
         reorganization_planner,
     ) = await get_refactoring_managers(mgrs)
 
-    # Handle preview mode
     if preview_suggestion_id:
         return handle_preview_mode(preview_suggestion_id)
 
-    # Generate suggestions based on type
-    if type == "consolidation":
+    if type_enum == RefactoringSuggestionType.CONSOLIDATION:
         return await suggest_consolidation(consolidation_detector, min_similarity)
-    elif type == "splits":
+    if type_enum == RefactoringSuggestionType.SPLITS:
         return await suggest_splits(split_recommender, size_threshold)
-    elif type == "reorganization":
+    if type_enum == RefactoringSuggestionType.REORGANIZATION:
         return await suggest_reorganization(reorganization_planner, mgrs, goal)
-
     return json.dumps({"status": "error", "error": "Unknown error"}, indent=2)
 
 
@@ -687,12 +571,13 @@ async def suggest_refactoring(
           to apply changes after reviewing suggestions.
     """
     try:
-        error_response = validate_refactoring_type(type)
-        if error_response:
-            return error_response
-
+        err = validate_suggest_refactoring_type(type)
+        if err is not None:
+            return err
+        type_parsed = parse_refactoring_suggestion_type(type)
+        assert type_parsed is not None
         return await process_refactoring_request(
-            type,
+            type_parsed,
             project_root,
             min_similarity,
             size_threshold,

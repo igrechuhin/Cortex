@@ -75,6 +75,22 @@ class RefactoringStatus(str, Enum):
     ROLLED_BACK = "rolled_back"
 
 
+class RefactoringAction(str, Enum):
+    """Action for apply_refactoring tool. Use instead of raw strings."""
+
+    APPROVE = "approve"
+    APPLY = "apply"
+    ROLLBACK = "rollback"
+
+
+class RefactoringSuggestionType(str, Enum):
+    """Type for suggest_refactoring tool. Use instead of raw strings."""
+
+    CONSOLIDATION = "consolidation"
+    SPLITS = "splits"
+    REORGANIZATION = "reorganization"
+
+
 # ============================================================================
 # Common Metric Models
 # ============================================================================
@@ -887,9 +903,6 @@ class ApprovalStatusResult(RefactoringBaseModel):
     user_comment: str | None = Field(default=None, description="User comment")
     requested_at: str | None = Field(
         default=None, description="ISO timestamp of request"
-    )
-    approved_at: str | None = Field(
-        default=None, description="ISO timestamp of approval"
     )
 
 

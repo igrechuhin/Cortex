@@ -13,7 +13,10 @@ from cortex.services.framework_adapters.base import (
     TestResult,
 )
 from cortex.services.language_detector import LanguageInfo
-from cortex.tools.pre_commit_helpers import MAX_LOG_OUTPUT_LENGTH
+from cortex.tools.pre_commit_helpers import (
+    MAX_LOG_OUTPUT_LENGTH,
+    count_file_lines,
+)
 from cortex.tools.pre_commit_tools import (
     MAX_FILE_LINES,
     MAX_FUNCTION_LINES,
@@ -21,7 +24,6 @@ from cortex.tools.pre_commit_tools import (
     _check_file_sizes,  # pyright: ignore[reportPrivateUsage]
     _check_function_lengths,  # pyright: ignore[reportPrivateUsage]
     _check_function_lengths_in_file,  # pyright: ignore[reportPrivateUsage]
-    _count_file_lines,  # pyright: ignore[reportPrivateUsage]
     _get_adapter,  # pyright: ignore[reportPrivateUsage]
     execute_pre_commit_checks,
     fix_quality_issues,
@@ -213,9 +215,11 @@ class TestAdapterRegistry:
             assert lang in SUPPORTED_LANGUAGES
         assert len(SUPPORTED_LANGUAGES) == 6
 
-    def test_get_adapter_returns_stub_for_typescript(self) -> None:
-        """_get_adapter returns StubAdapter for typescript."""
-        from cortex.services.framework_adapters.stub_adapter import StubAdapter
+    def test_get_adapter_returns_typescript_adapter_for_typescript(self) -> None:
+        """_get_adapter returns TypeScriptAdapter for typescript."""
+        from cortex.services.framework_adapters.typescript_adapter import (
+            TypeScriptAdapter,
+        )
 
         info = LanguageInfo(
             language="typescript",
@@ -228,7 +232,7 @@ class TestAdapterRegistry:
         )
         adapter = _get_adapter(info, "/some/root")
         assert adapter is not None
-        assert isinstance(adapter, StubAdapter)
+        assert isinstance(adapter, TypeScriptAdapter)
 
 
 class TestFixQualityIssues:
@@ -434,7 +438,7 @@ class TestFixQualityIssues:
 
 
 class TestCountFileLines:
-    """Test _count_file_lines helper function."""
+    """Test count_file_lines helper function."""
 
     def test_count_lines_simple_file(self) -> None:
         """Test counting lines in a simple Python file."""
@@ -446,7 +450,7 @@ class TestCountFileLines:
             path = Path(f.name)
 
         try:
-            count = _count_file_lines(path)
+            count = count_file_lines(path)
             assert count == 3
         finally:
             path.unlink()
@@ -464,7 +468,7 @@ class TestCountFileLines:
             path = Path(f.name)
 
         try:
-            count = _count_file_lines(path)
+            count = count_file_lines(path)
             assert count == 2  # Only x = 1 and y = 2
         finally:
             path.unlink()
@@ -480,7 +484,7 @@ class TestCountFileLines:
             path = Path(f.name)
 
         try:
-            count = _count_file_lines(path)
+            count = count_file_lines(path)
             # Both lines should be counted
             assert count == 2
         finally:
@@ -488,7 +492,7 @@ class TestCountFileLines:
 
     def test_count_lines_nonexistent_file(self) -> None:
         """Test counting lines returns 0 for nonexistent file."""
-        count = _count_file_lines(Path("/nonexistent/file.py"))
+        count = count_file_lines(Path("/nonexistent/file.py"))
         assert count == 0
 
 

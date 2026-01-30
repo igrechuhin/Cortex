@@ -5,6 +5,8 @@ Extracted to keep pre_commit_tools.py under 400 lines.
 
 import json
 from collections.abc import Sequence
+from enum import Enum
+from pathlib import Path
 from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -16,6 +18,25 @@ from cortex.services.framework_adapters.base import (
     TestResult,
 )
 from cortex.services.language_detector import LanguageDetector, LanguageInfo
+
+
+class PreCommitCheck(str, Enum):
+    """Fixed set of pre-commit check names. Use instead of raw strings."""
+
+    FIX_ERRORS = "fix_errors"
+    FORMAT = "format"
+    TYPE_CHECK = "type_check"
+    QUALITY = "quality"
+    TESTS = "tests"
+
+
+DEFAULT_CHECKS: list[PreCommitCheck] = [
+    PreCommitCheck.FIX_ERRORS,
+    PreCommitCheck.QUALITY,
+    PreCommitCheck.FORMAT,
+    PreCommitCheck.TYPE_CHECK,
+    PreCommitCheck.TESTS,
+]
 
 
 class FileSizeViolation(BaseModel):
@@ -287,10 +308,17 @@ def detect_or_use_language(language: str | None, root_str: str) -> LanguageInfo 
     )
 
 
-def determine_checks_to_perform(checks: Sequence[str] | None) -> list[str]:
-    """Determine which checks to perform."""
-    default_checks = ["fix_errors", "quality", "format", "type_check", "tests"]
-    return list(checks) if checks else default_checks
+def determine_checks_to_perform(checks: Sequence[str] | None) -> list[PreCommitCheck]:
+    """Determine which checks to perform. Invalid names are skipped."""
+    if not checks:
+        return list(DEFAULT_CHECKS)
+    result: list[PreCommitCheck] = []
+    for name in checks:
+        try:
+            result.append(PreCommitCheck(name))
+        except ValueError:
+            continue
+    return result if result else list(DEFAULT_CHECKS)
 
 
 MAX_LOG_OUTPUT_LENGTH = 4000
@@ -318,3 +346,28 @@ def truncate_large_logs_in_data(obj: JsonValue) -> JsonValue:
     if isinstance(obj, list):
         return [truncate_large_logs_in_data(item) for item in obj]
     return obj
+
+
+def count_file_lines(path: Path) -> int:
+    """Count non-blank, non-comment, non-docstring lines in a file."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            lines = f.readlines()
+    except Exception:
+        return 0
+
+    count = 0
+    in_docstring = False
+
+    for line in lines:
+        stripped = line.strip()
+        if '"""' in stripped or "'''" in stripped:
+            in_docstring = not in_docstring
+            continue
+        if in_docstring:
+            continue
+        if not stripped or stripped.startswith("#"):
+            continue
+        count += 1
+
+    return count

@@ -26,11 +26,12 @@ from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
 from cortex.tools.file_operation_helpers import (
+    FileOperation,
     build_invalid_operation_error,
-    build_missing_parameters_error,
     build_new_file_creation_error,
     build_read_error_response,
     build_write_error_response,
+    validate_manage_file_operation,
 )
 
 
@@ -256,18 +257,15 @@ async def manage_file(
         - Write operations update both the file content and metadata index
           atomically
     """
-    missing_params: list[str] = []
-    if not file_name:
-        missing_params.append("file_name")
-    if not operation:
-        missing_params.append("operation")
-    if missing_params:
-        return build_missing_parameters_error(missing_params)
+    parsed_op, err = validate_manage_file_operation(operation, file_name)
+    if err is not None:
+        return err
+    assert parsed_op is not None and file_name is not None
 
     try:
         return await _execute_file_operation(
-            cast(str, file_name),
-            cast(Literal["read", "write", "metadata"], operation),
+            file_name,
+            parsed_op,
             content,
             project_root,
             include_metadata,
@@ -282,7 +280,7 @@ async def manage_file(
 
 async def _execute_file_operation(
     file_name: str,
-    operation: Literal["read", "write", "metadata"],
+    operation: FileOperation,
     content: str | None,
     project_root: str | None,
     include_metadata: bool,
@@ -628,7 +626,7 @@ def _validate_and_get_path(
 
 
 async def _dispatch_operation(
-    operation: str,
+    operation: FileOperation,
     file_path: Path,
     file_name: str,
     content: str | None,
@@ -638,17 +636,17 @@ async def _dispatch_operation(
     managers: ManagersDict,
 ) -> str:
     """Dispatch operation to appropriate handler."""
-    if operation == "read":
+    if operation == FileOperation.READ:
         return await _dispatch_read_operation(
             file_path, file_name, root, managers, include_metadata
         )
-    if operation == "write":
+    if operation == FileOperation.WRITE:
         return await _dispatch_write_operation(
             file_path, file_name, content, change_description, managers
         )
-    if operation == "metadata":
+    if operation == FileOperation.METADATA:
         return await _dispatch_metadata_operation(file_path, file_name, managers)
-    return build_invalid_operation_error(operation)
+    return build_invalid_operation_error(operation.value)
 
 
 async def _dispatch_read_operation(

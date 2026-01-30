@@ -18,6 +18,7 @@ from cortex.refactoring.approval_manager import ApprovalManager
 from cortex.refactoring.learning_engine import LearningEngine
 from cortex.refactoring.models import (
     FeedbackRecordResult,
+    RefactoringAction,
     RefactoringSuggestionModel,
 )
 from cortex.refactoring.refactoring_engine import (
@@ -37,6 +38,7 @@ from cortex.tools.phase5_execution_handlers import (
 from cortex.tools.phase5_execution_helpers import (
     check_approval_status,
     extract_feedback_managers,
+    parse_refactoring_action,
     record_feedback_and_build_result,
 )
 
@@ -224,8 +226,11 @@ async def apply_refactoring(
           when requested
         - Use dry_run=True to safely preview any operation before actual execution
     """
+    parsed_action: RefactoringAction | None = parse_refactoring_action(action)
+    if parsed_action is None:
+        return create_invalid_action_error(action)
     return await _execute_apply_refactoring_with_validation(
-        action,
+        parsed_action,
         project_root,
         suggestion_id,
         approval_id,
@@ -240,7 +245,7 @@ async def apply_refactoring(
 
 
 async def _execute_apply_refactoring_with_validation(
-    action: str,
+    action: RefactoringAction,
     project_root: str | None,
     suggestion_id: str | None,
     approval_id: str | None,
@@ -269,7 +274,7 @@ async def _execute_apply_refactoring_with_validation(
 
 
 async def _execute_with_error_handling(
-    action: str,
+    action: RefactoringAction,
     project_root: str | None,
     suggestion_id: str | None,
     approval_id: str | None,
@@ -301,7 +306,7 @@ async def _execute_with_error_handling(
 
 
 async def _execute_validated_refactoring(
-    action: str,
+    action: RefactoringAction,
     project_root: str | None,
     suggestion_id: str | None,
     approval_id: str | None,
@@ -332,14 +337,16 @@ async def _execute_validated_refactoring(
 
 
 def _check_validation_error(
-    action: str, suggestion_id: str | None, execution_id: str | None
+    action: RefactoringAction,
+    suggestion_id: str | None,
+    execution_id: str | None,
 ) -> str | None:
     """Check validation error and return it if present."""
     return _validate_apply_refactoring_params(action, suggestion_id, execution_id)
 
 
 async def _call_execute_refactoring_action(
-    action: str,
+    action: RefactoringAction,
     project_root: str | None,
     suggestion_id: str | None,
     approval_id: str | None,
@@ -368,7 +375,7 @@ async def _call_execute_refactoring_action(
 
 
 async def _execute_refactoring_action(
-    action: str,
+    action: RefactoringAction,
     project_root: str | None,
     suggestion_id: str | None,
     approval_id: str | None,
@@ -399,7 +406,7 @@ async def _execute_refactoring_action(
 
 
 async def _dispatch_refactoring_action(
-    action: str,
+    action: RefactoringAction,
     mgrs: ManagersDict,
     suggestion_id: str | None,
     approval_id: str | None,
@@ -412,33 +419,33 @@ async def _dispatch_refactoring_action(
     preserve_manual_changes: bool,
 ) -> str:
     """Dispatch refactoring action to appropriate handler."""
-    if action == "approve":
+    if action == RefactoringAction.APPROVE:
         return await handle_approve_action(
             mgrs, suggestion_id, user_comment, auto_apply
         )
-    if action == "apply":
+    if action == RefactoringAction.APPLY:
         return await handle_apply_action(
             mgrs, suggestion_id, approval_id, dry_run, validate_first
         )
-    if action == "rollback":
+    if action == RefactoringAction.ROLLBACK:
         return await handle_rollback_action(
             mgrs, execution_id, restore_snapshot, preserve_manual_changes, dry_run
         )
-    return create_invalid_action_error(action)
+    return create_invalid_action_error(action.value)
 
 
 def _validate_apply_refactoring_params(
-    action: str, suggestion_id: str | None, execution_id: str | None
+    action: RefactoringAction,
+    suggestion_id: str | None,
+    execution_id: str | None,
 ) -> str | None:
     """Validate apply_refactoring parameters."""
-    if action == "approve" and not suggestion_id:
-        return create_missing_param_error("suggestion_id", "approve")
-    if action == "apply" and not suggestion_id:
-        return create_missing_param_error("suggestion_id", "apply")
-    if action == "rollback" and not execution_id:
-        return create_missing_param_error("execution_id", "rollback")
-    if action not in {"approve", "apply", "rollback"}:
-        return create_invalid_action_error(action)
+    if action == RefactoringAction.APPROVE and not suggestion_id:
+        return create_missing_param_error("suggestion_id", action.value)
+    if action == RefactoringAction.APPLY and not suggestion_id:
+        return create_missing_param_error("suggestion_id", action.value)
+    if action == RefactoringAction.ROLLBACK and not execution_id:
+        return create_missing_param_error("execution_id", action.value)
     return None
 
 

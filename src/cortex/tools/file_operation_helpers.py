@@ -1,6 +1,7 @@
 """Helper functions for file operations error handling."""
 
 import json
+from enum import Enum
 from pathlib import Path
 
 from cortex.core.exceptions import (
@@ -11,10 +12,28 @@ from cortex.core.exceptions import (
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 
+class FileOperation(str, Enum):
+    """Fixed set of manage_file operations. Use instead of raw strings."""
+
+    READ = "read"
+    WRITE = "write"
+    METADATA = "metadata"
+
+
+def parse_file_operation(value: str | None) -> FileOperation | None:
+    """Parse string to FileOperation. Returns None if invalid or missing."""
+    if value is None:
+        return None
+    try:
+        return FileOperation(value)
+    except ValueError:
+        return None
+
+
 def build_missing_parameters_error(missing: list[str]) -> str:
     """Build error response for missing required parameters."""
     required = ["file_name", "operation"]
-    valid_operations = ["read", "write", "metadata"]
+    valid_operations = [op.value for op in FileOperation]
     return json.dumps(
         {
             "status": "error",
@@ -148,7 +167,7 @@ def build_write_error_response(
 
 def build_invalid_operation_error(operation: str) -> str:
     """Build error response for invalid operation."""
-    valid_operations = ["read", "write", "metadata"]
+    valid_operations = [op.value for op in FileOperation]
     return json.dumps(
         {
             "status": "error",
@@ -161,3 +180,22 @@ def build_invalid_operation_error(operation: str) -> str:
         },
         indent=2,
     )
+
+
+def validate_manage_file_operation(
+    operation: str | None,
+    file_name: str | None,
+) -> tuple[FileOperation | None, str | None]:
+    """Validate operation and file_name. Returns (parsed_op, None) or (None, error_json)."""
+    parsed_op = parse_file_operation(operation)
+    if parsed_op is None:
+        if operation is None:
+            missing_params: list[str] = []
+            if not file_name:
+                missing_params.append("file_name")
+            missing_params.append("operation")
+            return (None, build_missing_parameters_error(missing_params))
+        return (None, build_invalid_operation_error(str(operation)))
+    if not file_name:
+        return (None, build_missing_parameters_error(["file_name"]))
+    return (parsed_op, None)

@@ -1,6 +1,14 @@
 # Progress Log
 
+## 2026-01-30
+
+- ✅ **Commit: Coverage above 90%** - COMPLETE (2026-01-30)
+  - Added `tests/unit/test_refactoring_operation_helpers.py` (parse_refactoring_suggestion_type, validate_refactoring_type, validate_suggest_refactoring_type, handle_preview_mode, convert_opportunities_to_dict, convert_recommendations_to_dict). Coverage 89.98% → 90.01%. All 2932 tests passing. 0 plans archived.
+
 ## 2026-01-29
+
+- ✅ **TypeScript Pre-Commit Adapter** - COMPLETE (2026-01-29)
+  - Added TypeScriptAdapter in `src/cortex/services/framework_adapters/typescript_adapter.py` (prettier, eslint, tsc, npm test). Registered in pre_commit_tools _ADAPTER_REGISTRY; typescript now uses TypeScriptAdapter instead of StubAdapter. Unit tests in `tests/unit/test_typescript_adapter.py`. TestAdapterRegistry updated (test_get_adapter_returns_typescript_adapter_for_typescript). All 2919 tests passing, coverage 90%.
 
 - **Commit: Pre-commit pipeline and Multi-Language Validation Support** - In progress
   - Steps 0–4 passed: fix_errors (1 fixed), format, markdown lint (177 files, 3 fixed), type_check (0 errors, 0 warnings), quality (0 violations), tests (2906 passed, 90.12% coverage).
