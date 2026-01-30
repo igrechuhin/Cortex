@@ -19,7 +19,7 @@ Cortex uses strongly-typed data structures for all operations. This document cov
 | [Pattern Types](#pattern-types) | 7 | Access patterns, usage statistics |
 | [Optimization Types](#optimization-types) | 2 | Progressive loading, optimization results |
 | [Refactoring Types](#refactoring-types) | 10+ | Suggestions, actions, approvals, executions |
-| [Enums](#enums) | 5 | Status values, priorities, types |
+| [Enums](#enums) | 12 | Status values, tool operations, check types, priorities |
 
 ---
 
@@ -963,10 +963,35 @@ class ReorganizationMove:
 
 ## Enums
 
+### Tool and Validation Enums (str Enum)
+
+Fixed sets of string values used at MCP tool boundaries (operation, action, type, check_type) are implemented as `class X(str, Enum)`. Handlers accept `str` from the client, parse to the enum (e.g. via `parse_validation_check_type(value)`), and use enum members internally; use `.value` when writing to JSON or response dicts so the API shape stays string-based.
+
+| Enum | Module | Values |
+|------|--------|--------|
+| `ValidationCheckType` | cortex.tools.validation_helpers | SCHEMA, DUPLICATIONS, QUALITY, INFRASTRUCTURE, TIMESTAMPS, ROADMAP_SYNC |
+| `ConfigAction` | cortex.tools.configuration_helpers | VIEW, UPDATE, RESET |
+| `AnalysisTarget` | cortex.tools.analysis_helpers | USAGE_PATTERNS, STRUCTURE, INSIGHTS |
+| `StubAdapterLanguage` | cortex.services.framework_adapters.stub_adapter | TYPESCRIPT, JAVASCRIPT, RUST, GO, JAVA |
+| `FileOperation` | cortex.tools.file_operation_helpers | READ, WRITE, METADATA |
+| `RulesOperation` | cortex.tools.rules_operation_helpers | INDEX, GET_RELEVANT |
+| `RefactoringAction` | cortex.refactoring.models | APPROVE, APPLY, ROLLBACK |
+| `RefactoringSuggestionType` | cortex.refactoring.models | CONSOLIDATION, SPLITS, REORGANIZATION |
+
+**Pattern:** At the MCP boundary, accept `str`; validate to enum (e.g. `try: ValidationCheckType(value)` / `except ValueError`); use enum members in branching; use `.value` when serializing to JSON/dict.
+
 ### All Enums Summary
 
 | Enum | Module | Values |
 |------|--------|--------|
+| `ValidationCheckType` | validation_helpers | SCHEMA, DUPLICATIONS, QUALITY, INFRASTRUCTURE, TIMESTAMPS, ROADMAP_SYNC |
+| `ConfigAction` | configuration_helpers | VIEW, UPDATE, RESET |
+| `AnalysisTarget` | analysis_helpers | USAGE_PATTERNS, STRUCTURE, INSIGHTS |
+| `StubAdapterLanguage` | stub_adapter | TYPESCRIPT, JAVASCRIPT, RUST, GO, JAVA |
+| `FileOperation` | file_operation_helpers | READ, WRITE, METADATA |
+| `RulesOperation` | rules_operation_helpers | INDEX, GET_RELEVANT |
+| `RefactoringAction` | refactoring.models | APPROVE, APPLY, ROLLBACK |
+| `RefactoringSuggestionType` | refactoring.models | CONSOLIDATION, SPLITS, REORGANIZATION |
 | `RefactoringType` | refactoring_engine | CONSOLIDATION, SPLIT, REORGANIZATION, TRANSCLUSION, RENAME, MERGE |
 | `RefactoringPriority` | refactoring_engine | CRITICAL, HIGH, MEDIUM, LOW, OPTIONAL |
 | `ApprovalStatus` | approval_manager | PENDING, APPROVED, REJECTED, EXPIRED, APPLIED |
@@ -1014,10 +1039,12 @@ class ImmutableClass:
 
 ### Using Enums
 
+Use `class X(str, Enum)` for fixed sets of string values; reserve `Literal` for one-off or external API constraints. At MCP/JSON boundaries, accept `str`, parse to enum inside the handler, and use `.value` when writing to JSON so the wire format stays string.
+
 ```python
 from enum import Enum
 
-class Status(Enum):
+class Status(str, Enum):
     PENDING = "pending"
     COMPLETED = "completed"
 
@@ -1025,6 +1052,11 @@ class Status(Enum):
 status = Status.PENDING
 if status == Status.PENDING:
     print(status.value)  # "pending"
+
+# At MCP boundary: accept str, parse to enum, use .value for JSON
+def handle_request(status_str: str) -> dict[str, str]:
+    status = Status(status_str)  # raises ValueError if invalid
+    return {"status": status.value}  # wire format stays string
 ```
 
 ---

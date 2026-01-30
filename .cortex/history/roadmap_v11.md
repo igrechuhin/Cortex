@@ -4,7 +4,9 @@
 
 ### Active Work
 
-- 🔄 **Phase 64: Promote fixed string sets to enums** - IN PROGRESS (2026-01-30) - Milestones 1–3 done: ValidationCheckType, ConfigAction, AnalysisTarget, StubAdapterLanguage enums added; file/rules tool boundaries use str; validate/configure/analyze parse to enum; tests updated. Milestone 4 (docs) deferred. Plan: .cortex/plans/phase-64-promote-fixed-strings-to-enums.md.
+- ✅ **Commit: Coverage at 90% (helper tests)** - COMPLETE (2026-01-30) - Added tests/unit/test_configuration_helpers.py and tests/unit/test_analysis_helpers.py (parse_config_action, parse_analysis_target; invalid-value branch). Coverage 89.98% → 90%; 2951 tests passing. Markdown lint fixed 2 files.
+
+- ✅ **Phase 64: Promote fixed string sets to enums** - COMPLETE (2026-01-30) - Milestones 1–4 done: ValidationCheckType, ConfigAction, AnalysisTarget, StubAdapterLanguage, FileOperation, RulesOperation, RefactoringAction, RefactoringSuggestionType enums added; file/rules tool boundaries use str; validate/configure/analyze parse to enum; tests updated. Milestone 4 (docs): docs/api/types.md Tool and Validation Enums section and str Enum pattern; python-coding-standards.mdc guideline (str Enum for fixed sets, reserve Literal for one-off). Plan: .cortex/plans/phase-64-promote-fixed-strings-to-enums.md.
 
 - ✅ **Commit: Coverage above 90%** - COMPLETE (2026-01-30) - Added tests/unit/test_refactoring_operation_helpers.py; coverage 89.98% → 90.01%; 2932 tests passing.
 

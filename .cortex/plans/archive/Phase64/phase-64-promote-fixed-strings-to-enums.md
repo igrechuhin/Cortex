@@ -1,6 +1,6 @@
 # Phase 64: Promote Fixed String Sets to Enums
 
-**Status:** In progress (Milestones 1–3 done; Milestone 4 deferred)  
+**Status:** Complete (Milestones 1–4 done)  
 **Created:** 2026-01-29  
 **Updated:** 2026-01-30
 
@@ -86,10 +86,10 @@ The pre-commit tools already use `PreCommitCheck(str, Enum)` successfully. Exten
    - Replace repeated `Literal["A","B",...]` and `Literal["healthy","warning","critical"]` in Pydantic models.  
    - Defer to a follow-up if scope is large.
 
-### Milestone 4: Documentation and consistency (deferred)
+### Milestone 4: Documentation and consistency (COMPLETED 2026-01-30)
 
-1. Update `docs/api/types.md` or equivalent to document new enums and the pattern (str Enum, `.value` at JSON boundary).
-2. Add a short guideline in `.cortex/synapse/rules` or python-coding-standards: “Use `class X(str, Enum)` for fixed sets of string values; reserve Literal for one-off or external API constraints.”
+1. ✅ Update `docs/api/types.md`: added "Tool and Validation Enums (str Enum)" section; updated Enums summary table; added str Enum and `.value` at JSON boundary in "Using Enums".
+2. ✅ Added guideline in `.cortex/synapse/rules/python/python-coding-standards.mdc`: use str Enum for fixed sets; reserve Literal for one-off or external API constraints.
 
 ## Dependencies
 

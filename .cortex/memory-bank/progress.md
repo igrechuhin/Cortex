@@ -2,6 +2,14 @@
 
 ## 2026-01-30
 
+- ✅ **Commit: Phase 64 plan archival** - COMPLETE (2026-01-30)
+  - Archived phase-64-promote-fixed-strings-to-enums.md to .cortex/plans/archive/Phase64/; updated roadmap.md plan link. Markdown lint fixed 6 files (memory-bank, plan, synapse rules, docs/api/types.md). Steps 0–4 passed: fix_errors, format, markdown lint (179 files, 6 fixed), type_check (0 errors, 0 warnings), quality (0 violations), tests (2951 passed, 90% coverage). 1 plan archived.
+
+- ✅ **Phase 64: Promote fixed string sets to enums (Milestone 4)** - COMPLETE (2026-01-30)
+  - Milestone 4 (docs): Updated docs/api/types.md with "Tool and Validation Enums (str Enum)" section documenting ValidationCheckType, ConfigAction, AnalysisTarget, StubAdapterLanguage, FileOperation, RulesOperation, RefactoringAction, RefactoringSuggestionType (modules and values); updated Enums summary table; added str Enum and `.value` at JSON boundary in "Using Enums" guideline.
+  - Added explicit guideline in .cortex/synapse/rules/python/python-coding-standards.mdc: "Use `class X(str, Enum)` for fixed sets of string values; reserve Literal for one-off or external API constraints."
+  - Plan phase-64-promote-fixed-strings-to-enums.md status set to Complete. All 2951 tests passing; format and type_check passed.
+
 - 🔄 **Phase 64: Promote fixed string sets to enums (Milestones 1–3)** - IN PROGRESS (2026-01-30)
   - Added ValidationCheckType(str, Enum) in validation_helpers; parse_validation_check_type(); replaced CheckType Literal in validation_dispatch and validation_operations; validate(check_type: str) parses and dispatches by enum.
   - Tool boundaries: manage_file(operation: str), rules(operation: str); file_operation_helpers and rules_operation_helpers already had FileOperation/RulesOperation; error messages use enum values.
