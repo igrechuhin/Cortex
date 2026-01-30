@@ -203,10 +203,10 @@ class PythonAdapter(FrameworkAdapter):
         )
 
     def _run_black_formatting(self, errors: list[str], output_parts: list[str]) -> None:
-        """Run black formatter."""
+        """Run black formatter on src/ and tests/ (matches CI workflow)."""
         try:
             result = subprocess.run(
-                [self._get_command("black"), "."],
+                [self._get_command("black"), "src/", "tests/"],
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
@@ -220,10 +220,18 @@ class PythonAdapter(FrameworkAdapter):
     def _run_ruff_import_sorting(
         self, errors: list[str], output_parts: list[str]
     ) -> None:
-        """Run ruff import sorting."""
+        """Run ruff import sorting on src/ and tests/ (matches CI workflow)."""
         try:
             result = subprocess.run(
-                [self._get_command("ruff"), "check", "--fix", "--select", "I", "."],
+                [
+                    self._get_command("ruff"),
+                    "check",
+                    "--fix",
+                    "--select",
+                    "I",
+                    "src/",
+                    "tests/",
+                ],
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,

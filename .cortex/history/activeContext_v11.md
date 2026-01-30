@@ -6,9 +6,11 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
-- ✅ **Commit: Coverage above 90%** - COMPLETE (2026-01-30)
-  - Added `tests/unit/test_refactoring_operation_helpers.py` (parse_refactoring_suggestion_type, validate_refactoring_type, validate_suggest_refactoring_type, handle_preview_mode, convert_opportunities_to_dict, convert_recommendations_to_dict). Coverage 89.98% → 90.01%. All 2932 tests passing.
+- **Commit in progress** (2026-01-30)
+  - Changes: .github/workflows/quality.yml, src/cortex/services/framework_adapters/python_adapter.py, .cortex/synapse (submodule); markdown lint fix on .cortex/synapse/prompts/commit.md.
+  - Steps 0–4 passed: fix_errors (0), format, markdown lint (179 files, 1 fixed), type_check (0 errors, 0 warnings), quality (0 violations), tests (2932 passed, 90.01% coverage).
 
+- ✅ **Commit: Coverage above 90%** - COMPLETE (2026-01-30)
 - ✅ **Multi-Language Validation Support** - COMPLETE (2026-01-29)
 - ✅ **Phase 55: Improve Implementation Prompt Quality Gates** - COMPLETE (2026-01-29)
 - ✅ **Phase 56: Commit Workflow Parallelization (Steps 9–11)** - COMPLETE (2026-01-29)
@@ -31,4 +33,4 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 ## Next Focus
 
 - **Phase 64: Promote fixed string sets to enums** - PLANNED (.cortex/plans/phase-64-promote-fixed-strings-to-enums.md).
-- No remaining completed plans to archive; phase-64 status Planning.
+- No completed plans to archive this run (0 plans archived).

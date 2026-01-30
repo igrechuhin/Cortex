@@ -163,7 +163,9 @@ class TestTypeScriptAdapter:
     def test_extract_test_counts_parses_passed_failed(self) -> None:
         """_extract_test_counts parses Jest-style output."""
         adapter = TypeScriptAdapter()
-        passed, failed = adapter._extract_test_counts("5 passed, 2 failed")  # pyright: ignore[reportPrivateUsage]
+        passed, failed = adapter._extract_test_counts(  # pyright: ignore[reportPrivateUsage]
+            "5 passed, 2 failed"
+        )
         assert passed == 5
         assert failed == 2
 
