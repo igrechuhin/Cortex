@@ -31,6 +31,7 @@ from cortex.services.framework_adapters.base import (
     FrameworkAdapter,
     TestResult,
 )
+from cortex.services.framework_adapters.go_adapter import GoAdapter
 from cortex.services.framework_adapters.javascript_adapter import JavaScriptAdapter
 from cortex.services.framework_adapters.python_adapter import PythonAdapter
 from cortex.services.framework_adapters.rust_adapter import RustAdapter
@@ -63,14 +64,14 @@ from cortex.tools.pre_commit_helpers import (
 from cortex.tools.pre_commit_synapse import run_synapse_script
 
 # Adapter registry: language -> factory(project_root) -> FrameworkAdapter.
-# Python, TypeScript, JavaScript, and Rust have full implementations; Go, Java
-# use StubAdapter until language-specific implementations are added.
+# Python, TypeScript, JavaScript, Rust, and Go have full implementations; Java
+# uses StubAdapter until a language-specific implementation is added.
 _ADAPTER_REGISTRY: dict[str, Callable[[str | None], FrameworkAdapter]] = {
     "python": lambda root: PythonAdapter(root),
     "typescript": lambda root: TypeScriptAdapter(root),
     "javascript": lambda root: JavaScriptAdapter(root),
     "rust": lambda root: RustAdapter(root),
-    "go": lambda root: StubAdapter(root, "go"),
+    "go": lambda root: GoAdapter(root),
     "java": lambda root: StubAdapter(root, "java"),
 }
 SUPPORTED_LANGUAGES: tuple[str, ...] = tuple(_ADAPTER_REGISTRY.keys())

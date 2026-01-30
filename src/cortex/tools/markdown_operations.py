@@ -519,6 +519,37 @@ def _is_cached_clean_entry(
     )
 
 
+_HASH_CONCURRENCY = 32
+
+
+async def _compute_file_hashes(
+    files: list[Path], project_root: Path, max_concurrent: int = _HASH_CONCURRENCY
+) -> dict[str, str | None]:
+    """Compute content hashes for files in parallel.
+
+    Returns:
+        Mapping of relative path -> content hash (or None if unreadable).
+    """
+    semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def hash_one(file_path: Path) -> tuple[str, str | None]:
+        rel = str(file_path.relative_to(project_root))
+        async with semaphore:
+            h = await _calculate_file_hash(file_path)
+        return rel, h
+
+    pairs = await asyncio.gather(
+        *[hash_one(fp) for fp in files], return_exceptions=True
+    )
+    out: dict[str, str | None] = {}
+    for p in pairs:
+        if isinstance(p, BaseException):
+            continue
+        rel, h = p
+        out[rel] = h
+    return out
+
+
 async def _filter_files_for_linting(
     project_root: Path,
     files: list[Path],
@@ -527,24 +558,23 @@ async def _filter_files_for_linting(
 ) -> tuple[list[Path], list[FileResult], dict[str, str]]:
     """Filter files using lint cache and prepare initial results.
 
-    Returns:
-        A tuple of:
-        - files_to_lint: files that still need markdownlint to run
-        - initial_results: FileResult entries for cached-clean files
-        - file_hashes: mapping of relative path -> content hash
+    Uses parallel hashing so cache lookups are fast even with many files;
+    only files not in cache or with changed content are passed to markdownlint.
     """
+    file_hashes = await _compute_file_hashes(files, project_root)
+
     files_to_lint: list[Path] = []
     initial_results: list[FileResult] = []
-    file_hashes: dict[str, str] = {}
+    hashes_for_cache: dict[str, str] = {}
 
     for file_path in files:
         rel_path = str(file_path.relative_to(project_root))
-        content_hash = await _calculate_file_hash(file_path)
+        content_hash = file_hashes.get(rel_path)
         if content_hash is None:
             files_to_lint.append(file_path)
             continue
 
-        file_hashes[rel_path] = content_hash
+        hashes_for_cache[rel_path] = content_hash
         cache_entry = index.files.get(rel_path)
         if _is_cached_clean_entry(cache_entry, content_hash, dry_run):
             initial_results.append(
@@ -559,7 +589,7 @@ async def _filter_files_for_linting(
 
         files_to_lint.append(file_path)
 
-    return files_to_lint, initial_results, file_hashes
+    return files_to_lint, initial_results, hashes_for_cache
 
 
 async def _process_markdown_files(

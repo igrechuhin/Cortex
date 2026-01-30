@@ -515,6 +515,23 @@ class TestAdapterRegistry:
         assert adapter is not None
         assert isinstance(adapter, RustAdapter)
 
+    def test_get_adapter_returns_go_adapter_for_go(self) -> None:
+        """_get_adapter returns GoAdapter for go."""
+        from cortex.services.framework_adapters.go_adapter import GoAdapter
+
+        info = LanguageInfo(
+            language="go",
+            test_framework=None,
+            formatter=None,
+            linter=None,
+            type_checker=None,
+            build_tool=None,
+            confidence=0.8,
+        )
+        adapter = _get_adapter(info, "/some/root")
+        assert adapter is not None
+        assert isinstance(adapter, GoAdapter)
+
 
 class TestFixQualityIssues:
     """Test fix_quality_issues tool."""

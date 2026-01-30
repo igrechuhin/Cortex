@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-01-30T23:07:42.941325",
+  "last_updated": "2026-01-30T23:31:56.238008",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 10366,
-      "token_count": 2487,
+      "size_bytes": 10809,
+      "token_count": 2597,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-30T19:25:49.654521",
-      "content_hash": "sha256:070540470def3ad559ca3051365520a9671ac55ba0e723df6bd890c47f4f35db",
+      "last_modified": "2026-01-30T23:15:35.822542",
+      "content_hash": "sha256:8a09302282bf2f2e7358fa920bd6ab75425d6af2b4a72b96c784bf64e1a1b717",
       "sections": [
         {
           "title": "## Current Status (2026-01-30)",
@@ -31,14 +31,14 @@
         {
           "title": "## Future Enhancements",
           "level": 2,
-          "line_start": 31,
-          "line_end": 31,
+          "line_start": 33,
+          "line_end": 33,
           "content_hash": null
         }
       ],
       "read_count": 2,
-      "write_count": 41,
-      "last_read": "2026-01-30T19:25:49.654521",
+      "write_count": 42,
+      "last_read": "2026-01-30T23:15:35.822542",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -514,17 +514,28 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Marked session-hang fix (asyncio.to_thread for pre-commit) as completed in roadmap"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T23:15:35.822109",
+          "content_hash": "sha256:8a09302282bf2f2e7358fa920bd6ab75425d6af2b4a72b96c784bf64e1a1b717",
+          "size_bytes": 10809,
+          "token_count": 2597,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Marked Go Pre-Commit Adapter complete; updated Pre-commit tracked item (Go full, Java stub)"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 3730,
-      "token_count": 999,
+      "size_bytes": 1153,
+      "token_count": 339,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-30T23:07:42.938108",
-      "content_hash": "sha256:ac5a53648da96a9985467f441a42ead89ab0f57ccc139da5797eb5e948597505",
+      "last_modified": "2026-01-30T23:31:56.236932",
+      "content_hash": "sha256:499fda63e7803ce0773913aaeaf903659b34a1c790f7202148fc36a03c958782",
       "sections": [
         {
           "title": "## 2026-01-30",
@@ -536,14 +547,14 @@
         {
           "title": "## 2026-01-29",
           "level": 2,
-          "line_start": 37,
-          "line_end": 37,
+          "line_start": 16,
+          "line_end": 16,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 40,
-      "last_read": "2026-01-30T23:07:42.938108",
+      "write_count": 43,
+      "last_read": "2026-01-30T23:31:56.236932",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -986,17 +997,50 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Progress entry for commit pipeline run 2026-01-30"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T23:15:49.256867",
+          "content_hash": "sha256:5e43d05752665ab75c638a5e8e6801c57cda18ddc548c118f0a376044a3b996c",
+          "size_bytes": 4577,
+          "token_count": 1203,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for Go Pre-Commit Adapter completion (26-01-30)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T23:31:42.398387",
+          "content_hash": "sha256:0240083c83e879790c78377a178fcc038c89e1530c65abbec29b7f22afaec643",
+          "size_bytes": 1150,
+          "token_count": 336,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Progress: commit type fix and phase5_execution_errors coverage"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T23:31:56.236693",
+          "content_hash": "sha256:499fda63e7803ce0773913aaeaf903659b34a1c790f7202148fc36a03c958782",
+          "size_bytes": 1153,
+          "token_count": 339,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Fix timestamp false positive: Phase 64/65/66 -> Phases 64, 65, 66"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 2434,
-      "token_count": 611,
+      "size_bytes": 1308,
+      "token_count": 353,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-30T19:25:19.567352",
-      "content_hash": "sha256:ca32442a292d8242dc1cd0d77c2e7c565dc8a4531efadc4b6d5050cd4523902b",
+      "last_modified": "2026-01-30T23:31:53.080714",
+      "content_hash": "sha256:6e7ddaadc3d6c89c94639778486ed219334e896bcfa636b8ff6b50f1f86df187",
       "sections": [
         {
           "title": "## Current Focus (2026-01-30)",
@@ -1015,28 +1059,28 @@
         {
           "title": "### Recently Completed",
           "level": 2,
-          "line_start": 20,
-          "line_end": 20,
+          "line_start": 18,
+          "line_end": 18,
           "content_hash": null
         },
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 27,
-          "line_end": 27,
+          "line_start": 22,
+          "line_end": 22,
           "content_hash": null
         },
         {
           "title": "## Next Focus",
           "level": 2,
-          "line_start": 34,
-          "line_end": 34,
+          "line_start": 28,
+          "line_end": 28,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 29,
-      "last_read": "2026-01-30T19:25:19.567352",
+      "write_count": 32,
+      "last_read": "2026-01-30T23:31:53.080714",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -1358,6 +1402,39 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Updated active context after session-hang fix (asyncio.to_thread for pre-commit)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T23:15:56.802688",
+          "content_hash": "sha256:00e9f5a5c36d50b6b3f3f892d6bb6007aaff98bf67d92604cffc1068ba998592",
+          "size_bytes": 2864,
+          "token_count": 723,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context after Go Pre-Commit Adapter completion; Java remains stub"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T23:31:35.596153",
+          "content_hash": "sha256:6aacc88f82f30c28ff36acb63b0fe83fb94e12a81ad8edb0c7b7988f1dc02277",
+          "size_bytes": 1305,
+          "token_count": 350,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated for commit: type fix and phase5_execution_errors coverage"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-30T23:31:53.080448",
+          "content_hash": "sha256:6e7ddaadc3d6c89c94639778486ed219334e896bcfa636b8ff6b50f1f86df187",
+          "size_bytes": 1308,
+          "token_count": 353,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Fix timestamp false positive: Phase 64/65/66 -> Phases 64, 65, 66"
         }
       ]
     },
@@ -1595,8 +1672,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 29755,
-    "total_tokens": 6960,
-    "last_full_scan": "2026-01-30T23:07:42.938132"
+    "total_size_bytes": 26495,
+    "total_tokens": 6152,
+    "last_full_scan": "2026-01-30T23:31:56.236964"
   }
 }

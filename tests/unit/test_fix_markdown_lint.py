@@ -805,6 +805,24 @@ class TestHelperFunctions:
         assert _is_cached_clean_entry(cache_entry, "sha256:abc", dry_run=True) is False
         assert _is_cached_clean_entry(None, "sha256:abc", dry_run=False) is False
 
+    @pytest.mark.asyncio
+    async def test_compute_file_hashes_parallel(self, tmp_path: Path) -> None:
+        """_compute_file_hashes returns rel_path -> hash for multiple files."""
+        from cortex.tools.markdown_operations import (  # type: ignore[reportPrivateUsage]
+            _compute_file_hashes,
+        )
+
+        _ = (tmp_path / "a.md").write_text("# A\n", encoding="utf-8")
+        _ = (tmp_path / "b.md").write_text("# B\n", encoding="utf-8")
+        files = [tmp_path / "a.md", tmp_path / "b.md"]
+
+        hashes = await _compute_file_hashes(files, tmp_path)
+
+        assert len(hashes) == 2
+        assert "a.md" in hashes and hashes["a.md"] is not None
+        assert "b.md" in hashes and hashes["b.md"] is not None
+        assert hashes["a.md"] != hashes["b.md"]
+
 
 class TestGetAllMarkdownFiles:
     """Tests for _get_all_markdown_files helper."""

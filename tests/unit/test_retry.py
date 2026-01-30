@@ -89,6 +89,19 @@ class TestRetryAsync:
         assert func.call_count == 1
 
     @pytest.mark.asyncio
+    async def test_retry_async_does_not_retry_file_not_found(self):
+        """Test retry_async does not retry FileNotFoundError (not transient)."""
+        # Arrange
+        func = AsyncMock(side_effect=FileNotFoundError("No such file or directory"))
+
+        # Act & Assert
+        with pytest.raises(FileNotFoundError):
+            await retry_async(lambda: func())
+
+        # Should only try once; retrying missing files cannot succeed
+        assert func.call_count == 1
+
+    @pytest.mark.asyncio
     async def test_retry_async_with_delay(self):
         """Test retry_async uses exponential backoff."""
         # Arrange

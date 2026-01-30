@@ -9,12 +9,12 @@ class TestStubAdapter:
 
     def test_run_tests_returns_not_implemented(self) -> None:
         """run_tests returns TestResult with not-implemented message."""
-        adapter = StubAdapter(None, "go")
+        adapter = StubAdapter(None, "java")
         result = adapter.run_tests()
         assert isinstance(result, TestResult)
         assert result.success is False
         assert result.tests_run == 0
-        assert "go" in result.output
+        assert "java" in result.output
         assert "not yet available" in result.output.lower()
         assert len(result.errors) == 1
 
@@ -30,12 +30,12 @@ class TestStubAdapter:
 
     def test_format_code_returns_not_implemented(self) -> None:
         """format_code returns CheckResult with not-implemented message."""
-        adapter = StubAdapter(None, "go")
+        adapter = StubAdapter(None, "java")
         result = adapter.format_code()
         assert isinstance(result, CheckResult)
         assert result.check_type == "format"
         assert result.success is False
-        assert "go" in result.output
+        assert "java" in result.output
 
     def test_type_check_returns_not_implemented(self) -> None:
         """type_check returns CheckResult with not-implemented message."""
@@ -57,7 +57,7 @@ class TestStubAdapter:
 
     def test_adapter_accepts_project_root(self) -> None:
         """StubAdapter accepts project_root and uses it."""
-        adapter = StubAdapter("/some/root", "go")
+        adapter = StubAdapter("/some/root", "java")
         assert adapter.project_root is not None
         assert "some" in str(adapter.project_root) and "root" in str(
             adapter.project_root

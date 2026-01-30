@@ -6,31 +6,25 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
+- **Commit: type fix and coverage** - In progress (2026-01-30)
+  - Fixed Pyright reportUnusedCallResult in tests/unit/test_fix_markdown_lint.py (lines 815–816: assign write_text result to _). Added tests/unit/test_phase5_execution_errors.py for phase5_execution_errors (create_missing_param_error, create_invalid_action_error, create_execution_error_response branches). All 3027 tests passing; coverage 90.02%.
+
+- ✅ **Go Pre-Commit Adapter** - COMPLETE (2026-01-30)
 - ✅ **Session hang: run pre-commit adapter work off event loop** - COMPLETE (2026-01-30)
-  - Per `.cortex/reviews/session-hang-investigation-2026-01-30T15-00.md`: `execute_pre_commit_checks` now runs `_execute_all_checks` via `asyncio.to_thread()` so format, fix_errors, type_check, quality, and tests run off the event loop. Event loop stays responsive; MCP tool timeout still applies. Unit test `test_runs_adapter_checks_off_event_loop_via_to_thread` verifies to_thread usage.
-
 - ✅ **Rust Pre-Commit Adapter** - COMPLETE (2026-01-30)
-  - RustAdapter in src/cortex/services/framework_adapters/rust_adapter.py (cargo fmt, cargo clippy, cargo check, cargo test, cargo fix). Registered in pre_commit_tools; rust uses RustAdapter. StubAdapterLanguage no longer includes RUST. Unit tests in test_rust_adapter.py; test_get_adapter_returns_rust_adapter_for_rust. All 3000 tests passing.
-
 - ✅ **JavaScript Pre-Commit Adapter** - COMPLETE (2026-01-30)
-- ✅ **Phase 64: Promote fixed string sets to enums** - COMPLETE (2026-01-30)
-- ✅ **Phase 66: Plan Creation Workflow Compliance** - COMPLETE (2026-01-30)
-- ✅ **Phase 65: Commit Workflow — Cortex Tools Only** - COMPLETE (2026-01-30)
+- ✅ **Phases 64, 65, 66** - COMPLETE (2026-01-30)
 
 ### Recently Completed
 
-- ✅ Session hang fix: pre-commit adapter work (format, fix_errors, type_check, quality, tests) now runs via `asyncio.to_thread(_execute_all_checks, ...)` so the event loop stays responsive during long runs.
-- ✅ Rust Pre-Commit Adapter (RustAdapter, tests, registry; StubAdapter RUST removed).
-- ✅ JavaScript Pre-Commit Adapter (JavaScriptAdapter, tests, registry).
-- ✅ Phase 64 plan archived to .cortex/plans/archive/Phase64/.
+- Type fix (test_fix_markdown_lint reportUnusedCallResult). Phase5 execution errors unit tests; coverage ≥ 90%.
 
 ## Project Health
 
-- **Tests**: 3000 passing; coverage meets project threshold when running full suite.
+- **Tests**: 3027 passing; coverage 90.02%.
 - **Linting/Types**: Pyright 0 errors, 0 warnings.
-- **Pre-commit adapters**: SUPPORTED_LANGUAGES = (python, typescript, javascript, rust, go, java); Python, TypeScript, JavaScript, and Rust have full implementations; Go, Java use StubAdapter.
-- **Pre-commit event loop**: Adapter work runs off the event loop via `asyncio.to_thread()` to avoid session-hang perception during format/fix_errors.
+- **Pre-commit adapters**: Python, TypeScript, JavaScript, Rust, Go full; Java StubAdapter.
 
 ## Next Focus
 
-- No blockers. Next pending roadmap item: tracked pre-commit adapters (Go, Java) as needed, or other Future Enhancements.
+- No blockers. Next: commit pipeline completion or Future Enhancements.

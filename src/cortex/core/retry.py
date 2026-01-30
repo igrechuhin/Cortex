@@ -67,6 +67,9 @@ async def retry_async[T](
         try:
             return await operation()
         except exceptions as e:
+            # Do not retry missing files; retrying cannot succeed
+            if isinstance(e, FileNotFoundError):
+                raise
             last_exception = e
             if attempt == max_retries:
                 _log_retry_exhausted(operation, max_retries, attempt, e)
