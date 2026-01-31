@@ -1,9 +1,10 @@
 # Phase 20: Code Review Fixes
 
-**Status:** Planning  
+**Status:** In Progress  
 **Priority:** ASAP  
 **Created:** 2026-01-15  
-**Target Completion:** 2026-01-20
+**Target Completion:** 2026-01-20  
+**Updated:** 2026-01-31
 
 ## Goal
 
@@ -32,11 +33,13 @@ Address issues in priority order:
 
 ## Implementation Steps
 
-### Step 1: Fix Test Import Error (CRITICAL - BLOCKS TESTING)
+### Step 1: Fix Test Import Error (CRITICAL - BLOCKS TESTING) ✅ COMPLETE (2026-01-31)
 
 **Priority:** ASAP  
 **Effort:** Low (1-2 hours)  
 **Impact:** High - Unblocks test execution
+
+Tests already import from `cortex.tools.markdown_operations`; 35 tests pass; collection succeeds.
 
 **Issue:**
 
@@ -64,11 +67,13 @@ Address issues in priority order:
 
 ---
 
-### Step 2: Fix Type Errors in Test Files
+### Step 2: Fix Type Errors in Test Files ✅ COMPLETE (2026-01-31)
 
 **Priority:** High  
 **Effort:** Low (1-2 hours)  
 **Impact:** Medium - Improves code quality
+
+Pyright reports 0 errors, 0 warnings on src and tests.
 
 **Issue:**
 
@@ -107,11 +112,13 @@ Address issues in priority order:
 
 ---
 
-### Step 3: Fix File Size Violations (CRITICAL - RULES VIOLATION)
+### Step 3: Fix File Size Violations (CRITICAL - RULES VIOLATION) 🔄 PARTIAL
 
 **Priority:** High  
 **Effort:** High (40-60 hours total)  
 **Impact:** High - Rules compliance, maintainability
+
+Validation and phase2 already split (validation_operations 491 lines; phase2_linking 26). Step 3.10 complete: phase5_execution split into phase5_execution_validation.py, phase5_execution_monitoring.py, phase5_execution_planning.py (2026-01-31). Remaining files >400 lines: rollback_manager, template_manager, initialization, structure_analyzer, optimization_strategies, phase8_structure. Quality gate passes; continue splits in future sessions as needed.
 
 **Issue:**
 10 files exceed the 400-line limit (MANDATORY rule violation):
@@ -210,14 +217,14 @@ Address issues in priority order:
 - Update imports across codebase
 - Ensure all tests pass
 
-**3.10: Split `phase5_execution.py` (781 → ≤400 lines)**
+**3.10: Split `phase5_execution.py` (781 → ≤400 lines)** ✅ COMPLETE (2026-01-31)
 
-- Extract execution planning → `execution_planning.py`
-- Extract execution validation → `execution_validation.py`
-- Extract execution monitoring → `execution_monitoring.py`
-- Keep core orchestration in `phase5_execution.py`
-- Update imports across codebase
-- Ensure all tests pass
+- Extract execution validation → `phase5_execution_validation.py`
+- Extract execution monitoring → `phase5_execution_monitoring.py`
+- Extract execution planning → `phase5_execution_planning.py`
+- Keep core orchestration in `phase5_execution.py` (tool decorators and thin entry points)
+- Updated imports; tests patched to use `phase5_execution_planning.get_project_root`; context-logging test patched for both modules' `log_client`
+- All 3184 tests pass; quality gate passes
 
 **General Guidelines:**
 
@@ -240,11 +247,13 @@ Address issues in priority order:
 
 ---
 
-### Step 4: Fix Security Vulnerabilities
+### Step 4: Fix Security Vulnerabilities ✅ COMPLETE (pre-existing)
 
 **Priority:** Medium  
 **Effort:** Medium (4-6 hours)  
 **Impact:** Medium - Security improvements
+
+Implemented in `src/cortex/core/security.py`: CommitMessageSanitizer (commit message sanitization, used in synapse_repository._git_commit_file), HTMLEscaper (XSS prevention), RegexValidator (ReDoS prevention).
 
 #### Issue 4.1: Command Injection in Commit Messages (MEDIUM)
 
@@ -341,11 +350,13 @@ Address issues in priority order:
 
 ---
 
-### Step 5: Handle TODO Comments
+### Step 5: Handle TODO Comments ✅ COMPLETE
 
 **Priority:** Low  
 **Effort:** Low (1 hour)  
 **Impact:** Low - Documentation cleanup
+
+TODOs tracked in roadmap (Future Enhancements). No untracked TODOs.
 
 **Issue:**
 2 TODO comments in production code:

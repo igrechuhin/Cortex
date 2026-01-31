@@ -18,43 +18,13 @@ from cortex.core.constants import (
 )
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import mcp_tool_wrapper
-from cortex.managers.initialization import get_managers, get_project_root
-from cortex.managers.types import ManagersDict
-from cortex.refactoring.approval_manager import ApprovalManager
-from cortex.refactoring.learning_engine import LearningEngine
-from cortex.refactoring.models import (
-    FeedbackRecordResult,
-    RefactoringAction,
-    RefactoringSuggestionModel,
-)
-from cortex.refactoring.refactoring_engine import (
-    RefactoringEngine,
-)
 from cortex.server import mcp
-from cortex.tools.phase5_execution_errors import (
-    create_execution_error_response,
-    create_invalid_action_error,
-    create_missing_param_error,
+from cortex.tools.phase5_execution_helpers import parse_refactoring_action
+from cortex.tools.phase5_execution_monitoring import log_invalid_action_and_return
+from cortex.tools.phase5_execution_planning import (
+    execute_with_error_handling,
+    provide_feedback_impl,
 )
-from cortex.tools.phase5_execution_handlers import (
-    handle_apply_action,
-    handle_approve_action,
-    handle_rollback_action,
-)
-from cortex.tools.phase5_execution_helpers import (
-    check_approval_status,
-    extract_feedback_managers,
-    parse_refactoring_action,
-    record_feedback_and_build_result,
-)
-
-
-async def _log_invalid_action_and_return(ctx: MCPContext | None, action: str) -> str:
-    """Log invalid action and return error JSON."""
-    await log_client(
-        ctx, "warning", "apply_refactoring: invalid action", logger_name=__name__
-    )
-    return create_invalid_action_error(action)
 
 
 async def _apply_refactoring_validate_and_run(
@@ -74,8 +44,8 @@ async def _apply_refactoring_validate_and_run(
     """Validate action and run apply refactoring."""
     parsed_action = parse_refactoring_action(action)
     if parsed_action is None:
-        return await _log_invalid_action_and_return(ctx, action)
-    return await _execute_apply_refactoring_with_validation(
+        return await log_invalid_action_and_return(ctx, action)
+    return await execute_with_error_handling(
         parsed_action,
         project_root,
         suggestion_id,
@@ -293,270 +263,6 @@ async def apply_refactoring(
     )
 
 
-async def _execute_apply_refactoring_with_validation(
-    action: RefactoringAction,
-    project_root: str | None,
-    suggestion_id: str | None,
-    approval_id: str | None,
-    execution_id: str | None,
-    user_comment: str | None,
-    auto_apply: bool,
-    dry_run: bool,
-    validate_first: bool,
-    restore_snapshot: bool,
-    preserve_manual_changes: bool,
-    ctx: MCPContext | None = None,
-) -> str:
-    """Execute apply refactoring with validation and error handling."""
-    return await _execute_with_error_handling(
-        action,
-        project_root,
-        suggestion_id,
-        approval_id,
-        execution_id,
-        user_comment,
-        auto_apply,
-        dry_run,
-        validate_first,
-        restore_snapshot,
-        preserve_manual_changes,
-        ctx,
-    )
-
-
-async def _log_apply_result(
-    ctx: MCPContext | None, out: str | None, exc: Exception | None
-) -> str:
-    """Log apply_refactoring result and return output or error response."""
-    if exc is not None:
-        await log_client(
-            ctx, "error", f"apply_refactoring: {exc!s}", logger_name=__name__
-        )
-        return create_execution_error_response(exc)
-    await log_client(ctx, "info", "apply_refactoring: completed", logger_name=__name__)
-    return out or ""
-
-
-async def _execute_with_error_handling(
-    action: RefactoringAction,
-    project_root: str | None,
-    suggestion_id: str | None,
-    approval_id: str | None,
-    execution_id: str | None,
-    user_comment: str | None,
-    auto_apply: bool,
-    dry_run: bool,
-    validate_first: bool,
-    restore_snapshot: bool,
-    preserve_manual_changes: bool,
-    ctx: MCPContext | None = None,
-) -> str:
-    """Execute with validation and error handling."""
-    try:
-        out = await _execute_validated_refactoring(
-            action,
-            project_root,
-            suggestion_id,
-            approval_id,
-            execution_id,
-            user_comment,
-            auto_apply,
-            dry_run,
-            validate_first,
-            restore_snapshot,
-            preserve_manual_changes,
-        )
-        return await _log_apply_result(ctx, out, None)
-    except Exception as e:
-        return await _log_apply_result(ctx, None, e)
-
-
-async def _execute_validated_refactoring(
-    action: RefactoringAction,
-    project_root: str | None,
-    suggestion_id: str | None,
-    approval_id: str | None,
-    execution_id: str | None,
-    user_comment: str | None,
-    auto_apply: bool,
-    dry_run: bool,
-    validate_first: bool,
-    restore_snapshot: bool,
-    preserve_manual_changes: bool,
-) -> str:
-    """Execute validated refactoring action."""
-    if validation_error := _check_validation_error(action, suggestion_id, execution_id):
-        return validation_error
-    return await _call_execute_refactoring_action(
-        action,
-        project_root,
-        suggestion_id,
-        approval_id,
-        execution_id,
-        user_comment,
-        auto_apply,
-        dry_run,
-        validate_first,
-        restore_snapshot,
-        preserve_manual_changes,
-    )
-
-
-def _check_validation_error(
-    action: RefactoringAction,
-    suggestion_id: str | None,
-    execution_id: str | None,
-) -> str | None:
-    """Check validation error and return it if present."""
-    return _validate_apply_refactoring_params(action, suggestion_id, execution_id)
-
-
-async def _call_execute_refactoring_action(
-    action: RefactoringAction,
-    project_root: str | None,
-    suggestion_id: str | None,
-    approval_id: str | None,
-    execution_id: str | None,
-    user_comment: str | None,
-    auto_apply: bool,
-    dry_run: bool,
-    validate_first: bool,
-    restore_snapshot: bool,
-    preserve_manual_changes: bool,
-) -> str:
-    """Call execute refactoring action with all parameters."""
-    return await _execute_refactoring_action(
-        action,
-        project_root,
-        suggestion_id,
-        approval_id,
-        execution_id,
-        user_comment,
-        auto_apply,
-        dry_run,
-        validate_first,
-        restore_snapshot,
-        preserve_manual_changes,
-    )
-
-
-async def _execute_refactoring_action(
-    action: RefactoringAction,
-    project_root: str | None,
-    suggestion_id: str | None,
-    approval_id: str | None,
-    execution_id: str | None,
-    user_comment: str | None,
-    auto_apply: bool,
-    dry_run: bool,
-    validate_first: bool,
-    restore_snapshot: bool,
-    preserve_manual_changes: bool,
-) -> str:
-    """Execute refactoring action after validation."""
-    root = get_project_root(project_root)
-    mgrs = await get_managers(root)
-    return await _dispatch_refactoring_action(
-        action,
-        mgrs,
-        suggestion_id,
-        approval_id,
-        execution_id,
-        user_comment,
-        auto_apply,
-        dry_run,
-        validate_first,
-        restore_snapshot,
-        preserve_manual_changes,
-    )
-
-
-async def _dispatch_refactoring_action(
-    action: RefactoringAction,
-    mgrs: ManagersDict,
-    suggestion_id: str | None,
-    approval_id: str | None,
-    execution_id: str | None,
-    user_comment: str | None,
-    auto_apply: bool,
-    dry_run: bool,
-    validate_first: bool,
-    restore_snapshot: bool,
-    preserve_manual_changes: bool,
-) -> str:
-    """Dispatch refactoring action to appropriate handler."""
-    if action == RefactoringAction.APPROVE:
-        return await handle_approve_action(
-            mgrs, suggestion_id, user_comment, auto_apply
-        )
-    if action == RefactoringAction.APPLY:
-        return await handle_apply_action(
-            mgrs, suggestion_id, approval_id, dry_run, validate_first
-        )
-    if action == RefactoringAction.ROLLBACK:
-        return await handle_rollback_action(
-            mgrs, execution_id, restore_snapshot, preserve_manual_changes, dry_run
-        )
-    return create_invalid_action_error(action.value)
-
-
-def _validate_apply_refactoring_params(
-    action: RefactoringAction,
-    suggestion_id: str | None,
-    execution_id: str | None,
-) -> str | None:
-    """Validate apply_refactoring parameters."""
-    if action == RefactoringAction.APPROVE and not suggestion_id:
-        return create_missing_param_error("suggestion_id", action.value)
-    if action == RefactoringAction.APPLY and not suggestion_id:
-        return create_missing_param_error("suggestion_id", action.value)
-    if action == RefactoringAction.ROLLBACK and not execution_id:
-        return create_missing_param_error("execution_id", action.value)
-    return None
-
-
-async def _warn_suggestion_not_found_and_return(
-    ctx: MCPContext | None, suggestion: str
-) -> str:
-    """Log suggestion-not-found warning and return error JSON."""
-    await log_client(
-        ctx,
-        "warning",
-        "provide_feedback: suggestion not found",
-        logger_name=__name__,
-    )
-    return suggestion
-
-
-async def _provide_feedback_impl(
-    suggestion_id: str,
-    feedback_type: str,
-    comment: str | None,
-    adjust_preferences: bool,
-    project_root: str | None,
-    ctx: MCPContext | None,
-) -> str:
-    """Run provide_feedback logic and return JSON result."""
-    root = get_project_root(project_root)
-    mgrs = await get_managers(root)
-    managers = await extract_feedback_managers(mgrs)
-    suggestion = await _get_suggestion_for_feedback(managers[1], suggestion_id)
-    if isinstance(suggestion, str):
-        return await _warn_suggestion_not_found_and_return(ctx, suggestion)
-    result = await _process_feedback(
-        managers[0],
-        managers[1],
-        managers[2],
-        suggestion,
-        suggestion_id,
-        feedback_type,
-        comment,
-    )
-    out = result.model_dump_json(indent=2)
-    await log_client(ctx, "info", "provide_feedback: completed", logger_name=__name__)
-    return out
-
-
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def provide_feedback(
@@ -696,7 +402,7 @@ async def provide_feedback(
     """
     await log_client(ctx, "info", "provide_feedback: starting", logger_name=__name__)
     try:
-        return await _provide_feedback_impl(
+        return await provide_feedback_impl(
             suggestion_id, feedback_type, comment, adjust_preferences, project_root, ctx
         )
     except Exception as e:
@@ -705,55 +411,3 @@ async def provide_feedback(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
-
-
-async def _get_suggestion_for_feedback(
-    refactoring_engine: RefactoringEngine, suggestion_id: str
-) -> RefactoringSuggestionModel | str:
-    """Get suggestion or return error JSON."""
-    suggestion = await refactoring_engine.get_suggestion(suggestion_id)
-    if not suggestion:
-        return json.dumps(
-            {"status": "error", "error": f"Suggestion '{suggestion_id}' not found"},
-            indent=2,
-        )
-    return suggestion
-
-
-async def _process_feedback(
-    learning_engine: LearningEngine,
-    refactoring_engine: RefactoringEngine,
-    approval_manager: ApprovalManager,
-    suggestion: RefactoringSuggestionModel,
-    suggestion_id: str,
-    feedback_type: str,
-    comment: str | None,
-) -> FeedbackRecordResult:
-    """Process feedback and return result.
-
-    Args:
-        learning_engine: Learning engine instance
-        refactoring_engine: Refactoring engine instance
-        approval_manager: Approval manager instance
-        suggestion: Suggestion object
-        suggestion_id: Suggestion ID
-        feedback_type: Type of feedback
-        comment: Optional comment
-
-    Returns:
-        Feedback record result model
-    """
-    approvals = await approval_manager.get_approvals_for_suggestion(suggestion_id)
-    was_approved, was_applied = check_approval_status(approvals)
-
-    result = await record_feedback_and_build_result(
-        learning_engine,
-        suggestion,
-        suggestion_id,
-        feedback_type,
-        comment,
-        was_approved,
-        was_applied,
-    )
-
-    return result

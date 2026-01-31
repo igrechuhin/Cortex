@@ -6,7 +6,7 @@
 
 ### Active Work
 
-- ✅ **Conditional prompt registration** - COMPLETE (2026-01-31) - Implementation already present (config_status.py, prompts.py conditional registration). Documented conditional availability in README.md, docs/prompts/README.md, CLAUDE.md. All tests passing (3134); coverage 90.44%. Plan: .cortex/plans/conditional-prompt-registration.md.
+- ✅ **Conditional prompt registration** - COMPLETE (2026-01-31) - Implementation already present (src/cortex/tools/config_status.py, src/cortex/tools/prompts.py conditional registration). Documented conditional availability in README.md, docs/prompts/README.md, CLAUDE.md. All tests passing (3134); coverage 90.44%. Plan: .cortex/plans/conditional-prompt-registration.md.
 
 - ✅ **Session optimization (2026-01-31 review)** - COMPLETE (2026-01-31) - Implemented recommendations from `.cortex/reviews/session-optimization-2026-01-31T15-00.md`: (1) Mandatory rules-load Pre-Step and BLOCK in commit prompt; checklist item "Rules loaded: Yes/No. If No, do not proceed to Step 0". (2) CRITICAL violation sentence for skipping rules load. (3) Error-fixer and type-checker agents: prerequisites to load rules before fixing, visibility/API guidance (test via public API; do not use reportPrivateUsage=false). (4) Common error "Fixing type/visibility without loaded rules" in commit prompt. (5) Project-wide rule for real-time references (Synapse rules): ALL time references MUST use real time; derive from mtime/tool/system date; NEVER use fallback or invented time. Updated analyze-session-optimization and session-optimization-analyzer accordingly.
 
@@ -64,9 +64,9 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Ensure proper logging (FastMCP context)** - PENDING - Audit and standardize logging to align with FastMCP Context-based logging. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
+- ✅ **Ensure proper logging (FastMCP context)** - COMPLETE (2026-01-31) - Phase 3 tool migration done: phase4_optimization_handlers, context_analysis_handlers, phase8_structure, synapse_tools, pre_commit_tools, phase5_execution, refactoring_operations now use optional ctx and log_client; unit tests added (TestPhase4OptimizationContextLogging, TestContextAnalysisContextLogging, TestPhase8StructureContextLogging, TestSynapseToolsContextLogging, TestPreCommitToolsContextLogging, TestPhase5ExecutionContextLogging, TestRefactoringOperationsContextLogging). Some function-length/file-size quality violations remain; tracked for follow-up. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
 
-- **Phase 20: Code Review Fixes** - PENDING - Address critical issues from code review (rules violations, test blockers, type errors, security). Plan: .cortex/plans/phase-20-code-review-fixes.md.
+- **Phase 20: Code Review Fixes** - IN PROGRESS (2026-01-31) - Steps 1, 2, 4, 5 complete: test import from cortex.tools.markdown_operations (35 tests pass), type errors 0 (pyright), security in core/security.py (CommitMessageSanitizer, HTMLEscaper, RegexValidator), TODOs tracked. Step 3 (file size) partial: validation/phase2 already split; remaining files >400 lines: rollback_manager, template_manager, initialization, structure_analyzer, optimization_strategies, phase8_structure, phase5_execution. Plan updated. Plan: .cortex/plans/phase-20-code-review-fixes.md.
 
 - **Phase 21: Health-Check and Optimization Analysis** - PENDING - Health-check system for prompts, rules, and MCP tools. Plan: .cortex/plans/phase-21-health-check-optimization.md.
 
@@ -126,4 +126,4 @@
 
 - **Sequential thinking in Cortex MCP** - PENDING - Implement sequential thinking tool similar to MCP servers reference (thought history, revisions, branches). Plan: .cortex/plans/sequential-thinking-cortex-mcp.md.
 
-- **Session optimization (2026-01-31 12-19): Public API, memory bank, SDK generics** - PENDING - Implement recommendations from session-optimization-2026-01-31T12-19 review: rule for public API not using private type names; prompt/agent to update memory bank after user-requested fixes; rule for SDK generic type parameters; one-time progress.md alignment if needed. Plan: .cortex/plans/session-optimization-public-api-memory-bank-rules.md.
+- **Session optimization (2026-01-31 12-19): Public API, memory bank, SDK generics** - PENDING - Implement recommendations from session-optimization-2026-01-31T12-19 review: rule for public API not using private type names; prompt/agent to update memory bank after user-requested fixes; rule for SDK generic type parameters; one-time .cortex/memory-bank/progress.md alignment if needed. Plan: .cortex/plans/session-optimization-public-api-memory-bank-rules.md.

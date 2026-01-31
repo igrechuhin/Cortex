@@ -6,10 +6,11 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
-- ✅ **Commit: quality gate (function length + file size)** - COMPLETE (2026-01-31) - Fixed 7 function-length and 1 file-size violation: refactoring_operations (moved suggest_consolidation, suggest_splits, suggest_reorganization, process_refactoring_request, suggest_refactoring_error_json to refactoring_operation_helpers); file_operations (_log_manage_file_result); synapse_tools (_get_synapse_rules_error_json, _synapse_not_initialized_json); phase5_execution (_log_invalid_action_and_return, _log_apply_result,warn_suggestion_not_found_and_return). Tests: test_analysis_operations, test_consolidated patch targets updated to refactoring_operation_helpers. 3184 tests, 90.54% coverage.
+- **Phase 20: Code Review Fixes** - IN PROGRESS (2026-01-31) - Steps 1, 2, 4, 5 complete; Step 3.10 complete: phase5_execution split into phase5_execution_validation.py, phase5_execution_monitoring.py, phase5_execution_planning.py. Remaining files >400 lines: rollback_manager, template_manager, initialization, structure_analyzer, optimization_strategies, phase8_structure. Plan: .cortex/plans/phase-20-code-review-fixes.md.
 
-- ✅ **Ensure proper logging (FastMCP context)** - COMPLETE (2026-01-31) - Phase 3 tool migration done; unit tests added. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
-
+- ✅ **Phase 20 Step 3.10 (phase5_execution split)** - COMPLETE (2026-01-31)
+- ✅ **Commit: quality gate (function length + file size)** - COMPLETE (2026-01-31)
+- ✅ **Ensure proper logging (FastMCP context)** - COMPLETE (2026-01-31)
 - ✅ **Conditional prompt registration** - COMPLETE (2026-01-31)
 - ✅ **Commit: type fix (reportPrivateUsage)** - COMPLETE (2026-01-31)
 - ✅ **Session optimization (2026-01-31 review)** - COMPLETE (2026-01-31)
@@ -25,8 +26,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
-- Commit (2026-01-31): quality gate (function length + file size); refactoring_operations split to helpers; file_operations, synapse_tools, phase5_execution helpers; test imports/patches updated. 3184 tests, 90.54% coverage.
-- Commit (2026-01-31): quality gate fixes (pre_commit_tools, file_operations, refactoring_operations, synapse_tools, phase5_execution). 3184 tests, 90.55% coverage.
+- Implement run (2026-01-31): Phase 20 Code Review Fixes – Step 3.10 phase5_execution split. Added phase5_execution_validation.py, phase5_execution_monitoring.py, phase5_execution_planning.py; updated phase5_execution.py and tests. All 3184 tests pass; quality gate passes.
 
 ## Project Health
 
@@ -39,4 +39,4 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Next Focus
 
-- Run commit pipeline when ready; or pick next roadmap step.
+- Continue Phase 20 Step 3 (file splits for rollback_manager, template_manager, initialization, structure_analyzer, optimization_strategies, phase8_structure) as needed; or pick next roadmap step (Phase 21: Health-Check and Optimization Analysis). Run commit pipeline when ready.
