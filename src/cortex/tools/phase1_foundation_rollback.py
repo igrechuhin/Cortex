@@ -11,6 +11,7 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
 from cortex.core.mcp_stability import execute_tool_with_stability, mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
@@ -57,7 +58,10 @@ class RollbackProcessingData(BaseModel):
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def rollback_file_version(
-    file_name: str, version: int, project_root: str | None = None
+    file_name: str,
+    version: int,
+    project_root: str | None = None,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Rollback a Memory Bank file to a previous version.
 
@@ -112,16 +116,40 @@ async def rollback_file_version(
         - To undo a rollback, use get_version_history to find the
           version before rollback, then rollback to that version
     """
+    await log_client(
+        ctx, "info", "rollback_file_version: starting", logger_name=__name__
+    )
     try:
-        result = await execute_tool_with_stability(
-            _execute_rollback, file_name, version, project_root
+        result = await _rollback_file_version_run(file_name, version, project_root)
+        await log_client(
+            ctx, "info", "rollback_file_version: completed", logger_name=__name__
         )
-        if isinstance(result, dict):
-            return json.dumps(result, indent=2)
-        return json.dumps(result.model_dump(exclude_none=True), indent=2)
+        payload = (
+            result if isinstance(result, dict) else result.model_dump(exclude_none=True)
+        )
+        return json.dumps(payload, indent=2)
     except Exception as e:
+        await log_client(
+            ctx,
+            "error",
+            f"rollback_file_version: failed: {e}",
+            logger_name=__name__,
+        )
         error_result = build_rollback_error_response(str(e), type(e).__name__)
         return json.dumps(error_result.model_dump(exclude_none=True), indent=2)
+
+
+async def _rollback_file_version_run(
+    file_name: str, version: int, project_root: str | None
+) -> (
+    RollbackFileVersionResult
+    | RollbackFileVersionErrorResult
+    | dict[str, str | int | None]
+):
+    """Execute rollback and return result or dict for JSON serialization."""
+    return await execute_tool_with_stability(
+        _execute_rollback, file_name, version, project_root
+    )
 
 
 async def _execute_rollback(

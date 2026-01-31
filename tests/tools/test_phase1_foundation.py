@@ -1245,3 +1245,274 @@ def test_build_rollback_error_response():
     assert result.status == "error"
     assert result.error == "Test error"
     assert result.error_type == "ValueError"
+
+
+# ============================================================================
+# Context logging (FastMCP)
+# ============================================================================
+
+
+@pytest.mark.asyncio
+class TestPhase1FoundationContextLogging:
+    """Test Phase 1 foundation tools use log_client when ctx is passed."""
+
+    async def test_get_version_history_calls_log_client_on_start_and_completion_when_ctx_passed(
+        self, mock_project_root: Path
+    ) -> None:
+        """When ctx is passed, get_version_history logs start and completion."""
+        mock_ctx = AsyncMock()
+        file_meta = {
+            "current_version": 1,
+            "version_history": [
+                {
+                    "version": 1,
+                    "timestamp": "2026-01-10T10:00:00",
+                    "change_type": "create",
+                }
+            ],
+        }
+        with (
+            patch(
+                "cortex.tools.phase1_foundation_version.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.phase1_foundation_version._get_file_metadata_for_history",
+                new=AsyncMock(return_value=file_meta),
+            ),
+        ):
+            result = await get_version_history(
+                file_name="test.md",
+                project_root=str(mock_project_root),
+                limit=10,
+                ctx=mock_ctx,
+            )
+            assert json.loads(result)["status"] == "success"
+            args_list = [c[0] for c in mock_log.call_args_list]
+            levels_and_messages = [(a[1], a[2]) for a in args_list]
+            assert ("info", "get_version_history: starting") in levels_and_messages
+            assert ("info", "get_version_history: completed") in levels_and_messages
+
+    async def test_get_version_history_calls_log_client_warning_when_file_not_found_when_ctx_passed(
+        self, mock_project_root: Path
+    ) -> None:
+        """When file not found and ctx passed, get_version_history logs warning."""
+        mock_ctx = AsyncMock()
+        with patch(
+            "cortex.tools.phase1_foundation_version.log_client",
+            new_callable=AsyncMock,
+        ) as mock_log:
+            result = await get_version_history(
+                file_name="missing.md",
+                project_root=str(mock_project_root),
+                ctx=mock_ctx,
+            )
+            _ = json.loads(result)
+            assert any(
+                c[0][1] == "warning" and "not found" in (c[0][2] or "")
+                for c in mock_log.call_args_list
+                if len(c[0]) >= 3
+            )
+
+    async def test_get_version_history_calls_log_client_error_on_exception_when_ctx_passed(
+        self, mock_project_root: Path
+    ) -> None:
+        """When exception and ctx passed, get_version_history logs error."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.phase1_foundation_version.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.phase1_foundation_version._get_file_metadata_for_history",
+                new=AsyncMock(side_effect=RuntimeError("index error")),
+            ),
+        ):
+            result = await get_version_history(
+                file_name="test.md",
+                project_root=str(mock_project_root),
+                ctx=mock_ctx,
+            )
+            assert json.loads(result)["status"] == "error"
+            assert any(
+                c[0][1] == "error" and "failed" in (c[0][2] or "")
+                for c in mock_log.call_args_list
+                if len(c[0]) >= 3
+            )
+
+    async def test_get_memory_bank_stats_calls_log_client_on_start_and_completion_when_ctx_passed(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """When ctx is passed, get_memory_bank_stats logs start and completion."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.phase1_foundation_stats.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.managers.initialization.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.managers.initialization.get_managers",
+                new=AsyncMock(return_value=mock_managers),
+            ),
+        ):
+            result = await get_memory_bank_stats(
+                project_root=str(mock_project_root), ctx=mock_ctx
+            )
+            assert json.loads(result)["status"] == "success"
+            args_list = [c[0] for c in mock_log.call_args_list]
+            levels_and_messages = [(a[1], a[2]) for a in args_list]
+            assert ("info", "get_memory_bank_stats: starting") in levels_and_messages
+            assert ("info", "get_memory_bank_stats: completed") in levels_and_messages
+
+    async def test_get_memory_bank_stats_calls_log_client_error_on_exception_when_ctx_passed(
+        self, mock_project_root: Path
+    ) -> None:
+        """When exception and ctx passed, get_memory_bank_stats logs error."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.phase1_foundation_stats.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.managers.initialization.get_managers",
+                side_effect=RuntimeError("init failed"),
+            ),
+        ):
+            result = await get_memory_bank_stats(
+                project_root=str(mock_project_root), ctx=mock_ctx
+            )
+            assert json.loads(result)["status"] == "error"
+            assert any(
+                c[0][1] == "error" and "failed" in (c[0][2] or "")
+                for c in mock_log.call_args_list
+                if len(c[0]) >= 3
+            )
+
+    async def test_get_dependency_graph_calls_log_client_on_start_and_completion_when_ctx_passed(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """When ctx is passed, get_dependency_graph logs start and completion."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.phase1_foundation_dependency.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.managers.initialization.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.managers.initialization.get_managers",
+                new=AsyncMock(return_value=mock_managers),
+            ),
+        ):
+            result = await get_dependency_graph(
+                project_root=str(mock_project_root), format="json", ctx=mock_ctx
+            )
+            assert json.loads(result)["status"] == "success"
+            args_list = [c[0] for c in mock_log.call_args_list]
+            levels_and_messages = [(a[1], a[2]) for a in args_list]
+            assert ("info", "get_dependency_graph: starting") in levels_and_messages
+            assert ("info", "get_dependency_graph: completed") in levels_and_messages
+
+    async def test_get_dependency_graph_calls_log_client_error_on_exception_when_ctx_passed(
+        self, mock_project_root: Path
+    ) -> None:
+        """When exception and ctx passed, get_dependency_graph logs error."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.phase1_foundation_dependency.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.managers.initialization.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.managers.initialization.get_managers",
+                new=AsyncMock(return_value={}),
+            ),
+            patch(
+                "cortex.tools.phase1_foundation_dependency.build_graph_data",
+                side_effect=RuntimeError("graph build failed"),
+            ),
+        ):
+            result = await get_dependency_graph(
+                project_root=str(mock_project_root), ctx=mock_ctx
+            )
+            assert json.loads(result)["status"] == "error"
+            assert any(
+                c[0][1] == "error" and "failed" in (c[0][2] or "")
+                for c in mock_log.call_args_list
+                if len(c[0]) >= 3
+            )
+
+    async def test_rollback_file_version_calls_log_client_on_start_and_completion_when_ctx_passed(
+        self, mock_project_root: Path
+    ) -> None:
+        """When ctx is passed, rollback_file_version logs start and completion."""
+        mock_ctx = AsyncMock()
+        success_result = {
+            "status": "success",
+            "file_name": "test.md",
+            "rolled_back_from_version": 1,
+            "new_version": 2,
+            "token_count": 100,
+        }
+        with (
+            patch(
+                "cortex.tools.phase1_foundation_rollback.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.phase1_foundation_rollback.execute_tool_with_stability",
+                new=AsyncMock(return_value=success_result),
+            ),
+        ):
+            result = await rollback_file_version(
+                file_name="test.md",
+                version=1,
+                project_root=str(mock_project_root),
+                ctx=mock_ctx,
+            )
+            assert json.loads(result)["status"] == "success"
+            args_list = [c[0] for c in mock_log.call_args_list]
+            levels_and_messages = [(a[1], a[2]) for a in args_list]
+            assert ("info", "rollback_file_version: starting") in levels_and_messages
+            assert ("info", "rollback_file_version: completed") in levels_and_messages
+
+    async def test_rollback_file_version_calls_log_client_error_on_exception_when_ctx_passed(
+        self, mock_project_root: Path
+    ) -> None:
+        """When exception and ctx passed, rollback_file_version logs error."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.phase1_foundation_rollback.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.phase1_foundation_rollback.execute_tool_with_stability",
+                new=AsyncMock(side_effect=RuntimeError("rollback failed")),
+            ),
+        ):
+            result = await rollback_file_version(
+                file_name="test.md",
+                version=1,
+                project_root=str(mock_project_root),
+                ctx=mock_ctx,
+            )
+            assert json.loads(result)["status"] == "error"
+            assert any(
+                c[0][1] == "error" and "failed" in (c[0][2] or "")
+                for c in mock_log.call_args_list
+                if len(c[0]) >= 3
+            )

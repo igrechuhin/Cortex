@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Literal, cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonValue, ModelDict
@@ -28,6 +29,7 @@ async def get_memory_bank_stats(
     include_token_budget: bool = True,
     include_refactoring_history: bool = False,
     refactoring_days: int = 90,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Get overall Memory Bank statistics and analytics.
 
@@ -120,23 +122,53 @@ async def get_memory_bank_stats(
         - "warning": Usage >= warning threshold but < max
         - "over_budget": Usage >= max tokens
     """
+    await log_client(
+        ctx, "info", "get_memory_bank_stats: starting", logger_name=__name__
+    )
     try:
-        base_result, total_tokens = await _collect_base_stats(project_root)
-        result_dict: ModelDict = base_result
-        updated = await _add_optional_stats(
-            result_dict,
+        result_dict = await _get_memory_bank_stats_impl(
+            ctx,
+            project_root,
             include_token_budget,
             include_refactoring_history,
-            project_root,
-            total_tokens,
             refactoring_days,
         )
-        return json.dumps(updated if updated is not None else result_dict, indent=2)
+        return json.dumps(result_dict, indent=2)
     except Exception as e:
+        await log_client(
+            ctx,
+            "error",
+            f"get_memory_bank_stats: failed: {e}",
+            logger_name=__name__,
+        )
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+async def _get_memory_bank_stats_impl(
+    ctx: MCPContext | None,
+    project_root: str | None,
+    include_token_budget: bool,
+    include_refactoring_history: bool,
+    refactoring_days: int,
+) -> ModelDict:
+    """Run get_memory_bank_stats logic and return result dict."""
+    base_result, total_tokens = await _collect_base_stats(project_root)
+    result_dict: ModelDict = base_result
+    updated = await _add_optional_stats(
+        result_dict,
+        include_token_budget,
+        include_refactoring_history,
+        project_root,
+        total_tokens,
+        refactoring_days,
+    )
+    await log_client(
+        ctx, "info", "get_memory_bank_stats: completed", logger_name=__name__
+    )
+    return updated if updated is not None else result_dict
 
 
 async def _collect_base_stats(

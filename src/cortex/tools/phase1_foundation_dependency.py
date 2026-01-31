@@ -9,6 +9,7 @@ import json
 from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.dependency_graph import DependencyGraph, FileDependencyInfo
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import JsonValue, ModelDict
@@ -20,7 +21,9 @@ from cortex.server import mcp
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_dependency_graph(
-    project_root: str | None = None, format: str = "json"
+    project_root: str | None = None,
+    format: str = "json",
+    ctx: MCPContext | None = None,
 ) -> str:
     """Get the Memory Bank dependency graph.
 
@@ -81,37 +84,53 @@ async def get_dependency_graph(
         The loading order is computed using topological sort and respects
         both static priorities and dependency relationships.
     """
+    await log_client(
+        ctx, "info", "get_dependency_graph: starting", logger_name=__name__
+    )
     try:
-        root = initialization.get_project_root(project_root)
-        try:
-            mgrs = await initialization.get_managers(root)
-            dep_graph = await get_manager(mgrs, "graph", DependencyGraph)
-        except Exception:
-            # Fallback to static graph when manager init fails (useful in tests).
-            dep_graph = DependencyGraph()
-
-        if format == "mermaid":
-            diagram = dep_graph.to_mermaid()
-            return json.dumps(
-                {"status": "success", "format": "mermaid", "diagram": diagram}, indent=2
-            )
-        else:
-            graph_data = build_graph_data(dep_graph.static_deps)
-            return json.dumps(
-                {
-                    "status": "success",
-                    "format": "json",
-                    "graph": graph_data,
-                    "loading_order": dep_graph.compute_loading_order(),
-                },
-                indent=2,
-            )
-
+        out = await _get_dependency_graph_impl(project_root, format)
+        await log_client(
+            ctx, "info", "get_dependency_graph: completed", logger_name=__name__
+        )
+        return out
     except Exception as e:
+        await log_client(
+            ctx,
+            "error",
+            f"get_dependency_graph: failed: {e}",
+            logger_name=__name__,
+        )
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+async def _get_dependency_graph_impl(project_root: str | None, format: str) -> str:
+    """Build dependency graph and return JSON string."""
+    root = initialization.get_project_root(project_root)
+    try:
+        mgrs = await initialization.get_managers(root)
+        dep_graph = await get_manager(mgrs, "graph", DependencyGraph)
+    except Exception:
+        dep_graph = DependencyGraph()
+
+    if format == "mermaid":
+        diagram = dep_graph.to_mermaid()
+        return json.dumps(
+            {"status": "success", "format": "mermaid", "diagram": diagram},
+            indent=2,
+        )
+    graph_data = build_graph_data(dep_graph.static_deps)
+    return json.dumps(
+        {
+            "status": "success",
+            "format": "json",
+            "graph": graph_data,
+            "loading_order": dep_graph.compute_loading_order(),
+        },
+        indent=2,
+    )
 
 
 def build_graph_data(static_deps: dict[str, FileDependencyInfo]) -> ModelDict:

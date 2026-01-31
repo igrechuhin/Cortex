@@ -85,3 +85,70 @@ class TestCleanupMetadataIndex:
         assert result.status == "error"
         assert result.error == "boom"
         assert result.error_type == "RuntimeError"
+
+
+@pytest.mark.asyncio
+class TestCleanupMetadataIndexContextLogging:
+    """Test cleanup_metadata_index uses log_client when ctx is passed."""
+
+    async def test_cleanup_metadata_index_calls_log_client_on_start_and_completion_when_ctx_passed(
+        self, tmp_path: Path
+    ) -> None:
+        """When ctx is passed, cleanup_metadata_index logs start and completion."""
+        mock_ctx = AsyncMock()
+        mock_index = AsyncMock()
+        mock_index.validate_index_consistency = AsyncMock(return_value=[])
+
+        with (
+            patch(
+                "cortex.tools.phase1_foundation_cleanup.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.phase1_foundation_cleanup.get_project_root",
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.phase1_foundation_cleanup.get_managers",
+                return_value=make_test_managers(index=mock_index),
+            ),
+        ):
+            result = await cleanup_metadata_index(
+                project_root=None, dry_run=False, ctx=mock_ctx
+            )
+
+        assert result.status == "success"
+        args_list = [c[0] for c in mock_log.call_args_list]
+        levels_and_messages = [(a[1], a[2]) for a in args_list]
+        assert ("info", "cleanup_metadata_index: starting") in levels_and_messages
+        assert ("info", "cleanup_metadata_index: completed") in levels_and_messages
+
+    async def test_cleanup_metadata_index_calls_log_client_error_on_exception_when_ctx_passed(
+        self, tmp_path: Path
+    ) -> None:
+        """When exception and ctx passed, cleanup_metadata_index logs error."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.phase1_foundation_cleanup.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.phase1_foundation_cleanup.get_project_root",
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.phase1_foundation_cleanup.get_managers",
+                side_effect=RuntimeError("init failed"),
+            ),
+        ):
+            result = await cleanup_metadata_index(
+                project_root=None, dry_run=False, ctx=mock_ctx
+            )
+
+        assert result.status == "error"
+        assert any(
+            c[0][1] == "error" and "failed" in (c[0][2] or "")
+            for c in mock_log.call_args_list
+            if len(c[0]) >= 3
+        )

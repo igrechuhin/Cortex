@@ -9,6 +9,7 @@ import json
 from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ModelDict
@@ -20,7 +21,10 @@ from cortex.server import mcp
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_version_history(
-    file_name: str, project_root: str | None = None, limit: int = 10
+    file_name: str,
+    project_root: str | None = None,
+    limit: int = 10,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Get version history for a Memory Bank file.
 
@@ -77,33 +81,51 @@ async def get_version_history(
         Version history is stored in .cortex/history/ and includes
         automatic snapshots created on each file modification.
     """
+    await log_client(ctx, "info", "get_version_history: starting", logger_name=__name__)
     try:
-        file_meta = await _get_file_metadata_for_history(file_name, project_root)
-        if not file_meta:
-            return json.dumps(
-                {"status": "error", "error": f"File '{file_name}' not found in index"},
-                indent=2,
-            )
-
-        version_history = extract_version_history(file_meta)
-        sorted_history = sort_and_limit_versions(version_history, limit)
-        versions = format_versions_for_export(sorted_history)
-
-        return json.dumps(
-            {
-                "status": "success",
-                "file_name": file_name,
-                "versions": versions,
-                "total_versions": len(versions),
-            },
-            indent=2,
+        out = await _get_version_history_impl(file_name, project_root, limit, ctx)
+        await log_client(
+            ctx, "info", "get_version_history: completed", logger_name=__name__
         )
-
+        return out
     except Exception as e:
+        await log_client(
+            ctx, "error", f"get_version_history: failed: {e}", logger_name=__name__
+        )
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+async def _get_version_history_impl(
+    file_name: str,
+    project_root: str | None,
+    limit: int,
+    ctx: MCPContext | None,
+) -> str:
+    """Load version history and return JSON string."""
+    file_meta = await _get_file_metadata_for_history(file_name, project_root)
+    if not file_meta:
+        await log_client(
+            ctx, "warning", f"get_version_history: file '{file_name}' not found"
+        )
+        return json.dumps(
+            {"status": "error", "error": f"File '{file_name}' not found in index"},
+            indent=2,
+        )
+    version_history = extract_version_history(file_meta)
+    sorted_history = sort_and_limit_versions(version_history, limit)
+    versions = format_versions_for_export(sorted_history)
+    return json.dumps(
+        {
+            "status": "success",
+            "file_name": file_name,
+            "versions": versions,
+            "total_versions": len(versions),
+        },
+        indent=2,
+    )
 
 
 async def _get_file_metadata_for_history(

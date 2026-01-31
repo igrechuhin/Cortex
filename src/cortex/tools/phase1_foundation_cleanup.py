@@ -6,6 +6,7 @@ stale entries from the metadata index.
 """
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
 from cortex.managers.initialization import get_managers, get_project_root
@@ -39,7 +40,9 @@ async def _process_stale_entries(
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def cleanup_metadata_index(
-    project_root: str | None = None, dry_run: bool = False
+    project_root: str | None = None,
+    dry_run: bool = False,
+    ctx: MCPContext | None = None,
 ) -> CleanupMetadataIndexResultUnion:
     """Clean up stale entries from metadata index.
 
@@ -55,21 +58,41 @@ async def cleanup_metadata_index(
     Validates index consistency with filesystem and removes entries for
     files that no longer exist on disk. Supports dry-run mode.
     """
+    await log_client(
+        ctx, "info", "cleanup_metadata_index: starting", logger_name=__name__
+    )
     try:
-        root = get_project_root(project_root)
-        mgrs = await get_managers(root)
-        metadata_index: MetadataIndex = mgrs.index
-        stale_files = await metadata_index.validate_index_consistency()
-        if not stale_files:
-            return CleanupMetadataIndexResult(
-                dry_run=dry_run,
-                stale_files_found=0,
-                stale_files=[],
-                entries_cleaned=0,
-                message="No stale entries found",
-            )
-        return await _process_stale_entries(metadata_index, stale_files, dry_run)
+        result = await _cleanup_metadata_index_impl(project_root, dry_run)
+        await log_client(
+            ctx, "info", "cleanup_metadata_index: completed", logger_name=__name__
+        )
+        return result
     except Exception as e:
+        await log_client(
+            ctx,
+            "error",
+            f"cleanup_metadata_index: failed: {e}",
+            logger_name=__name__,
+        )
         return CleanupMetadataIndexErrorResult(
             error=str(e), error_type=type(e).__name__
         )
+
+
+async def _cleanup_metadata_index_impl(
+    project_root: str | None, dry_run: bool
+) -> CleanupMetadataIndexResultUnion:
+    """Run cleanup logic and return result."""
+    root = get_project_root(project_root)
+    mgrs = await get_managers(root)
+    metadata_index: MetadataIndex = mgrs.index
+    stale_files = await metadata_index.validate_index_consistency()
+    if not stale_files:
+        return CleanupMetadataIndexResult(
+            dry_run=dry_run,
+            stale_files_found=0,
+            stale_files=[],
+            entries_cleaned=0,
+            message="No stale entries found",
+        )
+    return await _process_stale_entries(metadata_index, stale_files, dry_run)
