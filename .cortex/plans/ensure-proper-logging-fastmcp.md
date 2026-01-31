@@ -208,8 +208,8 @@ For each tool:
 - [x] `markdown_operations.py` — 2026-01-31
 - [x] `rules_operations.py` — 2026-01-31
 - [x] `phase1_foundation_*.py` tools — 2026-01-31 (get_version_history, get_memory_bank_stats, get_dependency_graph, rollback_file_version, cleanup_metadata_index; optional ctx and log_client; unit tests TestPhase1FoundationContextLogging, TestCleanupMetadataIndexContextLogging)
-- [ ] `phase2_linking.py` tools
-- ] `phase3_validation.py` tools
+- [x] `phase2_linking.py` tools — 2026-01-31 (parse_file_links, validate_links, resolve_transclusions, get_link_graph; optional ctx and log_client; unit tests TestPhase2LinkingContextLogging)
+- [ ] `phase3_validation.py` tools
 - ] `phase4_optimization.py` tools
 - ] `phase5*.py` tools
 - ] `phase8_structure.py` tools

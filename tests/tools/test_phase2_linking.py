@@ -807,6 +807,288 @@ class TestGetLinkGraph:
 
 
 # ============================================================================
+# Context logging (FastMCP)
+# ============================================================================
+
+
+@pytest.mark.asyncio
+class TestPhase2LinkingContextLogging:
+    """Test Phase 2 linking tools use log_client when ctx is passed."""
+
+    async def test_parse_file_links_calls_log_client_on_start_and_completion_when_ctx_passed(
+        self, mock_project_root: Path, mock_managers: ManagersDict
+    ) -> None:
+        """When ctx is passed, parse_file_links logs start and completion."""
+        file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
+        file_path.touch()
+        mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.link_parser_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.link_parser_operations.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.link_parser_operations.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.link_parser_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            result = await parse_file_links(
+                file_name="test.md",
+                project_root=str(mock_project_root),
+                ctx=mock_ctx,
+            )
+            assert json.loads(result)["status"] == "success"
+            args_list = [c[0] for c in mock_log.call_args_list]
+            levels_and_messages = [(a[1], a[2]) for a in args_list]
+            assert ("info", "parse_file_links: starting") in levels_and_messages
+            assert ("info", "parse_file_links: completed") in levels_and_messages
+
+    async def test_parse_file_links_calls_log_client_warning_when_validation_failed_when_ctx_passed(
+        self, mock_project_root: Path, mock_managers: ManagersDict
+    ) -> None:
+        """When validation fails and ctx passed, parse_file_links logs warning."""
+        file_path = get_test_memory_bank_dir(mock_project_root) / "nonexistent.md"
+        mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.link_parser_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.link_parser_operations.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.link_parser_operations.get_managers",
+                return_value=mock_managers,
+            ),
+        ):
+            result = await parse_file_links(
+                file_name="nonexistent.md",
+                project_root=str(mock_project_root),
+                ctx=mock_ctx,
+            )
+            _ = json.loads(result)
+            assert any(
+                c[0][1] == "warning" and "validation failed" in (c[0][2] or "")
+                for c in mock_log.call_args_list
+                if len(c[0]) >= 3
+            )
+
+    async def test_parse_file_links_calls_log_client_error_on_exception_when_ctx_passed(
+        self, mock_project_root: Path
+    ) -> None:
+        """When exception and ctx passed, parse_file_links logs error."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.link_parser_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.link_parser_operations.get_project_root",
+                side_effect=RuntimeError("index error"),
+            ),
+        ):
+            result = await parse_file_links(
+                file_name="test.md",
+                project_root=str(mock_project_root),
+                ctx=mock_ctx,
+            )
+            _ = json.loads(result)
+            assert any(
+                c[0][1] == "error" for c in mock_log.call_args_list if len(c[0]) >= 2
+            )
+
+    async def test_validate_links_calls_log_client_on_start_and_completion_when_ctx_passed(
+        self, mock_project_root: Path, mock_managers: ManagersDict
+    ) -> None:
+        """When ctx is passed, validate_links logs start and completion."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.link_validation_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.link_validation_operations.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.link_validation_operations.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.link_validation_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            result = await validate_links(
+                project_root=str(mock_project_root),
+                ctx=mock_ctx,
+            )
+            assert json.loads(result)["status"] == "success"
+            args_list = [c[0] for c in mock_log.call_args_list]
+            levels_and_messages = [(a[1], a[2]) for a in args_list]
+            assert ("info", "validate_links: starting") in levels_and_messages
+            assert ("info", "validate_links: completed") in levels_and_messages
+
+    async def test_validate_links_calls_log_client_error_on_exception_when_ctx_passed(
+        self, mock_project_root: Path
+    ) -> None:
+        """When exception and ctx passed, validate_links logs error."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.link_validation_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.link_validation_operations.get_project_root",
+                side_effect=RuntimeError("validation failed"),
+            ),
+        ):
+            result = await validate_links(
+                project_root=str(mock_project_root),
+                ctx=mock_ctx,
+            )
+            _ = json.loads(result)
+            assert any(
+                c[0][1] == "error" for c in mock_log.call_args_list if len(c[0]) >= 2
+            )
+
+    async def test_resolve_transclusions_calls_log_client_on_start_and_completion_when_ctx_passed(
+        self, mock_project_root: Path, mock_managers: ManagersDict
+    ) -> None:
+        """When ctx is passed, resolve_transclusions logs start and completion."""
+        file_path = get_test_memory_bank_dir(mock_project_root) / "test.md"
+        file_path.touch()
+        mock_managers.fs.construct_safe_path.return_value = file_path  # type: ignore[attr-defined]
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.transclusion_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.transclusion_operations.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.transclusion_operations.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.transclusion_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            result = await resolve_transclusions(
+                file_name="test.md",
+                project_root=str(mock_project_root),
+                ctx=mock_ctx,
+            )
+            assert json.loads(result)["status"] == "success"
+            args_list = [c[0] for c in mock_log.call_args_list]
+            levels_and_messages = [(a[1], a[2]) for a in args_list]
+            assert ("info", "resolve_transclusions: starting") in levels_and_messages
+            assert ("info", "resolve_transclusions: completed") in levels_and_messages
+
+    async def test_resolve_transclusions_calls_log_client_error_on_exception_when_ctx_passed(
+        self, mock_project_root: Path
+    ) -> None:
+        """When exception and ctx passed, resolve_transclusions logs error."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.transclusion_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.transclusion_operations.execute_tool_with_stability",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("resolve error"),
+            ),
+        ):
+            result = await resolve_transclusions(
+                file_name="test.md",
+                project_root=str(mock_project_root),
+                ctx=mock_ctx,
+            )
+            _ = json.loads(result)
+            assert any(
+                c[0][1] == "error" for c in mock_log.call_args_list if len(c[0]) >= 2
+            )
+
+    async def test_get_link_graph_calls_log_client_on_start_and_completion_when_ctx_passed(
+        self, mock_project_root: Path, mock_managers: ManagersDict
+    ) -> None:
+        """When ctx is passed, get_link_graph logs start and completion."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.link_graph_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.link_graph_operations.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.link_graph_operations.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.link_graph_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            result = await get_link_graph(
+                project_root=str(mock_project_root),
+                ctx=mock_ctx,
+            )
+            assert json.loads(result)["status"] == "success"
+            args_list = [c[0] for c in mock_log.call_args_list]
+            levels_and_messages = [(a[1], a[2]) for a in args_list]
+            assert ("info", "get_link_graph: starting") in levels_and_messages
+            assert ("info", "get_link_graph: completed") in levels_and_messages
+
+    async def test_get_link_graph_calls_log_client_error_on_exception_when_ctx_passed(
+        self, mock_project_root: Path
+    ) -> None:
+        """When exception and ctx passed, get_link_graph logs error."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.link_graph_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.link_graph_operations.get_project_root",
+                side_effect=RuntimeError("graph build failed"),
+            ),
+        ):
+            result = await get_link_graph(
+                project_root=str(mock_project_root),
+                ctx=mock_ctx,
+            )
+            _ = json.loads(result)
+            assert any(
+                c[0][1] == "error" for c in mock_log.call_args_list if len(c[0]) >= 2
+            )
+
+
+# ============================================================================
 # Integration Tests
 # ============================================================================
 

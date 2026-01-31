@@ -14,9 +14,16 @@ from typing import cast
 
 import anyio
 
+# Configure logging before FastMCP is created so root has our formatter first.
+# FastMCP.__init__ calls configure_logging() → basicConfig(); basicConfig() is a
+# no-op when root already has handlers, so we avoid RichHandler column format.
+import cortex.core.logging_config  # noqa: F401
+
 # Import tools package to register all @mcp.tool() decorators
 import cortex.tools  # noqa: F401
 from cortex.server import mcp
+
+cortex.core.logging_config.apply_cortex_format_to_third_party_loggers()
 
 # Explicitly reference cortex.tools to satisfy type checker (imported for side effects)
 _ = cortex.tools

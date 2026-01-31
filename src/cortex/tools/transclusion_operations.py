@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
 from cortex.core.mcp_stability import execute_tool_with_stability, mcp_tool_wrapper
 from cortex.core.models import ModelDict
@@ -33,7 +34,10 @@ from cortex.tools.models import (
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def resolve_transclusions(
-    file_name: str, project_root: str | None = None, max_depth: int = 5
+    file_name: str,
+    project_root: str | None = None,
+    max_depth: int = 5,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Resolve all {{include:}} transclusion directives in a file by
     replacing them with actual content.
@@ -161,23 +165,40 @@ async def resolve_transclusions(
         - Maximum depth prevents stack overflow from deeply nested or
           circular transclusions
     """
+    await log_client(
+        ctx, "info", "resolve_transclusions: starting", logger_name=__name__
+    )
+    return await _resolve_transclusions_run_or_error(
+        ctx, file_name, project_root, max_depth
+    )
+
+
+async def _resolve_transclusions_run_or_error(
+    ctx: MCPContext | None,
+    file_name: str,
+    project_root: str | None,
+    max_depth: int,
+) -> str:
+    """Run resolve_transclusions and handle errors with logging."""
     try:
         result = await execute_tool_with_stability(
             _execute_transclusion_resolution, file_name, project_root, max_depth
         )
+        await log_client(
+            ctx,
+            "info",
+            "resolve_transclusions: completed",
+            logger_name=__name__,
+        )
         return json.dumps(result.model_dump(), indent=2)
-    except CircularDependencyError as e:
-        return json.dumps(
-            _build_circular_dependency_error(str(e)).model_dump(), indent=2
-        )
-    except MaxDepthExceededError as e:
-        return json.dumps(
-            _build_max_depth_error(str(e), max_depth).model_dump(), indent=2
-        )
     except Exception as e:
-        return json.dumps(
-            _build_transclusion_error(str(e), type(e).__name__).model_dump(), indent=2
+        await log_client(
+            ctx,
+            "error",
+            f"resolve_transclusions: {e!s}",
+            logger_name=__name__,
         )
+        return _resolve_transclusions_error_json(e, max_depth)
 
 
 async def _execute_transclusion_resolution(
@@ -371,4 +392,20 @@ def _build_transclusion_error(
     return ResolveTransclusionsErrorResult(
         error=error_message,
         error_type=error_type,
+    )
+
+
+def _resolve_transclusions_error_json(e: BaseException, max_depth: int) -> str:
+    """Build error JSON string for transclusion resolution exceptions."""
+    if isinstance(e, CircularDependencyError):
+        return json.dumps(
+            _build_circular_dependency_error(str(e)).model_dump(), indent=2
+        )
+    if isinstance(e, MaxDepthExceededError):
+        return json.dumps(
+            _build_max_depth_error(str(e), max_depth).model_dump(), indent=2
+        )
+    return json.dumps(
+        _build_transclusion_error(str(e), type(e).__name__).model_dump(),
+        indent=2,
     )

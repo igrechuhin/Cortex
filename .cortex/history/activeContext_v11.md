@@ -7,7 +7,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 ### Active Work
 
 - **Ensure proper logging (FastMCP context)** - IN PROGRESS (2026-01-31)
-  - Phase 1 and Phase 2 foundation done; Phase 2.3 extended: `manage_file`, `validate`, `analyze`, `configure`, `fix_markdown_lint`, `rules`, and `fix_roadmap_corruption` refactored with optional ctx and client-visible logging via `log_client`. Phase 3.1 done: **phase1_foundation_* tools**et_version_history, get_memory_bank_stats, get_dependency_graph, rollback_file_version, cleanup_metadata_index) refactored with optional ctx and log_client; unit tests TestPhase1FoundationContextLogging and TestCleanupMetadataIndexContextLogging. Remaining: Phase 3 (phase2_linking, phase3_validation, phase4_optimization, phase5_*, phase8_structure, synapse_tools, pre_commit_tools), Phases 4–5 (tests, docs). Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
+  - Phase 1 and Phase 2 foundation done; Phase 2.3 extended: `manage_file`, `validate`, `analyze`, `configure`, `fix_markdown_lint`, `rules`, and `fix_roadmap_corruption` refactored with optional ctx and client-visible logging via `log_client`. Phase 3.1 done: phase1_foundation_*ools (get_version_history, get_memory_bank_stats, get_dependency_graph, rollback_file_version, cleanup_metadata_index). Phase 3 phase2_linking done: parse_file_links, validate_links, resolve_transclusions, get_link_graph with optional ctx and log_client; TestPhase2LinkingContextLogging (9 tests). Remaining: Phase 3 (phase3_validation, phase4_optimization, phase5_*, phase8_structure, synapse_tools, pre_commit_tools), Phases 4–5 (tests, docs). Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
 
 - ✅ **Conditional prompt registration** - COMPLETE (2026-01-31)
 - ✅ **Commit: type fix (reportPrivateUsage)** - COMPLETE (2026-01-31)
@@ -24,6 +24,8 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
+- Commit (2026-01-31): pre-commit pipeline; markdown lint progress.md MD037 fix; 3177 tests, 90.51% coverage; 0 plans archived.
+- Ensure proper logging: phase2_linking tools (parse_file_links, validate_links, resolve_transclusions, get_link_graph) refactored with Context logging; TestPhase2LinkingContextLogging added; 33 Phase 2 tests passing; quality gate passed.
 - Commit (2026-01-31): function length refactors for phase1_foundation_* tools (get_memory_bank_stats, rollback_file_version, cleanup_metadata_index, get_dependency_graph, get_version_history); 3168 tests passing, 90.5% coverage.
 - Ensure proper logging: phase1_foundation_* tools (get_version_history, get_memory_bank_stats, get_dependency_graph, rollback_file_version, cleanup_metadata_index) refactored with Context logging; TestPhase1FoundationContextLogging and TestCleanupMetadataIndexContextLogging added; all 11 context-logging tests passing.
 - Commit (2026-01-31): function length refactors for `_execute_rules_operation`, `fix_markdown_lint`, `fix_roadmap_corruption`; markdown lint 3 files fixed; 3157 tests passing, 90.47% coverage.
@@ -36,7 +38,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Project Health
 
-- **Tests**: 3168+ passing; coverage ≥ 90%.
+- **Tests**: 3177+ passing; coverage ≥ 90%.
 - **Linting/Types**: Pyright 0 errors, 0 warnings.
 - **Pre-commit adapters**: Python, TypeScript, JavaScript, Rust, Go, Java, Kotlin, Swift full implementations.
 - **Plans**: Plans directory in sync with roadmap.
@@ -44,4 +46,4 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Next Focus
 
-- Continue **Ensure proper logging (FastMCP context)**: Phase 3 (phase2_linking, phase3_validation, phase4, phase5, phase8, synapse_tools, pre_commit_tools); or run commit pipeline when ready.
+- Continue **Ensure proper logging (FastMCP context)**: Phase 3 (phase3_validation, phase4_optimization, phase5_*, phase8_structure, synapse_tools, pre_commit_tools); or run commit pipeline when ready.

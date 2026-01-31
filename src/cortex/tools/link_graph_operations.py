@@ -8,6 +8,7 @@ import json
 from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import ModelDict
@@ -24,6 +25,7 @@ async def get_link_graph(
     project_root: str | None = None,
     include_transclusions: bool = True,
     format: str = "json",
+    ctx: MCPContext | None = None,
 ) -> str:
     """Build and return a dependency graph showing how Memory Bank files
     reference each other through links.
@@ -215,15 +217,18 @@ async def get_link_graph(
           reference structure only
         - The summary includes has_cycles and cycle_count for quick cycle detection
     """
+    await log_client(ctx, "info", "get_link_graph: starting", logger_name=__name__)
     try:
         link_graph, cycles = await _build_link_graph_data(project_root)
-
+        await log_client(ctx, "info", "get_link_graph: completed", logger_name=__name__)
         if format == "mermaid":
             return _generate_mermaid_response(link_graph, cycles)
-
         return _generate_json_response(link_graph, cycles, include_transclusions)
 
     except Exception as e:
+        await log_client(
+            ctx, "error", f"get_link_graph: failed: {e}", logger_name=__name__
+        )
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,

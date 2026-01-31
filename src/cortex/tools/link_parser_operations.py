@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import JsonValue, ModelDict
@@ -22,7 +23,11 @@ from cortex.server import mcp
 
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
-async def parse_file_links(file_name: str, project_root: str | None = None) -> str:
+async def parse_file_links(
+    file_name: str,
+    project_root: str | None = None,
+    ctx: MCPContext | None = None,
+) -> str:
     """Parse and extract all markdown links and transclusion directives
     from a Memory Bank file.
 
@@ -133,37 +138,69 @@ async def parse_file_links(file_name: str, project_root: str | None = None) -> s
         - Line and column numbers are 1-indexed for editor compatibility
         - Relative paths in links are resolved relative to the memory-bank directory
     """
+    await log_client(ctx, "info", "parse_file_links: starting", logger_name=__name__)
+    return await _parse_file_links_run_or_error(ctx, file_name, project_root)
+
+
+async def _parse_file_links_run_or_error(
+    ctx: MCPContext | None,
+    file_name: str,
+    project_root: str | None,
+) -> str:
+    """Run parse_file_links and handle validation/errors with logging."""
     try:
-        root = get_project_root(project_root)
-        mgrs = await get_managers(root)
-        file_path, error_response = await _get_validated_file_path(
-            mgrs, root, file_name
-        )
-        if error_response or file_path is None:
-            return error_response or json.dumps(
-                {"status": "error", "error": "File path validation failed"}, indent=2
+        result, status = await _parse_file_links_impl(file_name, project_root)
+        if status == "completed":
+            await log_client(
+                ctx, "info", "parse_file_links: completed", logger_name=__name__
             )
-
-        parsed, summary = await _parse_file_content(mgrs, file_path)
-
-        return json.dumps(
-            {
-                "status": "success",
-                "file": file_name,
-                "markdown_links": cast(
-                    list[JsonValue], parsed.get("markdown_links", [])
-                ),
-                "transclusions": cast(list[JsonValue], parsed.get("transclusions", [])),
-                "summary": summary,
-            },
-            indent=2,
-        )
-
+        elif status == "validation_failed":
+            await log_client(ctx, "warning", "parse_file_links: validation failed")
+        return result
     except Exception as e:
+        await log_client(
+            ctx, "error", f"parse_file_links: failed: {e}", logger_name=__name__
+        )
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+async def _parse_file_links_impl(
+    file_name: str, project_root: str | None
+) -> tuple[str, str]:
+    """Run parse and return (result_json, 'completed' | 'validation_failed')."""
+    root = get_project_root(project_root)
+    mgrs = await get_managers(root)
+    file_path, error_response = await _get_validated_file_path(mgrs, root, file_name)
+    if error_response or file_path is None:
+        err = error_response or json.dumps(
+            {"status": "error", "error": "File path validation failed"},
+            indent=2,
+        )
+        return (err, "validation_failed")
+    parsed, summary = await _parse_file_content(mgrs, file_path)
+    return (
+        _build_parse_file_links_success(parsed, file_name, summary),
+        "completed",
+    )
+
+
+def _build_parse_file_links_success(
+    parsed: ModelDict, file_name: str, summary: ModelDict
+) -> str:
+    """Build success JSON string for parse_file_links."""
+    return json.dumps(
+        {
+            "status": "success",
+            "file": file_name,
+            "markdown_links": cast(list[JsonValue], parsed.get("markdown_links", [])),
+            "transclusions": cast(list[JsonValue], parsed.get("transclusions", [])),
+            "summary": summary,
+        },
+        indent=2,
+    )
 
 
 async def _parse_and_count_links(

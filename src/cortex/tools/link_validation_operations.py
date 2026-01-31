@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -20,7 +21,9 @@ from cortex.server import mcp
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def validate_links(
-    file_name: str | None = None, project_root: str | None = None
+    file_name: str | None = None,
+    project_root: str | None = None,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Validate all markdown links and transclusion directives to ensure
     they point to existing targets.
@@ -175,6 +178,7 @@ async def validate_links(
         - External URLs in markdown links are not validated (only local file links)
         - The report in all_files mode provides a summary suitable for display to users
     """
+    await log_client(ctx, "info", "validate_links: starting", logger_name=__name__)
     try:
         root = get_project_root(project_root)
         mgrs = await get_managers(root)
@@ -183,12 +187,18 @@ async def validate_links(
         memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
 
         if file_name:
-            return await _validate_single_file(
+            result = await _validate_single_file(
                 file_name, fs_manager, link_validator, memory_bank_dir
             )
-        return await _validate_all_files(link_validator, memory_bank_dir)
+        else:
+            result = await _validate_all_files(link_validator, memory_bank_dir)
+        await log_client(ctx, "info", "validate_links: completed", logger_name=__name__)
+        return result
 
     except Exception as e:
+        await log_client(
+            ctx, "error", f"validate_links: failed: {e}", logger_name=__name__
+        )
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,

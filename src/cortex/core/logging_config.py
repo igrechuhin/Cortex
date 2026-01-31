@@ -19,6 +19,14 @@ import os
 import sys
 
 
+class _CortexFormatter(logging.Formatter):
+    """Formatter that emits: [level] name  - message (no timestamp; client adds one for stderr)."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        level = record.levelname.lower()
+        return f"[{level}] {record.name}  - {record.getMessage()}"
+
+
 def setup_logging(level: str | None = None) -> logging.Logger:
     """
     Configure logging for Cortex.
@@ -53,12 +61,31 @@ def setup_logging(level: str | None = None) -> logging.Logger:
 
     # Send logs to stderr (stdout is reserved for MCP protocol)
     handler = logging.StreamHandler(sys.stderr)
-    handler.setFormatter(
-        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    )
+    handler.setFormatter(_CortexFormatter())
     logger.addHandler(handler)
 
+    # Ensure root has our formatter so loggers that propagate to root use it.
+    root = logging.getLogger()
+    if not root.handlers:
+        root.setLevel(logging.INFO)
+        root_handler = logging.StreamHandler(sys.stderr)
+        root_handler.setFormatter(_CortexFormatter())
+        root.addHandler(root_handler)
+
     return logger
+
+
+def apply_cortex_format_to_third_party_loggers() -> None:
+    """Make MCP and other third-party loggers use our compact format.
+
+    Call after the MCP package is imported so their loggers exist. Clears
+    their handlers and enables propagation to root so messages are formatted
+    by the root handler (same style as cortex logs).
+    """
+    for name in ("mcp", "mcp.server"):
+        log = logging.getLogger(name)
+        log.handlers.clear()
+        log.propagate = True
 
 
 # Global logger instance (acceptable exception - Python logging convention)
