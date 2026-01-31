@@ -839,6 +839,8 @@ async def fix_markdown_lint(
             dry_run,
             check_all_files,
         )
+    except asyncio.CancelledError:
+        raise  # Let cancellation propagate so the server can shut down cleanly
     except Exception as e:
         # Normal error path: return structured JSON error instead of crashing MCP
         return _create_error_response(str(e))

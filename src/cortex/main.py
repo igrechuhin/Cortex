@@ -6,6 +6,7 @@ This is the main entry point for the Memory Bank MCP server.
 All tool implementations are in the tools/ package.
 """
 
+import asyncio
 import logging
 import sys
 from builtins import BaseExceptionGroup  # Python 3.11+
@@ -24,11 +25,13 @@ logger = logging.getLogger(__name__)
 
 
 def _is_connection_error(exc: BaseException) -> bool:
-    """Check if exception is a connection-related error."""
+    """Check if exception is a connection-related or shutdown-related error."""
     if isinstance(
         exc, (anyio.BrokenResourceError, BrokenPipeError, ConnectionResetError)
     ):
         return True
+    if isinstance(exc, asyncio.CancelledError):
+        return True  # Task cancellation often means client disconnect or timeout
     if isinstance(exc, OSError) and (
         "Broken pipe" in str(exc) or "Connection reset" in str(exc)
     ):
@@ -99,7 +102,17 @@ def main() -> None:
     except BaseExceptionGroup as eg:
         if _handle_broken_resource_in_group(eg):
             sys.exit(0)  # Graceful shutdown
-        logger.error(f"MCP server TaskGroup error: {eg}")
+        # Log first nested exception for debugging tool/server failures
+        first = eg.exceptions[0] if eg.exceptions else None
+        if first is not None:
+            logger.error(
+                "MCP server TaskGroup error (%d sub-exception(s)); first: %s",
+                len(eg.exceptions),
+                first,
+                exc_info=(type(first), first, first.__traceback__),
+            )
+        else:
+            logger.error("MCP server TaskGroup error: %s", eg)
         sys.exit(1)
     except (anyio.BrokenResourceError, BrokenPipeError, ConnectionError, OSError) as e:
         _handle_connection_error(e)

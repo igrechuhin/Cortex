@@ -6,6 +6,7 @@ including BaseExceptionGroup, anyio.BrokenResourceError, and other
 connection-related exceptions.
 """
 
+import asyncio
 from builtins import BaseExceptionGroup
 from unittest.mock import MagicMock, patch
 
@@ -70,6 +71,26 @@ class TestMainErrorHandling:
         broken_resource_error = anyio.BrokenResourceError("Resource broken")
         exception_group = BaseExceptionGroup(
             "unhandled errors in a TaskGroup", [broken_resource_error]
+        )
+        mock_mcp.run.side_effect = exception_group
+
+        # Act
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+
+        # Assert
+        assert exc_info.value.code == 0
+        mock_mcp.run.assert_called_once_with(transport="stdio")
+
+    @patch("cortex.main.mcp")
+    def test_base_exception_group_with_cancelled_error(
+        self, mock_mcp: MagicMock
+    ) -> None:
+        """Test that BaseExceptionGroup containing CancelledError exits gracefully."""
+        # Arrange - task cancellation often means client disconnect or timeout
+        cancelled_error = asyncio.CancelledError()
+        exception_group = BaseExceptionGroup(
+            "unhandled errors in a TaskGroup", [cancelled_error]
         )
         mock_mcp.run.side_effect = exception_group
 
