@@ -8,14 +8,21 @@ from collections.abc import Sequence
 from typing import cast
 
 from cortex.analysis.structure_analyzer import StructureAnalyzer
+from cortex.core.constants import CONSOLIDATION_MIN_SIMILARITY
 from cortex.core.models import ModelDict
+from cortex.core.protocols.token import DependencyGraphProtocol
+from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.refactoring.consolidation_detector import (
     ConsolidationDetector,
     ConsolidationOpportunity,
 )
-from cortex.refactoring.models import RefactoringSuggestionType
+from cortex.refactoring.models import (
+    DependencyGraphInput,
+    MemoryBankStructureData,
+    RefactoringSuggestionType,
+)
 from cortex.refactoring.reorganization_planner import ReorganizationPlanner
 from cortex.refactoring.split_recommender import SplitRecommendation, SplitRecommender
 
@@ -157,3 +164,108 @@ async def get_structure_data(mgrs: ManagersDict) -> ModelDict:
         "complexity_score": 0.0,
         "analysis": analysis,
     }
+
+
+def suggest_refactoring_error_json(exc: Exception) -> str:
+    """Build JSON error response for suggest_refactoring failures."""
+    return json.dumps(
+        {"status": "error", "error": str(exc), "error_type": exc.__class__.__name__},
+        indent=2,
+    )
+
+
+async def suggest_consolidation(
+    consolidation_detector: ConsolidationDetector,
+    min_similarity: float | None,
+) -> str:
+    """Generate consolidation suggestions."""
+    similarity = min_similarity or CONSOLIDATION_MIN_SIMILARITY
+    consolidation_detector.min_similarity = similarity
+    opportunities = await consolidation_detector.detect_opportunities()
+    opportunities_list = convert_opportunities_to_dict(opportunities)
+    return json.dumps(
+        {
+            "status": "success",
+            "type": "consolidation",
+            "min_similarity": similarity,
+            "opportunities": opportunities_list,
+        },
+        indent=2,
+    )
+
+
+async def suggest_splits(
+    split_recommender: SplitRecommender,
+    size_threshold: int | None,
+) -> str:
+    """Generate file split recommendations."""
+    threshold = size_threshold or 10000
+    split_recommender.max_file_size = threshold // 4
+    recommendations = await split_recommender.suggest_file_splits()
+    recommendations_list = convert_recommendations_to_dict(recommendations)
+    return json.dumps(
+        {
+            "status": "success",
+            "type": "splits",
+            "recommendations": recommendations_list,
+            "size_threshold": threshold,
+        },
+        indent=2,
+    )
+
+
+async def suggest_reorganization(
+    reorganization_planner: ReorganizationPlanner,
+    mgrs: ManagersDict,
+    goal: str | None,
+) -> str:
+    """Generate reorganization plan."""
+    reorg_goal = goal or "dependency_depth"
+    structure_data = await get_structure_data(mgrs)
+    dependency_graph_instance = cast(DependencyGraphProtocol, mgrs.graph)
+    graph_data = dependency_graph_instance.to_dict()
+    structure_model = MemoryBankStructureData.model_validate(structure_data)
+    graph_model = DependencyGraphInput.model_validate(
+        graph_data.model_dump(mode="json")
+    )
+    plan = await reorganization_planner.create_reorganization_plan(
+        optimize_for=reorg_goal,
+        structure_data=structure_model,
+        dependency_graph=graph_model,
+    )
+    return json.dumps(
+        {
+            "status": "success",
+            "type": "reorganization",
+            "goal": reorg_goal,
+            "plan": plan.model_dump(mode="json") if plan else None,
+        },
+        indent=2,
+    )
+
+
+async def process_refactoring_request(
+    type_enum: RefactoringSuggestionType,
+    project_root: str | None,
+    min_similarity: float | None,
+    size_threshold: int | None,
+    goal: str | None,
+    preview_suggestion_id: str | None,
+) -> str:
+    """Process refactoring suggestion request."""
+    root = get_project_root(project_root)
+    mgrs = await get_managers(root)
+    (
+        consolidation_detector,
+        split_recommender,
+        reorganization_planner,
+    ) = await get_refactoring_managers(mgrs)
+    if preview_suggestion_id:
+        return handle_preview_mode(preview_suggestion_id)
+    if type_enum == RefactoringSuggestionType.CONSOLIDATION:
+        return await suggest_consolidation(consolidation_detector, min_similarity)
+    if type_enum == RefactoringSuggestionType.SPLITS:
+        return await suggest_splits(split_recommender, size_threshold)
+    if type_enum == RefactoringSuggestionType.REORGANIZATION:
+        return await suggest_reorganization(reorganization_planner, mgrs, goal)
+    return json.dumps({"status": "error", "error": "Unknown error"}, indent=2)

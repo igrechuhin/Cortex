@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -123,3 +123,48 @@ class TestContextAnalysisHandlers:
         assert result["status"] == "error"
         assert result["error"] == "boom"
         assert result["error_type"] == "RuntimeError"
+
+
+@pytest.mark.asyncio
+class TestContextAnalysisContextLogging:
+    """Test context analysis handlers use log_client when ctx is passed."""
+
+    async def test_analyze_context_effectiveness_calls_log_client_when_ctx_passed(
+        self, tmp_path: Path
+    ) -> None:
+        """When ctx is passed, analyze_context_effectiveness logs start and completion."""
+        mock_ctx = AsyncMock()
+        analysis_result = MagicMock(
+            model_dump=MagicMock(return_value={"status": "success"})
+        )
+        with (
+            patch(
+                "cortex.tools.context_analysis_handlers.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.context_analysis_handlers.phase4_opt.get_project_root",
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.context_analysis_handlers.analyze_current_session",
+                return_value=analysis_result,
+            ),
+        ):
+            result_str = await analyze_context_effectiveness(
+                project_root=str(tmp_path),
+                analyze_all_sessions=False,
+                ctx=mock_ctx,
+            )
+            result = json.loads(result_str)
+        assert result["status"] == "success"
+        args_list = [c[0] for c in mock_log.call_args_list]
+        levels_and_messages = [(a[1], a[2]) for a in args_list]
+        assert (
+            "info",
+            "analyze_context_effectiveness: starting",
+        ) in levels_and_messages
+        assert (
+            "info",
+            "analyze_context_effectiveness: completed",
+        ) in levels_and_messages

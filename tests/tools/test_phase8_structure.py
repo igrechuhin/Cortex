@@ -10,7 +10,7 @@ This test suite provides comprehensive coverage for:
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -846,3 +846,44 @@ class TestPerformUpdateIndex:
         assert len(action.files) == 2
         assert "file1.md" in action.files
         assert "file2.md" in action.files
+
+
+# ============================================================================
+# Context logging (FastMCP)
+# ============================================================================
+
+
+@pytest.mark.asyncio
+class TestPhase8StructureContextLogging:
+    """Test Phase 8 structure tools use log_client when ctx is passed."""
+
+    async def test_get_structure_info_calls_log_client_when_ctx_passed(
+        self,
+        mock_project_root: Path,
+        mock_structure_manager: MagicMock,
+    ) -> None:
+        """When ctx is passed, get_structure_info logs start and completion."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.phase8_structure.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.phase8_structure.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase8_structure.StructureManager",
+                return_value=mock_structure_manager,
+            ),
+        ):
+            result_str = await get_structure_info(
+                project_root=str(mock_project_root), ctx=mock_ctx
+            )
+            result = json.loads(result_str)
+        assert result["success"] is True
+        args_list = [c[0] for c in mock_log.call_args_list]
+        levels_and_messages = [(a[1], a[2]) for a in args_list]
+        assert ("info", "get_structure_info: starting") in levels_and_messages
+        assert ("info", "get_structure_info: completed") in levels_and_messages

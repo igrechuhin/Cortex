@@ -16,6 +16,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_COMPLEX,
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.types import ManagersDict
@@ -48,6 +49,48 @@ from cortex.tools.phase5_execution_helpers import (
 )
 
 
+async def _log_invalid_action_and_return(ctx: MCPContext | None, action: str) -> str:
+    """Log invalid action and return error JSON."""
+    await log_client(
+        ctx, "warning", "apply_refactoring: invalid action", logger_name=__name__
+    )
+    return create_invalid_action_error(action)
+
+
+async def _apply_refactoring_validate_and_run(
+    action: str,
+    project_root: str | None,
+    suggestion_id: str | None,
+    approval_id: str | None,
+    execution_id: str | None,
+    user_comment: str | None,
+    auto_apply: bool,
+    dry_run: bool,
+    validate_first: bool,
+    restore_snapshot: bool,
+    preserve_manual_changes: bool,
+    ctx: MCPContext | None,
+) -> str:
+    """Validate action and run apply refactoring."""
+    parsed_action = parse_refactoring_action(action)
+    if parsed_action is None:
+        return await _log_invalid_action_and_return(ctx, action)
+    return await _execute_apply_refactoring_with_validation(
+        parsed_action,
+        project_root,
+        suggestion_id,
+        approval_id,
+        execution_id,
+        user_comment,
+        auto_apply,
+        dry_run,
+        validate_first,
+        restore_snapshot,
+        preserve_manual_changes,
+        ctx,
+    )
+
+
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def apply_refactoring(
@@ -62,6 +105,7 @@ async def apply_refactoring(
     restore_snapshot: bool = True,
     preserve_manual_changes: bool = True,
     project_root: str | None = None,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Apply refactoring operations: approve suggestions, execute changes, or rollback.
 
@@ -232,11 +276,9 @@ async def apply_refactoring(
           when requested
         - Use dry_run=True to safely preview any operation before actual execution
     """
-    parsed_action: RefactoringAction | None = parse_refactoring_action(action)
-    if parsed_action is None:
-        return create_invalid_action_error(action)
-    return await _execute_apply_refactoring_with_validation(
-        parsed_action,
+    await log_client(ctx, "info", "apply_refactoring: starting", logger_name=__name__)
+    return await _apply_refactoring_validate_and_run(
+        action,
         project_root,
         suggestion_id,
         approval_id,
@@ -247,6 +289,7 @@ async def apply_refactoring(
         validate_first,
         restore_snapshot,
         preserve_manual_changes,
+        ctx,
     )
 
 
@@ -262,6 +305,7 @@ async def _execute_apply_refactoring_with_validation(
     validate_first: bool,
     restore_snapshot: bool,
     preserve_manual_changes: bool,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Execute apply refactoring with validation and error handling."""
     return await _execute_with_error_handling(
@@ -276,7 +320,21 @@ async def _execute_apply_refactoring_with_validation(
         validate_first,
         restore_snapshot,
         preserve_manual_changes,
+        ctx,
     )
+
+
+async def _log_apply_result(
+    ctx: MCPContext | None, out: str | None, exc: Exception | None
+) -> str:
+    """Log apply_refactoring result and return output or error response."""
+    if exc is not None:
+        await log_client(
+            ctx, "error", f"apply_refactoring: {exc!s}", logger_name=__name__
+        )
+        return create_execution_error_response(exc)
+    await log_client(ctx, "info", "apply_refactoring: completed", logger_name=__name__)
+    return out or ""
 
 
 async def _execute_with_error_handling(
@@ -291,10 +349,11 @@ async def _execute_with_error_handling(
     validate_first: bool,
     restore_snapshot: bool,
     preserve_manual_changes: bool,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Execute with validation and error handling."""
     try:
-        return await _execute_validated_refactoring(
+        out = await _execute_validated_refactoring(
             action,
             project_root,
             suggestion_id,
@@ -307,8 +366,9 @@ async def _execute_with_error_handling(
             restore_snapshot,
             preserve_manual_changes,
         )
+        return await _log_apply_result(ctx, out, None)
     except Exception as e:
-        return create_execution_error_response(e)
+        return await _log_apply_result(ctx, None, e)
 
 
 async def _execute_validated_refactoring(
@@ -455,6 +515,48 @@ def _validate_apply_refactoring_params(
     return None
 
 
+async def _warn_suggestion_not_found_and_return(
+    ctx: MCPContext | None, suggestion: str
+) -> str:
+    """Log suggestion-not-found warning and return error JSON."""
+    await log_client(
+        ctx,
+        "warning",
+        "provide_feedback: suggestion not found",
+        logger_name=__name__,
+    )
+    return suggestion
+
+
+async def _provide_feedback_impl(
+    suggestion_id: str,
+    feedback_type: str,
+    comment: str | None,
+    adjust_preferences: bool,
+    project_root: str | None,
+    ctx: MCPContext | None,
+) -> str:
+    """Run provide_feedback logic and return JSON result."""
+    root = get_project_root(project_root)
+    mgrs = await get_managers(root)
+    managers = await extract_feedback_managers(mgrs)
+    suggestion = await _get_suggestion_for_feedback(managers[1], suggestion_id)
+    if isinstance(suggestion, str):
+        return await _warn_suggestion_not_found_and_return(ctx, suggestion)
+    result = await _process_feedback(
+        managers[0],
+        managers[1],
+        managers[2],
+        suggestion,
+        suggestion_id,
+        feedback_type,
+        comment,
+    )
+    out = result.model_dump_json(indent=2)
+    await log_client(ctx, "info", "provide_feedback: completed", logger_name=__name__)
+    return out
+
+
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def provide_feedback(
@@ -463,6 +565,7 @@ async def provide_feedback(
     comment: str | None = None,
     adjust_preferences: bool = True,
     project_root: str | None = None,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Provide feedback on refactoring suggestions to improve future recommendations.
 
@@ -591,24 +694,13 @@ async def provide_feedback(
         - Feedback can be provided at any time, even after suggestion
           approval/application
     """
+    await log_client(ctx, "info", "provide_feedback: starting", logger_name=__name__)
     try:
-        root = get_project_root(project_root)
-        mgrs = await get_managers(root)
-        managers = await extract_feedback_managers(mgrs)
-        suggestion = await _get_suggestion_for_feedback(managers[1], suggestion_id)
-        if isinstance(suggestion, str):
-            return suggestion
-        result = await _process_feedback(
-            managers[0],
-            managers[1],
-            managers[2],
-            suggestion,
-            suggestion_id,
-            feedback_type,
-            comment,
+        return await _provide_feedback_impl(
+            suggestion_id, feedback_type, comment, adjust_preferences, project_root, ctx
         )
-        return result.model_dump_json(indent=2)
     except Exception as e:
+        await log_client(ctx, "error", f"provide_feedback: {e!s}", logger_name=__name__)
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,

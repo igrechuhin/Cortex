@@ -11,6 +11,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_FAST,
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.server import mcp
 from cortex.tools.context_analysis_operations import (
@@ -20,11 +21,24 @@ from cortex.tools.context_analysis_operations import (
 )
 
 
+async def _analyze_context_effectiveness_impl(
+    project_root: str | None, analyze_all_sessions: bool
+) -> str:
+    """Run analyze_context_effectiveness logic. Raises on error."""
+    root = phase4_opt.get_project_root(project_root)
+    if analyze_all_sessions:
+        result = analyze_session_logs(root)
+    else:
+        result = analyze_current_session(root)
+    return json.dumps(result.model_dump(mode="json"), indent=2)
+
+
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def analyze_context_effectiveness(
     project_root: str | None = None,
     analyze_all_sessions: bool = False,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Analyze load_context calls and update usage statistics.
 
@@ -51,14 +65,27 @@ async def analyze_context_effectiveness(
     Returns:
         JSON with analysis results and statistics summary
     """
+    await log_client(
+        ctx, "info", "analyze_context_effectiveness: starting", logger_name=__name__
+    )
     try:
-        root = phase4_opt.get_project_root(project_root)
-        if analyze_all_sessions:
-            result = analyze_session_logs(root)
-        else:
-            result = analyze_current_session(root)
-        return json.dumps(result.model_dump(mode="json"), indent=2)
+        out = await _analyze_context_effectiveness_impl(
+            project_root, analyze_all_sessions
+        )
+        await log_client(
+            ctx,
+            "info",
+            "analyze_context_effectiveness: completed",
+            logger_name=__name__,
+        )
+        return out
     except Exception as e:
+        await log_client(
+            ctx,
+            "error",
+            f"analyze_context_effectiveness: {e!s}",
+            logger_name=__name__,
+        )
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
@@ -69,6 +96,7 @@ async def analyze_context_effectiveness(
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_context_usage_statistics(
     project_root: str | None = None,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Get current context usage statistics.
 
@@ -90,11 +118,27 @@ async def get_context_usage_statistics(
     Returns:
         JSON with current statistics and recent entries
     """
+    await log_client(
+        ctx, "info", "get_context_usage_statistics: starting", logger_name=__name__
+    )
     try:
         root = phase4_opt.get_project_root(project_root)
         result = get_context_statistics(root)
-        return json.dumps(result.model_dump(mode="json"), indent=2)
+        out = json.dumps(result.model_dump(mode="json"), indent=2)
+        await log_client(
+            ctx,
+            "info",
+            "get_context_usage_statistics: completed",
+            logger_name=__name__,
+        )
+        return out
     except Exception as e:
+        await log_client(
+            ctx,
+            "error",
+            f"get_context_usage_statistics: {e!s}",
+            logger_name=__name__,
+        )
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,

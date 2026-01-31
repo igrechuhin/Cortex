@@ -7,141 +7,76 @@ Total: 1 tool
 - suggest_refactoring: Consolidation/split/reorganization suggestions
 """
 
-import json
-from typing import Literal, cast
+from typing import Literal
 
-from cortex.core.constants import (
-    CONSOLIDATION_MIN_SIMILARITY,
-    MCP_TOOL_TIMEOUT_COMPLEX,
-)
+from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import mcp_tool_wrapper
-from cortex.core.protocols.token import DependencyGraphProtocol
-from cortex.managers.initialization import get_managers, get_project_root
-from cortex.managers.types import ManagersDict
-from cortex.refactoring.consolidation_detector import ConsolidationDetector
-from cortex.refactoring.models import (
-    DependencyGraphInput,
-    MemoryBankStructureData,
-    RefactoringSuggestionType,
-)
-from cortex.refactoring.reorganization_planner import ReorganizationPlanner
-from cortex.refactoring.split_recommender import SplitRecommender
 from cortex.server import mcp
 from cortex.tools.refactoring_operation_helpers import (
-    convert_opportunities_to_dict,
-    convert_recommendations_to_dict,
-    get_refactoring_managers,
-    get_structure_data,
-    handle_preview_mode,
     parse_refactoring_suggestion_type,
+    process_refactoring_request,
+    suggest_refactoring_error_json,
     validate_suggest_refactoring_type,
 )
 
 
-async def suggest_consolidation(
-    consolidation_detector: ConsolidationDetector,
-    min_similarity: float | None,
-) -> str:
-    """Generate consolidation suggestions."""
-    similarity = min_similarity or CONSOLIDATION_MIN_SIMILARITY
-    consolidation_detector.min_similarity = similarity
-    opportunities = await consolidation_detector.detect_opportunities()
-
-    opportunities_list = convert_opportunities_to_dict(opportunities)
-
-    return json.dumps(
-        {
-            "status": "success",
-            "type": "consolidation",
-            "min_similarity": similarity,
-            "opportunities": opportunities_list,
-        },
-        indent=2,
-    )
-
-
-async def suggest_splits(
-    split_recommender: SplitRecommender,
-    size_threshold: int | None,
-) -> str:
-    """Generate file split recommendations."""
-    threshold = size_threshold or 10000  # 10KB default
-    split_recommender.max_file_size = threshold // 4  # 1 token ≈ 4 chars
-    recommendations = await split_recommender.suggest_file_splits()
-
-    recommendations_list = convert_recommendations_to_dict(recommendations)
-
-    return json.dumps(
-        {
-            "status": "success",
-            "type": "splits",
-            "recommendations": recommendations_list,
-            "size_threshold": threshold,
-        },
-        indent=2,
-    )
-
-
-async def suggest_reorganization(
-    reorganization_planner: ReorganizationPlanner,
-    mgrs: ManagersDict,
-    goal: str | None,
-) -> str:
-    """Generate reorganization plan."""
-    reorg_goal = goal or "dependency_depth"
-    structure_data = await get_structure_data(mgrs)
-    dependency_graph_instance = cast(DependencyGraphProtocol, mgrs.graph)
-    graph_data = dependency_graph_instance.to_dict()
-
-    structure_model = MemoryBankStructureData.model_validate(structure_data)
-    graph_model = DependencyGraphInput.model_validate(
-        graph_data.model_dump(mode="json")
-    )
-
-    plan = await reorganization_planner.create_reorganization_plan(
-        optimize_for=reorg_goal,
-        structure_data=structure_model,
-        dependency_graph=graph_model,
-    )
-
-    return json.dumps(
-        {
-            "status": "success",
-            "type": "reorganization",
-            "goal": reorg_goal,
-            "plan": plan.model_dump(mode="json") if plan else None,
-        },
-        indent=2,
-    )
-
-
-async def process_refactoring_request(
-    type_enum: RefactoringSuggestionType,
+async def _suggest_refactoring_impl(
+    type_val: str,
     project_root: str | None,
     min_similarity: float | None,
     size_threshold: int | None,
     goal: str | None,
     preview_suggestion_id: str | None,
+) -> tuple[str, bool]:
+    """Validate and run process_refactoring_request. Returns (json_str, is_validation_error)."""
+    err = validate_suggest_refactoring_type(type_val)
+    if err is not None:
+        return (err, True)
+    type_parsed = parse_refactoring_suggestion_type(type_val)
+    assert type_parsed is not None
+    out = await process_refactoring_request(
+        type_parsed,
+        project_root,
+        min_similarity,
+        size_threshold,
+        goal,
+        preview_suggestion_id,
+    )
+    return (out, False)
+
+
+async def _suggest_refactoring_run(
+    type_val: str,
+    project_root: str | None,
+    min_similarity: float | None,
+    size_threshold: int | None,
+    goal: str | None,
+    preview_suggestion_id: str | None,
+    ctx: MCPContext | None,
 ) -> str:
-    """Process refactoring suggestion request."""
-    root = get_project_root(project_root)
-    mgrs = await get_managers(root)
-    (
-        consolidation_detector,
-        split_recommender,
-        reorganization_planner,
-    ) = await get_refactoring_managers(mgrs)
-
-    if preview_suggestion_id:
-        return handle_preview_mode(preview_suggestion_id)
-
-    if type_enum == RefactoringSuggestionType.CONSOLIDATION:
-        return await suggest_consolidation(consolidation_detector, min_similarity)
-    if type_enum == RefactoringSuggestionType.SPLITS:
-        return await suggest_splits(split_recommender, size_threshold)
-    if type_enum == RefactoringSuggestionType.REORGANIZATION:
-        return await suggest_reorganization(reorganization_planner, mgrs, goal)
-    return json.dumps({"status": "error", "error": "Unknown error"}, indent=2)
+    """Run suggest_refactoring with logging. Returns JSON string."""
+    try:
+        out, is_validation_error = await _suggest_refactoring_impl(
+            type_val,
+            project_root,
+            min_similarity,
+            size_threshold,
+            goal,
+            preview_suggestion_id,
+        )
+        level, msg = (
+            ("warning", "suggest_refactoring: invalid type")
+            if is_validation_error
+            else ("info", "suggest_refactoring: completed")
+        )
+        await log_client(ctx, level, msg, logger_name=__name__)
+        return out
+    except Exception as e:
+        await log_client(
+            ctx, "error", f"suggest_refactoring: {e!s}", logger_name=__name__
+        )
+        return suggest_refactoring_error_json(e)
 
 
 @mcp.tool()
@@ -155,6 +90,7 @@ async def suggest_refactoring(
     preview_suggestion_id: str | None = None,
     show_diff: bool = True,
     estimate_impact: bool = True,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Generate intelligent refactoring suggestions to improve Memory Bank
     structure and efficiency.
@@ -576,22 +512,13 @@ async def suggest_refactoring(
         - Refactoring suggestions do not modify files. Use execute_refactoring tool
           to apply changes after reviewing suggestions.
     """
-    try:
-        err = validate_suggest_refactoring_type(type)
-        if err is not None:
-            return err
-        type_parsed = parse_refactoring_suggestion_type(type)
-        assert type_parsed is not None
-        return await process_refactoring_request(
-            type_parsed,
-            project_root,
-            min_similarity,
-            size_threshold,
-            goal,
-            preview_suggestion_id,
-        )
-    except Exception as e:
-        return json.dumps(
-            {"status": "error", "error": str(e), "error_type": e.__class__.__name__},
-            indent=2,
-        )
+    await log_client(ctx, "info", "suggest_refactoring: starting", logger_name=__name__)
+    return await _suggest_refactoring_run(
+        type,
+        project_root,
+        min_similarity,
+        size_threshold,
+        goal,
+        preview_suggestion_id,
+        ctx,
+    )

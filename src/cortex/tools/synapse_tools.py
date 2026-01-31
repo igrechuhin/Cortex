@@ -23,6 +23,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_FAST,
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import ModelDict
 from cortex.managers.initialization import get_managers, get_project_root
@@ -55,9 +56,41 @@ def format_prompts_list(
     return result
 
 
+async def _sync_synapse_impl(pull: bool, push: bool, ctx: MCPContext | None) -> str:
+    """Run sync_synapse logic and return JSON result."""
+    project_root = get_project_root()
+    managers = await get_managers(project_root)
+    if managers.synapse is None:
+        await log_client(
+            ctx,
+            "warning",
+            "sync_synapse: Synapse not initialized",
+            logger_name=__name__,
+        )
+        return json.dumps(
+            {
+                "status": "error",
+                "error": "Synapse not initialized. Run setup_synapse first.",
+            },
+            indent=2,
+        )
+    synapse_manager = await get_manager(managers, "synapse", SynapseManager)
+    result = await synapse_manager.sync_synapse(pull=pull, push=push)
+    if result.reindex_triggered and managers.rules_manager is not None:
+        rules_manager = await get_manager(managers, "rules_manager", RulesManager)
+        _ = await rules_manager.index_rules(force=True)
+    out = json.dumps(result.model_dump(mode="json"), indent=2)
+    await log_client(ctx, "info", "sync_synapse: completed", logger_name=__name__)
+    return out
+
+
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_EXTERNAL)
-async def sync_synapse(pull: bool = True, push: bool = False) -> str:
+async def sync_synapse(
+    pull: bool = True,
+    push: bool = False,
+    ctx: MCPContext | None = None,
+) -> str:
     """Sync Synapse repository with remote using git operations.
 
     USE WHEN: User wants to sync shared rules, user needs to update Synapse,
@@ -134,42 +167,56 @@ async def sync_synapse(pull: bool = True, push: bool = False) -> str:
           "error": "Synapse not initialized. Run setup_synapse first."
         }
     """
+    await log_client(ctx, "info", "sync_synapse: starting", logger_name=__name__)
     try:
-        project_root = get_project_root()
-        managers = await get_managers(project_root)
-
-        if managers.synapse is None:
-            return json.dumps(
-                {
-                    "status": "error",
-                    "error": "Synapse not initialized. Run setup_synapse first.",
-                },
-                indent=2,
-            )
-
-        synapse_manager = await get_manager(managers, "synapse", SynapseManager)
-
-        # Sync Synapse
-        result = await synapse_manager.sync_synapse(pull=pull, push=push)
-
-        # Trigger reindex if there were changes
-        if result.reindex_triggered and managers.rules_manager is not None:
-            rules_manager = await get_manager(managers, "rules_manager", RulesManager)
-            _ = await rules_manager.index_rules(force=True)
-
-        return json.dumps(result.model_dump(mode="json"), indent=2)
-
+        return await _sync_synapse_impl(pull, push, ctx)
     except Exception as e:
+        await log_client(ctx, "error", f"sync_synapse: {e!s}", logger_name=__name__)
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
 
 
+async def _update_synapse_rule_impl(
+    category: str, file: str, content: str, commit_message: str, ctx: MCPContext | None
+) -> str:
+    """Run update_synapse_rule logic and return JSON result."""
+    project_root = get_project_root()
+    managers = await get_managers(project_root)
+    if managers.synapse is None:
+        await log_client(
+            ctx,
+            "warning",
+            "update_synapse_rule: Synapse not initialized",
+            logger_name=__name__,
+        )
+        return json.dumps(
+            {
+                "status": "error",
+                "error": "Synapse not initialized. Run setup_synapse first.",
+            },
+            indent=2,
+        )
+    synapse_manager = await get_manager(managers, "synapse", SynapseManager)
+    result = await synapse_manager.update_synapse_rule(
+        category=category, file=file, content=content, commit_message=commit_message
+    )
+    out = json.dumps(result, indent=2)
+    await log_client(
+        ctx, "info", "update_synapse_rule: completed", logger_name=__name__
+    )
+    return out
+
+
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_EXTERNAL)
 async def update_synapse_rule(
-    category: str, file: str, content: str, commit_message: str
+    category: str,
+    file: str,
+    content: str,
+    commit_message: str,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Update a Synapse rule file and push changes to all projects.
 
@@ -239,29 +286,15 @@ async def update_synapse_rule(
           "error": "Synapse not initialized. Run setup_synapse first."
         }
     """
+    await log_client(ctx, "info", "update_synapse_rule: starting", logger_name=__name__)
     try:
-        project_root = get_project_root()
-        managers = await get_managers(project_root)
-
-        if managers.synapse is None:
-            return json.dumps(
-                {
-                    "status": "error",
-                    "error": "Synapse not initialized. Run setup_synapse first.",
-                },
-                indent=2,
-            )
-
-        synapse_manager = await get_manager(managers, "synapse", SynapseManager)
-
-        # Update Synapse rule
-        result = await synapse_manager.update_synapse_rule(
-            category=category, file=file, content=content, commit_message=commit_message
+        return await _update_synapse_rule_impl(
+            category, file, content, commit_message, ctx
         )
-
-        return json.dumps(result, indent=2)
-
     except Exception as e:
+        await log_client(
+            ctx, "error", f"update_synapse_rule: {e!s}", logger_name=__name__
+        )
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
@@ -277,6 +310,7 @@ async def get_synapse_rules(
     project_files: str | None = None,
     rule_priority: str = "local_overrides_shared",
     context_aware: bool = True,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Get intelligently selected rules from task context and project.
 
@@ -410,6 +444,7 @@ async def get_synapse_rules(
           "source": "mixed"
         }
     """
+    await log_client(ctx, "info", "get_synapse_rules: starting", logger_name=__name__)
     try:
         from cortex.tools.synapse_tools_helpers import execute_rules_with_context
 
@@ -421,12 +456,24 @@ async def get_synapse_rules(
             rule_priority,
             context_aware,
         )
-        return json.dumps(result.model_dump(mode="json"), indent=2)
-    except Exception as e:
-        return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
-            indent=2,
+        out = json.dumps(result.model_dump(mode="json"), indent=2)
+        await log_client(
+            ctx, "info", "get_synapse_rules: completed", logger_name=__name__
         )
+        return out
+    except Exception as e:
+        await log_client(
+            ctx, "error", f"get_synapse_rules: {e!s}", logger_name=__name__
+        )
+        return _get_synapse_rules_error_json(e)
+
+
+def _get_synapse_rules_error_json(exc: Exception) -> str:
+    """Build JSON error response for get_synapse_rules failures."""
+    return json.dumps(
+        {"status": "error", "error": str(exc), "error_type": type(exc).__name__},
+        indent=2,
+    )
 
 
 def _build_category_prompts_response(
@@ -459,9 +506,52 @@ def _build_all_prompts_response(
     )
 
 
+def _synapse_not_initialized_json() -> str:
+    """Build JSON error when Synapse is not initialized."""
+    return json.dumps(
+        {
+            "status": "error",
+            "error": "Synapse not initialized. Run setup_synapse first.",
+        },
+        indent=2,
+    )
+
+
+async def _get_synapse_prompts_impl(
+    category: str | None, ctx: MCPContext | None
+) -> str:
+    """Run get_synapse_prompts logic and return JSON result."""
+    project_root = get_project_root()
+    managers = await get_managers(project_root)
+    if managers.synapse is None:
+        await log_client(
+            ctx,
+            "warning",
+            "get_synapse_prompts: Synapse not initialized",
+            logger_name=__name__,
+        )
+        return _synapse_not_initialized_json()
+    synapse_manager = await get_manager(managers, "synapse", SynapseManager)
+    _ = await synapse_manager.load_prompts_manifest()
+    if category:
+        prompts = await synapse_manager.load_prompts_category(category)
+        out = _build_category_prompts_response(category, prompts)
+    else:
+        prompts = await synapse_manager.get_all_prompts()
+        categories = synapse_manager.get_prompt_categories()
+        out = _build_all_prompts_response(prompts, categories)
+    await log_client(
+        ctx, "info", "get_synapse_prompts: completed", logger_name=__name__
+    )
+    return out
+
+
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
-async def get_synapse_prompts(category: str | None = None) -> str:
+async def get_synapse_prompts(
+    category: str | None = None,
+    ctx: MCPContext | None = None,
+) -> str:
     """Get prompts from Synapse repository.
 
     USE WHEN: User needs Synapse prompts, user wants prompt templates,
@@ -538,41 +628,58 @@ async def get_synapse_prompts(category: str | None = None) -> str:
           "error": "Synapse not initialized. Run setup_synapse first."
         }
     """
+    await log_client(ctx, "info", "get_synapse_prompts: starting", logger_name=__name__)
     try:
-        project_root = get_project_root()
-        managers = await get_managers(project_root)
-
-        if managers.synapse is None:
-            return json.dumps(
-                {
-                    "status": "error",
-                    "error": "Synapse not initialized. Run setup_synapse first.",
-                },
-                indent=2,
-            )
-
-        synapse_manager = await get_manager(managers, "synapse", SynapseManager)
-        _ = await synapse_manager.load_prompts_manifest()
-
-        if category:
-            prompts = await synapse_manager.load_prompts_category(category)
-            return _build_category_prompts_response(category, prompts)
-        else:
-            prompts = await synapse_manager.get_all_prompts()
-            categories = synapse_manager.get_prompt_categories()
-            return _build_all_prompts_response(prompts, categories)
-
+        return await _get_synapse_prompts_impl(category, ctx)
     except Exception as e:
+        await log_client(
+            ctx, "error", f"get_synapse_prompts: {e!s}", logger_name=__name__
+        )
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
 
 
+async def _update_synapse_prompt_impl(
+    category: str, file: str, content: str, commit_message: str, ctx: MCPContext | None
+) -> str:
+    """Run update_synapse_prompt logic and return JSON result."""
+    project_root = get_project_root()
+    managers = await get_managers(project_root)
+    if managers.synapse is None:
+        await log_client(
+            ctx,
+            "warning",
+            "update_synapse_prompt: Synapse not initialized",
+            logger_name=__name__,
+        )
+        return json.dumps(
+            {
+                "status": "error",
+                "error": "Synapse not initialized. Run setup_synapse first.",
+            },
+            indent=2,
+        )
+    synapse_manager = await get_manager(managers, "synapse", SynapseManager)
+    result = await synapse_manager.update_synapse_prompt(
+        category=category, file=file, content=content, commit_message=commit_message
+    )
+    out = json.dumps(result, indent=2)
+    await log_client(
+        ctx, "info", "update_synapse_prompt: completed", logger_name=__name__
+    )
+    return out
+
+
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_EXTERNAL)
 async def update_synapse_prompt(
-    category: str, file: str, content: str, commit_message: str
+    category: str,
+    file: str,
+    content: str,
+    commit_message: str,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Update a Synapse prompt file and push changes to all projects.
 
@@ -642,29 +749,17 @@ async def update_synapse_prompt(
           "error": "Synapse not initialized. Run setup_synapse first."
         }
     """
+    await log_client(
+        ctx, "info", "update_synapse_prompt: starting", logger_name=__name__
+    )
     try:
-        project_root = get_project_root()
-        managers = await get_managers(project_root)
-
-        if managers.synapse is None:
-            return json.dumps(
-                {
-                    "status": "error",
-                    "error": "Synapse not initialized. Run setup_synapse first.",
-                },
-                indent=2,
-            )
-
-        synapse_manager = await get_manager(managers, "synapse", SynapseManager)
-
-        # Update Synapse prompt
-        result = await synapse_manager.update_synapse_prompt(
-            category=category, file=file, content=content, commit_message=commit_message
+        return await _update_synapse_prompt_impl(
+            category, file, content, commit_message, ctx
         )
-
-        return json.dumps(result, indent=2)
-
     except Exception as e:
+        await log_client(
+            ctx, "error", f"update_synapse_prompt: {e!s}", logger_name=__name__
+        )
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,

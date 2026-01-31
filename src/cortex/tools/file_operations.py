@@ -262,10 +262,41 @@ async def manage_file(
         - Write operations update both the file content and metadata index
           atomically
     """
-    await log_client(ctx, "info", "manage_file: starting", logger_name=__name__)
+    await log_client(
+        ctx,
+        "info",
+        f"manage_file: starting file_name={file_name!r} operation={operation!r}",
+        logger_name=__name__,
+    )
+    return await _manage_file_validate_and_run(
+        ctx,
+        file_name,
+        operation,
+        content,
+        project_root,
+        include_metadata,
+        change_description,
+    )
+
+
+async def _manage_file_validate_and_run(
+    ctx: MCPContext | None,
+    file_name: str | None,
+    operation: str | None,
+    content: str | None,
+    project_root: str | None,
+    include_metadata: bool,
+    change_description: str | None,
+) -> str:
+    """Validate manage_file inputs and run operation or return error."""
     parsed_op, err = validate_manage_file_operation(operation, file_name)
     if err is not None:
-        await log_client(ctx, "warning", "manage_file: validation failed")
+        await log_client(
+            ctx,
+            "warning",
+            f"manage_file: validation failed file_name={file_name!r} operation={operation!r}",
+            logger_name=__name__,
+        )
         return err
     assert parsed_op is not None and file_name is not None
     return await _manage_file_run_or_error(
@@ -277,6 +308,37 @@ async def manage_file(
         include_metadata,
         change_description,
     )
+
+
+def _manage_file_error_response(exc: Exception) -> str:
+    """Build JSON error response for manage_file failures."""
+    return json.dumps(
+        {"status": "error", "error": str(exc), "error_type": type(exc).__name__},
+        indent=2,
+    )
+
+
+async def _log_manage_file_result(
+    ctx: MCPContext | None,
+    file_name: str,
+    parsed_op: FileOperation,
+    error: Exception | None,
+) -> None:
+    """Log manage_file completion or failure."""
+    if error is None:
+        await log_client(
+            ctx,
+            "info",
+            f"manage_file: completed file_name={file_name!r} operation={parsed_op!r}",
+            logger_name=__name__,
+        )
+    else:
+        await log_client(
+            ctx,
+            "error",
+            f"manage_file: operation failed file_name={file_name!r} operation={parsed_op!r}: {error}",
+            logger_name=__name__,
+        )
 
 
 async def _manage_file_run_or_error(
@@ -298,16 +360,11 @@ async def _manage_file_run_or_error(
             include_metadata,
             change_description,
         )
-        await log_client(ctx, "info", "manage_file: completed", logger_name=__name__)
+        await _log_manage_file_result(ctx, file_name, parsed_op, None)
         return result
     except Exception as e:
-        await log_client(
-            ctx, "error", f"manage_file: operation failed: {e}", logger_name=__name__
-        )
-        return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
-            indent=2,
-        )
+        await _log_manage_file_result(ctx, file_name, parsed_op, e)
+        return _manage_file_error_response(e)
 
 
 async def _execute_file_operation(

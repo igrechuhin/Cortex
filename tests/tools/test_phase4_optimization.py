@@ -760,3 +760,49 @@ class TestIntegration:
                 assert result["status"] == "success"
                 assert result["loading_strategy"] == strategy
                 assert result["files_loaded"] > 0
+
+
+# ============================================================================
+# Context logging (FastMCP)
+# ============================================================================
+
+
+@pytest.mark.asyncio
+class TestPhase4OptimizationContextLogging:
+    """Test Phase 4 optimization handlers use log_client when ctx is passed."""
+
+    async def test_load_context_calls_log_client_on_start_and_completion_when_ctx_passed(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """When ctx is passed, load_context logs start and completion."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.phase4_optimization.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                new=AsyncMock(return_value=mock_managers),
+            ),
+            patch(
+                "cortex.tools.phase4_context_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            result_str = await load_context(
+                task_description="Test task",
+                token_budget=5000,
+                project_root=str(mock_project_root),
+                ctx=mock_ctx,
+            )
+            result = json.loads(result_str)
+        assert result.get("status") == "success"
+        args_list = [c[0] for c in mock_log.call_args_list]
+        levels_and_messages = [(a[1], a[2]) for a in args_list]
+        assert ("info", "load_context: starting") in levels_and_messages
+        assert ("info", "load_context: completed") in levels_and_messages

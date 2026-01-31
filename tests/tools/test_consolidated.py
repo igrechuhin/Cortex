@@ -888,11 +888,11 @@ class TestSuggestRefactoring:
         }
 
         with patch(
-            "cortex.tools.refactoring_operations.get_managers",
+            "cortex.tools.refactoring_operation_helpers.get_managers",
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.refactoring_operations.get_project_root",
+                "cortex.tools.refactoring_operation_helpers.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -959,11 +959,11 @@ class TestSuggestRefactoring:
         }
 
         with patch(
-            "cortex.tools.refactoring_operations.get_managers",
+            "cortex.tools.refactoring_operation_helpers.get_managers",
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.refactoring_operations.get_project_root",
+                "cortex.tools.refactoring_operation_helpers.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -1057,11 +1057,11 @@ class TestSuggestRefactoring:
         }
 
         with patch(
-            "cortex.tools.refactoring_operations.get_managers",
+            "cortex.tools.refactoring_operation_helpers.get_managers",
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.refactoring_operations.get_project_root",
+                "cortex.tools.refactoring_operation_helpers.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute

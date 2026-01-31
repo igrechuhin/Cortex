@@ -17,6 +17,7 @@ from cortex.services.framework_adapters.base import (
 from cortex.services.language_detector import LanguageInfo
 from cortex.tools.pre_commit_helpers import (
     MAX_LOG_OUTPUT_LENGTH,
+    PreCommitCheck,
     check_file_sizes,
     count_file_lines,
 )
@@ -1100,3 +1101,85 @@ class TestLogTruncationBehavior:
                 assert isinstance(truncated_output, str)
                 assert len(truncated_output) <= MAX_LOG_OUTPUT_LENGTH + 200
                 assert "truncated" in truncated_output
+
+
+@pytest.mark.asyncio
+class TestPreCommitToolsContextLogging:
+    """Test pre-commit tools use log_client when ctx is passed."""
+
+    async def test_execute_pre_commit_checks_calls_log_client_when_ctx_passed(
+        self,
+    ) -> None:
+        """When ctx is passed, execute_pre_commit_checks logs start and completion."""
+        mock_ctx = AsyncMock()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            (project_root / ".venv").mkdir()
+            with (
+                patch(
+                    "cortex.tools.pre_commit_tools.log_client",
+                    new_callable=AsyncMock,
+                ) as mock_log,
+                patch(
+                    "cortex.tools.pre_commit_tools.PythonAdapter",
+                ) as mock_adapter_class,
+                patch(
+                    "cortex.tools.pre_commit_tools.asyncio.to_thread",
+                    new_callable=AsyncMock,
+                ) as mock_to_thread,
+            ):
+                mock_adapter = MagicMock()
+                mock_adapter_class.return_value = mock_adapter
+                mock_result = CheckResult(
+                    check_type="fix_errors",
+                    success=True,
+                    output="OK",
+                    errors=[],
+                    warnings=[],
+                    files_modified=[],
+                )
+                mock_adapter.fix_errors.return_value = mock_result
+
+                async def run_sync(
+                    _fn: Callable[
+                        ...,
+                        tuple[dict[str, CheckResult | TestResult | object], object],
+                    ],
+                    _adapter: FrameworkAdapter,
+                    _lang: str,
+                    checks: list[PreCommitCheck],
+                    _strict: bool,
+                    _timeout: int | None,
+                    _cov: float,
+                ) -> tuple[dict[str, CheckResult], MagicMock]:
+                    results: dict[str, CheckResult] = {}
+                    stats: MagicMock = MagicMock(
+                        total_errors=0,
+                        total_warnings=0,
+                        files_modified=[],
+                        checks_performed=[c.value for c in checks],
+                    )
+                    for c in checks:
+                        results[c.value] = mock_result
+                    return results, stats
+
+                mock_to_thread.side_effect = run_sync
+
+                result_json = await execute_pre_commit_checks(
+                    checks=["fix_errors"],
+                    project_root=str(project_root),
+                    ctx=mock_ctx,
+                )
+                result = json.loads(result_json)
+            assert result["status"] == "success"
+            args_list = [c[0] for c in mock_log.call_args_list]
+            levels_and_messages = [(a[1], a[2]) for a in args_list]
+            assert (
+                "info",
+                "execute_pre_commit_checks: starting",
+            ) in levels_and_messages
+            assert (
+                "info",
+                "execute_pre_commit_checks: completed",
+            ) in levels_and_messages

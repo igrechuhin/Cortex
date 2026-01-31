@@ -36,15 +36,13 @@ from cortex.tools.refactoring_operation_helpers import (
     get_refactoring_managers,
     get_structure_data,
     handle_preview_mode,
-    validate_refactoring_type,
-)
-from cortex.tools.refactoring_operations import (
     process_refactoring_request,
     suggest_consolidation,
-    suggest_refactoring,
     suggest_reorganization,
     suggest_splits,
+    validate_refactoring_type,
 )
+from cortex.tools.refactoring_operations import suggest_refactoring
 from tests.helpers.managers import make_test_managers
 
 
@@ -1132,10 +1130,11 @@ class TestProcessRefactoringRequest:
         """Test processing reorganization refactoring request."""
         # Arrange
         with patch(
-            "cortex.tools.refactoring_operations.get_managers", new_callable=AsyncMock
+            "cortex.tools.refactoring_operation_helpers.get_managers",
+            new_callable=AsyncMock,
         ) as mock_get_managers:
             with patch(
-                "cortex.tools.refactoring_operations.get_project_root",
+                "cortex.tools.refactoring_operation_helpers.get_project_root",
                 return_value=Path(str(tmp_path)),
             ):
                 mock_planner = MagicMock()
@@ -1286,7 +1285,7 @@ class TestSuggestRefactoringHandler:
         """Test exception handling in suggest_refactoring."""
         # Arrange
         with patch(
-            "cortex.tools.refactoring_operations.get_managers"
+            "cortex.tools.refactoring_operation_helpers.get_managers"
         ) as mock_get_managers:
             mock_get_managers.side_effect = RuntimeError("Test error")
 
@@ -1300,3 +1299,41 @@ class TestSuggestRefactoringHandler:
             assert result_data["status"] == "error"
             assert "Test error" in result_data["error"]
             assert result_data["error_type"] == "RuntimeError"
+
+
+@pytest.mark.asyncio
+class TestRefactoringOperationsContextLogging:
+    """Test suggest_refactoring uses log_client when ctx is passed."""
+
+    async def test_suggest_refactoring_calls_log_client_when_ctx_passed(
+        self, tmp_path: Path
+    ) -> None:
+        """When ctx is passed, suggest_refactoring logs start and completion."""
+        mock_ctx = AsyncMock()
+        success_json = json.dumps(
+            {"status": "success", "type": "consolidation", "opportunities": []},
+            indent=2,
+        )
+        with (
+            patch(
+                "cortex.tools.refactoring_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.refactoring_operations.process_refactoring_request",
+                new_callable=AsyncMock,
+                return_value=success_json,
+            ),
+        ):
+            result = await suggest_refactoring(
+                type="consolidation",
+                project_root=str(tmp_path),
+                min_similarity=0.85,
+                ctx=mock_ctx,
+            )
+            result_data = json.loads(result)
+        assert result_data["status"] == "success"
+        args_list = [c[0] for c in mock_log.call_args_list]
+        levels_and_messages = [(a[1], a[2]) for a in args_list]
+        assert ("info", "suggest_refactoring: starting") in levels_and_messages
+        assert ("info", "suggest_refactoring: completed") in levels_and_messages

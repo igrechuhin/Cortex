@@ -836,3 +836,62 @@ class TestIntegration:
 
             # Assert 3
             assert update_data["status"] == "success"
+
+
+# ============================================================================
+# Context logging (FastMCP)
+# ============================================================================
+
+
+@pytest.mark.asyncio
+class TestSynapseToolsContextLogging:
+    """Test Synapse tools use log_client when ctx is passed."""
+
+    async def test_get_synapse_rules_calls_log_client_when_ctx_passed(
+        self,
+        mock_project_root: Path,
+        mock_managers: ManagersDict,
+    ) -> None:
+        """When ctx is passed, get_synapse_rules logs start and completion."""
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.synapse_tools.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.synapse_tools.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.synapse_tools.get_managers",
+                new=AsyncMock(return_value=mock_managers),
+            ),
+            patch(
+                "cortex.tools.synapse_tools_helpers.execute_rules_with_context",
+                new=AsyncMock(
+                    return_value=MagicMock(
+                        model_dump=MagicMock(
+                            return_value={
+                                "status": "success",
+                                "task_description": "test",
+                                "rules_loaded": {},
+                                "total_tokens": 0,
+                                "token_budget": 10000,
+                                "source": "mixed",
+                            }
+                        )
+                    )
+                ),
+            ),
+        ):
+            result_str = await get_synapse_rules(
+                task_description="test task",
+                ctx=mock_ctx,
+            )
+            result = json.loads(result_str)
+        assert result["status"] == "success"
+        args_list = [c[0] for c in mock_log.call_args_list]
+        levels_and_messages = [(a[1], a[2]) for a in args_list]
+        assert ("info", "get_synapse_rules: starting") in levels_and_messages
+        assert ("info", "get_synapse_rules: completed") in levels_and_messages

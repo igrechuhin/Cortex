@@ -22,6 +22,7 @@ from datetime import datetime
 from pathlib import Path
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX, MCP_TOOL_TIMEOUT_FAST
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
@@ -37,6 +38,69 @@ from cortex.structure.structure_manager import StructureManager
 from cortex.tools.models import CleanupActionResult, CleanupReport
 
 
+async def _check_structure_health_impl(
+    project_root: str | None,
+    perform_cleanup: bool,
+    cleanup_actions: list[str] | None,
+    stale_days: int,
+    dry_run: bool,
+    ctx: MCPContext | None,
+) -> str:
+    """Run check_structure_health logic. Returns JSON string."""
+    root = get_project_root(project_root)
+    structure_mgr = StructureManager(root)
+    not_initialized_response = check_structure_initialized(structure_mgr)
+    if not_initialized_response:
+        await log_client(
+            ctx,
+            "warning",
+            "check_structure_health: structure not initialized",
+            logger_name=__name__,
+        )
+        return not_initialized_response
+    health = structure_mgr.check_structure_health()
+    result = build_health_result(health)
+    result_dict = result.model_dump()
+    if perform_cleanup:
+        cleanup_report = await perform_cleanup_actions(
+            structure_mgr, cleanup_actions, stale_days, dry_run, root
+        )
+        result_dict["cleanup"] = cleanup_report.model_dump()
+    return json.dumps(result_dict, indent=2)
+
+
+async def _check_structure_health_with_logging(
+    project_root: str | None,
+    perform_cleanup: bool,
+    cleanup_actions: list[str] | None,
+    stale_days: int,
+    dry_run: bool,
+    ctx: MCPContext | None,
+) -> str:
+    """Run check_structure_health with try/except and error logging."""
+    try:
+        out = await _check_structure_health_impl(
+            project_root,
+            perform_cleanup,
+            cleanup_actions,
+            stale_days,
+            dry_run,
+            ctx,
+        )
+        await log_client(
+            ctx, "info", "check_structure_health: completed", logger_name=__name__
+        )
+        return out
+    except Exception as e:
+        await log_client(
+            ctx, "error", f"check_structure_health: {e!s}", logger_name=__name__
+        )
+        return json.dumps(
+            {"success": False, "error": str(e), "error_type": type(e).__name__},
+            indent=2,
+        )
+
+
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def check_structure_health(
@@ -45,6 +109,7 @@ async def check_structure_health(
     cleanup_actions: list[str] | None = None,
     stale_days: int = 90,
     dry_run: bool = True,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Analyze project structure health and optionally perform cleanup operations.
 
@@ -319,31 +384,17 @@ async def check_structure_health(
         - If structure is not initialized, returns score=0, grade=F,
           status=not_initialized
     """
-    try:
-        root = get_project_root(project_root)
-        structure_mgr = StructureManager(root)
-
-        not_initialized_response = check_structure_initialized(structure_mgr)
-        if not_initialized_response:
-            return not_initialized_response
-
-        health = structure_mgr.check_structure_health()
-        result = build_health_result(health)
-        result_dict = result.model_dump()
-
-        if perform_cleanup:
-            cleanup_report = await perform_cleanup_actions(
-                structure_mgr, cleanup_actions, stale_days, dry_run, root
-            )
-            result_dict["cleanup"] = cleanup_report.model_dump()
-
-        return json.dumps(result_dict, indent=2)
-
-    except Exception as e:
-        return json.dumps(
-            {"success": False, "error": str(e), "error_type": type(e).__name__},
-            indent=2,
-        )
+    await log_client(
+        ctx, "info", "check_structure_health: starting", logger_name=__name__
+    )
+    return await _check_structure_health_with_logging(
+        project_root,
+        perform_cleanup,
+        cleanup_actions,
+        stale_days,
+        dry_run,
+        ctx,
+    )
 
 
 def check_structure_initialized(
@@ -501,7 +552,10 @@ async def perform_cleanup_actions(
 
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
-async def get_structure_info(project_root: str | None = None) -> str:
+async def get_structure_info(
+    project_root: str | None = None,
+    ctx: MCPContext | None = None,
+) -> str:
     """Get current project structure configuration, paths, and status information.
 
     USE WHEN: User needs structure paths, user wants structure
@@ -839,6 +893,7 @@ async def get_structure_info(project_root: str | None = None) -> str:
         - For uninitialized projects, many exists fields will be false
         - The version field indicates the structure schema version (currently "1.0")
     """
+    await log_client(ctx, "info", "get_structure_info: starting", logger_name=__name__)
     try:
         root = get_project_root(project_root)
         structure_mgr = StructureManager(root)
@@ -847,7 +902,7 @@ async def get_structure_info(project_root: str | None = None) -> str:
         info = structure_mgr.get_structure_info()
 
         info_payload: ModelDict = info
-        return json.dumps(
+        out = json.dumps(
             {
                 "success": True,
                 "structure_info": info_payload,
@@ -855,8 +910,15 @@ async def get_structure_info(project_root: str | None = None) -> str:
             },
             indent=2,
         )
+        await log_client(
+            ctx, "info", "get_structure_info: completed", logger_name=__name__
+        )
+        return out
 
     except Exception as e:
+        await log_client(
+            ctx, "error", f"get_structure_info: {e!s}", logger_name=__name__
+        )
         return json.dumps(
             {"success": False, "error": str(e), "error_type": type(e).__name__},
             indent=2,

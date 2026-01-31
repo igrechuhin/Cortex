@@ -1183,3 +1183,28 @@ class TestHelperFunctions:
             # Mark as applied should NOT have been called (execution_id is not string)
             # type: ignore[union-attr] - MagicMock access on optional manager
             mock_managers.approval_manager.mark_as_applied.assert_not_called()  # type: ignore[union-attr]
+
+
+@pytest.mark.asyncio
+class TestPhase5ExecutionContextLogging:
+    """Test Phase 5 execution tools use log_client when ctx is passed."""
+
+    async def test_apply_refactoring_calls_log_client_when_ctx_passed_invalid_action(
+        self,
+    ) -> None:
+        """When ctx is passed and action invalid, apply_refactoring logs start and warning."""
+        mock_ctx = AsyncMock()
+        with patch(
+            "cortex.tools.phase5_execution.log_client",
+            new_callable=AsyncMock,
+        ) as mock_log:
+            result_str = await apply_refactoring(
+                action="invalid",  # type: ignore[arg-type]
+                ctx=mock_ctx,
+            )
+            result = json.loads(result_str)
+        assert result["status"] == "error"
+        args_list = [c[0] for c in mock_log.call_args_list]
+        levels_and_messages = [(a[1], a[2]) for a in args_list]
+        assert ("info", "apply_refactoring: starting") in levels_and_messages
+        assert ("warning", "apply_refactoring: invalid action") in levels_and_messages

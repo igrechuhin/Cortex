@@ -64,7 +64,7 @@
 
 ## Pending plans (from .cortex/plans)
 
-- **Ensure proper logging (FastMCP context)** - PENDING - Audit and standardize logging to align with FastMCP Context-based logging. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
+- ✅ **Ensure proper logging (FastMCP context)** - COMPLETE (2026-01-31) - Phase 3 tool migration done: phase4_optimization_handlers, context_analysis_handlers, phase8_structure, synapse_tools, pre_commit_tools, phase5_execution, refactoring_operations now use optional ctx and log_client; unit tests added (TestPhase4OptimizationContextLogging, TestContextAnalysisContextLogging, TestPhase8StructureContextLogging, TestSynapseToolsContextLogging, TestPreCommitToolsContextLogging, TestPhase5ExecutionContextLogging, TestRefactoringOperationsContextLogging). Some function-length/file-size quality violations remain; tracked for follow-up. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
 
 - **Phase 20: Code Review Fixes** - PENDING - Address critical issues from code review (rules violations, test blockers, type errors, security). Plan: .cortex/plans/phase-20-code-review-fixes.md.
 

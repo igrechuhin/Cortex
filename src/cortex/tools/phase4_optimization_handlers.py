@@ -20,6 +20,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_FAST,
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.server import mcp
 from cortex.tools.phase4_context_operations import load_context_impl
@@ -37,6 +38,7 @@ async def load_context(
     token_budget: int | None = None,
     strategy: str = "dependency_aware",
     project_root: str | None = None,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Load relevant context for a task within token budget.
 
@@ -65,13 +67,17 @@ async def load_context(
     Returns:
         JSON with selected files, their content, and relevance scores
     """
+    await log_client(ctx, "info", "load_context: starting", logger_name=__name__)
     try:
         root = phase4_opt.get_project_root(project_root)
         mgrs = await phase4_opt.get_managers(root)
-        return await load_context_impl(
+        out = await load_context_impl(
             mgrs, task_description, token_budget, strategy, project_root=root
         )
+        await log_client(ctx, "info", "load_context: completed", logger_name=__name__)
+        return out
     except Exception as e:
+        await log_client(ctx, "error", f"load_context: {e!s}", logger_name=__name__)
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
@@ -85,6 +91,7 @@ async def load_progressive_context(
     token_budget: int | None = None,
     loading_strategy: str = "by_relevance",
     project_root: str | None = None,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Load context progressively based on relevance, loading files
     incrementally as needed.
@@ -99,13 +106,23 @@ async def load_progressive_context(
     RETURNS: JSON with progressive context batches, each with files and
     relevance scores.
     """
+    await log_client(
+        ctx, "info", "load_progressive_context: starting", logger_name=__name__
+    )
     try:
         root = phase4_opt.get_project_root(project_root)
         mgrs = await phase4_opt.get_managers(root)
-        return await load_progressive_context_impl(
+        out = await load_progressive_context_impl(
             mgrs, task_description, token_budget, loading_strategy
         )
+        await log_client(
+            ctx, "info", "load_progressive_context: completed", logger_name=__name__
+        )
+        return out
     except Exception as e:
+        await log_client(
+            ctx, "error", f"load_progressive_context: {e!s}", logger_name=__name__
+        )
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
@@ -119,6 +136,7 @@ async def summarize_content(
     target_reduction: float = 0.5,
     strategy: str = "extract_key_sections",
     project_root: str | None = None,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Summarize Memory Bank content to reduce token usage while preserving
     key information.
@@ -131,11 +149,19 @@ async def summarize_content(
 
     RETURNS: JSON with summarized content and token reduction metrics.
     """
+    await log_client(ctx, "info", "summarize_content: starting", logger_name=__name__)
     try:
         root = phase4_opt.get_project_root(project_root)
         mgrs = await phase4_opt.get_managers(root)
-        return await summarize_content_impl(mgrs, file_name, target_reduction, strategy)
+        out = await summarize_content_impl(mgrs, file_name, target_reduction, strategy)
+        await log_client(
+            ctx, "info", "summarize_content: completed", logger_name=__name__
+        )
+        return out
     except Exception as e:
+        await log_client(
+            ctx, "error", f"summarize_content: {e!s}", logger_name=__name__
+        )
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
@@ -148,6 +174,7 @@ async def get_relevance_scores(
     task_description: str,
     project_root: str | None = None,
     include_sections: bool = False,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Get relevance scores for Memory Bank files based on task description.
 
@@ -161,11 +188,21 @@ async def get_relevance_scores(
     RETURNS: JSON with files ranked by relevance scores and detailed scoring
     breakdown.
     """
+    await log_client(
+        ctx, "info", "get_relevance_scores: starting", logger_name=__name__
+    )
     try:
         root = phase4_opt.get_project_root(project_root)
         mgrs = await phase4_opt.get_managers(root)
-        return await get_relevance_scores_impl(mgrs, task_description, include_sections)
+        out = await get_relevance_scores_impl(mgrs, task_description, include_sections)
+        await log_client(
+            ctx, "info", "get_relevance_scores: completed", logger_name=__name__
+        )
+        return out
     except Exception as e:
+        await log_client(
+            ctx, "error", f"get_relevance_scores: {e!s}", logger_name=__name__
+        )
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,

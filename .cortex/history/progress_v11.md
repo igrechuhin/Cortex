@@ -2,6 +2,8 @@
 
 ## 2026-01-31
 
+- **Ensure proper logging (FastMCP context): Phase 3 tool migration** (2026-01-31) - Added optional `ctx: MCPContext | None` and `log_client` to phase4_optimization_handlers (load_context, load_progressive_context, summarize_content, get_relevance_scores), context_analysis_handlers (analyze_context_effectiveness, get_context_usage_statistics), phase8_structure (check_structure_health, get_structure_info), synapse_tools (sync_synapse, update_synapse_rule, get_synapse_rules, get_synapse_prompts, update_synapse_prompt), pre_commit_tools (execute_pre_commit_checks, fix_quality_issues), phase5_execution (apply_refactoring, provide_feedback), refactoring_operations (suggest_refactoring). Extracted helpers: _analyze_context_effectiveness_impl, _check_structure_health_impl, _check_structure_health_with_logging,ggest_refactoring_impl,uggest_refactoring_run. Unit tests: TestPhase4OptimizationContextLogging, TestContextAnalysisContextLogging, TestPhase8StructureContextLogging, TestSynapseToolsContextLogging, TestPreCommitToolsContextLogging, TestPhase5ExecutionContextLogging, TestRefactoringOperationsContextLogging. Phase 3 complete; some function-length/file-size quality violations remain (tracked for follow-up). Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
+
 - **Commit: pre-commit pipeline and markdown lint** (2026-01-31) - Pre-commit: fix_errors, format, markdown lint (progress.md MD037 fix + 3 files auto-fixed), type_check, quality, tests (3177 passed, 90.51% coverage). 0 plans archived; memory bank updated.
 
 - **Ensure proper logging (FastMCP context): phase2_linking tools** (2026-01-31) - Refactored parse_file_links (link_parser_operations.py), validate_links (link_validation_operations.py), resolve_transclusions (transclusion_operations.py), and get_link_graph (link_graph_operations.py) to use optional `ctx: MCPContext | None` with entry/exit/error (and validation-failed warning for parse_file_links) logging via `log_client`. Extracted `_parse_file_links_run_or_error`, `_parse_file_links_impl`, `_build_parse_file_links_success`; `_resolve_transclusions_run_or_error`, `_resolve_transclusions_error_json`. Added unit tests TestPhase2LinkingContextLogging in test_phase2_linking.py (9 tests). All 33 Phase 2 linking tests passing; quality gate passed. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md (Phase 3 phase2_linking done; next: phase3_validation, phase4, phase5, phase8, synapse_tools, pre_commit_tools).
@@ -37,7 +39,6 @@
 - ✅ **Java Pre-Commit Adapter** - COMPLETE (2026-01-30)
 - ✅ **Go Pre-Commit Adapter** - COMPLETE (2026-01-30)
 - ✅ **Commit: Pre-commit checks and memory bank sync** - COMPLETE (2026-01-30)
-- ✅ **Commit: Type fix and file size compliance** - COMPLETE (2026-01-30)
 - ✅ **Session hang: run pre-commit adapter work off event loop** - COMPLETE (2026-01-30)
 - ✅ **Rust Pre-Commit Adapter** - COMPLETE (2026-01-30)
 - ✅ **JavaScript Pre-Commit Adapter** - COMPLETE (2026-01-30)
