@@ -1,8 +1,12 @@
 # Roadmap: MCP Memory Bank
 
-## Current Status (2026-01-30)
+## Current Status (2026-01-31)
 
 ### Active Work
+
+- ✅ **Session optimization (2026-01-31 review)** - COMPLETE (2026-01-31) - Implemented recommendations from `.cortex/reviews/session-optimization-2026-01-31T15-00.md`: (1) Mandatory rules-load Pre-Step and BLOCK in commit prompt; checklist item "Rules loaded: Yes/No. If No, do not proceed to Step 0". (2) CRITICAL violation sentence for skipping rules load. (3) Error-fixer and type-checker agents: prerequisites to load rules before fixing, visibility/API guidance (test via public API; do not use reportPrivateUsage=false). (4) Common error "Fixing type/visibility without loaded rules" in commit prompt. (5) Project-wide rule for real-time references (Synapse rules): ALL time references MUST use real time; derive from mtime/tool; fallback when unknown. Updated analyze-session-optimization and session-optimization-analyzer with derive-real-time and fallback.
+
+- ✅ **Sync plans with roadmap** - COMPLETE (2026-01-31) - Archived completed plans to .cortex/plans/archive/Phase63/, .cortex/plans/archive/Phase67/enhance-tool-descriptions.plan.md, .cortex/plans/archive/Phase60/roadmap-sync-validation-error-ux.md. Added implement-next-roadmap-step fallback: when no pending step exists, run plan sync (archive completed plans) and update progress/activeContext.
 
 - ✅ **Go Pre-Commit Adapter** - COMPLETE (2026-01-30) - Added GoAdapter in src/cortex/services/framework_adapters/go_adapter.py (go fmt, go vet, go build, go test). Registered in pre_commit_tools; go now uses GoAdapter instead of StubAdapter. StubAdapterLanguage no longer includes GO. Unit tests in tests/unit/test_go_adapter.py; test_get_adapter_returns_go_adapter_for_go in tests/unit/test_pre_commit_tools.py. Stub tests updated to use java. All 3020 tests passing.
 
@@ -36,14 +40,84 @@
 
 - ✅ **Multi-Language Pre-Commit Support** - COMPLETE (2026-01-29) - Added adapter registry (`_ADAPTER_REGISTRY`, SUPPORTED_LANGUAGES) and FrameworkAdapter typing in pre_commit_tools; quality check runs Python-specific file/function checks only when language is python; unsupported-language error lists supported languages from registry. Adding TypeScript/JavaScript/Rust/Go/Java adapters: implement FrameworkAdapter and register in `_ADAPTER_REGISTRY`.
 
-- ✅ **Phase 63: Harden create-plan roadmap writes (full content and verification)** - COMPLETE (2026-01-29) - Added full-content-only rule for roadmap writes in `cortex/synapse/prompts/create-plan.md` Step 6 and `cortex/synapse/agents/memory-bank-updater.md`; added post-write verification in create-plan prompt Step 7 (confirm all existing entries unchanged, restore-and-repeat if truncation). Plan: `cortex/synapse/plans/phase-63-harden-create-plan-roadmap-writes.md`.
+- ✅ **Phase 63: Harden create-plan roadmap writes (full content and verification)** - COMPLETE (2026-01-29) - Added full-content-only rule for roadmap writes in `cortex/synapse/prompts/create-plan.md` Step 6 and `cortex/synapse/agents/memory-bank-updater.md`; added post-write verification in create-plan prompt Step 7 (confirm all existing entries unchanged, restore-and-repeat if truncation). Plan: .cortex/plans/archive/Phase63/phase-63-harden-create-plan-roadmap-writes.md.
 
 - ✅ **Multi-Language Validation Support** - COMPLETE (2026-01-29) - Added StubAdapter for TypeScript, JavaScript, Rust, Go, Java and registered them in pre_commit_tools _ADAPTER_REGISTRY; SUPPORTED_LANGUAGES now includes 6 languages. Stub adapters return clear "not yet implemented" results until full implementations are added. Unit tests in tests/unit/test_stub_adapter.py and TestAdapterRegistry updates in tests/unit/test_pre_commit_tools.py. All 2906 tests passing.
 
 - ✅ **TypeScript Pre-Commit Adapter** - COMPLETE (2026-01-29) - Added TypeScriptAdapter in src/cortex/services/framework_adapters/typescript_adapter.py (prettier, eslint, tsc, npm test). Registered in pre_commit_tools _ADAPTER_REGISTRY; typescript now uses TypeScriptAdapter instead of StubAdapter. Unit tests in tests/unit/test_typescript_adapter.py. TestAdapterRegistry updated (test_get_adapter_returns_typescript_adapter_for_typescript). All 2919 tests passing, coverage 90%.
 
-- **Pre-commit**: Add other language adapters as needed (src/cortex/tools/pre_commit_tools.py) – tracked; Python, TypeScript, JavaScript, Rust, and Go have full implementations; Java uses StubAdapter until full implementation.
+- ✅ **Java Pre-Commit Adapter** - COMPLETE (2026-01-30) - Added JavaAdapter in src/cortex/services/framework_adapters/java_adapter.py (Maven/Gradle: spotless:apply/spotlessApply, compile/compileJava, validate/check, test). Registered in pre_commit_tools; java now uses JavaAdapter instead of StubAdapter. StubAdapterLanguage no longer includes JAVA (placeholder OTHER for future adapters). Unit tests in tests/unit/test_java_adapter.py; test_get_adapter_returns_java_adapter_for_java in tests/unit/test_pre_commit_tools.py. Stub tests updated to use other. All 3044 tests passing.
+
+- ✅ **Kotlin Pre-Commit Adapter** - COMPLETE (2026-01-31) - KotlinAdapter in src/cortex/services/framework_adapters/kotlin_adapter.py (Maven/Gradle: Spotless/ktlint format, compile, validate/check, test). Registered in pre_commit_tools; kotlin uses KotlinAdapter. Unit tests in tests/unit/test_kotlin_adapter.py; test_get_adapter_returns_kotlin_adapter_for_kotlin in tests/unit/test_pre_commit_tools.py. Language detector supports Kotlin (Gradle or Maven config files, e.g. build.gradle, pom.xml). All adapter tests passing.
+
+- ✅ **Swift Pre-Commit Adapter** - COMPLETE (2026-01-31) - SwiftAdapter in src/cortex/services/framework_adapters/swift_adapter.py (SwiftPM: swift format, swift build, swift test). Registered in pre_commit_tools; swift uses SwiftAdapter. Unit tests in tests/unit/test_swift_adapter.py; test_get_adapter_returns_swift_adapter_for_swift in tests/unit/test_pre_commit_tools.py. Language detector supports Swift (Package.swift). All adapter tests passing.
+
+- **Pre-commit**: Add other language adapters as needed (src/cortex/tools/pre_commit_tools.py) – tracked; Python, TypeScript, JavaScript, Rust, Go, Java, Kotlin, and Swift have full implementations.
 
 - ✅ **Phase 65: Commit Workflow — Cortex Tools Only** - COMPLETE (2026-01-30) - Removed all direct script invocations from the commit prompt; all pre-commit and Step 12 validation are invoked via Cortex MCP tools (`execute_pre_commit_checks` with format, format_ci_parity, type_check, quality, test_naming, tests; `fix_markdown_lint`). Added check types format_ci_parity and test_naming (run synapse scripts internally). Python adapter type_check now runs on src/ and tests/ to match CI. Integration test asserts the commit prompt file contains no `.venv/bin/python .cortex/synapse/scripts`. Plan: .cortex/plans/archive/Phase65/phase-65-commit-workflow-cortex-tools-only.md.
 
 - ✅ **Phase 66: Plan Creation Workflow Compliance** - COMPLETE (2026-01-30) - Clarified path resolution in create-plan prompt (structure_info.paths.plans absolute, no hardcoding; Path resolution in ERROR HANDLING and IMPLEMENTATION GUIDELINES). Enforced roadmap update via manage_file only (Step 6 PROHIBITED/REQUIRED/VIOLATION; Step 7 restore via manage_file). Added memory-bank-updater "Roadmap update (plan creation)" note. Integration tests in tests/integration/test_plan_creation_workflow_compliance.py. Plan: .cortex/plans/archive/Phase66/phase-66-plan-creation-workflow-compliance.md.
+
+## Pending plans (from .cortex/plans)
+
+- **Conditional prompt registration** - PENDING - Only show setup/migration prompts when project is not properly configured. Plan: .cortex/plans/conditional-prompt-registration.md.
+
+- **Ensure proper logging (FastMCP context)** - PENDING - Audit and standardize logging to align with FastMCP Context-based logging. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
+
+- **Phase 20: Code Review Fixes** - PENDING - Address critical issues from code review (rules violations, test blockers, type errors, security). Plan: .cortex/plans/phase-20-code-review-fixes.md.
+
+- **Phase 21: Health-Check and Optimization Analysis** - PENDING - Health-check system for prompts, rules, and MCP tools. Plan: .cortex/plans/phase-21-health-check-optimization.md.
+
+- **Phase 23: Fix CI failure (validation refactor)** - PENDING - Plan: .cortex/plans/phase-23-fix-ci-failure-validation-refactor.md.
+
+- **Phase 24: Fix roadmap text corruption** - PENDING - Plan: .cortex/plans/phase-24-fix-roadmap-text-corruption.md.
+
+- **Phase 25: Fix CI failure (commit 302c5e2)** - PENDING - Plan: .cortex/plans/phase-25-fix-ci-failure-commit-302c5e2.md.
+
+- **Phase 27: Script generation prevention** - PENDING - Plan: .cortex/plans/phase-27-script-generation-prevention.md.
+
+- **Phase 29: Track MCP tool usage** - PENDING - Plan: .cortex/plans/phase-29-track-mcp-tool-usage.md.
+
+- **Phase 30: Fix CI failure (commit 42a3362)** - PENDING - Plan: .cortex/plans/phase-30-fix-ci-failure-commit-42a3362.md.
+
+- **Phase 31: Fix optimize-context stale file errors** - PENDING - Plan: .cortex/plans/phase-31-fix-optimize-context-stale-file-errors.md.
+
+- **Phase 32: Fix MCP tool connection closure errors** - PENDING - Plan: .cortex/plans/phase-32-fix-mcp-tool-connection-closure-errors.md.
+
+- **Phase 33: Fix execute_pre_commit_checks JSON parsing error** - PENDING - Plan: .cortex/plans/phase-33-fix-execute-pre-commit-checks-json-parsing-error.md.
+
+- **Phase 34: Ensure MCP tool timeouts** - PENDING - Plan: .cortex/plans/phase-34-ensure-mcp-tool-timeouts.md.
+
+- **Phase 35: Fix execute_pre_commit_checks MCP JSON error** - PENDING - Plan: .cortex/plans/phase-35-fix-execute-pre-commit-checks-mcp-json-error.md.
+
+- **Phase 36: Enforce MCP tool failure protocol** - PENDING - Plan: .cortex/plans/phase-36-enforce-mcp-tool-failure-protocol.md.
+
+- **Phase 42: Investigate execute_pre_commit_checks JSON error (commit 20260117)** - PENDING - Plan: .cortex/plans/phase-42-investigate-execute-pre-commit-checks-json-error-commit-20260117-122412.md.
+
+- **Phase 43: Reconsider tools registration** - PENDING - Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+
+- **Phase 45: Add MCP annotations** - PENDING - Plan: .cortex/plans/phase-45-add-mcp-annotations.md.
+
+- **Phase 46: Add progress reporting** - PENDING - Plan: .cortex/plans/phase-46-add-progress-reporting.md.
+
+- **Phase 46: Extract setup to separate MCP server** - PENDING - Plan: .cortex/plans/phase-46-extract-setup-to-separate-mcp-server.md.
+
+- **Phase 47: Add prompt icons** - PENDING - Plan: .cortex/plans/phase-47-add-prompt-icons.md.
+
+- **Phase 48: Improve optimize-context feedback** - PENDING - Plan: .cortex/plans/phase-48-improve-optimize-context-feedback.md.
+
+- **Phase 48: Optimize-context feedback analysis** - PENDING - Plan: .cortex/plans/phase-48-optimize-context-feedback-analysis.md.
+
+- **Phase 49: Introduce Anthropic advanced tool use** - PENDING - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
+
+- **Phase 53: Investigate Cursor MCP user-cortex server error** - PENDING - Plan: .cortex/plans/phase-53-investigate-cursor-mcp-user-cortex-server-error.md.
+
+- **Phase 53: Investigate manage_file conflict/index stale** - PENDING - Plan: .cortex/plans/phase-53-investigate-manage-file-conflict-index-stale.md.
+
+- **Phase 59: Investigate/fix markdown_lint MCP connection closed** - PENDING - Plan: .cortex/plans/phase-59-investigate-fix-markdown-lint-mcp-connection-closed.md.
+
+- **Phase 9: Excellence 98** - PENDING - Plan: .cortex/plans/phase-9-excellence-98.md.
+
+- **Refactor setup prompts (simplify to 3)** - PENDING - Simplify setup from 4 prompts to 3 (initialize, migrate, setup_synapse). Plan: .cortex/plans/refactor-setup-prompts.md.
+
+- **Type cleanup inventory (Phase 53)** - PENDING - Inventory of dict[str, object], list[object], object, TypedDict, Any for type safety cleanup. Plan: .cortex/plans/type-cleanup-inventory.md.

@@ -2,8 +2,10 @@
 
 ## 2026-01-31
 
-- **Commit: Type fix (reportPrivateUsage)** - Ready to commit (2026-01-31)
-  - Fixed 7 Pyright reportPrivateUsage errors: refactored test_language_detector.py (test via detect_language for package_json/tool behavior) and test_stub_adapter.py (test via format_code/run_tests for StubAdapterLanguage.OTHER). All 3134 tests passing; coverage 90.44%. Pyright 0 errors, 0 warnings. Pre-commit pipeline passed.
+- ✅ **Commit: Type fix (reportPrivateUsage)** - COMPLETE (2026-01-31)
+  - Pre-commit: fix_errors, format, markdown lint (19 files total), type_check, quality, tests (3134, 90.44% coverage). Synapse submodule: markdown lint in prompts/rules (committed and pushed).
+
+- **Implement run** (2026-01-31) - No pending step; plan sync checked—no plans to archive. Next: add roadmap entry or run commit pipeline.
 
 - ✅ **Session optimization (2026-01-31 review)** - COMPLETE (2026-01-31)
 - ✅ **Sync plans with roadmap** - COMPLETE (2026-01-31)

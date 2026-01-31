@@ -1,21 +1,21 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-01-31T10:16:03.084580",
+  "last_updated": "2026-01-31T11:14:05.826921",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 10809,
-      "token_count": 2597,
+      "size_bytes": 18073,
+      "token_count": 4513,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-30T23:15:35.822542",
-      "content_hash": "sha256:8a09302282bf2f2e7358fa920bd6ab75425d6af2b4a72b96c784bf64e1a1b717",
+      "last_modified": "2026-01-31T10:26:26.493534",
+      "content_hash": "sha256:6a9070d524cc3787e3221f0b8c1732f544e608550522db1e075cf58eed9f431d",
       "sections": [
         {
-          "title": "## Current Status (2026-01-30)",
+          "title": "## Current Status (2026-01-31)",
           "level": 2,
           "line_start": 3,
           "line_end": 3,
@@ -31,14 +31,21 @@
         {
           "title": "## Future Enhancements",
           "level": 2,
-          "line_start": 33,
-          "line_end": 33,
+          "line_start": 37,
+          "line_end": 37,
+          "content_hash": null
+        },
+        {
+          "title": "## Pending plans (from .cortex/plans)",
+          "level": 2,
+          "line_start": 61,
+          "line_end": 61,
           "content_hash": null
         }
       ],
       "read_count": 2,
-      "write_count": 42,
-      "last_read": "2026-01-30T23:15:35.822542",
+      "write_count": 43,
+      "last_read": "2026-01-31T10:26:26.493534",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -525,17 +532,28 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Marked Go Pre-Commit Adapter complete; updated Pre-commit tracked item (Go full, Java stub)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-31T10:26:26.493154",
+          "content_hash": "sha256:6a9070d524cc3787e3221f0b8c1732f544e608550522db1e075cf58eed9f431d",
+          "size_bytes": 18073,
+          "token_count": 4513,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Added Pending plans section: all unarchived .cortex/plans entries"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 1494,
-      "token_count": 455,
+      "size_bytes": 1497,
+      "token_count": 463,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-31T10:16:03.083151",
-      "content_hash": "sha256:e564391cd10b8a49ff3895ba3dc116bd1494f2f068a831c88f69af4e89566b45",
+      "last_modified": "2026-01-31T11:14:05.825494",
+      "content_hash": "sha256:cab4ab49a30acb141d3f2061ffc5fb1441a43634085bc09ac5740ca51bfbbb65",
       "sections": [
         {
           "title": "## 2026-01-31",
@@ -547,21 +565,21 @@
         {
           "title": "## 2026-01-30",
           "level": 2,
-          "line_start": 12,
-          "line_end": 12,
+          "line_start": 14,
+          "line_end": 14,
           "content_hash": null
         },
         {
           "title": "## 2026-01-29",
           "level": 2,
-          "line_start": 24,
-          "line_end": 24,
+          "line_start": 26,
+          "line_end": 26,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 50,
-      "last_read": "2026-01-31T10:16:03.083151",
+      "write_count": 53,
+      "last_read": "2026-01-31T11:14:05.825494",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -1114,17 +1132,50 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Updated after commit pipeline: type fix ready to commit"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-31T10:23:19.410154",
+          "content_hash": "sha256:72a2454692d86819f4d16b7fc01b96d788ebcac7c80384ba295270776eabeeca",
+          "size_bytes": 1636,
+          "token_count": 492,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for implement run: no pending step; plan sync checked"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-31T11:11:52.501066",
+          "content_hash": "sha256:94bab35342936e340fdde5ab9ec19aefea9b697096d98fe5e0460d4768b1a617",
+          "size_bytes": 1445,
+          "token_count": 451,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Pre-commit Steps 0-4 passed; markdown lint 17 files fixed"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-31T11:14:05.825143",
+          "content_hash": "sha256:cab4ab49a30acb141d3f2061ffc5fb1441a43634085bc09ac5740ca51bfbbb65",
+          "size_bytes": 1497,
+          "token_count": 463,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Commit: Type fix (reportPrivateUsage) COMPLETE"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 1656,
-      "token_count": 467,
+      "size_bytes": 1871,
+      "token_count": 524,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-31T10:15:58.807944",
-      "content_hash": "sha256:7ac2bc9b7fd83cecde6ff306340055b2acff5e43f20813146f7baf6f50f7710d",
+      "last_modified": "2026-01-31T11:14:01.394936",
+      "content_hash": "sha256:d404a3b0590b28e1e4e1097e538a1f8fb98117208a2620fb971c2533fe9f5fb2",
       "sections": [
         {
           "title": "## Current Focus (2026-01-31)",
@@ -1150,21 +1201,21 @@
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 27,
-          "line_end": 27,
+          "line_start": 28,
+          "line_end": 28,
           "content_hash": null
         },
         {
           "title": "## Next Focus",
           "level": 2,
-          "line_start": 34,
-          "line_end": 34,
+          "line_start": 36,
+          "line_end": 36,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 38,
-      "last_read": "2026-01-31T10:15:58.807944",
+      "write_count": 41,
+      "last_read": "2026-01-31T11:14:01.394936",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -1585,6 +1636,39 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Updated after commit pipeline: type fix ready to commit"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-31T10:23:23.721961",
+          "content_hash": "sha256:487a28c65c75e01bf96a4b70a379e705589dc1c0d6e31934102eae753693b0f2",
+          "size_bytes": 1764,
+          "token_count": 492,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated next focus after implement run: no pending step; add roadmap entry or run commit pipeline"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-31T11:11:49.193476",
+          "content_hash": "sha256:019358670bd3442814aa98d200ada2556e6796cdec293fea3515c51a21a483cf",
+          "size_bytes": 1973,
+          "token_count": 538,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Commit pipeline in progress (Steps 0-4 passed)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-31T11:14:01.394557",
+          "content_hash": "sha256:d404a3b0590b28e1e4e1097e538a1f8fb98117208a2620fb971c2533fe9f5fb2",
+          "size_bytes": 1871,
+          "token_count": 524,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Commit: type fix (reportPrivateUsage) COMPLETE"
         }
       ]
     },
@@ -1822,8 +1906,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 27184,
-    "total_tokens": 6382,
-    "last_full_scan": "2026-01-31T10:16:03.083169"
+    "total_size_bytes": 34666,
+    "total_tokens": 8363,
+    "last_full_scan": "2026-01-31T11:14:05.825512"
   }
 }

@@ -68,7 +68,7 @@ pip install -e ".dev]"
 
 ## Tool Usage Patterns
 
-**NOTE**: These are examples for THIS project (Python). For language-agnostic procedures, use scripts from `.cortex/synapse/scripts/{language}/` instead.
+**NOTE**: These are examples for THIS project (Python). For language-agnostic procedures, prefer Cortex MCP tool `execute_pre_commit_checks()` or use scripts from the Synapse scripts directory (path from project structure or `get_structure_info()`).
 
 ### Code Formatting (This Project - Python)
 
@@ -96,15 +96,11 @@ pip install -e ".dev]"
 
 ### Language-Agnostic Pattern (For Procedures)
 
-**CRITICAL**: When writing procedures or prompts, use language-agnostic scripts:
+**CRITICAL**: When writing procedures or prompts, use semantic names and Cortex tools:
 
-```bash
-# ✅ CORRECT: Language-agnostic script
-python .cortex/synapse/scripts/{language}/check_linting.py
-
-# ❌ WRONG: Hardcoded Python command
-ruff check src/ tests/
-```
+- **Prefer Cortex MCP tools**: Use `execute_pre_commit_checks(checks=[...])` for format, type_check, quality, tests instead of invoking scripts directly.
+- **If using scripts**: Refer to the "Synapse scripts directory" (path from project structure or `get_structure_info()` if available) and the language-specific script (e.g. check_linting, check_types). Do not hardcode `.cortex/synapse/scripts/` paths.
+- **Wrong**: Hardcoding language-specific commands (e.g. `ruff check src/ tests/`) in prompts.
 
 Scripts auto-detect:
 
@@ -147,12 +143,20 @@ Cortex/
 └── docs/                # Documentation
 ```
 
+## Path Resolution and Cortex Tools (MANDATORY)
+
+**Use semantic names and Cortex MCP tools** for all structure and memory bank access. Do not hardcode paths.
+
+- **Memory bank**: Use `manage_file(file_name="...", operation="read"|"write")` to read/write memory bank files (e.g. roadmap.md, progress.md, activeContext.md). Do not hardcode the memory bank directory path.
+- **Structure paths**: Use `get_structure_info()` → `structure_info.paths.plans`, `structure_info.paths.memory_bank`, `structure_info.paths.rules`, `structure_info.paths.reviews` for plans, memory bank, rules, and reviews directories.
+- **Rules**: Prefer `rules(operation="get_relevant", task_description="...")` to load rules; if reading rule files, use the rules directory path from `get_structure_info()`.
+- **Procedures and prompts**: Refer to "plans directory", "memory bank", "Synapse agents directory", etc., and resolve actual paths via Cortex tools.
+
 ## Memory Bank Location
 
-- **Primary Location**: `.cursor/memory-bank/` (for Cursor IDE)
+- **Access**: Use Cortex MCP tool `manage_file(file_name="...", operation="read"|"write")`; resolve path via `get_structure_info()` → `structure_info.paths.memory_bank` if needed.
 - **Core Files**: projectBrief.md, productContext.md, activeContext.md, systemPatterns.md, techContext.md, progress.md, roadmap.md
-- **Metadata**: `.memory-bank-index` (JSON index)
-- **Version History**: `.memory-bank-history/` (snapshots)
+- **Metadata**: Managed by Cortex (index, version history)
 
 ## Code Quality Standards
 

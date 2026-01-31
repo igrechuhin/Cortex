@@ -27,41 +27,36 @@ Cortex is structured as an MCP (Model Context Protocol) server with a modular, l
 - **Template Method** - Standardized tool response patterns
 - **Strategy Pattern** - Multiple loading strategies (dependency-aware, by-relevance, etc.)
 - **Observer Pattern** - File watching for external change detection
-- **Language-Agnostic Script Pattern** - All procedures use scripts from `.cortex/synapse/scripts/{language}/` instead of hardcoded commands
+- **Language-Agnostic Script Pattern** - All procedures use scripts from the Synapse scripts directory (path resolved via project structure or Cortex tools) instead of hardcoded commands
+- **Semantic Names and Cortex Tools** - Prompts and procedures use semantic names ("plans directory", "memory bank", "Synapse agents directory") and resolve paths via Cortex MCP tools (`get_structure_info()`, `manage_file()`, `rules()`); hardcoding `.cortex/` or `.cursor/` paths is forbidden
 
 ## Synapse Architecture (CRITICAL)
 
-Synapse (`.cortex/synapse/`) is a git submodule providing shared resources with a strict separation of concerns:
+Synapse is a git submodule (Synapse directory) providing shared resources with a strict separation of concerns.
 
-### Directory Structure
+### Directory Structure (Semantic Names)
 
-```text
-.cortex/synapse/
-├── prompts/           # Language-AGNOSTIC workflow definitions
-├── rules/             # Coding standards (general + language-specific)
-└── scripts/           # Language-SPECIFIC implementations
-    └── {language}/    # e.g., python/, typescript/
-```
+- **Synapse prompts directory** – Language-AGNOSTIC workflow definitions
+- **Synapse rules directory** – Coding standards (general + language-specific)
+- **Synapse scripts directory** – Language-SPECIFIC implementations (`{language}/` e.g. python/, typescript/)
+
+Resolve actual paths via `get_structure_info()` where available; do not hardcode `.cortex/synapse/` in prompts.
 
 ### Prompts: Language-AGNOSTIC (MANDATORY)
 
-All prompts in `prompts/` MUST be language-agnostic:
+All prompts in the Synapse prompts directory MUST be language-agnostic:
 
 - **DO NOT** hardcode language-specific commands (`ruff`, `black`, `prettier`, `eslint`)
-- **DO NOT** reference language-specific paths directly
-- **DO** use script references with `{language}` placeholder
+- **DO NOT** hardcode structure paths (use semantic names and Cortex tools)
+- **DO** use semantic names ("Synapse scripts directory", "plans directory", "memory bank") and Cortex MCP tools (`get_structure_info()`, `manage_file()`, `rules()`) to resolve paths and access content
 
 **Correct Pattern**:
 
-```markdown
-Run: `.venv/bin/python .cortex/synapse/scripts/{language}/check_formatting.py`
-```
+- Use Cortex MCP tool `execute_pre_commit_checks(checks=["format"])` (or similar), or reference "Synapse scripts directory" and language-specific script name (path resolved by tool or project structure).
 
 **Wrong Pattern**:
 
-```markdown
-Run: `.venv/bin/black --check src/ tests/`
-```
+- Hardcoding paths like `.cortex/synapse/scripts/` or commands like `.venv/bin/black --check src/ tests/`
 
 ### Scripts: Language-SPECIFIC
 

@@ -57,3 +57,67 @@
 - ✅ **Phase 65: Commit Workflow — Cortex Tools Only** - COMPLETE (2026-01-30) - Removed all direct script invocations from the commit prompt; all pre-commit and Step 12 validation are invoked via Cortex MCP tools (`execute_pre_commit_checks` with format, format_ci_parity, type_check, quality, test_naming, tests; `fix_markdown_lint`). Added check types format_ci_parity and test_naming (run synapse scripts internally). Python adapter type_check now runs on src/ and tests/ to match CI. Integration test asserts the commit prompt file contains no `.venv/bin/python .cortex/synapse/scripts`. Plan: .cortex/plans/archive/Phase65/phase-65-commit-workflow-cortex-tools-only.md.
 
 - ✅ **Phase 66: Plan Creation Workflow Compliance** - COMPLETE (2026-01-30) - Clarified path resolution in create-plan prompt (structure_info.paths.plans absolute, no hardcoding; Path resolution in ERROR HANDLING and IMPLEMENTATION GUIDELINES). Enforced roadmap update via manage_file only (Step 6 PROHIBITED/REQUIRED/VIOLATION; Step 7 restore via manage_file). Added memory-bank-updater "Roadmap update (plan creation)" note. Integration tests in tests/integration/test_plan_creation_workflow_compliance.py. Plan: .cortex/plans/archive/Phase66/phase-66-plan-creation-workflow-compliance.md.
+
+## Pending plans (from .cortex/plans)
+
+- **Conditional prompt registration** - PENDING - Only show setup/migration prompts when project is not properly configured. Plan: .cortex/plans/conditional-prompt-registration.md.
+
+- **Ensure proper logging (FastMCP context)** - PENDING - Audit and standardize logging to align with FastMCP Context-based logging. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
+
+- **Phase 20: Code Review Fixes** - PENDING - Address critical issues from code review (rules violations, test blockers, type errors, security). Plan: .cortex/plans/phase-20-code-review-fixes.md.
+
+- **Phase 21: Health-Check and Optimization Analysis** - PENDING - Health-check system for prompts, rules, and MCP tools. Plan: .cortex/plans/phase-21-health-check-optimization.md.
+
+- **Phase 23: Fix CI failure (validation refactor)** - PENDING - Plan: .cortex/plans/phase-23-fix-ci-failure-validation-refactor.md.
+
+- **Phase 24: Fix roadmap text corruption** - PENDING - Plan: .cortex/plans/phase-24-fix-roadmap-text-corruption.md.
+
+- **Phase 25: Fix CI failure (commit 302c5e2)** - PENDING - Plan: .cortex/plans/phase-25-fix-ci-failure-commit-302c5e2.md.
+
+- **Phase 27: Script generation prevention** - PENDING - Plan: .cortex/plans/phase-27-script-generation-prevention.md.
+
+- **Phase 29: Track MCP tool usage** - PENDING - Plan: .cortex/plans/phase-29-track-mcp-tool-usage.md.
+
+- **Phase 30: Fix CI failure (commit 42a3362)** - PENDING - Plan: .cortex/plans/phase-30-fix-ci-failure-commit-42a3362.md.
+
+- **Phase 31: Fix optimize-context stale file errors** - PENDING - Plan: .cortex/plans/phase-31-fix-optimize-context-stale-file-errors.md.
+
+- **Phase 32: Fix MCP tool connection closure errors** - PENDING - Plan: .cortex/plans/phase-32-fix-mcp-tool-connection-closure-errors.md.
+
+- **Phase 33: Fix execute_pre_commit_checks JSON parsing error** - PENDING - Plan: .cortex/plans/phase-33-fix-execute-pre-commit-checks-json-parsing-error.md.
+
+- **Phase 34: Ensure MCP tool timeouts** - PENDING - Plan: .cortex/plans/phase-34-ensure-mcp-tool-timeouts.md.
+
+- **Phase 35: Fix execute_pre_commit_checks MCP JSON error** - PENDING - Plan: .cortex/plans/phase-35-fix-execute-pre-commit-checks-mcp-json-error.md.
+
+- **Phase 36: Enforce MCP tool failure protocol** - PENDING - Plan: .cortex/plans/phase-36-enforce-mcp-tool-failure-protocol.md.
+
+- **Phase 42: Investigate execute_pre_commit_checks JSON error (commit 20260117)** - PENDING - Plan: .cortex/plans/phase-42-investigate-execute-pre-commit-checks-json-error-commit-20260117-122412.md.
+
+- **Phase 43: Reconsider tools registration** - PENDING - Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+
+- **Phase 45: Add MCP annotations** - PENDING - Plan: .cortex/plans/phase-45-add-mcp-annotations.md.
+
+- **Phase 46: Add progress reporting** - PENDING - Plan: .cortex/plans/phase-46-add-progress-reporting.md.
+
+- **Phase 46: Extract setup to separate MCP server** - PENDING - Plan: .cortex/plans/phase-46-extract-setup-to-separate-mcp-server.md.
+
+- **Phase 47: Add prompt icons** - PENDING - Plan: .cortex/plans/phase-47-add-prompt-icons.md.
+
+- **Phase 48: Improve optimize-context feedback** - PENDING - Plan: .cortex/plans/phase-48-improve-optimize-context-feedback.md.
+
+- **Phase 48: Optimize-context feedback analysis** - PENDING - Plan: .cortex/plans/phase-48-optimize-context-feedback-analysis.md.
+
+- **Phase 49: Introduce Anthropic advanced tool use** - PENDING - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
+
+- **Phase 53: Investigate Cursor MCP user-cortex server error** - PENDING - Plan: .cortex/plans/phase-53-investigate-cursor-mcp-user-cortex-server-error.md.
+
+- **Phase 53: Investigate manage_file conflict/index stale** - PENDING - Plan: .cortex/plans/phase-53-investigate-manage-file-conflict-index-stale.md.
+
+- **Phase 59: Investigate/fix markdown_lint MCP connection closed** - PENDING - Plan: .cortex/plans/phase-59-investigate-fix-markdown-lint-mcp-connection-closed.md.
+
+- **Phase 9: Excellence 98** - PENDING - Plan: .cortex/plans/phase-9-excellence-98.md.
+
+- **Refactor setup prompts (simplify to 3)** - PENDING - Simplify setup from 4 prompts to 3 (initialize, migrate, setup_synapse). Plan: .cortex/plans/refactor-setup-prompts.md.
+
+- **Type cleanup inventory (Phase 53)** - PENDING - Inventory of dict[str, object], list[object], object, TypedDict, Any for type safety cleanup. Plan: .cortex/plans/type-cleanup-inventory.md.
