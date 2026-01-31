@@ -2,6 +2,10 @@
 
 ## 2026-01-31
 
+- **Commit: pre-commit and markdown lint** (2026-01-31) - Pre-commit: fix_errors, format, markdown lint (3 files fixed), type_check, quality, tests (3143 passed, 90.45% coverage). Memory bank and plan archiving per commit workflow.
+
+- **Ensure proper logging (FastMCP context): validate tool** (2026-01-31) - Refactored `validate` in validation_operations.py to use optional `ctx: MCPContext | None` with entry/invalid check_type/exit/error logging via `log_client`. Added unit tests in TestValidateContextLogging (start and completion, invalid check_type warning, exception error path). All 3143 tests passing; coverage 90.45%. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md (Phase 2.3 validate done; analyze, configure next).
+
 - **Commit: function length fix and markdown lint** (2026-01-31) - Refactored `manage_file` to meet 30-line limit (extracted `_manage_file_run_or_error` in file_operations.py). Markdown lint: 10 files fixed (check_all_files). Pre-commit: fix_errors, format, markdown lint, type_check, quality, tests (3140 passed, 90.45% coverage). 0 plans archived.
 
 - **Ensure proper logging (FastMCP context)** (2026-01-31) - Phase 1 and Phase 2 foundation done: added `docs/development/logging-guidelines.md`, `src/cortex/core/context_logging.py` (log_client, report_progress_safe), refactored `manage_file` to use optional ctx with entry/validation/exit/error logging. Unit tests in tests/unit/test_context_logging.py; all file_operations and consolidated tests passing. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md (Phases 3–5 remain).

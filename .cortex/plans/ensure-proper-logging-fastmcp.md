@@ -175,14 +175,14 @@ This allows:
   - Context-aware logging wrapper (log to ctx when present, else std logger)
   - Typed with `Context[ServerSession, object]` for MCP SDK compatibility
 
-#### Step 2.3: Refactor Core Tools — manage_file DONE
+#### Step 2.3: Refactor Core Tools — manage_file DONE, validate DONE
 
 Start with high-priority tools:
 
 - [x] `file_operations.py` - `manage_file` (optional `ctx: _MCPContext | None`; entry/validation/exit/error logging via `log_client`)
-- [ ] `validation_operations.py` - `validate`
-- sis_operations.py` - `analyze`
-- ] `configuration_operations.py` - `configure`
+- [x] `validation_operations.py` - `validate` (optional `ctx: MCPContext | None`; entry/invalid check_type/exit/error via `log_client`; unit tests in TestValidateContextLogging)
+- [ ] `analysis_operations.py` - `analyze`
+- [ ] `configuration_operations.py` - `configure`
 
 For each tool:
 

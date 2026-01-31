@@ -8,6 +8,7 @@ Total: 1 tool
 """
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.server import mcp
 from cortex.tools.validation_dispatch import (
@@ -35,6 +36,7 @@ async def validate(
     check_code_quality_consistency: bool = True,
     check_documentation_consistency: bool = True,
     check_config_consistency: bool = True,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Run validation checks on Memory Bank files for schema compliance,
     duplications, quality metrics, or timestamps.
@@ -436,8 +438,10 @@ async def validate(
         below 60 needs improvement
         - All validation operations are read-only and do not modify files
     """
+    await log_client(ctx, "info", "validate: starting", logger_name=__name__)
     parsed = parse_validation_check_type(check_type)
     if parsed is None:
+        await log_client(ctx, "warning", "validate: invalid check_type")
         return create_invalid_check_type_error(check_type or "null")
     return await _execute_validation_with_error_handling(
         parsed,
@@ -449,6 +453,7 @@ async def validate(
         check_code_quality_consistency,
         check_documentation_consistency,
         check_config_consistency,
+        ctx,
     )
 
 
@@ -462,11 +467,12 @@ async def _execute_validation_with_error_handling(
     check_code_quality_consistency: bool,
     check_documentation_consistency: bool,
     check_config_consistency: bool,
+    ctx: MCPContext | None,
 ) -> str:
     """Execute validation with error handling."""
     try:
         root, managers = await prepare_validation_managers(project_root)
-        return await call_dispatch_validation(
+        result = await call_dispatch_validation(
             check_type,
             managers,
             root,
@@ -478,5 +484,8 @@ async def _execute_validation_with_error_handling(
             check_documentation_consistency,
             check_config_consistency,
         )
+        await log_client(ctx, "info", "validate: completed", logger_name=__name__)
+        return result
     except Exception as e:
+        await log_client(ctx, "error", f"validate: failed: {e}", logger_name=__name__)
         return create_validation_error_response(e)
