@@ -2,7 +2,7 @@
 
 ## Status
 
-Planning
+In progress (Phase 1 and Phase 2 foundation complete 2026-01-31)
 
 ## Goal
 
@@ -133,9 +133,11 @@ This allows:
 
 ## Implementation Steps
 
-### Phase 1: Audit and Analysis (Week1#### Step10.1 Audit Current Logging Usage
+### Phase 1: Audit and Analysis (Week 1) — COMPLETED 2026-01-31
 
-- ] Scan all tool files in `src/cortex/tools/` to identify:
+#### Step 1.1: Audit Current Logging Usage — DONE
+
+- [x] Scan all tool files in `src/cortex/tools/` to identify:
   - Current logging patterns (`logger.debug`, `logger.info`, `logger.warning`, `logger.error`)
   - Error handling patterns
   - Missing logging in critical paths
@@ -148,9 +150,9 @@ This allows:
 - [ ] Document current logging approach for each tool
 - ] Identify helper functions that need `get_context()` access
 
-#### Step1.3: Define Logging Guidelines
+#### Step 1.3: Define Logging Guidelines — DONE
 
--Create `docs/development/logging-guidelines.md` with:
+- [x] Create `docs/development/logging-guidelines.md` with:
 
 - When to use each log level
 - Required metadata fields (request_id, tool_name, etc.)
@@ -166,18 +168,18 @@ This allows:
 - [ ] Verify FastMCP version supports `CurrentContext()` dependency injection
 - [ ] Test Context access in a sample tool
 
-#### Step2.2 Create Logging Helper Utilities
+#### Step 2.2: Create Logging Helper Utilities — DONE
 
-- [ ] Create `src/cortex/core/context_logging.py` with:
-  - Helper functions for common logging patterns
-  - Context-aware logging wrapper
-  - Metadata extraction utilities
+- [x] Create `src/cortex/core/context_logging.py` with:
+  - Helper functions for common logging patterns (`log_client`, `report_progress_safe`)
+  - Context-aware logging wrapper (log to ctx when present, else std logger)
+  - Typed with `Context[ServerSession, object]` for MCP SDK compatibility
 
-#### Step 23efactor Core Tools
+#### Step 2.3: Refactor Core Tools — manage_file DONE
 
 Start with high-priority tools:
 
-- [ ] `file_operations.py` - `manage_file`
+- [x] `file_operations.py` - `manage_file` (optional `ctx: _MCPContext | None`; entry/validation/exit/error logging via `log_client`)
 - [ ] `validation_operations.py` - `validate`
 - sis_operations.py` - `analyze`
 - ] `configuration_operations.py` - `configure`

@@ -177,6 +177,8 @@ Provide more context to get better results.
 
 Cortex provides MCP prompts for one-time setup and migration operations. Use prompts when you need guided assistance for initial configuration or structural changes.
 
+**Conditional availability**: Setup and migration prompts are only shown when needed. If your project is already configured (memory bank initialized, structure in place, Cursor symlinks valid), you will not see `initialize_memory_bank`, `setup_project_structure`, `setup_cursor_integration`, or migration prompts. The `setup_synapse` prompt is always available as an optional feature.
+
 ### Which Prompt Should I Use?
 
 | Your Situation | Prompt to Use |

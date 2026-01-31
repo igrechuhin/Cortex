@@ -1,10 +1,14 @@
 # Roadmap: MCP Memory Bank
 
+**Implementation sequence**: The implement command picks the **next** step as the **first PENDING item** when reading the roadmap in this order: (1) Blockers (ASAP Priority), (2) Active Work, (3) Future Enhancements, (4) Implementation queue (Pending plans). Order within each section is top-to-bottom. New plans are added by create-plan in the correct place so this order defines execution.
+
 ## Current Status (2026-01-31)
 
 ### Active Work
 
-- ✅ **Session optimization (2026-01-31 review)** - COMPLETE (2026-01-31) - Implemented recommendations from `.cortex/reviews/session-optimization-2026-01-31T15-00.md`: (1) Mandatory rules-load Pre-Step and BLOCK in commit prompt; checklist item "Rules loaded: Yes/No. If No, do not proceed to Step 0". (2) CRITICAL violation sentence for skipping rules load. (3) Error-fixer and type-checker agents: prerequisites to load rules before fixing, visibility/API guidance (test via public API; do not use reportPrivateUsage=false). (4) Common error "Fixing type/visibility without loaded rules" in commit prompt. (5) Project-wide rule for real-time references (Synapse rules): ALL time references MUST use real time; derive from mtime/tool; fallback when unknown. Updated analyze-session-optimization and session-optimization-analyzer with derive-real-time and fallback.
+- ✅ **Conditional prompt registration** - COMPLETE (2026-01-31) - Implementation already present (src/cortex/tools/config_status.py, src/cortex/tools/prompts.py conditional registration). Documented conditional availability in README.md, docs/prompts/README.md, CLAUDE.md. All tests passing (3134); coverage 90.44%. Plan: .cortex/plans/conditional-prompt-registration.md.
+
+- ✅ **Session optimization (2026-01-31 review)** - COMPLETE (2026-01-31) - Implemented recommendations from `.cortex/reviews/session-optimization-2026-01-31T15-00.md`: (1) Mandatory rules-load Pre-Step and BLOCK in commit prompt; checklist item "Rules loaded: Yes/No. If No, do not proceed to Step 0". (2) CRITICAL violation sentence for skipping rules load. (3) Error-fixer and type-checker agents: prerequisites to load rules before fixing, visibility/API guidance (test via public API; do not use reportPrivateUsage=false). (4) Common error "Fixing type/visibility without loaded rules" in commit prompt. (5) Project-wide rule for real-time references (Synapse rules): ALL time references MUST use real time; derive from mtime/tool/system date; NEVER use fallback or invented time. Updated analyze-session-optimization and session-optimization-analyzer accordingly.
 
 - ✅ **Sync plans with roadmap** - COMPLETE (2026-01-31) - Archived completed plans to .cortex/plans/archive/Phase63/, .cortex/plans/archive/Phase67/enhance-tool-descriptions.plan.md, .cortex/plans/archive/Phase60/roadmap-sync-validation-error-ux.md. Added implement-next-roadmap-step fallback: when no pending step exists, run plan sync (archive completed plans) and update progress/activeContext.
 
@@ -59,8 +63,6 @@
 - ✅ **Phase 66: Plan Creation Workflow Compliance** - COMPLETE (2026-01-30) - Clarified path resolution in create-plan prompt (structure_info.paths.plans absolute, no hardcoding; Path resolution in ERROR HANDLING and IMPLEMENTATION GUIDELINES). Enforced roadmap update via manage_file only (Step 6 PROHIBITED/REQUIRED/VIOLATION; Step 7 restore via manage_file). Added memory-bank-updater "Roadmap update (plan creation)" note. Integration tests in tests/integration/test_plan_creation_workflow_compliance.py. Plan: .cortex/plans/archive/Phase66/phase-66-plan-creation-workflow-compliance.md.
 
 ## Pending plans (from .cortex/plans)
-
-- **Conditional prompt registration** - PENDING - Only show setup/migration prompts when project is not properly configured. Plan: .cortex/plans/conditional-prompt-registration.md.
 
 - **Ensure proper logging (FastMCP context)** - PENDING - Audit and standardize logging to align with FastMCP Context-based logging. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
 
@@ -121,3 +123,7 @@
 - **Refactor setup prompts (simplify to 3)** - PENDING - Simplify setup from 4 prompts to 3 (initialize, migrate, setup_synapse). Plan: .cortex/plans/refactor-setup-prompts.md.
 
 - **Type cleanup inventory (Phase 53)** - PENDING - Inventory of dict[str, object], list[object], object, TypedDict, Any for type safety cleanup. Plan: .cortex/plans/type-cleanup-inventory.md.
+
+- **Sequential thinking in Cortex MCP** - PENDING - Implement sequential thinking tool similar to MCP servers reference (thought history, revisions, branches). Plan: .cortex/plans/sequential-thinking-cortex-mcp.md.
+
+- **Session optimization (2026-01-31 12-19): Public API, memory bank, SDK generics** - PENDING - Implement recommendations from session-optimization-2026-01-31T12-19 review: rule for public API not using private type names; prompt/agent to update memory bank after user-requested fixes; rule for SDK generic type parameters; one-time .cortex/memory-bank/progress.md alignment if needed. Plan: .cortex/plans/session-optimization-public-api-memory-bank-rules.md.

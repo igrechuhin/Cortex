@@ -2,6 +2,16 @@
 
 This directory contains prompt templates for one-time Memory Bank operations. These operations don't need dedicated MCP tools since they're typically performed once per project during setup.
 
+## When Prompts Appear
+
+Prompts are **conditionally registered** based on project configuration:
+
+- **Setup prompts** (`initialize_memory_bank`, `setup_project_structure`, `setup_cursor_integration`) appear only when the corresponding part of the project is not configured (e.g. no memory bank, missing structure, or missing Cursor symlinks).
+- **Migration prompts** (`check_migration_status`, `migrate_memory_bank`, `migrate_project_structure`) appear only when a legacy format is detected and migration is needed.
+- **setup_synapse** is always available (optional feature).
+
+If your project is fully configured, only active-development prompts (e.g. from Synapse) and `setup_synapse` will be listed.
+
 ## Available Prompts
 
 ### Setup & Initialization

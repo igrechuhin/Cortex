@@ -415,6 +415,8 @@ This project targets Python 3.13+ and MUST use modern built-ins instead of `typi
 - Phase 6 (Shared Rules): `initialize_shared_rules`, `sync_shared_rules`, `get_shared_rules`, `merge_rules`
 - Phase 8 (Structure): `setup_project_structure`, `validate_project_structure`, `get_structure_report`, `migrate_structure`, `get_structure_templates`, `analyze_structure_quality`
 
+**MCP Prompts (conditional availability)**: Setup and migration prompts (`initialize_memory_bank`, `setup_project_structure`, `setup_cursor_integration`, `check_migration_status`, `migrate_memory_bank`, `migrate_project_structure`) are only registered when the project is not fully configured or when migration is needed. The `setup_synapse` prompt is always available. See README "Available Prompts" and docs/prompts/README.md for when each prompt appears.
+
 ## Memory Bank File Structure
 
 The Memory Bank consists of core files and optional context files, all in Markdown format:

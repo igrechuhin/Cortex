@@ -189,13 +189,13 @@ def setup_synapse(synapse_repo_url: str) -> str:
 ## Implementation Steps
 
 1. ✅ Create plan document
-2. Create `get_project_config_status()` function
-3. Add unit tests for status detection
-4. Modify `prompts.py` for conditional registration
-5. Add integration tests
-6. Update documentation
-7. Test with various project states
-8. Verify no regressions in existing functionality
+2. ✅ Create `get_project_config_status()` function (config_status.py)
+3. ✅ Add unit tests for status detection (tests/unit/test_config_status.py)
+4. ✅ Modify `prompts.py` for conditional registration
+5. ✅ Add integration tests (tests/integration/test_conditional_prompts.py)
+6. ✅ Update documentation (README.md, docs/prompts/README.md, CLAUDE.md)
+7. ✅ Test with various project states
+8. ✅ Verify no regressions in existing functionality (3134 tests passing)
 
 ## Success Criteria
 

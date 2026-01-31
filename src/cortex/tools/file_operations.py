@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.exceptions import (
     FileConflictError,
     FileLockTimeoutError,
@@ -46,6 +47,7 @@ async def manage_file(
     project_root: str | None = None,
     include_metadata: bool = False,
     change_description: str | None = None,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Manage Memory Bank file operations: read, write, or get metadata.
 
@@ -260,13 +262,35 @@ async def manage_file(
         - Write operations update both the file content and metadata index
           atomically
     """
+    await log_client(ctx, "info", "manage_file: starting", logger_name=__name__)
     parsed_op, err = validate_manage_file_operation(operation, file_name)
     if err is not None:
+        await log_client(ctx, "warning", "manage_file: validation failed")
         return err
     assert parsed_op is not None and file_name is not None
+    return await _manage_file_run_or_error(
+        ctx,
+        file_name,
+        parsed_op,
+        content,
+        project_root,
+        include_metadata,
+        change_description,
+    )
 
+
+async def _manage_file_run_or_error(
+    ctx: MCPContext | None,
+    file_name: str,
+    parsed_op: FileOperation,
+    content: str | None,
+    project_root: str | None,
+    include_metadata: bool,
+    change_description: str | None,
+) -> str:
+    """Run _execute_file_operation and handle exceptions with logging."""
     try:
-        return await _execute_file_operation(
+        result = await _execute_file_operation(
             file_name,
             parsed_op,
             content,
@@ -274,7 +298,12 @@ async def manage_file(
             include_metadata,
             change_description,
         )
+        await log_client(ctx, "info", "manage_file: completed", logger_name=__name__)
+        return result
     except Exception as e:
+        await log_client(
+            ctx, "error", f"manage_file: operation failed: {e}", logger_name=__name__
+        )
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,

@@ -94,6 +94,7 @@
     "ruff",
     "rustc",
     "schema",
+    "sequentialthinking",
     "setuptools",
     "sharedrules",
     "slugification",
