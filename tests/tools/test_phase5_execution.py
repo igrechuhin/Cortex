@@ -33,7 +33,11 @@ from cortex.refactoring.models import (
     RollbackRefactoringResult,
 )
 from cortex.tools.phase5_execution import apply_refactoring, provide_feedback
-from cortex.tools.phase5_execution_helpers import check_approval_status
+from cortex.tools.phase5_execution_helpers import (
+    check_approval_status,
+    parse_refactoring_action,
+    record_feedback_and_build_result,
+)
 from tests.helpers.managers import make_test_managers
 
 
@@ -496,6 +500,19 @@ class TestApplyRefactoringApply:
             assert result["status"] == "error"
             assert "suggestion_id is required" in result["error"]
 
+    async def test_apply_missing_approval_id(self, mock_project_root: Path) -> None:
+        """Test application without approval_id."""
+        with patch(
+            "cortex.tools.phase5_execution.get_project_root",
+            return_value=mock_project_root,
+        ):
+            result_str = await apply_refactoring(
+                action="apply", suggestion_id="test-123"
+            )
+            result = json.loads(result_str)
+            assert result["status"] == "error"
+            assert "approval_id is required" in result["error"]
+
 
 # ============================================================================
 # Test apply_refactoring() - Rollback Action
@@ -946,6 +963,59 @@ class TestPhase5ExecutionHelpers:
         # Assert
         assert was_approved is True
         assert was_applied is True
+
+    def test_parse_refactoring_action_returns_none_for_invalid_value(
+        self,
+    ) -> None:
+        """parse_refactoring_action returns None for invalid string."""
+        assert parse_refactoring_action("invalid_action") is None
+        assert parse_refactoring_action("") is None
+        assert parse_refactoring_action(None) is None
+
+    def test_parse_refactoring_action_returns_action_for_valid_value(
+        self,
+    ) -> None:
+        """parse_refactoring_action returns RefactoringAction for valid string."""
+        from cortex.refactoring.models import RefactoringAction
+
+        assert parse_refactoring_action("approve") == RefactoringAction.APPROVE
+        assert parse_refactoring_action("apply") == RefactoringAction.APPLY
+
+    @pytest.mark.asyncio
+    async def test_record_feedback_and_build_result_sets_learning_summary(
+        self,
+        mock_refactoring_suggestion: RefactoringSuggestionModel,
+    ) -> None:
+        """record_feedback_and_build_result sets learning_summary from insights."""
+        learning_engine = AsyncMock()
+        learning_engine.record_feedback = AsyncMock(
+            return_value=FeedbackRecordResult(
+                status="recorded",
+                feedback_id="fb-1",
+                learning_enabled=True,
+                message="OK",
+            )
+        )
+        learning_engine.get_learning_insights = AsyncMock(
+            return_value=LearningInsights(
+                total_feedback=10,
+                approval_rate=0.8,
+                min_confidence_threshold=0.5,
+            )
+        )
+        result = await record_feedback_and_build_result(
+            learning_engine=learning_engine,
+            suggestion=mock_refactoring_suggestion,
+            suggestion_id="test-123",
+            feedback_type="helpful",
+            comment=None,
+            was_approved=True,
+            was_applied=False,
+        )
+        assert result.learning_summary is not None
+        assert result.learning_summary.get("total_feedback") == 10
+        assert result.learning_summary.get("approval_rate") == 0.8
+        assert result.learning_summary.get("min_confidence_threshold") == 0.5
 
 
 # ============================================================================

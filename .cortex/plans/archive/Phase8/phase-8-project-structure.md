@@ -73,7 +73,7 @@ project-root/
 │   │       └── swift/
 │   ├── plans/                 # Planning system
 │   │   ├── README.md         # Plans index
-│   │   ├── STATUS.md         # Current state
+│   │   # Current state: .cortex/memory-bank/roadmap.md
 │   │   ├── templates/        # Plan templates
 │   │   │   ├── feature.md
 │   │   │   ├── bugfix.md

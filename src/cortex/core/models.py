@@ -1199,6 +1199,8 @@ class SuccessResponseData(BaseModel):
     This model replaces `ModelDict` for success response data.
     """
 
+    file_count: int | None = None
+    total_tokens: int | None = None
     model_config = ConfigDict(extra="allow", validate_assignment=True)
 
     def to_dict(self) -> ModelDict:
@@ -1217,6 +1219,7 @@ class ErrorContext(BaseModel):
     This model replaces `ModelDict` for error context.
     """
 
+    provided_value: int | float | str | None = None
     model_config = ConfigDict(extra="allow", validate_assignment=True)
 
     def to_dict(self) -> ModelDict:

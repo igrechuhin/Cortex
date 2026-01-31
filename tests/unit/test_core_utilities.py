@@ -18,7 +18,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.core.manager_registry import ManagerRegistry
-from cortex.core.models import ModelDict
+from cortex.core.models import ErrorContext, JsonDict, ModelDict, SuccessResponseData
 from cortex.core.responses import error_response, success_response
 from tests.helpers.managers import make_test_managers
 
@@ -55,6 +55,30 @@ class TestResponses:
         assert parsed["status"] == "success"
         assert parsed["files"] == ["a.md", "b.md"]
         assert parsed["stats"]["total"] == 100
+
+    def test_success_response_with_success_response_data(self) -> None:
+        """Test success response with SuccessResponseData model."""
+        # Act
+        data = SuccessResponseData(file_count=7, total_tokens=15000)
+        result = success_response(data)
+
+        # Assert
+        parsed = json.loads(result)
+        assert parsed["status"] == "success"
+        assert parsed["file_count"] == 7
+        assert parsed["total_tokens"] == 15000
+
+    def test_success_response_with_json_dict(self) -> None:
+        """Test success response with JsonDict model."""
+        # Act
+        data = JsonDict.model_validate({"count": 3, "label": "items"})
+        result = success_response(data)
+
+        # Assert
+        parsed = json.loads(result)
+        assert parsed["status"] == "success"
+        assert parsed["count"] == 3
+        assert parsed["label"] == "items"
 
     def test_error_response_basic(self) -> None:
         """Test basic error response."""
@@ -106,6 +130,33 @@ class TestResponses:
         assert data["error_type"] == "ValueError"
         assert data["action_required"] == "Use positive number"
         assert data["context"]["value"] == -5
+
+    def test_error_response_with_error_context(self) -> None:
+        """Test error response with ErrorContext model."""
+        # Act
+        result = error_response(
+            ValueError("Invalid token budget"),
+            action_required="Set token_budget to a positive integer",
+            context=ErrorContext(provided_value=-1000),
+        )
+
+        # Assert
+        data = json.loads(result)
+        assert data["status"] == "error"
+        assert data["context"]["provided_value"] == -1000
+
+    def test_error_response_with_json_dict_context(self) -> None:
+        """Test error response with JsonDict as context."""
+        # Act
+        result = error_response(
+            ValueError("Config error"),
+            context=JsonDict.model_validate({"path": "/config.yaml"}),
+        )
+
+        # Assert
+        data = json.loads(result)
+        assert data["status"] == "error"
+        assert data["context"]["path"] == "/config.yaml"
 
 
 class TestManagerRegistry:
@@ -223,6 +274,49 @@ class TestMCPToolValidator:
         # Act - error status is valid, not a tool failure
         # The function should not raise because status=error means the tool worked
         validate_mcp_tool_response(response, "test_tool", "test_step", str(tmp_path))
+
+    def test_validate_mcp_tool_response_dict_missing_status(
+        self, tmp_path: Path
+    ) -> None:
+        """Test dict response without 'status' triggers validation path."""
+        from cortex.core.mcp_tool_validator import (
+            _is_test_context,
+            validate_mcp_tool_response,
+        )
+
+        (tmp_path / ".cortex").mkdir()
+        response_dict: ModelDict = {"data": "no status key"}
+
+        with patch(
+            "cortex.core.mcp_tool_validator._is_test_context",
+            return_value=False,
+        ):
+            # Act - should not raise; _validate_dict_response logs warning
+            validate_mcp_tool_response(
+                response_dict, "test_tool", "test_step", str(tmp_path)
+            )
+
+        # Restore so other tests see pytest context
+        assert _is_test_context() is True
+
+    def test_validate_mcp_tool_response_json_string_raises(
+        self, tmp_path: Path
+    ) -> None:
+        """Test JSON string response (double-encoded) is treated as tool failure."""
+        from cortex.core.mcp_failure_handler import MCPToolFailure
+        from cortex.core.mcp_tool_validator import validate_mcp_tool_response
+
+        (tmp_path / ".cortex").mkdir()
+        response_str = '{"status": "ok"}'
+
+        with patch(
+            "cortex.core.mcp_tool_validator._is_test_context",
+            return_value=False,
+        ):
+            with pytest.raises(MCPToolFailure):
+                validate_mcp_tool_response(
+                    response_str, "test_tool", "test_step", str(tmp_path)
+                )
 
     def test_check_mcp_tool_failure_json_error(self, tmp_path: Path) -> None:
         """Test checking if JSON decode error is MCP tool failure."""

@@ -68,6 +68,14 @@ class LanguageDetector:
         if self._is_go_project():
             return self._detect_go_tooling()
 
+        # Check for Swift
+        if self._is_swift_project():
+            return self._detect_swift_tooling()
+
+        # Check for Kotlin
+        if self._is_kotlin_project():
+            return self._detect_kotlin_tooling()
+
         return None
 
     def _is_python_project(self) -> bool:
@@ -106,6 +114,20 @@ class LanguageDetector:
         return (self.project_root / "go.mod").exists() or (
             self.project_root / "go.sum"
         ).exists()
+
+    def _is_swift_project(self) -> bool:
+        """Check if project is Swift (Swift Package Manager)."""
+        return (self.project_root / "Package.swift").exists()
+
+    def _is_kotlin_project(self) -> bool:
+        """Check if project is Kotlin (Gradle/Maven with Kotlin)."""
+        root = self.project_root
+        has_gradle = (root / "build.gradle").exists() or (
+            root / "build.gradle.kts"
+        ).exists()
+        has_maven = (root / "pom.xml").exists()
+        has_kt = any(root.rglob("*.kt"))
+        return (has_gradle or has_maven) and has_kt
 
     def _package_json_has_typescript(self) -> bool:
         """Check if package.json indicates TypeScript."""
@@ -199,6 +221,30 @@ class LanguageDetector:
             type_checker=None,
             build_tool="go",
             confidence=0.9,
+        )
+
+    def _detect_swift_tooling(self) -> LanguageInfo:
+        """Detect Swift tooling (Swift Package Manager)."""
+        return LanguageInfo(
+            language="swift",
+            test_framework="swift test",
+            formatter="swift format",
+            linter=None,
+            type_checker="swift build",
+            build_tool="swift",
+            confidence=0.9,
+        )
+
+    def _detect_kotlin_tooling(self) -> LanguageInfo:
+        """Detect Kotlin tooling (Gradle/Maven)."""
+        return LanguageInfo(
+            language="kotlin",
+            test_framework=None,
+            formatter="spotless",
+            linter=None,
+            type_checker=None,
+            build_tool="gradle",
+            confidence=0.85,
         )
 
     def _detect_js_test_framework(self) -> str | None:

@@ -257,7 +257,7 @@ Before starting Phase 9.9, verify ALL previous phases are complete:
 4. **Configuration** - Document new options
 5. **Troubleshooting** - Add new issues
 
-#### 9.9.3.2: Update STATUS.md
+#### 9.9.3.2: Update roadmap / memory bank
 
 **Updates:**
 
@@ -530,7 +530,7 @@ Last Updated: 2026-01-XX
 ### Phase 9.9.3: Documentation
 
 - [ ] Update README.md
-- [ ] Update STATUS.md
+- [ ] Update roadmap / memory bank
 - [ ] Update .plan/README.md
 - [ ] Update activeContext.md
 - [ ] Update progress.md
@@ -571,7 +571,7 @@ Last Updated: 2026-01-XX
 | 9.9.2: Generate quality report | 1.0h | High |
 | 9.9.2: Security validation | 0.5h | Medium |
 | 9.9.3: Update README.md | 0.5h | Medium |
-| 9.9.3: Update STATUS.md | 0.5h | Medium |
+| 9.9.3: Update roadmap / memory bank | 0.5h | Medium |
 | 9.9.3: Update .plan/README.md | 0.5h | Medium |
 | 9.9.3: Update memory bank | 0.5h | Medium |
 | 9.9.3: Create completion summary | 1.0h | Medium |
@@ -589,7 +589,7 @@ Last Updated: 2026-01-XX
 
 2. **Documentation:**
    - Updated README.md
-   - Updated STATUS.md
+   - Updated roadmap / memory bank
    - Updated .plan/README.md
    - Phase 9 completion summary
    - Updated memory bank files

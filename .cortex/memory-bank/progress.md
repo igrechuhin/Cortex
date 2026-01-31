@@ -1,10 +1,18 @@
 # Progress Log
 
+## 2026-01-31
+
+- **Commit: Type fix (reportPrivateUsage)** - In progress (2026-01-31)
+  - Fixed 7 Pyright reportPrivateUsage errors: refactored test_language_detector.py (test via detect_language for package_json/tool behavior) and test_stub_adapter.py (test via format_code/run_tests for StubAdapterLanguage.OTHER). All 3133 tests passing; coverage 90.45%. Pyright 0 errors, 0 warnings.
+
+- ✅ **Session optimization (2026-01-31 review)** - COMPLETE (2026-01-31)
+- ✅ **Sync plans with roadmap** - COMPLETE (2026-01-31)
+- **Implement run** (2026-01-31) - No Blockers; no pending step. Documented Kotlin and Swift Pre-Commit Adapters as COMPLETE in roadmap.
+
 ## 2026-01-30
 
+- ✅ **Java Pre-Commit Adapter** - COMPLETE (2026-01-30)
 - **Commit: Type fix and phase5_execution_errors coverage** - In progress (2026-01-30)
-  - Fixed Pyright reportUnusedCallResult in tests/unit/test_fix_markdown_lint.py (lines 815–816: assign write_text result to _). Added tests/unit/test_phase5_execution_errors.py for phase5_execution_errors (create_missing_param_error, create_invalid_action_error, create_execution_error_response branches). All 3027 tests passing; coverage 90.02%. Plan archiving: 0 completed plans in .cortex/plans/ root.
-
 - ✅ **Go Pre-Commit Adapter** - COMPLETE (2026-01-30)
 - ✅ **Commit: Pre-commit checks and memory bank sync** - COMPLETE (2026-01-30)
 - ✅ **Commit: Type fix and file size compliance** - COMPLETE (2026-01-30)

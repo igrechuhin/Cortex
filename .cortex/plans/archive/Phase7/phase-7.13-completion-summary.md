@@ -216,7 +216,7 @@ python3 scripts/check_function_lengths.py
 ### Updated Files
 
 - `.plan/README.md` - Mark Phase 7.13 as complete
-- `.plan/STATUS.md` - Update progress to 100%
+- Update progress (roadmap / memory bank)
 
 ---
 

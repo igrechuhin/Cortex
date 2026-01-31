@@ -1,14 +1,19 @@
 # Active Context: Cortex
 
-## Current Focus (2026-01-30)
+## Current Focus (2026-01-31)
 
 See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
-- **Commit: type fix and coverage** - In progress (2026-01-30)
-  - Fixed Pyright reportUnusedCallResult in tests/unit/test_fix_markdown_lint.py (lines 815–816: assign write_text result to _). Added tests/unit/test_phase5_execution_errors.py for phase5_execution_errors (create_missing_param_error, create_invalid_action_error, create_execution_error_response branches). All 3027 tests passing; coverage 90.02%.
+- **Commit: type fix (reportPrivateUsage)** - In progress (2026-01-31)
+  - Fixed 7 Pyright reportPrivateUsage errors by refactoring tests to use public API only: test_language_detector.py (detect_language for package_json/tool behavior), test_stub_adapter.py (format_code/run_tests for language). All 3133 tests passing; coverage 90.45%. Pyright 0 errors, 0 warnings.
 
+- ✅ **Session optimization (2026-01-31 review)** - COMPLETE (2026-01-31)
+- ✅ **Sync plans with roadmap** - COMPLETE (2026-01-31)
+- ✅ **Kotlin Pre-Commit Adapter** - COMPLETE (2026-01-31)
+- ✅ **Swift Pre-Commit Adapter** - COMPLETE (2026-01-31)
+- ✅ **Java Pre-Commit Adapter** - COMPLETE (2026-01-30)
 - ✅ **Go Pre-Commit Adapter** - COMPLETE (2026-01-30)
 - ✅ **Session hang: run pre-commit adapter work off event loop** - COMPLETE (2026-01-30)
 - ✅ **Rust Pre-Commit Adapter** - COMPLETE (2026-01-30)
@@ -17,14 +22,15 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
-- Type fix (test_fix_markdown_lint reportUnusedCallResult). Phase5 execution errors unit tests; coverage ≥ 90%.
+- Plans synced with roadmap: completed plans archived; implement prompt has no-pending-step fallback.
 
 ## Project Health
 
-- **Tests**: 3027 passing; coverage 90.02%.
+- **Tests**: 3133+ passing; coverage ≥ 90%.
 - **Linting/Types**: Pyright 0 errors, 0 warnings.
-- **Pre-commit adapters**: Python, TypeScript, JavaScript, Rust, Go full; Java StubAdapter.
+- **Pre-commit adapters**: Python, TypeScript, JavaScript, Rust, Go, Java, Kotlin, Swift full implementations.
+- **Plans**: .cortex/plans/ in sync with roadmap.
 
 ## Next Focus
 
-- No blockers. Next: commit pipeline completion or Future Enhancements.
+- No blockers. Run commit pipeline to create commit when ready.

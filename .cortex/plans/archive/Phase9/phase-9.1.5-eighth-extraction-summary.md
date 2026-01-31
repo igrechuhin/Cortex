@@ -244,7 +244,7 @@ All integration tests passing:
 
 - [Phase 9.1.5 Function Extraction Report](./phase-9.1.5-function-extraction-report.md)
 - [Phase 9.1 Rules Compliance Plan](./phase-9.1-rules-compliance.md)
-- [STATUS.md](./STATUS.md)
+- [roadmap.md](../../../memory-bank/roadmap.md)
 
 ---
 

@@ -62,7 +62,7 @@ These are all **preventable** via tighter Synapse prompt/rule guardrails.
   - `agent-transcripts/8fe27...` around lines ~5296–5304.
 - **Impact**:
   - Harder to reproduce behavior in restricted environments.
-  - Risk of false matches (e.g., `STATUS.md`, `README.md` containing “complete”).
+  - Risk of false matches (e.g., `README.md` containing “complete”).
 
 ### Pattern 5: Reference hygiene issues triggering roadmap_sync invalid references
 
@@ -170,7 +170,7 @@ These are all **preventable** via tighter Synapse prompt/rule guardrails.
   - Replace shell `find`/`grep` instructions with:
     - `Glob` plan files (`phase-*.md*`) in the plans directory
     - `Grep` status markers in those files
-  - Ensure it ignores non-plan files like `README.md` and `STATUS.md`.
+  - Ensure it ignores non-plan files like `README.md`.
 - **Expected impact**: More reliable archiving detection and better consistency with repo tool policies.
 
 ### Recommendation 6: Make session optimization robust to “no load_context telemetry”

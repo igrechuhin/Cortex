@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.core.constants import MAX_FILE_LINES, MAX_FUNCTION_LINES
 from cortex.services.framework_adapters.base import (
     CheckResult,
     FrameworkAdapter,
@@ -19,16 +20,14 @@ from cortex.tools.pre_commit_helpers import (
     check_file_sizes,
     count_file_lines,
 )
+from cortex.tools.pre_commit_synapse import run_synapse_script
 from cortex.tools.pre_commit_tools import (
-    MAX_FILE_LINES,
-    MAX_FUNCTION_LINES,
     SUPPORTED_LANGUAGES,
     _check_function_lengths,  # pyright: ignore[reportPrivateUsage]
     _check_function_lengths_in_file,  # pyright: ignore[reportPrivateUsage]
     _get_adapter,  # pyright: ignore[reportPrivateUsage]
     execute_pre_commit_checks,
     fix_quality_issues,
-    run_synapse_script,
 )
 
 
@@ -455,10 +454,18 @@ class TestAdapterRegistry:
         assert adapter is None
 
     def test_supported_languages_includes_stub_languages(self) -> None:
-        """SUPPORTED_LANGUAGES includes TypeScript, JavaScript, Rust, Go, Java."""
-        for lang in ("typescript", "javascript", "rust", "go", "java"):
+        """SUPPORTED_LANGUAGES includes TypeScript, JavaScript, Rust, Go, Java, Swift, Kotlin."""
+        for lang in (
+            "typescript",
+            "javascript",
+            "rust",
+            "go",
+            "java",
+            "swift",
+            "kotlin",
+        ):
             assert lang in SUPPORTED_LANGUAGES
-        assert len(SUPPORTED_LANGUAGES) == 6
+        assert len(SUPPORTED_LANGUAGES) == 8
 
     def test_get_adapter_returns_typescript_adapter_for_typescript(self) -> None:
         """_get_adapter returns TypeScriptAdapter for typescript."""
@@ -531,6 +538,57 @@ class TestAdapterRegistry:
         adapter = _get_adapter(info, "/some/root")
         assert adapter is not None
         assert isinstance(adapter, GoAdapter)
+
+    def test_get_adapter_returns_java_adapter_for_java(self) -> None:
+        """_get_adapter returns JavaAdapter for java."""
+        from cortex.services.framework_adapters.java_adapter import JavaAdapter
+
+        info = LanguageInfo(
+            language="java",
+            test_framework=None,
+            formatter=None,
+            linter=None,
+            type_checker=None,
+            build_tool=None,
+            confidence=0.8,
+        )
+        adapter = _get_adapter(info, "/some/root")
+        assert adapter is not None
+        assert isinstance(adapter, JavaAdapter)
+
+    def test_get_adapter_returns_swift_adapter_for_swift(self) -> None:
+        """_get_adapter returns SwiftAdapter for swift."""
+        from cortex.services.framework_adapters.swift_adapter import SwiftAdapter
+
+        info = LanguageInfo(
+            language="swift",
+            test_framework=None,
+            formatter=None,
+            linter=None,
+            type_checker=None,
+            build_tool=None,
+            confidence=0.8,
+        )
+        adapter = _get_adapter(info, "/some/root")
+        assert adapter is not None
+        assert isinstance(adapter, SwiftAdapter)
+
+    def test_get_adapter_returns_kotlin_adapter_for_kotlin(self) -> None:
+        """_get_adapter returns KotlinAdapter for kotlin."""
+        from cortex.services.framework_adapters.kotlin_adapter import KotlinAdapter
+
+        info = LanguageInfo(
+            language="kotlin",
+            test_framework=None,
+            formatter=None,
+            linter=None,
+            type_checker=None,
+            build_tool=None,
+            confidence=0.8,
+        )
+        adapter = _get_adapter(info, "/some/root")
+        assert adapter is not None
+        assert isinstance(adapter, KotlinAdapter)
 
 
 class TestFixQualityIssues:

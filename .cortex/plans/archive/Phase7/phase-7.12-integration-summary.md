@@ -539,4 +539,4 @@ Phase 7.12 Security Audit Integration is **COMPLETE** with excellent results:
 - [Security Module](../src/cortex/security.py)
 - [Security Tests](../tests/unit/test_security.py)
 - [FileSystemManager](../src/cortex/file_system.py)
-- [STATUS.md](./STATUS.md)
+- [roadmap.md](../../../memory-bank/roadmap.md) (current status)

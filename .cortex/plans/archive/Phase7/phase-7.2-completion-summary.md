@@ -247,7 +247,7 @@ tests/
 1. [pytest.ini](../../pytest.ini) - Added coverage configuration ✅
 2. [pyproject.toml](../../pyproject.toml) - Added pytest-cov, pytest-mock ✅
 3. [.plan/README.md](.cursor/plans/README.md) - Updated Phase 7.2 status ✅
-4. [.plan/STATUS.md](.cursor/plans/STATUS.md) - Updated progress ✅
+4. Updated progress (roadmap / memory bank) ✅
 
 ---
 

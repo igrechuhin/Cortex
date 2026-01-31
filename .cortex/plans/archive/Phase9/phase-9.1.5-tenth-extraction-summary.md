@@ -316,4 +316,4 @@ Successfully extracted the tenth function `get_relevant_rules()` from 103 to 23 
 - [phase-9.1.5-seventh-extraction-summary.md](./phase-9.1.5-seventh-extraction-summary.md)
 - [phase-9.1.5-eighth-extraction-summary.md](./phase-9.1.5-eighth-extraction-summary.md)
 - [phase-9.1.5-ninth-extraction-summary.md](./phase-9.1.5-ninth-extraction-summary.md)
-- [STATUS.md](./STATUS.md)
+- [roadmap.md](../../../memory-bank/roadmap.md)

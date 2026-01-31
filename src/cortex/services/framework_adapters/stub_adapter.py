@@ -11,11 +11,9 @@ from .base import CheckResult, FrameworkAdapter, TestResult
 
 
 class StubAdapterLanguage(str, Enum):
-    """Languages that use StubAdapter (must match _ADAPTER_REGISTRY in pre_commit_tools)."""
+    """Languages that use StubAdapter (placeholder for future adapters)."""
 
-    TYPESCRIPT = "typescript"
-    JAVASCRIPT = "javascript"
-    JAVA = "java"
+    OTHER = "other"
 
 
 _NOT_IMPLEMENTED_MSG = "Adapter registered; full implementation not yet available"
@@ -24,8 +22,8 @@ _NOT_IMPLEMENTED_MSG = "Adapter registered; full implementation not yet availabl
 class StubAdapter(FrameworkAdapter):
     """Stub adapter for languages without full implementation.
 
-    Used for Java until a language-specific implementation is added.
-    Python, TypeScript, JavaScript, Rust, and Go have full adapters. All
+    Used for languages not yet in the adapter registry.
+    Python, TypeScript, JavaScript, Rust, Go, and Java have full adapters. All
     operations return a clear "not yet implemented" result.
     """
 
@@ -38,7 +36,7 @@ class StubAdapter(FrameworkAdapter):
 
         Args:
             project_root: Path to project root directory.
-            language: Language identifier (java).
+            language: Language identifier (e.g. other for future adapters).
         """
         super().__init__(project_root)
         if isinstance(language, StubAdapterLanguage):

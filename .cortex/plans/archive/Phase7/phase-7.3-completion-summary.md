@@ -269,7 +269,7 @@ gtimeout -k 5 150 uv run pytest tests/ --ignore=tests/test_token.py -x -q
   - [logging_config.py](../src/cortex/logging_config.py)
   - [responses.py](../src/cortex/responses.py)
   - [exceptions.py](../src/cortex/exceptions.py)
-- **Project Status:** [STATUS.md](./STATUS.md)
+- **Current status:** [.cortex/memory-bank/roadmap.md](../../../memory-bank/roadmap.md)
 
 ---
 

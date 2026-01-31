@@ -567,7 +567,7 @@ await cleanup_project_structure(
 ### Modified Files
 
 1. `src/cortex/tools/__init__.py` - Added phase8_structure import
-2. `.plan/STATUS.md` - Updated with Phase 8 completion details
+2. Roadmap / memory bank - Updated with Phase 8 completion details
 
 ---
 

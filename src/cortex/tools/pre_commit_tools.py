@@ -32,10 +32,12 @@ from cortex.services.framework_adapters.base import (
     TestResult,
 )
 from cortex.services.framework_adapters.go_adapter import GoAdapter
+from cortex.services.framework_adapters.java_adapter import JavaAdapter
 from cortex.services.framework_adapters.javascript_adapter import JavaScriptAdapter
+from cortex.services.framework_adapters.kotlin_adapter import KotlinAdapter
 from cortex.services.framework_adapters.python_adapter import PythonAdapter
 from cortex.services.framework_adapters.rust_adapter import RustAdapter
-from cortex.services.framework_adapters.stub_adapter import StubAdapter
+from cortex.services.framework_adapters.swift_adapter import SwiftAdapter
 from cortex.services.framework_adapters.typescript_adapter import TypeScriptAdapter
 from cortex.services.language_detector import LanguageInfo
 
@@ -64,15 +66,16 @@ from cortex.tools.pre_commit_helpers import (
 from cortex.tools.pre_commit_synapse import run_synapse_script
 
 # Adapter registry: language -> factory(project_root) -> FrameworkAdapter.
-# Python, TypeScript, JavaScript, Rust, and Go have full implementations; Java
-# uses StubAdapter until a language-specific implementation is added.
+# Python, TypeScript, JavaScript, Rust, Go, Java, Swift, and Kotlin have full implementations.
 _ADAPTER_REGISTRY: dict[str, Callable[[str | None], FrameworkAdapter]] = {
     "python": lambda root: PythonAdapter(root),
     "typescript": lambda root: TypeScriptAdapter(root),
     "javascript": lambda root: JavaScriptAdapter(root),
     "rust": lambda root: RustAdapter(root),
     "go": lambda root: GoAdapter(root),
-    "java": lambda root: StubAdapter(root, "java"),
+    "java": lambda root: JavaAdapter(root),
+    "swift": lambda root: SwiftAdapter(root),
+    "kotlin": lambda root: KotlinAdapter(root),
 }
 SUPPORTED_LANGUAGES: tuple[str, ...] = tuple(_ADAPTER_REGISTRY.keys())
 
@@ -121,8 +124,8 @@ async def execute_pre_commit_checks(
         checks: List of checks to perform. Options: "fix_errors",
             "format", "format_ci_parity", "type_check", "quality",
             "test_naming", "tests". If None, performs all checks.
-        language: Project language (python, typescript, javascript, rust, go).
-            If None, auto-detects from project structure.
+        language: Project language (python, typescript, javascript, rust, go,
+            java, swift, kotlin). If None, auto-detects from project structure.
         project_root: Path to project root directory. If None, uses current directory.
         timeout: Maximum time in seconds for test execution. If None, no timeout.
         coverage_threshold: Minimum test coverage percentage required (0.0-1.0).

@@ -319,4 +319,4 @@ Phase 9.1.5 first extraction is **100% successful**. The most critical function 
 
 - [phase-9.1.5-function-extraction-report.md](./phase-9.1.5-function-extraction-report.md) - Full violation analysis
 - [phase-9.1-rules-compliance.md](./phase-9.1-rules-compliance.md) - Overall phase 9.1 plan
-- [STATUS.md](./STATUS.md) - Project status
+- [roadmap.md](../../../memory-bank/roadmap.md) - Current status

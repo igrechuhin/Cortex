@@ -293,4 +293,4 @@ Successfully extracted the ninth function `rules()` from 102 to 28 logical lines
 - [phase-9.1.5-sixth-extraction-summary.md](./phase-9.1.5-sixth-extraction-summary.md)
 - [phase-9.1.5-seventh-extraction-summary.md](./phase-9.1.5-seventh-extraction-summary.md)
 - [phase-9.1.5-eighth-extraction-summary.md](./phase-9.1.5-eighth-extraction-summary.md)
-- [STATUS.md](./STATUS.md)
+- [roadmap.md](../../../memory-bank/roadmap.md)

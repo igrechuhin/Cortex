@@ -333,7 +333,7 @@ async def tool_name(...):
 
 ### Documentation Updated
 
-- [.plan/STATUS.md](STATUS.md) - Added Phase 7.1.1 completion section
+- Updated roadmap/memory bank - Added Phase 7.1.1 completion section
 - [.plan/README.md](README.md) - Updated Phase 7 status and timeline
 - [.plan/phase-7.1.1-completion-summary.md](phase-7.1.1-completion-summary.md) - This document
 

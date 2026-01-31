@@ -108,7 +108,7 @@ Out of scope:
   - Replaced shell `find`/`grep` with preferred tool primitives:
     - **"Use `Glob` tool to find plan files**: `Glob(pattern="phase-*.md*", path=".cortex/plans")`**
     - **"Use `Grep` tool to search for status markers**: `Grep(pattern="Status.*COMPLETE", path=".cortex/plans", files=["phase-*.md"])`**
-  - Ensure archiving logic ignores non-plan files like `README.md`, `STATUS.md`, `QUICK_START.md`
+  - Ensure archiving logic ignores non-plan files like `README.md`, `QUICK_START.md`
   - Add explicit guidance: **"NEVER use shell `find` or `grep` for file operations. Use standard tools (`Glob`, `Grep`, `Read`, `LS`) instead."**
 - **Expected impact**: More reliable archiving detection and better consistency with repo tool policies. Plan-archiver already uses Glob/Grep, "NEVER use shell find or grep", and excludes non-plan files.
 

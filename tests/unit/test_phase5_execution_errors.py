@@ -40,6 +40,18 @@ class TestCreateExecutionErrorResponse:
         assert data["status"] == "error"
         assert "validate_first" in data.get("action_required", "")
 
+    def test_validation_error_type_name_hits_validation_branch(self) -> None:
+        """Error type name containing ValidationError hits validation branch."""
+
+        class ValidationError(ValueError):
+            pass
+
+        error = ValidationError("invalid")
+        result = create_execution_error_response(error)
+        data = json.loads(result)
+        assert data["status"] == "error"
+        assert "validate_first" in data.get("action_required", "")
+
     def test_permission_error_branch_sets_permission_action_required(self) -> None:
         error = PermissionError("permission denied")
         result = create_execution_error_response(error)

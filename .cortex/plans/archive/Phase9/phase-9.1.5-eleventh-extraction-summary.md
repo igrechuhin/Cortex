@@ -227,7 +227,7 @@ This is an MCP tool function that should be extracted next to maintain consisten
 
 1. ✅ `src/cortex/refactoring/learning_data_manager.py` - Extracted 7 helper functions
 2. ✅ `.plan/phase-9.1.5-eleventh-extraction-summary.md` - This document
-3. ⏳ `.plan/STATUS.md` - Update progress to 11/140 (7.9%)
+3. ⏳ Update progress (roadmap / memory bank)
 
 ## Lessons Learned
 
@@ -271,5 +271,5 @@ gtimeout -k 5 300 ./.venv/bin/pytest tests/integration/ -v
 **See Also:**
 
 - [phase-9.1.5-function-extraction-report.md](./phase-9.1.5-function-extraction-report.md)
-- [STATUS.md](./STATUS.md)
+- [roadmap.md](../../../memory-bank/roadmap.md)
 - [phase-9.1-rules-compliance.md](./phase-9.1-rules-compliance.md)

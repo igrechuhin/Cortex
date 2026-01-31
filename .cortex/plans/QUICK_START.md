@@ -115,7 +115,7 @@ python test_phase2.py
 
 ## Resources
 
-- **Complete Status:** [STATUS.md](./STATUS.md)
+- **Current status:** [.cortex/memory-bank/roadmap.md](../memory-bank/roadmap.md)
 - **Phase 1 Plan:** [phase-1-foundation.md](./phase-1-foundation.md)
 - **Phase 2 Plan:** [phase-2-dry-linking.md](./phase-2-dry-linking.md)
 - **Architecture:** [README.md](./README.md)

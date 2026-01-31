@@ -411,4 +411,4 @@ gtimeout -k 5 300 .venv/bin/python -m pytest tests/integration/ -v
 - [Phase 9.1.5 Function Extraction Report](./phase-9.1.5-function-extraction-report.md)
 - [Fifth Extraction Summary](./phase-9.1.5-fifth-extraction-summary.md)
 - [Phase 9.1 Rules Compliance Plan](./phase-9.1-rules-compliance.md)
-- [STATUS.md](./STATUS.md)
+- [roadmap.md](../../../memory-bank/roadmap.md)
