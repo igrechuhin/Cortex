@@ -729,6 +729,93 @@ class TestFixMarkdownLintTool:
             assert len(passed_files) == MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL
 
 
+class TestFixMarkdownLintContextLogging:
+    """Test fix_markdown_lint Context logging (FastMCP)."""
+
+    @pytest.mark.asyncio
+    async def test_fix_markdown_lint_calls_log_client_on_start_and_completion_when_ctx_passed(
+        self, tmp_path: Path
+    ) -> None:
+        """When ctx is passed, fix_markdown_lint logs start and completion."""
+        # Arrange
+        from cortex.tools.markdown_operations import fix_markdown_lint
+
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.markdown_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.markdown_operations.get_project_root",
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.markdown_operations._run_command",
+                new_callable=AsyncMock,
+            ) as mock_run,
+            patch(
+                "cortex.tools.markdown_operations._find_markdownlint_command",
+                new_callable=AsyncMock,
+                return_value=["markdownlint-cli2"],
+            ),
+            patch(
+                "cortex.tools.markdown_operations._get_markdown_files_to_process",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
+        ):
+            mock_run.return_value = GitCommandResult(
+                success=True, stdout="", stderr="", returncode=0
+            )
+
+            # Act
+            result_str = await fix_markdown_lint(
+                project_root=str(tmp_path), ctx=mock_ctx
+            )
+            result = json.loads(result_str)
+
+            # Assert
+            assert result["success"] is True
+            args_list = [c[0] for c in mock_log.call_args_list]
+            levels_and_messages = [(a[1], a[2]) for a in args_list]
+            assert ("info", "fix_markdown_lint: starting") in levels_and_messages
+            assert ("info", "fix_markdown_lint: completed") in levels_and_messages
+
+    @pytest.mark.asyncio
+    async def test_fix_markdown_lint_calls_log_client_error_on_exception_when_ctx_passed(
+        self, tmp_path: Path
+    ) -> None:
+        """When impl raises and ctx is passed, fix_markdown_lint logs error."""
+        # Arrange
+        from cortex.tools.markdown_operations import fix_markdown_lint
+
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.markdown_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.markdown_operations.get_project_root",
+                side_effect=ValueError("Test error"),
+            ),
+        ):
+            # Act
+            result_str = await fix_markdown_lint(
+                project_root=str(tmp_path), ctx=mock_ctx
+            )
+            result = json.loads(result_str)
+
+            # Assert
+            assert result["success"] is False
+            assert any(
+                c[0][1] == "error" and "fix_markdown_lint: failed:" in str(c[0][2])
+                for c in mock_log.call_args_list
+                if len(c[0]) >= 3
+            )
+
+
 class TestHelperFunctions:
     """Test helper functions in markdown_operations."""
 

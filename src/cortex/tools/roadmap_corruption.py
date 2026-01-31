@@ -12,6 +12,7 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.managers.initialization import get_project_root
 from cortex.server import mcp
@@ -324,10 +325,31 @@ def _create_roadmap_success_response(matches: list[CorruptionMatch]) -> str:
     return json.dumps(result.model_dump(), indent=2)
 
 
+def _fix_roadmap_corruption_run(
+    project_root: str | None, dry_run: bool
+) -> tuple[str, bool]:
+    """Run roadmap fix: path check, read, detect, apply. Return (response, ok)."""
+    root_path = Path(get_project_root(project_root))
+    roadmap_path = root_path / ".cortex" / "memory-bank" / "roadmap.md"
+    if not roadmap_path.exists():
+        return (
+            _create_roadmap_error_response(f"roadmap.md not found at {roadmap_path}"),
+            False,
+        )
+    content = roadmap_path.read_text(encoding="utf-8")
+    matches = _detect_roadmap_corruption(content)
+    if not dry_run and matches:
+        fixed_content = _apply_roadmap_fixes(content, matches)
+        _ = roadmap_path.write_text(fixed_content, encoding="utf-8")
+    return (_create_roadmap_success_response(matches), True)
+
+
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def fix_roadmap_corruption(
-    project_root: str | None = None, dry_run: bool = False
+    project_root: str | None = None,
+    dry_run: bool = False,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Fix text corruption in roadmap.md file.
 
@@ -342,18 +364,25 @@ async def fix_roadmap_corruption(
     Detects and fixes corruption patterns: missing spaces/newlines, corrupted
     text like 'ented'->'Implemented', malformed dates, corrupted scores.
     """
+    await log_client(
+        ctx, "info", "fix_roadmap_corruption: starting", logger_name=__name__
+    )
     try:
-        root_path = Path(get_project_root(project_root))
-        roadmap_path = root_path / ".cortex" / "memory-bank" / "roadmap.md"
-        if not roadmap_path.exists():
-            return _create_roadmap_error_response(
-                f"roadmap.md not found at {roadmap_path}"
+        result, ok = _fix_roadmap_corruption_run(project_root, dry_run)
+        if ok:
+            await log_client(
+                ctx, "info", "fix_roadmap_corruption: completed", logger_name=__name__
             )
-        content = roadmap_path.read_text(encoding="utf-8")
-        matches = _detect_roadmap_corruption(content)
-        if not dry_run and matches:
-            fixed_content = _apply_roadmap_fixes(content, matches)
-            _ = roadmap_path.write_text(fixed_content, encoding="utf-8")
-        return _create_roadmap_success_response(matches)
+        else:
+            await log_client(
+                ctx,
+                "warning",
+                "fix_roadmap_corruption: roadmap not found",
+                logger_name=__name__,
+            )
+        return result
     except Exception as e:
+        await log_client(
+            ctx, "error", f"fix_roadmap_corruption: failed: {e}", logger_name=__name__
+        )
         return _create_roadmap_error_response(str(e))

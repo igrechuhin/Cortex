@@ -7,7 +7,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 ### Active Work
 
 - **Ensure proper logging (FastMCP context)** - IN PROGRESS (2026-01-31)
-  - Phase 1 and Phase 2 foundation done: logging guidelines (`docs/development/logging-guidelines.md`), `context_logging.py` (log_client, report_progress_safe), `manage_file`, `validate`, `analyze`, and `configure` refactored with optional ctx and client-visible logging. Unit tests: test_context_logging.py, TestValidateContextLogging, TestAnalyzeContextLogging, TestConfigureContextLogging. Remaining: Phase 2.3 (markdown_operations, rules_operations), Phases 3–5 (remaining phase* tools, synapse_tools, pre_commit_tools, tests, docs). Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
+  - Phase 1 and Phase 2 foundation done; Phase 2.3 extended: `manage_file`, `validate`, `analyze`, `configure`, `fix_markdown_lint`, `rules`, and `fix_roadmap_corruption` refactored with optional ctx and client-visible logging via `log_client`. Unit tests: test_context_logging.py, TestValidateContextLogging, TestAnalyzeContextLogging, TestConfigureContextLogging, TestFixMarkdownLintContextLogging, TestRulesContextLogging, TestFixRoadmapCorruptionContextLogging. Remaining: Phase 3 (phase1_foundation_*, phase2_linking, phase3_validation, phase4_optimization, phase5_*, phase8_structure, synapse_tools, pre_commit_tools), Phases 4–5 (tests, docs). Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
 
 - ✅ **Conditional prompt registration** - COMPLETE (2026-01-31)
 - ✅ **Commit: type fix (reportPrivateUsage)** - COMPLETE (2026-01-31)
@@ -24,15 +24,17 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
+- Commit (2026-01-31): function length refactors for `_execute_rules_operation`, `fix_markdown_lint`, `fix_roadmap_corruption` (extracted _run_rules_operation_impl, _fix_markdown_lint_run_or_error, _fix_roadmap_corruption_run); markdown lint 3 files fixed; 3157 tests passing, 90.47% coverage.
+- Ensure proper logging: fix_markdown_lint, rules, fix_roadmap_corruption refactored with Context logging; TestFixMarkdownLintContextLogging, TestRulesContextLogging, TestFixRoadmapCorruptionContextLogging added; 3157 tests passing.
 - Ensure proper logging: analyze and configure tools refactored with Context logging (optional ctx, log_client for start/invalid/complete/error); TestAnalyzeContextLogging and TestConfigureContextLogging added; 3150 tests passing, 90.46% coverage.
 - Ensure proper logging: validate tool refactored with Context logging; TestValidateContextLogging added.
 - Commit (2026-01-31): function length fix for `manage_file` (extracted `_manage_file_run_or_error`), markdown lint fixes (10 files), 3140 tests passing, 90.45% coverage.
-- Ensure proper logging: Phase 1 (guidelines) and Phase 2 foundation (context_logging.py, manage_file with ctx logging).
-- Conditional prompt registration: documentation for conditional prompt availability added.
+- Ensure proper logging: Phase 1 and Phase 2 foundation (context_logging.py, manage_file with ctx logging).
+- Conditional prompt registration: documentation for conditional availability added.
 
 ## Project Health
 
-- **Tests**: 3150+ passing; coverage ≥ 90%.
+- **Tests**: 3157+ passing; coverage ≥ 90%.
 - **Linting/Types**: Pyright 0 errors, 0 warnings.
 - **Pre-commit adapters**: Python, TypeScript, JavaScript, Rust, Go, Java, Kotlin, Swift full implementations.
 - **Plans**: Plans directory in sync with roadmap.
@@ -40,4 +42,4 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Next Focus
 
-- Continue **Ensure proper logging (FastMCP context)**: Phase 2.3 next tools (markdown_operations, rules_operations) or Phase 3 (phase1–8 tools, synapse_tools, pre_commit_tools); or run commit pipeline when ready.
+- Continue **Ensure proper logging (FastMCP context)**: Phase 3 (phase1–8 tools, synapse_tools, pre_commit_tools); or run commit pipeline when ready.

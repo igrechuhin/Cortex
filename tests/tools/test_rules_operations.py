@@ -921,3 +921,102 @@ async def test_rules_missing_operation_returns_friendly_error(
         assert "missing required parameter" in result_dict["error"].lower()
         assert result_dict["details"]["missing"] == ["operation"]
         assert "operation_values" in result_dict["details"]
+
+
+# ============================================================================
+# Test rules Context logging (FastMCP)
+# ============================================================================
+
+
+class TestRulesContextLogging:
+    """Test rules tool Context logging (FastMCP)."""
+
+    @pytest.mark.asyncio
+    async def test_rules_calls_log_client_on_start_and_completion_when_ctx_passed(
+        self,
+        mock_managers_enabled: dict[str, Any],
+    ) -> None:
+        """When ctx is passed, rules logs start and completion via log_client."""
+        # Arrange
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.rules_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.rules_operations.get_project_root",
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.rules_operations.get_managers",
+                AsyncMock(return_value=mock_managers_enabled),
+            ),
+        ):
+            # Act
+            result = await rules(operation="index", ctx=mock_ctx)
+
+            # Assert
+            assert json.loads(result)["status"] == "success"
+            args_list = [c[0] for c in mock_log.call_args_list]
+            levels_and_messages = [(a[1], a[2]) for a in args_list]
+            assert ("info", "rules: starting") in levels_and_messages
+            assert ("info", "rules: completed") in levels_and_messages
+
+    @pytest.mark.asyncio
+    async def test_rules_calls_log_client_warning_on_invalid_operation_when_ctx_passed(
+        self,
+    ) -> None:
+        """When operation is invalid and ctx is passed, rules logs warning."""
+        # Arrange
+        mock_ctx = AsyncMock()
+        with patch(
+            "cortex.tools.rules_operations.log_client",
+            new_callable=AsyncMock,
+        ) as mock_log:
+            # Act
+            result = await rules(operation="invalid_op", ctx=mock_ctx)
+
+            # Assert
+            result_data = json.loads(result)
+            assert "error" in result_data or "status" in result_data
+            assert any(
+                c[0][1] == "warning"
+                and c[0][2] == "rules: invalid or missing operation"
+                for c in mock_log.call_args_list
+                if len(c[0]) >= 3
+            )
+
+    @pytest.mark.asyncio
+    async def test_rules_calls_log_client_error_on_exception_when_ctx_passed(
+        self,
+    ) -> None:
+        """When _execute_rules_operation raises and ctx is passed, rules logs error."""
+        # Arrange
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.rules_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.rules_operations.get_project_root",
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.rules_operations.get_managers",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("Setup failed"),
+            ),
+        ):
+            # Act
+            result = await rules(operation="index", ctx=mock_ctx)
+
+            # Assert
+            result_data = json.loads(result)
+            assert result_data.get("status") == "error"
+            assert any(
+                c[0][1] == "error" and "rules: failed:" in str(c[0][2])
+                for c in mock_log.call_args_list
+                if len(c[0]) >= 3
+            )

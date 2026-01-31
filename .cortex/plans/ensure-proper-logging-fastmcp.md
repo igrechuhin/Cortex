@@ -175,7 +175,7 @@ This allows:
   - Context-aware logging wrapper (log to ctx when present, else std logger)
   - Typed with `Context[ServerSession, object]` for MCP SDK compatibility
 
-#### Step 2.3: Refactor Core Tools — manage_file DONE, validate DONE, analyze DONE, configure DONE
+#### Step 2.3: Refactor Core Tools — manage_file DONE, validate DONE, analyze DONE, configure DONE, markdown DONE, rules DONE
 
 Start with high-priority tools:
 
@@ -183,6 +183,9 @@ Start with high-priority tools:
 - [x] `validation_operations.py` - `validate` (optional `ctx: MCPContext | None`; entry/invalid check_type/exit/error via `log_client`; unit tests in TestValidateContextLogging)
 - [x] `analysis_operations.py` - `analyze` (optional `ctx: MCPContext | None`; entry/invalid target/exit/error via `log_client`; _analyze_run_or_error; unit tests in TestAnalyzeContextLogging) — 2026-01-31
 - [x] `configuration_operations.py` - `configure` (optional `ctx: MCPContext | None`; entry/invalid action/invalid component/exit/error via `log_client`; unit tests in TestConfigureContextLogging) — 2026-01-31
+- [x] `markdown_operations.py` - `fix_markdown_lint` (optional `ctx: MCPContext | None`; entry/exit/error via `log_client`; unit tests in TestFixMarkdownLintContextLogging) — 2026-01-31
+- [x] `roadmap_corruption.py` - `fix_roadmap_corruption` (optional `ctx: MCPContext | None`; entry/warning/exit/error via `log_client`; unit tests in TestFixRoadmapCorruptionContextLogging) — 2026-01-31
+- [x] `rules_operations.py` - `rules` (optional `ctx: MCPContext | None`; entry/warning/exit/error via `log_client`; unit tests in TestRulesContextLogging) — 2026-01-31
 
 For each tool:
 
@@ -200,10 +203,10 @@ For each tool:
 - ] Update to use `get_context()` for logging when needed
 - [ ] Ensure context is only accessed during request context
 
-### Phase 3omplete Tool Migration (Week 2 Step 31 Refactor Remaining Tools
+### Phase 3: Complete Tool Migration (Week 2 Step 3.1) Refactor Remaining Tools
 
-- ] `markdown_operations.py`
-- ] `rules_operations.py`
+- [x] `markdown_operations.py` — 2026-01-31
+- [x] `rules_operations.py` — 2026-01-31
 - [ ] `phase1foundation_*.py` tools
 - [ ] `phase2king.py` tools
 - ] `phase3_validation.py` tools

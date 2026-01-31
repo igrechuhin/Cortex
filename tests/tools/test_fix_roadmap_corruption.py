@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -75,3 +75,78 @@ class TestFixRoadmapCorruption:
         assert result["corruption_count"] >= 1
         updated = roadmap_path.read_text(encoding="utf-8")
         assert "Target completion: 2026-01-01" in updated
+
+
+class TestFixRoadmapCorruptionContextLogging:
+    """Test fix_roadmap_corruption Context logging (FastMCP)."""
+
+    @pytest.mark.asyncio
+    async def test_fix_roadmap_corruption_calls_log_client_on_start_and_completion_when_ctx_passed(
+        self, tmp_path: Path
+    ) -> None:
+        """When ctx is passed, fix_roadmap_corruption logs start and completion."""
+        # Arrange
+        roadmap_path = tmp_path / ".cortex" / "memory-bank" / "roadmap.md"
+        roadmap_path.parent.mkdir(parents=True, exist_ok=True)
+        _ = roadmap_path.write_text("# Roadmap\n\n## Section\n", encoding="utf-8")
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.roadmap_corruption.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.roadmap_corruption.get_project_root",
+                return_value=str(tmp_path),
+            ),
+        ):
+            # Act
+            result_str = await fix_roadmap_corruption(
+                project_root=str(tmp_path), dry_run=True, ctx=mock_ctx
+            )
+            result = json.loads(result_str)
+
+            # Assert
+            assert result["success"] is True
+            args_list = [c[0] for c in mock_log.call_args_list]
+            levels_and_messages = [(a[1], a[2]) for a in args_list]
+            assert (
+                "info",
+                "fix_roadmap_corruption: starting",
+            ) in levels_and_messages
+            assert (
+                "info",
+                "fix_roadmap_corruption: completed",
+            ) in levels_and_messages
+
+    @pytest.mark.asyncio
+    async def test_fix_roadmap_corruption_calls_log_client_warning_when_file_missing_when_ctx_passed(
+        self, tmp_path: Path
+    ) -> None:
+        """When roadmap not found and ctx is passed, logs warning."""
+        # Arrange
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.roadmap_corruption.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.roadmap_corruption.get_project_root",
+                return_value=str(tmp_path),
+            ),
+        ):
+            # Act
+            result_str = await fix_roadmap_corruption(
+                project_root=str(tmp_path), dry_run=True, ctx=mock_ctx
+            )
+            result = json.loads(result_str)
+
+            # Assert
+            assert result["success"] is False
+            assert any(
+                c[0][1] == "warning"
+                and "fix_roadmap_corruption: roadmap not found" in str(c[0][2])
+                for c in mock_log.call_args_list
+                if len(c[0]) >= 3
+            )

@@ -24,6 +24,7 @@ from cortex.core.constants import (
     MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL,
     MCP_TOOL_TIMEOUT_VERY_COMPLEX,
 )
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import GitCommandResult
 from cortex.managers.initialization import get_project_root
@@ -808,6 +809,39 @@ async def _run_markdownlint_with_cache(
     return _build_fix_response(results)
 
 
+async def _fix_markdown_lint_run_or_error(
+    ctx: MCPContext | None,
+    project_root: str | None,
+    include_untracked_markdown: bool,
+    dry_run: bool,
+    check_all_files: bool,
+) -> tuple[str, bool]:
+    """Run fix_markdown_lint impl; return (result_json, success)."""
+    try:
+        result = await _fix_markdown_lint_impl(
+            project_root,
+            include_untracked_markdown,
+            dry_run,
+            check_all_files,
+        )
+        return (result, True)
+    except asyncio.CancelledError:
+        raise
+    except Exception as e:
+        await log_client(
+            ctx, "error", f"fix_markdown_lint: failed: {e}", logger_name=__name__
+        )
+        return (_create_error_response(str(e)), False)
+    except BaseException as e:  # pragma: no cover - defensive guardrail
+        await log_client(
+            ctx,
+            "error",
+            f"fix_markdown_lint: fatal: {e!r}",
+            logger_name=__name__,
+        )
+        return (_create_error_response(f"Fatal markdown lint error: {e!r}"), False)
+
+
 @mcp.tool()
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
 async def fix_markdown_lint(
@@ -815,6 +849,7 @@ async def fix_markdown_lint(
     include_untracked_markdown: bool = False,
     dry_run: bool = False,
     check_all_files: bool = False,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Fix markdownlint errors in markdown files.
 
@@ -832,22 +867,19 @@ async def fix_markdown_lint(
     The return value is a JSON string encoded from `FixMarkdownLintResult`
     with aggregate counts and per-file `FileResult` entries.
     """
-    try:
-        return await _fix_markdown_lint_impl(
-            project_root,
-            include_untracked_markdown,
-            dry_run,
-            check_all_files,
+    await log_client(ctx, "info", "fix_markdown_lint: starting", logger_name=__name__)
+    result, ok = await _fix_markdown_lint_run_or_error(
+        ctx,
+        project_root,
+        include_untracked_markdown,
+        dry_run,
+        check_all_files,
+    )
+    if ok:
+        await log_client(
+            ctx, "info", "fix_markdown_lint: completed", logger_name=__name__
         )
-    except asyncio.CancelledError:
-        raise  # Let cancellation propagate so the server can shut down cleanly
-    except Exception as e:
-        # Normal error path: return structured JSON error instead of crashing MCP
-        return _create_error_response(str(e))
-    except BaseException as e:  # pragma: no cover - defensive guardrail
-        # Defensive: catch SystemExit/KeyboardInterrupt-style errors so the
-        # MCP server doesn't terminate with a closed-connection error.
-        return _create_error_response(f"Fatal markdown lint error: {e!r}")
+    return result
 
 
 def _detect_roadmap_corruption(  # pyright: ignore[unused-function]

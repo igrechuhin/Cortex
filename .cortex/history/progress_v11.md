@@ -2,6 +2,10 @@
 
 ## 2026-01-31
 
+- **Commit: function length and markdown lint** (2026-01-31) - Refactored `_execute_rules_operation` (extracted `_run_rules_operation_impl`), `fix_markdown_lint` (extracted `_fix_markdown_lint_run_or_error`), and `fix_roadmap_corruption` (extracted `_fix_roadmap_corruption_run`) to meet 30-line limit. Markdown lint: 3 files fixed (activeContext.md, progress.md, ensure-proper-logging-fastmcp.md). Pre-commit: fix_errors, format, markdown lint, type_check, quality, tests (3157 passed, 90.47% coverage). 0 plans archived.
+
+- **Ensure proper logging (FastMCP context): markdown_operations, rules_operations, fix_roadmap_corruption** (2026-01-31) - Refactored `fix_markdown_lint` in markdown_operations.py, `rules` in rules_operations.py, and `fix_roadmap_corruption` in roadmap_corruption.py to use optional `ctx: MCPContext | None` with entry/exit/error (and warning where applicable) logging via `log_client`. Added unit tests: TestFixMarkdownLintContextLogging, TestRulesContextLogging, TestFixRoadmapCorruptionContextLogging. All 3157 tests passing. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md (Phase 2.3 markdown/rules and roadmap_corruption done; Phase 3 remaining: phase1–8 tools, synapse_tools, pre_commit_tools).
+
 - **Commit: pre-commit and memory bank** (2026-01-31) - fix_errors, format, markdown lint (3 files fixed), type_check, quality, tests (3150 passed, 90.46% coverage). 0 plans archived; memory bank updated.
 
 - **Ensure proper logging (FastMCP context): analyze and configure tools** (2026-01-31) - Refactored `analyze` in analysis_operations.py and `configure` in configuration_operations.py to use optional `ctx: MCPContext | None` with entry/invalid target or action/component/exit/error logging via `log_client`. Added `_analyze_run_or_error` helper; unit tests in TestAnalyzeContextLogging and TestConfigureContextLogging (start and completion, invalid target/action/component warning, exception error path). All 3150 tests passing; coverage 90.46%. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md (Phase 2.3 analyze and configure done; next: markdown_operations, rules_operations, phase* tools).

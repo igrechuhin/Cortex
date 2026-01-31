@@ -10,6 +10,7 @@ Total: 1 tool
 import json
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import ModelDict
 from cortex.managers.initialization import get_managers, get_project_root
@@ -185,6 +186,7 @@ async def rules(
     task_description: str | None = None,
     max_tokens: int | None = None,
     min_relevance_score: float | None = None,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Manage custom rules for Memory Bank with indexing and intelligent retrieval.
 
@@ -449,14 +451,45 @@ async def rules(
         - Index results include cache_hit flag indicating whether cached index used
           or fresh indexing performed
     """
+    await log_client(ctx, "info", "rules: starting", logger_name=__name__)
     parsed = parse_rules_operation(operation)
     if parsed is None:
+        await log_client(ctx, "warning", "rules: invalid or missing operation")
         if operation is None:
             return build_missing_rules_parameters_error()
         return build_invalid_operation_error(operation)
     return await _execute_rules_operation(
         parsed,
         project_root,
+        force,
+        task_description,
+        max_tokens,
+        min_relevance_score,
+        ctx,
+    )
+
+
+async def _run_rules_operation_impl(
+    operation: RulesOperation,
+    project_root: str | None,
+    force: bool,
+    task_description: str | None,
+    max_tokens: int | None,
+    min_relevance_score: float | None,
+) -> str:
+    """Run rules operation: resolve managers, check enabled, dispatch."""
+    root = get_project_root(project_root)
+    mgrs = await get_managers(root)
+    rules_manager = await get_manager(mgrs, "rules_manager", RulesManager)
+    optimization_config = await get_manager(
+        mgrs, "optimization_config", OptimizationConfig
+    )
+    if error_msg := await check_rules_enabled(optimization_config):
+        return error_msg
+    return await dispatch_operation(
+        operation,
+        rules_manager,
+        optimization_config,
         force,
         task_description,
         max_tokens,
@@ -471,27 +504,22 @@ async def _execute_rules_operation(
     task_description: str | None,
     max_tokens: int | None,
     min_relevance_score: float | None,
+    ctx: MCPContext | None,
 ) -> str:
     """Execute rules operation with error handling."""
     try:
-        root = get_project_root(project_root)
-        mgrs = await get_managers(root)
-        rules_manager = await get_manager(mgrs, "rules_manager", RulesManager)
-        optimization_config = await get_manager(
-            mgrs, "optimization_config", OptimizationConfig
-        )
-        if error_msg := await check_rules_enabled(optimization_config):
-            return error_msg
-        return await dispatch_operation(
+        result = await _run_rules_operation_impl(
             operation,
-            rules_manager,
-            optimization_config,
+            project_root,
             force,
             task_description,
             max_tokens,
             min_relevance_score,
         )
+        await log_client(ctx, "info", "rules: completed", logger_name=__name__)
+        return result
     except Exception as e:
+        await log_client(ctx, "error", f"rules: failed: {e}", logger_name=__name__)
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,

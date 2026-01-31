@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-01-31T13:21:01.905713",
+  "last_updated": "2026-01-31T13:56:11.315525",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
@@ -571,11 +571,11 @@
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 3693,
-      "token_count": 1001,
+      "size_bytes": 4927,
+      "token_count": 1326,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-31T13:21:01.904253",
-      "content_hash": "sha256:0ab2e85236eebe7115858cd05ee132c233c55cec489e214a97fbdd51f1c0aca4",
+      "last_modified": "2026-01-31T13:56:00.581609",
+      "content_hash": "sha256:dc2d7f2a98d80e7b49b687d015e12b5a6a427f09fd9c6adc527ae48fa5a4c209",
       "sections": [
         {
           "title": "## 2026-01-31",
@@ -587,21 +587,21 @@
         {
           "title": "## 2026-01-30",
           "level": 2,
-          "line_start": 23,
-          "line_end": 23,
+          "line_start": 27,
+          "line_end": 27,
           "content_hash": null
         },
         {
           "title": "## 2026-01-29",
           "level": 2,
-          "line_start": 34,
-          "line_end": 34,
+          "line_start": 38,
+          "line_end": 38,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 63,
-      "last_read": "2026-01-31T13:21:01.904253",
+      "write_count": 65,
+      "last_read": "2026-01-31T13:56:00.581609",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -1297,17 +1297,39 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Added commit run entry for pre-commit and memory bank sync"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-31T13:37:41.677418",
+          "content_hash": "sha256:c5bcb4206888fec580ff33c00c3ffc495caff3ee8a42d635e2f77e5f6ea1a515",
+          "size_bytes": 4403,
+          "token_count": 1181,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for Ensure proper logging: markdown_operations, rules_operations, fix_roadmap_corruption"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-31T13:56:00.581183",
+          "content_hash": "sha256:dc2d7f2a98d80e7b49b687d015e12b5a6a427f09fd9c6adc527ae48fa5a4c209",
+          "size_bytes": 4927,
+          "token_count": 1326,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated progress after commit: function length refactors, markdown lint"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 3026,
-      "token_count": 796,
+      "size_bytes": 3582,
+      "token_count": 953,
       "token_model": "cl100k_base",
-      "last_modified": "2026-01-31T13:01:39.122974",
-      "content_hash": "sha256:ab436427fe172d0d06cdff8a27483949e7ff31c197bec37ab8163ca337aead26",
+      "last_modified": "2026-01-31T13:56:11.314290",
+      "content_hash": "sha256:e92bb53ac55b3100abf6f31fc87b1c0de8f1d250d19ebe5a28c57b8b0339bdaf",
       "sections": [
         {
           "title": "## Current Focus (2026-01-31)",
@@ -1333,21 +1355,21 @@
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 33,
-          "line_end": 33,
+          "line_start": 35,
+          "line_end": 35,
           "content_hash": null
         },
         {
           "title": "## Next Focus",
           "level": 2,
-          "line_start": 41,
-          "line_end": 41,
+          "line_start": 43,
+          "line_end": 43,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 49,
-      "last_read": "2026-01-31T13:01:39.122974",
+      "write_count": 51,
+      "last_read": "2026-01-31T13:56:11.314290",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -1889,6 +1911,28 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Updated active context after analyze and configure Context logging"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-31T13:37:52.359453",
+          "content_hash": "sha256:5c4fa4a3285835b71613e06e6df9f2a0d368da11321d7350e74ecdbb7ef0934d",
+          "size_bytes": 3308,
+          "token_count": 875,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context after Ensure proper logging: markdown_operations, rules_operations, fix_roadmap_corruption"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-01-31T13:56:11.313844",
+          "content_hash": "sha256:e92bb53ac55b3100abf6f31fc87b1c0de8f1d250d19ebe5a28c57b8b0339bdaf",
+          "size_bytes": 3582,
+          "token_count": 953,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context after commit: function length refactors"
         }
       ]
     },
@@ -2126,8 +2170,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 39230,
-    "total_tokens": 9454,
-    "last_full_scan": "2026-01-31T13:21:01.904280"
+    "total_size_bytes": 41020,
+    "total_tokens": 9936,
+    "last_full_scan": "2026-01-31T13:56:11.314311"
   }
 }
