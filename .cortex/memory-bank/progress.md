@@ -2,6 +2,10 @@
 
 ## 2026-01-31
 
+- **Commit: pre-commit and memory bank** (2026-01-31) - fix_errors, format, markdown lint (3 files fixed), type_check, quality, tests (3150 passed, 90.46% coverage). 0 plans archived; memory bank updated.
+
+- **Ensure proper logging (FastMCP context): analyze and configure tools** (2026-01-31) - Refactored `analyze` in analysis_operations.py and `configure` in configuration_operations.py to use optional `ctx: MCPContext | None` with entry/invalid target or action/component/exit/error logging via `log_client`. Added `_analyze_run_or_error` helper; unit tests in TestAnalyzeContextLogging and TestConfigureContextLogging (start and completion, invalid target/action/component warning, exception error path). All 3150 tests passing; coverage 90.46%. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md (Phase 2.3 analyze and configure done; next: markdown_operations, rules_operations, phase* tools).
+
 - **Commit: pre-commit and markdown lint** (2026-01-31) - Pre-commit: fix_errors, format, markdown lint (3 files fixed), type_check, quality, tests (3143 passed, 90.45% coverage). Memory bank and plan archiving per commit workflow.
 
 - **Ensure proper logging (FastMCP context): validate tool** (2026-01-31) - Refactored `validate` in validation_operations.py to use optional `ctx: MCPContext | None` with entry/invalid check_type/exit/error logging via `log_client`. Added unit tests in TestValidateContextLogging (start and completion, invalid check_type warning, exception error path). All 3143 tests passing; coverage 90.45%. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md (Phase 2.3 validate done; analyze, configure next).

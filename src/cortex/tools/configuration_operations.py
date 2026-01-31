@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Protocol, cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.responses import error_response
@@ -102,6 +103,7 @@ async def configure(
     key: str | None = None,
     value: JsonValue | None = None,
     project_root: str | None = None,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Configure Memory Bank validation, optimization, and learning settings.
 
@@ -254,19 +256,23 @@ async def configure(
         - Changes persist to `.cortex/{validation,optimization,learning}.json`
           and take effect immediately.
     """
+    await log_client(ctx, "info", "configure: starting", logger_name=__name__)
     parsed_action = parse_config_action(action)
     if parsed_action is None:
+        await log_client(ctx, "warning", "configure: invalid action")
         return _create_invalid_action_error(action or "null")
     try:
         root = get_project_root(project_root)
         mgrs = await get_managers(root)
         handler = _get_component_handler(component)
-        if handler:
-            return await handler(mgrs, parsed_action, settings, key, value)
-
-        return _create_invalid_component_error(component)
-
+        if not handler:
+            await log_client(ctx, "warning", "configure: invalid component")
+            return _create_invalid_component_error(component)
+        result = await handler(mgrs, parsed_action, settings, key, value)
+        await log_client(ctx, "info", "configure: completed", logger_name=__name__)
+        return result
     except Exception as e:
+        await log_client(ctx, "error", f"configure: failed: {e}", logger_name=__name__)
         return _create_configuration_exception_error(e, component, action)
 
 

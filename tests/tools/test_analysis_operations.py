@@ -361,6 +361,118 @@ class TestAnalyzeHandler:
             assert result_data["error_type"] == "RuntimeError"
 
 
+class TestAnalyzeContextLogging:
+    """Test analyze tool Context logging (FastMCP)."""
+
+    @pytest.mark.asyncio
+    async def test_analyze_calls_log_client_on_start_and_completion_when_ctx_passed(
+        self, tmp_path: Path
+    ) -> None:
+        """When ctx is passed, analyze logs start and completion via log_client."""
+        # Arrange
+        mock_ctx = AsyncMock()
+        mock_structure_analyzer = MagicMock()
+        mock_structure_analyzer.analyze_file_organization = AsyncMock(
+            return_value=FileOrganizationResult(status="analyzed", file_count=5)
+        )
+        mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
+        mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
+            return_value=ComplexityAnalysisResult(status="analyzed")
+        )
+        with (
+            patch(
+                "cortex.tools.analysis_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.analysis_operations.get_managers",
+                new_callable=AsyncMock,
+            ) as mock_get_managers,
+        ):
+            mock_get_managers.return_value = make_test_managers(
+                pattern_analyzer=MagicMock(),
+                structure_analyzer=mock_structure_analyzer,
+                insight_engine=MagicMock(),
+            )
+
+            # Act
+            result = await analyze(
+                target="structure",
+                project_root=str(tmp_path),
+                ctx=mock_ctx,
+            )
+
+            # Assert
+            assert json.loads(result)["status"] == "success"
+            args_list = [c[0] for c in mock_log.call_args_list]
+            levels_and_messages = [(a[1], a[2]) for a in args_list]
+            assert ("info", "analyze: starting") in levels_and_messages
+            assert ("info", "analyze: completed") in levels_and_messages
+
+    @pytest.mark.asyncio
+    async def test_analyze_calls_log_client_warning_on_invalid_target_when_ctx_passed(
+        self, tmp_path: Path
+    ) -> None:
+        """When target is invalid and ctx is passed, analyze logs warning."""
+        # Arrange
+        mock_ctx = AsyncMock()
+        with patch(
+            "cortex.tools.analysis_operations.log_client",
+            new_callable=AsyncMock,
+        ) as mock_log:
+            # Act
+            result = await analyze(
+                target="invalid",  # type: ignore[arg-type]
+                project_root=str(tmp_path),
+                ctx=mock_ctx,
+            )
+
+            # Assert
+            result_data = json.loads(result)
+            assert result_data["status"] == "error"
+            assert any(
+                c[0][1] == "warning" and c[0][2] == "analyze: invalid target"
+                for c in mock_log.call_args_list
+                if len(c[0]) >= 3
+            )
+
+    @pytest.mark.asyncio
+    async def test_analyze_calls_log_client_error_on_exception_when_ctx_passed(
+        self, tmp_path: Path
+    ) -> None:
+        """When analysis raises and ctx is passed, analyze logs error."""
+        # Arrange
+        mock_ctx = AsyncMock()
+        with (
+            patch(
+                "cortex.tools.analysis_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.analysis_operations.get_managers",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("Setup failed"),
+            ),
+        ):
+            # Act
+            result = await analyze(
+                target="structure",
+                project_root=str(tmp_path),
+                ctx=mock_ctx,
+            )
+
+            # Assert
+            result_data = json.loads(result)
+            assert result_data["status"] == "error"
+            assert "Setup failed" in result_data["error"]
+            error_calls = [
+                c[0]
+                for c in mock_log.call_args_list
+                if len(c[0]) >= 2 and c[0][1] == "error"
+            ]
+            assert len(error_calls) == 1
+
+
 class TestDispatchAnalysisTarget:
     """Test _dispatch_analysis_target helper."""
 

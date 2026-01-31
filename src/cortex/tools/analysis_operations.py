@@ -14,6 +14,7 @@ from cortex.analysis.insight_engine import InsightEngine
 from cortex.analysis.pattern_analyzer import PatternAnalyzer
 from cortex.analysis.structure_analyzer import StructureAnalyzer
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import mcp_tool_wrapper
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
@@ -137,6 +138,7 @@ async def analyze(
     time_window_days: int | None = None,
     export_format: str = "json",
     categories: list[str] | None = None,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Analyze Memory Bank usage patterns, file structure, and generate
     optimization insights.
@@ -439,8 +441,10 @@ async def analyze(
         - Export formats for insights: "json" provides structured data, "markdown"
           provides formatted documentation, "text" provides plain text summary.
     """
+    await log_client(ctx, "info", "analyze: starting", logger_name=__name__)
     parsed_target = parse_analysis_target(target)
     if parsed_target is None:
+        await log_client(ctx, "warning", "analyze: invalid target")
         valid = [t.value for t in AnalysisTarget]
         return json.dumps(
             {
@@ -450,16 +454,36 @@ async def analyze(
             },
             indent=2,
         )
+    return await _analyze_run_or_error(
+        ctx,
+        parsed_target,
+        project_root,
+        time_window_days,
+        export_format,
+        categories,
+    )
+
+
+async def _analyze_run_or_error(
+    ctx: MCPContext | None,
+    parsed_target: AnalysisTarget,
+    project_root: str | None,
+    time_window_days: int | None,
+    export_format: str,
+    categories: list[str] | None,
+) -> str:
+    """Run analysis and handle exceptions with context logging."""
     try:
         root = get_project_root(project_root)
         mgrs = await get_managers(root)
         analyzers = await get_analysis_managers(mgrs)
-
-        return await dispatch_analysis_target(
+        result = await dispatch_analysis_target(
             parsed_target, analyzers, time_window_days, export_format, categories
         )
-
+        await log_client(ctx, "info", "analyze: completed", logger_name=__name__)
+        return result
     except Exception as e:
+        await log_client(ctx, "error", f"analyze: failed: {e}", logger_name=__name__)
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
