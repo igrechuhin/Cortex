@@ -70,7 +70,7 @@
 
 - ✅ **Ensure proper logging (FastMCP context)** - COMPLETE (2026-01-31) - Phase 3 tool migration done: phase4_optimization_handlers, context_analysis_handlers, phase8_structure, synapse_tools, pre_commit_tools, phase5_execution, refactoring_operations now use optional ctx and log_client; unit tests added (TestPhase4OptimizationContextLogging, TestContextAnalysisContextLogging, TestPhase8StructureContextLogging, TestSynapseToolsContextLogging, TestPreCommitToolsContextLogging, TestPhase5ExecutionContextLogging, TestRefactoringOperationsContextLogging). Some function-length/file-size quality violations remain; tracked for follow-up. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
 
-- **Phase 27: Script generation prevention (Step 1/6 partial 2026-02-01)** - PENDING - Plan: .cortex/plans/phase-27-script-generation-prevention.md.
+- **Phase 27: Script generation prevention (Steps 1–2/6 partial 2026-02-01)** - PENDING - Step 2 complete: script_analysis module (models, use_case_extractor, gap_analyzer, similarity_detector, script_analyzer); unit tests. Steps 3–5, 7 remain. Plan: .cortex/plans/phase-27-script-generation-prevention.md.
 
 - **Phase 29: Track MCP tool usage** - PENDING - Plan: .cortex/plans/phase-29-track-mcp-tool-usage.md.
 

@@ -2,6 +2,10 @@
 
 ## 2026-02-01
 
+- **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 4 files fixed (activeContext, progress, roadmap, phase-27). type_check, quality, tests 3254, coverage 90.83%. 0 plans archived; memory bank updated.
+
+- **Phase 27: Script generation prevention (Step 2)** (2026-02-01) - Added script_analysis module: models (UseCaseExtraction, GapAnalysis, SimilarityPair, ScriptAnalysisResult), use_case_extractor, gap_analyzer (overlap with substring matching), similarity_detector (content hash + Jaccard), script_analyzer. Unit tests in test_script_analysis_models.py, test_use_case_extractor.py, test_gap_analyzer.py, test_similarity_detector.py, test_script_analyzer.py. All 3254 tests pass; coverage 90.83%; quality gate passes. Plan updated: Step 2 complete.
+
 - **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 9 files fixed (Synapse implement-next-roadmap-step, create-plan; memory bank activeContext, progress, roadmap; plans phase-27, session-optimization-sequential-plan-steps, structured-planning-cortex-mcp-tools; reviews session-optimization-2026-02-01T15-23). type_check, quality, tests 3224, coverage 90.84%. 0 plans archived; memory bank updated.
 
 - **Phase 27: Script generation prevention (Step 1/6 partial)** (2026-02-01) - Added script_detection module (models, storage, script_capture), path_resolver SCRIPT_CAPTURE, MCP tools capture_session_script and list_session_scripts. Plan updated. All 3224 tests pass; coverage 90.84%; quality gate passes.
@@ -73,8 +77,6 @@
 - **Ensure proper logging (FastMCP context): analyze and configure tools** (2026-01-31) - Refactored analyze and configure to use optional ctx and log_client. All 3150 tests passing; coverage 90.46%.
 
 - **Commit: pre-commit and markdown lint** (2026-01-31) - Pre-commit: fix_errors, format, markdown lint (3 files fixed), type_check, quality, tests (3143 passed, 90.45% coverage). Memory bank and plan archiving per commit workflow.
-
-- **Ensure proper logging (FastMCP context): validate tool** (2026-01-31) - Refactored validate to use optional ctx and log_client. All 3143 tests passing; coverage 90.45%.
 
 - **Commit: function length fix and markdown lint** (2026-01-31) - Refactored manage_file to meet 30-line limit. Markdown lint: 10 files fixed (check_all_files). 3140 tests, 90.45% coverage. 0 plans archived.
 

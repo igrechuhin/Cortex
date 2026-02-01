@@ -7,7 +7,7 @@
 **Created**: 2026-01-16  
 **Target Completion**: 2026-01-30  
 **Estimated Effort**: 30-40 hours  
-**2026-02-01**: Step 1 (partial) and Step 6 (partial) implemented: script_detection module (models, storage, script_capture), path_resolver SCRIPT_CAPTURE, MCP tools capture_session_script and list_session_scripts. Steps 2–5 and 7 remain.
+**2026-02-01**: Step 1 (partial) and Step 6 (partial) implemented: script_detection module (models, storage, script_capture), path_resolver SCRIPT_CAPTURE, MCP tools capture_session_script and list_session_scripts. **Step 2 complete**: script_analysis module (models, use_case_extractor, gap_analyzer, similarity_detector, script_analyzer); unit tests. Steps 3–5 and 7 remain.
 
 ## Goal
 
@@ -112,17 +112,18 @@ Script Generation Prevention System
 - Metadata includes sufficient context for analysis
 - Storage format supports efficient querying and analysis
 
-### Step 2: Create Script Analysis System
+### Step 2: Create Script Analysis System ✅ (2026-02-01)
 
 **Location**: `src/cortex/script_analysis/`
 
-**Files to Create**:
+**Files Created**:
 
 - `__init__.py` - Module initialization
-- `script_analyzer.py` - Analyzes captured scripts for patterns
-- `gap_analyzer.py` - Compares against existing tools/scripts
-- `use_case_extractor.py` - Extracts common use cases
-- `similarity_detector.py` - Detects duplicate/redundant scripts
+- `models.py` - UseCaseExtraction, GapAnalysis, SimilarityPair, ScriptAnalysisResult (Pydantic)
+- `script_analyzer.py` - Analyzes captured scripts for patterns (orchestrates use_case + gap)
+- `gap_analyzer.py` - Compares against existing tools/scripts (name/substring overlap)
+- `use_case_extractor.py` - Extracts common use cases (keywords + label)
+- `similarity_detector.py` - Detects duplicate/redundant scripts (content hash + Jaccard)
 
 **Key Features**:
 
