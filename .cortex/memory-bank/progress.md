@@ -2,6 +2,10 @@
 
 ## 2026-02-01
 
+- **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 9 files fixed (Synapse implement-next-roadmap-step, create-plan; memory bank activeContext, progress, roadmap; plans phase-27, session-optimization-sequential-plan-steps, structured-planning-cortex-mcp-tools; reviews session-optimization-2026-02-01T15-23). type_check, quality, tests 3224, coverage 90.84%. 0 plans archived; memory bank updated.
+
+- **Phase 27: Script generation prevention (Step 1/6 partial)** (2026-02-01) - Added script_detection module (models, storage, script_capture), path_resolver SCRIPT_CAPTURE, MCP tools capture_session_script and list_session_scripts. Plan updated. All 3224 tests pass; coverage 90.84%; quality gate passes.
+
 - **Commit (2026-02-01)**: Pre-commit pipeline; main.py type/quality fixes (reportImplicitStringConcatenation, main() refactor to _log_and_exit_on_task_group_error). type_check, quality, tests 3204, coverage 90.83%. 0 plans archived; memory bank updated.
 
 - **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 7 files fixed; type_check, quality, tests 3203, coverage 90.83%. 0 plans archived; memory bank updated.

@@ -53,6 +53,14 @@ class TestGetCortexPath:
         # Assert
         assert result == tmp_path / ".cortex" / "plans"
 
+    def test_get_script_capture_path(self, tmp_path: Path) -> None:
+        """Test getting script-capture directory path."""
+        # Act
+        result = get_cortex_path(tmp_path, CortexResourceType.SCRIPT_CAPTURE)
+
+        # Assert
+        assert result == tmp_path / ".cortex" / "script-capture"
+
 
 class TestGetCachePath:
     """Tests for get_cache_path function."""

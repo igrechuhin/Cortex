@@ -14,6 +14,7 @@ class CortexResourceType(Enum):
     CORTEX_DIR = ".cortex"
     MEMORY_BANK = "memory-bank"
     PLANS = "plans"
+    SCRIPT_CAPTURE = "script-capture"
     RULES = "rules"
     HISTORY = "history"
     CONFIG = "config"

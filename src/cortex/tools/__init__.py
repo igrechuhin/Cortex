@@ -22,8 +22,9 @@ Modules:
 - synapse_tools: Synapse repository tools for rules and prompts (5 tools)
 - phase8_structure: Project structure management (6 tools)
 - prompts: MCP prompt templates for one-time operations (7 prompts)
+- script_capture_tools: Session script capture and listing (2 tools)
 
-Total: 54 tools + 7 prompts
+Total: 56 tools + 7 prompts
 """
 
 # Import all tool modules to register their decorators
@@ -50,6 +51,7 @@ from . import (
     refactoring_operations,  # noqa: F401
     roadmap_corruption,  # noqa: F401
     rules_operations,  # noqa: F401
+    script_capture_tools,  # noqa: F401
     synapse_prompts,  # noqa: F401  # Dynamic Synapse prompts registration
     synapse_tools,  # noqa: F401
     validation_operations,  # noqa: F401
@@ -83,6 +85,7 @@ __all__ = [
     "prompts",
     "refactoring_operations",
     "rules_operations",
+    "script_capture_tools",
     "synapse_prompts",
     "validation_operations",
 ]

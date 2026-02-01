@@ -1,6 +1,6 @@
 # Roadmap: MCP Memory Bank
 
-**Implementation sequence**: The implement command picks the **next** step as the **first PENDING item** when reading the roadmap in this order: (1) Blockers (ASAP Priority), (2) Active Work, (3) Future Enhancements, (4) Implementation queue (Pending plans). Order within each section is top-to-bottom. New plans are added by create-plan in the correct place so this order defines execution.
+**Implementation sequence**: The implement command picks the **next** step as the **first PENDING item** when reading the roadmap in this order: (1) Blockers (ASAP Priority), (2) Active Work), (3) Future Enhancements, (4) Implementation queue (Pending plans). Order within each section is top-to-bottom. New plans are added by create-plan in the correct place so this order defines execution.
 
 ## Current Status (2026-02-01)
 
@@ -70,7 +70,7 @@
 
 - ✅ **Ensure proper logging (FastMCP context)** - COMPLETE (2026-01-31) - Phase 3 tool migration done: phase4_optimization_handlers, context_analysis_handlers, phase8_structure, synapse_tools, pre_commit_tools, phase5_execution, refactoring_operations now use optional ctx and log_client; unit tests added (TestPhase4OptimizationContextLogging, TestContextAnalysisContextLogging, TestPhase8StructureContextLogging, TestSynapseToolsContextLogging, TestPreCommitToolsContextLogging, TestPhase5ExecutionContextLogging, TestRefactoringOperationsContextLogging). Some function-length/file-size quality violations remain; tracked for follow-up. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
 
-- **Phase 27: Script generation prevention** - PENDING - Plan: .cortex/plans/phase-27-script-generation-prevention.md.
+- **Phase 27: Script generation prevention (Step 1/6 partial 2026-02-01)** - PENDING - Plan: .cortex/plans/phase-27-script-generation-prevention.md.
 
 - **Phase 29: Track MCP tool usage** - PENDING - Plan: .cortex/plans/phase-29-track-mcp-tool-usage.md.
 
@@ -123,3 +123,7 @@
 - **Session optimization (2026-01-31 12-19): Public API, memory bank, SDK generics** - PENDING - Implement recommendations from session-optimization-2026-01-31T12-19 review: rule for public API not using private type names; prompt/agent to update memory bank after user-requested fixes; rule for SDK generic type parameters; one-time .cortex/memory-bank/progress.md alignment if needed. Plan: .cortex/plans/session-optimization-public-api-memory-bank-rules.md.
 
 - **Session optimization (2026-02-01): Markdown corruption in progress and plans** - PENDING - Implement recommendations from .cortex/reviews/session-optimization-2026-02-01T11-55.md: add MD037 and code identifiers in backticks to markdown-formatting rule; extend corruption guard to .cortex/memory-bank/progress.md; verify code symbols in memory-bank-updater/workflow; optionally apply corruption fix to plan files. Plan: .cortex/plans/session-optimization-markdown-corruption-progress-plans.md.
+
+- **Session optimization (2026-02-01 15-23): Sequential plan steps** - PENDING - Document and verify enforcement of sequential plan-step execution in implement and create-plan prompts per `.cortex/reviews/session-optimization-2026-02-01T15-23.md`. Plan: .cortex/plans/session-optimization-sequential-plan-steps.md.
+
+- **Structured plan creation via Cortex MCP tools** - PENDING - Replace manual plan creation (Write + full roadmap manage_file) with tool-driven flow: create_plan and register_plan_in_roadmap MCP tools; update create-plan prompt to prefer these tools. Plan: .cortex/plans/structured-planning-cortex-mcp-tools.md.

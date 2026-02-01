@@ -2,11 +2,12 @@
 
 ## Status
 
-**Status**: PLANNING  
+**Status**: IN PROGRESS  
 **Priority**: Medium  
 **Created**: 2026-01-16  
 **Target Completion**: 2026-01-30  
-**Estimated Effort**: 30-40 hours
+**Estimated Effort**: 30-40 hours  
+**2026-02-01**: Step 1 (partial) and Step 6 (partial) implemented: script_detection module (models, storage, script_capture), path_resolver SCRIPT_CAPTURE, MCP tools capture_session_script and list_session_scripts. Steps 2–5 and 7 remain.
 
 ## Goal
 
@@ -84,17 +85,18 @@ Script Generation Prevention System
 
 ## Implementation Steps
 
-### Step 1: Create Script Detection and Capture System
+### Step 1: Create Script Detection and Capture System ✅ (partial)
 
 **Location**: `src/cortex/script_detection/`
 
-**Files to Create**:
+**Files Created** (2026-02-01):
 
 - `__init__.py` - Module initialization
-- `session_monitor.py` - Monitors agent sessions for script generation
+- `models.py` - Pydantic ScriptCaptureRecord
 - `script_capture.py` - Captures and stores session scripts
-- `pattern_recognizer.py` - Recognizes script types and purposes
-- `storage.py` - Stores captured scripts with metadata
+- `storage.py` - Stores captured scripts in .cortex/script-capture/ (JSON per record)
+- `session_monitor.py` - Not yet implemented (optional; capture via MCP tool)
+- `pattern_recognizer.py` - Not yet implemented
 
 **Key Features**:
 
@@ -211,15 +213,17 @@ Script Generation Prevention System
 - Documentation is complete and accurate
 - Tools/scripts are tested and validated
 
-### Step 6: Create MCP Tool for Script Analysis
+### Step 6: Create MCP Tool for Script Analysis ✅ (partial)
 
-**Location**: `src/cortex/tools/script_analysis_tools.py`
+**Location**: `src/cortex/tools/script_capture_tools.py`
 
-**New MCP Tool**:
+**MCP Tools Implemented** (2026-02-01):
 
-- `analyze_session_scripts` - Analyzes captured session scripts
-- `suggest_tool_improvements` - Suggests tooling improvements based on analysis
-- `promote_session_script` - Promotes a session script to permanent tool/script
+- `capture_session_script` - Records a session-generated script with metadata
+- `list_session_scripts` - Lists captured scripts for analysis
+- `analyze_session_scripts` - Not yet (full analysis deferred to Step 2)
+- `suggest_tool_improvements` - Not yet
+- `promote_session_script` - Not yet
 
 **Key Features**:
 
