@@ -6,25 +6,21 @@ complexity metrics, and anti-patterns.
 """
 
 from pathlib import Path
-from typing import cast
 
+from cortex.analysis import structure_analysis, structure_detection, structure_metrics
 from cortex.analysis.models import (
     AntiPatternInfo,
     ComplexityAnalysisResult,
     ComplexityAssessment,
     ComplexityHotspot,
     ComplexityMetrics,
+    DependencyChainResult,
 )
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.exceptions import MemoryBankError
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import (
-    FileOrganizationResult,
-    FileSizeEntry,
-    JsonValue,
-    ModelDict,
-)
+from cortex.core.models import FileOrganizationResult, JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 
@@ -79,251 +75,15 @@ class StructureAnalyzer:
         file_count = len(all_files)
 
         if file_count == 0:
-            return _build_empty_organization_result()
+            return structure_analysis.build_empty_organization_result()
 
-        file_sizes = self._collect_file_sizes(all_files)
-        stats = _calculate_size_statistics(file_sizes, file_count)
-        issues = _identify_size_issues(file_sizes)
+        file_sizes = structure_analysis.collect_file_sizes(all_files)
+        stats = structure_analysis.calculate_size_statistics(file_sizes, file_count)
+        issues = structure_analysis.identify_size_issues(file_sizes)
 
-        return _build_organization_analysis_result(
+        return structure_analysis.build_organization_analysis_result(
             file_count, stats, file_sizes, issues
         )
-
-    def _collect_file_sizes(self, all_files: list[Path]) -> list[FileSizeEntry]:
-        """Collect file size information for all files."""
-
-        def _get_file_size(file_path: Path) -> FileSizeEntry | None:
-            """Get file size info, returning None on error."""
-            try:
-                size = file_path.stat().st_size
-                return FileSizeEntry(
-                    file=file_path.name,
-                    size_bytes=size,
-                    tokens=0,  # Will be populated if needed
-                )
-            except OSError:
-                return None
-
-        file_sizes = [
-            size_info
-            for file_path in all_files
-            if (size_info := _get_file_size(file_path)) is not None
-        ]
-        file_sizes.sort(key=lambda x: x.size_bytes, reverse=True)
-        return file_sizes
-
-    def _detect_oversized_files(self, all_files: list[Path]) -> list[AntiPatternInfo]:
-        """
-        Detect oversized files (>100KB).
-
-        Args:
-            all_files: List of file paths to check
-
-        Returns:
-            List of oversized file anti-patterns
-        """
-
-        def _check_oversized(file_path: Path) -> AntiPatternInfo | None:
-            """Check if file is oversized, returning pattern model or None."""
-            try:
-                size = file_path.stat().st_size
-                if size > 100000:  # > 100KB
-                    return AntiPatternInfo(
-                        type="oversized_file",
-                        severity="high",
-                        file=file_path.name,
-                        description=f"File is very large ({round(size / 1024, 2)}KB)",
-                        recommendation="Consider splitting into multiple smaller files",
-                    )
-            except OSError:
-                pass
-            return None
-
-        return [
-            pattern
-            for file_path in all_files
-            if (pattern := _check_oversized(file_path)) is not None
-        ]
-
-    def _build_dependency_graph(self) -> dict[str, dict[str, list[str]]]:
-        """
-        Build dependency graph from DependencyGraph manager.
-
-        Returns:
-            Dictionary mapping file names to their dependencies and dependents
-        """
-        all_file_names = self.dependency_graph.get_all_files()
-        graph: dict[str, dict[str, list[str]]] = {}
-
-        for file_name in all_file_names:
-            graph[file_name] = {
-                "dependencies": self.dependency_graph.get_dependencies(file_name),
-                "dependents": self.dependency_graph.get_dependents(file_name),
-            }
-
-        return graph
-
-    def _detect_orphaned_files(
-        self, all_files: list[Path], graph: dict[str, dict[str, list[str]]]
-    ) -> list[AntiPatternInfo]:
-        """
-        Detect orphaned files (no dependencies or dependents).
-
-        Args:
-            all_files: List of file paths to check
-            graph: Dependency graph
-
-        Returns:
-            List of orphaned file anti-patterns
-        """
-        from cortex.analysis.models import AntiPatternInfo
-
-        patterns: list[AntiPatternInfo] = [
-            AntiPatternInfo(
-                type="orphaned_file",
-                severity="medium",
-                file=file_path.name,
-                description="File has no dependencies or dependents",
-                recommendation="Link to other files or consider if it's still needed",
-            )
-            for file_path in all_files
-            if not (
-                file_path.name in graph
-                and (
-                    graph[file_path.name].get("dependencies")
-                    or graph[file_path.name].get("dependents")
-                )
-            )
-        ]
-
-        return patterns
-
-    def _detect_excessive_dependencies(
-        self, graph: dict[str, dict[str, list[str]]]
-    ) -> list[AntiPatternInfo]:
-        """
-        Detect files with excessive dependencies (>15).
-
-        Args:
-            graph: Dependency graph
-
-        Returns:
-            List of excessive dependency anti-patterns
-        """
-        from cortex.analysis.models import AntiPatternInfo
-
-        return [
-            AntiPatternInfo(
-                type="excessive_dependencies",
-                severity="medium",
-                file=file_name,
-                dependency_count=dep_count,
-                description=f"File depends on {dep_count} other files",
-                recommendation="Consider reducing dependencies or splitting file",
-            )
-            for file_name, file_data in graph.items()
-            if (dep_count := len(file_data.get("dependencies", []))) > 15
-        ]
-
-    def _detect_excessive_dependents(
-        self, graph: dict[str, dict[str, list[str]]]
-    ) -> list[AntiPatternInfo]:
-        """
-        Detect files with excessive dependents (>15).
-
-        Args:
-            graph: Dependency graph
-
-        Returns:
-            List of excessive dependent anti-patterns
-        """
-        from cortex.analysis.models import AntiPatternInfo
-
-        return [
-            AntiPatternInfo(
-                type="excessive_dependents",
-                severity="low",
-                file=file_name,
-                dependent_count=dependent_count,
-                description=(f"File is depended upon by {dependent_count} other files"),
-                recommendation=(
-                    "This is a central file - ensure it's stable and " "well-maintained"
-                ),
-            )
-            for file_name, file_data in graph.items()
-            if (dependent_count := len(file_data.get("dependents", []))) > 15
-        ]
-
-    def _detect_similar_filenames(self, all_files: list[Path]) -> list[AntiPatternInfo]:
-        """
-        Detect files with similar names (potential duplication).
-
-        Args:
-            all_files: List of file paths to check
-
-        Returns:
-            List of similar filename anti-patterns
-        """
-        from cortex.analysis.models import AntiPatternInfo
-
-        file_names: list[str] = [f.stem for f in all_files]
-
-        # Optimize: Sort names and use sorted order to reduce comparisons
-        # Only check adjacent and nearby names in sorted order, as similar
-        # names tend to cluster together alphabetically
-        sorted_names = sorted(file_names, key=lambda x: x.lower())
-
-        # Check each name against the next few names (window approach)
-        # This reduces complexity from O(n²) to O(n*k) where k is window size
-        window_size = min(10, len(sorted_names))  # Check next 10 names max
-
-        similar_names: list[tuple[str, str]] = [
-            (sorted_names[i], sorted_names[j])
-            for i in range(len(sorted_names))
-            for j in range(i + 1, min(i + 1 + window_size, len(sorted_names)))
-            if sorted_names[j].lower()[0] == sorted_names[i].lower()[0]
-            and (
-                sorted_names[i].lower() in sorted_names[j].lower()
-                or sorted_names[j].lower() in sorted_names[i].lower()
-            )
-        ]
-
-        patterns: list[AntiPatternInfo] = [
-            AntiPatternInfo(
-                type="similar_filenames",
-                severity="low",
-                files=[f"{name1}.md", f"{name2}.md"],
-                description="Files have similar names",
-                recommendation=(
-                    "Check if content is duplicated or could be " "consolidated"
-                ),
-            )
-            for name1, name2 in similar_names
-        ]
-
-        return patterns
-
-    def _sort_patterns_by_severity(
-        self, patterns: list[AntiPatternInfo]
-    ) -> list[AntiPatternInfo]:
-        """
-        Sort anti-patterns by severity (high > medium > low).
-
-        Args:
-            patterns: List of anti-patterns to sort
-
-        Returns:
-            Sorted list of anti-patterns
-        """
-        severity_order = {"high": 0, "medium": 1, "low": 2}
-
-        def get_severity_order(pattern: AntiPatternInfo) -> int:
-            """Extract severity order for sorting."""
-            return severity_order.get(pattern.severity, 2)
-
-        sorted_patterns = patterns.copy()
-        sorted_patterns.sort(key=get_severity_order)
-        return sorted_patterns
 
     async def detect_anti_patterns(self) -> list[AntiPatternInfo]:
         """
@@ -332,23 +92,22 @@ class StructureAnalyzer:
         Returns:
             List of detected anti-patterns with details
         """
-        from cortex.analysis.models import AntiPatternInfo
-
         memory_bank_dir = get_cortex_path(
             self.project_root, CortexResourceType.MEMORY_BANK
         )
         all_files = list(memory_bank_dir.glob("*.md"))
-
-        graph = self._build_dependency_graph()
+        graph = structure_analysis.build_dependency_graph(self.dependency_graph)
 
         anti_patterns: list[AntiPatternInfo] = []
-        anti_patterns.extend(self._detect_oversized_files(all_files))
-        anti_patterns.extend(self._detect_orphaned_files(all_files, graph))
-        anti_patterns.extend(self._detect_excessive_dependencies(graph))
-        anti_patterns.extend(self._detect_excessive_dependents(graph))
-        anti_patterns.extend(self._detect_similar_filenames(all_files))
+        anti_patterns.extend(structure_detection.detect_oversized_files(all_files))
+        anti_patterns.extend(
+            structure_detection.detect_orphaned_files(all_files, graph)
+        )
+        anti_patterns.extend(structure_detection.detect_excessive_dependencies(graph))
+        anti_patterns.extend(structure_detection.detect_excessive_dependents(graph))
+        anti_patterns.extend(structure_detection.detect_similar_filenames(all_files))
 
-        return self._sort_patterns_by_severity(anti_patterns)
+        return structure_detection.sort_patterns_by_severity(anti_patterns)
 
     async def measure_complexity_metrics(self) -> ComplexityAnalysisResult:
         """
@@ -357,19 +116,21 @@ class StructureAnalyzer:
         Returns:
             ComplexityAnalysisResult model with complexity metrics
         """
-        graph = self._build_complexity_graph()
+        graph = structure_metrics.build_complexity_graph(self.dependency_graph)
         if not graph:
             return ComplexityAnalysisResult(status="no_files")
 
-        depth_map, max_depth = self._calculate_dependency_depths(graph)
+        depth_map, max_depth = structure_metrics.calculate_dependency_depths(graph)
         edge_count, node_count, cyclomatic_complexity, avg_dependencies = (
-            self._calculate_cyclomatic_metrics(graph)
+            structure_metrics.calculate_cyclomatic_metrics(graph)
         )
         fan_in, fan_out, max_fan_in, max_fan_out, avg_fan_in, avg_fan_out = (
-            self._calculate_fan_metrics(graph)
+            structure_metrics.calculate_fan_metrics(graph)
         )
-        hotspots = self._identify_complexity_hotspots(graph, depth_map, fan_in, fan_out)
-        metrics = self._build_complexity_metrics(
+        hotspots = structure_metrics.identify_complexity_hotspots(
+            graph, depth_map, fan_in, fan_out
+        )
+        metrics = _build_complexity_metrics(
             max_depth,
             cyclomatic_complexity,
             avg_dependencies,
@@ -380,335 +141,18 @@ class StructureAnalyzer:
             edge_count,
             node_count,
         )
-        assessment = self._assess_complexity_model(
+        assessment = _assess_complexity_model(
             max_depth, cyclomatic_complexity, avg_dependencies
         )
-        return self._build_complexity_result(metrics, hotspots, assessment)
-
-    def _build_complexity_result(
-        self,
-        metrics: ComplexityMetrics,
-        hotspots: list[ComplexityHotspot],
-        assessment: ComplexityAssessment,
-    ) -> ComplexityAnalysisResult:
-        """Build complexity analysis result."""
-        return ComplexityAnalysisResult(
-            status="analyzed",
-            metrics=metrics,
-            complexity_hotspots=hotspots[:10],
-            assessment=assessment,
-        )
-
-    def _build_complexity_metrics(
-        self,
-        max_depth: int,
-        cyclomatic_complexity: int,
-        avg_dependencies: float,
-        max_fan_in: int,
-        max_fan_out: int,
-        avg_fan_in: float,
-        avg_fan_out: float,
-        edge_count: int,
-        node_count: int,
-    ) -> ComplexityMetrics:
-        """Build ComplexityMetrics from calculated values."""
-        return ComplexityMetrics(
-            max_dependency_depth=max_depth,
-            cyclomatic_complexity=int(cyclomatic_complexity),
-            avg_dependencies_per_file=round(avg_dependencies, 2),
-            max_fan_in=max_fan_in,
-            max_fan_out=max_fan_out,
-            avg_fan_in=round(avg_fan_in, 2),
-            avg_fan_out=round(avg_fan_out, 2),
-            total_edges=edge_count,
-            total_nodes=node_count,
-        )
-
-    def _build_complexity_graph(self) -> dict[str, dict[str, list[str]]]:
-        """Build graph from dependency graph for complexity analysis.
-
-        Returns:
-            Graph dictionary mapping file names to dependencies and dependents
-        """
-        all_file_names = self.dependency_graph.get_all_files()
-        graph: dict[str, dict[str, list[str]]] = {}
-        for file_name in all_file_names:
-            graph[file_name] = {
-                "dependencies": self.dependency_graph.get_dependencies(file_name),
-                "dependents": self.dependency_graph.get_dependents(file_name),
-            }
-        return graph
-
-    def _calculate_dependency_depths(
-        self, graph: dict[str, dict[str, list[str]]]
-    ) -> tuple[dict[str, int], int]:
-        """Calculate dependency depths for all files.
-
-        Args:
-            graph: Dependency graph
-
-        Returns:
-            Tuple of (depth_map, max_depth)
-        """
-        max_depth = 0
-        depth_map: dict[str, int] = {}
-
-        def calculate_depth(file_name: str, visited: set[str]) -> int:
-            """Calculate maximum dependency depth for a file."""
-            if file_name in depth_map:
-                return depth_map[file_name]
-
-            if file_name in visited:
-                return 0  # Circular dependency
-
-            visited.add(file_name)
-
-            dependencies = graph.get(file_name, {}).get("dependencies", [])
-            if not dependencies:
-                depth = 0
-            else:
-                depth = 1 + max(
-                    calculate_depth(dep, visited.copy()) for dep in dependencies
-                )
-
-            depth_map[file_name] = depth
-            return depth
-
-        for file_name in graph.keys():
-            depth = calculate_depth(file_name, set())
-            max_depth = max(max_depth, depth)
-
-        return depth_map, max_depth
-
-    def _calculate_cyclomatic_metrics(
-        self, graph: dict[str, dict[str, list[str]]]
-    ) -> tuple[int, int, int, float]:
-        """Calculate cyclomatic complexity metrics.
-
-        Args:
-            graph: Dependency graph
-
-        Returns:
-            Tuple of (edge_count, node_count, cyclomatic_complexity, avg_dependencies)
-        """
-        edge_count = sum(len(data.get("dependencies", [])) for data in graph.values())
-        node_count = len(graph)
-        cyclomatic_complexity = edge_count - node_count + 1 if node_count > 0 else 0
-        avg_dependencies = edge_count / node_count if node_count > 0 else 0
-        return edge_count, node_count, cyclomatic_complexity, avg_dependencies
-
-    def _calculate_fan_metrics(
-        self, graph: dict[str, dict[str, list[str]]]
-    ) -> tuple[dict[str, int], dict[str, int], int, int, float, float]:
-        """Calculate fan-in and fan-out metrics.
-
-        Args:
-            graph: Dependency graph
-
-        Returns:
-            Tuple of (fan_in, fan_out, max_fan_in, max_fan_out, avg_fan_in, avg_fan_out)
-        """
-        fan_in: dict[str, int] = {}
-        fan_out: dict[str, int] = {}
-
-        for file_name, data in graph.items():
-            fan_out[file_name] = len(data.get("dependencies", []))
-            fan_in[file_name] = len(data.get("dependents", []))
-
-        max_fan_in = max(fan_in.values()) if fan_in else 0
-        max_fan_out = max(fan_out.values()) if fan_out else 0
-        avg_fan_in = sum(fan_in.values()) / len(fan_in) if fan_in else 0
-        avg_fan_out = sum(fan_out.values()) / len(fan_out) if fan_out else 0
-
-        return fan_in, fan_out, max_fan_in, max_fan_out, avg_fan_in, avg_fan_out
-
-    def _identify_complexity_hotspots(
-        self,
-        graph: dict[str, dict[str, list[str]]],
-        depth_map: dict[str, int],
-        fan_in: dict[str, int],
-        fan_out: dict[str, int],
-    ) -> list[ComplexityHotspot]:
-        """Identify complexity hotspots.
-
-        Args:
-            graph: Dependency graph
-            depth_map: Map of file names to dependency depths
-            fan_in: Map of file names to fan-in counts
-            fan_out: Map of file names to fan-out counts
-
-        Returns:
-            List of ComplexityHotspot models, sorted by score
-        """
-        hotspots: list[ComplexityHotspot] = [
-            ComplexityHotspot(
-                file=file_name,
-                score=float(complexity_score),
-                depth=depth_map.get(file_name, 0),
-                fan_in=fan_in.get(file_name, 0),
-                fan_out=fan_out.get(file_name, 0),
-            )
-            for file_name in graph.keys()
-            if (
-                complexity_score := (
-                    depth_map.get(file_name, 0) * 2
-                    + fan_in.get(file_name, 0)
-                    + fan_out.get(file_name, 0)
-                )
-            )
-            > 20
-        ]
-
-        hotspots.sort(key=lambda h: h.score, reverse=True)
-        return hotspots
-
-    def _assess_complexity_model(
-        self, max_depth: int, cyclomatic: int, avg_deps: float
-    ) -> ComplexityAssessment:
-        """
-        Assess overall complexity and provide recommendations.
-
-        Args:
-            max_depth: Maximum dependency depth
-            cyclomatic: Cyclomatic complexity
-            avg_deps: Average dependencies per file
-
-        Returns:
-            ComplexityAssessment model with score and recommendations
-        """
-        issues: list[str] = []
-        score = 100  # Start with perfect score
-
-        score, issues = self._assess_depth_complexity(max_depth, score, issues)
-        score, issues = self._assess_cyclomatic_complexity(cyclomatic, score, issues)
-        score, issues = self._assess_dependency_complexity(avg_deps, score, issues)
-
-        grade, status = self._determine_complexity_grade(score)
-        recommendations = self._generate_complexity_recommendations(
-            max_depth, cyclomatic, avg_deps
-        )
-
-        return ComplexityAssessment(
-            score=score,
-            grade=grade,
-            status=status,
-            issues=issues if issues else ["No major issues detected"],
-            recommendations=(
-                recommendations if recommendations else ["Structure looks good"]
-            ),
-        )
+        return _build_complexity_result(metrics, hotspots[:10], assessment)
 
     def assess_complexity(
         self, max_depth: int, cyclomatic: int, avg_deps: float
     ) -> ComplexityAssessment:
         """Assess complexity and return a typed model."""
-        return self._assess_complexity_model(
+        return _assess_complexity_model(
             max_depth=max_depth, cyclomatic=cyclomatic, avg_deps=avg_deps
         )
-
-    def _assess_depth_complexity(
-        self, max_depth: int, score: int, issues: list[str]
-    ) -> tuple[int, list[str]]:
-        """Assess depth complexity and update score.
-
-        Args:
-            max_depth: Maximum dependency depth
-            score: Current score
-            issues: Current issues list
-
-        Returns:
-            Tuple of (updated_score, updated_issues)
-        """
-        if max_depth > 10:
-            issues.append("Dependency chains are very deep")
-            score -= 20
-        elif max_depth > 5:
-            issues.append("Dependency chains are moderately deep")
-            score -= 10
-        return score, issues
-
-    def _assess_cyclomatic_complexity(
-        self, cyclomatic: int, score: int, issues: list[str]
-    ) -> tuple[int, list[str]]:
-        """Assess cyclomatic complexity and update score.
-
-        Args:
-            cyclomatic: Cyclomatic complexity value
-            score: Current score
-            issues: Current issues list
-
-        Returns:
-            Tuple of (updated_score, updated_issues)
-        """
-        if cyclomatic > 20:
-            issues.append("High cyclomatic complexity")
-            score -= 20
-        elif cyclomatic > 10:
-            issues.append("Moderate cyclomatic complexity")
-            score -= 10
-        return score, issues
-
-    def _assess_dependency_complexity(
-        self, avg_deps: float, score: int, issues: list[str]
-    ) -> tuple[int, list[str]]:
-        """Assess dependency complexity and update score.
-
-        Args:
-            avg_deps: Average dependencies per file
-            score: Current score
-            issues: Current issues list
-
-        Returns:
-            Tuple of (updated_score, updated_issues)
-        """
-        if avg_deps > 10:
-            issues.append("Files have too many dependencies on average")
-            score -= 15
-        elif avg_deps > 5:
-            issues.append("Files have moderate number of dependencies")
-            score -= 5
-        return score, issues
-
-    def _determine_complexity_grade(self, score: int) -> tuple[str, str]:
-        """Determine grade and status from score.
-
-        Args:
-            score: Complexity score
-
-        Returns:
-            Tuple of (grade, status)
-        """
-        if score >= 90:
-            return ("A", "excellent")
-        if score >= 80:
-            return ("B", "good")
-        if score >= 70:
-            return ("C", "acceptable")
-        if score >= 60:
-            return ("D", "needs_improvement")
-        return ("F", "poor")
-
-    def _generate_complexity_recommendations(
-        self, max_depth: int, cyclomatic: int, avg_deps: float
-    ) -> list[str]:
-        """Generate recommendations based on complexity metrics.
-
-        Args:
-            max_depth: Maximum dependency depth
-            cyclomatic: Cyclomatic complexity
-            avg_deps: Average dependencies per file
-
-        Returns:
-            List of recommendation strings
-        """
-        recommendations: list[str] = []
-        if max_depth > 5:
-            recommendations.append("Consider flattening dependency hierarchy")
-        if cyclomatic > 10:
-            recommendations.append("Simplify dependency structure")
-        if avg_deps > 5:
-            recommendations.append("Reduce number of dependencies per file")
-        return recommendations
 
     async def find_dependency_chains(
         self, max_chain_length: int = 10
@@ -722,203 +166,88 @@ class StructureAnalyzer:
         Returns:
             List of dependency chains
         """
-        graph = self._build_dependency_graph()
-        chains = self._find_all_chains(graph, max_chain_length)
-        unique_chains = self._deduplicate_and_sort_chains(chains)
-        return unique_chains[:20]
-
-    def _find_all_chains(
-        self, graph: dict[str, dict[str, list[str]]], max_chain_length: int
-    ) -> list[ModelDict]:
-        """Find all dependency chains in the graph.
-
-        Args:
-            graph: Dependency graph structure
-            max_chain_length: Maximum chain length to search for
-
-        Returns:
-            List of found chains
-        """
-        chains: list[ModelDict] = []
-
-        def find_chains_from_file(
-            start_file: str, current_path: list[str], visited: set[str]
-        ) -> None:
-            """Recursively find chains from a starting file."""
-            if len(current_path) > max_chain_length:
-                return
-
-            if start_file in visited:
-                if len(current_path) >= 2:
-                    chains.append(_create_circular_chain_dict(current_path, start_file))
-                return
-
-            visited.add(start_file)
-            dependencies = graph.get(start_file, {}).get("dependencies", [])
-
-            if not dependencies:
-                if len(current_path) >= 3:
-                    chains.append(_create_linear_chain_dict(current_path))
-            else:
-                for dep in dependencies:
-                    find_chains_from_file(dep, current_path + [dep], visited.copy())
-
-        for file_name in graph.keys():
-            find_chains_from_file(file_name, [file_name], set())
-
-        return chains
-
-    def _deduplicate_and_sort_chains(self, chains: list[ModelDict]) -> list[ModelDict]:
-        """Remove duplicate chains and sort by length.
-
-        Args:
-            chains: List of chains to deduplicate and sort
-
-        Returns:
-            Deduplicated and sorted chains
-        """
-        seen: set[tuple[str, ...]] = set()
-
-        def _is_unique_chain(chain: dict[str, JsonValue]) -> bool:
-            """Check if chain is unique and add to seen set."""
-            chain_list = chain.get("chain", [])
-            if not isinstance(chain_list, list):
-                return False
-            chain_list_values = cast(list[JsonValue], chain_list)
-            chain_items = [
-                str(item)
-                for item in chain_list_values
-                if isinstance(item, (str, int, float))
-            ]
-            chain_key = tuple(chain_items)
-            if chain_key and chain_key not in seen:
-                seen.add(chain_key)
-                return True
-            return False
-
-        unique_chains: list[ModelDict] = [
-            chain for chain in chains if _is_unique_chain(chain)
-        ]
-
-        def _chain_length(chain: dict[str, JsonValue]) -> int:
-            raw_length = chain.get("length", 0)
-            return int(raw_length) if isinstance(raw_length, (int, float, str)) else 0
-
-        unique_chains.sort(key=_chain_length, reverse=True)
-        return unique_chains
+        graph = structure_analysis.build_dependency_graph(self.dependency_graph)
+        chains = structure_metrics.find_all_chains(graph, max_chain_length)
+        unique_chains = structure_metrics.deduplicate_and_sort_chains(chains)
+        return [_chain_result_to_dict(c) for c in unique_chains[:20]]
 
 
-def _build_empty_organization_result() -> FileOrganizationResult:
-    """Build result for empty memory bank.
-
-    Returns:
-        Empty organization result model
-    """
-    return FileOrganizationResult(
-        status="empty",
-        file_count=0,
-        issues=["No files found in memory bank"],
+def _build_complexity_metrics(
+    max_depth: int,
+    cyclomatic_complexity: int,
+    avg_dependencies: float,
+    max_fan_in: int,
+    max_fan_out: int,
+    avg_fan_in: float,
+    avg_fan_out: float,
+    edge_count: int,
+    node_count: int,
+) -> ComplexityMetrics:
+    """Build ComplexityMetrics from calculated values."""
+    return ComplexityMetrics(
+        max_dependency_depth=max_depth,
+        cyclomatic_complexity=int(cyclomatic_complexity),
+        avg_dependencies_per_file=round(avg_dependencies, 2),
+        max_fan_in=max_fan_in,
+        max_fan_out=max_fan_out,
+        avg_fan_in=round(avg_fan_in, 2),
+        avg_fan_out=round(avg_fan_out, 2),
+        total_edges=edge_count,
+        total_nodes=node_count,
     )
 
 
-def _build_organization_analysis_result(
-    file_count: int,
-    stats: dict[str, int],
-    file_sizes: list[FileSizeEntry],
-    issues: list[str],
-) -> FileOrganizationResult:
-    """Build organization analysis result model.
-
-    Args:
-        file_count: Total number of files
-        stats: Size statistics dictionary
-        file_sizes: List of file size entries
-        issues: List of identified issues
-
-    Returns:
-        Organization analysis result model
-    """
-    return FileOrganizationResult(
+def _build_complexity_result(
+    metrics: ComplexityMetrics,
+    hotspots: list[ComplexityHotspot],
+    assessment: ComplexityAssessment,
+) -> ComplexityAnalysisResult:
+    """Build complexity analysis result."""
+    return ComplexityAnalysisResult(
         status="analyzed",
-        file_count=file_count,
-        total_size_bytes=stats["total_size"],
-        total_size_kb=round(stats["total_size"] / 1024, 2),
-        avg_size_bytes=round(stats["avg_size"]),
-        avg_size_kb=round(stats["avg_size"] / 1024, 2),
-        max_size_bytes=stats["max_size"],
-        min_size_bytes=stats["min_size"],
-        largest_files=file_sizes[:5],
-        smallest_files=file_sizes[-5:],
-        issues=issues if issues else None,
+        metrics=metrics,
+        complexity_hotspots=hotspots,
+        assessment=assessment,
     )
 
 
-def _calculate_size_statistics(
-    file_sizes: list[FileSizeEntry], file_count: int
-) -> dict[str, int]:
-    """Calculate size statistics from file sizes."""
-    total_size = sum(f.size_bytes for f in file_sizes)
-    avg_size = total_size // file_count if file_count > 0 else 0
-
-    max_size = file_sizes[0].size_bytes if file_sizes else 0
-    min_size = file_sizes[-1].size_bytes if file_sizes else 0
-
-    return {
-        "total_size": total_size,
-        "avg_size": avg_size,
-        "max_size": max_size,
-        "min_size": min_size,
-    }
-
-
-def _identify_size_issues(file_sizes: list[FileSizeEntry]) -> list[str]:
-    """Identify size-related issues in files."""
+def _assess_complexity_model(
+    max_depth: int, cyclomatic: int, avg_deps: float
+) -> ComplexityAssessment:
+    """Assess overall complexity and return assessment model."""
     issues: list[str] = []
+    score = 100
 
-    large_files = [f for f in file_sizes if f.size_bytes > 50000]
-    if large_files:
-        issues.append(f"{len(large_files)} files are very large (>50KB)")
+    score, issues = structure_metrics.assess_depth_complexity(max_depth, score, issues)
+    score, issues = structure_metrics.assess_cyclomatic_complexity(
+        cyclomatic, score, issues
+    )
+    score, issues = structure_metrics.assess_dependency_complexity(
+        avg_deps, score, issues
+    )
 
-    small_files = [f for f in file_sizes if f.size_bytes < 500]
-    if small_files:
-        issues.append(f"{len(small_files)} files are very small (<500 bytes)")
+    grade, status = structure_metrics.determine_complexity_grade(score)
+    recommendations = structure_metrics.generate_complexity_recommendations(
+        max_depth, cyclomatic, avg_deps
+    )
 
-    return issues
+    return ComplexityAssessment(
+        score=score,
+        grade=grade,
+        status=status,
+        issues=issues if issues else ["No major issues detected"],
+        recommendations=(
+            recommendations if recommendations else ["Structure looks good"]
+        ),
+    )
 
 
-def _create_circular_chain_dict(current_path: list[str], start_file: str) -> ModelDict:
-    """Create a circular chain dict.
-
-    Args:
-        current_path: Current path in the chain
-        start_file: Starting file that creates the cycle
-
-    Returns:
-        Chain dict
-    """
-    full_chain = current_path + [start_file]
-    full_chain_json = cast(list[JsonValue], full_chain)
+def _chain_result_to_dict(chain_result: DependencyChainResult) -> ModelDict:
+    """Convert DependencyChainResult to ModelDict for find_dependency_chains API."""
+    chain_json: list[JsonValue] = list(chain_result.chain)
     return {
-        "type": "circular",
-        "chain": full_chain_json,
-        "length": len(full_chain),
-        "is_linear": False,
-    }
-
-
-def _create_linear_chain_dict(current_path: list[str]) -> ModelDict:
-    """Create a linear chain dict.
-
-    Args:
-        current_path: Current path in the chain
-
-    Returns:
-        Chain dict
-    """
-    current_path_json = cast(list[JsonValue], current_path)
-    return {
-        "type": "linear",
-        "chain": current_path_json,
-        "length": len(current_path),
-        "is_linear": True,
+        "type": "linear" if chain_result.is_linear else "circular",
+        "chain": chain_json,
+        "length": chain_result.length,
+        "is_linear": chain_result.is_linear,
     }

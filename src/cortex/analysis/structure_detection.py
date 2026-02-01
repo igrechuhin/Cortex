@@ -96,6 +96,7 @@ def detect_excessive_dependencies(
             severity="medium",
             file=file_name,
             files=[],
+            dependency_count=dep_count,
             description=f"File depends on {dep_count} other files",
             recommendation="Consider reducing dependencies or splitting file",
         )
@@ -121,9 +122,10 @@ def detect_excessive_dependents(
             severity="low",
             file=file_name,
             files=[],
+            dependent_count=dependent_count,
             description=f"File is depended upon by {dependent_count} other files",
             recommendation=(
-                "This is a central file - ensure it's stable and " "well-maintained"
+                "This is a central file - ensure it's stable and well-maintained"
             ),
         )
         for file_name, file_data in graph.items()

@@ -2,6 +2,12 @@
 
 ## 2026-02-01
 
+- **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 5 files fixed; type_check, quality, tests 3201, coverage 90.84%. 0 plans archived; memory bank updated.
+
+- **Phase 20: Steps 3.6 and 3.7 (initialization, structure_analyzer split)** (2026-02-01) - Refactored initialization.py (556 → 188 lines) to delegate to manager_initialization (`add_*` and `_create_*`) and initialization_health (handle_file_change). Refactored structure_analyzer.py (612 → 264 lines) to delegate to structure_detection, structure_analysis, structure_metrics. Added dependency_count/dependent_count to structure_detection; fixed structure_metrics create_circular_chain length. Test helper _get_manager_helper updated to support dict (builder) for get_manager patches. All 3201 tests pass; quality gate passes. Phase 20 Step 3 complete; plan and roadmap updated.
+
+- **Commit (2026-02-01)**: Pre-commit pipeline; quality fix (rollback_execution.restore_files → _restore_one_file, ≤30 lines); markdown lint 7 files; type_check, quality, tests 3201, coverage 90.73%. 0 plans archived; memory bank updated.
+
 - **Phase 20: Step 3.4 rollback_manager split** (2026-02-01) - Refactored rollback_manager.py (928 → 363 lines) to delegate to version_snapshots, rollback_execution, rollback_conflicts, rollback_history_operations, rollback_initialization, rollback_history_loader. Added rollback_history_operations.py. All 28 rollback_manager tests pass; 3201 tests total; quality gate passes. Plan: .cortex/plans/phase-20-code-review-fixes.md (Step 3.4 complete).
 
 - **Phase 20: Step 3.5 template_manager split** (2026-02-01) - Refactored template_manager.py (900 → 106 lines) to delegate to template_loader, template_renderer, template_questions. Added template_questions.py. All 40 template_manager tests pass; 3201 tests total; quality gate passes. Plan: .cortex/plans/phase-20-code-review-fixes.md (Step 3.5 complete; remaining >400-line files: initialization, structure_analyzer).
@@ -52,7 +58,7 @@
 
 - **Commit: function length and markdown lint** (2026-01-31) - Refactored _execute_rules_operation, fix_markdown_lint, fix_roadmap_corruption to meet 30-line limit. Markdown lint: 3 files fixed. 3157 tests, 90.47% coverage. 0 plans archived.
 
-- **Commit: pre-commit and memory bank** (2026-01-31) - fix_errors, format, markdown lint (3 files fixed), type_check, quality, tests (3150 passed, 90.46% coverage). 0 plans archived; memory bank updated.
+- **Commit: pre-commit and markdown lint** (2026-01-31) - fix_errors, format, markdown lint (3 files fixed), type_check, quality, tests (3150 passed, 90.46% coverage). 0 plans archived; memory bank updated.
 
 - **Ensure proper logging (FastMCP context): analyze and configure tools** (2026-01-31) - Refactored analyze and configure to use optional ctx and log_client. All 3150 tests passing; coverage 90.46%.
 

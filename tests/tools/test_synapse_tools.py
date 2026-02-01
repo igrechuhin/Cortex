@@ -40,9 +40,22 @@ from tests.helpers.managers import make_test_managers
 # ============================================================================
 
 
-async def _get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object:
-    """Helper function to get manager by field name."""
-    manager = getattr(mgrs, key)
+async def _get_manager_helper(
+    mgrs: ManagersDict | dict[str, object], key: str, _: object
+) -> object:
+    """Get manager by key; supports dict because get_synapse_rules uses real get_managers.
+
+    execute_rules_with_context imports get_managers from initialization (not from
+    synapse_tools), so the test's patch of synapse_tools.get_managers does not apply.
+    The real initialize_managers runs and passes a builder dict to _post_init_setup,
+    which then calls get_manager(builders_dict, ...). The patched get_manager is
+    thus invoked with a dict here; other test files only pass ManagersDict.
+    """
+    manager: object
+    if isinstance(mgrs, dict):
+        manager = mgrs.get(key)
+    else:
+        manager = getattr(mgrs, key)
     # Handle LazyManager unwrapping if needed
     from cortex.managers.lazy_manager import LazyManager
 

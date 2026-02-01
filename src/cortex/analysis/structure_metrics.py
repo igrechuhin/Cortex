@@ -347,9 +347,10 @@ def create_circular_chain(
     Returns:
         DependencyChainResult with is_linear=False
     """
+    full_chain = [*current_path, start_file]
     return DependencyChainResult(
-        chain=[*current_path, start_file],
-        length=len(current_path),
+        chain=full_chain,
+        length=len(full_chain),
         is_linear=False,
     )
 
