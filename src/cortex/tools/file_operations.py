@@ -36,6 +36,7 @@ from cortex.tools.file_operation_helpers import (
     build_write_error_response,
     validate_manage_file_operation,
 )
+from cortex.tools.roadmap_corruption import fix_roadmap_content_if_needed
 
 
 @mcp.tool()
@@ -469,6 +470,8 @@ async def _handle_write_operation(
     if validation_error := _validate_write_request(file_path, file_name, content):
         return validation_error
     assert content is not None
+    if file_name == "roadmap.md":
+        content = fix_roadmap_content_if_needed(content)
     return await _execute_write_with_error_handling(
         file_path,
         file_name,

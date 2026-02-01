@@ -227,3 +227,76 @@ class TestRoadmapCorruption:
         assert len(matches) > 0
         assert matches[0].pattern == "corrupted_implemented"
         assert "Implemented" in matches[0].fixed
+
+    def test_detect_roadmap_corruption_percent_to(self):
+        """Test detection of percent+to corruption (e.g. 89.89to -> 89.89% to)."""
+        from cortex.tools.markdown_operations import (
+            _detect_roadmap_corruption,  # pyright: ignore[reportPrivateUsage]
+        )
+
+        content = "Coverage 89.89to 90%"
+        matches = _detect_roadmap_corruption(content)
+        assert len(matches) >= 1
+        assert any(m.pattern == "percent_to_missing_space" for m in matches)
+        fixed_match = next(
+            m for m in matches if m.pattern == "percent_to_missing_space"
+        )
+        assert fixed_match.fixed == "89.89% to"
+
+    def test_detect_roadmap_corruption_number_actual(self):
+        """Test detection of number+ctual corruption (e.g. 0ctual -> 0 actual)."""
+        from cortex.tools.markdown_operations import (
+            _detect_roadmap_corruption,  # pyright: ignore[reportPrivateUsage]
+        )
+
+        content = "0ctual completion"
+        matches = _detect_roadmap_corruption(content)
+        assert len(matches) >= 1
+        assert any(m.pattern == "number_actual_missing_space" for m in matches)
+        fixed_match = next(
+            m for m in matches if m.pattern == "number_actual_missing_space"
+        )
+        assert fixed_match.fixed == "0 actual"
+
+    def test_detect_roadmap_corruption_ceeds_percent(self):
+        """Test detection of ceeds+digit corruption (e.g. ceeds90 -> (exceeds 90%)."""
+        from cortex.tools.markdown_operations import (
+            _detect_roadmap_corruption,  # pyright: ignore[reportPrivateUsage]
+        )
+
+        content = "Threshold ceeds90"
+        matches = _detect_roadmap_corruption(content)
+        assert len(matches) >= 1
+        assert any(m.pattern == "exceeds_percent_corrupted" for m in matches)
+        fixed_match = next(
+            m for m in matches if m.pattern == "exceeds_percent_corrupted"
+        )
+        assert fixed_match.fixed == "(exceeds 90%"
+
+    def test_detect_roadmap_corruption_files_unchanged(self):
+        """Test detection of number+es unchanged (e.g. 285es -> 285 files)."""
+        from cortex.tools.markdown_operations import (
+            _detect_roadmap_corruption,  # pyright: ignore[reportPrivateUsage]
+        )
+
+        content = "285es unchanged"
+        matches = _detect_roadmap_corruption(content)
+        assert len(matches) >= 1
+        assert any(m.pattern == "files_unchanged_corrupted" for m in matches)
+        fixed_match = next(
+            m for m in matches if m.pattern == "files_unchanged_corrupted"
+        )
+        assert fixed_match.fixed == "285 files unchanged"
+
+    def test_detect_roadmap_corruption_malformed_date_fixed(self):
+        """Test detection of 2026MM-DDixed -> 2026-MM-DD) - Fixed."""
+        from cortex.tools.markdown_operations import (
+            _detect_roadmap_corruption,  # pyright: ignore[reportPrivateUsage]
+        )
+
+        content = "Target 202601-15ixed"
+        matches = _detect_roadmap_corruption(content)
+        assert len(matches) >= 1
+        assert any(m.pattern == "malformed_date_fixed" for m in matches)
+        fixed_match = next(m for m in matches if m.pattern == "malformed_date_fixed")
+        assert fixed_match.fixed == "2026-01-15) - Fixed"

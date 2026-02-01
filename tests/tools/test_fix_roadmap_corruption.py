@@ -4,7 +4,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from cortex.tools.roadmap_corruption import fix_roadmap_corruption
+from cortex.tools.roadmap_corruption import (
+    fix_roadmap_content_if_needed,
+    fix_roadmap_corruption,
+)
 
 
 @pytest.mark.asyncio
@@ -75,6 +78,24 @@ class TestFixRoadmapCorruption:
         assert result["corruption_count"] >= 1
         updated = roadmap_path.read_text(encoding="utf-8")
         assert "Target completion: 2026-01-01" in updated
+
+
+def test_fix_roadmap_content_if_needed_returns_fixed_content_when_corruption():
+    """fix_roadmap_content_if_needed fixes corruption and returns corrected string."""
+    content = "89.89to 0ctual ceeds90 285es unchanged 90.32coverage"
+    result = fix_roadmap_content_if_needed(content)
+    assert "89.89% to" in result
+    assert "0 actual" in result
+    assert "(exceeds 90%" in result
+    assert "285 files unchanged" in result
+    assert "90.32% coverage" in result
+
+
+def test_fix_roadmap_content_if_needed_returns_same_when_no_corruption():
+    """fix_roadmap_content_if_needed returns content unchanged when no corruption."""
+    content = "# Roadmap\n\n## Section\n\nNo corruption here."
+    result = fix_roadmap_content_if_needed(content)
+    assert result == content
 
 
 class TestFixRoadmapCorruptionContextLogging:

@@ -72,7 +72,7 @@
 
 - ✅ **Phase 23: Fix CI failure (validation refactor)** - COMPLETE (2026-02-01) - Verified: all validation modules present; format, type_check, quality, tests pass (3194 passed, coverage 90.5%). CI failure from commit 612af0e resolved. Plan: .cortex/plans/archive/Phase23/phase-23-fix-ci-failure-validation-refactor.md.
 
-- **Phase 24: Fix roadmap text corruption** - PENDING - Plan: .cortex/plans/phase-24-fix-roadmap-text-corruption.md.
+- ✅ **Phase 24: Fix roadmap text corruption** - COMPLETE (2026-02-01) - Added Phase 24 phrase patterns to src/cortex/tools/roadmap_corruption.py (percent+to, number+ctual, ceeds, files unchanged, percent coverage, malformed date); fix_roadmap_content_if_needed and auto-fix on manage_file write for .cortex/memory-bank/roadmap.md; unit tests; quality gate passes. Plan: .cortex/plans/archive/Phase24/phase-24-fix-roadmap-text-corruption.md.
 
 - **Phase 25: Fix CI failure (commit 302c5e2)** - PENDING - Plan: .cortex/plans/phase-25-fix-ci-failure-commit-302c5e2.md.
 

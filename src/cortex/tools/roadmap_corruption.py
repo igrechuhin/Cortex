@@ -246,10 +246,123 @@ def _detect_pattern8_and_9(lines: list[str], matches: list[CorruptionMatch]) -> 
             )
 
 
+def _detect_plan24_percent_to(lines: list[str], matches: list[CorruptionMatch]) -> None:
+    """Detect number/percent + 'to' -> 'X% to' (e.g. 89.89to -> 89.89% to)."""
+    p_to = re.compile(r"(\d+\.?\d*)to\b")
+    for i, line in enumerate(lines, 1):
+        for m in p_to.finditer(line):
+            matches.append(
+                CorruptionMatch(
+                    line_num=i,
+                    original=m.group(0),
+                    fixed=f"{m.group(1)}% to",
+                    pattern="percent_to_missing_space",
+                )
+            )
+
+
+def _detect_plan24_number_actual(
+    lines: list[str], matches: list[CorruptionMatch]
+) -> None:
+    """Detect number + 'ctual' -> 'X actual' (e.g. 0ctual -> 0 actual)."""
+    p_actual = re.compile(r"(\d+)ctual\b")
+    for i, line in enumerate(lines, 1):
+        for m in p_actual.finditer(line):
+            matches.append(
+                CorruptionMatch(
+                    line_num=i,
+                    original=m.group(0),
+                    fixed=f"{m.group(1)} actual",
+                    pattern="number_actual_missing_space",
+                )
+            )
+
+
+def _detect_plan24_ceeds_percent(
+    lines: list[str], matches: list[CorruptionMatch]
+) -> None:
+    """Detect 'ceeds' + digits -> '(exceeds X%' (e.g. ceeds90 -> (exceeds 90%)."""
+    p_ceeds = re.compile(r"ceeds(\d+)\b")
+    for i, line in enumerate(lines, 1):
+        for m in p_ceeds.finditer(line):
+            matches.append(
+                CorruptionMatch(
+                    line_num=i,
+                    original=m.group(0),
+                    fixed=f"(exceeds {m.group(1)}%",
+                    pattern="exceeds_percent_corrupted",
+                )
+            )
+
+
+def _detect_plan24_files_unchanged(
+    lines: list[str], matches: list[CorruptionMatch]
+) -> None:
+    """Detect number + 'es unchanged' -> 'X files unchanged'."""
+    p_files = re.compile(r"(\d+)es\s+unchanged\b")
+    for i, line in enumerate(lines, 1):
+        for m in p_files.finditer(line):
+            matches.append(
+                CorruptionMatch(
+                    line_num=i,
+                    original=m.group(0),
+                    fixed=f"{m.group(1)} files unchanged",
+                    pattern="files_unchanged_corrupted",
+                )
+            )
+
+
+def _detect_plan24_percent_coverage(
+    lines: list[str], matches: list[CorruptionMatch]
+) -> None:
+    """Detect number + 'coverage' -> 'X% coverage' (e.g. 90.32coverage)."""
+    p_cov = re.compile(r"(\d+\.?\d*)coverage\b")
+    for i, line in enumerate(lines, 1):
+        for m in p_cov.finditer(line):
+            matches.append(
+                CorruptionMatch(
+                    line_num=i,
+                    original=m.group(0),
+                    fixed=f"{m.group(1)}% coverage",
+                    pattern="percent_coverage_missing_space",
+                )
+            )
+
+
+def _detect_plan24_malformed_date(
+    lines: list[str], matches: list[CorruptionMatch]
+) -> None:
+    """Detect 2026MM-DD + 'ixed' -> '2026-MM-DD) - Fixed'."""
+    p_date = re.compile(r"2026(\d{2})-(\d{2})(ixed)\b")
+    for i, line in enumerate(lines, 1):
+        for m in p_date.finditer(line):
+            matches.append(
+                CorruptionMatch(
+                    line_num=i,
+                    original=m.group(0),
+                    fixed=f"2026-{m.group(1)}-{m.group(2)}) - Fixed",
+                    pattern="malformed_date_fixed",
+                )
+            )
+
+
+def _detect_plan24_phrase_patterns(
+    lines: list[str], matches: list[CorruptionMatch]
+) -> None:
+    """Detect Phase 24 phrase corruptions: percent+to, number+ctual, ceeds, etc."""
+    _detect_plan24_percent_to(lines, matches)
+    _detect_plan24_number_actual(lines, matches)
+    _detect_plan24_ceeds_percent(lines, matches)
+    _detect_plan24_files_unchanged(lines, matches)
+    _detect_plan24_percent_coverage(lines, matches)
+    _detect_plan24_malformed_date(lines, matches)
+
+
 def _detect_misc_patterns(lines: list[str], matches: list[CorruptionMatch]) -> None:
     """Detect miscellaneous corruption patterns."""
     _detect_pattern3_implemented(lines, matches)
     _detect_pattern8_and_9(lines, matches)
+    _detect_plan24_phrase_patterns(lines, matches)
 
 
 def _detect_roadmap_corruption(content: str) -> list[CorruptionMatch]:
@@ -261,6 +374,15 @@ def _detect_roadmap_corruption(content: str) -> list[CorruptionMatch]:
     _detect_score_patterns(lines, matches)
     _detect_misc_patterns(lines, matches)
     return matches
+
+
+def fix_roadmap_content_if_needed(content: str) -> str:
+    """Return content with corruption patterns fixed; use before writing roadmap.md.
+
+    Use when writing roadmap.md via manage_file to prevent persisting corruption.
+    """
+    matches = _detect_roadmap_corruption(content)
+    return _apply_roadmap_fixes(content, matches) if matches else content
 
 
 def _apply_roadmap_fixes(content: str, matches: list[CorruptionMatch]) -> str:
