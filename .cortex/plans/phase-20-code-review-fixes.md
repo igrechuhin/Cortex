@@ -118,7 +118,7 @@ Pyright reports 0 errors, 0 warnings on src and tests.
 **Effort:** High (40-60 hours total)  
 **Impact:** High - Rules compliance, maintainability
 
-Validation and phase2 already split (validation_operations 491 lines; phase2_linking 26). Step 3.10 complete: phase5_execution split (2026-01-31). Step 3.9 complete: phase8_structure split into phase8_structure_validation.py, phase8_structure_operations.py, phase8_structure_docs.py (2026-02-01). Remaining files >400 lines: rollback_manager, template_manager, initialization, structure_analyzer, optimization_strategies. Quality gate passes; continue splits in future sessions as needed.
+Validation and phase2 already split (validation_operations 491 lines; phase2_linking 26). Step 3.10 complete: phase5_execution split (2026-01-31). Step 3.9 complete: phase8_structure split (2026-02-01). Step 3.8 complete: optimization_strategies split (2026-02-01). Remaining files >400 lines: rollback_manager, template_manager, initialization, structure_analyzer. Quality gate passes; continue splits in future sessions as needed.
 
 **Issue:**
 10 files exceed the 400-line limit (MANDATORY rule violation):
@@ -199,14 +199,13 @@ Validation and phase2 already split (validation_operations 491 lines; phase2_lin
 - Update imports across codebase
 - Ensure all tests pass
 
-**3.8: Split `optimization_strategies.py` (822 → ≤400 lines)**
+**3.8: Split `optimization_strategies.py` (822 → ≤400 lines)** ✅ COMPLETE (2026-02-01)
 
-- Extract strategy implementations → `strategy_implementations.py`
-- Extract strategy selection → `strategy_selection.py`
-- Extract strategy metrics → `strategy_metrics.py`
-- Keep core orchestration in `optimization_strategies.py`
-- Update imports across codebase
-- Ensure all tests pass
+- Extracted section helpers → `strategy_implementations.py` (find_section_bounds, extract_section_content, filter_and_sort_sections, calculate_section_tokens, process_sections_for_file)
+- Extracted hybrid phase execution → `strategy_hybrid.py` (execute_hybrid_phase1, execute_hybrid_phase2, combine_hybrid_results)
+- Added `get_all_dependencies_closure` to `strategy_selection.py`; moved OptimizationResult dataclass to `optimization_types.py`
+- Core orchestration in `optimization_strategies.py` (387 lines); delegates to strategy_selection, strategy_metrics, strategy_implementations, strategy_hybrid
+- All 3194 tests pass; quality gate passes
 
 **3.9: Split `phase8_structure.py` (821 → ≤400 lines)** ✅ COMPLETE (2026-02-01)
 

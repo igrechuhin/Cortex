@@ -106,6 +106,7 @@
     "rootdir",
     "ruff",
     "rustc",
+    "scanability",
     "schema",
     "sequentialthinking",
     "setuptools",

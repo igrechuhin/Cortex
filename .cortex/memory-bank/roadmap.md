@@ -50,7 +50,7 @@
 
 - ✅ **TypeScript Pre-Commit Adapter** - COMPLETE (2026-01-29) - Added TypeScriptAdapter in src/cortex/services/framework_adapters/typescript_adapter.py (prettier, eslint, tsc, npm test). Registered in pre_commit_tools _ADAPTER_REGISTRY; typescript now uses TypeScriptAdapter instead of StubAdapter. Unit tests in tests/unit/test_typescript_adapter.py. TestAdapterRegistry updated (test_get_adapter_returns_typescript_adapter_for_typescript). All 2919 tests passing, coverage 90%.
 
-- ✅ **Java Pre-Commit Adapter** - COMPLETE (2026-01-30) - Added JavaAdapter in src/cortex/services/framework_adapters/java_adapter.py (Maven/Gradle: spotless:apply/spotlessApply, compile/compileJava, validate/check, test). Registered in pre_commit_tools; java now uses JavaAdapter instead of StubAdapter. StubAdapterLanguage no longer includes JAVA (placeholder OTHER for future adapters). Unit tests in tests/unit/test_java_adapter.py; test_get_adapter_returns_java_adapter_for_java in tests/unit/test_pre_commit_tools.py. Stub tests updated to use other. All 3044 tests passing.
+- ✅ **Java Pre-Commit Adapter** - COMPLETE (2026-01-30) - Added JavaAdapter in src/cortex/services/framework_adapters/java_adapter.py (Maven/Gradle: spotless:apply/spotlessApply, compile/compileJava, validate/check, test). Registered in pre_commit_tools; java now uses JavaAdapter instead of StubAdapter. Unit tests in tests/unit/test_java_adapter.py; test_get_adapter_returns_java_adapter_for_java in tests/unit/test_pre_commit_tools.py. Stub tests updated to use other. All 3044 tests passing.
 
 - ✅ **Kotlin Pre-Commit Adapter** - COMPLETE (2026-01-31) - KotlinAdapter in src/cortex/services/framework_adapters/kotlin_adapter.py (Maven/Gradle: Spotless/ktlint format, compile, validate/check, test). Registered in pre_commit_tools; kotlin uses KotlinAdapter. Unit tests in tests/unit/test_kotlin_adapter.py; test_get_adapter_returns_kotlin_adapter_for_kotlin in tests/unit/test_pre_commit_tools.py. Language detector supports Kotlin (Gradle or Maven config files, e.g. build.gradle, pom.xml). All adapter tests passing.
 
@@ -66,7 +66,7 @@
 
 - ✅ **Ensure proper logging (FastMCP context)** - COMPLETE (2026-01-31) - Phase 3 tool migration done: phase4_optimization_handlers, context_analysis_handlers, phase8_structure, synapse_tools, pre_commit_tools, phase5_execution, refactoring_operations now use optional ctx and log_client; unit tests added (TestPhase4OptimizationContextLogging, TestContextAnalysisContextLogging, TestPhase8StructureContextLogging, TestSynapseToolsContextLogging, TestPreCommitToolsContextLogging, TestPhase5ExecutionContextLogging, TestRefactoringOperationsContextLogging). Some function-length/file-size quality violations remain; tracked for follow-up. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
 
-- **Phase 20: Code Review Fixes** - IN PROGRESS (2026-02-01) - Steps 1, 2, 4, 5 complete; Step 3.10 complete (phase5_execution split); Step 3.9 complete (phase8_structure split into validation, operations, docs). Remaining files >400 lines: rollback_manager, template_manager, initialization, structure_analyzer, optimization_strategies. All 3194 tests pass; quality gate passes. Plan: .cortex/plans/phase-20-code-review-fixes.md.
+- **Phase 20: Code Review Fixes** - IN PROGRESS (2026-02-01) - Steps 1, 2, 4, 5 complete; Step 3.10 complete (phase5_execution split); Step 3.9 complete (phase8_structure split); Step 3.8 complete (optimization_strategies split). Remaining files >400 lines: rollback_manager, template_manager, initialization, structure_analyzer. All 3194 tests pass; quality gate passes. Plan: .cortex/plans/phase-20-code-review-fixes.md.
 
 - **Phase 21: Health-Check and Optimization Analysis** - IN PROGRESS (2026-02-01) - Step 5 complete: MCP tool `analyze_health_check` in src/cortex/tools/health_check_operations.py (prompts, rules, tools, all; similarity_threshold, include_dependencies, validate_quality; optional prompt_dependencies/rule_dependencies). Public get_prompts_for_dependencies/get_rules_for_dependencies on analyzers. Tests: tests/tools/test_health_check_operations.py (10 tests). Quality gate passes. Remaining: Steps 2–4, 6–9. Plan: .cortex/plans/phase-21-health-check-optimization.md.
 
@@ -104,7 +104,7 @@
 
 - **Phase 46: Extract setup to separate MCP server** - PENDING - Plan: .cortex/plans/phase-46-extract-setup-to-separate-mcp-server.md.
 
-- **Phase 47: Add prompt icons** - PENDING - Plan: .cortex/plans/phase-47-add-prompt-icons.md.
+- **Phase 47: Add prompt icons and emoji in messages** - PENDING - Add emoji icons to prompts; use emoji in messages (e.g. ✅ success, ❌ error) where meaning is obvious. Plan: .cortex/plans/phase-47-add-prompt-icons.md.
 
 - **Phase 48: Improve optimize-context feedback** - PENDING - Plan: .cortex/plans/phase-48-improve-optimize-context-feedback.md.
 

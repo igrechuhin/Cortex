@@ -303,3 +303,31 @@ def get_medium_scoring_files(
         if medium_score_threshold <= score < high_score_threshold
         and file_name not in selected_files
     ]
+
+
+def get_all_dependencies_closure(
+    get_dependencies: Callable[[str], list[str]], file_name: str
+) -> set[str]:
+    """Compute transitive closure of dependencies for a file.
+
+    Args:
+        get_dependencies: Function returning immediate dependencies for a file
+        file_name: File name to start from
+
+    Returns:
+        Set of all dependency file names (excluding file_name itself)
+    """
+    visited: set[str] = set()
+    to_visit = [file_name]
+
+    while to_visit:
+        current = to_visit.pop()
+        if current in visited:
+            continue
+
+        visited.add(current)
+        deps = get_dependencies(current)
+        to_visit.extend(deps)
+
+    visited.discard(file_name)
+    return visited

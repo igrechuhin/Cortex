@@ -8,10 +8,11 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 - **Phase 21: Health-Check and Optimization Analysis** - IN PROGRESS (2026-02-01) - Step 5 complete: MCP tool `analyze_health_check` in src/cortex/tools/health_check_operations.py. Remaining: Steps 2–4 (similarity/dependency/quality enhancements), 6–9 (CLI script, CI/CD, tests, docs). Plan: .cortex/plans/phase-21-health-check-optimization.md.
 
-- **Phase 20: Code Review Fixes** - IN PROGRESS (2026-02-01) - Steps 1, 2, 4, 5 complete; Step 3.10 complete (phase5_execution split); Step 3.9 complete (phase8_structure split). Remaining files >400 lines: rollback_manager, template_manager, initialization, structure_analyzer, optimization_strategies. Plan: .cortex/plans/phase-20-code-review-fixes.md.
+- **Phase 20: Code Review Fixes** - IN PROGRESS (2026-02-01) - Steps 1, 2, 4, 5 complete; Step 3.10 complete (phase5_execution split); Step 3.9 complete (phase8_structure split); Step 3.8 complete (optimization_strategies split). Remaining files >400 lines: rollback_manager, template_manager, initialization, structure_analyzer. Plan: .cortex/plans/phase-20-code-review-fixes.md.
 
 - ✅ **Phase 23: Fix CI failure (validation refactor)** - COMPLETE (2026-02-01)
 - ✅ **Phase 21 Step 5 (analyze_health_check MCP tool)** - COMPLETE (2026-02-01)
+- ✅ **Phase 20 Step 3.8 (optimization_strategies split)** - COMPLETE (2026-02-01)
 - ✅ **Phase 20 Step 3.9 (phase8_structure split)** - COMPLETE (2026-02-01)
 - ✅ **Phase 20 Step 3.10 (phase5_execution split)** - COMPLETE (2026-01-31)
 - ✅ **Ensure proper logging (FastMCP context)** - COMPLETE (2026-01-31)
@@ -19,10 +20,10 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
-- Commit (2026-02-01): Pre-commit pipeline passed; markdown lint 4 files fixed; type_check, quality, tests 3194, coverage 90.51%. 0 plans archived; memory bank updated.
+- Commit (2026-02-01): Pre-commit pipeline; quality fix (optimization_strategies._run_sections_phase → _run_mandatory_and_high helper); markdown lint 5 files; type_check, quality, tests 3194, coverage 90.51%. 0 plans archived.
+- Phase 20 Step 3.8 (2026-02-01): optimization_strategies.py split to ≤400 lines (387 lines) via strategy_implementations.py, strategy_hybrid.py, strategy_selection (get_all_dependencies_closure), optimization_types (OptimizationResult). All 3194 tests pass; quality gate passes.
 - Phase 20 Step 3.9 (2026-02-01): phase8_structure split into phase8_structure_validation.py, phase8_structure_operations.py, phase8_structure_docs.py; main file 193 lines. All 3194 tests pass; quality gate passes.
 - Phase 23 (2026-02-01): Verified validation refactor state; all validation modules present; format, type_check, quality, tests pass (3194, 90.5% coverage). Plan archived to .cortex/plans/archive/Phase23/.
-- Commit (2026-02-01): Pre-commit pipeline passed; memory bank and markdown lint updates. Tests 3194, coverage 90.5%. Phase 21 Step 5 (analyze_health_check) and health_check_operations in place.
 
 ## Project Health
 
@@ -35,4 +36,4 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Next Focus
 
-- Continue Phase 21 (Steps 2–4, 6–9) or Phase 20 (remaining file splits); or pick next roadmap step (Phase 24: Fix roadmap text corruption). Run commit pipeline when ready.
+- Continue Phase 20 (remaining file splits: rollback_manager, template_manager, initialization, structure_analyzer) or Phase 21 (Steps 2–4, 6–9); or pick next roadmap step (Phase 24: Fix roadmap text corruption). Run commit pipeline when ready.

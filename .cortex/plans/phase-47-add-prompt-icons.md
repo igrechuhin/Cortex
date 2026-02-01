@@ -7,7 +7,7 @@
 
 ## Overview
 
-Add visual emoji icons to all Cortex MCP prompts to help users navigate between prompts in client applications. Icons provide visual representations that make it easier to identify and select prompts, improving user experience and discoverability.
+Add visual emoji icons to all Cortex MCP prompts to help users navigate between prompts in client applications. Icons provide visual representations that make it easier to identify and select prompts, improving user experience and discoverability. Additionally, use emoji in **messages** (MCP tool responses, commit pipeline output, validation reports) where the meaning is obvious—e.g. ✅ instead of "success", ❌ instead of "error"—to improve scanability and consistency.
 
 **Reference**: <https://gofastmcp.com/servers/icons>
 
@@ -20,6 +20,10 @@ Add visual emoji icons to all Cortex MCP prompts to help users navigate between 
 - All prompts use `@mcp.prompt()` decorator without icons
 - FastMCP 2.0 in use (migrated in Phase 41)
 - No visual indicators to help users distinguish between prompts
+
+### New Input (2026-02-01)
+
+From commit-pipeline runs and user request: extend Phase 47 so that **all messages** (not only prompt icons) use emoji where meaning is obvious—e.g. ✅ instead of "success", ❌ for error, ⚠️ for warning. Use wisely and only when unambiguous; do not replace descriptive text where context is needed.
 
 ### Related Work
 
@@ -34,6 +38,7 @@ Add visual emoji icons to all Cortex MCP prompts to help users navigate between 
 3. **Categorize prompts visually** using appropriate emoji for each prompt type
 4. **Maintain backward compatibility** with existing prompt behavior
 5. **Create reusable icon helper** for emoji-to-data-URI conversion
+6. **Use emoji in messages** (MCP responses, commit pipeline, validation) where meaning is obvious—e.g. ✅ success, ❌ error, ⚠️ warning—use wisely, only when unambiguous
 
 ## FastMCP Icons Reference
 
@@ -212,9 +217,33 @@ Update `process_prompt_info()` to read icon from manifest if present.
 
 **Estimated Effort**: 1 hour
 
-### Step 7: Testing and Verification
+### Step 7: Messages with Emoji (MCP and Pipeline)
 
-1. **Unit Tests**:
+**Scope**: MCP tool response fields (e.g. `message`, `status`-related text), `execute_pre_commit_checks` output, validation reports, and commit-pipeline step summaries.
+
+**Principle**: Use emoji **only when meaning is obvious**. Do not replace descriptive text with emoji where context is needed.
+
+**Examples** (prefer emoji instead of bare text when used as status/summary):
+
+- ✅ for success (e.g. "File written successfully" → "✅ File written successfully" or message field "✅ …")
+- ❌ for error/failure
+- ⚠️ for warning
+- 🔍 for check/inspection
+- 📋 for plan/list
+
+**Where to apply**:
+
+- MCP tools that return `message` or similar (e.g. `manage_file`, `get_structure_info`, `execute_pre_commit_checks` result summaries)
+- Commit workflow agents/prompts that emit step outcomes (success/fail/warning)
+- Validation tool output (e.g. schema/roadmap sync messages)
+
+**Out of scope**: Do not change structured fields (e.g. `status: "success"`) to emoji-only; use emoji to **augment** human-facing message text where it improves scanability.
+
+**Estimated Effort**: 1–2 hours (audit message strings, add emoji where appropriate, keep machine-readable fields unchanged).
+
+### Step 8: Testing and Verification
+
+1. **Unit tests**:
    - Test `create_emoji_icon()` generates valid Icon objects
    - Test SVG generation with different emojis
    - Test data URI format is correct
@@ -333,6 +362,7 @@ def create_emoji_icons(
 4. ✅ Icon helper utility is reusable and well-tested
 5. ✅ No breaking changes to existing prompt functionality
 6. ✅ Icons improve prompt discoverability and navigation
+7. ✅ Messages (MCP responses, commit pipeline, validation) use emoji where meaning is obvious (e.g. ✅ success, ❌ error, ⚠️ warning), without replacing descriptive text where context is needed
 
 ## Dependencies
 
@@ -370,9 +400,10 @@ def create_emoji_icons(
 - **Step 4**: Define dynamic prompt icons (0.5 hours)
 - **Step 5**: Update dynamic prompt registration (1.5 hours)
 - **Step 6**: Update prompts manifest (optional, 1 hour)
-- **Step 7**: Testing and verification (1.5 hours)
+- **Step 7**: Messages with emoji (1–2 hours)
+- **Step 8**: Testing and verification (1.5 hours)
 
-**Total**: 6-8 hours
+**Total**: 7–10 hours
 
 ## Notes
 
