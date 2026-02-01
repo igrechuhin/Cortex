@@ -67,8 +67,15 @@ def _handle_broken_resource_in_group(eg: BaseExceptionGroup) -> bool:
     for exc in eg.exceptions:
         if _is_connection_error(exc):
             logger.warning(
-                "MCP stdio connection broken during TaskGroup cleanup "
-                + f"(client disconnected): {exc}"
+                (
+                    "MCP stdio connection broken during TaskGroup cleanup "
+                    "(client disconnected); group_msg=%s sub_count=%d "
+                    "exc_type=%s exc_msg=%s"
+                ),
+                eg.message,
+                len(eg.exceptions),
+                type(exc).__name__,
+                str(exc),
             )
             return True
     return False
@@ -80,18 +87,62 @@ def _handle_connection_error(e: Exception) -> None:
     Args:
         e: Exception to handle
     """
+    exc_type = type(e).__name__
+    exc_msg = str(e)
     if isinstance(e, (anyio.BrokenResourceError, BrokenPipeError)):
-        logger.warning(f"MCP stdio connection broken (client disconnected): {e}")
+        logger.warning(
+            (
+                "MCP stdio connection broken (client disconnected); "
+                "exc_type=%s exc_msg=%s"
+            ),
+            exc_type,
+            exc_msg,
+        )
         sys.exit(0)  # Graceful shutdown
     elif isinstance(e, ConnectionError):
-        logger.error(f"MCP connection error: {e}")
+        logger.error("MCP connection error; exc_type=%s exc_msg=%s", exc_type, exc_msg)
         sys.exit(1)
     elif isinstance(e, OSError):
-        if "Broken pipe" in str(e) or "Connection reset" in str(e):
-            logger.warning(f"MCP connection reset (client disconnected): {e}")
+        if "Broken pipe" in exc_msg or "Connection reset" in exc_msg:
+            logger.warning(
+                (
+                    "MCP connection reset (client disconnected); "
+                    "exc_type=%s exc_msg=%s"
+                ),
+                exc_type,
+                exc_msg,
+            )
             sys.exit(0)  # Exit gracefully - client disconnected
-        logger.error(f"MCP OS error: {e}")
+        logger.error("MCP OS error; exc_type=%s exc_msg=%s", exc_type, exc_msg)
         sys.exit(1)
+
+
+def _log_and_exit_on_task_group_error(eg: BaseExceptionGroup) -> None:
+    """Log TaskGroup error details and exit with code 1."""
+    first = eg.exceptions[0] if eg.exceptions else None
+    sub_summary = "; ".join(
+        f"{type(e).__name__}: {str(e)[:200]}" for e in eg.exceptions[:5]
+    )
+    if len(eg.exceptions) > 5:
+        sub_summary += f" ... and {len(eg.exceptions) - 5} more"
+    logger.error(
+        (
+            "MCP server TaskGroup error (not connection-related); "
+            "group_msg=%s sub_count=%d sub_exceptions=[%s]"
+        ),
+        eg.message,
+        len(eg.exceptions),
+        sub_summary,
+    )
+    if first is not None:
+        logger.error(
+            "MCP server TaskGroup first exception: %s",
+            first,
+            exc_info=(type(first), first, first.__traceback__),
+        )
+    else:
+        logger.error("MCP server TaskGroup error: %s", eg)
+    sys.exit(1)
 
 
 def main() -> None:
@@ -109,18 +160,7 @@ def main() -> None:
     except BaseExceptionGroup as eg:
         if _handle_broken_resource_in_group(eg):
             sys.exit(0)  # Graceful shutdown
-        # Log first nested exception for debugging tool/server failures
-        first = eg.exceptions[0] if eg.exceptions else None
-        if first is not None:
-            logger.error(
-                "MCP server TaskGroup error (%d sub-exception(s)); first: %s",
-                len(eg.exceptions),
-                first,
-                exc_info=(type(first), first, first.__traceback__),
-            )
-        else:
-            logger.error("MCP server TaskGroup error: %s", eg)
-        sys.exit(1)
+        _log_and_exit_on_task_group_error(eg)
     except (anyio.BrokenResourceError, BrokenPipeError, ConnectionError, OSError) as e:
         _handle_connection_error(e)
     except Exception as e:

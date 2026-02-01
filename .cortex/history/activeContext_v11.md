@@ -6,9 +6,11 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
-- ✅ **Phase 21: Health-Check and Optimization Analysis** - COMPLETE (2026-02-01) - Steps 6–9 done: CLI scripts/health_check.py; CI health-check step and artifact in .github/workflows/quality.yml; tests/tools/test_health_check_cli.py; docs/guides/health-check.md, docs/api/health-check.md, docs/api/tools.md (54 tools). Steps 2–4 implemented in module. All 3203 tests pass; coverage 90.84%. Plan: .cortex/plans/phase-21-health-check-optimization.md.
+- ✅ **Phase 21: Health-Check and Optimization Analysis** - COMPLETE (2026-02-01) - Steps 6–9 done: CLI scripts/health_check.py; CI health-check step and artifact in .github/workflows/quality.yml; tests/tools/test_health_check_cli.py; docs/guides/health-check.md, docs/api/health-check.md, docs/api/tools.md (54 tools). Steps 2–4 implemented in module. All 3204 tests pass; coverage 90.83%.
 
 - ✅ **Phase 20: Code Review Fixes** - COMPLETE (2026-02-01) - All steps done. Step 3.6 (initialization.py 188 lines) and 3.7 (structure_analyzer.py 264 lines) complete. All 10 file splits done; 3201 tests pass; quality gate passes. Plan: .cortex/plans/phase-20-code-review-fixes.md.
+
+- ✅ **Commit (2026-02-01)**: main.py type/quality fixes - Fixed reportImplicitStringConcatenation (4 logger calls); refactored main() to _log_and_exit_on_task_group_error (≤30 lines). All 3204 tests pass; coverage 90.83%.
 
 - ✅ **Phase 25: Fix CI failure (commit 302c5e2)** - COMPLETE (2026-02-01)
 - ✅ **Phase 24: Fix roadmap text corruption** - COMPLETE (2026-02-01)
@@ -26,12 +28,13 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
-- Phase 21 (2026-02-01): CLI scripts/health_check.py; CI Health-Check Analysis step and artifact; test_health_check_cli.py; docs/guides/health-check.md, docs/api/health-check.md, tools.md (54 tools). All 3203 tests pass; coverage 90.84%.
-- Phase 20 (2026-02-01): initialization.py 556→188 lines; structure_analyzer.py 612→264 lines. Delegation to manager_initialization, initialization_health, structure_detection, structure_analysis, structure_metrics. All 3201 tests pass; quality gate passes.
+- Commit (2026-02-01): main.py reportImplicitStringConcatenation fixes; main() refactored to _log_and_exit_on_task_group_error. 3204 tests; coverage 90.83%.
+- Phase 21 (2026-02-01): CLI scripts/health_check.py; CI Health-Check Analysis step and artifact; test_health_check_cli.py; docs. All 3203 tests pass; coverage 90.84%.
+- Phase 20 (2026-02-01): initialization.py, structure_analyzer.py splits. All 3201 tests pass; quality gate passes.
 
 ## Project Health
 
-- **Tests**: 3203 passing; coverage ≥ 90%.
+- **Tests**: 3204 passing; coverage ≥ 90%.
 - **Linting/Types**: Pyright 0 errors, 0 warnings.
 - **Quality**: File size and function length gates passing; all 10 Phase 20 file splits ≤400 lines.
 - **Pre-commit adapters**: Python, TypeScript, JavaScript, Rust, Go, Java, Kotlin, Swift full implementations.

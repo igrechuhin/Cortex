@@ -168,6 +168,28 @@ class TestMainErrorHandling:
         mock_mcp.run.assert_called_once_with(transport="stdio")
 
     @patch("cortex.main.mcp")
+    def test_base_exception_group_with_mcp_connection_closed(
+        self, mock_mcp: MagicMock
+    ) -> None:
+        """Test that TaskGroup error with MCP -32000 Connection closed is
+        not treated as graceful shutdown; we exit with code 1 (real error)."""
+        # Arrange - e.g. when fix_markdown_lint completes after client disconnected
+        connection_closed_error = RuntimeError("MCP error -32000: Connection closed")
+        exception_group = BaseExceptionGroup(
+            "unhandled errors in a TaskGroup (1 sub-exception)",
+            [connection_closed_error],
+        )
+        mock_mcp.run.side_effect = exception_group
+
+        # Act
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+
+        # Assert - do not silence as success; treat as failure for investigation
+        assert exc_info.value.code == 1
+        mock_mcp.run.assert_called_once_with(transport="stdio")
+
+    @patch("cortex.main.mcp")
     def test_base_exception_group_with_nested_group(self, mock_mcp: MagicMock) -> None:
         """Test that nested BaseExceptionGroup with connection error is
         handled gracefully."""
