@@ -1,0 +1,184 @@
+"""Tests for health_check_operations MCP tool."""
+
+import json
+import tempfile
+from collections.abc import Generator
+from contextlib import contextmanager
+from pathlib import Path
+from unittest.mock import AsyncMock, patch
+
+import pytest
+
+from cortex.tools.health_check_operations import (
+    analyze_health_check,
+    empty_prompt_result,
+    empty_rule_result,
+    empty_tool_result,
+    get_project_root,
+    run_health_check_analysis,
+)
+
+
+@contextmanager
+def _temp_project() -> Generator[Path]:
+    """Yield a temporary project path with .cortex/synapse layout."""
+    with tempfile.TemporaryDirectory() as tmp:
+        path: Path = Path(tmp)
+        (path / ".cortex" / "synapse" / "prompts").mkdir(parents=True)
+        (path / ".cortex" / "synapse" / "rules" / "general").mkdir(parents=True)
+        (path / "src" / "cortex" / "tools").mkdir(parents=True)
+        yield path
+
+
+class TestGetProjectRoot:
+    """Tests for get_project_root."""
+
+    def test_returns_cwd_when_none(self) -> None:
+        """When project_root is None, returns Path.cwd()."""
+        result = get_project_root(None)
+        assert result == Path.cwd()
+
+    def test_returns_resolved_path_when_given(self) -> None:
+        """When project_root is given, returns resolved Path."""
+        result = get_project_root("/some/project")
+        assert result == Path("/some/project").resolve()
+
+
+class TestEmptyResults:
+    """Tests for empty result helpers."""
+
+    def test_empty_prompt_result_has_zero_total(self) -> None:
+        """empty_prompt_result returns total=0 and empty lists."""
+        r = empty_prompt_result()
+        assert r["total"] == 0
+        assert r["merge_opportunities"] == []
+        assert r["optimization_opportunities"] == []
+
+    def test_empty_rule_result_has_zero_total(self) -> None:
+        """empty_rule_result returns total=0 and empty categories."""
+        r = empty_rule_result()
+        assert r["total"] == 0
+        assert r["categories"] == []
+        assert r["merge_opportunities"] == []
+        assert r["optimization_opportunities"] == []
+
+    def test_empty_tool_result_has_zero_total(self) -> None:
+        """empty_tool_result returns total=0 and empty lists."""
+        r = empty_tool_result()
+        assert r["total"] == 0
+        assert r["merge_opportunities"] == []
+        assert r["optimization_opportunities"] == []
+        assert r["consolidation_opportunities"] == []
+
+
+class TestRunHealthCheckAnalysis:
+    """Tests for run_health_check_analysis."""
+
+    @pytest.mark.asyncio
+    async def test_returns_valid_json_with_prompts_only(self) -> None:
+        """Analysis type prompts returns JSON with prompts section."""
+        with _temp_project() as root:
+            result = await run_health_check_analysis(
+                analysis_type="prompts",
+                similarity_threshold=0.75,
+                include_dependencies=False,
+                validate_quality=False,
+                project_root=root,
+            )
+            data = json.loads(result)
+            assert data["status"] == "success"
+            assert data["analysis_type"] == "prompts"
+            assert "prompts" in data
+            assert "rules" in data
+            assert "tools" in data
+            assert data["rules"]["total"] == 0
+            assert data["tools"]["total"] == 0
+
+    @pytest.mark.asyncio
+    async def test_returns_valid_json_with_all_types(self) -> None:
+        """Analysis type all returns JSON with all sections."""
+        with _temp_project() as root:
+            result = await run_health_check_analysis(
+                analysis_type="all",
+                similarity_threshold=0.75,
+                include_dependencies=False,
+                validate_quality=False,
+                project_root=root,
+            )
+            data = json.loads(result)
+            assert data["status"] == "success"
+            assert data["analysis_type"] == "all"
+            assert "prompts" in data
+            assert "rules" in data
+            assert "tools" in data
+            assert "recommendations" in data
+
+    @pytest.mark.asyncio
+    async def test_include_dependencies_adds_prompt_deps_when_prompts_analyzed(
+        self,
+    ) -> None:
+        """When include_dependencies and prompts analyzed, report has prompt_dependencies."""
+        with _temp_project() as root:
+            result = await run_health_check_analysis(
+                analysis_type="prompts",
+                similarity_threshold=0.75,
+                include_dependencies=True,
+                validate_quality=False,
+                project_root=root,
+            )
+            data = json.loads(result)
+            assert "prompt_dependencies" in data
+            assert isinstance(data["prompt_dependencies"], dict)
+
+
+class TestAnalyzeHealthCheck:
+    """Tests for analyze_health_check MCP tool."""
+
+    @pytest.mark.asyncio
+    async def test_analyze_health_check_returns_success_json(self) -> None:
+        """analyze_health_check returns valid JSON with status success."""
+        mock_report = json.dumps(
+            {
+                "status": "success",
+                "analysis_type": "prompts",
+                "prompts": empty_prompt_result(),
+                "rules": empty_rule_result(),
+                "tools": empty_tool_result(),
+                "recommendations": [],
+            },
+            indent=2,
+        )
+        with patch(
+            "cortex.tools.health_check_operations.run_health_check_analysis",
+            new_callable=AsyncMock,
+            return_value=mock_report,
+        ):
+            result_str = await analyze_health_check(
+                analysis_type="prompts",
+                similarity_threshold=0.75,
+                include_dependencies=False,
+                validate_quality=False,
+                project_root=None,
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["analysis_type"] == "prompts"
+        assert "prompts" in result
+        assert "rules" in result
+        assert "tools" in result
+
+    @pytest.mark.asyncio
+    async def test_analyze_health_check_with_project_root(self) -> None:
+        """analyze_health_check accepts project_root and uses it."""
+        with _temp_project() as root:
+            result_str = await analyze_health_check(
+                analysis_type="tools",
+                similarity_threshold=0.75,
+                include_dependencies=False,
+                validate_quality=False,
+                project_root=str(root),
+            )
+            result = json.loads(result_str)
+            assert result["status"] == "success"
+            assert result["analysis_type"] == "tools"
+            assert result["tools"]["total"] >= 0

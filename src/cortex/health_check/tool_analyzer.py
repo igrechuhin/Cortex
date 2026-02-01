@@ -222,10 +222,7 @@ class ToolAnalyzer:
                         MergeOpportunity(
                             files=[name1, name2],
                             similarity=(param_overlap + body_similarity) / 2,
-                            merge_suggestion=(
-                                f"Consider consolidating {name1} and {name2} "
-                                "(similar parameters and implementation)"
-                            ),
+                            merge_suggestion=f"Consider consolidating {name1} and {name2} (similar parameters and implementation)",
                             quality_impact="positive",
                             estimated_savings="Reduced maintenance overhead",
                         )

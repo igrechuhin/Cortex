@@ -32,6 +32,7 @@ from . import (
     configuration_operations,  # noqa: F401
     connection_health,  # noqa: F401
     file_operations,  # noqa: F401
+    health_check_operations,  # noqa: F401
     markdown_operations,  # noqa: F401
     phase1_foundation_dependency,  # noqa: F401
     phase1_foundation_rollback,  # noqa: F401
@@ -63,6 +64,7 @@ __all__ = [
     "configuration_operations",
     "connection_health",
     "file_operations",
+    "health_check_operations",
     "markdown_operations",
     "phase1_foundation_dependency",
     "phase1_foundation_rollback",

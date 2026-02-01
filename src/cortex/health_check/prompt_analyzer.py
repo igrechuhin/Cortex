@@ -33,6 +33,14 @@ class PromptAnalyzer:
             / "prompts"
         )
 
+    async def get_prompts_for_dependencies(self) -> dict[str, str]:
+        """Return scanned prompts dict for dependency mapping.
+
+        Returns:
+            Dictionary mapping prompt file names to content.
+        """
+        return await self._scan_prompts()
+
     async def analyze(self) -> PromptAnalysisResult:
         """Analyze all prompts for merge and optimization opportunities.
 

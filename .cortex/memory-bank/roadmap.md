@@ -68,7 +68,7 @@
 
 - **Phase 20: Code Review Fixes** - IN PROGRESS (2026-01-31) - Steps 1, 2, 4, 5 complete; Step 3.10 complete: phase5_execution split into validation, monitoring, and planning modules. Remaining files >400 lines: rollback_manager, template_manager, initialization, structure_analyzer, optimization_strategies, phase8_structure. All 3184 tests pass; quality gate passes. Plan: .cortex/plans/phase-20-code-review-fixes.md.
 
-- **Phase 21: Health-Check and Optimization Analysis** - PENDING - Health-check system for prompts, rules, and MCP tools. Plan: .cortex/plans/phase-21-health-check-optimization.md.
+- **Phase 21: Health-Check and Optimization Analysis** - IN PROGRESS (2026-02-01) - Step 5 complete: MCP tool `analyze_health_check` in src/cortex/tools/health_check_operations.py (prompts, rules, tools, all; similarity_threshold, include_dependencies, validate_quality; optional prompt_dependencies/rule_dependencies). Public get_prompts_for_dependencies/get_rules_for_dependencies on analyzers. Tests: tests/tools/test_health_check_operations.py (10 tests). Quality gate passes. Remaining: Steps 2–4, 6–9. Plan: .cortex/plans/phase-21-health-check-optimization.md.
 
 - **Phase 23: Fix CI failure (validation refactor)** - PENDING - Plan: .cortex/plans/phase-23-fix-ci-failure-validation-refactor.md.
 

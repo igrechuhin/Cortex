@@ -18,6 +18,13 @@
   - Tests: 12 tests passing (similarity_engine, quality_validator)
   - Code formatted with Black, all quality gates passing
 
+- ✅ Step 5: Create MCP Tool for Health-Check - COMPLETE (2026-02-01)
+  - Added `src/cortex/tools/health_check_operations.py` with `analyze_health_check` MCP tool
+  - Parameters: analysis_type (prompts|rules|tools|all), similarity_threshold, include_dependencies, validate_quality, project_root
+  - Uses PromptAnalyzer, RuleAnalyzer, ToolAnalyzer; optional DependencyMapper and QualityValidator
+  - Public `get_prompts_for_dependencies` / `get_rules_for_dependencies` on PromptAnalyzer and RuleAnalyzer
+  - Registered in cortex.tools; 10 tests in tests/tools/test_health_check_operations.py; quality gate passes
+
 ## Goal
 
 Create a comprehensive health-check system that analyzes prompts, rules, and MCP tools for merge and optimization opportunities without losing quality. Integrate this system into CI/CD pipelines to continuously monitor and suggest improvements.

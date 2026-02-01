@@ -33,6 +33,14 @@ class RuleAnalyzer:
             / "rules"
         )
 
+    async def get_rules_for_dependencies(self) -> dict[str, dict[str, str]]:
+        """Return scanned rules dict for dependency mapping.
+
+        Returns:
+            Dictionary mapping category -> file_name -> content.
+        """
+        return await self._scan_rules()
+
     async def analyze(self) -> RuleAnalysisResult:
         """Analyze all rules for merge and optimization opportunities.
 
@@ -143,7 +151,7 @@ class RuleAnalyzer:
                                 ),
                                 quality_impact="positive",
                                 estimated_savings=(
-                                    f"{int((1 - similarity) * 100)}% " "reduction"
+                                    f"{int((1 - similarity) * 100)}% reduction"
                                 ),
                             )
                         )
@@ -210,10 +218,10 @@ class RuleAnalyzer:
             files=[f"{cat1}/{name1}", f"{cat2}/{name2}"],
             similarity=similarity,
             merge_suggestion=(
-                f"Consider consolidating {name1} " f"({cat1}) and {name2} ({cat2})"
+                f"Consider consolidating {name1} ({cat1}) and {name2} ({cat2})"
             ),
             quality_impact="positive",
-            estimated_savings=(f"{int((1 - similarity) * 100)}% " "reduction"),
+            estimated_savings=f"{int((1 - similarity) * 100)}% reduction",
         )
 
     async def _find_optimization_opportunities(
