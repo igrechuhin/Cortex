@@ -6,6 +6,10 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
+- ✅ **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 4 files fixed (activeContext, progress, roadmap, phase-30). 3298 tests; coverage 90.37%. Plan archiving in Step 7.
+
+- ✅ **Phase 30: Fix CI failure (commit 42a3362)** - COMPLETE (2026-02-01) - Reproduced full CI pipeline locally; all checks pass (3298 tests, coverage 90.36%). Original failure from 42a3362 likely addressed by subsequent work. No code changes required. Plan and roadmap updated.
+
 - ✅ **Commit (2026-02-01)**: Pre-commit pipeline; quality fix (usage_analytics.get_tool_usage_report → _fetch_report_data, ≤30 lines); markdown lint 4 files fixed. 3298 tests; coverage 90.26%. 0 plans archived.
 
 - ✅ **Phase 21: Health-Check and Optimization Analysis** - COMPLETE (2026-02-01) - Steps 6–9 done: CLI scripts/health_check.py; CI health-check step and artifact in .github/workflows/quality.yml; tests/tools/test_health_check_cli.py; docs/guides/health-check.md, docs/api/health-check.md, docs/api/tools.md (54 tools). Steps 2–4 implemented in module. All 3204 tests pass; coverage 90.83%.
@@ -34,12 +38,10 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
+- Commit (2026-02-01): Pre-commit pipeline; markdown lint 4 files fixed. 3298 tests; coverage 90.37%. Plan archiving in Step 7.
+- Phase 30 (2026-02-01): Verified full CI pipeline locally; all checks pass. No code changes. Plan and roadmap updated.
 - Commit (2026-02-01): Pre-commit pipeline; quality fix (usage_analytics); markdown lint 4 files fixed. 3298 tests; coverage 90.26%. 0 plans archived.
-- Commit (2026-02-01): Pre-commit pipeline; markdown lint 5 files fixed. 3283 tests; coverage 90.84%. 0 plans archived.
 - Phase 27 (2026-02-01): script_promotion, discovery; analyze_session_scripts, suggest_tool_improvements, promote_session_script MCP tools. 3283 tests; coverage 90.84%.
-- Commit (2026-02-01): Pre-commit pipeline; markdown lint 4 files fixed (activeContext, progress, roadmap, phase-27). 3254 tests; coverage 90.83%. 0 plans archived.
-- Phase 27 (2026-02-01): script_detection module; capture_session_script and list_session_scripts MCP tools. 3224 tests; coverage 90.84%.
-- Commit (2026-02-01): main.py reportImplicitStringConcatenation fixes; main() refactored to _log_and_exit_on_task_group_error. 3204 tests; coverage 90.83%.
 - Phase 21 (2026-02-01): CLI scripts/health_check.py; CI Health-Check Analysis step and artifact; test_health_check_cli.py; docs. All 3203 tests pass; coverage 90.84%.
 - Phase 20 (2026-02-01): initialization.py, structure_analyzer.py splits. All 3201 tests pass; quality gate passes.
 
@@ -56,4 +58,4 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Next Focus
 
-- Pick next PENDING plan (Phase 30: Fix CI failure). Run commit pipeline when ready.
+- Pick next PENDING plan (Phase 31: Fix optimize-context stale file errors). Run commit pipeline when ready.

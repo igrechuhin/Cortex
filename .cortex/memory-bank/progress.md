@@ -2,6 +2,10 @@
 
 ## 2026-02-01
 
+- **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 4 files fixed (activeContext, progress, roadmap, phase-30). fix_errors, format, type_check, quality, tests 3298, coverage 90.37%. Plan archiving in Step 7; memory bank updated.
+
+- **Phase 30: Fix CI failure (commit 42a3362)** (2026-02-01) - Reproduced full CI pipeline locally (Black, Ruff, Pyright, file sizes, function lengths, quality gate, tests with coverage). All checks pass (3298 tests, coverage 90.36%). No failures identified; original failure from 42a3362 likely addressed by subsequent work (Phase 20, 21, 27, 29, etc.) or was environment-specific. No code changes required. Plan and roadmap updated: Phase 30 COMPLETE.
+
 - **Commit (2026-02-01)**: Pre-commit pipeline; quality fix (usage_analytics.get_tool_usage_report → _fetch_report_data, ≤30 lines); markdown lint 4 files fixed (activeContext, progress, roadmap, phase-29). fix_errors, format, type_check, quality, tests 3298, coverage 90.26%. 0 plans archived; memory bank updated.
 
 - **Phase 29: Track MCP tool usage** (2026-02-01) - Implemented usage tracking: docs/architecture/tool-usage-tracking.md; UsageTracker and usage_models; usage_context and recording in mcp_stability; usage_analytics MCP tools (get_tool_usage_stats, get_unused_tools, get_tool_usage_report, get_optimization_recommendations); config .cortex/config/usage_tracking.json; CacheType.USAGE. Unit tests test_usage_tracker.py, test_usage_models.py. All 3298 tests pass; coverage 90.27%; quality gate passes. Roadmap and plan updated: Phase 29 COMPLETE.

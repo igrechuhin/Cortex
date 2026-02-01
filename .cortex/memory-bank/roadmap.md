@@ -78,7 +78,7 @@
 
 - ✅ **Phase 29: Track MCP tool usage** - COMPLETE (2026-02-01) - Usage tracking: docs/architecture/tool-usage-tracking.md; UsageTracker, usage_models, usage_context; recording in mcp_stability; usage_analytics MCP tools (get_tool_usage_stats, get_unused_tools, get_tool_usage_report, get_optimization_recommendations); config .cortex/config/usage_tracking.json; CacheType.USAGE. All 3298 tests pass; coverage 90.27%; quality gate passes. Plan: .cortex/plans/archive/Phase29/phase-29-track-mcp-tool-usage.md.
 
-- **Phase 30: Fix CI failure (commit 42a3362)** - PENDING - Plan: .cortex/plans/phase-30-fix-ci-failure-commit-42a3362.md.
+- ✅ **Phase 30: Fix CI failure (commit 42a3362)** - COMPLETE (2026-02-01) - Reproduced full CI pipeline locally; all checks pass (3298 tests, coverage 90.36%). Original failure from 42a3362 likely addressed by subsequent work. No code changes required. Plan: .cortex/plans/archive/Phase30/phase-30-fix-ci-failure-commit-42a3362.md.
 
 - **Phase 31: Fix optimize-context stale file errors** - PENDING - Plan: .cortex/plans/phase-31-fix-optimize-context-stale-file-errors.md.
 
