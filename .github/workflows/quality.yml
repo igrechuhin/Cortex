@@ -294,6 +294,25 @@ jobs:
           token: ${{ env.CODECOV_TOKEN }}
         continue-on-error: true
 
+      - name: Health-Check Analysis
+        id: health_check
+        run: |
+          echo "::group::Running health-check analysis"
+          uv run python scripts/health_check.py \
+            --type all \
+            --threshold 0.75 \
+            --output health-check-report.json \
+            --format json
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: Upload Health-Check Report
+        if: always() && steps.health_check.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: health-check-report
+          path: health-check-report.json
+
       - name: Quality check summary
         if: always()
         run: |

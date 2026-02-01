@@ -25,6 +25,26 @@
   - Public `get_prompts_for_dependencies` / `get_rules_for_dependencies` on PromptAnalyzer and RuleAnalyzer
   - Registered in cortex.tools; 10 tests in tests/tools/test_health_check_operations.py; quality gate passes
 
+- ✅ Step 6: Create CLI Script for Health-Check - COMPLETE (2026-02-01)
+  - Added `scripts/health_check.py` with --type, --threshold, --output, --format (json|markdown), --project-root, --no-dependencies, --no-quality-validation
+  - Runs run_health_check_analysis via asyncio.run; emits JSON or Markdown via ReportGenerator
+
+- ✅ Step 7: Integrate into CI/CD Pipeline - COMPLETE (2026-02-01)
+  - Added Health-Check Analysis step in `.github/workflows/quality.yml` (continue-on-error: true)
+  - Upload Health-Check Report artifact when step succeeds
+
+- ✅ Step 8: Create Unit Tests - COMPLETE (existing + CLI)
+  - tests/unit/health_check/ (prompt_analyzer, rule_analyzer, tool_analyzer, similarity_engine, dependency_mapper, quality_validator, report_generator)
+  - tests/tools/test_health_check_operations.py, tests/tools/test_health_check_cli.py (--help, invalid threshold)
+  - Full suite 3203 tests; coverage ≥90%
+
+- ✅ Step 9: Documentation - COMPLETE (2026-02-01)
+  - docs/guides/health-check.md (user guide: CLI, MCP tool, reports, CI)
+  - docs/api/health-check.md (API reference: analyze_health_check, CLI, report types)
+  - docs/api/tools.md updated (54 tools; Health-Check Analysis section, analyze_health_check)
+
+Note: Steps 2–4 (Similarity Engine, Dependency Mapper, Quality Validator) were implemented as part of Step 1; existing modules already provide the planned features.
+
 ## Goal
 
 Create a comprehensive health-check system that analyzes prompts, rules, and MCP tools for merge and optimization opportunities without losing quality. Integrate this system into CI/CD pipelines to continuously monitor and suggest improvements.

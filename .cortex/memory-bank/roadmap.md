@@ -14,6 +14,8 @@
 
 - ✅ **Phase 20: Code Review Fixes** - COMPLETE (2026-02-01) - Steps 1, 2, 4, 5 complete; Step 3 complete (all 10 file splits: validation_operations, phase2_linking, pattern_analyzer, rollback_manager, template_manager, initialization, structure_analyzer, optimization_strategies, phase8_structure, phase5_execution). src/cortex/managers/initialization.py 188 lines; src/cortex/analysis/structure_analyzer.py 264 lines. All 3201 tests pass; quality gate passes. Plan: .cortex/plans/phase-20-code-review-fixes.md.
 
+- ✅ **Phase 21: Health-Check and Optimization Analysis** - COMPLETE (2026-02-01) - Steps 6–9 done: CLI scripts/health_check.py (--type, --threshold, --output, --format json|markdown); CI health-check step and artifact in .github/workflows/quality.yml; tests/tools/test_health_check_cli.py; docs/guides/health-check.md, docs/api/health-check.md, docs/api/tools.md (54 tools, analyze_health_check). Steps 2–4 implemented in module (similarity_engine, dependency_mapper, quality_validator). All 3203 tests pass; coverage 90.84%. Plan: .cortex/plans/phase-21-health-check-optimization.md.
+
 - ✅ **Go Pre-Commit Adapter** - COMPLETE (2026-01-30) - Added GoAdapter in src/cortex/services/framework_adapters/go_adapter.py (go fmt, go vet, go build, go test). Registered in pre_commit_tools; go now uses GoAdapter instead of StubAdapter. StubAdapterLanguage no longer includes GO. Unit tests in tests/unit/test_go_adapter.py; test_get_adapter_returns_go_adapter_for_go in tests/unit/test_pre_commit_tools.py. Stub tests updated to use java. All 3020 tests passing.
 
 - ✅ **Session hang: run pre-commit adapter work off event loop** - COMPLETE (2026-01-30) - Per `.cortex/reviews/session-hang-investigation-2026-01-30T15-00.md`: `execute_pre_commit_checks` now runs `_execute_all_checks` via `asyncio.to_thread()` so format, fix_errors, type_check, quality, and tests run off the event loop. Event loop stays responsive; MCP tool timeout still applies. Unit test `test_runs_adapter_checks_off_event_loop_via_to_thread` in tests/unit/test_pre_commit_tools.py. All 43 tests in that file passing.
@@ -67,14 +69,6 @@
 ## Pending plans (from .cortex/plans)
 
 - ✅ **Ensure proper logging (FastMCP context)** - COMPLETE (2026-01-31) - Phase 3 tool migration done: phase4_optimization_handlers, context_analysis_handlers, phase8_structure, synapse_tools, pre_commit_tools, phase5_execution, refactoring_operations now use optional ctx and log_client; unit tests added (TestPhase4OptimizationContextLogging, TestContextAnalysisContextLogging, TestPhase8StructureContextLogging, TestSynapseToolsContextLogging, TestPreCommitToolsContextLogging, TestPhase5ExecutionContextLogging, TestRefactoringOperationsContextLogging). Some function-length/file-size quality violations remain; tracked for follow-up. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
-
-- **Phase 21: Health-Check and Optimization Analysis** - IN PROGRESS (2026-02-01) - Step 5 complete: MCP tool `analyze_health_check` in src/cortex/tools/health_check_operations.py (prompts, rules, tools, all; similarity_threshold, include_dependencies, validate_quality; optional prompt_dependencies/rule_dependencies). Public get_prompts_for_dependencies/get_rules_for_dependencies on analyzers. Tests: tests/tools/test_health_check_operations.py (10 tests). Quality gate passes. Remaining: Steps 2–4, 6–9. Plan: .cortex/plans/phase-21-health-check-optimization.md.
-
-- ✅ **Phase 23: Fix CI failure (validation refactor)** - COMPLETE (2026-02-01) - Verified: all validation modules present; format, type_check, quality, tests pass (3194 passed, coverage 90.5%). CI failure from commit 612af0e resolved. Plan: .cortex/plans/archive/Phase23/phase-23-fix-ci-failure-validation-refactor.md.
-
-- ✅ **Phase 24: Fix roadmap text corruption** - COMPLETE (2026-02-01) - Added Phase 24 phrase patterns to src/cortex/tools/roadmap_corruption.py (percent+to, number+ctual, ceeds, files unchanged, percent coverage, malformed date); fix_roadmap_content_if_needed and auto-fix on manage_file write for .cortex/memory-bank/roadmap.md; unit tests; quality gate passes. Plan: .cortex/plans/archive/Phase24/phase-24-fix-roadmap-text-corruption.md.
-
-- ✅ **Phase 25: Fix CI failure (commit 302c5e2)** - COMPLETE (2026-02-01) - Verified: format, type_check, quality, tests pass (3201 passed, coverage 90.54%). CI failure from commit 302c5e2 resolved in current codebase. Plan: .cortex/plans/archive/Phase25/phase-25-fix-ci-failure-commit-302c5e2.md.
 
 - **Phase 27: Script generation prevention** - PENDING - Plan: .cortex/plans/phase-27-script-generation-prevention.md.
 

@@ -2,6 +2,10 @@
 
 ## 2026-02-01
 
+- **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 7 files fixed; type_check, quality, tests 3203, coverage 90.83%. 0 plans archived; memory bank updated.
+
+- **Phase 21: Steps 6–9 (CLI, CI, tests, docs)** (2026-02-01) - Completed Phase 21 Health-Check: added scripts/health_check.py (--type, --threshold, --output, --format json|markdown); Health-Check Analysis step and artifact upload in .github/workflows/quality.yml (continue-on-error: true); tests/tools/test_health_check_cli.py (--help, invalid threshold); docs/guides/health-check.md, docs/api/health-check.md, docs/api/tools.md (54 tools, analyze_health_check section). Plan updated: Steps 2–4 noted as implemented in module. All 3203 tests pass; coverage 90.84%; quality gate passes.
+
 - **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 5 files fixed; type_check, quality, tests 3201, coverage 90.84%. 0 plans archived; memory bank updated.
 
 - **Phase 20: Steps 3.6 and 3.7 (initialization, structure_analyzer split)** (2026-02-01) - Refactored initialization.py (556 → 188 lines) to delegate to manager_initialization (`add_*` and `_create_*`) and initialization_health (handle_file_change). Refactored structure_analyzer.py (612 → 264 lines) to delegate to structure_detection, structure_analysis, structure_metrics. Added dependency_count/dependent_count to structure_detection; fixed structure_metrics create_circular_chain length. Test helper _get_manager_helper updated to support dict (builder) for get_manager patches. All 3201 tests pass; quality gate passes. Phase 20 Step 3 complete; plan and roadmap updated.
@@ -48,7 +52,7 @@
 
 - **Ensure proper logging (FastMCP context): Phase 3 tool migration** (2026-01-31) - Added optional ctx and log_client to phase4, context_analysis, phase8_structure, synapse_tools, pre_commit_tools, phase5_execution, refactoring_operations. Unit tests added. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
 
-- **Commit: pre-commit pipeline and markdown lint** (2026-01-31) - Pre-commit: fix_errors, format, markdown lint (3 files fixed), type_check, quality, tests (3177 passed, 90.51% coverage). 0 plans archived; memory bank updated.
+- **Commit: pre-commit and markdown lint** (2026-01-31) - Pre-commit: fix_errors, format, markdown lint (3 files fixed), type_check, quality, tests (3177 passed, 90.51% coverage). 0 plans archived; memory bank updated.
 
 - **Ensure proper logging (FastMCP context): phase2_linking tools** (2026-01-31) - Refactored parse_links, validate_links, resolve_transclusions, get_link_graph to use optional ctx and log_client. All 33 Phase 2 linking tests passing.
 

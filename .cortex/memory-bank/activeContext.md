@@ -6,7 +6,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
-- **Phase 21: Health-Check and Optimization Analysis** - IN PROGRESS (2026-02-01) - Step 5 complete: MCP tool `analyze_health_check` in src/cortex/tools/health_check_operations.py. Remaining: Steps 2–4 (similarity/dependency/quality enhancements), 6–9 (CLI script, CI/CD, tests, docs). Plan: .cortex/plans/phase-21-health-check-optimization.md.
+- ✅ **Phase 21: Health-Check and Optimization Analysis** - COMPLETE (2026-02-01) - Steps 6–9 done: CLI scripts/health_check.py; CI health-check step and artifact in .github/workflows/quality.yml; tests/tools/test_health_check_cli.py; docs/guides/health-check.md, docs/api/health-check.md, docs/api/tools.md (54 tools). Steps 2–4 implemented in module. All 3203 tests pass; coverage 90.84%. Plan: .cortex/plans/phase-21-health-check-optimization.md.
 
 - ✅ **Phase 20: Code Review Fixes** - COMPLETE (2026-02-01) - All steps done. Step 3.6 (initialization.py 188 lines) and 3.7 (structure_analyzer.py 264 lines) complete. All 10 file splits done; 3201 tests pass; quality gate passes. Plan: .cortex/plans/phase-20-code-review-fixes.md.
 
@@ -26,20 +26,19 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
+- Phase 21 (2026-02-01): CLI scripts/health_check.py; CI Health-Check Analysis step and artifact; test_health_check_cli.py; docs/guides/health-check.md, docs/api/health-check.md, tools.md (54 tools). All 3203 tests pass; coverage 90.84%.
 - Phase 20 (2026-02-01): initialization.py 556→188 lines; structure_analyzer.py 612→264 lines. Delegation to manager_initialization, initialization_health, structure_detection, structure_analysis, structure_metrics. All 3201 tests pass; quality gate passes.
-- Commit (2026-02-01): Pre-commit pipeline; quality fix (rollback_execution.restore_files → _restore_one_file); markdown lint 7 files; type_check, quality, tests 3201, coverage 90.73%.
-- Phase 20 Step 3.4 (2026-02-01): rollback_manager.py split to 363 lines; delegation to version_snapshots, rollback_execution, rollback_conflicts, rollback_history_operations, rollback_initialization, rollback_history_loader. All 28 rollback_manager tests pass; 3201 tests total.
-- Phase 20 Step 3.5 (2026-02-01): template_manager.py split to 106 lines; delegation to template_loader, template_renderer, template_questions. All 40 template_manager tests pass; 3201 tests total.
 
 ## Project Health
 
-- **Tests**: 3201 passing; coverage ≥ 90%.
+- **Tests**: 3203 passing; coverage ≥ 90%.
 - **Linting/Types**: Pyright 0 errors, 0 warnings.
 - **Quality**: File size and function length gates passing; all 10 Phase 20 file splits ≤400 lines.
 - **Pre-commit adapters**: Python, TypeScript, JavaScript, Rust, Go, Java, Kotlin, Swift full implementations.
+- **Health-check**: CLI scripts/health_check.py; CI step in quality.yml; analyze_health_check MCP tool.
 - **Plans**: Plans directory in sync with roadmap.
 - **Path resolution**: Use Cortex MCP tools (`get_structure_info()`, `manage_file()`, `rules()`) for memory bank and structure paths.
 
 ## Next Focus
 
-- Continue Phase 21 (Steps 2–4, 6–9) or pick next roadmap step (e.g. Phase 27: Script generation prevention). Run commit pipeline when ready.
+- Pick next roadmap step (first PENDING in Pending plans: Phase 27 Script generation prevention, Phase 29 Track MCP tool usage, etc.). Run commit pipeline when ready.

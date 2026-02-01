@@ -1,10 +1,10 @@
 # MCP Tools API Reference
 
-Complete reference for all 53 MCP tools provided by Cortex.
+Complete reference for all 54 MCP tools provided by Cortex.
 
 ## Overview
 
-Cortex provides 53 tools organized by functionality phases. All tools accept optional `project_root` parameter and return JSON responses with consistent error handling.
+Cortex provides 54 tools organized by functionality phases. All tools accept optional `project_root` parameter and return JSON responses with consistent error handling.
 
 **Total Tools by Phase:**
 
@@ -19,6 +19,7 @@ Cortex provides 53 tools organized by functionality phases. All tools accept opt
 | [Phase 5.3-5.4](#phase-53-54-safe-execution-and-learning) | 6 | Safe Execution & Learning |
 | [Phase 6](#phase-6-shared-rules-repository) | 4 | Shared Rules Repository |
 | [Phase 8](#phase-8-project-structure-management) | 7 | Project Structure Management |
+| [Health-Check](#health-check-analysis) | 1 | Health-Check (prompts, rules, tools analysis) |
 | [Legacy](#legacy-tools) | 3 | Legacy Support |
 
 ---
@@ -2633,6 +2634,30 @@ Returns information about the current structure configuration and status.
   "message": "Structure information retrieved successfully"
 }
 ```
+
+---
+
+## Health-Check Analysis
+
+Tools for analyzing prompts, rules, and MCP tools for merge and optimization opportunities.
+
+### analyze_health_check
+
+Analyze prompts, rules, and/or MCP tools for merge and optimization opportunities.
+
+**USE WHEN:** User wants health-check analysis of prompts, rules, or tools; merge/optimization suggestions; dependency mapping.
+
+**Parameters:**
+
+- `analysis_type` (Literal["prompts", "rules", "tools", "all"]) - What to analyze (default: "all")
+- `similarity_threshold` (float) - Similarity threshold 0.0–1.0 (default: 0.75)
+- `include_dependencies` (bool) - Include prompt/rule dependency maps (default: true)
+- `validate_quality` (bool) - Run quality validation on merge opportunities (default: true)
+- `project_root` (str | None) - Optional project root path
+
+**Returns:** JSON string with `status`, `analysis_type`, `prompts`, `rules`, `tools`, `recommendations`, and optionally `prompt_dependencies` and `rule_dependencies`.
+
+**See:** [Health-Check API](health-check.md) and [Health-Check Guide](../guides/health-check.md).
 
 ---
 
