@@ -144,6 +144,9 @@ class FileSystemManager:
             )
             raise PermissionError(msg)
 
+        if not file_path.exists():
+            raise FileNotFoundError(f"File not found: {file_path}")
+
         async def read_operation() -> tuple[str, str]:
             async with open_async_text_file(file_path, "r", "utf-8") as f:
                 content = await f.read()

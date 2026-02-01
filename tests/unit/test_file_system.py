@@ -183,6 +183,27 @@ class TestReadFile:
             _ = await manager.read_file(file_path)
 
     @pytest.mark.asyncio
+    async def test_read_file_nonexistent_raises_immediately_no_retry(
+        self, temp_project_root: Path
+    ) -> None:
+        """Non-existent file raises FileNotFoundError before retry (no retries)."""
+        from unittest.mock import AsyncMock, patch
+
+        # Arrange: path under memory-bank so validate_path passes
+        memory_bank = temp_project_root / ".cortex" / "memory-bank"
+        memory_bank.mkdir(parents=True, exist_ok=True)
+        nonexistent_path = memory_bank / "missing.md"
+        manager = FileSystemManager(temp_project_root)
+
+        with patch(
+            "cortex.core.file_system.retry_async", new_callable=AsyncMock
+        ) as mock_retry:
+            # Act & Assert
+            with pytest.raises(FileNotFoundError):
+                _ = await manager.read_file(nonexistent_path)
+            mock_retry.assert_not_called()
+
+    @pytest.mark.asyncio
     async def test_read_file_outside_project(self, temp_project_root: Path) -> None:
         """Test reading file outside project raises error."""
         # Arrange

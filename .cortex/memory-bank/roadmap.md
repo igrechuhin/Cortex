@@ -80,7 +80,7 @@
 
 - ✅ **Phase 30: Fix CI failure (commit 42a3362)** - COMPLETE (2026-02-01) - Reproduced full CI pipeline locally; all checks pass (3298 tests, coverage 90.36%). Original failure from 42a3362 likely addressed by subsequent work. No code changes required. Plan: .cortex/plans/archive/Phase30/phase-30-fix-ci-failure-commit-42a3362.md.
 
-- **Phase 31: Fix optimize-context stale file errors** - PENDING - Plan: .cortex/plans/phase-31-fix-optimize-context-stale-file-errors.md.
+- ✅ **Phase 31: Fix optimize-context stale file errors** - COMPLETE (2026-02-01) - Existence check before read in phase4_context_operations._read_all_files_for_context_loading and progressive_loader._read_all_files_for_loading; FileSystemManager.read_file raises FileNotFoundError immediately for non-existent files (no retries); unit tests test_phase4_context_operations, test_file_system (read_file no-retry), test_progressive_loader (load_by_relevance skips stale). All 3301 tests pass; coverage 90.39%; quality gate passes. Plan: .cortex/plans/archive/Phase31/phase-31-fix-optimize-context-stale-file-errors.md.
 
 - **Phase 32: Fix MCP tool connection closure errors** - PENDING - Plan: .cortex/plans/phase-32-fix-mcp-tool-connection-closure-errors.md.
 

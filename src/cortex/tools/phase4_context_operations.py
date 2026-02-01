@@ -5,6 +5,7 @@ This module contains the implementation logic for the load_context tool.
 """
 
 import json
+import logging
 from pathlib import Path
 from typing import cast
 
@@ -17,6 +18,8 @@ from cortex.managers.types import ManagersDict
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.optimization_strategies import OptimizationResult
+
+logger = logging.getLogger(__name__)
 
 
 async def load_context_impl(
@@ -107,8 +110,11 @@ async def _read_all_files_for_context_loading(
     files_metadata: dict[str, ModelDict] = {}
 
     for file_name in all_files:
+        file_path = metadata_index.memory_bank_dir / file_name
+        if not file_path.exists():
+            logger.warning("Skipping stale index entry: %s", file_name)
+            continue
         try:
-            file_path = metadata_index.memory_bank_dir / file_name
             content, _ = await fs_manager.read_file(file_path)
             files_content[file_name] = content
 

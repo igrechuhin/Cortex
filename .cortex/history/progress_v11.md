@@ -2,6 +2,10 @@
 
 ## 2026-02-01
 
+- **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 4 files fixed (activeContext, progress, roadmap, phase-31). fix_errors, format, type_check, quality, tests 3301, coverage 90.39%. Plan archiving in Step 7; memory bank updated.
+
+- **Phase 31: Fix optimize-context stale file errors** (2026-02-01) - Existence check before read in _read_all_files_for_context_loading (phase4_context_operations) and _read_all_files_for_loading (progressive_loader); FileSystemManager.read_file raises FileNotFoundError immediately for non-existent files (no retries). Unit tests: test_phase4_context_operations (load_context_skips_stale_index_entries), test_file_system (read_file_nonexistent_raises_immediately_no_retry), test_progressive_loader (load_by_relevance_skips_stale_index_entries). All 3301 tests pass; coverage 90.39%; quality gate passes. Roadmap and plan updated: Phase 31 COMPLETE.
+
 - **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 4 files fixed (activeContext, progress, roadmap, phase-30). fix_errors, format, type_check, quality, tests 3298, coverage 90.37%. Plan archiving in Step 7; memory bank updated.
 
 - **Phase 30: Fix CI failure (commit 42a3362)** (2026-02-01) - Reproduced full CI pipeline locally (Black, Ruff, Pyright, file sizes, function lengths, quality gate, tests with coverage). All checks pass (3298 tests, coverage 90.36%). No failures identified; original failure from 42a3362 likely addressed by subsequent work (Phase 20, 21, 27, 29, etc.) or was environment-specific. No code changes required. Plan and roadmap updated: Phase 30 COMPLETE.

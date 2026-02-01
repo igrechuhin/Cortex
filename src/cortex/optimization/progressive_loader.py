@@ -557,8 +557,10 @@ async def _read_all_files_for_loading(
     files_metadata: dict[str, FileMetadataForScoring] = {}
 
     for file_name in all_files:
+        file_path = Path(metadata_index.memory_bank_dir) / file_name
+        if not file_path.exists():
+            continue
         try:
-            file_path = Path(metadata_index.memory_bank_dir) / file_name
             content, _ = await file_system.read_file(file_path)
             files_content[file_name] = content
 
