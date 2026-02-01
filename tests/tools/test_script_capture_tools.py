@@ -7,8 +7,11 @@ from pathlib import Path
 import pytest
 
 from cortex.tools.script_capture_tools import (
+    analyze_session_scripts,
     capture_session_script,
     list_session_scripts,
+    promote_session_script,
+    suggest_tool_improvements,
 )
 
 
@@ -98,3 +101,105 @@ class TestListSessionScripts:
                 s for s in data["scripts"] if s["script_path"] == "b.sh"
             )
             assert shell_script["script_type"] == "shell"
+
+
+class TestAnalyzeSessionScripts:
+    """Tests for analyze_session_scripts MCP tool."""
+
+    @pytest.mark.asyncio
+    async def test_returns_success_with_count_and_analyses(self) -> None:
+        """analyze_session_scripts returns JSON with status, count, analyses."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = await analyze_session_scripts(project_root=str(root))
+            data = json.loads(result)
+            assert data["status"] == "success"
+            assert "count" in data
+            assert "analyses" in data
+            assert data["count"] == len(data["analyses"])
+
+    @pytest.mark.asyncio
+    async def test_analyzes_captured_scripts(self) -> None:
+        """analyze_session_scripts returns analysis for each captured script."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            await capture_session_script(
+                script_path="foo.py",
+                script_content="def main(): pass",
+                task_description="Format code",
+                project_root=str(root),
+            )
+            result = await analyze_session_scripts(project_root=str(root))
+            data = json.loads(result)
+            assert data["status"] == "success"
+            assert data["count"] == 1
+            analysis = data["analyses"][0]
+            assert "script_id" in analysis
+            assert "use_case_label" in analysis
+            assert "gap_reason" in analysis
+            assert "promotion_potential" in analysis
+
+
+class TestSuggestToolImprovements:
+    """Tests for suggest_tool_improvements MCP tool."""
+
+    @pytest.mark.asyncio
+    async def test_returns_success_with_recommendations(self) -> None:
+        """suggest_tool_improvements returns JSON with status and recommendations."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = await suggest_tool_improvements(
+                task_description="format Python files",
+                project_root=str(root),
+                max_results=5,
+            )
+            data = json.loads(result)
+            assert data["status"] == "success"
+            assert "recommendations" in data
+            assert "task_description" in data
+            for rec in data["recommendations"]:
+                assert "name" in rec
+                assert "type" in rec
+                assert "score" in rec
+
+
+class TestPromoteSessionScript:
+    """Tests for promote_session_script MCP tool."""
+
+    @pytest.mark.asyncio
+    async def test_returns_error_when_script_not_found(self) -> None:
+        """promote_session_script returns error when script_id not found."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = await promote_session_script(
+                script_id="nonexistent-id",
+                project_root=str(root),
+            )
+            data = json.loads(result)
+            assert data["status"] == "error"
+            assert "not found" in data.get("error", "").lower()
+
+    @pytest.mark.asyncio
+    async def test_returns_validation_and_template_when_script_exists(self) -> None:
+        """promote_session_script returns validation and template for existing script."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cap = await capture_session_script(
+                script_path="format.py",
+                script_content="def main(): pass",
+                task_description="Format code",
+                project_root=str(root),
+            )
+            cap_data = json.loads(cap)
+            script_id = cap_data["script_id"]
+            result = await promote_session_script(
+                script_id=script_id,
+                project_root=str(root),
+                output_type="tool",
+            )
+            data = json.loads(result)
+            assert data["status"] == "success"
+            assert data["script_id"] == script_id
+            assert "validation_passed" in data
+            assert "quality_score" in data
+            assert "template_content" in data

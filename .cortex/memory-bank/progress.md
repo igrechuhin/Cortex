@@ -2,6 +2,10 @@
 
 ## 2026-02-01
 
+- **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 5 files fixed (activeContext, progress, roadmap, phase-27, implement-next-roadmap-step). fix_errors, format, type_check, quality, tests 3283, coverage 90.84%. 0 plans archived; memory bank updated.
+
+- **Phase 27: Script generation prevention (Steps 3–5, 7)** (2026-02-01) - Added script_promotion (validator, tool_converter, script_integrator, documentation_generator); discovery (tool_registry, use_case_mapper, search_interface, recommendation_engine); script_capture_tools extended with analyze_session_scripts, suggest_tool_improvements, promote_session_script; implement prompt script-generation-prevention note. Unit tests for script_promotion and discovery; tests/tools/test_script_capture_tools.py extended. All 3283 tests pass; coverage 90.84%; quality gate passes. Plan and roadmap updated: Phase 27 COMPLETE.
+
 - **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 4 files fixed (activeContext, progress, roadmap, phase-27). type_check, quality, tests 3254, coverage 90.83%. 0 plans archived; memory bank updated.
 
 - **Phase 27: Script generation prevention (Step 2)** (2026-02-01) - Added script_analysis module: models (UseCaseExtraction, GapAnalysis, SimilarityPair, ScriptAnalysisResult), use_case_extractor, gap_analyzer (overlap with substring matching), similarity_detector (content hash + Jaccard), script_analyzer. Unit tests in test_script_analysis_models.py, test_use_case_extractor.py, test_gap_analyzer.py, test_similarity_detector.py, test_script_analyzer.py. All 3254 tests pass; coverage 90.83%; quality gate passes. Plan updated: Step 2 complete.

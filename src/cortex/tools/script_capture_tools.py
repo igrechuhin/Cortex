@@ -3,19 +3,30 @@ Script Capture Tools (Phase 27)
 
 MCP tools for capturing and listing session-generated scripts.
 
-Total: 2 tools
+Total: 5 tools
 - capture_session_script: Record a session-generated script with metadata
 - list_session_scripts: List captured session scripts for analysis
+- analyze_session_scripts: Analyze captured scripts (use case, gap, promotion)
+- suggest_tool_improvements: Recommend tools/scripts for a task description
+- promote_session_script: Validate and get promotion template for a script
 """
 
 import json
 from pathlib import Path
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
+from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST, MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.discovery.recommendation_engine import recommend_tools_and_scripts
+from cortex.discovery.tool_registry import get_known_script_names, get_known_tool_names
+from cortex.script_analysis.script_analyzer import analyze_script
+from cortex.script_detection.models import ScriptCaptureRecord
 from cortex.script_detection.script_capture import capture_script
-from cortex.script_detection.storage import list_captures
+from cortex.script_detection.storage import get_capture_by_id, list_captures
+from cortex.script_promotion.models import ValidationResult
+from cortex.script_promotion.script_integrator import script_integration_template
+from cortex.script_promotion.script_validator import validate_for_promotion
+from cortex.script_promotion.tool_converter import tool_conversion_template
 from cortex.server import mcp
 
 
@@ -108,4 +119,148 @@ async def list_session_scripts(
         "scripts": summaries,
     }
     await log_client(ctx, "info", "list_session_scripts: completed")
+    return json.dumps(payload, indent=2)
+
+
+def _build_promote_payload(
+    record: ScriptCaptureRecord,
+    script_id: str,
+    validation: ValidationResult,
+    output_type: str,
+) -> dict[str, object]:
+    """Build JSON payload for promote_session_script success response."""
+    payload: dict[str, object] = {
+        "status": "success",
+        "script_id": script_id,
+        "validation_passed": validation.passed,
+        "quality_score": validation.quality_score,
+        "issues": validation.issues,
+    }
+    if output_type == "script":
+        rel_path, content = script_integration_template(record)
+        payload["template_path"] = rel_path
+        payload["template_content"] = content
+    else:
+        payload["template_content"] = tool_conversion_template(record)
+    return payload
+
+
+def _analysis_to_summary(obj: object) -> dict[str, object]:
+    """Build JSON-serializable summary from ScriptAnalysisResult."""
+    return {
+        "script_id": getattr(obj, "script_id", ""),
+        "use_case_label": getattr(getattr(obj, "use_case", None), "use_case_label", ""),
+        "keywords": getattr(getattr(obj, "use_case", None), "keywords", []),
+        "gap_reason": getattr(getattr(obj, "gap", None), "gap_reason", ""),
+        "is_gap": getattr(getattr(obj, "gap", None), "is_gap", True),
+        "reusability_score": getattr(obj, "reusability_score", 0.0),
+        "promotion_potential": getattr(obj, "promotion_potential", 0.0),
+    }
+
+
+@mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def analyze_session_scripts(
+    project_root: str | None = None,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Analyze captured session scripts for use case, gap, and promotion potential.
+
+    USE WHEN: User or agent wants to analyze captured scripts; identify
+    use cases, gaps vs existing tools/scripts, and promotion potential.
+
+    EXAMPLES: 'analyze captured scripts', 'run script analysis'.
+
+    RETURNS: JSON with status, count, and list of analysis summaries.
+    """
+    root = _project_root(project_root)
+    await log_client(ctx, "info", "analyze_session_scripts: starting")
+    records = await list_captures(root)
+    tool_names = get_known_tool_names()
+    script_names = get_known_script_names(root)
+    analyses: list[dict[str, object]] = []
+    for record in records:
+        result = analyze_script(record, tool_names, script_names)
+        analyses.append(_analysis_to_summary(result))
+    payload = {
+        "status": "success",
+        "count": len(analyses),
+        "analyses": analyses,
+    }
+    await log_client(ctx, "info", "analyze_session_scripts: completed")
+    return json.dumps(payload, indent=2)
+
+
+@mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def suggest_tool_improvements(
+    task_description: str,
+    project_root: str | None = None,
+    max_results: int = 15,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Recommend existing tools/scripts for a task description.
+
+    USE WHEN: User or agent wants tool/script recommendations for a task;
+    discover existing tools before generating a new script.
+
+    EXAMPLES: 'suggest tools for formatting Python', 'recommend scripts for lint'.
+
+    RETURNS: JSON with status, recommendations (name, type, score).
+    """
+    root = _project_root(project_root)
+    await log_client(ctx, "info", "suggest_tool_improvements: starting")
+    tool_names = get_known_tool_names()
+    script_names = get_known_script_names(root)
+    recs = recommend_tools_and_scripts(
+        task_description=task_description,
+        tool_names=tool_names,
+        script_names=script_names,
+        max_results=max_results,
+    )
+    recommendations = [
+        {"name": name, "type": typ, "score": score} for name, typ, score in recs
+    ]
+    payload = {
+        "status": "success",
+        "task_description": task_description,
+        "recommendations": recommendations,
+    }
+    await log_client(ctx, "info", "suggest_tool_improvements: completed")
+    return json.dumps(payload, indent=2)
+
+
+@mcp.tool()
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def promote_session_script(
+    script_id: str,
+    project_root: str | None = None,
+    output_type: str = "tool",
+    ctx: MCPContext | None = None,
+) -> str:
+    """Validate a captured script and get promotion template (tool or script).
+
+    USE WHEN: User or agent wants to promote a captured script to a
+    permanent MCP tool or Synapse script; get validation and template.
+
+    EXAMPLES: 'promote script abc-123', 'get tool template for script xyz'.
+
+    RETURNS: JSON with status, validation, and template or issues.
+    """
+    root = _project_root(project_root)
+    await log_client(ctx, "info", "promote_session_script: starting")
+    record = await get_capture_by_id(root, script_id)
+    if record is None:
+        payload = {
+            "status": "error",
+            "error": f"Script {script_id} not found",
+        }
+        await log_client(ctx, "info", "promote_session_script: completed")
+        return json.dumps(payload, indent=2)
+    tool_names = get_known_tool_names()
+    script_names = get_known_script_names(root)
+    analysis = analyze_script(record, tool_names, script_names)
+    validation = validate_for_promotion(record, analysis)
+    payload = _build_promote_payload(record, script_id, validation, output_type)
+    await log_client(ctx, "info", "promote_session_script: completed")
     return json.dumps(payload, indent=2)

@@ -10,9 +10,9 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 - ✅ **Phase 20: Code Review Fixes** - COMPLETE (2026-02-01) - All steps done. Step 3.6 (initialization.py 188 lines) and 3.7 (structure_analyzer.py 264 lines) complete. All 10 file splits done; 3201 tests pass; quality gate passes. Plan: .cortex/plans/phase-20-code-review-fixes.md.
 
-- ✅ **Phase 27: Script generation prevention (Steps 1–2/6 partial)** (2026-02-01) - Step 1: script_detection (models, storage, script_capture), capture_session_script and list_session_scripts. Step 2: script_analysis (models, use_case_extractor, gap_analyzer, similarity_detector, script_analyzer); unit tests. 3254 tests; coverage 90.83%.
+- ✅ **Phase 27: Script generation prevention** - COMPLETE (2026-02-01) - Steps 3–5, 7 done: script_promotion (validator, tool_converter, script_integrator, documentation_generator); discovery (tool_registry, use_case_mapper, search_interface, recommendation_engine); script_capture_tools extended with analyze_session_scripts, suggest_tool_improvements, promote_session_script; implement prompt script-generation-prevention note. 3283 tests; coverage 90.84%.
 
-- ✅ **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 4 files (activeContext, progress, roadmap, phase-27). 3254 tests; coverage 90.83%. 0 plans archived.
+- ✅ **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 5 files fixed (activeContext, progress, roadmap, phase-27, implement-next-roadmap-step). fix_errors, format, type_check, quality, tests 3283, coverage 90.84%. 0 plans archived.
 
 - ✅ **Phase 25: Fix CI failure (commit 302c5e2)** - COMPLETE (2026-02-01)
 - ✅ **Phase 24: Fix roadmap text corruption** - COMPLETE (2026-02-01)
@@ -30,6 +30,8 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
+- Commit (2026-02-01): Pre-commit pipeline; markdown lint 5 files fixed. 3283 tests; coverage 90.84%. 0 plans archived.
+- Phase 27 (2026-02-01): script_promotion, discovery; analyze_session_scripts, suggest_tool_improvements, promote_session_script MCP tools. 3283 tests; coverage 90.84%.
 - Commit (2026-02-01): Pre-commit pipeline; markdown lint 4 files fixed (activeContext, progress, roadmap, phase-27). 3254 tests; coverage 90.83%. 0 plans archived.
 - Phase 27 (2026-02-01): script_detection module; capture_session_script and list_session_scripts MCP tools. 3224 tests; coverage 90.84%.
 - Commit (2026-02-01): main.py reportImplicitStringConcatenation fixes; main() refactored to _log_and_exit_on_task_group_error. 3204 tests; coverage 90.83%.
@@ -38,15 +40,15 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Project Health
 
-- **Tests**: 3254 passing; coverage ≥ 90%.
+- **Tests**: 3283 passing; coverage ≥ 90%.
 - **Linting/Types**: Pyright 0 errors, 0 warnings.
 - **Quality**: File size and function length gates passing; all 10 Phase 20 file splits ≤400 lines.
 - **Pre-commit adapters**: Python, TypeScript, JavaScript, Rust, Go, Java, Kotlin, Swift full implementations.
 - **Health-check**: CLI scripts/health_check.py; CI step in quality.yml; analyze_health_check MCP tool.
-- **Script capture**: capture_session_script and list_session_scripts MCP tools; .cortex/script-capture/ storage. **Script analysis**: script_analysis module (use case extraction, gap analysis, similarity detection, script_analyzer).
+- **Script capture**: capture_session_script, list_session_scripts, analyze_session_scripts, suggest_tool_improvements, promote_session_script MCP tools; script_promotion and discovery modules; .cortex/script-capture/ storage.
 - **Plans**: Plans directory in sync with roadmap.
 - **Path resolution**: Use Cortex MCP tools (`get_structure_info()`, `manage_file()`, `rules()`) for memory bank and structure paths.
 
 ## Next Focus
 
-- Continue Phase 27 (Steps 3–5, 7) or pick next PENDING plan (Phase 27 remains first PENDING with Steps 1–2/6 partial done). Run commit pipeline when ready.
+- Pick next PENDING plan (Phase 29: Track MCP tool usage). Run commit pipeline when ready.

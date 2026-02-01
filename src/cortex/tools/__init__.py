@@ -22,9 +22,9 @@ Modules:
 - synapse_tools: Synapse repository tools for rules and prompts (5 tools)
 - phase8_structure: Project structure management (6 tools)
 - prompts: MCP prompt templates for one-time operations (7 prompts)
-- script_capture_tools: Session script capture and listing (2 tools)
+- script_capture_tools: Session script capture, analysis, promotion (5 tools)
 
-Total: 56 tools + 7 prompts
+Total: 59 tools + 7 prompts
 """
 
 # Import all tool modules to register their decorators

@@ -7,7 +7,7 @@
 **Created**: 2026-01-16  
 **Target Completion**: 2026-01-30  
 **Estimated Effort**: 30-40 hours  
-**2026-02-01**: Step 1 (partial) and Step 6 (partial) implemented: script_detection module (models, storage, script_capture), path_resolver SCRIPT_CAPTURE, MCP tools capture_session_script and list_session_scripts. **Step 2 complete**: script_analysis module (models, use_case_extractor, gap_analyzer, similarity_detector, script_analyzer); unit tests. Steps 3–5 and 7 remain.
+**2026-02-01**: Step 1 (partial) and Step 6 (partial) implemented: script_detection module (models, storage, script_capture), path_resolver SCRIPT_CAPTURE, MCP tools capture_session_script and list_session_scripts. **Step 2 complete**: script_analysis module (models, use_case_extractor, gap_analyzer, similarity_detector, script_analyzer); unit tests. **Steps 3–5, 7 complete**: script_promotion (validator, tool_converter, script_integrator, documentation_generator); discovery (tool_registry, use_case_mapper, search_interface, recommendation_engine); script_capture_tools extended with analyze_session_scripts, suggest_tool_improvements, promote_session_script; implement prompt script-generation-prevention note. All 3283 tests pass; coverage 90.84%; quality gate passes.
 
 ## Goal
 

@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-01T18:24:21.988568",
+  "last_updated": "2026-02-01T19:14:15.747547",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 21402,
-      "token_count": 5293,
+      "size_bytes": 4458,
+      "token_count": 1088,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-01T15:31:00.910084",
-      "content_hash": "sha256:54366132003446af564f4ce0e3c4c855524d51956a3c6da1ee6e57612a400325",
+      "last_modified": "2026-02-01T18:50:32.287522",
+      "content_hash": "sha256:428db83eb60890cfb03055a8f59bec0eaa8baa26bd60d8f6fd678d5062c90a69",
       "sections": [
         {
           "title": "## Current Status (2026-02-01)",
@@ -27,25 +27,11 @@
           "line_start": 7,
           "line_end": 7,
           "content_hash": null
-        },
-        {
-          "title": "## Future Enhancements",
-          "level": 2,
-          "line_start": 45,
-          "line_end": 45,
-          "content_hash": null
-        },
-        {
-          "title": "## Pending plans (from .cortex/plans)",
-          "level": 2,
-          "line_start": 69,
-          "line_end": 69,
-          "content_hash": null
         }
       ],
       "read_count": 2,
-      "write_count": 54,
-      "last_read": "2026-02-01T15:31:00.910084",
+      "write_count": 55,
+      "last_read": "2026-02-01T18:50:32.287522",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -664,6 +650,17 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Added new plan: Structured plan creation via Cortex MCP tools"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-01T18:50:32.287167",
+          "content_hash": "sha256:428db83eb60890cfb03055a8f59bec0eaa8baa26bd60d8f6fd678d5062c90a69",
+          "size_bytes": 4458,
+          "token_count": 1088,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Mark Phase 27 Script generation prevention as COMPLETE"
         }
       ]
     },
@@ -1706,11 +1703,11 @@
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 4131,
-      "token_count": 1182,
+      "size_bytes": 4538,
+      "token_count": 1269,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-01T18:24:21.987477",
-      "content_hash": "sha256:0532c7e136145190c2ca084d48530bd935e380827895dcb411fe6b76ae20031d",
+      "last_modified": "2026-02-01T19:14:15.745964",
+      "content_hash": "sha256:f4dc44825a8c256e0f2526f73f1802c44991b265e7799366828bd6133ec64f86",
       "sections": [
         {
           "title": "## Current Focus (2026-02-01)",
@@ -1736,21 +1733,21 @@
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 39,
-          "line_end": 39,
+          "line_start": 41,
+          "line_end": 41,
           "content_hash": null
         },
         {
           "title": "## Next Focus",
           "level": 2,
-          "line_start": 50,
-          "line_end": 50,
+          "line_start": 52,
+          "line_end": 52,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 74,
-      "last_read": "2026-02-01T18:24:21.987477",
+      "write_count": 75,
+      "last_read": "2026-02-01T19:14:15.745964",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -2567,6 +2564,17 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Updated after commit pipeline (markdown lint 4 files, 3254 tests, 90.83% coverage)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-01T19:14:15.745432",
+          "content_hash": "sha256:f4dc44825a8c256e0f2526f73f1802c44991b265e7799366828bd6133ec64f86",
+          "size_bytes": 4538,
+          "token_count": 1269,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated after commit pipeline (markdown lint 5 files, 3283 tests, 90.84% coverage)"
         }
       ]
     },
@@ -2804,8 +2812,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 51388,
-    "total_tokens": 12731,
-    "last_full_scan": "2026-02-01T18:24:21.987494"
+    "total_size_bytes": 34851,
+    "total_tokens": 8613,
+    "last_full_scan": "2026-02-01T19:14:15.745989"
   }
 }

@@ -16,6 +16,8 @@
 
 - ✅ **Phase 21: Health-Check and Optimization Analysis** - COMPLETE (2026-02-01) - Steps 6–9 done: CLI scripts/health_check.py (--type, --threshold, --output, --format json|markdown); CI health-check step and artifact in .github/workflows/quality.yml; tests/tools/test_health_check_cli.py; docs/guides/health-check.md, docs/api/health-check.md, docs/api/tools.md (54 tools, analyze_health_check). Steps 2–4 implemented in module (similarity_engine, dependency_mapper, quality_validator). All 3203 tests pass; coverage 90.84%. Plan: .cortex/plans/phase-21-health-check-optimization.md.
 
+- ✅ **Phase 27: Script generation prevention** - COMPLETE (2026-02-01) - Steps 3–5, 7 done: script_promotion (validator, tool_converter, script_integrator, documentation_generator); discovery (tool_registry, use_case_mapper, search_interface, recommendation_engine); script_capture_tools extended with analyze_session_scripts, suggest_tool_improvements, promote_session_script; implement prompt script-generation-prevention note. All 3283 tests pass; coverage 90.84%; quality gate passes. Plan: .cortex/plans/phase-27-script-generation-prevention.md.
+
 - ✅ **Go Pre-Commit Adapter** - COMPLETE (2026-01-30) - Added GoAdapter in src/cortex/services/framework_adapters/go_adapter.py (go fmt, go vet, go build, go test). Registered in pre_commit_tools; go now uses GoAdapter instead of StubAdapter. StubAdapterLanguage no longer includes GO. Unit tests in tests/unit/test_go_adapter.py; test_get_adapter_returns_go_adapter_for_go in tests/unit/test_pre_commit_tools.py. Stub tests updated to use java. All 3020 tests passing.
 
 - ✅ **Session hang: run pre-commit adapter work off event loop** - COMPLETE (2026-01-30) - Per `.cortex/reviews/session-hang-investigation-2026-01-30T15-00.md`: `execute_pre_commit_checks` now runs `_execute_all_checks` via `asyncio.to_thread()` so format, fix_errors, type_check, quality, and tests run off the event loop. Event loop stays responsive; MCP tool timeout still applies. Unit test `test_runs_adapter_checks_off_event_loop_via_to_thread` in tests/unit/test_pre_commit_tools.py. All 43 tests in that file passing.
@@ -60,6 +62,8 @@
 
 - ✅ **Swift Pre-Commit Adapter** - COMPLETE (2026-01-31) - SwiftAdapter in src/cortex/services/framework_adapters/swift_adapter.py (SwiftPM: swift format, swift build, swift test). Registered in pre_commit_tools; swift uses SwiftAdapter. Unit tests in tests/unit/test_swift_adapter.py; test_get_adapter_returns_swift_adapter_for_swift in tests/unit/test_pre_commit_tools.py. Language detector supports Swift (Package.swift). All adapter tests passing.
 
+- **Script promotion**: Port logic from script_content – src/cortex/script_promotion/script_integrator.py, src/cortex/script_promotion/tool_converter.py – tracked; Phase 27 follow-up.
+
 - **Pre-commit**: Add other language adapters as needed (src/cortex/tools/pre_commit_tools.py) – tracked; Python, TypeScript, JavaScript, Rust, Go, Java, Kotlin, and Swift have full implementations.
 
 - ✅ **Phase 65: Commit Workflow — Cortex Tools Only** - COMPLETE (2026-01-30) - Removed all direct script invocations from the commit prompt; all pre-commit and Step 12 validation are invoked via Cortex MCP tools (`execute_pre_commit_checks` with format, format_ci_parity, type_check, quality, test_naming, tests; `fix_markdown_lint`). Added check types format_ci_parity and test_naming (run synapse scripts internally). Python adapter type_check now runs on src/ and tests/ to match CI. Integration test asserts the commit prompt file contains no `.venv/bin/python .cortex/synapse/scripts`. Plan: .cortex/plans/archive/Phase65/phase-65-commit-workflow-cortex-tools-only.md.
@@ -70,7 +74,7 @@
 
 - ✅ **Ensure proper logging (FastMCP context)** - COMPLETE (2026-01-31) - Phase 3 tool migration done: phase4_optimization_handlers, context_analysis_handlers, phase8_structure, synapse_tools, pre_commit_tools, phase5_execution, refactoring_operations now use optional ctx and log_client; unit tests added (TestPhase4OptimizationContextLogging, TestContextAnalysisContextLogging, TestPhase8StructureContextLogging, TestSynapseToolsContextLogging, TestPreCommitToolsContextLogging, TestPhase5ExecutionContextLogging, TestRefactoringOperationsContextLogging). Some function-length/file-size quality violations remain; tracked for follow-up. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
 
-- **Phase 27: Script generation prevention (Steps 1–2/6 partial 2026-02-01)** - PENDING - Step 2 complete: script_analysis module (models, use_case_extractor, gap_analyzer, similarity_detector, script_analyzer); unit tests. Steps 3–5, 7 remain. Plan: .cortex/plans/phase-27-script-generation-prevention.md.
+- ✅ **Phase 27: Script generation prevention** - COMPLETE (2026-02-01) - Steps 3–5, 7 done: script_promotion (validator, tool_converter, script_integrator, documentation_generator); discovery (tool_registry, use_case_mapper, search_interface, recommendation_engine); script_capture_tools extended with analyze_session_scripts, suggest_tool_improvements, promote_session_script; implement prompt script-generation-prevention note. All 3283 tests pass; coverage 90.84%; quality gate passes. Plan: .cortex/plans/phase-27-script-generation-prevention.md.
 
 - **Phase 29: Track MCP tool usage** - PENDING - Plan: .cortex/plans/phase-29-track-mcp-tool-usage.md.
 
