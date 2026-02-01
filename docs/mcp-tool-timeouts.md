@@ -170,16 +170,15 @@ Choose the timeout category based on operation complexity:
 
 ## Internal Operations
 
-For internal operations (not MCP tools) that use `asyncio.wait_for()`, use timeout constants from `cortex.core.constants`:
+For internal async operations (not MCP tools), use `asyncio.timeout()` with constants from `cortex.core.constants` (Python 3.11+):
 
 ```python
 from cortex.core.constants import GIT_OPERATION_TIMEOUT_SECONDS
 
 async def _run_git_command(cmd: list[str]) -> dict[str, object]:
-    process = await asyncio.wait_for(
-        asyncio.create_subprocess_exec(*cmd, ...),
-        timeout=GIT_OPERATION_TIMEOUT_SECONDS,
-    )
+    async with asyncio.timeout(GIT_OPERATION_TIMEOUT_SECONDS):
+        process = await asyncio.create_subprocess_exec(*cmd, ...)
+        stdout, stderr = await process.communicate()
     ...
 ```
 

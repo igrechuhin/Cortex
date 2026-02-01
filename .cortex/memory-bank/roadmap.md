@@ -86,7 +86,7 @@
 
 - ✅ **Phase 33: Fix execute_pre_commit_checks JSON parsing error** - COMPLETE (2026-02-01) - Tool now returns dict (ModelDict) instead of JSON string so FastMCP serializes once (avoids double-encoding). Added create_error_result_dict, unsupported_language_result_dict in pre_commit_helpers; _build_response and _execute_pre_commit_checks_impl return ModelDict;un_quality_checks uses dict directly. All 3303 tests pass; quality gate passes. Plan: .cortex/plans/archive/Phase33/phase-33-fix-execute-pre-commit-checks-json-parsing-error.md.
 
-- **Phase 34: Ensure MCP tool timeouts** - PENDING - Plan: .cortex/plans/phase-34-ensure-mcp-tool-timeouts.md.
+- ✅ **Phase 34: Ensure MCP tool timeouts** - COMPLETE (2026-02-01) - All MCP tools already had @mcp_tool_wrapper; constants (MCP_TOOL_TIMEOUT_FAST/MEDIUM/COMPLEX/VERY_COMPLEX/EXTERNAL) in place. Replaced asyncio.wait_for with asyncio.timeout in synapse_repository._run_git_command_internal; updated docs/mcp-tool-timeouts.md (Internal Operations: asyncio.timeout). Added verification test test_every_mcp_tool_has_timeout_wrapper in tests/unit/test_mcp_stability_timeouts.py. Quality gate passes. Plan: .cortex/plans/archive/Phase34/phase-34-ensure-mcp-tool-timeouts.md.
 
 - **Phase 35: Fix execute_pre_commit_checks MCP JSON error** - PENDING - Plan: .cortex/plans/phase-35-fix-execute-pre-commit-checks-mcp-json-error.md.
 

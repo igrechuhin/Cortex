@@ -2,6 +2,10 @@
 
 ## 2026-02-01
 
+- **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 5 files fixed (activeContext, progress, roadmap, phase-34, docs/mcp-tool-timeouts). fix_errors, format, type_check, quality, tests 3304, coverage 90.35%. Plan archiving in Step 7; memory bank updated.
+
+- **Phase 34: Ensure MCP tool timeouts** (2026-02-01) - All MCP tools already had @mcp_tool_wrapper; constants in place. Replaced asyncio.wait_for with asyncio.timeout in synapse_repository._run_git_command_internal; updated docs/mcp-tool-timeouts.md (Internal Operations: asyncio.timeout). Added verification test test_every_mcp_tool_has_timeout_wrapper in tests/unit/test_mcp_stability_timeouts.py. Quality gate passes. Plan: .cortex/plans/archive/Phase34/phase-34-ensure-mcp-tool-timeouts.md (status COMPLETE).
+
 - **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 2 files fixed (progress, phase-33). fix_errors, format, type_check, quality, tests 3303, coverage 90.36%. Plan archiving in Step 7; memory bank updated.
 
 - **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 3 files fixed (activeContext, progress, roadmap). fix_errors, format, type_check, quality, tests 3303, coverage 90.37%. Plan archiving in Step 7; memory bank updated.

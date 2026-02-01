@@ -87,21 +87,17 @@ class SynapseRepository:
     async def _run_git_command_internal(
         self, cmd: list[str], timeout: int = GIT_OPERATION_TIMEOUT_SECONDS
     ) -> GitCommandResult:
-        """Internal method to run git command."""
+        """Internal method to run git command with timeout (Phase 34)."""
         try:
             cmd = [c for c in cmd if c]
-            process = await asyncio.wait_for(
-                asyncio.create_subprocess_exec(
+            async with asyncio.timeout(timeout):
+                process = await asyncio.create_subprocess_exec(
                     *cmd,
                     cwd=str(self.project_root),
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
-                ),
-                timeout=timeout,
-            )
-            stdout, stderr = await asyncio.wait_for(
-                process.communicate(), timeout=timeout
-            )
+                )
+                stdout, stderr = await process.communicate()
             return self._build_git_success_response(process, stdout, stderr)
         except TimeoutError:
             return self._build_git_timeout_response(timeout)

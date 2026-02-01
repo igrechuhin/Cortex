@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "anonymize_params": true,
+  "anonymize_params": false,
   "retention_days": 90,
   "aggregation_enabled": true,
   "opt_out_tools": [],

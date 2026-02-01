@@ -5,9 +5,11 @@ Tests verify that:
 - Tools complete successfully within timeout limits
 - Timeout errors are clear and actionable
 - Different timeout categories work correctly
+- All MCP tools have timeout wrapper (Phase 34 verification)
 """
 
 import asyncio
+from pathlib import Path
 
 import pytest
 
@@ -233,3 +235,51 @@ class TestJsonValueTimeoutNormalization:
 
         with pytest.raises(TimeoutError):
             _ = await with_mcp_stability(operation_that_raises, timeout=timeout)
+
+
+def _tools_dir() -> Path:
+    """Return src/cortex/tools path relative to repo root."""
+    return Path(__file__).resolve().parents[2] / "src" / "cortex" / "tools"
+
+
+def _file_has_mcp_tool_without_wrapper(content: str) -> list[int]:
+    """Return line numbers where @mcp.tool() is not followed by @mcp_tool_wrapper."""
+    lines = content.splitlines()
+    bad: list[int] = []
+    i = 0
+    while i < len(lines):
+        stripped = lines[i].strip()
+        if stripped == "@mcp.tool()":
+            # Next non-empty line must be @mcp_tool_wrapper(...)
+            j = i + 1
+            while j < len(lines) and not lines[j].strip():
+                j += 1
+            if j >= len(lines):
+                bad.append(i + 1)
+                break
+            next_line = lines[j].strip()
+            if not next_line.startswith("@mcp_tool_wrapper("):
+                bad.append(i + 1)
+            i = j
+        i += 1
+    return bad
+
+
+class TestAllToolsHaveTimeoutWrapper:
+    """Phase 34: Verify every @mcp.tool() has @mcp_tool_wrapper immediately below."""
+
+    def test_every_mcp_tool_has_timeout_wrapper(self) -> None:
+        """Every @mcp.tool() in src/cortex/tools must have @mcp_tool_wrapper(timeout=...)."""
+        tools_dir = _tools_dir()
+        assert tools_dir.is_dir(), f"Tools dir not found: {tools_dir}"
+        violations: list[tuple[str, list[int]]] = []
+        for path in sorted(tools_dir.glob("*.py")):
+            if path.name.startswith("__"):
+                continue
+            text = path.read_text()
+            bad_lines = _file_has_mcp_tool_without_wrapper(text)
+            if bad_lines:
+                violations.append((path.name, bad_lines))
+        assert not violations, "MCP tools missing @mcp_tool_wrapper: " + ", ".join(
+            f"{f}: lines {lns}" for f, lns in violations
+        )
