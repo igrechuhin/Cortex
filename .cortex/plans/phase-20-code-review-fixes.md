@@ -118,7 +118,7 @@ Pyright reports 0 errors, 0 warnings on src and tests.
 **Effort:** High (40-60 hours total)  
 **Impact:** High - Rules compliance, maintainability
 
-Validation and phase2 already split (validation_operations 491 lines; phase2_linking 26). Step 3.10 complete: phase5_execution split into phase5_execution_validation.py, phase5_execution_monitoring.py, phase5_execution_planning.py (2026-01-31). Remaining files >400 lines: rollback_manager, template_manager, initialization, structure_analyzer, optimization_strategies, phase8_structure. Quality gate passes; continue splits in future sessions as needed.
+Validation and phase2 already split (validation_operations 491 lines; phase2_linking 26). Step 3.10 complete: phase5_execution split (2026-01-31). Step 3.9 complete: phase8_structure split into phase8_structure_validation.py, phase8_structure_operations.py, phase8_structure_docs.py (2026-02-01). Remaining files >400 lines: rollback_manager, template_manager, initialization, structure_analyzer, optimization_strategies. Quality gate passes; continue splits in future sessions as needed.
 
 **Issue:**
 10 files exceed the 400-line limit (MANDATORY rule violation):
@@ -208,14 +208,13 @@ Validation and phase2 already split (validation_operations 491 lines; phase2_lin
 - Update imports across codebase
 - Ensure all tests pass
 
-**3.9: Split `phase8_structure.py` (821 → ≤400 lines)**
+**3.9: Split `phase8_structure.py` (821 → ≤400 lines)** ✅ COMPLETE (2026-02-01)
 
-- Extract structure operations → `structure_operations.py`
-- Extract structure validation → `structure_validation.py`
-- Extract structure creation → `structure_creation.py`
-- Keep core orchestration in `phase8_structure.py`
-- Update imports across codebase
-- Ensure all tests pass
+- Extracted structure validation → `phase8_structure_validation.py` (check_structure_initialized, build_health_result)
+- Extracted structure cleanup operations → `phase8_structure_operations.py` (perform_cleanup_actions, perform_archive_stale, perform_fix_symlinks, perform_update_index, perform_remove_empty, and helpers)
+- Extracted long docstrings → `phase8_structure_docs.py` (CHECK_STRUCTURE_HEALTH_DOC, GET_STRUCTURE_INFO_DOC)
+- Kept core orchestration and MCP tools in `phase8_structure.py` (193 lines); re-exports for tests
+- All 29 phase8 tests pass; 3194 tests total; quality gate passes
 
 **3.10: Split `phase5_execution.py` (781 → ≤400 lines)** ✅ COMPLETE (2026-01-31)
 
