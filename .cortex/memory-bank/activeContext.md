@@ -6,9 +6,13 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
+- ✅ **Commit (2026-02-01)**: Pre-commit pipeline; quality fix (usage_analytics.get_tool_usage_report → _fetch_report_data, ≤30 lines); markdown lint 4 files fixed. 3298 tests; coverage 90.26%. 0 plans archived.
+
 - ✅ **Phase 21: Health-Check and Optimization Analysis** - COMPLETE (2026-02-01) - Steps 6–9 done: CLI scripts/health_check.py; CI health-check step and artifact in .github/workflows/quality.yml; tests/tools/test_health_check_cli.py; docs/guides/health-check.md, docs/api/health-check.md, docs/api/tools.md (54 tools). Steps 2–4 implemented in module. All 3204 tests pass; coverage 90.83%.
 
 - ✅ **Phase 20: Code Review Fixes** - COMPLETE (2026-02-01) - All steps done. Step 3.6 (initialization.py 188 lines) and 3.7 (structure_analyzer.py 264 lines) complete. All 10 file splits done; 3201 tests pass; quality gate passes. Plan: .cortex/plans/phase-20-code-review-fixes.md.
+
+- ✅ **Phase 29: Track MCP tool usage** - COMPLETE (2026-02-01) - Usage tracking (UsageTracker, usage_models, usage_context); recording in mcp_stability; usage_analytics MCP tools; config usage_tracking.json. 3298 tests; coverage 90.27%; quality gate passes.
 
 - ✅ **Phase 27: Script generation prevention** - COMPLETE (2026-02-01) - Steps 3–5, 7 done: script_promotion (validator, tool_converter, script_integrator, documentation_generator); discovery (tool_registry, use_case_mapper, search_interface, recommendation_engine); script_capture_tools extended with analyze_session_scripts, suggest_tool_improvements, promote_session_script; implement prompt script-generation-prevention note. 3283 tests; coverage 90.84%.
 
@@ -30,6 +34,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
+- Commit (2026-02-01): Pre-commit pipeline; quality fix (usage_analytics); markdown lint 4 files fixed. 3298 tests; coverage 90.26%. 0 plans archived.
 - Commit (2026-02-01): Pre-commit pipeline; markdown lint 5 files fixed. 3283 tests; coverage 90.84%. 0 plans archived.
 - Phase 27 (2026-02-01): script_promotion, discovery; analyze_session_scripts, suggest_tool_improvements, promote_session_script MCP tools. 3283 tests; coverage 90.84%.
 - Commit (2026-02-01): Pre-commit pipeline; markdown lint 4 files fixed (activeContext, progress, roadmap, phase-27). 3254 tests; coverage 90.83%. 0 plans archived.
@@ -40,7 +45,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Project Health
 
-- **Tests**: 3283 passing; coverage ≥ 90%.
+- **Tests**: 3298 passing; coverage ≥ 90%.
 - **Linting/Types**: Pyright 0 errors, 0 warnings.
 - **Quality**: File size and function length gates passing; all 10 Phase 20 file splits ≤400 lines.
 - **Pre-commit adapters**: Python, TypeScript, JavaScript, Rust, Go, Java, Kotlin, Swift full implementations.
@@ -51,4 +56,4 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Next Focus
 
-- Pick next PENDING plan (Phase 29: Track MCP tool usage). Run commit pipeline when ready.
+- Pick next PENDING plan (Phase 30: Fix CI failure). Run commit pipeline when ready.

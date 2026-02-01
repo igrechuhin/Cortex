@@ -9,6 +9,7 @@ This module provides connection stability features for MCP tool handlers:
 
 import asyncio
 import logging
+import time
 from collections.abc import Awaitable, Callable
 from inspect import Signature
 from types import TracebackType
@@ -23,6 +24,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_SECONDS,
 )
 from cortex.core.models import ConnectionHealth, JsonValue, MCPToolArguments
+from cortex.core.usage_context import get_current_managers
 
 logger = logging.getLogger(__name__)
 
@@ -268,6 +270,51 @@ def _to_timeout_value(value: JsonValue | None) -> float | None:
     return None
 
 
+async def _record_usage_if_available(
+    tool_name: str,
+    duration_ms: float,
+    success: bool,
+    error_type: str | None,
+) -> None:
+    """Record tool usage if UsageTracker is available (Phase 29)."""
+    try:
+        from cortex.managers.lazy_manager import LazyManager
+        from cortex.managers.usage_tracker import UsageTracker
+
+        managers = get_current_managers()
+        raw = managers.get("usage_tracker") if managers else None
+        if raw is None:
+            return
+        tracker = cast(
+            object,
+            await raw.get() if isinstance(raw, LazyManager) else raw,
+        )
+        if isinstance(tracker, UsageTracker):
+            await tracker.record_tool_usage(
+                tool_name=tool_name,
+                duration_ms=duration_ms,
+                success=success,
+                error_type=error_type,
+            )
+    except Exception as e:
+        logger.debug("Usage recording skipped or failed: %s (%s)", type(e).__name__, e)
+
+
+def _stability_params(
+    timeout: JsonValue | None,
+    stability_timeout: JsonValue | None,
+    kwargs: dict[str, JsonValue],
+) -> tuple[float, MCPToolArguments]:
+    """Compute effective timeout and validated kwargs for with_mcp_stability."""
+    st = _to_timeout_value(stability_timeout)
+    tv = _to_timeout_value(timeout)
+    effective = st or tv or float(MCP_TOOL_TIMEOUT_SECONDS)
+    func_kwargs = {
+        k: v for k, v in kwargs.items() if k not in {"timeout", "stability_timeout"}
+    }
+    return effective, MCPToolArguments.model_validate(func_kwargs)
+
+
 async def with_mcp_stability[T](
     func: Callable[..., Awaitable[T]],
     *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
@@ -298,27 +345,29 @@ async def with_mcp_stability[T](
         RuntimeError: If resource limits exceeded or connection fails
     """
     semaphore = _get_semaphore()
-
-    stability_timeout_value = _to_timeout_value(stability_timeout)
-    timeout_value = _to_timeout_value(timeout)
-
-    effective_timeout = (
-        stability_timeout_value or timeout_value or float(MCP_TOOL_TIMEOUT_SECONDS)
+    effective_timeout, kwargs_model = _stability_params(
+        timeout, stability_timeout, kwargs
     )
-
-    func_kwargs = {
-        key: value
-        for key, value in kwargs.items()
-        if key not in {"timeout", "stability_timeout"}
-    }
-    kwargs_model = MCPToolArguments.model_validate(func_kwargs)
-    return await _execute_with_retry(
-        func,
-        semaphore,
-        effective_timeout,
-        args,
-        kwargs_model,
-    )
+    start_ns = time.perf_counter_ns()
+    success = True
+    error_type: str | None = None
+    try:
+        return await _execute_with_retry(
+            func,
+            semaphore,
+            effective_timeout,
+            args,
+            kwargs_model,
+        )
+    except Exception as e:
+        success = False
+        error_type = type(e).__name__
+        raise
+    finally:
+        duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000.0
+        await _record_usage_if_available(
+            func.__name__, duration_ms, success, error_type
+        )
 
 
 def mcp_tool_wrapper[T](

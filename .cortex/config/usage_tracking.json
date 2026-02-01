@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "anonymize_params": true,
+  "retention_days": 90,
+  "aggregation_enabled": true,
+  "opt_out_tools": [],
+  "min_duration_ms": 0.0
+}

@@ -28,6 +28,7 @@ from cortex.linking.transclusion_engine import TransclusionEngine
 
 # Lazy manager wrapper for on-demand initialization
 from cortex.managers.lazy_manager import LazyManager
+from cortex.managers.usage_tracker import UsageTracker
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.progressive_loader import ProgressiveLoader
@@ -184,4 +185,9 @@ class ManagersDict(BaseModel):
     )
     adaptation_config: LazyManager[AdaptationConfig] | AdaptationConfig | None = Field(
         default=None, description="Adaptation config"
+    )
+
+    # Usage tracking (Phase 29)
+    usage_tracker: LazyManager[UsageTracker] | UsageTracker | None = Field(
+        default=None, description="Usage tracker for MCP tool analytics"
     )

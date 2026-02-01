@@ -17,6 +17,7 @@ class CacheType(str, Enum):
     RELEVANCE = "relevance"
     PATTERNS = "patterns"
     REFACTORING = "refactoring"
+    USAGE = "usage"
 
 
 def get_cache_dir(

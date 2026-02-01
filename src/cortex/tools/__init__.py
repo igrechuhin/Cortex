@@ -23,8 +23,9 @@ Modules:
 - phase8_structure: Project structure management (6 tools)
 - prompts: MCP prompt templates for one-time operations (7 prompts)
 - script_capture_tools: Session script capture, analysis, promotion (5 tools)
+- usage_analytics: Tool usage statistics and optimization (4 tools) - Phase 29
 
-Total: 59 tools + 7 prompts
+Total: 63 tools + 7 prompts
 """
 
 # Import all tool modules to register their decorators
@@ -54,6 +55,7 @@ from . import (
     script_capture_tools,  # noqa: F401
     synapse_prompts,  # noqa: F401  # Dynamic Synapse prompts registration
     synapse_tools,  # noqa: F401
+    usage_analytics,  # noqa: F401
     validation_operations,  # noqa: F401
 )
 
@@ -87,5 +89,6 @@ __all__ = [
     "rules_operations",
     "script_capture_tools",
     "synapse_prompts",
+    "usage_analytics",
     "validation_operations",
 ]

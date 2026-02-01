@@ -32,6 +32,7 @@ from cortex.refactoring.refactoring_executor import RefactoringExecutor
 from cortex.refactoring.reorganization_planner import ReorganizationPlanner
 from cortex.refactoring.rollback_manager import RollbackManager
 from cortex.refactoring.split_recommender import SplitRecommender
+from cortex.managers.usage_tracker import UsageTracker
 from cortex.rules.synapse_manager import SynapseManager
 from cortex.validation.duplication_detector import DuplicationDetector
 from cortex.validation.quality_metrics import QualityMetrics
@@ -216,6 +217,18 @@ def add_execution_managers(
     )
     managers["adaptation_config"] = LazyManager(
         lambda: _create_adaptation_config(managers), name="adaptation_config"
+    )
+
+
+def add_usage_tracker(managers: ManagersBuilder, project_root: Path) -> None:
+    """Add usage tracker manager (Phase 29).
+
+    Args:
+        managers: Managers dictionary to update
+        project_root: Project root directory
+    """
+    managers["usage_tracker"] = LazyManager(
+        lambda: _create_usage_tracker(project_root), name="usage_tracker"
     )
 
 
@@ -575,3 +588,8 @@ async def _create_adaptation_config(managers: ManagersBuilder) -> AdaptationConf
     # AdaptationConfig now manages its own defaults via Pydantic models
     _ = managers  # Kept for API compatibility
     return AdaptationConfig()
+
+
+async def _create_usage_tracker(project_root: Path) -> UsageTracker:
+    """Create UsageTracker instance (Phase 29)."""
+    return UsageTracker(project_root)

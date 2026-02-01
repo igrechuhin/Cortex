@@ -76,7 +76,7 @@
 
 - ✅ **Phase 27: Script generation prevention** - COMPLETE (2026-02-01) - Steps 3–5, 7 done: script_promotion (validator, tool_converter, script_integrator, documentation_generator); discovery (tool_registry, use_case_mapper, search_interface, recommendation_engine); script_capture_tools extended with analyze_session_scripts, suggest_tool_improvements, promote_session_script; implement prompt script-generation-prevention note. All 3283 tests pass; coverage 90.84%; quality gate passes. Plan: .cortex/plans/phase-27-script-generation-prevention.md.
 
-- **Phase 29: Track MCP tool usage** - PENDING - Plan: .cortex/plans/phase-29-track-mcp-tool-usage.md.
+- ✅ **Phase 29: Track MCP tool usage** - COMPLETE (2026-02-01) - Usage tracking: docs/architecture/tool-usage-tracking.md; UsageTracker, usage_models, usage_context; recording in mcp_stability; usage_analytics MCP tools (get_tool_usage_stats, get_unused_tools, get_tool_usage_report, get_optimization_recommendations); config .cortex/config/usage_tracking.json; CacheType.USAGE. All 3298 tests pass; coverage 90.27%; quality gate passes. Plan: .cortex/plans/archive/Phase29/phase-29-track-mcp-tool-usage.md.
 
 - **Phase 30: Fix CI failure (commit 42a3362)** - PENDING - Plan: .cortex/plans/phase-30-fix-ci-failure-commit-42a3362.md.
 

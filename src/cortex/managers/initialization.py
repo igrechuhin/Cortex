@@ -13,6 +13,7 @@ from cortex.managers.manager_initialization import (
     add_linking_managers,
     add_optimization_managers,
     add_refactoring_managers,
+    add_usage_tracker,
     add_validation_managers,
 )
 from cortex.managers.types import CoreManagersDict, ManagersDict
@@ -70,6 +71,7 @@ async def get_managers(project_root: Path) -> ManagersDict:
 
     Core managers (priority 1) are initialized immediately for reliability.
     Other managers are wrapped in LazyManager for on-demand initialization.
+    Sets current managers in contextvar for Phase 29 usage tracking.
 
     Args:
         project_root: Project root directory
@@ -78,10 +80,13 @@ async def get_managers(project_root: Path) -> ManagersDict:
         ManagersDict model with manager instances (or LazyManager wrappers)
     """
     from cortex.core.manager_registry import ManagerRegistry
+    from cortex.core.usage_context import set_current_managers
 
     registry = ManagerRegistry()
     managers_dict = await registry.get_managers(project_root)
-    return ManagersDict.model_validate(managers_dict)
+    result = ManagersDict.model_validate(managers_dict)
+    set_current_managers(managers_dict.model_dump())
+    return result
 
 
 async def initialize_managers(project_root: Path) -> ManagersDict:
@@ -102,6 +107,7 @@ async def initialize_managers(project_root: Path) -> ManagersDict:
     add_analysis_managers(builders_dict, project_root, core_managers)
     add_refactoring_managers(builders_dict, project_root)
     add_execution_managers(builders_dict, project_root, core_managers)
+    add_usage_tracker(builders_dict, project_root)
 
     await _post_init_setup(project_root, builders_dict)
     return ManagersDict.model_validate(builders_dict)
