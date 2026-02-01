@@ -85,11 +85,10 @@ class TestExecutePreCommitChecks:
 
                 mock_to_thread.side_effect = run_sync
 
-                result_json = await execute_pre_commit_checks(
+                result = await execute_pre_commit_checks(
                     checks=["fix_errors"],
                     project_root=str(project_root),
                 )
-                result = json.loads(result_json)
 
                 mock_to_thread.assert_called_once()
                 call_args = mock_to_thread.call_args
@@ -101,11 +100,10 @@ class TestExecutePreCommitChecks:
     async def test_detect_language_error_when_no_language_detected(self) -> None:
         """Test error when language cannot be detected."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            result_json = await execute_pre_commit_checks(
+            result = await execute_pre_commit_checks(
                 checks=["fix_errors"],
                 project_root=str(tmpdir),
             )
-            result = json.loads(result_json)
 
             assert result["status"] == "error"
             assert "Could not detect project language" in result["error"]
@@ -113,11 +111,10 @@ class TestExecutePreCommitChecks:
     @pytest.mark.asyncio
     async def test_error_for_unsupported_language(self) -> None:
         """Test error for unsupported language includes supported list."""
-        result_json = await execute_pre_commit_checks(
+        result = await execute_pre_commit_checks(
             checks=["fix_errors"],
             language="haskell",
         )
-        result = json.loads(result_json)
 
         assert result["status"] == "error"
         assert "not yet supported" in result["error"]
@@ -147,11 +144,10 @@ class TestExecutePreCommitChecks:
                     files_modified=[],
                 )
 
-                result_json = await execute_pre_commit_checks(
+                result = await execute_pre_commit_checks(
                     checks=["fix_errors"],
                     project_root=str(project_root),
                 )
-                result = json.loads(result_json)
 
                 assert result["status"] == "success"
                 assert result["language"] == "python"
@@ -195,11 +191,10 @@ class TestExecutePreCommitChecks:
                     errors=[],
                 )
 
-                result_json = await execute_pre_commit_checks(
+                result = await execute_pre_commit_checks(
                     checks=None,
                     project_root=str(project_root),
                 )
-                result = json.loads(result_json)
 
                 assert result["status"] == "success"
                 assert len(result["checks_performed"]) == 5
@@ -215,8 +210,7 @@ class TestExecutePreCommitChecks:
         with patch("cortex.tools.pre_commit_tools.get_project_root_str") as mock_root:
             mock_root.side_effect = Exception("Test error")
 
-            result_json = await execute_pre_commit_checks(checks=["fix_errors"])
-            result = json.loads(result_json)
+            result = await execute_pre_commit_checks(checks=["fix_errors"])
 
             assert result["status"] == "error"
             assert "Test error" in result["error"]
@@ -239,12 +233,11 @@ class TestExecutePreCommitChecks:
                 mock_adapter_class.return_value = mock_adapter
                 mock_adapter.project_root = project_root
 
-                result_json = await execute_pre_commit_checks(
+                result = await execute_pre_commit_checks(
                     checks=["format_ci_parity"],
                     project_root=str(project_root),
                     language="python",
                 )
-                result = json.loads(result_json)
 
                 assert result["status"] == "success"
                 assert "format_ci_parity" in result["checks_performed"]
@@ -268,12 +261,11 @@ class TestExecutePreCommitChecks:
                 mock_adapter_class.return_value = mock_adapter
                 mock_adapter.project_root = project_root
 
-                result_json = await execute_pre_commit_checks(
+                result = await execute_pre_commit_checks(
                     checks=["test_naming"],
                     project_root=str(project_root),
                     language="python",
                 )
-                result = json.loads(result_json)
 
                 assert result["status"] == "success"
                 assert "test_naming" in result["checks_performed"]
@@ -606,9 +598,7 @@ class TestFixQualityIssues:
             with patch(
                 "cortex.tools.pre_commit_tools.execute_pre_commit_checks"
             ) as mock_execute:
-                mock_execute.return_value = json.dumps(
-                    {"status": "error", "error": "Test error"}
-                )
+                mock_execute.return_value = {"status": "error", "error": "Test error"}
 
                 result_json = await fix_quality_issues(project_root=str(project_root))
                 result = json.loads(result_json)
@@ -635,25 +625,23 @@ class TestFixQualityIssues:
                     "cortex.tools.pre_commit_tools.fix_markdown_lint"
                 ) as mock_markdown,
             ):
-                mock_execute.return_value = json.dumps(
-                    {
-                        "status": "error",
-                        "checks_performed": ["fix_errors", "format", "type_check"],
-                        "files_modified": ["file1.py"],
-                        "total_errors": 1,
-                        "total_warnings": 0,
-                        "success": False,
-                        "results": {
-                            "fix_errors": {
-                                "errors": ["E1"],
-                                "warnings": [],
-                                "files_modified": ["file1.py"],
-                            },
-                            "format": {"files_formatted": 0},
-                            "type_check": {"errors": [], "warnings": []},
+                mock_execute.return_value = {
+                    "status": "error",
+                    "checks_performed": ["fix_errors", "format", "type_check"],
+                    "files_modified": ["file1.py"],
+                    "total_errors": 1,
+                    "total_warnings": 0,
+                    "success": False,
+                    "results": {
+                        "fix_errors": {
+                            "errors": ["E1"],
+                            "warnings": [],
+                            "files_modified": ["file1.py"],
                         },
-                    }
-                )
+                        "format": {"files_formatted": 0},
+                        "type_check": {"errors": [], "warnings": []},
+                    },
+                }
                 mock_markdown.return_value = json.dumps(
                     {"success": True, "files_fixed": 0, "files_processed": 0}
                 )
@@ -700,20 +688,18 @@ class TestFixQualityIssues:
                     "cortex.tools.pre_commit_tools.fix_markdown_lint"
                 ) as mock_markdown,
             ):
-                mock_execute.return_value = json.dumps(
-                    {
-                        "status": "success",
-                        "checks": {
-                            "fix_errors": {
-                                "errors": [],
-                                "warnings": [],
-                                "files_modified": ["file1.py"],
-                            },
-                            "format": {"files_formatted": 1},
-                            "type_check": {"errors": 0, "warnings": 0},
+                mock_execute.return_value = {
+                    "status": "success",
+                    "checks": {
+                        "fix_errors": {
+                            "errors": [],
+                            "warnings": [],
+                            "files_modified": ["file1.py"],
                         },
-                    }
-                )
+                        "format": {"files_formatted": 1},
+                        "type_check": {"errors": 0, "warnings": 0},
+                    },
+                }
                 mock_markdown.return_value = json.dumps(
                     {"success": True, "files_fixed": 1, "files_processed": 1}
                 )
@@ -749,38 +735,36 @@ class TestFixQualityIssues:
                 # Simulate a clean repo where all checks succeeded but
                 # total_errors/total_warnings might be non-zero
                 # (e.g., from previous runs)
-                mock_execute.return_value = json.dumps(
-                    {
-                        "status": "success",
-                        "checks_performed": ["fix_errors", "format", "type_check"],
-                        "files_modified": [],
-                        "total_errors": 4175,  # Large number that should
-                        # NOT appear in remaining_issues
-                        "total_warnings": 100,  # Large number that should NOT
-                        # appear in remaining_issues
-                        "success": True,
-                        "results": {
-                            "fix_errors": {
-                                "check_type": "fix_errors",
-                                "success": True,  # All checks succeeded
-                                "errors": [],
-                                "warnings": [],
-                                "files_modified": [],
-                            },
-                            "format": {
-                                "check_type": "format",
-                                "success": True,  # Format succeeded
-                                "errors": [],
-                                "files_modified": [],
-                            },
-                            "type_check": {
-                                "check_type": "type_check",
-                                "success": True,  # Type check succeeded
-                                "errors": [],
-                            },
+                mock_execute.return_value = {
+                    "status": "success",
+                    "checks_performed": ["fix_errors", "format", "type_check"],
+                    "files_modified": [],
+                    "total_errors": 4175,  # Large number that should NOT
+                    # appear in remaining_issues
+                    "total_warnings": 100,  # Large number that should NOT
+                    # appear in remaining_issues
+                    "success": True,
+                    "results": {
+                        "fix_errors": {
+                            "check_type": "fix_errors",
+                            "success": True,  # All checks succeeded
+                            "errors": [],
+                            "warnings": [],
+                            "files_modified": [],
                         },
-                    }
-                )
+                        "format": {
+                            "check_type": "format",
+                            "success": True,  # Format succeeded
+                            "errors": [],
+                            "files_modified": [],
+                        },
+                        "type_check": {
+                            "check_type": "type_check",
+                            "success": True,  # Type check succeeded
+                            "errors": [],
+                        },
+                    },
+                }
                 mock_markdown.return_value = json.dumps(
                     {"success": True, "files_fixed": 0, "files_processed": 0}
                 )
@@ -1051,11 +1035,10 @@ class TestQualityCheckIntegration:
                     files_modified=[],
                 )
 
-                result_json = await execute_pre_commit_checks(
+                result = await execute_pre_commit_checks(
                     checks=["quality"],
                     project_root=str(project_root),
                 )
-                result = json.loads(result_json)
 
                 assert result["status"] == "success"
                 assert "quality" in result["checks_performed"]
@@ -1108,11 +1091,10 @@ class TestLogTruncationBehavior:
                     files_modified=[],
                 )
 
-                result_json = await execute_pre_commit_checks(
+                result = await execute_pre_commit_checks(
                     checks=["quality"],
                     project_root=str(project_root),
                 )
-                result = json.loads(result_json)
 
                 assert result["status"] == "error"
                 quality_result = result["results"]["quality"]
@@ -1185,12 +1167,11 @@ class TestPreCommitToolsContextLogging:
 
                 mock_to_thread.side_effect = run_sync
 
-                result_json = await execute_pre_commit_checks(
+                result = await execute_pre_commit_checks(
                     checks=["fix_errors"],
                     project_root=str(project_root),
                     ctx=mock_ctx,
                 )
-                result = json.loads(result_json)
             assert result["status"] == "success"
             args_list = [c[0] for c in mock_log.call_args_list]
             levels_and_messages = [(a[1], a[2]) for a in args_list]

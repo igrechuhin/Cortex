@@ -84,7 +84,7 @@
 
 - ✅ **Phase 32: Fix MCP tool connection closure errors** - COMPLETE (2026-02-01) - Pre-execution and before-retry connection health checks in mcp_stability; connection closure/recovery state tracking; ConnectionError on connection failures; helpers `_retry_path_health_and_recovery`, `_raise_final_error`, `_run_with_retry_and_record`; test rollback_file_version_error_handling expects ConnectionError. All 3303 tests pass; coverage 90.38%; quality gate passes. Plan: .cortex/plans/archive/Phase32/phase-32-fix-mcp-tool-connection-closure-errors.md.
 
-- **Phase 33: Fix execute_pre_commit_checks JSON parsing error** - PENDING - Plan: .cortex/plans/phase-33-fix-execute-pre-commit-checks-json-parsing-error.md.
+- ✅ **Phase 33: Fix execute_pre_commit_checks JSON parsing error** - COMPLETE (2026-02-01) - Tool now returns dict (ModelDict) instead of JSON string so FastMCP serializes once (avoids double-encoding). Added create_error_result_dict, unsupported_language_result_dict in pre_commit_helpers; _build_response and _execute_pre_commit_checks_impl return ModelDict;un_quality_checks uses dict directly. All 3303 tests pass; quality gate passes. Plan: .cortex/plans/archive/Phase33/phase-33-fix-execute-pre-commit-checks-json-parsing-error.md.
 
 - **Phase 34: Ensure MCP tool timeouts** - PENDING - Plan: .cortex/plans/phase-34-ensure-mcp-tool-timeouts.md.
 

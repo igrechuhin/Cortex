@@ -53,7 +53,7 @@ from cortex.tools.pre_commit_helpers import (
     QualityCheckResult,
     check_file_sizes,
     collect_remaining_issues,
-    create_error_result,
+    create_error_result_dict,
     detect_or_use_language,
     determine_checks_to_perform,
     extract_check_results,
@@ -62,7 +62,7 @@ from cortex.tools.pre_commit_helpers import (
     extract_list_from_object,
     get_project_root_str,
     truncate_large_logs_in_data,
-    unsupported_language_result,
+    unsupported_language_result_dict,
 )
 from cortex.tools.pre_commit_synapse import run_synapse_script
 
@@ -103,8 +103,8 @@ async def _resolve_language_and_adapter(
     ctx: MCPContext | None,
     root_str: str,
     language: str | None,
-) -> str | tuple[FrameworkAdapter, LanguageInfo]:
-    """Resolve language and adapter; return error JSON string or (adapter, lang_info)."""
+) -> ModelDict | tuple[FrameworkAdapter, LanguageInfo]:
+    """Resolve language and adapter; return error dict or (adapter, lang_info)."""
     language_info = detect_or_use_language(language, root_str)
     if isinstance(language_info, str):
         await log_client(
@@ -113,7 +113,7 @@ async def _resolve_language_and_adapter(
             "execute_pre_commit_checks: language detection failed",
             logger_name=__name__,
         )
-        return language_info
+        return cast(ModelDict, json.loads(language_info))
     adapter = _get_adapter(language_info, root_str)
     if adapter is None:
         await log_client(
@@ -122,7 +122,9 @@ async def _resolve_language_and_adapter(
             "execute_pre_commit_checks: unsupported language",
             logger_name=__name__,
         )
-        return unsupported_language_result(language_info.language, SUPPORTED_LANGUAGES)
+        return unsupported_language_result_dict(
+            language_info.language, SUPPORTED_LANGUAGES
+        )
     return (adapter, language_info)
 
 
@@ -134,11 +136,11 @@ async def _execute_pre_commit_checks_impl(
     timeout: int | None,
     coverage_threshold: float,
     ctx: MCPContext | None,
-) -> str:
-    """Run pre-commit checks and return JSON result."""
+) -> ModelDict:
+    """Run pre-commit checks and return result dict (FastMCP serializes to JSON)."""
     root_str = get_project_root_str(project_root)
     resolved = await _resolve_language_and_adapter(ctx, root_str, language)
-    if isinstance(resolved, str):
+    if isinstance(resolved, dict):
         return resolved
     adapter, language_info = resolved
     checks_to_perform = determine_checks_to_perform(checks)
@@ -168,7 +170,7 @@ async def execute_pre_commit_checks(
     coverage_threshold: float = 0.90,
     strict_mode: bool = False,
     ctx: MCPContext | None = None,
-) -> str:
+) -> ModelDict:
     """Execute pre-commit checks with language auto-detection.
 
     USE WHEN: User wants pre-commit checks, user needs quality
@@ -188,7 +190,7 @@ async def execute_pre_commit_checks(
         coverage_threshold: Minimum coverage 0.0-1.0 (default 0.90).
         strict_mode: Treat warnings as errors (default False).
     Returns:
-        JSON string with status, language, checks, stats, error (if any).
+        Dict with status, language, checks, stats, error (if any); FastMCP serializes.
     Examples:
         See MCP tool descriptor for full JSON examples.
     """
@@ -212,7 +214,7 @@ async def execute_pre_commit_checks(
             f"execute_pre_commit_checks: {e!s}",
             logger_name=__name__,
         )
-        return create_error_result(str(e), type(e).__name__)
+        return create_error_result_dict(str(e), type(e).__name__)
 
 
 def _execute_all_checks(
@@ -594,8 +596,8 @@ def _build_response(
     results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
     detected_language: str,
-) -> str:
-    """Build JSON response."""
+) -> ModelDict:
+    """Build response dict (FastMCP serializes to JSON; avoids double-encoding)."""
     total_errors = stats.total_errors
     success = total_errors == 0
     response = PreCommitResult(
@@ -610,7 +612,7 @@ def _build_response(
     )
     data = response.model_dump(mode="json")
     compact = truncate_large_logs_in_data(data)
-    return json.dumps(compact, separators=(",", ":"))
+    return cast(ModelDict, compact)
 
 
 class FixQualityResult(BaseModel):
@@ -657,7 +659,7 @@ def _create_quality_error_response(error_message: str) -> str:
 
 async def _run_quality_checks(root_str: str) -> ModelDict | str:
     """Run quality checks and return result or error response."""
-    fix_errors_result_json = await execute_pre_commit_checks(
+    fix_errors_result = await execute_pre_commit_checks(
         checks=[
             PreCommitCheck.FIX_ERRORS.value,
             PreCommitCheck.FORMAT.value,
@@ -666,13 +668,6 @@ async def _run_quality_checks(root_str: str) -> ModelDict | str:
         project_root=root_str,
         strict_mode=False,
     )
-    fix_errors_result_raw: JsonValue = json.loads(fix_errors_result_json)
-    # Recursive JsonValue narrows incorrectly in pyright/basedpyright
-    if not isinstance(
-        fix_errors_result_raw, dict
-    ):  # pyright: ignore[reportUnnecessaryIsInstance]
-        return _create_quality_error_response("Invalid quality check response")
-    fix_errors_result = cast(ModelDict, fix_errors_result_raw)
 
     # `execute_pre_commit_checks()` uses `"status": "error"` both for:
     # - genuine tool failures (exception paths), which include `error`/`error_type`

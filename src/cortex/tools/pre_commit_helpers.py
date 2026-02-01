@@ -271,6 +271,11 @@ def create_error_result(error: str, error_type: str = "ValueError") -> str:
     )
 
 
+def create_error_result_dict(error: str, error_type: str = "ValueError") -> ModelDict:
+    """Create error response as dict for MCP (avoids double JSON encoding)."""
+    return {"status": "error", "error": error, "error_type": error_type}
+
+
 def get_project_root_str(project_root: str | None) -> str:
     """Get project root as string."""
     root = get_project_root(project_root)
@@ -287,6 +292,18 @@ def unsupported_language_result(
         + f"Supported languages: {supported}"
     )
     return create_error_result(msg)
+
+
+def unsupported_language_result_dict(
+    language: str, supported_languages: tuple[str, ...]
+) -> ModelDict:
+    """Return error dict for unsupported language (for MCP tool return)."""
+    supported = ", ".join(supported_languages)
+    msg = (
+        f"Language '{language}' is not yet supported. "
+        + f"Supported languages: {supported}"
+    )
+    return create_error_result_dict(msg)
 
 
 def detect_or_use_language(language: str | None, root_str: str) -> LanguageInfo | str:

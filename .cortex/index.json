@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-01T21:17:26.189769",
+  "last_updated": "2026-02-01T22:04:27.205400",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
@@ -667,11 +667,11 @@
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 15968,
-      "token_count": 4208,
+      "size_bytes": 18095,
+      "token_count": 4710,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-01T21:17:26.188402",
-      "content_hash": "sha256:5a74494ce8d10ca08b28bc30a261d7f6bf442653792415f40ad4f36bb3206759",
+      "last_modified": "2026-02-01T22:04:27.204019",
+      "content_hash": "sha256:f69618dfe615b5e30536a98946a2dad05d0f3c226894a9a395591685ac0547be",
       "sections": [
         {
           "title": "## 2026-02-01",
@@ -683,28 +683,28 @@
         {
           "title": "## 2026-01-31",
           "level": 2,
-          "line_start": 67,
-          "line_end": 67,
+          "line_start": 77,
+          "line_end": 77,
           "content_hash": null
         },
         {
           "title": "## 2026-01-30",
           "level": 2,
-          "line_start": 107,
-          "line_end": 107,
+          "line_start": 117,
+          "line_end": 117,
           "content_hash": null
         },
         {
           "title": "## 2026-01-29",
           "level": 2,
-          "line_start": 117,
-          "line_end": 117,
+          "line_start": 127,
+          "line_end": 127,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 94,
-      "last_read": "2026-02-01T21:17:26.188402",
+      "write_count": 95,
+      "last_read": "2026-02-01T22:04:27.204019",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -1741,17 +1741,28 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Updated after commit pipeline; 3301 tests, 90.39% coverage"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-01T22:04:27.203576",
+          "content_hash": "sha256:f69618dfe615b5e30536a98946a2dad05d0f3c226894a9a395591685ac0547be",
+          "size_bytes": 18095,
+          "token_count": 4710,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated after commit pipeline; markdown lint 2 files fixed"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 5011,
-      "token_count": 1381,
+      "size_bytes": 5542,
+      "token_count": 1526,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-01T21:16:50.779484",
-      "content_hash": "sha256:331e5b1bfb2aec91a04ef79f546c578dd1445eea6ff43a6f39cf3a104015ad24",
+      "last_modified": "2026-02-01T22:03:48.374620",
+      "content_hash": "sha256:d7fe27c1561317e235afb59ffad68ec6ee561c8dc2d506c3a23541f5bfca39c7",
       "sections": [
         {
           "title": "## Current Focus (2026-02-01)",
@@ -1770,28 +1781,28 @@
         {
           "title": "### Recently Completed",
           "level": 2,
-          "line_start": 39,
-          "line_end": 39,
+          "line_start": 45,
+          "line_end": 45,
           "content_hash": null
         },
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 46,
-          "line_end": 46,
+          "line_start": 51,
+          "line_end": 51,
           "content_hash": null
         },
         {
           "title": "## Next Focus",
           "level": 2,
-          "line_start": 57,
-          "line_end": 57,
+          "line_start": 62,
+          "line_end": 62,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 79,
-      "last_read": "2026-02-01T21:16:50.779484",
+      "write_count": 81,
+      "last_read": "2026-02-01T22:03:48.374620",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -2663,6 +2674,28 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Updated after commit pipeline; markdown lint 4 files fixed; 3301 tests, 90.39% coverage"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-01T21:55:17.452170",
+          "content_hash": "sha256:4b2464bc22d1634caa74b0360d79c65ee4261500c551d0c08e111a0f158af9d7",
+          "size_bytes": 5346,
+          "token_count": 1462,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Commit (2026-02-01): pre-commit pipeline; markdown lint 3 files; tests 3303, coverage 90.37%"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-01T22:03:48.374250",
+          "content_hash": "sha256:d7fe27c1561317e235afb59ffad68ec6ee561c8dc2d506c3a23541f5bfca39c7",
+          "size_bytes": 5542,
+          "token_count": 1526,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated after commit pipeline; markdown lint 2 files fixed"
         }
       ]
     },
@@ -2900,8 +2933,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 38662,
-    "total_tokens": 9540,
-    "last_full_scan": "2026-02-01T21:17:26.188421"
+    "total_size_bytes": 41320,
+    "total_tokens": 10187,
+    "last_full_scan": "2026-02-01T22:04:27.204037"
   }
 }

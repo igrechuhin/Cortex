@@ -6,17 +6,19 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
+- ✅ **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 2 files fixed (progress, phase-33). fix_errors, format, type_check, quality, tests 3303, coverage 90.36%. Plan archiving in Step 7.
+
+- ✅ **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 3 files fixed (activeContext, progress, roadmap). fix_errors, format, type_check, quality, tests 3303, coverage 90.37%. Plan archiving in Step 7.
+
 - ✅ **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint MD037 fixes (progress, roadmap); fix_errors, format, type_check, quality, tests 3303, coverage 90.38%. Plan archiving in Step 7.
+
+- ✅ **Phase 33: Fix execute_pre_commit_checks JSON parsing error** - COMPLETE (2026-02-01) - Tool returns dict (ModelDict) so FastMCP serializes once; create_error_result_dict, unsupported_language_result_dict; _run_quality_checks uses dict directly. 3303 tests; quality gate passes.
 
 - ✅ **Phase 32: Fix MCP tool connection closure errors** - COMPLETE (2026-02-01) - Pre-execution and before-retry health checks; connection state tracking; ConnectionError on connection failures; 3303 tests; coverage 90.38%; quality gate passes.
 
 - ✅ **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 4 files fixed (activeContext, progress, roadmap, phase-31). fix_errors, format, type_check, quality, tests 3301, coverage 90.39%. Plan archiving in Step 7.
 
 - ✅ **Phase 31: Fix optimize-context stale file errors** - COMPLETE (2026-02-01) - Existence check before read in load_context and load_progressive_context paths; read_file raises FileNotFoundError immediately (no retries). 3301 tests; coverage 90.39%; quality gate passes.
-
-- ✅ **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 4 files fixed (activeContext, progress, roadmap, phase-30). 3298 tests; coverage 90.37%. Plan archiving in Step 7.
-
-- ✅ **Phase 30: Fix CI failure (commit 42a3362)** - COMPLETE (2026-02-01) - Reproduced full CI pipeline locally; all checks pass (3298 tests, coverage 90.36%). Original failure from 42a3362 likely addressed by subsequent work. No code changes required. Plan and roadmap updated.
 
 - ✅ **Phase 21: Health-Check and Optimization Analysis** - COMPLETE (2026-02-01) - Steps 6–9 done: CLI scripts/health_check.py; CI health-check step and artifact in .github/workflows/quality.yml; tests/tools/test_health_check_cli.py; docs/guides/health-check.md, docs/api/health-check.md, docs/api/tools.md (54 tools). Steps 2–4 implemented in module. All 3204 tests pass; coverage 90.83%.
 
@@ -42,14 +44,13 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
-- Commit (2026-02-01): Pre-commit pipeline; markdown lint 4 files fixed. 3301 tests; coverage 90.39%. Plan archiving in Step 7.
-- Phase 31 (2026-02-01): Existence check before read; read_file raises FileNotFoundError immediately. 3301 tests; coverage 90.39%.
-- Commit (2026-02-01): Pre-commit pipeline; markdown lint 4 files fixed. 3298 tests; coverage 90.37%. Plan archiving in Step 7.
-- Phase 30 (2026-02-01): Verified full CI pipeline locally; all checks pass. No code changes. Plan and roadmap updated.
+- Commit (2026-02-01): Pre-commit pipeline; markdown lint 2 files fixed. 3303 tests; coverage 90.36%. Plan archiving in Step 7.
+- Commit (2026-02-01): Pre-commit pipeline; markdown lint 3 files fixed. 3303 tests; coverage 90.37%. Plan archiving in Step 7.
+- Commit (2026-02-01): Pre-commit pipeline; markdown lint MD037 fixes. 3303 tests; coverage 90.38%.
 
 ## Project Health
 
-- **Tests**: 3301 passing; coverage ≥ 90%.
+- **Tests**: 3303 passing; coverage ≥ 90%.
 - **Linting/Types**: Pyright 0 errors, 0 warnings.
 - **Quality**: File size and function length gates passing; all 10 Phase 20 file splits ≤400 lines.
 - **Pre-commit adapters**: Python, TypeScript, JavaScript, Rust, Go, Java, Kotlin, Swift full implementations.
@@ -60,4 +61,4 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Next Focus
 
-- Pick next PENDING plan (Phase 33: Fix execute_pre_commit_checks JSON parsing error). Run commit pipeline when ready.
+- Pick next PENDING plan (Phase 34: Ensure MCP tool timeouts). Run commit pipeline when ready.

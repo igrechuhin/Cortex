@@ -2,6 +2,12 @@
 
 ## 2026-02-01
 
+- **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 2 files fixed (progress, phase-33). fix_errors, format, type_check, quality, tests 3303, coverage 90.36%. Plan archiving in Step 7; memory bank updated.
+
+- **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 3 files fixed (activeContext, progress, roadmap). fix_errors, format, type_check, quality, tests 3303, coverage 90.37%. Plan archiving in Step 7; memory bank updated.
+
+- **Phase 33: Fix execute_pre_commit_checks JSON parsing error** (2026-02-01) - Tool now returns dict (ModelDict) instead of JSON string so FastMCP serializes once (avoids double-encoding). Added create_error_result_dict, unsupported_language_result_dict in pre_commit_helpers; _build_response and _execute_pre_commit_checks_impl return ModelDict;_run_quality_checks uses dict directly. Unit tests updated for dict return. All 3303 tests pass; quality gate passes. Plan archived to .cortex/plans/archive/Phase33/.
+
 - **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint MD037 fixes (progress, roadmap—backticks for identifiers); fix_errors, format, type_check, quality, tests 3303, coverage 90.38%. Plan archiving in Step 7; memory bank updated.
 
 - **Phase 32: Fix MCP tool connection closure errors** (2026-02-01) - Pre-execution and before-retry connection health checks in mcp_stability; connection closure/recovery state tracking (`_connection_closure_count`, `_connection_recovery_count`); ConnectionError on connection failures; helpers `_retry_path_health_and_recovery`, `_raise_final_error`, `_run_with_retry_and_record`; `_handle_connection_error` raises ConnectionError on final attempt when connection-related. Unit tests: test_unhealthy_connection_raises_before_execution, test_unhealthy_before_retry_raises_connection_error, test_max_retries_exhausted expects ConnectionError. test_rollback_file_version_error_handling updated to expect ConnectionError. All 3303 tests pass; coverage 90.38%; quality gate passes. Plan archived to .cortex/plans/archive/Phase32/.

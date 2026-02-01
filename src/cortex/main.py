@@ -9,6 +9,7 @@ All tool implementations are in the tools/ package.
 import asyncio
 import logging
 import sys
+import traceback
 from builtins import BaseExceptionGroup  # Python 3.11+
 from typing import cast
 
@@ -117,9 +118,20 @@ def _handle_connection_error(e: Exception) -> None:
         sys.exit(1)
 
 
+def _log_exception_with_traceback(exc: BaseException, prefix: str = "") -> None:
+    """Log a single exception with full traceback; recurse into exception groups."""
+    if isinstance(exc, BaseExceptionGroup):
+        nested = cast(BaseExceptionGroup[BaseException], exc)
+        for i, sub in enumerate(nested.exceptions):
+            _log_exception_with_traceback(sub, prefix=f"{prefix}[{i}] ")
+        return
+    lines = traceback.format_exception(type(exc), exc, exc.__traceback__)
+    tb_text = "".join(lines).strip()
+    logger.error("%sMCP TaskGroup sub-exception: %s\n%s", prefix, exc, tb_text)
+
+
 def _log_and_exit_on_task_group_error(eg: BaseExceptionGroup) -> None:
-    """Log TaskGroup error details and exit with code 1."""
-    first = eg.exceptions[0] if eg.exceptions else None
+    """Log TaskGroup error details (including full nested tracebacks) and exit with code 1."""
     sub_summary = "; ".join(
         f"{type(e).__name__}: {str(e)[:200]}" for e in eg.exceptions[:5]
     )
@@ -134,14 +146,8 @@ def _log_and_exit_on_task_group_error(eg: BaseExceptionGroup) -> None:
         len(eg.exceptions),
         sub_summary,
     )
-    if first is not None:
-        logger.error(
-            "MCP server TaskGroup first exception: %s",
-            first,
-            exc_info=(type(first), first, first.__traceback__),
-        )
-    else:
-        logger.error("MCP server TaskGroup error: %s", eg)
+    for i, exc in enumerate(eg.exceptions):
+        _log_exception_with_traceback(exc, prefix=f"[{i}] ")
     sys.exit(1)
 
 
