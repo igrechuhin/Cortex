@@ -2,6 +2,10 @@
 
 ## 2026-02-01
 
+- **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint fixes (roadmap.md, roadmap_v11.md MD012). Phase 25 plan already archived. Tests 3201, coverage 90.54%. Memory bank updated.
+
+- **Phase 25: Fix CI failure (commit 302c5e2)** (2026-02-01) - Verified: format, type_check, quality, tests pass (3201 passed, coverage 90.54%). CI failure from commit 302c5e2 resolved in current codebase. No code changes required. Plan archived to .cortex/plans/archive/Phase25/phase-25-fix-ci-failure-commit-302c5e2.md.
+
 - **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 4 files fixed; type_check, quality, tests 3201, coverage 90.54%. 1 plan archived (Phase 24); memory bank updated.
 
 - **Phase 24: Fix roadmap text corruption** (2026-02-01) - Added Phase 24 phrase patterns to roadmap_corruption.py (percent+to, number+ctual, ceeds, files unchanged, percent coverage, malformed date); fix_roadmap_content_if_needed and auto-fix on manage_file write for roadmap.md; unit tests in test_fix_roadmap_corruption.py and test_markdown_operations_batch.py; quality gate passes. All 3201 tests pass; coverage 90.54%. Plan: .cortex/plans/archive/Phase24/phase-24-fix-roadmap-text-corruption.md (status COMPLETE).
@@ -36,7 +40,7 @@
 
 - **Commit: pre-commit pipeline and markdown lint** (2026-01-31) - Pre-commit: fix_errors, format, markdown lint (3 files fixed), type_check, quality, tests (3177 passed, 90.51% coverage). 0 plans archived; memory bank updated.
 
-- **Ensure proper logging (FastMCP context): phase2_linking tools** (2026-01-31) - Refactored parse_file_links, validate_links, resolve_transclusions, get_link_graph to use optional ctx and log_client. All 33 Phase 2 linking tests passing.
+- **Ensure proper logging (FastMCP context): phase2_linking tools** (2026-01-31) - Refactored parse_links, validate_links, resolve_transclusions, get_link_graph to use optional ctx and log_client. All 33 Phase 2 linking tests passing.
 
 - **Commit: function length (phase1_foundation_* tools)** (2026-01-31) - Refactored get_memory_bank_stats, rollback_file_version, cleanup_metadata_index, get_dependency_graph, get_version_history to meet 30-line limit. 3168 tests, 90.5% coverage.
 

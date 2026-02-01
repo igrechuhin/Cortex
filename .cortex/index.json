@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-01T10:12:46.658556",
+  "last_updated": "2026-02-01T10:55:36.587356",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 20696,
-      "token_count": 5142,
+      "size_bytes": 21198,
+      "token_count": 5278,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-01T09:44:56.316219",
-      "content_hash": "sha256:e204c3ed7302eaa47e062941b75a6ae721826812a00b43535010bf1d5af6a1de",
+      "last_modified": "2026-02-01T10:48:40.603050",
+      "content_hash": "sha256:71e1b558007425b0b3c7ffea8c736ec70de11416f8c74f389a5e3fc59fdcd7a7",
       "sections": [
         {
           "title": "## Current Status (2026-02-01)",
@@ -44,8 +44,8 @@
         }
       ],
       "read_count": 2,
-      "write_count": 48,
-      "last_read": "2026-02-01T09:44:56.316219",
+      "write_count": 49,
+      "last_read": "2026-02-01T10:48:40.603050",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -598,17 +598,28 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Mark Phase 20 Step 3.8 (optimization_strategies split) complete; update remaining files list"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-01T10:48:40.601167",
+          "content_hash": "sha256:71e1b558007425b0b3c7ffea8c736ec70de11416f8c74f389a5e3fc59fdcd7a7",
+          "size_bytes": 21198,
+          "token_count": 5278,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Marked Phase 25 (Fix CI failure commit 302c5e2) as COMPLETE"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 7894,
-      "token_count": 2172,
+      "size_bytes": 8592,
+      "token_count": 2379,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-01T10:12:40.780867",
-      "content_hash": "sha256:a847feaa90e76f7f7ec79ff4eba2cb851ce965537ba806c461476ada0626b625",
+      "last_modified": "2026-02-01T10:55:36.581988",
+      "content_hash": "sha256:a8622f5a19bdbd0dac5cfb82771f93922a3ce2bfdc593a955105bae369ec01c1",
       "sections": [
         {
           "title": "## 2026-02-01",
@@ -620,28 +631,28 @@
         {
           "title": "## 2026-01-31",
           "level": 2,
-          "line_start": 21,
-          "line_end": 21,
+          "line_start": 27,
+          "line_end": 27,
           "content_hash": null
         },
         {
           "title": "## 2026-01-30",
           "level": 2,
-          "line_start": 65,
-          "line_end": 65,
+          "line_start": 71,
+          "line_end": 71,
           "content_hash": null
         },
         {
           "title": "## 2026-01-29",
           "level": 2,
-          "line_start": 75,
-          "line_end": 75,
+          "line_start": 81,
+          "line_end": 81,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 79,
-      "last_read": "2026-02-01T10:12:40.780867",
+      "write_count": 81,
+      "last_read": "2026-02-01T10:55:36.581988",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -1513,17 +1524,39 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Added progress entry for Phase 24 (Fix roadmap text corruption)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-01T10:49:16.939950",
+          "content_hash": "sha256:00e069ed0db8d70addce31f993511a7df104fc851ca47d83676e3fb5824f625c",
+          "size_bytes": 8410,
+          "token_count": 2327,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for Phase 25 (Fix CI failure commit 302c5e2)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-01T10:55:36.581651",
+          "content_hash": "sha256:a8622f5a19bdbd0dac5cfb82771f93922a3ce2bfdc593a955105bae369ec01c1",
+          "size_bytes": 8592,
+          "token_count": 2379,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated progress after commit pipeline (markdown lint fixes)"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 3431,
-      "token_count": 939,
+      "size_bytes": 3738,
+      "token_count": 1030,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-01T10:12:46.657444",
-      "content_hash": "sha256:abc069e7fa92a85d325c07dc6adccd9fece9d652085633f2bc75e258c36866f0",
+      "last_modified": "2026-02-01T10:49:27.056704",
+      "content_hash": "sha256:7bbd1378d0bd1a3e97aff1dc7881485c276657f6c1d29402857cc49b9c80030c",
       "sections": [
         {
           "title": "## Current Focus (2026-02-01)",
@@ -1542,28 +1575,28 @@
         {
           "title": "### Recently Completed",
           "level": 2,
-          "line_start": 22,
-          "line_end": 22,
+          "line_start": 23,
+          "line_end": 23,
           "content_hash": null
         },
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 30,
-          "line_end": 30,
+          "line_start": 32,
+          "line_end": 32,
           "content_hash": null
         },
         {
           "title": "## Next Focus",
           "level": 2,
-          "line_start": 39,
-          "line_end": 39,
+          "line_start": 41,
+          "line_end": 41,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 66,
-      "last_read": "2026-02-01T10:12:46.657444",
+      "write_count": 67,
+      "last_read": "2026-02-01T10:49:27.056704",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -2292,6 +2325,17 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Updated active context after Phase 24 completion"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-01T10:49:27.056207",
+          "content_hash": "sha256:7bbd1378d0bd1a3e97aff1dc7881485c276657f6c1d29402857cc49b9c80030c",
+          "size_bytes": 3738,
+          "token_count": 1030,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context after Phase 25 completion"
         }
       ]
     },
@@ -2529,8 +2573,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 45246,
-    "total_tokens": 11116,
-    "last_full_scan": "2026-02-01T10:12:46.657464"
+    "total_size_bytes": 46753,
+    "total_tokens": 11550,
+    "last_full_scan": "2026-02-01T10:55:36.582014"
   }
 }

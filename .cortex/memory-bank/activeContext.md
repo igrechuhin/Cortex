@@ -10,6 +10,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 - **Phase 20: Code Review Fixes** - IN PROGRESS (2026-02-01) - Steps 1, 2, 4, 5 complete; Step 3.10 complete (phase5_execution split); Step 3.9 complete (phase8_structure split); Step 3.8 complete (optimization_strategies split). Remaining files >400 lines: rollback_manager, template_manager, initialization, structure_analyzer. Plan: .cortex/plans/phase-20-code-review-fixes.md.
 
+- ✅ **Phase 25: Fix CI failure (commit 302c5e2)** - COMPLETE (2026-02-01)
 - ✅ **Phase 24: Fix roadmap text corruption** - COMPLETE (2026-02-01)
 - ✅ **Phase 23: Fix CI failure (validation refactor)** - COMPLETE (2026-02-01)
 - ✅ **Phase 21 Step 5 (analyze_health_check MCP tool)** - COMPLETE (2026-02-01)
@@ -21,6 +22,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
+- Phase 25 (2026-02-01): Fix CI failure (commit 302c5e2) – Verified format, type_check, quality, tests pass (3201 passed, 90.54% coverage). CI failure resolved in current codebase. Plan archived to .cortex/plans/archive/Phase25/.
 - Phase 24 (2026-02-01): Fix roadmap text corruption – Phase 24 phrase patterns in roadmap_corruption.py; fix_roadmap_content_if_needed and auto-fix on manage_file write for roadmap.md; unit tests; quality gate passes. 3201 tests, 90.54% coverage.
 - Commit (2026-02-01): Pre-commit pipeline; quality fix (optimization_strategies._run_sections_phase → _run_mandatory_and_high helper); markdown lint 5 files; type_check, quality, tests 3194, coverage 90.51%. 0 plans archived.
 - Phase 20 Step 3.8 (2026-02-01): optimization_strategies.py split to ≤400 lines (387 lines) via strategy_implementations.py, strategy_hybrid.py, strategy_selection (get_all_dependencies_closure), optimization_types (OptimizationResult). All 3194 tests pass; quality gate passes.
@@ -38,4 +40,4 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Next Focus
 
-- Continue Phase 20 (remaining file splits: rollback_manager, template_manager, initialization, structure_analyzer) or Phase 21 (Steps 2–4, 6–9); or pick next roadmap step (Phase 25: Fix CI failure commit 302c5e2). Run commit pipeline when ready.
+- Continue Phase 20 (remaining file splits: rollback_manager, template_manager, initialization, structure_analyzer) or Phase 21 (Steps 2–4, 6–9); or pick next roadmap step (Phase 27: Script generation prevention). Run commit pipeline when ready.

@@ -74,7 +74,7 @@
 
 - ✅ **Phase 24: Fix roadmap text corruption** - COMPLETE (2026-02-01) - Added Phase 24 phrase patterns to src/cortex/tools/roadmap_corruption.py (percent+to, number+ctual, ceeds, files unchanged, percent coverage, malformed date); fix_roadmap_content_if_needed and auto-fix on manage_file write for .cortex/memory-bank/roadmap.md; unit tests; quality gate passes. Plan: .cortex/plans/archive/Phase24/phase-24-fix-roadmap-text-corruption.md.
 
-- **Phase 25: Fix CI failure (commit 302c5e2)** - PENDING - Plan: .cortex/plans/phase-25-fix-ci-failure-commit-302c5e2.md.
+- ✅ **Phase 25: Fix CI failure (commit 302c5e2)** - COMPLETE (2026-02-01) - Verified: format, type_check, quality, tests pass (3201 passed, coverage 90.54%). CI failure from commit 302c5e2 resolved in current codebase. Plan: .cortex/plans/archive/Phase25/phase-25-fix-ci-failure-commit-302c5e2.md.
 
 - **Phase 27: Script generation prevention** - PENDING - Plan: .cortex/plans/phase-27-script-generation-prevention.md.
 
