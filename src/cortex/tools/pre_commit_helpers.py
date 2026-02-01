@@ -312,7 +312,11 @@ def detect_or_use_language(language: str | None, root_str: str) -> LanguageInfo 
 
 
 def determine_checks_to_perform(checks: Sequence[str] | None) -> list[PreCommitCheck]:
-    """Determine which checks to perform. Invalid names are skipped."""
+    """Determine which checks to perform. Invalid names are skipped.
+
+    When \"quality\" is requested, type_check is included so the quality gate
+    catches type diagnostics (e.g. reportRedeclaration) and matches IDE/CI.
+    """
     if not checks:
         return list(DEFAULT_CHECKS)
     result: list[PreCommitCheck] = []
@@ -321,7 +325,13 @@ def determine_checks_to_perform(checks: Sequence[str] | None) -> list[PreCommitC
             result.append(PreCommitCheck(name))
         except ValueError:
             continue
-    return result if result else list(DEFAULT_CHECKS)
+    if not result:
+        return list(DEFAULT_CHECKS)
+    # Quality gate includes type_check so CI/IDE type diagnostics are caught
+    if PreCommitCheck.QUALITY in result and PreCommitCheck.TYPE_CHECK not in result:
+        quality_idx = result.index(PreCommitCheck.QUALITY)
+        result.insert(quality_idx + 1, PreCommitCheck.TYPE_CHECK)
+    return result
 
 
 MAX_LOG_OUTPUT_LENGTH = 4000

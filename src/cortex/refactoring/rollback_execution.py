@@ -29,6 +29,7 @@ async def execute_rollback(
     fs_manager: FileSystemManager,
     version_manager: VersionManager,
     metadata_index: MetadataIndex,
+    backup_fn: Callable[[str], Awaitable[None]] | None = None,
 ) -> list[str]:
     """Execute rollback operation.
 
@@ -42,6 +43,7 @@ async def execute_rollback(
         fs_manager: File system manager
         version_manager: Version manager
         metadata_index: Metadata index
+        backup_fn: Optional backup callable (path) -> None for conflicted files
 
     Returns:
         List of restored files
@@ -56,8 +58,53 @@ async def execute_rollback(
             fs_manager,
             version_manager,
             metadata_index,
+            backup_fn=backup_fn,
         )
     return affected_files
+
+
+async def _try_restore_one(
+    file_path: str,
+    snapshot_id: str,
+    skip: bool,
+    memory_bank_dir: Path,
+    version_manager: VersionManager,
+    metadata_index: MetadataIndex,
+) -> str | None:
+    """Restore one file if not skipped; return path or None."""
+    if skip:
+        return None
+    restored = await restore_single_file(
+        file_path, snapshot_id, memory_bank_dir, version_manager, metadata_index
+    )
+    return file_path if restored else None
+
+
+async def _restore_one_file(
+    file_path: str,
+    snapshot_id: str,
+    preserve_manual_changes: bool,
+    conflicts: list[str],
+    memory_bank_dir: Path,
+    fs_manager: FileSystemManager,
+    version_manager: VersionManager,
+    metadata_index: MetadataIndex,
+    backup_fn: Callable[[str], Awaitable[None]] | None,
+) -> str | None:
+    """Restore one file if not skipped; return path or None."""
+    skip = await should_skip_conflicted_file(
+        file_path,
+        preserve_manual_changes,
+        conflicts,
+        memory_bank_dir,
+        fs_manager,
+        version_manager,
+        metadata_index,
+        backup_fn=backup_fn,
+    )
+    return await _try_restore_one(
+        file_path, snapshot_id, skip, memory_bank_dir, version_manager, metadata_index
+    )
 
 
 async def restore_files(
@@ -69,42 +116,24 @@ async def restore_files(
     fs_manager: FileSystemManager,
     version_manager: VersionManager,
     metadata_index: MetadataIndex,
+    backup_fn: Callable[[str], Awaitable[None]] | None = None,
 ) -> list[str]:
-    """Restore files from snapshot.
-
-    Args:
-        affected_files: List of files to restore
-        snapshot_id: Snapshot to restore from
-        preserve_manual_changes: Whether to preserve manual edits
-        conflicts: List of detected conflicts
-        memory_bank_dir: Memory bank directory
-        fs_manager: File system manager
-        version_manager: Version manager
-        metadata_index: Metadata index
-
-    Returns:
-        List of successfully restored files
-    """
+    """Restore files from snapshot. Returns list of successfully restored paths."""
     restored_files: list[str] = []
-
     for file_path in affected_files:
-        # Skip files with conflicts if preserving manual changes
-        if await should_skip_conflicted_file(
-            file_path, preserve_manual_changes, conflicts, memory_bank_dir, fs_manager
-        ):
-            continue
-
-        # Restore from snapshot
-        restored = await restore_single_file(
+        one = await _restore_one_file(
             file_path,
             snapshot_id,
+            preserve_manual_changes,
+            conflicts,
             memory_bank_dir,
+            fs_manager,
             version_manager,
             metadata_index,
+            backup_fn,
         )
-        if restored:
-            restored_files.append(file_path)
-
+        if one is not None:
+            restored_files.append(one)
     return restored_files
 
 
@@ -114,6 +143,8 @@ async def should_skip_conflicted_file(
     conflicts: list[str],
     memory_bank_dir: Path,
     fs_manager: FileSystemManager,
+    version_manager: VersionManager,
+    metadata_index: MetadataIndex,
     backup_fn: Callable[[str], Awaitable[None]] | None = None,
 ) -> bool:
     """Check if file should be skipped due to conflicts.
@@ -124,6 +155,9 @@ async def should_skip_conflicted_file(
         conflicts: List of detected conflicts
         memory_bank_dir: Memory bank directory
         fs_manager: File system manager
+        version_manager: Version manager (used for backup when backup_fn is None)
+        metadata_index: Metadata index (used for backup when backup_fn is None)
+        backup_fn: Optional backup callable; if None, uses backup_current_version
 
     Returns:
         True if file should be skipped
@@ -133,12 +167,11 @@ async def should_skip_conflicted_file(
 
     has_conflict = any(file_path in conflict for conflict in conflicts)
     if has_conflict:
-        # Create a backup of the current version
         if backup_fn:
             await backup_fn(file_path)
         else:
             await backup_current_version(
-                file_path, memory_bank_dir, fs_manager, None, None
+                file_path, memory_bank_dir, fs_manager, version_manager, metadata_index
             )
         return True
 

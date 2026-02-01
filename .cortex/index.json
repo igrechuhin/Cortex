@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-01T10:55:36.587356",
+  "last_updated": "2026-02-01T11:31:10.446731",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
@@ -615,11 +615,11 @@
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 8592,
-      "token_count": 2379,
+      "size_bytes": 9223,
+      "token_count": 2533,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-01T10:55:36.581988",
-      "content_hash": "sha256:a8622f5a19bdbd0dac5cfb82771f93922a3ce2bfdc593a955105bae369ec01c1",
+      "last_modified": "2026-02-01T11:07:50.905919",
+      "content_hash": "sha256:5abca3f7896eea996082236ce8eff794b3a923acab3c54539f37de7ae3d87a53",
       "sections": [
         {
           "title": "## 2026-02-01",
@@ -631,28 +631,28 @@
         {
           "title": "## 2026-01-31",
           "level": 2,
-          "line_start": 27,
-          "line_end": 27,
+          "line_start": 31,
+          "line_end": 31,
           "content_hash": null
         },
         {
           "title": "## 2026-01-30",
           "level": 2,
-          "line_start": 71,
-          "line_end": 71,
+          "line_start": 73,
+          "line_end": 73,
           "content_hash": null
         },
         {
           "title": "## 2026-01-29",
           "level": 2,
-          "line_start": 81,
-          "line_end": 81,
+          "line_start": 83,
+          "line_end": 83,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 81,
-      "last_read": "2026-02-01T10:55:36.581988",
+      "write_count": 82,
+      "last_read": "2026-02-01T11:07:50.905919",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -1546,17 +1546,28 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Updated progress after commit pipeline (markdown lint fixes)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-01T11:07:50.904828",
+          "content_hash": "sha256:5abca3f7896eea996082236ce8eff794b3a923acab3c54539f37de7ae3d87a53",
+          "size_bytes": 9223,
+          "token_count": 2533,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for Phase 20 Steps 3.4 and 3.5 (rollback_manager and template_manager splits)"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 3738,
-      "token_count": 1030,
+      "size_bytes": 3379,
+      "token_count": 952,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-01T10:49:27.056704",
-      "content_hash": "sha256:7bbd1378d0bd1a3e97aff1dc7881485c276657f6c1d29402857cc49b9c80030c",
+      "last_modified": "2026-02-01T11:31:10.445441",
+      "content_hash": "sha256:fc5e89527a0c63d5df4e7c186d6e2376a65883422e547f995b8bfb0bed7d25d7",
       "sections": [
         {
           "title": "## Current Focus (2026-02-01)",
@@ -1575,8 +1586,8 @@
         {
           "title": "### Recently Completed",
           "level": 2,
-          "line_start": 23,
-          "line_end": 23,
+          "line_start": 25,
+          "line_end": 25,
           "content_hash": null
         },
         {
@@ -1595,8 +1606,8 @@
         }
       ],
       "read_count": 0,
-      "write_count": 67,
-      "last_read": "2026-02-01T10:49:27.056704",
+      "write_count": 69,
+      "last_read": "2026-02-01T11:31:10.445441",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -2336,6 +2347,28 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Updated active context after Phase 25 completion"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-01T11:08:02.962489",
+          "content_hash": "sha256:83a835715156715d0377f5178a500af4f11ec86178569219ef966077bdb8d59f",
+          "size_bytes": 4145,
+          "token_count": 1147,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context after Phase 20 Steps 3.4 and 3.5 completion"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-01T11:31:10.445077",
+          "content_hash": "sha256:fc5e89527a0c63d5df4e7c186d6e2376a65883422e547f995b8bfb0bed7d25d7",
+          "size_bytes": 3379,
+          "token_count": 952,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated after commit pipeline; rollback_execution quality fix"
         }
       ]
     },
@@ -2573,8 +2606,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 46753,
-    "total_tokens": 11550,
-    "last_full_scan": "2026-02-01T10:55:36.582014"
+    "total_size_bytes": 47025,
+    "total_tokens": 11626,
+    "last_full_scan": "2026-02-01T11:31:10.445463"
   }
 }

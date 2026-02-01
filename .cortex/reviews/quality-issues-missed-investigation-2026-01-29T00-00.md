@@ -50,7 +50,7 @@ This document explains why each was missed and recommends fixes.
 
 ### Recommendation (reportRedeclaration)
 
-- Add **`"reportRedeclaration": "error"`** to `pyrightconfig.json` so both CLI (pyright/basedpyright) and IDE fail consistently on variable shadowing. Then the commit pipeline will catch this class of issue.
+- Add **`"reportRedeclaration": "error"`** to `pyrightconfig.json` so both CLI (pyright/basedpyright) and IDE fail consistently on variable shadowing. Then the commit pipeline will catch this class of issue. **Applied**: `pyrightconfig.json` has `reportRedeclaration: error`; CI and quality gate run type_check (Option A).
 
 ---
 
@@ -73,7 +73,7 @@ This document explains why each was missed and recommends fixes.
 
 ### Recommendation (Ruff UP034)
 
-- **Option A**: Change CI and `check_linting.py` to use the **same** rule set as `pyproject.toml` (e.g. run `ruff check` **without** `--select F,E,W` so Ruff uses `pyproject.toml`), or explicitly add the same select list including UP (and I, B if desired).
+- **Option A**: Change CI and `check_linting.py` to use the **same** rule set as `pyproject.toml` (e.g. run `ruff check` **without** `--select F,E,W` so Ruff uses `pyproject.toml`), or explicitly add the same select list including UP (and I, B if desired). **Applied**: CI (`.github/workflows/quality.yml`) and `check_linting.py` run `ruff check` with no `--select` override; pipeline documented as Option A.
 - **Option B**: If the intent is to keep CI minimal (F,E,W only), document that UP (and similar) are **IDE-only** and accept that UP034-style issues can slip through until CI is aligned with pyproject.toml.
 
 ---

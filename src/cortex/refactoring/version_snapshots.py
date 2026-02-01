@@ -13,8 +13,8 @@ from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonValue, VersionMetadata
 
 
-async def find_snapshot_for_execution(execution_id: str) -> str | None:
-    """Find snapshot ID for an execution.
+def find_snapshot_for_execution_sync(execution_id: str) -> str | None:
+    """Find snapshot ID for an execution (sync, no I/O).
 
     Args:
         execution_id: Execution ID
@@ -22,17 +22,24 @@ async def find_snapshot_for_execution(execution_id: str) -> str | None:
     Returns:
         Snapshot ID or None if not found
     """
-    # This would typically come from the execution record
-    # For now, we'll construct it from the execution_id
-    # In practice, the RefactoringExecutor would store this
     if "exec-" in execution_id:
-        # Extract timestamp from execution_id
-        # Format: exec-{suggestion_id}-{timestamp}
         parts = execution_id.split("-")
         if len(parts) >= 3:
             timestamp = parts[-1]
             return f"refactoring-{timestamp}"
     return None
+
+
+async def find_snapshot_for_execution(execution_id: str) -> str | None:
+    """Find snapshot ID for an execution (async wrapper).
+
+    Args:
+        execution_id: Execution ID
+
+    Returns:
+        Snapshot ID or None if not found
+    """
+    return find_snapshot_for_execution_sync(execution_id)
 
 
 async def get_affected_files(
@@ -161,10 +168,10 @@ def _extract_version_history(file_meta: JsonValue) -> list[VersionMetadata] | No
     if not isinstance(version_history_attr, list):
         return None
 
-    history: list[VersionMetadata] = []
+    result: list[VersionMetadata] = []
     for item in cast(list[JsonValue], version_history_attr):
         if isinstance(item, BaseModel):
-            history.append(VersionMetadata.model_validate(item.model_dump(mode="json")))
+            result.append(VersionMetadata.model_validate(item.model_dump(mode="json")))
         elif isinstance(item, dict):
-            history.append(VersionMetadata.model_validate(item))
-    return history
+            result.append(VersionMetadata.model_validate(item))
+    return result

@@ -2,6 +2,12 @@
 
 ## 2026-02-01
 
+- **Commit (2026-02-01)**: Pre-commit pipeline; quality fix (rollback_execution.restore_files → _restore_one_file, ≤30 lines); markdown lint 7 files; type_check, quality, tests 3201, coverage 90.73%. 0 plans archived; memory bank updated.
+
+- **Phase 20: Step 3.4 rollback_manager split** (2026-02-01) - Refactored rollback_manager.py (928 → 363 lines) to delegate to version_snapshots, rollback_execution, rollback_conflicts, rollback_history_operations, rollback_initialization, rollback_history_loader. Added rollback_history_operations.py. All 28 rollback_manager tests pass; 3201 tests total; quality gate passes. Plan: .cortex/plans/phase-20-code-review-fixes.md (Step 3.4 complete).
+
+- **Phase 20: Step 3.5 template_manager split** (2026-02-01) - Refactored template_manager.py (900 → 106 lines) to delegate to template_loader, template_renderer, template_questions. Added template_questions.py. All 40 template_manager tests pass; 3201 tests total; quality gate passes. Plan: .cortex/plans/phase-20-code-review-fixes.md (Step 3.5 complete; remaining >400-line files: initialization, structure_analyzer).
+
 - **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint fixes (roadmap.md, roadmap_v11.md MD012). Phase 25 plan already archived. Tests 3201, coverage 90.54%. Memory bank updated.
 
 - **Phase 25: Fix CI failure (commit 302c5e2)** (2026-02-01) - Verified: format, type_check, quality, tests pass (3201 passed, coverage 90.54%). CI failure from commit 302c5e2 resolved in current codebase. No code changes required. Plan archived to .cortex/plans/archive/Phase25/phase-25-fix-ci-failure-commit-302c5e2.md.
@@ -47,8 +53,6 @@
 - **Ensure proper logging (FastMCP context): phase1_foundation_* tools** (2026-01-31) - Refactored get_version_history, get_memory_bank_stats, get_dependency_graph, rollback_file_version, cleanup_metadata_index to use optional ctx and log_client.
 
 - **Commit: function length and markdown lint** (2026-01-31) - Refactored _execute_rules_operation, fix_markdown_lint, fix_roadmap_corruption to meet 30-line limit. Markdown lint: 3 files fixed. 3157 tests, 90.47% coverage. 0 plans archived.
-
-- **Ensure proper logging (FastMCP context): markdown_operations, rules_operations, fix_roadmap_corruption** (2026-01-31) - Refactored fix_markdown_lint, rules, fix_roadmap_corruption to use optional ctx and log_client. All 3157 tests passing.
 
 - **Commit: pre-commit and memory bank** (2026-01-31) - fix_errors, format, markdown lint (3 files fixed), type_check, quality, tests (3150 passed, 90.46% coverage). 0 plans archived; memory bank updated.
 

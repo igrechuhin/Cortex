@@ -1,5 +1,9 @@
 name: Code Quality
 
+# Option A (quality-issues-missed-investigation): (1) Ruff uses pyproject.toml
+# rule set only—do NOT add --select F,E,W. (2) Quality includes type_check—
+# this job runs format, lint, type_check, file sizes, function lengths, tests.
+
 on:
   push:
     branches: [main, develop]
@@ -68,11 +72,11 @@ jobs:
           echo "✅ Black formatting check passed"
           echo "::endgroup::"
 
-      - name: "Lint with ruff (uses pyproject.toml rule set: E, F, I, B, UP)"
+      - name: "Lint with ruff (Option A: pyproject.toml rule set E, F, I, B, UP)"
         id: linting
         run: |
           echo "::group::Running Ruff linting check"
-          # Uses tool.ruff.lint.select from pyproject.toml (E, F, I, B, UP)
+          # Option A: no --select F,E,W; Ruff uses tool.ruff.lint.select from pyproject.toml
           # Note: .cortex/synapse/scripts/ is checked by the synapse scripts themselves
           if ! uv run ruff check src/ tests/; then
             echo "::error::Ruff linting check failed. Run 'ruff check --fix src/ tests/' to fix auto-fixable issues."
@@ -81,10 +85,11 @@ jobs:
           echo "✅ Ruff linting check passed"
           echo "::endgroup::"
 
-      - name: Type check with pyright (source)
+      - name: "Type check with pyright (source) (Option A: quality includes type_check)"
         id: type_check_src
         run: |
           echo "::group::Running Pyright type check (source)"
+          # Option A: quality gate includes type_check; pyrightconfig.json has reportRedeclaration etc.
           # Try JSON output first for reliable parsing
           JSON_OUTPUT=$(uv run pyright --outputjson src/ 2>&1) || true
           TEXT_OUTPUT=$(uv run pyright src/ 2>&1) || true
@@ -172,10 +177,11 @@ jobs:
           echo "✅ Ruff linting check passed (synapse scripts)"
           echo "::endgroup::"
 
-      - name: Type check with pyright (tests and scripts)
+      - name: "Type check with pyright (tests and scripts) (Option A: quality includes type_check)"
         id: type_check_tests
         run: |
           echo "::group::Running Pyright type check (tests and scripts)"
+          # Option A: quality gate includes type_check
           # Use the check_types script which handles tests and scripts properly
           if ! uv run python .cortex/synapse/scripts/python/check_types.py; then
             echo "::error::Type check failed for tests or scripts. Fix type errors before committing."

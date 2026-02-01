@@ -1041,6 +1041,15 @@ class TestQualityCheckIntegration:
                     warnings=[],
                     files_modified=[],
                 )
+                # Quality gate includes type_check (Option A: pipelines run type_check with quality)
+                mock_adapter.type_check.return_value = CheckResult(
+                    check_type="type_check",
+                    success=True,
+                    output="0 errors, 0 warnings",
+                    errors=[],
+                    warnings=[],
+                    files_modified=[],
+                )
 
                 result_json = await execute_pre_commit_checks(
                     checks=["quality"],
@@ -1050,6 +1059,7 @@ class TestQualityCheckIntegration:
 
                 assert result["status"] == "success"
                 assert "quality" in result["checks_performed"]
+                assert "type_check" in result["checks_performed"]
                 # Quality result should include file_size_violations and
                 # function_length_violations
                 quality_result = result["results"]["quality"]
@@ -1085,6 +1095,15 @@ class TestLogTruncationBehavior:
                     success=False,
                     output=large_output,
                     errors=["E1"],
+                    warnings=[],
+                    files_modified=[],
+                )
+                # Quality gate includes type_check
+                mock_adapter.type_check.return_value = CheckResult(
+                    check_type="type_check",
+                    success=True,
+                    output="0 errors",
+                    errors=[],
                     warnings=[],
                     files_modified=[],
                 )

@@ -134,6 +134,8 @@ Validation and phase2 already split (validation_operations 491 lines; phase2_lin
 9. `src/cortex/tools/phase8_structure.py` - **821 lines** (105% over limit)
 10. `src/cortex/tools/phase5_execution.py` - **781 lines** (95% over limit)
 
+**Remaining files >400 lines (after 2026-02-01):** initialization, structure_analyzer.
+
 **Fix Strategy:**
 
 **3.1: Split `validation_operations.py` (1063 → ≤400 lines)**
@@ -163,23 +165,13 @@ Validation and phase2 already split (validation_operations 491 lines; phase2_lin
 - Update imports across codebase
 - Ensure all tests pass
 
-**3.4: Split `rollback_manager.py` (928 → ≤400 lines)**
+**3.4: Split `rollback_manager.py` (928 → ≤400 lines)** ✅ COMPLETE (2026-02-01)
 
-- Extract version snapshot logic → `version_snapshots.py`
-- Extract rollback execution → `rollback_execution.py`
-- Extract conflict resolution → `rollback_conflicts.py`
-- Keep core orchestration in `rollback_manager.py`
-- Update imports across codebase
-- Ensure all tests pass
+- Delegated to existing `version_snapshots.py`, `rollback_execution.py`, `rollback_conflicts.py`; added `rollback_history_operations.py` and use `rollback_initialization`, `rollback_history_loader`. Core orchestration in `rollback_manager.py` (363 lines). All 28 rollback_manager tests pass; quality gate passes.
 
-**3.5: Split `template_manager.py` (891 → ≤400 lines)**
+**3.5: Split `template_manager.py` (891 → ≤400 lines)** ✅ COMPLETE (2026-02-01)
 
-- Extract template loading → `template_loader.py`
-- Extract template rendering → `template_renderer.py`
-- Extract template validation → `template_validator.py`
-- Keep core orchestration in `template_manager.py`
-- Update imports across codebase
-- Ensure all tests pass
+- Delegated to existing `template_loader.py`, `template_renderer.py`; added `template_questions.py` for interactive setup questions. Core orchestration in `template_manager.py` (106 lines). All 40 template_manager tests pass; quality gate passes.
 
 **3.6: Split `initialization.py` (886 → ≤400 lines)**
 
