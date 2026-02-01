@@ -2,6 +2,10 @@
 
 ## 2026-02-01
 
+- **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint MD037 fixes (progress, roadmap—backticks for identifiers); fix_errors, format, type_check, quality, tests 3303, coverage 90.38%. Plan archiving in Step 7; memory bank updated.
+
+- **Phase 32: Fix MCP tool connection closure errors** (2026-02-01) - Pre-execution and before-retry connection health checks in mcp_stability; connection closure/recovery state tracking (`_connection_closure_count`, `_connection_recovery_count`); ConnectionError on connection failures; helpers `_retry_path_health_and_recovery`, `_raise_final_error`, `_run_with_retry_and_record`; `_handle_connection_error` raises ConnectionError on final attempt when connection-related. Unit tests: test_unhealthy_connection_raises_before_execution, test_unhealthy_before_retry_raises_connection_error, test_max_retries_exhausted expects ConnectionError. test_rollback_file_version_error_handling updated to expect ConnectionError. All 3303 tests pass; coverage 90.38%; quality gate passes. Plan archived to .cortex/plans/archive/Phase32/.
+
 - **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 4 files fixed (activeContext, progress, roadmap, phase-31). fix_errors, format, type_check, quality, tests 3301, coverage 90.39%. Plan archiving in Step 7; memory bank updated.
 
 - **Phase 31: Fix optimize-context stale file errors** (2026-02-01) - Existence check before read in _read_all_files_for_context_loading (phase4_context_operations) and _read_all_files_for_loading (progressive_loader); FileSystemManager.read_file raises FileNotFoundError immediately for non-existent files (no retries). Unit tests: test_phase4_context_operations (load_context_skips_stale_index_entries), test_file_system (read_file_nonexistent_raises_immediately_no_retry), test_progressive_loader (load_by_relevance_skips_stale_index_entries). All 3301 tests pass; coverage 90.39%; quality gate passes. Roadmap and plan updated: Phase 31 COMPLETE.
@@ -38,9 +42,9 @@
 
 - **Commit (2026-02-01)**: Pre-commit pipeline; quality fix (rollback_execution.restore_files → _restore_one_file, ≤30 lines); markdown lint 7 files; type_check, quality, tests 3201, coverage 90.73%. 0 plans archived; memory bank updated.
 
-- **Phase 20: Step 3.4 rollback_manager split** (2026-02-01) - Refactored rollback_manager.py (928 → 363 lines) to delegate to version_snapshots, rollback_execution, rollback_conflicts, rollback_history_operations, rollback_initialization, rollback_history_loader. Added rollback_history_operations.py. All 28 rollback_manager tests pass; 3201 tests total; quality gate passes. Plan: .cortex/plans/phase-20-code-review-fixes.md (Step 3.4 complete).
+- **Phase 20: Step 3.4 rollback_manager split** (2026-02-01) - Refactored rollback_manager.py (928 → 363 lines) to delegate to version_snapshots, rollback_execution, rollback_conflicts, rollback_history_operations, rollback_initialization, rollback_history_loader. Added rollback_history_operations.py. All 28 rollback_manager tests pass; 3201 tests total; quality gate passes. Plan: .cortex/plans/archive/Phase20/phase-20-code-review-fixes.md (Step 3.4 complete).
 
-- **Phase 20: Step 3.5 template_manager split** (2026-02-01) - Refactored template_manager.py (900 → 106 lines) to delegate to template_loader, template_renderer, template_questions. Added template_questions.py. All 40 template_manager tests pass; 3201 tests total; quality gate passes. Plan: .cortex/plans/phase-20-code-review-fixes.md (Step 3.5 complete; remaining >400-line files: initialization, structure_analyzer).
+- **Phase 20: Step 3.5 template_manager split** (2026-02-01) - Refactored template_manager.py (900 → 106 lines) to delegate to template_loader, template_renderer, template_questions. Added template_questions.py. All 40 template_manager tests pass; 3201 tests total; quality gate passes. Plan: .cortex/plans/archive/Phase20/phase-20-code-review-fixes.md (Step 3.5 complete; remaining >400-line files: initialization, structure_analyzer).
 
 - **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint fixes (roadmap.md, roadmap_v11.md MD012). Phase 25 plan already archived. Tests 3201, coverage 90.54%. Memory bank updated.
 
@@ -52,23 +56,23 @@
 
 - **Commit (2026-02-01)**: Pre-commit pipeline; quality fix (optimization_strategies._run_sections_phase → _run_mandatory_and_high); markdown lint 5 files; type_check, quality, tests 3194, coverage 90.51%. 0 plans archived; memory bank updated.
 
-- **Phase 20: Step 3.8 optimization_strategies split** (2026-02-01) - Split optimization_strategies.py (822 lines) into orchestration (387 lines) plus strategy_implementations.py (section helpers), strategy_hybrid.py (hybrid phase execution), strategy_selection (get_all_dependencies_closure), optimization_types (OptimizationResult dataclass). Delegation to existing strategy_selection and strategy_metrics. All 3194 tests pass; quality gate passes; coverage 90.51%. Plan: .cortex/plans/phase-20-code-review-fixes.md (Step 3.8 complete; remaining >400-line files: rollback_manager, template_manager, initialization, structure_analyzer).
+- **Phase 20: Step 3.8 optimization_strategies split** (2026-02-01) - Split optimization_strategies.py (822 lines) into orchestration (387 lines) plus strategy_implementations.py (section helpers), strategy_hybrid.py (hybrid phase execution), strategy_selection (get_all_dependencies_closure), optimization_types (OptimizationResult dataclass). Delegation to existing strategy_selection and strategy_metrics. All 3194 tests pass; quality gate passes; coverage 90.51%. Plan: .cortex/plans/archive/Phase20/phase-20-code-review-fixes.md (Step 3.8 complete; remaining >400-line files: rollback_manager, template_manager, initialization, structure_analyzer).
 
 - **Commit (2026-02-01)**: Pre-commit pipeline passed (fix_errors, format, markdown lint 4 files, type_check, quality, tests 3194, coverage 90.51%). 0 plans archived; memory bank updated.
 
-- **Phase 20: Step 3.9 phase8_structure split** (2026-02-01) - Split phase8_structure.py (821 lines) into phase8_structure_validation.py, phase8_structure_operations.py, phase8_structure_docs.py. Main file 193 lines; re-exports for tests. All 29 phase8 tests pass; 3194 tests total; quality gate and type check pass. Plan: .cortex/plans/phase-20-code-review-fixes.md (Step 3.9 complete; remaining >400-line files: rollback_manager, template_manager, initialization, structure_analyzer, optimization_strategies).
+- **Phase 20: Step 3.9 phase8_structure split** (2026-02-01) - Split phase8_structure.py (821 lines) into phase8_structure_validation.py, phase8_structure_operations.py, phase8_structure_docs.py. Main file 193 lines; re-exports for tests. All 29 phase8 tests pass; 3194 tests total; quality gate and type check pass. Plan: .cortex/plans/archive/Phase20/phase-20-code-review-fixes.md (Step 3.9 complete; remaining >400-line files: rollback_manager, template_manager, initialization, structure_analyzer, optimization_strategies).
 
 - **Phase 23: Fix CI failure (validation refactor)** (2026-02-01) - Verified current state: all validation modules present; format, type_check, quality, tests pass (3194 passed, coverage 90.5%). CI failure from commit 612af0e resolved. No code changes required. Plan archived to .cortex/plans/archive/Phase23/phase-23-fix-ci-failure-validation-refactor.md.
 
 - **Commit (2026-02-01)**: Pre-commit pipeline passed; memory bank and markdown lint updates. Tests 3194, coverage 90.5%. 0 plans archived. Phase 21 Step 5 (analyze_health_check) and health_check_operations in place.
 
-- **Phase 21: Step 5 MCP tool analyze_health_check** (2026-02-01) - Added src/cortex/tools/health_check_operations.py with analyze_health_check MCP tool. Plan: .cortex/plans/phase-21-health-check-optimization.md (Step 5 complete; remaining Steps 2–4, 6–9).
+- **Phase 21: Step 5 MCP tool analyze_health_check** (2026-02-01) - Added src/cortex/tools/health_check_operations.py with analyze_health_check MCP tool. Plan: .cortex/plans/archive/Phase21/phase-21-health-check-optimization.md (Step 5 complete; remaining Steps 2–4, 6–9).
 
 ## 2026-01-31
 
 - **Commit (2026-01-31)**: Pre-commit pipeline passed; Phase 20 Step 3.10 phase5_execution split (validation, monitoring, planning modules) committed.
 
-- **Phase 20: Step 3.10 phase5_execution split** (2026-01-31) - Split phase5_execution.py into phase5_execution_validation.py, phase5_execution_monitoring.py, phase5_execution_planning.py. Main file keeps tool decorators and thin entry points. All 3184 tests pass; quality gate passes; coverage 90.55%. Plan: .cortex/plans/phase-20-code-review-fixes.md (Step 3.10 complete).
+- **Phase 20: Step 3.10 phase5_execution split** (2026-01-31) - Split phase5_execution.py into phase5_execution_validation.py, phase5_execution_monitoring.py, phase5_execution_planning.py. Main file keeps tool decorators and thin entry points. All 3184 tests pass; quality gate passes; coverage 90.55%. Plan: .cortex/plans/archive/Phase20/phase-20-code-review-fixes.md (Step 3.10 complete).
 
 - **Phase 20: Code Review Fixes (implement run)** (2026-01-31) - Verified Steps 1, 2, 4, 5 complete; Step 3 partial. Plan file updated with status.
 

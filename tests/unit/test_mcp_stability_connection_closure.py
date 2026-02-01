@@ -5,6 +5,7 @@ Tests the connection closure detection, retry logic, and error handling.
 """
 
 import asyncio
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -12,6 +13,7 @@ from cortex.core.mcp_stability import (
     check_connection_health,
     with_mcp_stability,
 )
+from cortex.core.models import ConnectionHealth
 
 
 class TestConnectionClosureHandling:
@@ -97,7 +99,7 @@ class TestConnectionClosureHandling:
         # Act
         health = await check_connection_health()
 
-        # Assert - check_connection_health returns dict with health metrics
+        # Assert - check_connection_health returns ConnectionHealth (dict-like)
         assert "healthy" in health
         assert "concurrent_operations" in health
         assert "max_concurrent" in health
@@ -106,6 +108,76 @@ class TestConnectionClosureHandling:
         assert isinstance(health["healthy"], bool)
         assert isinstance(health["concurrent_operations"], int)
         assert isinstance(health["max_concurrent"], int)
+
+    @pytest.mark.asyncio
+    async def test_unhealthy_connection_raises_before_execution(self) -> None:
+        """Test that unhealthy connection raises ConnectionError before execution."""
+        # Arrange
+        unhealthy = ConnectionHealth(
+            healthy=False,
+            concurrent_operations=0,
+            max_concurrent=5,
+            semaphore_available=5,
+            utilization_percent=0.0,
+        )
+        call_count = 0
+
+        async def test_func() -> str:
+            nonlocal call_count
+            call_count += 1
+            return "success"
+
+        with patch(
+            "cortex.core.mcp_stability.check_connection_health",
+            new_callable=AsyncMock,
+            return_value=unhealthy,
+        ):
+            # Act & Assert
+            with pytest.raises(ConnectionError, match="not healthy before tool"):
+                _ = await with_mcp_stability(test_func, timeout=10.0)
+        assert call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_unhealthy_before_retry_raises_connection_error(self) -> None:
+        """Test that unhealthy connection before retry raises ConnectionError."""
+        # Arrange
+        healthy = ConnectionHealth(
+            healthy=True,
+            concurrent_operations=1,
+            max_concurrent=5,
+            semaphore_available=4,
+            utilization_percent=20.0,
+        )
+        unhealthy = ConnectionHealth(
+            healthy=False,
+            concurrent_operations=0,
+            max_concurrent=5,
+            semaphore_available=5,
+            utilization_percent=0.0,
+        )
+        call_order: list[ConnectionHealth] = [healthy, unhealthy]
+
+        async def check_health() -> ConnectionHealth:
+            return call_order.pop(0) if call_order else healthy
+
+        attempt_count = 0
+
+        async def test_func() -> str:
+            nonlocal attempt_count
+            attempt_count += 1
+            if attempt_count == 1:
+                raise ConnectionError("Connection closed")
+            return "success"
+
+        with patch(
+            "cortex.core.mcp_stability.check_connection_health",
+            new_callable=AsyncMock,
+            side_effect=check_health,
+        ):
+            # Act & Assert - second check (before retry) returns unhealthy
+            with pytest.raises(ConnectionError, match="not healthy before retry"):
+                _ = await with_mcp_stability(test_func, timeout=10.0)
+        assert attempt_count == 1
 
     @pytest.mark.asyncio
     async def test_timeout_error_handling(self) -> None:
@@ -172,9 +244,9 @@ class TestConnectionClosureHandling:
             attempt_count += 1
             raise ConnectionError("Connection closed")
 
-        # Act & Assert
+        # Act & Assert - Phase 32: connection failures raise ConnectionError
         with pytest.raises(
-            RuntimeError, match="MCP connection failed.*after 3 attempts"
+            ConnectionError, match="failed after.*attempts \\(connection\\)"
         ):
             _ = await with_mcp_stability(test_func, timeout=10.0)
 

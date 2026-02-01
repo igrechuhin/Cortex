@@ -6,6 +6,10 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
+- ✅ **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint MD037 fixes (progress, roadmap); fix_errors, format, type_check, quality, tests 3303, coverage 90.38%. Plan archiving in Step 7.
+
+- ✅ **Phase 32: Fix MCP tool connection closure errors** - COMPLETE (2026-02-01) - Pre-execution and before-retry health checks; connection state tracking; ConnectionError on connection failures; 3303 tests; coverage 90.38%; quality gate passes.
+
 - ✅ **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 4 files fixed (activeContext, progress, roadmap, phase-31). fix_errors, format, type_check, quality, tests 3301, coverage 90.39%. Plan archiving in Step 7.
 
 - ✅ **Phase 31: Fix optimize-context stale file errors** - COMPLETE (2026-02-01) - Existence check before read in load_context and load_progressive_context paths; read_file raises FileNotFoundError immediately (no retries). 3301 tests; coverage 90.39%; quality gate passes.
@@ -16,7 +20,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 - ✅ **Phase 21: Health-Check and Optimization Analysis** - COMPLETE (2026-02-01) - Steps 6–9 done: CLI scripts/health_check.py; CI health-check step and artifact in .github/workflows/quality.yml; tests/tools/test_health_check_cli.py; docs/guides/health-check.md, docs/api/health-check.md, docs/api/tools.md (54 tools). Steps 2–4 implemented in module. All 3204 tests pass; coverage 90.83%.
 
-- ✅ **Phase 20: Code Review Fixes** - COMPLETE (2026-02-01) - All steps done. Step 3.6 (initialization.py 188 lines) and 3.7 (structure_analyzer.py 264 lines) complete. All 10 file splits done; 3201 tests pass; quality gate passes. Plan: .cortex/plans/phase-20-code-review-fixes.md.
+- ✅ **Phase 20: Code Review Fixes** - COMPLETE (2026-02-01) - All steps done. Step 3.6 (initialization.py 188 lines) and 3.7 (structure_analyzer.py 264 lines) complete. All 10 file splits done; 3201 tests pass; quality gate passes. Plan: .cortex/plans/archive/Phase20/phase-20-code-review-fixes.md.
 
 - ✅ **Phase 29: Track MCP tool usage** - COMPLETE (2026-02-01) - Usage tracking (UsageTracker, usage_models, usage_context); recording in mcp_stability; usage_analytics MCP tools; config usage_tracking.json. 3298 tests; coverage 90.27%; quality gate passes.
 
@@ -56,4 +60,4 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Next Focus
 
-- Pick next PENDING plan (Phase 32: Fix MCP tool connection closure errors). Run commit pipeline when ready.
+- Pick next PENDING plan (Phase 33: Fix execute_pre_commit_checks JSON parsing error). Run commit pipeline when ready.

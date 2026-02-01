@@ -85,6 +85,10 @@ class TrackedSemaphore:
 # Global semaphore for limiting concurrent tool executions
 _concurrent_tools_semaphore: TrackedSemaphore | None = None
 
+# Connection state for diagnostics (Phase 32)
+_connection_closure_count: int = 0
+_connection_recovery_count: int = 0
+
 
 def _get_semaphore() -> TrackedSemaphore:
     """Get or create the global semaphore for concurrent tool limits."""
@@ -119,9 +123,21 @@ async def _handle_timeout_error(
     return None, e
 
 
+def _record_connection_closure() -> None:
+    """Record connection closure for diagnostics (Phase 32)."""
+    global _connection_closure_count
+    _connection_closure_count += 1
+
+
+def _record_connection_recovery() -> None:
+    """Record connection recovery for diagnostics (Phase 32)."""
+    global _connection_recovery_count
+    _connection_recovery_count += 1
+
+
 async def _handle_connection_error(
     func_name: str, attempt: int, e: Exception
-) -> tuple[RuntimeError | None, Exception | None]:
+) -> tuple[ConnectionError | RuntimeError | None, Exception | None]:
     """Handle connection error during retry.
 
     Args:
@@ -132,13 +148,20 @@ async def _handle_connection_error(
     Returns:
         Tuple of (error to raise if final attempt, exception to store)
     """
+    _record_connection_closure()
     logger.warning(
         f"MCP connection error in {func_name} "
         + f"(attempt {attempt}/{MCP_CONNECTION_RETRY_ATTEMPTS}): {e}"
     )
     if attempt == MCP_CONNECTION_RETRY_ATTEMPTS:
-        error = RuntimeError(
-            f"MCP connection failed for {func_name} after {attempt} attempts"
+        error: RuntimeError | ConnectionError = (
+            ConnectionError(
+                f"MCP tool {func_name} failed after {attempt} attempts (connection)"
+            )
+            if _is_connection_error(e)
+            else RuntimeError(
+                f"MCP connection failed for {func_name} after {attempt} attempts"
+            )
         )
         error.__cause__ = e
         return error, None
@@ -192,6 +215,32 @@ def _is_connection_error(e: Exception) -> bool:
     return any(keyword in error_message for keyword in connection_keywords)
 
 
+async def _retry_path_health_and_recovery(
+    func_name: str, attempt: int, last_exception: Exception | None
+) -> None:
+    """Check connection health before retry and record recovery (Phase 32)."""
+    health = await check_connection_health()
+    if not health.healthy:
+        raise ConnectionError(
+            f"Connection not healthy before retry {attempt} for {func_name}"
+        ) from last_exception
+    if last_exception and _is_connection_error(last_exception):
+        _record_connection_recovery()
+
+
+def _raise_final_error(func_name: str, last_exception: Exception | None) -> None:
+    """Raise ConnectionError or RuntimeError after retries exhausted."""
+    if last_exception and _is_connection_error(last_exception):
+        raise ConnectionError(
+            f"MCP tool {func_name} failed after "
+            + f"{MCP_CONNECTION_RETRY_ATTEMPTS} attempts (connection)"
+        ) from last_exception
+    raise RuntimeError(
+        f"MCP tool {func_name} failed after "
+        + f"{MCP_CONNECTION_RETRY_ATTEMPTS} attempts"
+    ) from last_exception
+
+
 async def _handle_retry_exception(
     func_name: str,
     timeout: float,
@@ -240,13 +289,10 @@ async def _execute_with_retry[T](
             _, last_exception = await _handle_retry_exception(
                 func_name, timeout, attempt, e, last_exception
             )
+        await _retry_path_health_and_recovery(func_name, attempt, last_exception)
 
     if last_exception:
-        raise RuntimeError(
-            f"MCP tool {func_name} failed after "
-            + f"{MCP_CONNECTION_RETRY_ATTEMPTS} attempts"
-        ) from last_exception
-
+        _raise_final_error(func_name, last_exception)
     raise RuntimeError(f"MCP tool {func_name} failed unexpectedly")
 
 
@@ -315,6 +361,36 @@ def _stability_params(
     return effective, MCPToolArguments.model_validate(func_kwargs)
 
 
+async def _run_with_retry_and_record[T](
+    func: Callable[..., Awaitable[T]],
+    args: tuple[JsonValue, ...],
+    timeout: JsonValue | None,
+    stability_timeout: JsonValue | None,
+    kwargs: dict[str, JsonValue],
+) -> T:
+    """Run func with retry and record usage (used by with_mcp_stability)."""
+    semaphore = _get_semaphore()
+    effective_timeout, kwargs_model = _stability_params(
+        timeout, stability_timeout, kwargs
+    )
+    start_ns = time.perf_counter_ns()
+    success = True
+    error_type: str | None = None
+    try:
+        return await _execute_with_retry(
+            func, semaphore, effective_timeout, args, kwargs_model
+        )
+    except Exception as e:
+        success = False
+        error_type = type(e).__name__
+        raise
+    finally:
+        duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000.0
+        await _record_usage_if_available(
+            func.__name__, duration_ms, success, error_type
+        )
+
+
 async def with_mcp_stability[T](
     func: Callable[..., Awaitable[T]],
     *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
@@ -344,30 +420,12 @@ async def with_mcp_stability[T](
         TimeoutError: If operation exceeds timeout
         RuntimeError: If resource limits exceeded or connection fails
     """
-    semaphore = _get_semaphore()
-    effective_timeout, kwargs_model = _stability_params(
-        timeout, stability_timeout, kwargs
+    health = await check_connection_health()
+    if not health.healthy:
+        raise ConnectionError("Connection not healthy before tool execution")
+    return await _run_with_retry_and_record(
+        func, args, timeout, stability_timeout, kwargs
     )
-    start_ns = time.perf_counter_ns()
-    success = True
-    error_type: str | None = None
-    try:
-        return await _execute_with_retry(
-            func,
-            semaphore,
-            effective_timeout,
-            args,
-            kwargs_model,
-        )
-    except Exception as e:
-        success = False
-        error_type = type(e).__name__
-        raise
-    finally:
-        duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000.0
-        await _record_usage_if_available(
-            func.__name__, duration_ms, success, error_type
-        )
 
 
 def mcp_tool_wrapper[T](

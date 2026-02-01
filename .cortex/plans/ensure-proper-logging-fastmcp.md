@@ -62,11 +62,9 @@ According to [FastMCP Context documentation](https://gofastmcp.com/servers/conte
 3. **Structured logging** with metadata (request_id, tool_name, etc.) where applicable
 
 4. **No ad-hoc print statements** or discarded exception traces
-5nsistent logging format** across all tools
-
-6ts updated** to verify Context logging behavior
-
-1. **Documentation updated** with logging guidelines
+5. **Consistent logging format** across all tools
+6. **Tests updated** to verify Context logging behavior
+7. **Documentation updated** with logging guidelines
 
 ## Technical Design
 
@@ -145,10 +143,9 @@ This allows:
 
 #### Step 1.2: Identify Tool Functions
 
--t all `@mcp.tool()` decorated functions
-
+- [ ] List all `@mcp.tool()` decorated functions
 - [ ] Document current logging approach for each tool
-- ] Identify helper functions that need `get_context()` access
+- [ ] Identify helper functions that need `get_context()` access
 
 #### Step 1.3: Define Logging Guidelines — DONE
 
@@ -159,12 +156,11 @@ This allows:
 - Message format standards
 - Context logging vs standard logging decision tree
 
-### Phase 2: Core Refactoring (Week2)
+### Phase 2: Core Refactoring (Week 2)
 
 #### Step 2.1: Update Server Configuration
 
--Check if `mask_error_details` should be enabled in `src/cortex/server.py`
-
+- [ ] Check if `mask_error_details` should be enabled in `src/cortex/server.py`
 - [ ] Verify FastMCP version supports `CurrentContext()` dependency injection
 - [ ] Test Context access in a sample tool
 
@@ -200,7 +196,7 @@ For each tool:
 #### Step 2.4: Update Helper Functions
 
 - [ ] Identify helper functions called from tools
-- ] Update to use `get_context()` for logging when needed
+- [ ] Update to use `get_context()` for logging when needed
 - [ ] Ensure context is only accessed during request context
 
 ### Phase 3: Complete Tool Migration (Week 2 Step 3.1) Refactor Remaining Tools
@@ -212,24 +208,24 @@ For each tool:
 - [x] `phase3_validation.py` tools — 2026-01-31 (N/A: 0 tools; all consolidated)
 - [x] `phase4_optimization.py` tools — 2026-01-31 (phase4_optimization_handlers: load_context, load_progressive_context, summarize_content, get_relevance_scores; context_analysis_handlers: analyze_context_effectiveness, get_context_usage_statistics; optional ctx and log_client; TestPhase4OptimizationContextLogging, TestContextAnalysisContextLogging)
 - [x] `phase5*.py` tools — 2026-01-31 (phase5_execution: apply_refactoring, provide_feedback; refactoring_operations: suggest_refactoring; optional ctx and log_client; TestPhase5ExecutionContextLogging, TestRefactoringOperationsContextLogging)
-- [x] `phase8_structure.py` tools — 2026-01-31 (check_structure_health, get_structure_info; optional ctx and log_client;eck_structure_health_impl,_hc_structure_health_with_logging; TestPhase8StructureContextLogging)
+- [x] `phase8_structure.py` tools — 2026-01-31 (check_structure_health, get_structure_info; optional ctx and log_client; check_structure_health_impl, _check_structure_health_with_logging; TestPhase8StructureContextLogging)
 - [x] `synapse_tools.py` — 2026-01-31 (sync_synapse, update_synapse_rule, get_synapse_rules, get_synapse_prompts, update_synapse_prompt; optional ctx and log_client; TestSynapseToolsContextLogging)
 - [x] `pre_commit_tools.py` — 2026-01-31 (execute_pre_commit_checks, fix_quality_issues; optional ctx and log_client; TestPreCommitToolsContextLogging)
 
-#### Step 3.2pdate Error Handling
+#### Step 3.2: Update Error Handling
 
 - [ ] Review `src/cortex/core/mcp_failure_handler.py`
-- ] Ensure it uses Context logging for client notifications
+- [ ] Ensure it uses Context logging for client notifications
 - [ ] Update exception handling to use `ctx.error()` where appropriate
 
-### Phase 4ting and Validation (Week 3)
+### Phase 4: Testing and Validation (Week 3)
 
 #### Step 4.1: Update Unit Tests
 
 - [ ] Update test fixtures to mock `CurrentContext`
-- tests to verify Context logging calls
+- [ ] Update tests to verify Context logging calls
 - [ ] Test `get_context()` in helper functions
--erify error logging behavior
+- Verify error logging behavior
 
 #### Step 4.2: Integration Tests
 
@@ -237,7 +233,7 @@ For each tool:
 - [ ] Verify logs appear in client responses
 - [ ] Test error scenarios and logging
 
-#### Step 43 Manual Testing
+#### Step 4.3: Manual Testing
 
 - [ ] Test each refactored tool manually
 - [ ] Verify log messages appear correctly
@@ -257,9 +253,9 @@ For each tool:
 - Ensure consistent logging patterns
 - [ ] Fix any linting/type errors
 
-#### Step 5.3Final Verification
+#### Step 5.3: Final Verification
 
-- ] Run full test suite
+- [ ] Run full test suite
 - [ ] Verify code coverage maintained
 - [ ] Check for any remaining standard logging that should be Context logging
 
@@ -282,10 +278,10 @@ For each tool:
 - `rules_operations.py`
 - `phase1_foundation_*.py` (multiple files)
 - `phase2_linking.py`
-- `phase3validation.py`
+- `phase3_validation.py`
 - `phase4_optimization.py` (multiple files)
 - `phase5_*.py` (multiple files)
-- `phase8tructure.py`
+- `phase8_structure.py`
 - `synapse_tools.py`
 - `pre_commit_tools.py`
 
@@ -315,7 +311,7 @@ For each tool:
 - Fall back to standard logging if context unavailable
 - Document when Context is available (only during request handling)
 
-### Risk3ensitive Information Exposure
+### Risk 3: Sensitive Information Exposure
 
 **Risk**: Logging sensitive data in client-visible messages  
 **Mitigation**:
@@ -333,7 +329,7 @@ For each tool:
 - Incremental migration (one tool at a time)
 - Maintain backward compatibility where possible
 
-### Risk5 Version Compatibility
+### Risk 5: Version Compatibility
 
 **Risk**: `CurrentContext()` dependency injection may not be available in current version  
 **Mitigation**:
@@ -344,7 +340,7 @@ For each tool:
 
 ## Timeline
 
-- **Week1 Audit, analysis, and guidelines definition
+- **Week 1**: Audit, analysis, and guidelines definition
 - **Week 2**: Core refactoring (high-priority tools, helper utilities)
 - **Week 3**: Complete tool migration and testing
 - **Week 4**: Documentation, cleanup, and final verification
@@ -359,10 +355,10 @@ For each tool:
 ## Success Metrics
 
 - [ ] 10% of tools use Context logging for client-visible messages
-- ll helper functions use `get_context()` when needed
+- [ ] All helper functions use `get_context()` when needed
 - [ ] Test coverage maintained or improved
 - [ ] No breaking changes to tool APIs
-- umentation complete and accurate
+- [ ] Documentation complete and accurate
 - [ ] All linting/type checks pass
 
 ## Notes

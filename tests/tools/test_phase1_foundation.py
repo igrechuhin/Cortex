@@ -587,11 +587,11 @@ async def test_rollback_file_version_error_handling(mock_project_root: Path):
             file_name="test.md", version=1, project_root=str(mock_project_root)
         )
 
-        # Assert
+        # Assert - Phase 32: connection-related RuntimeError becomes ConnectionError
         result_dict = json.loads(result)
         assert result_dict["status"] == "error"
         assert "error" in result_dict
-        assert result_dict.get("error_type") == "RuntimeError"
+        assert result_dict.get("error_type") == "ConnectionError"
 
 
 # ============================================================================
