@@ -88,7 +88,7 @@
 
 - ✅ **Phase 34: Ensure MCP tool timeouts** - COMPLETE (2026-02-01) - All MCP tools already had @mcp_tool_wrapper; constants (MCP_TOOL_TIMEOUT_FAST/MEDIUM/COMPLEX/VERY_COMPLEX/EXTERNAL) in place. Replaced asyncio.wait_for with asyncio.timeout in synapse_repository._run_git_command_internal; updated docs/mcp-tool-timeouts.md (Internal Operations: asyncio.timeout). Added verification test test_every_mcp_tool_has_timeout_wrapper in tests/unit/test_mcp_stability_timeouts.py. Quality gate passes. Plan: .cortex/plans/archive/Phase34/phase-34-ensure-mcp-tool-timeouts.md.
 
-- **Phase 35: Fix execute_pre_commit_checks MCP JSON error** - PENDING - Plan: .cortex/plans/phase-35-fix-execute-pre-commit-checks-mcp-json-error.md.
+- ✅ **Phase 35: Fix execute_pre_commit_checks MCP JSON error** - COMPLETE (2026-02-01) - JSON round-trip in _build_response via ensure_json_serializable_for_mcp (replace float nan/inf with None, round-trip through json.dumps/json.loads); unit tests TestEnsureJsonSerializableForMcp and test_return_value_is_dict_and_json_round_trips_for_mcp. Quality gate passes. Plan: .cortex/plans/archive/Phase35/phase-35-fix-execute-pre-commit-checks-mcp-json-error.md.
 
 - **Phase 36: Enforce MCP tool failure protocol** - PENDING - Plan: .cortex/plans/phase-36-enforce-mcp-tool-failure-protocol.md.
 

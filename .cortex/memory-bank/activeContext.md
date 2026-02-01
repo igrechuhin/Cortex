@@ -6,6 +6,8 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
+- ✅ **Commit (2026-02-01)**: Phase 35 plan archived; pre-commit pipeline (fix_errors, format, markdown lint 3 files, type_check, quality, tests 3308, coverage 90.34%).
+
 - ✅ **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 5 files fixed (activeContext, progress, roadmap, phase-34, docs/mcp-tool-timeouts). fix_errors, format, type_check, quality, tests 3304, coverage 90.35%. Plan archiving in Step 7.
 
 - ✅ **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 2 files fixed (progress, phase-33). fix_errors, format, type_check, quality, tests 3303, coverage 90.36%. Plan archiving in Step 7.
@@ -13,6 +15,8 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 - ✅ **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint 3 files fixed (activeContext, progress, roadmap). fix_errors, format, type_check, quality, tests 3303, coverage 90.37%. Plan archiving in Step 7.
 
 - ✅ **Commit (2026-02-01)**: Pre-commit pipeline; markdown lint MD037 fixes (progress, roadmap); fix_errors, format, type_check, quality, tests 3303, coverage 90.38%. Plan archiving in Step 7.
+
+- ✅ **Phase 35: Fix execute_pre_commit_checks MCP JSON error** - COMPLETE (2026-02-01) - ensure_json_serializable_for_mcp in _build_response; TestEnsureJsonSerializableForMcp and test_return_value_is_dict_and_json_round_trips_for_mcp. Quality gate passes.
 
 - ✅ **Phase 34: Ensure MCP tool timeouts** - COMPLETE (2026-02-01) - All tools had @mcp_tool_wrapper; synapse_repository uses asyncio.timeout; docs updated; verification test added. Quality gate passes.
 
@@ -54,7 +58,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Project Health
 
-- **Tests**: 3304 passing; coverage ≥ 90%.
+- **Tests**: 3308 passing; coverage ≥ 90%.
 - **Linting/Types**: Pyright 0 errors, 0 warnings.
 - **Quality**: File size and function length gates passing; all 10 Phase 20 file splits ≤400 lines.
 - **Pre-commit adapters**: Python, TypeScript, JavaScript, Rust, Go, Java, Kotlin, Swift full implementations.
@@ -65,4 +69,4 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Next Focus
 
-- Pick next PENDING plan (Phase 35: Fix execute_pre_commit_checks MCP JSON error). Run commit pipeline when ready.
+- Pick next PENDING plan (Phase 36: Enforce MCP tool failure protocol). Run commit pipeline when ready.

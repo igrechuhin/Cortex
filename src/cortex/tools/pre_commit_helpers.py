@@ -4,6 +4,7 @@ Extracted to keep pre_commit_tools.py under 400 lines.
 """
 
 import json
+import math
 from collections.abc import Sequence
 from enum import Enum
 from pathlib import Path
@@ -376,6 +377,38 @@ def truncate_large_logs_in_data(obj: JsonValue) -> JsonValue:
     if isinstance(obj, list):
         return [truncate_large_logs_in_data(item) for item in obj]
     return obj
+
+
+def _replace_nan_inf(value: JsonValue) -> JsonValue:
+    """Recursively replace float nan/inf with None for JSON compatibility."""
+    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+        return None
+    if isinstance(value, dict):
+        return {k: _replace_nan_inf(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_replace_nan_inf(item) for item in value]
+    return value
+
+
+def _json_friendly_default(obj: object) -> str | None:
+    """Convert non-JSON-serializable values for MCP response."""
+    if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
+        return None
+    return str(obj)
+
+
+def ensure_json_serializable_for_mcp(data: ModelDict) -> ModelDict:
+    """Ensure dict round-trips through JSON for MCP (avoids serialization errors).
+
+    Converts float nan/inf to None and other non-serializable types to strings,
+    then round-trips through json.dumps/json.loads so the result is exactly
+    what the MCP client will receive after parsing.
+    """
+    sanitized = _replace_nan_inf(data)
+    serialized = json.dumps(
+        sanitized, separators=(",", ":"), default=_json_friendly_default
+    )
+    return cast(ModelDict, json.loads(serialized))
 
 
 def count_file_lines(path: Path) -> int:

@@ -56,6 +56,7 @@ from cortex.tools.pre_commit_helpers import (
     create_error_result_dict,
     detect_or_use_language,
     determine_checks_to_perform,
+    ensure_json_serializable_for_mcp,
     extract_check_results,
     extract_dict_from_object,
     extract_int_from_object,
@@ -612,7 +613,7 @@ def _build_response(
     )
     data = response.model_dump(mode="json")
     compact = truncate_large_logs_in_data(data)
-    return cast(ModelDict, compact)
+    return ensure_json_serializable_for_mcp(cast(ModelDict, compact))
 
 
 class FixQualityResult(BaseModel):

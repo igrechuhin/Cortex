@@ -4,11 +4,13 @@ import json
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from cortex.core.constants import MAX_FILE_LINES, MAX_FUNCTION_LINES
+from cortex.core.models import ModelDict
 from cortex.services.framework_adapters.base import (
     CheckResult,
     FrameworkAdapter,
@@ -20,6 +22,7 @@ from cortex.tools.pre_commit_helpers import (
     PreCommitCheck,
     check_file_sizes,
     count_file_lines,
+    ensure_json_serializable_for_mcp,
 )
 from cortex.tools.pre_commit_synapse import run_synapse_script
 from cortex.tools.pre_commit_tools import (
@@ -120,6 +123,18 @@ class TestExecutePreCommitChecks:
         assert "not yet supported" in result["error"]
         assert "Supported languages:" in result["error"]
         assert "python" in result["error"]
+
+    @pytest.mark.asyncio
+    async def test_return_value_is_dict_and_json_round_trips_for_mcp(self) -> None:
+        """Return value must be dict (not JSON string) and round-trip for MCP."""
+        result = await execute_pre_commit_checks(
+            checks=["fix_errors"],
+            language="haskell",
+        )
+        assert isinstance(result, dict), "MCP tool must return dict, not JSON string"
+        serialized = json.dumps(result)
+        parsed = json.loads(serialized)
+        assert parsed == result, "Result must round-trip through JSON for MCP"
 
     @pytest.mark.asyncio
     async def test_success_with_python_project(self) -> None:
@@ -893,6 +908,35 @@ class TestCheckFileSizes:
 
             violations = check_file_sizes(project_root)
             assert violations == []  # test files are skipped
+
+
+class TestEnsureJsonSerializableForMcp:
+    """Test ensure_json_serializable_for_mcp (MCP JSON round-trip)."""
+
+    def test_preserves_normal_dict(self) -> None:
+        """Normal dict round-trips unchanged."""
+        data: ModelDict = {
+            "status": "success",
+            "language": "python",
+            "total_errors": 0,
+        }
+        result = ensure_json_serializable_for_mcp(data)
+        assert result == data
+        assert json.loads(json.dumps(result)) == result
+
+    def test_converts_float_nan_to_none(self) -> None:
+        """Float nan is converted so JSON round-trip succeeds."""
+        data: ModelDict = cast(ModelDict, {"score": float("nan")})
+        result = ensure_json_serializable_for_mcp(data)
+        assert result["score"] is None
+        assert json.loads(json.dumps(result)) == result
+
+    def test_converts_float_inf_to_none(self) -> None:
+        """Float inf is converted so JSON round-trip succeeds."""
+        data: ModelDict = cast(ModelDict, {"value": float("inf")})
+        result = ensure_json_serializable_for_mcp(data)
+        assert result["value"] is None
+        assert json.loads(json.dumps(result)) == result
 
 
 class TestCheckFunctionLengths:
