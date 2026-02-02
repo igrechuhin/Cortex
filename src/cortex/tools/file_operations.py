@@ -1,10 +1,12 @@
 """
 File Operations Tools
 
-This module contains the consolidated file management tool for Memory Bank.
+This module contains the consolidated file management tool and read resource
+for Memory Bank.
 
-Total: 1 tool
+Total: 1 tool, 1 resource
 - manage_file: Read/write/metadata operations
+- get_file_resource: Read file via cortex://memory-bank/file/{file_name}
 """
 
 import json
@@ -19,7 +21,11 @@ from cortex.core.exceptions import (
     GitConflictError,
 )
 from cortex.core.file_system import FileSystemManager
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonValue, ModelDict, SectionMetadata, VersionMetadata
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -278,6 +284,21 @@ async def manage_file(
         project_root,
         include_metadata,
         change_description,
+    )
+
+
+@mcp.resource(uri="cortex://memory-bank/file/{file_name}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def get_file_resource(file_name: str) -> str:
+    """Resource: Read a Memory Bank file. Read via cortex://memory-bank/file/{file_name}."""
+    return await _execute_file_operation(
+        file_name,
+        FileOperation.READ,
+        None,
+        None,
+        False,
+        None,
     )
 
 

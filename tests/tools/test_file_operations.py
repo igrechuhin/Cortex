@@ -26,6 +26,7 @@ from cortex.tools.file_operations import (
     compute_file_metrics,
     create_version_snapshot,
     extract_sections,
+    get_file_resource,
     manage_file,
     update_file_metadata,
     validate_write_content,
@@ -1091,3 +1092,47 @@ class TestEdgeCasesForCoverage:
                 result = json.loads(result_str)
                 assert result["status"] == "error"
                 assert "Cannot create new Memory Bank file" in result["error"]
+
+
+@pytest.mark.asyncio
+class TestGetFileResource:
+    """Test get_file_resource (Phase 43 memory-bank file read resource)."""
+
+    async def test_get_file_resource_returns_json_with_content(self):
+        """Test get_file_resource returns valid JSON with status/file_name/content."""
+        # Arrange
+        file_name = "projectBrief.md"
+        content = "# Project Brief"
+        mock_path = MagicMock(spec=Path)
+        mock_path.exists.return_value = True
+
+        mock_fs = AsyncMock()
+        mock_fs.read_file = AsyncMock(return_value=(content, "hash123"))
+        mock_fs.construct_safe_path = MagicMock(return_value=mock_path)
+
+        mock_index = AsyncMock()
+        mock_index.get_file_metadata = AsyncMock(return_value=None)
+
+        mock_managers_dict = {
+            "fs": mock_fs,
+            "index": mock_index,
+            "tokens": MagicMock(),
+            "versions": AsyncMock(),
+        }
+
+        with patch(
+            "cortex.tools.file_operations.get_managers",
+            return_value=make_test_managers(**mock_managers_dict),
+        ):
+            with patch(
+                "cortex.tools.file_operations.get_project_root",
+                return_value=Path("/tmp/test"),
+            ):
+                # Act
+                result_str = await get_file_resource(file_name=file_name)
+
+                # Assert
+                result = json.loads(result_str)
+                assert result["status"] == "success"
+                assert result["file_name"] == file_name
+                assert result["content"] == content

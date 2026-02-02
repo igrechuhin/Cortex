@@ -6,7 +6,9 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
-- **Phase 43: Reconsider tools registration (Step 3.2 partial complete)** (2026-02-02) - Step 3.1 done; pilot resources cortex://memory-bank/stats, cortex://structure/info. Step 3.2 Phase 1 foundation done: get_dependency_graph_resource, get_version_history_resource. Step 3.2 Phase 2 linking done: parse_file_links_resource (cortex://links/parse/{file_name}), resolve_transclusions_resource (cortex://links/transclusions/{file_name}), validate_links_resource (cortex://links/validate), get_link_graph_resource (cortex://links/graph). Next: manage_file read → Resource. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+- **Phase 43: Reconsider tools registration (Step 3.2 partial complete)** (2026-02-02) - Step 3.1 done; pilot resources cortex://memory-bank/stats, cortex://structure/info. Step 3.2 Phase 1 foundation done: get_dependency_graph_resource, get_version_history_resource. Step 3.2 Phase 2 linking done: parse_file_links_resource (cortex://links/parse/{file_name}), resolve_transclusions_resource (cortex://links/transclusions/{file_name}), validate_links_resource (cortex://links/validate), get_link_graph_resource (cortex://links/graph). manage_file read done: get_file_resource (cortex://memory-bank/file/{file_name}) in file_operations.py. Next: Phase 3 Validation (validate resource), Phase 4 Optimization, etc. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+
+- **Commit (2026-02-02)**: Pre-commit pipeline; markdown lint 4 files fixed; tests 3321, coverage 90.45%; 0 plans archived.
 
 - **Commit (2026-02-02)**: Pre-commit pipeline; markdown lint 7 files fixed; tests 3320, coverage 90.44%; plan session-optimization-commit-rules-and-fallback archived (duplicate removed from plans/).
 
@@ -22,6 +24,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
+- Commit (2026-02-02): Pre-commit pipeline; markdown lint 4 files fixed; tests 3321, coverage 90.45%; 0 plans archived.
 - Commit (2026-02-02): Pre-commit pipeline; markdown lint 7 files fixed; tests 3320, coverage 90.44%; duplicate session-optimization plan removed from plans/ (already in archive).
 - Session optimization (2026-02-02): Commit rules load and Step 12.6 fallback; rules disabled → explicit rule file read; markdown lint fallback example; tool unavailability after connection closed; integration tests; plan archived.
 - Phase 43 Step 3.2 (Phase 2 linking): parse_file_links_resource, resolve_transclusions_resource, validate_links_resource, get_link_graph_resource; unit tests in test_phase2_linking.py; plan and roadmap updated; 37 Phase 2 linking tests pass; quality gate passes.
@@ -32,17 +35,17 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Project Health
 
-- **Tests**: 3320+ passing; coverage ≥ 90%.
+- **Tests**: 3321+ passing; coverage ≥ 90%.
 - **Linting/Types**: Pyright 0 errors, 0 warnings.
 - **Quality**: File size and function length gates passing; all 10 Phase 20 file splits ≤400 lines.
 - **Pre-commit adapters**: Python, TypeScript, JavaScript, Rust, Go, Java, Kotlin, Swift full implementations.
 - **Health-check**: CLI scripts/health_check.py; CI step in quality.yml; analyze_health_check MCP tool.
 - **Script capture**: capture_session_script, list_session_scripts, analyze_session_scripts, suggest_tool_improvements, promote_session_script MCP tools; script_promotion and discovery modules; .cortex/script-capture/ storage.
 - **MCP tool failure protocol**: mcp_tool_wrapper invokes MCPToolFailureHandler on detected failures; investigation plan created, roadmap updated, MCPToolFailure raised.
-- **MCP resources (Phase 43)**: mcp_resource_wrapper; handler_kind in usage events; resources cortex://memory-bank/stats, cortex://structure/info, cortex://memory-bank/dependency-graph, cortex://memory-bank/version-history/{file_name}, cortex://links/parse/{file_name}, cortex://links/transclusions/{file_name}, cortex://links/validate, cortex://links/graph; verification test for resource decorator stack.
+- **MCP resources (Phase 43)**: mcp_resource_wrapper; handler_kind in usage events; resources cortex://memory-bank/stats, cortex://structure/info, cortex://memory-bank/dependency-graph, cortex://memory-bank/version-history/{file_name}, cortex://links/parse/{file_name}, cortex://links/transclusions/{file_name}, cortex://links/validate, cortex://links/graph, cortex://memory-bank/file/{file_name} (get_file_resource); verification test for resource decorator stack.
 - **Plans**: Plans directory in sync with roadmap.
 - **Path resolution**: Use Cortex MCP tools (`get_structure_info()`, `manage_file()`, `rules()`) for memory bank and structure paths.
 
 ## Next Focus
 
-- **Phase 43 Step 3.2**: manage_file read → Resource; then Phase 3 Validation, Phase 4 Optimization, etc. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+- **Phase 43 Step 3.2**: Phase 3 Validation (validate resource), Phase 4 Optimization (load_context, load_progressive_context, get_relevance_scores, summarize_content), etc. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.

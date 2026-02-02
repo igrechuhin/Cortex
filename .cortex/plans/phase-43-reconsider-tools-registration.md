@@ -178,8 +178,9 @@ Current tool registration doesn't align with MCP protocol semantics:
   - `resolve_transclusions` → Resource `resolve_transclusions_resource` (cortex://links/transclusions/{file_name})
   - `validate_links` → Resource `validate_links_resource` (cortex://links/validate)
   - `get_link_graph` → Resource `get_link_graph_resource` (cortex://links/graph)
+- manage_file read → Resource added (2026-02-02):
+  - `get_file_resource` (cortex://memory-bank/file/{file_name}) in file_operations.py; returns content only (no metadata); tool `manage_file` unchanged.
 - Remaining (to do):
-  - `manage_file` (read operation) → Resource
 - Continue with Phase 3 Validation tools:
   - `validate` (all check types) → Resource
 - Continue with Phase 4 Optimization tools:
