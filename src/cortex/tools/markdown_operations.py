@@ -25,6 +25,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_VERY_COMPLEX,
 )
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import GitCommandResult
 from cortex.managers.initialization import get_project_root
@@ -194,6 +195,10 @@ def _collect_markdown_files_sync(project_root: Path) -> list[Path]:
         "/.cortex/snapshots/",  # Snapshot files
         "/.cortex/plans/archive/",  # Archived plans (matches CI)
         ".cortex/plans/archive/",  # Also match relative paths
+        "/.memory-bank-history/",  # Memory bank version history
+        ".memory-bank-history/",  # Also match relative paths
+        "/benchmark_results/",  # Benchmark output files
+        "benchmark_results/",  # Also match relative paths
     ]
     for pattern in ("**/*.md", "**/*.mdc"):
         for file_path in project_root.rglob(pattern):
@@ -842,7 +847,7 @@ async def _fix_markdown_lint_run_or_error(
         return (_create_error_response(f"Fatal markdown lint error: {e!r}"), False)
 
 
-@mcp.tool()
+@mcp.tool(annotations=safe_write_annotations("Fix Markdown Lint"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
 async def fix_markdown_lint(

@@ -222,11 +222,16 @@ async def _execute_single_attempt[T](
     timeout: float,
     args: tuple[JsonValue, ...],
     kwargs: MCPToolArguments,
+    ctx: JsonValue | None = None,
 ) -> T:
     """Execute function once with timeout and resource limits."""
     async with semaphore:
         async with asyncio.timeout(timeout):
-            return await func(*args, **kwargs.model_dump(exclude_none=True))
+            call_kwargs = kwargs.model_dump(exclude_none=True)
+            # Re-inject ctx if it was provided (MCPContext cannot go through Pydantic)
+            if ctx is not None:
+                call_kwargs["ctx"] = ctx
+            return await func(*args, **call_kwargs)
 
 
 def _is_connection_error(e: Exception) -> bool:
@@ -325,6 +330,7 @@ async def _execute_with_retry[T](
     timeout: float,
     args: tuple[JsonValue, ...],
     kwargs: MCPToolArguments,
+    ctx: JsonValue | None = None,
 ) -> T:
     """Execute function with retry logic for transient failures."""
     last_exception: Exception | None = None
@@ -332,7 +338,9 @@ async def _execute_with_retry[T](
 
     for attempt in range(1, MCP_CONNECTION_RETRY_ATTEMPTS + 1):
         try:
-            return await _execute_single_attempt(func, semaphore, timeout, args, kwargs)
+            return await _execute_single_attempt(
+                func, semaphore, timeout, args, kwargs, ctx
+            )
         except Exception as e:
             _, last_exception = await _handle_retry_exception(
                 func_name, timeout, attempt, e, last_exception
@@ -400,17 +408,25 @@ def _stability_params(
     timeout: JsonValue | None,
     stability_timeout: JsonValue | None,
     kwargs: dict[str, JsonValue],
-) -> tuple[float, MCPToolArguments]:
-    """Compute effective timeout and validated kwargs for with_mcp_stability."""
+) -> tuple[float, MCPToolArguments, JsonValue | None]:
+    """Compute effective timeout, validated kwargs, and ctx for with_mcp_stability.
+
+    Returns:
+        Tuple of (effective_timeout, kwargs_model, ctx).
+        ctx is extracted separately because it's an MCPContext object that
+        cannot be serialized through Pydantic's model_dump().
+    """
     st = _to_timeout_value(stability_timeout)
     tv = _to_timeout_value(timeout)
     effective = st or tv or float(MCP_TOOL_TIMEOUT_SECONDS)
+    # Extract ctx separately - it's an MCPContext object, not JSON-serializable
+    ctx = kwargs.get("ctx")
     func_kwargs = {
         k: v
         for k, v in kwargs.items()
-        if k not in {"timeout", "stability_timeout", "kind"}
+        if k not in {"timeout", "stability_timeout", "kind", "ctx"}
     }
-    return effective, MCPToolArguments.model_validate(func_kwargs)
+    return effective, MCPToolArguments.model_validate(func_kwargs), ctx
 
 
 async def _run_with_retry_and_record[T](
@@ -423,7 +439,7 @@ async def _run_with_retry_and_record[T](
 ) -> T:
     """Run func with retry and record usage (used by with_mcp_stability)."""
     semaphore = _get_semaphore()
-    effective_timeout, kwargs_model = _stability_params(
+    effective_timeout, kwargs_model, ctx = _stability_params(
         timeout, stability_timeout, kwargs
     )
     start_ns = time.perf_counter_ns()
@@ -431,7 +447,7 @@ async def _run_with_retry_and_record[T](
     error_type: str | None = None
     try:
         return await _execute_with_retry(
-            func, semaphore, effective_timeout, args, kwargs_model
+            func, semaphore, effective_timeout, args, kwargs_model, ctx
         )
     except Exception as e:
         success = False

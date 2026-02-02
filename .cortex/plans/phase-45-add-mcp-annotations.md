@@ -1,6 +1,6 @@
 # Phase 45: Add Comprehensive MCP Annotations
 
-**Status**: PLANNING  
+**Status**: IN PROGRESS (Phases 1–3 done, Phase 4 partial 2026-02-02)  
 **Created**: 2026-01-17  
 **Priority**: Medium  
 **Estimated Effort**: 12-15 hours
@@ -478,11 +478,17 @@ Some tools have different behaviors based on parameters (e.g., `manage_file` wit
 
 **Total Estimated Time**: 12-15 hours
 
+## Progress (2026-02-02)
+
+- **Phase 1**: Tool categorization — plan mapping used as reference.
+- **Phase 2**: Added `src/cortex/core/mcp_annotations.py` with `ToolAnnotations` (Pydantic), `read_only_annotations`, `safe_write_annotations`, `destructive_annotations`, `external_annotations`; unit tests in `tests/unit/test_mcp_annotations.py` (10 tests, 100% coverage for module).
+- **Phase 3**: Annotations added to core tools: `manage_file`, `get_memory_bank_stats`, `validate`, `analyze`, `configure`, `get_version_history`, `rollback_file_version`.
+- **Phase 4 (partial)**: Annotations added to `check_structure_health`, `get_structure_info`, `check_mcp_connection_health`, `execute_pre_commit_checks`, `fix_quality_issues`. Remaining: rules, markdown, synapse, phase4/phase5/linking/refactoring tools.
+- **Note**: FastMCP type stubs do not declare `annotations`; each annotated tool uses `# pyright: ignore[reportCallIssue]` (and `reportUntypedFunctionDecorator` where needed) on the decorator. CI type_check may still report these until stubs are updated or project adds reportCallIssue to suppression list.
+
 ## Next Steps
 
-1. Review and approve this plan
-2. Begin Phase 1: Tool Categorization
-3. Create annotation helper utilities
-4. Systematically add annotations to all tools
-5. Test and validate
-6. Update documentation
+1. Add annotations to remaining tools (rules, markdown, synapse, phase4, phase5, linking, refactoring).
+2. Run full test suite and quality gate.
+3. Update docs (docs/api/tools.md, annotation patterns).
+4. Resolve type_check for `annotations` (stub update or CI config).

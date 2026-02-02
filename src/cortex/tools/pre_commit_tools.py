@@ -23,6 +23,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_VERY_COMPLEX,
 )
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.mcp_annotations import external_annotations, safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import JsonValue, ModelDict
 from cortex.server import mcp
@@ -161,7 +162,14 @@ async def _execute_pre_commit_checks_impl(
     return out
 
 
-@mcp.tool()
+@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
+    annotations=external_annotations(
+        "Execute Pre-Commit Checks",
+        read_only=False,
+        destructive=False,
+        idempotent=False,
+    ),  # pyright: ignore[reportCallIssue]
+)
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
 async def execute_pre_commit_checks(
@@ -773,7 +781,12 @@ async def _fix_quality_issues_impl(
     return out
 
 
-@mcp.tool()
+@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
+    annotations=safe_write_annotations(
+        "Fix Code Quality Issues",
+        open_world=True,
+    ),  # pyright: ignore[reportCallIssue]
+)
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
 async def fix_quality_issues(

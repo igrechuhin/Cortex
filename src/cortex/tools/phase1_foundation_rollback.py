@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
+from cortex.core.mcp_annotations import destructive_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     execute_tool_with_stability,
@@ -59,7 +60,11 @@ class RollbackProcessingData(BaseModel):
     size_bytes: int = Field(..., ge=0, description="Size in bytes")
 
 
-@mcp.tool()
+@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
+    annotations=destructive_annotations(
+        "Rollback File Version"
+    ),  # pyright: ignore[reportCallIssue]
+)
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def rollback_file_version(
