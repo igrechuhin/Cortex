@@ -2,6 +2,14 @@
 
 ## 2026-02-02
 
+- **Phase 43 Step 3.2 (Phase 4 Optimization resources): Reconsider tools registration** (2026-02-02) - Added load_context_resource (cortex://optimization/load-context/{task_description}), load_progressive_context_resource (cortex://optimization/load-progressive-context/{task_description}), get_relevance_scores_resource (cortex://optimization/relevance-scores/{task_description}), summarize_content_resource (cortex://optimization/summarize/{file_name}) in phase4_optimization_handlers.py; URL-decode path params; file_name '_' or 'all' = all files for summarize. Exported from phase4_optimization.py. Unit tests TestPhase4OptimizationResources (5 tests) in tests/tools/test_phase4_optimization.py. Plan Task 3.2 and roadmap updated. Quality gate passes. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+
+- **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; fix_errors, format, markdown lint (0 files fixed), type_check, quality, tests 3326, coverage 90.45%. 0 plans archived. Changes: mcp_stability.py, main.py (connection error handling), test_main_error_handling.py. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+
+- **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; fix_errors, format, markdown lint (4 files fixed: activeContext, progress, roadmap, phase-43-reconsider-tools-registration), type_check, quality, tests 3323, coverage 90.45%. 0 plans archived. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+
+- **Phase 43 Step 3.2 (Phase 3 validation resource): Reconsider tools registration** (2026-02-02) - Added validate_resource (cortex://validation/validate/{check_type}) in validation_operations.py; template resource with check_type; tool validate unchanged. Unit tests test_validate_resource_returns_json_success, test_validate_resource_invalid_check_type_returns_error in tests/tools/test_validation_operations.py. Plan Task 3.2 and roadmap updated. All 3323 tests pass; coverage 90.45%; quality gate passes. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+
 - **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; fix_errors, format, markdown lint (4 files fixed: activeContext, progress, roadmap, phase-43-reconsider-tools-registration), type_check, quality, tests 3321, coverage 90.45%. 0 plans archived. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
 
 - **Phase 43 Step 3.2 (manage_file read → Resource): Reconsider tools registration** (2026-02-02) - Added get_file_resource (cortex://memory-bank/file/{file_name}) in file_operations.py; returns content only (no metadata); tool manage_file unchanged. Unit test test_get_file_resource_returns_json_with_content in tests/tools/test_file_operations.py. Plan Task 3.2 and roadmap updated. All 3321 tests pass; coverage 90.45%; quality gate passes. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.

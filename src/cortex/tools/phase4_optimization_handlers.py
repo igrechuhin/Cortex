@@ -4,14 +4,15 @@ Phase 4: Token Optimization Tool Handlers
 This module contains the MCP tool decorators and handlers for context loading,
 progressive loading, content summarization, and relevance scoring.
 
-Total: 4 tools
-- load_context
-- load_progressive_context
-- summarize_content
-- get_relevance_scores
+Total: 4 tools, 4 resources
+- load_context / load_context_resource (cortex://optimization/load-context/{task_description})
+- load_progressive_context / load_progressive_context_resource (cortex://optimization/load-progressive-context/{task_description})
+- summarize_content / summarize_content_resource (cortex://optimization/summarize/{file_name})
+- get_relevance_scores / get_relevance_scores_resource (cortex://optimization/relevance-scores/{task_description})
 """
 
 import json
+from urllib.parse import unquote
 
 # Import via facade to allow test patching
 import cortex.tools.phase4_optimization as phase4_opt
@@ -21,7 +22,11 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.server import mcp
 from cortex.tools.phase4_context_operations import load_context_impl
 from cortex.tools.phase4_progressive_operations import (
@@ -211,3 +216,62 @@ async def get_relevance_scores(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+# Phase 43: Optimization resources (read-only, default params)
+
+
+@mcp.resource(uri="cortex://optimization/load-context/{task_description}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
+async def load_context_resource(task_description: str) -> str:
+    """Resource: Load context for task (default budget/strategy). Read via cortex://optimization/load-context/{task_description}. Task description may be URL-encoded."""
+    decoded = unquote(task_description)
+    return await load_context(
+        task_description=decoded,
+        token_budget=None,
+        strategy="dependency_aware",
+        project_root=None,
+    )
+
+
+@mcp.resource(uri="cortex://optimization/load-progressive-context/{task_description}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
+async def load_progressive_context_resource(task_description: str) -> str:
+    """Resource: Load progressive context for task. Read via cortex://optimization/load-progressive-context/{task_description}. Task description may be URL-encoded."""
+    decoded = unquote(task_description)
+    return await load_progressive_context(
+        task_description=decoded,
+        token_budget=None,
+        loading_strategy="by_relevance",
+        project_root=None,
+    )
+
+
+@mcp.resource(uri="cortex://optimization/relevance-scores/{task_description}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_relevance_scores_resource(task_description: str) -> str:
+    """Resource: Relevance scores for task. Read via cortex://optimization/relevance-scores/{task_description}. Task description may be URL-encoded."""
+    decoded = unquote(task_description)
+    return await get_relevance_scores(
+        task_description=decoded,
+        project_root=None,
+        include_sections=False,
+    )
+
+
+@mcp.resource(uri="cortex://optimization/summarize/{file_name}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def summarize_content_resource(file_name: str) -> str:
+    """Resource: Summarize file (default reduction/strategy). Read via cortex://optimization/summarize/{file_name}. Use file_name '_' for all files."""
+    decoded = unquote(file_name)
+    name_arg: str | None = None if decoded in ("_", "all", "") else decoded
+    return await summarize_content(
+        file_name=name_arg,
+        target_reduction=0.5,
+        strategy="extract_key_sections",
+        project_root=None,
+    )

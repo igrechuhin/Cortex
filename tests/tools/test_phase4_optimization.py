@@ -19,9 +19,13 @@ import pytest
 from cortex.managers.types import ManagersDict
 from cortex.tools.phase4_optimization import (
     get_relevance_scores,
+    get_relevance_scores_resource,
     load_context,
+    load_context_resource,
     load_progressive_context,
+    load_progressive_context_resource,
     summarize_content,
+    summarize_content_resource,
 )
 from tests.helpers.managers import make_test_managers
 
@@ -806,3 +810,134 @@ class TestPhase4OptimizationContextLogging:
         levels_and_messages = [(a[1], a[2]) for a in args_list]
         assert ("info", "load_context: starting") in levels_and_messages
         assert ("info", "load_context: completed") in levels_and_messages
+
+
+# ============================================================================
+# Phase 43: Optimization resources (cortex://optimization/...)
+# ============================================================================
+
+
+@pytest.mark.asyncio
+class TestPhase4OptimizationResources:
+    """Test Phase 4 optimization resources (Phase 43 Step 3.2)."""
+
+    async def test_load_context_resource_returns_success(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """load_context_resource returns JSON success for task_description."""
+        with (
+            patch(
+                "cortex.tools.phase4_optimization.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_context_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            result_str = await load_context_resource(task_description="Test%20task")
+            result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["task_description"] == "Test task"
+        assert result["strategy"] == "dependency_aware"
+
+    async def test_load_progressive_context_resource_returns_success(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """load_progressive_context_resource returns JSON success."""
+        with (
+            patch(
+                "cortex.tools.phase4_optimization.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_progressive_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            result_str = await load_progressive_context_resource(
+                task_description="progressive%20load"
+            )
+            result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["loading_strategy"] == "by_relevance"
+
+    async def test_get_relevance_scores_resource_returns_success(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """get_relevance_scores_resource returns JSON success."""
+        with (
+            patch(
+                "cortex.tools.phase4_optimization.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_relevance_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            result_str = await get_relevance_scores_resource(
+                task_description="relevance%20task"
+            )
+            result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "file_scores" in result
+
+    async def test_summarize_content_resource_single_file(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """summarize_content_resource with file_name returns JSON success."""
+        with (
+            patch(
+                "cortex.tools.phase4_optimization.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_summarization_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            result_str = await summarize_content_resource(file_name="file1.md")
+            result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["target_reduction"] == 0.5
+        assert result["strategy"] == "extract_key_sections"
+
+    async def test_summarize_content_resource_all_files_with_underscore(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """summarize_content_resource with file_name '_' summarizes all files."""
+        with (
+            patch(
+                "cortex.tools.phase4_optimization.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_summarization_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            result_str = await summarize_content_resource(file_name="_")
+            result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["files_summarized"] == 2

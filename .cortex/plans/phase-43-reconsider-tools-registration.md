@@ -182,12 +182,12 @@ Current tool registration doesn't align with MCP protocol semantics:
   - `get_file_resource` (cortex://memory-bank/file/{file_name}) in file_operations.py; returns content only (no metadata); tool `manage_file` unchanged.
 - Phase 3 Validation resource added (2026-02-02):
   - `validate` → Resource `validate_resource` (cortex://validation/validate/{check_type}, template); tool `validate` unchanged.
+- Phase 4 Optimization resources added (2026-02-02):
+  - `load_context` → Resource `load_context_resource` (cortex://optimization/load-context/{task_description}, template; URL-decode task_description)
+  - `load_progressive_context` → Resource `load_progressive_context_resource` (cortex://optimization/load-progressive-context/{task_description}, template)
+  - `get_relevance_scores` → Resource `get_relevance_scores_resource` (cortex://optimization/relevance-scores/{task_description}, template)
+  - `summarize_content` → Resource `summarize_content_resource` (cortex://optimization/summarize/{file_name}, template; file_name '_' or 'all' = all files)
 - Remaining (to do):
-- Continue with Phase 4 Optimization tools:
-  - `optimize_context` → Resource
-  - `load_progressive_context` → Resource
-  - `get_relevance_scores` → Resource
-  - `summarize_content` → Resource
 - Continue with Phase 5 Analysis tools:
   - `analyze` → Resource
   - `suggest_refactoring` → Resource
