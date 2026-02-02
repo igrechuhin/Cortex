@@ -7,7 +7,7 @@ import re
 import subprocess
 from collections.abc import Sequence
 
-from .base import CheckResult, FrameworkAdapter, TestResult
+from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
 
 _GO_VET_LINE_RE = re.compile(r"^[^\s]+\.go:\d+:\d+:\s+.+$")
 
@@ -41,6 +41,7 @@ class GoAdapter(FrameworkAdapter):
         timeout: int | None = None,
         coverage_threshold: float = 0.90,
         max_failures: int | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> TestResult:
         """Run test suite via go test."""
         args = ["test", "./..."]

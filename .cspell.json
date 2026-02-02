@@ -5,6 +5,7 @@
     "Привет",
     "activecontext",
     "aiofiles",
+    "aiter",
     "anonymization",
     "anyio",
     "asyncmock",

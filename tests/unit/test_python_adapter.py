@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import cast
 from unittest.mock import MagicMock, patch
 
+from cortex.services.framework_adapters.base import TestResult
 from cortex.services.framework_adapters.python_adapter import PythonAdapter
 
 
@@ -195,3 +196,67 @@ class TestPythonAdapter:
                 success=False, coverage=0.95, coverage_threshold=0.90
             )
             assert errors == ["Test execution failed"]
+
+    def test_collect_test_count_parses_tests_collected_line(self) -> None:
+        """_collect_test_count parses 'N tests collected' from collect-only output."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            (project_root / ".venv" / "bin").mkdir(parents=True)
+            (project_root / ".venv" / "bin" / "pytest").touch()
+            (project_root / "tests").mkdir()
+            adapter = PythonAdapter(str(project_root))
+            with patch(
+                "cortex.services.framework_adapters.python_adapter.subprocess.run"
+            ) as mock_run:
+                mock_run.return_value = MagicMock(
+                    returncode=0,
+                    stdout="",
+                    stderr="======================== 42 tests collected in 0.5s =========================\n",
+                )
+                total = adapter._collect_test_count()  # type: ignore[attr-defined]
+                assert total == 42
+
+    @patch(
+        "cortex.services.framework_adapters.python_adapter.PythonAdapter._execute_test_command_streaming"
+    )
+    @patch(
+        "cortex.services.framework_adapters.python_adapter.PythonAdapter._collect_test_count"
+    )
+    def test_run_tests_with_progress_callback_uses_real_test_counts(
+        self,
+        mock_collect: MagicMock,
+        mock_streaming: MagicMock,
+    ) -> None:
+        """When progress_callback is set, use streaming and report (completed, total)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            (project_root / ".venv" / "bin").mkdir(parents=True)
+            (project_root / ".venv" / "bin" / "pytest").touch()
+            mock_collect.return_value = 100
+            mock_streaming.return_value = TestResult(
+                success=True,
+                tests_run=100,
+                tests_passed=100,
+                tests_failed=0,
+                pass_rate=1.0,
+                coverage=0.95,
+                output="OK",
+                errors=[],
+            )
+            adapter = PythonAdapter(str(project_root))
+
+            def progress_callback(completed: int, total: int) -> None:
+                pass  # Callback used to enable streaming path; args verified below
+
+            result = adapter.run_tests(progress_callback=progress_callback)
+
+            mock_collect.assert_called_once()
+            mock_streaming.assert_called_once()
+            # _execute_test_command_streaming(cmd, timeout, coverage_threshold, total, progress_callback)
+            pos = mock_streaming.call_args[0]
+            total_arg = pos[3]
+            cb_arg = pos[4]
+            assert total_arg == 100
+            assert cb_arg is progress_callback
+            assert result["success"] is True
+            assert result["tests_run"] == 100

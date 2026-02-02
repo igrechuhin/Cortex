@@ -8,7 +8,7 @@ import re
 import subprocess
 from collections.abc import Sequence
 
-from .base import CheckResult, FrameworkAdapter, TestResult
+from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
 
 _SWIFT_ERROR_LINE_RE = re.compile(r"error:\s+.*|\.swift:\d+:\d+:\s+error:", re.I)
 
@@ -46,6 +46,7 @@ class SwiftAdapter(FrameworkAdapter):
         timeout: int | None = None,
         coverage_threshold: float = 0.90,
         max_failures: int | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> TestResult:
         """Run test suite via swift test."""
         if not self._has_package_swift():

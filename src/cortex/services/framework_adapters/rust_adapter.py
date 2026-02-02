@@ -7,7 +7,7 @@ import re
 import subprocess
 from collections.abc import Sequence
 
-from .base import CheckResult, FrameworkAdapter, TestResult
+from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
 
 _RUST_ERROR_RE = re.compile(r"^error(\[E\d+\])?:\s+", re.IGNORECASE)
 _RUST_WARNING_RE = re.compile(r"^warning(\[W\d+\]|\s+\(.*\))?:\s+", re.IGNORECASE)
@@ -42,6 +42,7 @@ class RustAdapter(FrameworkAdapter):
         timeout: int | None = None,
         coverage_threshold: float = 0.90,
         max_failures: int | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> TestResult:
         """Run test suite via cargo test."""
         args = ["test"]

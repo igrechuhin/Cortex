@@ -6,9 +6,9 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
-- **Phase 45: Add MCP annotations (IN PROGRESS)** (2026-02-02) - Phases 1–3 done: mcp_annotations.py helpers and unit tests; annotations on manage_file, get_memory_bank_stats, validate, analyze, configure, get_version_history, rollback_file_version, check_structure_health, get_structure_info, check_mcp_connection_health, execute_pre_commit_checks, fix_quality_issues. Next: remaining tools (rules, markdown, synapse, phase4/phase5/linking/refactoring); resolve type_check for `annotations` (stub or CI). Plan: .cortex/plans/phase-45-add-mcp-annotations.md.
+- **Commit (2026-02-02)** - Pre-commit pipeline: fixed 3 function-length and 1 file-size violation. Extracted _run_all_checks_off_loop,_run_checks_pipeline; created pre_commit_pipeline.py (run_checks_pipeline, _process_*, _execute_quality/tests/fix_errors, _check_function_lengths, _build_quality_*); python_adapter_collect_streaming_output; tests 3354, coverage 90.29%.
 
-- **Commit (2026-02-02)**: Pre-commit pipeline; fix_errors, format, markdown lint (6 fixed); type_check, quality, tests 3352, coverage 90.45%; 1 plan archived (Phase 46).
+- **Phase 45: Add MCP annotations (IN PROGRESS)** (2026-02-02) - Phases 1–3 done: mcp_annotations.py helpers and unit tests; annotations on manage_file, get_memory_bank_stats, validate, analyze, configure, get_version_history, rollback_file_version, check_structure_health, get_structure_info, check_mcp_connection_health, execute_pre_commit_checks, fix_quality_issues. Next: remaining tools (rules, markdown, synapse, phase4/phase5/linking/refactoring); resolve type_check for `annotations` (stub or CI). Plan: .cortex/plans/phase-45-add-mcp-annotations.md.
 
 - **Phase 43: Reconsider tools registration (Step 3.2 partial complete)** (2026-02-02) - Step 3.1 done; pilot resources cortex://memory-bank/stats, cortex://structure/info. Step 3.2 Phase 1–4 done (foundation, linking, validation, optimization resources). Next: Phase 5 Analysis, etc. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
 
@@ -26,21 +26,22 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
-- Phase 46: ProgressReporter (src/cortex/core/progress.py); mcp_tool_wrapper enable_progress (auto when timeout ≥ 120s); with_mcp_stability(enable_progress=...); time-based progress loop; unit tests test_progress.py, test_mcp_stability_timeouts; quality gate passes.
+- Commit (2026-02-02): Quality gate fixes—pre_commit_tools under 400 lines via pre_commit_pipeline.py; function length fixes in pre_commit_tools and python_adapter.
+- Phase 46: ProgressReporter (src/cortex/core/progress.py); mcp_tool_wrapper enable_progress (auto when timeout ≥ 120s); time-based progress loop; unit tests; quality gate passes.
 - Phase 45 (partial): mcp_annotations.py helpers; annotations on 12 MCP tools.
 - Phase 43 Step 3.2 (Phase 4 Optimization): load_context_resource, load_progressive_context_resource, get_relevance_scores_resource, summarize_content_resource; unit tests; quality gate passes.
 
 ## Project Health
 
-- **Tests**: 3343 passing; coverage ≥ 90%.
+- **Tests**: 3354 passing; coverage ≥ 90%.
 - **Linting/Types**: Pyright 0 errors, 0 warnings.
-- **Quality**: File size and function length gates passing; all 10 Phase 20 file splits ≤400 lines.
+- **Quality**: File size and function length gates passing; pre_commit_tools <400 lines (pipeline in pre_commit_pipeline.py).
 - **Pre-commit adapters**: Python, TypeScript, JavaScript, Rust, Go, Java, Kotlin, Swift full implementations.
 - **Health-check**: CLI scripts/health_check.py; CI step in quality.yml; analyze_health_check MCP tool.
 - **Script capture**: capture_session_script, list_session_scripts, analyze_session_scripts, suggest_tool_improvements, promote_session_script MCP tools; script_promotion and discovery modules; .cortex/script-capture/ storage.
 - **MCP tool failure protocol**: mcp_tool_wrapper invokes MCPToolFailureHandler on detected failures; investigation plan created, roadmap updated, MCPToolFailure raised.
 - **Progress reporting (Phase 46)**: ProgressReporter for stage-based progress; mcp_tool_wrapper(enable_progress=None) auto-enables for timeout ≥ 120s; time-based progress every 10s when ctx present; PROGRESS_REPORT_INTERVAL_SECONDS, PROGRESS_THRESHOLD_TIMEOUT_SECONDS.
-- **MCP resources (Phase 43)**: mcp_resource_wrapper; handler_kind in usage events; resources cortex://memory-bank/stats, cortex://structure/info, cortex://memory-bank/dependency-graph, cortex://memory-bank/version-history/{file_name}, cortex://links/*, cortex://memory-bank/file/{file_name}, cortex://validation/validate/{check_type}, cortex://optimization/*; verification test for resource decorator stack.
+- **MCP resources (Phase 43)**: mcp_resource_wrapper; handler_kind in usage events; resources cortex://memory-bank/stats, cortex://structure/info, cortex://memory-bank/dependency-graph, cortex://memory-bank/version-history/{file_name}, cortex://links/_, cortex://memory-bank/file/{file_name}, cortex://validation/validate/{check_type}, cortex://optimization/_; verification test for resource decorator stack.
 - **MCP annotations (Phase 45)**: ToolAnnotations Pydantic model; helpers read_only_annotations, safe_write_annotations, destructive_annotations, external_annotations; annotations on 12 tools.
 - **Plans**: Plans directory in sync with roadmap.
 - **Path resolution**: Use Cortex MCP tools (`get_structure_info()`, `manage_file()`, `rules()`) for memory bank and structure paths.

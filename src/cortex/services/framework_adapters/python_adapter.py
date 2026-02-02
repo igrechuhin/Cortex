@@ -7,9 +7,14 @@ import re
 import subprocess
 from collections.abc import Sequence
 
-from .base import CheckResult, FrameworkAdapter, TestResult
+from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
 
 _RUFF_DIAGNOSTIC_RE = re.compile(r"^.+?:\d+:\d+:\s+[A-Z]{1,6}\d{1,4}\b")
+_TESTS_COLLECTED_RE = re.compile(r"(\d+)\s+tests?\s+collected", re.IGNORECASE)
+_PYTEST_RESULT_LINE_RE = re.compile(
+    r"\s+(PASSED|FAILED|SKIPPED|ERROR)\s+\[", re.IGNORECASE
+)
+_PROGRESS_REPORT_EVERY_N_TESTS = 50
 
 
 class PythonAdapter(FrameworkAdapter):
@@ -36,6 +41,7 @@ class PythonAdapter(FrameworkAdapter):
         timeout: int | None = None,
         coverage_threshold: float = 0.90,
         max_failures: int | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> TestResult:
         """Run pytest test suite.
 
@@ -43,11 +49,18 @@ class PythonAdapter(FrameworkAdapter):
             timeout: Maximum time in seconds for test execution.
             coverage_threshold: Minimum coverage percentage required.
             max_failures: Maximum number of failures before stopping.
+            progress_callback: Optional (completed, total) for real test progress.
 
         Returns:
             TestResult with test execution details.
         """
         cmd = self._build_test_command(coverage_threshold, max_failures)
+        if progress_callback is not None:
+            total = self._collect_test_count()
+            if total is not None and total > 0:
+                return self._execute_test_command_streaming(
+                    cmd, timeout, coverage_threshold, total, progress_callback
+                )
         return self._execute_test_command(cmd, timeout, coverage_threshold)
 
     def _build_test_command(
@@ -67,6 +80,85 @@ class PythonAdapter(FrameworkAdapter):
         if max_failures:
             cmd.extend(["--maxfail", str(max_failures)])
         return cmd
+
+    def _collect_test_count(self) -> int | None:
+        """Run pytest --collect-only -q and return total test count."""
+        collect_cmd = [
+            self._get_command("pytest"),
+            "tests/",
+            "--collect-only",
+            "-q",
+        ]
+        try:
+            result = subprocess.run(
+                collect_cmd,
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            combined = result.stdout + result.stderr
+            for line in reversed(combined.splitlines()):
+                match = _TESTS_COLLECTED_RE.search(line)
+                if match:
+                    return int(match.group(1))
+        except (subprocess.TimeoutExpired, ValueError):
+            pass
+        return None
+
+    def _collect_streaming_output(
+        self,
+        proc: subprocess.Popen[str],
+        total: int,
+        progress_callback: ProgressCallback,
+    ) -> list[str]:
+        """Read proc stdout line by line and report test progress; return lines."""
+        lines: list[str] = []
+        completed = 0
+        assert proc.stdout is not None
+        for line in proc.stdout:
+            lines.append(line)
+            if _PYTEST_RESULT_LINE_RE.search(line):
+                completed += 1
+                if (
+                    completed % _PROGRESS_REPORT_EVERY_N_TESTS == 0
+                    or completed >= total
+                ):
+                    progress_callback(completed, total)
+        return lines
+
+    def _execute_test_command_streaming(
+        self,
+        cmd: list[str],
+        timeout: int | None,
+        coverage_threshold: float,
+        total: int,
+        progress_callback: ProgressCallback,
+    ) -> TestResult:
+        """Run pytest with Popen, stream output, report (completed, total)."""
+        proc: subprocess.Popen[str] | None = None
+        try:
+            proc = subprocess.Popen(
+                cmd,
+                cwd=self.project_root,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+            )
+            lines = self._collect_streaming_output(proc, total, progress_callback)
+            wait_timeout = timeout if timeout else 3600
+            _ = proc.wait(timeout=wait_timeout)  # noqa: F841
+            output = "".join(lines)
+            return self._parse_test_output(
+                output, proc.returncode == 0, coverage_threshold
+            )
+        except subprocess.TimeoutExpired:
+            if proc is not None and proc.poll() is None:
+                proc.kill()
+            return self._create_timeout_result()
+        except Exception as e:
+            return self._create_error_result(str(e))
 
     def _execute_test_command(
         self, cmd: list[str], timeout: int | None, coverage_threshold: float = 0.90

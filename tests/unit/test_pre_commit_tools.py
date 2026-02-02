@@ -25,10 +25,12 @@ from cortex.tools.pre_commit_helpers import (
     count_file_lines,
     ensure_json_serializable_for_mcp,
 )
+from cortex.tools.pre_commit_pipeline import (
+    _check_function_lengths,  # pyright: ignore[reportPrivateUsage]
+)
 from cortex.tools.pre_commit_synapse import run_synapse_script
 from cortex.tools.pre_commit_tools import (
     SUPPORTED_LANGUAGES,
-    _check_function_lengths,  # pyright: ignore[reportPrivateUsage]
     _get_adapter,  # pyright: ignore[reportPrivateUsage]
     execute_pre_commit_checks,
     fix_quality_issues,
@@ -1197,6 +1199,7 @@ class TestPreCommitToolsContextLogging:
                     _strict: bool,
                     _timeout: int | None,
                     _cov: float,
+                    _progress_callback: Callable[[int, int], None] | None = None,
                 ) -> tuple[dict[str, CheckResult], MagicMock]:
                     results: dict[str, CheckResult] = {}
                     stats: MagicMock = MagicMock(

@@ -2,7 +2,11 @@
 
 ## 2026-02-02
 
-- **Phase 46: Add progress reporting** (2026-02-02) - ProgressReporter in src/cortex/core/progress.py (stage-based progress, optional ctx); mcp_tool_wrapper(timeout=..., enable_progress=None) with auto-enable for timeout >= 120s; with_mcp_stability(enable_progress=...); time-based _progress_report_loop andcel_progress_and_report_done; constants PROGRESS_REPORT_INTERVAL_SECONDS, PROGRESS_THRESHOLD_TIMEOUT_SECONDS in constants.py. Unit tests tests/unit/test_progress.py (7 tests), test_mcp_stability_timeouts (enable_progress). Quality gate passes. Plan: .cortex/plans/phase-46-add-progress-reporting.md.
+- **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; fix_errors, format, markdown lint (1 file fixed: activeContext), type_check, quality, tests 3354, coverage 90.29%. 0 plans archived. Memory bank updated.
+
+- **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; fix_errors, format, markdown lint (6 files fixed), type_check, quality, tests 3352, coverage 90.45%. 1 plan archived (Phase 46: phase-46-add-progress-reporting.md). Memory bank links updated.
+
+- **Phase 46: Add progress reporting** (2026-02-02) - ProgressReporter in src/cortex/core/progress.py (stage-based progress, optional ctx); mcp_tool_wrapper(timeout=..., enable_progress=None) with auto-enable for timeout >= 120s; with_mcp_stability(enable_progress=...); time-based _progress_report_loop andcel_progress_and_report_done; constants PROGRESS_REPORT_INTERVAL_SECONDS, PROGRESS_THRESHOLD_TIMEOUT_SECONDS in constants.py. Unit tests tests/unit/test_progress.py (7 tests), test_mcp_stability_timeouts (enable_progress). Quality gate passes. Plan: .cortex/plans/archive/Phase46/phase-46-add-progress-reporting.md.
 
 - **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; fix_errors, format, markdown lint (0 files fixed), type_check, quality, tests 3343, coverage 90.47%. Phase 45 MCP annotations partial: mcp_annotations.py helpers and unit tests; annotations on 12 MCP tools (manage_file, get_memory_bank_stats, validate, analyze, configure, get_version_history, rollback_file_version, check_structure_health, get_structure_info, check_mcp_connection_health, execute_pre_commit_checks, fix_quality_issues). 0 plans archived.
 

@@ -8,7 +8,7 @@ import subprocess
 from collections.abc import Sequence
 from pathlib import Path
 
-from .base import CheckResult, FrameworkAdapter, TestResult
+from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
 
 _ESLINT_LINE_RE = re.compile(r"^.+?:\d+:\d+:\s+(error|warning)\s+", re.IGNORECASE)
 _TSC_ERROR_RE = re.compile(r"error\s+TS\d+", re.IGNORECASE)
@@ -43,6 +43,7 @@ class TypeScriptAdapter(FrameworkAdapter):
         timeout: int | None = None,
         coverage_threshold: float = 0.90,
         max_failures: int | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> TestResult:
         """Run test suite via npm test.
 
@@ -50,6 +51,7 @@ class TypeScriptAdapter(FrameworkAdapter):
             timeout: Maximum time in seconds for test execution.
             coverage_threshold: Minimum coverage percentage required.
             max_failures: Maximum number of failures before stopping.
+            progress_callback: Unused; for API compatibility.
 
         Returns:
             TestResult with test execution details.

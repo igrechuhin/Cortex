@@ -9,7 +9,7 @@ import subprocess
 from collections.abc import Sequence
 from pathlib import Path
 
-from .base import CheckResult, FrameworkAdapter, TestResult
+from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
 
 _KOTLIN_ERROR_RE = re.compile(r"^\[ERROR\].*|error:\s+.*|e:.*", re.IGNORECASE)
 _KOTLIN_LINE_RE = re.compile(r"^.*\.kt:\d+:\d+\s+.*error", re.IGNORECASE)
@@ -101,6 +101,7 @@ class KotlinAdapter(FrameworkAdapter):
         timeout: int | None = None,
         coverage_threshold: float = 0.90,
         max_failures: int | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> TestResult:
         """Run test suite via Maven or Gradle."""
         tool = self._build_tool()

@@ -4,12 +4,14 @@ Abstract base class for language-specific framework adapters.
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import DictLikeModel
+
+ProgressCallback = Callable[[int, int], None]
 
 
 class CheckResult(DictLikeModel):
@@ -59,6 +61,7 @@ class FrameworkAdapter(ABC):
         timeout: int | None = None,
         coverage_threshold: float = 0.90,
         max_failures: int | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> TestResult:
         """Run test suite.
 
@@ -66,6 +69,7 @@ class FrameworkAdapter(ABC):
             timeout: Maximum time in seconds for test execution.
             coverage_threshold: Minimum coverage percentage required.
             max_failures: Maximum number of failures before stopping.
+            progress_callback: Optional (completed, total) callback for progress.
 
         Returns:
             TestResult with test execution details.

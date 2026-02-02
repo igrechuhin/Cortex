@@ -456,11 +456,16 @@ def _create_progress_task_if_needed(
     effective_timeout: float,
     tool_name: str,
 ) -> asyncio.Task[None] | None:
-    """Create background progress task when enabled and ctx present (Phase 46)."""
+    """Create background progress task when enabled and ctx present (Phase 46).
+
+    Skips time-based progress for execute_pre_commit_checks so the tool
+    can report (tests executed, total tests) only.
+    """
     if (
         enable_progress
         and ctx is not None
         and effective_timeout >= PROGRESS_THRESHOLD_TIMEOUT_SECONDS
+        and tool_name != "execute_pre_commit_checks"
     ):
         return asyncio.create_task(
             _progress_report_loop(ctx, effective_timeout, tool_name)

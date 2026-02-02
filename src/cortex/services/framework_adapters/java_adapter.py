@@ -9,7 +9,7 @@ import subprocess
 from collections.abc import Sequence
 from pathlib import Path
 
-from .base import CheckResult, FrameworkAdapter, TestResult
+from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
 
 _JAVA_ERROR_RE = re.compile(r"^\[ERROR\].*|error:\s+.*", re.IGNORECASE)
 _JAVAC_LINE_RE = re.compile(r"^.*\.java:\d+:\s+error:", re.IGNORECASE)
@@ -118,6 +118,7 @@ class JavaAdapter(FrameworkAdapter):
         timeout: int | None = None,
         coverage_threshold: float = 0.90,
         max_failures: int | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> TestResult:
         """Run test suite via Maven or Gradle."""
         tool = self._build_tool()

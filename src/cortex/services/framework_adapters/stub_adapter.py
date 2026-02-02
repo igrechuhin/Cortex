@@ -7,7 +7,7 @@ Returns consistent "not yet implemented" results for all operations.
 from collections.abc import Sequence
 from enum import Enum
 
-from .base import CheckResult, FrameworkAdapter, TestResult
+from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
 
 
 class StubAdapterLanguage(str, Enum):
@@ -61,6 +61,7 @@ class StubAdapter(FrameworkAdapter):
         timeout: int | None = None,
         coverage_threshold: float = 0.90,
         max_failures: int | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> TestResult:
         """Return stub result; tests not implemented for this language."""
         msg = f"{self._language.value}: {_NOT_IMPLEMENTED_MSG}"
