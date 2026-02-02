@@ -6,9 +6,11 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
-- **Phase 43: Reconsider tools registration (Step 1 complete)** (2026-02-02) - Tool audit complete: .cortex/plans/phase-43-tool-audit.md; 45 tools categorized (28 Resource, 13 Tool, 4 Hybrid); hybrid handling strategy for `manage_file`, `configure`, `rules`, `check_structure_health`; MCP SDK `mcp.resource()` verified. Next: Step 2 Design Resource API. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+- **Commit (2026-02-02)**: Pre-commit pipeline; markdown lint 5 files fixed (memory bank, phase-43 plans). 3311 tests, coverage 90.42%. 0 plans archived.
 
-- ✅ **Session optimization (2026-02-01): Require script-analysis when script run** - COMPLETE (2026-02-02) - Commit prompt: "Script use (MANDATORY)" step and "Script run without analysis" in COMMON ERRORS; agent-workflow.mdc script-use rule; integration tests added. Plan: .cortex/plans/session-optimization-commit-require-script-analysis.md.
+- **Phase 43: Reconsider tools registration (Step 2 complete)** (2026-02-02) - Design complete: .cortex/plans/phase-43-resource-api-design.md (URI scheme `cortex://`, `mcp.resource()` syntax verified, `mcp_resource_wrapper` and usage tracking with `handler_kind`, hybrid split strategy). Next: Step 3 Implement Resources (mcp_resource_wrapper, pilot resources). Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+
+- ✅ **Session optimization (2026-02-01): Require script-analysis when script run** - COMPLETE (2026-02-02) - Commit prompt: "Script use (MANDATORY)" step and "Script run without analysis" in COMMON ERRORS; agent-workflow (Synapse rule) script-use rule; integration tests added. Plan: .cortex/plans/session-optimization-commit-require-script-analysis.md.
 
 - ✅ **Session optimization (2026-02-01): Connection closed handling** - COMPLETE (2026-02-01) - "Connection Closed During Long Tool (Retry Then Fallback)" in commit prompt; exception in MCP Tool Failure; docs/mcp-tool-timeouts.md "Client connection closed during long tools" subsection; optional Step 12.6 narrower scope for fix_markdown_lint.
 
@@ -40,13 +42,15 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
+- Commit (2026-02-02): Pre-commit pipeline; markdown lint 5 files fixed; 3311 tests, coverage 90.42%; 0 plans archived.
+- Phase 43 Step 2 (Design Resource API): Design complete (2026-02-02) — phase-43-resource-api-design.md; URI cortex://, mcp_resource_wrapper, handler_kind, hybrid split.
 - Phase 43 Step 1 (Audit): Tool audit complete (2026-02-02) — phase-43-tool-audit.md; 45 tools (28 Resource, 13 Tool, 4 Hybrid); MCP SDK mcp.resource() verified.
 - Session optimization (2026-02-01): Require script-analysis when script run (2026-02-02).
 - Phase 36: Enforce MCP tool failure protocol (2026-02-01).
 
 ## Project Health
 
-- **Tests**: 3304+ passing; coverage ≥ 90%.
+- **Tests**: 3311+ passing; coverage ≥ 90%.
 - **Linting/Types**: Pyright 0 errors, 0 warnings.
 - **Quality**: File size and function length gates passing; all 10 Phase 20 file splits ≤400 lines.
 - **Pre-commit adapters**: Python, TypeScript, JavaScript, Rust, Go, Java, Kotlin, Swift full implementations.
@@ -58,4 +62,4 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Next Focus
 
-- **Phase 43 Step 2**: Design Resource API (URI scheme, `@mcp.resource()` usage, response format; backward-compatibility strategy). Plan: .cortex/plans/phase-43-reconsider-tools-registration.md. Run commit pipeline when ready.
+- **Phase 43 Step 3**: Implement Resources (mcp_resource_wrapper in mcp_stability.py; extend usage tracking with handler_kind; pilot resources get_memory_bank_stats, get_structure_info). Plan: .cortex/plans/phase-43-reconsider-tools-registration.md. Design: .cortex/plans/phase-43-resource-api-design.md.

@@ -113,7 +113,9 @@ Current tool registration doesn't align with MCP protocol semantics:
 - Decision matrix (Resource vs Tool vs Hybrid)
 - List of hybrid operations with proposed handling strategy
 
-### Step 2: Design Resource API (3-4 hours)
+### Step 2: Design Resource API (3-4 hours) — COMPLETE (2026-02-02)
+
+**Deliverable**: `.cortex/plans/phase-43-resource-api-design.md` — Resource API design, FastMCP Resource syntax verification, URI scheme (`cortex://`), hybrid handling strategy, resource wrappers and usage-tracking design (mcp_resource_wrapper, handler_kind, analytics inclusion).
 
 #### Task 2.1: Research FastMCP 2.0 Resource Support
 
@@ -380,12 +382,7 @@ async def manage_file(
 
 ### FastMCP 2.0 Resource Syntax
 
-Need to verify FastMCP 2.0 Resource decorator syntax. Based on FastMCP 2.0 patterns:
-
-- Resources may use `@mcp.resource()` decorator
-- Resources may have different response format requirements
-- Resources may support URI-based identification
-- Resources may have caching mechanisms
+**Verified (Step 2)**: See `.cortex/plans/phase-43-resource-api-design.md`. MCP SDK `mcp.resource(uri, *, name=None, description=None, mime_type=None)`; function returns str, bytes, or JSON; URI params for template resources. URI scheme: `cortex://` (e.g. `cortex://memory-bank/stats`).
 
 ## Dependencies
 

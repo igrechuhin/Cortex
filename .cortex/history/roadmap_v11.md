@@ -6,9 +6,9 @@
 
 - **Session optimization (2026-02-01): Connection closed handling** - COMPLETE (2026-02-01) - Added "Connection Closed During Long Tool (Retry Then Fallback)" in commit prompt Failure Handling; exception in MCP Tool Failure for Connection closed/ClosedResourceError; fallback for fix_markdown_lint and optional Step 12.6 narrower scope. docs/mcp-tool-timeouts.md: "Client connection closed during long tools" subsection. Plan: .cortex/plans/session-optimization-commit-connection-closed-handling.md.
 
-- **Session optimization (2026-02-01): Require script-analysis when script run** - COMPLETE (2026-02-02) - Commit prompt: "Script use (MANDATORY)" step and "Script run without analysis" in COMMON ERRORS; agent-workflow.mdc script-use rule; integration tests test_commit_prompt_requires_script_tooling_when_script_run, test_commit_prompt_lists_script_run_without_analysis_common_error. Plan: .cortex/plans/session-optimization-commit-require-script-analysis.md.
+- **Session optimization (2026-02-01): Require script-analysis when script run** - COMPLETE (2026-02-02) - Commit prompt: "Script use (MANDATORY)" step and "Script run without analysis" in COMMON ERRORS; agent-workflow (Synapse rule) script-use rule; integration tests test_commit_prompt_requires_script_tooling_when_script_run, test_commit_prompt_lists_script_run_without_analysis_common_error. Plan: .cortex/plans/session-optimization-commit-require-script-analysis.md.
 
-## Current Status (2026-02-01)
+## Current Status (2026-02-02)
 
 ### Active Work
 
@@ -28,7 +28,7 @@
 
 - ✅ **Session hang: run pre-commit adapter work off event loop** - COMPLETE (2026-01-30) - Per `.cortex/reviews/session-hang-investigation-2026-01-30T15-00.md`: `execute_pre_commit_checks` now runs `_execute_all_checks` via `asyncio.to_thread()` so format, fix_errors, type_check, quality, and tests run off the event loop. Event loop stays responsive; MCP tool timeout still applies. Unit test `test_runs_adapter_checks_off_event_loop_via_to_thread` in tests/unit/test_pre_commit_tools.py. All 43 tests in that file passing.
 
-- ✅ **Rust Pre-Commit Adapter** - COMPLETE (2026-01-30) - Added RustAdapter in src/cortex/services/framework_adapters/rust_adapter.py (cargo fmt, cargo clippy, cargo check, cargo test, cargo fix). Registered in pre_commit_tools; rust now uses RustAdapter instead of StubAdapter. StubAdapterLanguage no longer includes RUST. Unit tests in tests/unit/test_rust_adapter.py; test_get_adapter_returns_rust_adapter_for_rust in tests/unit/test_pre_commit_tools.py. Stub tests updated to use go/java. All 3000 tests passing.
+- ✅ **Rust Pre-Commit Adapter** - COMPLETE (2026-01-30) - Added RustAdapter in src/cortex/services/framework_adapters/rust_adapter.py (cargo fmt, cargo clippy, cargo check, cargo test, cargo fix). Registered in pre_commit_tools; rust now uses RustAdapter instead of StubAdapter. Unit tests in tests/unit/test_rust_adapter.py; test_get_adapter_returns_rust_adapter_for_rust in tests/unit/test_pre_commit_tools.py. Stub tests updated to use go/java. All 3000 tests passing.
 
 - ✅ **JavaScript Pre-Commit Adapter** - COMPLETE (2026-01-30) - Added JavaScriptAdapter in src/cortex/services/framework_adapters/javascript_adapter.py (Prettier, ESLint for .js and .jsx, tsc --allowJs when configured, npm test). Registered in pre_commit_tools; javascript now uses JavaScriptAdapter instead of StubAdapter. Unit tests in tests/unit/test_javascript_adapter.py. test_get_adapter_returns_javascript_adapter_for_javascript in tests/unit/test_pre_commit_tools.py. All 2966 tests passing.
 
@@ -58,7 +58,7 @@
 
 - ✅ **Phase 63: Harden create-plan roadmap writes (full content and verification)** - COMPLETE (2026-01-29) - Added full-content-only rule for roadmap writes in `cortex/synapse/prompts/create-plan.md` Step 6 and `cortex/synapse/agents/memory-bank-updater.md`; added post-write verification in create-plan prompt Step 7 (confirm all existing entries unchanged, restore-and-repeat if truncation). Plan: .cortex/plans/archive/Phase63/phase-63-harden-create-plan-roadmap-writes.md.
 
-- ✅ **Multi-Language Validation Support** - COMPLETE (2026-01-29) - Added StubAdapter for TypeScript, JavaScript, Rust, Go, Java and registered them in pre_commit_tools _ADAPTER_REGISTRY; SUPPORTED_LANGUAGES now includes 6 languages. Stub adapters return clear "not yet implemented" results until full implementations are added. Unit tests in tests/unit/test_stub_adapter.py and TestAdapterRegistry updates in tests/unit/test_pre_commit_tools.py. All 2906 tests passing.
+- ✅ **Multi-Language Validation Support** - COMPLETE (2026-01-29) - StubAdapter for TypeScript, JavaScript, Rust, Go, Java and registered them in pre_commit_tools _ADAPTER_REGISTRY; SUPPORTED_LANGUAGES includes 6 languages. Stub adapters return clear "not yet implemented" results until full implementations are added. Unit tests in tests/unit/test_stub_adapter.py and TestAdapterRegistry updates in tests/unit/test_pre_commit_tools.py. All 2906 tests passing.
 
 - ✅ **TypeScript Pre-Commit Adapter** - COMPLETE (2026-01-29) - Added TypeScriptAdapter in src/cortex/services/framework_adapters/typescript_adapter.py (prettier, eslint, tsc, npm test). Registered in pre_commit_tools _ADAPTER_REGISTRY; typescript now uses TypeScriptAdapter instead of StubAdapter. Unit tests in tests/unit/test_typescript_adapter.py. TestAdapterRegistry updated (test_get_adapter_returns_typescript_adapter_for_typescript). All 2919 tests passing, coverage 90%.
 
@@ -100,7 +100,7 @@
 
 - ✅ **Phase 42: Investigate execute_pre_commit_checks JSON error (commit 20260117)** - COMPLETE (2026-02-01) - Resolved by Phase 33 and Phase 35 (tool returns ModelDict; ensure_json_serializable_for_mcp). Plan: .cortex/plans/archive/Phase42/phase-42-investigate-execute-pre-commit-checks-json-error-commit-20260117-122412.md.
 
-- **Phase 43: Reconsider tools registration** - PENDING - Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+- **Phase 43: Reconsider tools registration** - PENDING (Step 2 complete 2026-02-02) - Design: .cortex/plans/phase-43-resource-api-design.md (URI scheme cortex://, mcp_resource_wrapper, usage tracking handler_kind, hybrid split). Audit: .cortex/plans/phase-43-tool-audit.md (45 tools: 28 Resource, 13 Tool, 4 Hybrid). Plan: .cortex/plans/phase-43-reconsider-tools-registration.md. Next: Step 3 Implement Resources.
 
 - **Phase 45: Add MCP annotations** - PENDING - Plan: .cortex/plans/phase-45-add-mcp-annotations.md.
 

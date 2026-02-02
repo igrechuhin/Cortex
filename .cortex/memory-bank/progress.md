@@ -2,6 +2,10 @@
 
 ## 2026-02-02
 
+- **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; markdown lint 5 files fixed (activeContext, progress, roadmap, phase-43-reconsider-tools-registration, phase-43-resource-api-design). fix_errors, format, type_check, quality, tests 3311, coverage 90.42%. 0 plans archived.
+
+- **Phase 43 Step 2 (Design Resource API): Reconsider tools registration** (2026-02-02) - Design complete: .cortex/plans/phase-43-resource-api-design.md (URI scheme cortex://, mcp.resource() syntax verified, mcp_resource_wrapper and usage tracking with handler_kind, hybrid split strategy). Plan Step 2 marked COMPLETE; next Step 3 Implement Resources. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+
 - **Commit (2026-02-02)** - Pre-commit pipeline; markdown lint 11 files fixed (activeContext, progress, roadmap, phase-43 plans, session-optimization plans, commit prompt, agent-workflow (Synapse rule), docs/mcp-tool-timeouts). fix_errors, format, type_check, quality, tests 3311, coverage 90.42%. 0 plans archived.
 
 - **Phase 43 Step 1 (Audit): Reconsider tools registration** (2026-02-02) - Tool audit complete: .cortex/plans/phase-43-tool-audit.md; 45 tools categorized (28 Resource, 13 Tool, 4 Hybrid); hybrid handling strategy for manage_file, configure, rules, check_structure_health; MCP SDK `mcp.resource()` verified. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md (Step 1 COMPLETE).
