@@ -220,6 +220,7 @@ Long-running MCP tools (e.g. `fix_markdown_lint(check_all_files=True)` with many
 
 - **Meaning**: "Connection closed" in this context usually indicates the client disconnected or timed out, not that the tool failed. The tool may have completed successfully on the server.
 - **Recommendation**: In the commit workflow, when an MCP tool reports "Connection closed" or "ClosedResourceError": (1) Retry the tool once. (2) If it fails again with the same class of error, perform the documented fallback for that step (see commit prompt "Connection Closed During Long Tool") and record "MCP connection closed; fallback used" so the pipeline can proceed.
+- **Tool unavailability after disconnect**: After a connection closed error, a retry may fail with "tool not found" or similar (e.g. client/MCP reconnection or tool registration). In that case proceed with the documented fallback for that step (e.g. markdown lint via shell) and do not block the pipeline.
 
 ## Troubleshooting
 

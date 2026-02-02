@@ -121,3 +121,33 @@ class TestCommitPromptAlignment:
         """
         assert "Script run without analysis" in commit_prompt_content
         assert "COMMON ERRORS TO CATCH" in commit_prompt_content
+
+    def test_commit_prompt_requires_rules_file_read_when_rules_disabled(
+        self, commit_prompt_content: str
+    ) -> None:
+        """Commit prompt must require explicit rule file read when rules() returns disabled.
+
+        Session optimization (2026-02-02): When rules tool is disabled, agent must
+        read rule files via Read tool and record 'Rules loaded: Yes (via file read)'.
+        """
+        assert (
+            "rules() returns status" in commit_prompt_content
+            and "disabled" in commit_prompt_content
+        ) or "Rules loaded: Yes (via file read)" in commit_prompt_content
+        assert "get_structure_info" in commit_prompt_content
+        assert (
+            "Read tool" in commit_prompt_content
+            or "rule files" in commit_prompt_content
+        )
+
+    def test_commit_prompt_contains_markdown_lint_fallback_example(
+        self, commit_prompt_content: str
+    ) -> None:
+        """Commit prompt must contain example markdown lint fallback command for Step 12.6.
+
+        Session optimization (2026-02-02): When fix_markdown_lint is unavailable,
+        fallback command (e.g. markdownlint-cli2) must be documented so agents
+        do not need to infer it.
+        """
+        assert "markdownlint-cli2" in commit_prompt_content
+        assert "MCP connection closed; fallback used" in commit_prompt_content

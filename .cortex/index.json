@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-02T09:57:01.574470",
+  "last_updated": "2026-02-02T10:43:04.435201",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
@@ -743,11 +743,11 @@
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 5510,
-      "token_count": 1356,
+      "size_bytes": 6784,
+      "token_count": 1661,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-02T09:56:44.283915",
-      "content_hash": "sha256:c1fd28577f19526f3280b36d8f545b5528d634c22d2c5e080014402b5245797b",
+      "last_modified": "2026-02-02T10:43:04.434049",
+      "content_hash": "sha256:2e9484e704620ec33e0a5b84c5d8094c462cd3555eee1bb85a723ecd19c4a0f8",
       "sections": [
         {
           "title": "## 2026-02-02",
@@ -759,14 +759,14 @@
         {
           "title": "## 2026-02-01",
           "level": 2,
-          "line_start": 25,
-          "line_end": 25,
+          "line_start": 29,
+          "line_end": 29,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 104,
-      "last_read": "2026-02-02T09:56:44.283915",
+      "write_count": 105,
+      "last_read": "2026-02-02T10:43:04.434049",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -1913,17 +1913,28 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Added commit pipeline entry (2026-02-02)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-02T10:43:04.433814",
+          "content_hash": "sha256:2e9484e704620ec33e0a5b84c5d8094c462cd3555eee1bb85a723ecd19c4a0f8",
+          "size_bytes": 6784,
+          "token_count": 1661,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added commit 2026-02-02 pipeline entry; plan archived duplicate removed"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 4596,
-      "token_count": 1148,
+      "size_bytes": 5401,
+      "token_count": 1331,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-02T09:57:01.572965",
-      "content_hash": "sha256:1088e01731ff91893e62edb584aab61b13d8846fff1dc9640f3682ec3ed762ca",
+      "last_modified": "2026-02-02T10:42:35.162090",
+      "content_hash": "sha256:2029e2c833ac9a34c2e915cff6e6c0b29fa4b84ccc1ea29cbe199f597e938f26",
       "sections": [
         {
           "title": "## Current Focus (2026-02-02)",
@@ -1942,28 +1953,28 @@
         {
           "title": "### Recently Completed",
           "level": 2,
-          "line_start": 21,
-          "line_end": 21,
+          "line_start": 23,
+          "line_end": 23,
           "content_hash": null
         },
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 30,
-          "line_end": 30,
+          "line_start": 33,
+          "line_end": 33,
           "content_hash": null
         },
         {
           "title": "## Next Focus",
           "level": 2,
-          "line_start": 43,
-          "line_end": 43,
+          "line_start": 46,
+          "line_end": 46,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 89,
-      "last_read": "2026-02-02T09:57:01.572965",
+      "write_count": 90,
+      "last_read": "2026-02-02T10:42:35.162090",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -2945,6 +2956,17 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Updated after commit pipeline (2026-02-02)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-02T10:42:35.161548",
+          "content_hash": "sha256:2029e2c833ac9a34c2e915cff6e6c0b29fa4b84ccc1ea29cbe199f597e938f26",
+          "size_bytes": 5401,
+          "token_count": 1331,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated after commit pipeline: tests 3320, coverage 90.44%, markdown 7 fixed, plan archived"
         }
       ]
     },
@@ -3182,8 +3204,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 50681,
-    "total_tokens": 12022,
-    "last_full_scan": "2026-02-02T09:57:01.572987"
+    "total_size_bytes": 52760,
+    "total_tokens": 12510,
+    "last_full_scan": "2026-02-02T10:43:04.434064"
   }
 }
