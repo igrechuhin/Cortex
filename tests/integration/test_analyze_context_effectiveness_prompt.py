@@ -1,9 +1,10 @@
 """
-Integration tests for Phase 48: Analyze context effectiveness prompt.
+Integration tests for unified Analyze (end-of-session) prompt.
 
-Verifies that analyze-context-effectiveness.md is in the prompts manifest
-and contains required sections (Pre-Analysis Checklist, Usage Analysis,
-Scoring Metrics, Feedback Categories, Feedback Schema).
+Verifies that analyze.md is the single end-of-session prompt in the manifest
+and contains required sections: Pre-Analysis Checklist, context effectiveness,
+session optimization, and unified output format. Replaces the former
+analyze-context-effectiveness and analyze-session-optimization prompts.
 """
 
 from pathlib import Path
@@ -41,9 +42,9 @@ def _prompts_dir() -> Path:
     return _repo_root() / ".cortex" / "synapse" / "prompts"
 
 
-def _analyze_context_effectiveness_prompt_path() -> Path:
-    """Return path to analyze-context-effectiveness prompt."""
-    return _prompts_dir() / "analyze-context-effectiveness.md"
+def _analyze_prompt_path() -> Path:
+    """Return path to unified analyze prompt."""
+    return _prompts_dir() / "analyze.md"
 
 
 def _manifest_path() -> Path:
@@ -51,8 +52,8 @@ def _manifest_path() -> Path:
     return _prompts_dir() / "prompts-manifest.json"
 
 
-class TestAnalyzeContextEffectivenessInManifest:
-    """Assert Phase 48 analyze-context-effectiveness is in prompts manifest."""
+class TestUnifiedAnalyzeInManifest:
+    """Assert unified analyze.md is the single analyze prompt in manifest."""
 
     @pytest.fixture
     def manifest_data(self) -> dict[str, object] | None:
@@ -67,23 +68,25 @@ class TestAnalyzeContextEffectivenessInManifest:
         data: object = json.loads(path.read_text())
         return cast(dict[str, object], data) if isinstance(data, dict) else None
 
-    def test_analyze_context_effectiveness_listed_in_manifest(
+    def test_analyze_listed_in_manifest(
         self, manifest_data: dict[str, object] | None
     ) -> None:
-        """Manifest general category includes analyze-context-effectiveness prompt."""
+        """Manifest general category includes exactly one analyze prompt (analyze.md)."""
         assert manifest_data is not None
         prompts = _get_prompts_from_manifest(manifest_data)
         files = [str(p.get("file", "")) for p in prompts]
-        assert "analyze-context-effectiveness.md" in files
+        assert "analyze.md" in files
+        assert "analyze-context-effectiveness.md" not in files
+        assert "analyze-session-optimization.md" not in files
 
-    def test_analyze_context_effectiveness_has_name_and_description(
+    def test_analyze_has_name_and_description(
         self, manifest_data: dict[str, object] | None
     ) -> None:
-        """Analyze context effectiveness entry has name and description."""
+        """Analyze entry has name and description for end-of-session check-all."""
         assert manifest_data is not None
         prompts = _get_prompts_from_manifest(manifest_data)
         entry = next(
-            (p for p in prompts if p.get("file") == "analyze-context-effectiveness.md"),
+            (p for p in prompts if p.get("file") == "analyze.md"),
             None,
         )
         assert entry is not None
@@ -91,15 +94,16 @@ class TestAnalyzeContextEffectivenessInManifest:
         desc = entry.get("description")
         desc_str = desc if isinstance(desc, str) else ""
         assert "context" in desc_str.lower() or "effectiveness" in desc_str.lower()
+        assert "session" in desc_str.lower() or "optimization" in desc_str.lower()
 
 
-class TestAnalyzeContextEffectivenessPromptContent:
-    """Assert Phase 48 prompt contains required analysis sections."""
+class TestUnifiedAnalyzePromptContent:
+    """Assert unified analyze prompt contains required analysis sections."""
 
     @pytest.fixture
     def prompt_content(self) -> str:
-        """Read analyze-context-effectiveness prompt; skip if missing."""
-        path = _analyze_context_effectiveness_prompt_path()
+        """Read unified analyze prompt; skip if missing."""
+        path = _analyze_prompt_path()
         if not path.exists():
             pytest.skip(
                 f"Prompt not found at {path} (e.g. synapse submodule not present)"
@@ -107,38 +111,29 @@ class TestAnalyzeContextEffectivenessPromptContent:
         return path.read_text()
 
     def test_includes_pre_analysis_checklist(self, prompt_content: str) -> None:
-        """Prompt includes Pre-Analysis Checklist for recalling load_context calls."""
+        """Prompt includes Pre-Analysis Checklist (memory bank, rules, context recall)."""
         assert "Pre-Analysis Checklist" in prompt_content
         assert "load_context" in prompt_content
 
-    def test_includes_usage_analysis(self, prompt_content: str) -> None:
-        """Prompt includes Usage Analysis (files used, missing, unused)."""
-        assert "Usage Analysis" in prompt_content
-        assert "files_read" in prompt_content or "files read" in prompt_content
-        assert (
-            "files_needed_but_missing" in prompt_content
-            or "needed but missing" in prompt_content
-        )
+    def test_includes_context_effectiveness_step(self, prompt_content: str) -> None:
+        """Prompt includes Step 1: Context effectiveness (tool + no_data handling)."""
+        assert "Context Effectiveness" in prompt_content
+        assert "analyze_context_effectiveness" in prompt_content
+        assert "no_data" in prompt_content or "no data" in prompt_content
 
-    def test_includes_scoring_metrics(self, prompt_content: str) -> None:
-        """Prompt includes Scoring Metrics (precision, recall, F1, token efficiency)."""
-        assert "Scoring Metrics" in prompt_content or "precision" in prompt_content
-        assert "recall" in prompt_content
-        assert "F1" in prompt_content or "f1_score" in prompt_content
-        assert (
-            "token" in prompt_content.lower() and "efficiency" in prompt_content.lower()
-        )
+    def test_includes_session_optimization_step(self, prompt_content: str) -> None:
+        """Prompt includes Step 2: Session optimization (mistake patterns, report save)."""
+        assert "Session Optimization" in prompt_content
+        assert "get_structure_info" in prompt_content
+        assert "reviews" in prompt_content
 
-    def test_includes_feedback_categories(self, prompt_content: str) -> None:
-        """Prompt includes Feedback Categories (helpful, over_provisioned, etc.)."""
-        assert "Feedback Categories" in prompt_content
-        assert "helpful" in prompt_content
-        assert "over_provisioned" in prompt_content
-        assert "under_provisioned" in prompt_content
+    def test_includes_unified_output_format(self, prompt_content: str) -> None:
+        """Prompt includes unified output format (Context + Session sections)."""
+        assert "Output Format" in prompt_content or "output format" in prompt_content
+        assert "Context Effectiveness Analysis" in prompt_content
+        assert "Session Optimization Analysis" in prompt_content
 
-    def test_includes_feedback_schema_section(self, prompt_content: str) -> None:
-        """Prompt includes Feedback Schema documentation for future MCP tool."""
-        assert "Feedback Schema" in prompt_content
-        assert (
-            "record_context_feedback" in prompt_content or "feedback" in prompt_content
-        )
+    def test_includes_usage_analysis_or_scoring(self, prompt_content: str) -> None:
+        """Prompt includes usage/scoring concepts for manual fallback."""
+        assert "precision" in prompt_content or "recall" in prompt_content
+        assert "feedback" in prompt_content.lower() or "utilization" in prompt_content

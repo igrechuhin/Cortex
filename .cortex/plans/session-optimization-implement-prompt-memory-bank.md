@@ -2,7 +2,7 @@
 
 **Status**: PENDING  
 **Created**: 2026-02-02  
-**Source**: `.cortex/reviews/session-optimization-2026-02-02T14-28.md`  
+**Source**: `.cortex/reviews/session-optimization-2026-02-02T14-28.md`, `.cortex/reviews/session-optimization-2026-02-02T17-56.md`  
 **Priority**: High (Recommendation 1), Medium (Recommendation 2), Low (Recommendation 3)
 
 ## Goal
@@ -17,6 +17,10 @@ The review at `.cortex/reviews/session-optimization-2026-02-02T14-28.md` identif
 - **Pattern 2**: Function-length violations were introduced in `mcp_stability.py` and fixed only after the quality gate.
 
 The review’s Implementation Plan is: (1) Update implement prompt Step 5 with requirement and prohibition for memory bank writes; (2) Add function-length reminder in Step 4 or 4.6; (3) Optional: add rules-disabled fallback in analyze-session-optimization.
+
+### New Input (2026-02-02) — session-optimization-2026-02-02T17-56
+
+The review at `.cortex/reviews/session-optimization-2026-02-02T17-56.md` (implement session: Phase 48 Optimize-context feedback analysis) observed the same pattern: roadmap and activeContext were updated via **StrReplace** instead of `manage_file(write)`; progress was correctly updated via `manage_file(write)`. Root cause: implement prompt Step 5 does not explicitly **prohibit** Write/StrReplace/ApplyPatch on memory bank paths, and agents use StrReplace for single-line edits to avoid building full content. Recommendation 2 from that review (full-content fallback guidance for single-line edits) is merged into Step 1 below.
 
 ## Implementation Steps
 
@@ -33,9 +37,10 @@ Steps define the implementation sequence; execute in order.
    - "All updates to roadmap.md, progress.md, activeContext.md, and any other memory bank file MUST be performed with `manage_file(file_name='...', operation='write', ...)`. Read current content with `manage_file(operation='read')` before writing."
 3. Add an explicit **prohibition**:
    - "Do NOT use Write, StrReplace, or ApplyPatch on files under the memory bank directory (path from `get_structure_info()` → `structure_info.paths.memory_bank`). Using standard file tools for memory bank writes is a VIOLATION."
-4. Place these as sub-bullets or a note immediately under the "Update the roadmap content" / "Use manage_file(... roadmap.md ...)" bullets so they are visible when executing Step 5.
+4. Add **full-content fallback** guidance (from session-optimization-2026-02-02T17-56): "If you need to change only one line (e.g. one roadmap entry), read the file via `manage_file(operation='read')`, compute the full updated content (e.g. replace the line in the returned string), then call `manage_file(operation='write', content=updated_content, ...)`. Do not use Write, StrReplace, or ApplyPatch on memory bank paths."
+5. Place all of the above as sub-bullets or a note immediately under the "Update the roadmap content" / "Use manage_file(... roadmap.md ...)" bullets so they are visible when executing Step 5.
 
-**Acceptance**: Step 5 text includes the requirement and prohibition; no other behavior change required.
+**Acceptance**: Step 5 text includes the requirement, prohibition, VIOLATION note, and full-content fallback guidance; no other behavior change required.
 
 ### Step 2: Add function-length reminder (implement prompt Step 4 or 4.6)
 

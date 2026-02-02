@@ -13,10 +13,15 @@ Total: 5 tools
 
 import json
 from pathlib import Path
+from urllib.parse import unquote
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST, MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.discovery.recommendation_engine import recommend_tools_and_scripts
 from cortex.discovery.tool_registry import get_known_script_names, get_known_tool_names
 from cortex.script_analysis.script_analyzer import analyze_script
@@ -232,6 +237,36 @@ async def suggest_tool_improvements(
     }
     await log_client(ctx, "info", "suggest_tool_improvements: completed")
     return json.dumps(payload, indent=2)
+
+
+# Phase 43: Script capture resources (read-only, default params)
+
+
+@mcp.resource(uri="cortex://scripts/list")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def list_session_scripts_resource() -> str:
+    """Resource: List captured session scripts (default project). Read via cortex://scripts/list."""
+    return await list_session_scripts(project_root=None)
+
+
+@mcp.resource(uri="cortex://scripts/analyze")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def analyze_session_scripts_resource() -> str:
+    """Resource: Analyze captured scripts (default project). Read via cortex://scripts/analyze."""
+    return await analyze_session_scripts(project_root=None)
+
+
+@mcp.resource(uri="cortex://scripts/suggest-improvements/{task_description}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def suggest_tool_improvements_resource(task_description: str) -> str:
+    """Resource: Suggest tools/scripts for task (default params). Read via cortex://scripts/suggest-improvements/{task_description}. Task description may be URL-encoded."""
+    decoded = unquote(task_description)
+    return await suggest_tool_improvements(
+        task_description=decoded, project_root=None, max_results=15
+    )
 
 
 @mcp.tool()

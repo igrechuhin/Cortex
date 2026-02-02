@@ -25,6 +25,7 @@ from cortex.refactoring.split_recommender import SplitRecommendation
 from cortex.tools.analysis_operations import (
     analyze,
     analyze_insights,
+    analyze_resource,
     analyze_structure,
     analyze_usage_patterns,
     dispatch_analysis_target,
@@ -42,7 +43,10 @@ from cortex.tools.refactoring_operation_helpers import (
     suggest_splits,
     validate_refactoring_type,
 )
-from cortex.tools.refactoring_operations import suggest_refactoring
+from cortex.tools.refactoring_operations import (
+    suggest_refactoring,
+    suggest_refactoring_resource,
+)
 from tests.helpers.managers import make_test_managers
 
 
@@ -1337,3 +1341,68 @@ class TestRefactoringOperationsContextLogging:
         levels_and_messages = [(a[1], a[2]) for a in args_list]
         assert ("info", "suggest_refactoring: starting") in levels_and_messages
         assert ("info", "suggest_refactoring: completed") in levels_and_messages
+
+
+class TestAnalyzeResource:
+    """Test analyze_resource (Phase 43 Phase 5 Analysis resource)."""
+
+    @pytest.mark.asyncio
+    async def test_analyze_resource_returns_json_for_valid_target(
+        self, tmp_path: Path
+    ) -> None:
+        """analyze_resource returns valid JSON for structure target (Phase 43)."""
+        with patch(
+            "cortex.tools.analysis_operations.analyze",
+            new_callable=AsyncMock,
+            return_value=json.dumps(
+                {"status": "success", "target": "structure", "analysis": {}},
+                indent=2,
+            ),
+        ):
+            result = await analyze_resource("structure")
+        result_data = json.loads(result)
+        assert result_data["status"] == "success"
+        assert result_data["target"] == "structure"
+
+    @pytest.mark.asyncio
+    async def test_analyze_resource_invalid_target_returns_error(self) -> None:
+        """analyze_resource returns error JSON for invalid target (Phase 43)."""
+        result = await analyze_resource("invalid")
+        result_data = json.loads(result)
+        assert result_data["status"] == "error"
+        assert "valid_targets" in result_data
+
+
+class TestSuggestRefactoringResource:
+    """Test suggest_refactoring_resource (Phase 43 Phase 5 Analysis resource)."""
+
+    @pytest.mark.asyncio
+    async def test_suggest_refactoring_resource_returns_json_for_valid_type(
+        self, tmp_path: Path
+    ) -> None:
+        """suggest_refactoring_resource returns valid JSON for consolidation (Phase 43)."""
+        success_json = json.dumps(
+            {"status": "success", "type": "consolidation", "opportunities": []},
+            indent=2,
+        )
+        with patch(
+            "cortex.tools.refactoring_operations.suggest_refactoring",
+            new_callable=AsyncMock,
+            return_value=success_json,
+        ):
+            result = await suggest_refactoring_resource("consolidation")
+        result_data = json.loads(result)
+        assert result_data["status"] == "success"
+        assert result_data["type"] == "consolidation"
+
+    @pytest.mark.asyncio
+    async def test_suggest_refactoring_resource_invalid_type_returns_error(
+        self,
+    ) -> None:
+        """suggest_refactoring_resource returns error JSON for invalid type (Phase 43)."""
+        result = await suggest_refactoring_resource("invalid")
+        result_data = json.loads(result)
+        assert result_data["status"] == "error"
+        assert (
+            "Invalid type" in result_data["error"] or "invalid" in result_data["error"]
+        )

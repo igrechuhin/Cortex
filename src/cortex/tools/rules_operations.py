@@ -8,10 +8,15 @@ Total: 1 tool
 """
 
 import json
+from urllib.parse import unquote
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.core.models import ModelDict
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
@@ -525,3 +530,19 @@ async def _execute_rules_operation(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+@mcp.resource(uri="cortex://rules/relevant/{task_description}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def rules_get_relevant_resource(task_description: str) -> str:
+    """Resource: Rules relevant to task (default params). Read via cortex://rules/relevant/{task_description}. Task description may be URL-encoded."""
+    decoded = unquote(task_description)
+    return await rules(
+        operation="get_relevant",
+        project_root=None,
+        force=False,
+        task_description=decoded,
+        max_tokens=None,
+        min_relevance_score=None,
+    )

@@ -179,6 +179,8 @@ Cortex provides MCP prompts for one-time setup and migration operations. Use pro
 
 **Conditional availability**: Setup and migration prompts are only shown when needed. If your project is already configured (memory bank initialized, structure in place, Cursor symlinks valid), you will not see `initialize_memory_bank`, `setup_project_structure`, `setup_cursor_integration`, or migration prompts. The `setup_synapse` prompt is always available as an optional feature.
 
+**End-of-session analysis**: The single **Analyze** prompt (Synapse) runs at end of session and checks all: context effectiveness (`load_context` usage) and session optimization (mistake patterns, Synapse recommendations, report saved to `.cortex/reviews/`). Use this instead of the former separate "Analyze Context Effectiveness" and "Analyze Session Optimization" prompts.
+
 ### Which Prompt Should I Use?
 
 | Your Situation | Prompt to Use |
@@ -190,6 +192,7 @@ Cortex provides MCP prompts for one-time setup and migration operations. Use pro
 | Not sure if your Memory Bank needs updating | `check_migration_status` |
 | Have old `.cursor/memory-bank/` format | `migrate_memory_bank` |
 | Have files scattered in old locations | `migrate_project_structure` |
+| End of session: analyze context + session optimization | `analyze` (Synapse) |
 
 ### Setup Prompts
 

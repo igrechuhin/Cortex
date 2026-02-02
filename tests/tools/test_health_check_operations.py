@@ -11,6 +11,7 @@ import pytest
 
 from cortex.tools.health_check_operations import (
     analyze_health_check,
+    analyze_health_check_resource,
     empty_prompt_result,
     empty_rule_result,
     empty_tool_result,
@@ -182,3 +183,31 @@ class TestAnalyzeHealthCheck:
             assert result["status"] == "success"
             assert result["analysis_type"] == "tools"
             assert result["tools"]["total"] >= 0
+
+
+@pytest.mark.asyncio
+class TestAnalyzeHealthCheckResource:
+    """Tests for analyze_health_check_resource (Phase 43 cortex://health/analyze)."""
+
+    async def test_analyze_health_check_resource_returns_json(self) -> None:
+        """analyze_health_check_resource returns JSON (Phase 43)."""
+        success_json = json.dumps(
+            {
+                "status": "success",
+                "analysis_type": "all",
+                "prompts": {"total": 0},
+                "rules": {"total": 0},
+                "tools": {"total": 0},
+                "recommendations": [],
+            },
+            indent=2,
+        )
+        with patch(
+            "cortex.tools.health_check_operations.analyze_health_check",
+            new_callable=AsyncMock,
+            return_value=success_json,
+        ):
+            result_str = await analyze_health_check_resource(analysis_type="all")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["analysis_type"] == "all"

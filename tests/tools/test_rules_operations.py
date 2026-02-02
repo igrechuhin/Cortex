@@ -38,6 +38,7 @@ from cortex.tools.rules_operations import (
     handle_get_relevant_operation,
     handle_index_operation,
     rules,
+    rules_get_relevant_resource,
     validate_get_relevant_params,
 )
 from tests.helpers.managers import make_test_managers
@@ -793,6 +794,32 @@ async def test_rules_get_relevant_defaults(
         result_dict = json.loads(result)
         assert result_dict["max_tokens"] == 5000  # From config
         assert result_dict["min_relevance_score"] == 0.6  # From config
+
+
+@pytest.mark.asyncio
+async def test_rules_get_relevant_resource_returns_json(
+    mock_managers_enabled: dict[str, Any], mock_project_root: Path
+) -> None:
+    """rules_get_relevant_resource returns JSON (Phase 43 cortex://rules/relevant)."""
+    with (
+        patch(
+            "cortex.tools.rules_operations.get_project_root",
+            return_value=mock_project_root,
+        ),
+        patch(
+            "cortex.tools.rules_operations.get_managers",
+            AsyncMock(return_value=mock_managers_enabled),
+        ),
+    ):
+        result_str = await rules_get_relevant_resource(
+            task_description="Implementing%20async%20file%20operations"
+        )
+    result_dict = json.loads(result_str)
+    assert result_dict["status"] == "success"
+    assert result_dict["operation"] == "get_relevant"
+    assert "Implementing async file operations" in result_dict.get(
+        "task_description", ""
+    )
 
 
 @pytest.mark.asyncio

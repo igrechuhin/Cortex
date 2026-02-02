@@ -19,9 +19,11 @@ from cortex.tools.models import CleanupReport
 from cortex.tools.phase8_structure import (
     build_health_result,
     check_structure_health,
+    check_structure_health_resource,
     check_structure_initialized,
     find_stale_plans,
     get_structure_info,
+    get_structure_info_resource,
     move_stale_plans,
     perform_archive_stale,
     perform_cleanup_actions,
@@ -392,6 +394,62 @@ class TestGetStructureInfo:
             # Assert
             assert result["success"] is False
             assert "Invalid project root" in result["error"]
+
+
+# ============================================================================
+# Test Phase 8 structure resources (Phase 43 Step 3.2)
+# ============================================================================
+
+
+@pytest.mark.asyncio
+class TestPhase8StructureResources:
+    """Tests for Phase 8 structure resources (cortex://structure/*)."""
+
+    async def test_get_structure_info_resource_returns_success(
+        self,
+        mock_project_root: Path,
+        mock_structure_manager: MagicMock,
+    ) -> None:
+        """get_structure_info_resource returns JSON success (Phase 43)."""
+        with (
+            patch(
+                "cortex.tools.phase8_structure.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase8_structure.StructureManager",
+                return_value=mock_structure_manager,
+            ),
+        ):
+            result_str = await get_structure_info_resource()
+            result = json.loads(result_str)
+        assert result["success"] is True
+        assert "structure_info" in result
+
+    async def test_check_structure_health_resource_returns_json(
+        self,
+        mock_project_root: Path,
+        mock_structure_manager: MagicMock,
+    ) -> None:
+        """check_structure_health_resource returns JSON (read-only, no cleanup)."""
+        with (
+            patch(
+                "cortex.tools.phase8_structure.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase8_structure.StructureManager",
+                return_value=mock_structure_manager,
+            ),
+            patch(
+                "cortex.tools.phase8_structure.check_structure_initialized",
+                return_value=None,
+            ),
+        ):
+            result_str = await check_structure_health_resource()
+            result = json.loads(result_str)
+        assert "score" in result or "success" in result or "error" in result
+        assert "cleanup" not in result
 
 
 # ============================================================================

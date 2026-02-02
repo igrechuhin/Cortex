@@ -10,6 +10,7 @@ from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     check_connection_health,
     ensure_usage_context,
+    mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
 from cortex.server import mcp
@@ -86,3 +87,14 @@ async def check_mcp_connection_health() -> str:
             },
             indent=2,
         )
+
+
+# Phase 43: Connection health resource (read-only)
+
+
+@mcp.resource(uri="cortex://health/connection")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def check_mcp_connection_health_resource() -> str:
+    """Resource: MCP connection health. Read via cortex://health/connection."""
+    return await check_mcp_connection_health()

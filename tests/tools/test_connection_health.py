@@ -11,7 +11,10 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.core.models import ConnectionHealth
-from cortex.tools.connection_health import check_mcp_connection_health
+from cortex.tools.connection_health import (
+    check_mcp_connection_health,
+    check_mcp_connection_health_resource,
+)
 
 
 class TestCheckMCPConnectionHealth:
@@ -90,3 +93,32 @@ class TestCheckMCPConnectionHealth:
             assert result["status"] == "error"
             assert result["error"] == error_message
             assert result["error_type"] == "ValueError"
+
+
+@pytest.mark.asyncio
+class TestCheckMCPConnectionHealthResource:
+    """Tests for check_mcp_connection_health_resource (Phase 43 cortex://health/connection)."""
+
+    async def test_check_mcp_connection_health_resource_returns_json(
+        self,
+    ) -> None:
+        """check_mcp_connection_health_resource returns JSON (Phase 43)."""
+        expected_health = ConnectionHealth(
+            healthy=True,
+            concurrent_operations=1,
+            max_concurrent=5,
+            semaphore_available=4,
+            utilization_percent=20.0,
+        )
+        with patch(
+            "cortex.tools.connection_health.check_mcp_connection_health",
+            new_callable=AsyncMock,
+            return_value=json.dumps(
+                {"status": "success", "health": expected_health.model_dump()},
+                indent=2,
+            ),
+        ):
+            result_str = await check_mcp_connection_health_resource()
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["health"]["healthy"] is True

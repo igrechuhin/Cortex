@@ -12,7 +12,11 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.server import mcp
 from cortex.tools.context_analysis_operations import (
     analyze_current_session,
@@ -145,3 +149,24 @@ async def get_context_usage_statistics(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+# Phase 43: Context analysis resources (read-only, default params)
+
+
+@mcp.resource(uri="cortex://optimization/context-effectiveness")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def analyze_context_effectiveness_resource() -> str:
+    """Resource: Analyze context effectiveness (current session, default project). Read via cortex://optimization/context-effectiveness."""
+    return await analyze_context_effectiveness(
+        project_root=None, analyze_all_sessions=False
+    )
+
+
+@mcp.resource(uri="cortex://optimization/context-usage-statistics")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_context_usage_statistics_resource() -> str:
+    """Resource: Context usage statistics (default project). Read via cortex://optimization/context-usage-statistics."""
+    return await get_context_usage_statistics(project_root=None)

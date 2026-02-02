@@ -166,7 +166,7 @@ Current tool registration doesn't align with MCP protocol semantics:
 - Extend usage analytics (UsageTracker / reporting) so `get_tool_usage_stats`, `get_unused_tools`, `get_optimization_recommendations` include resource reads.
 - Add Resource listing/querying capabilities as needed.
 
-#### Task 3.2: Transform Read-Only Tools to Resources — PARTIAL (Phase 3 validation done 2026-02-02)
+#### Task 3.2: Transform Read-Only Tools to Resources — PARTIAL (Phase 5 Analysis done 2026-02-02)
 
 - Pilot resources (alongside tools, no-arg handlers): `get_memory_bank_stats_resource` (cortex://memory-bank/stats), `get_structure_info_resource` (cortex://structure/info). Tools kept for backward compatibility.
 - Phase 1 Foundation resources added (2026-02-02):
@@ -187,17 +187,28 @@ Current tool registration doesn't align with MCP protocol semantics:
   - `load_progressive_context` → Resource `load_progressive_context_resource` (cortex://optimization/load-progressive-context/{task_description}, template)
   - `get_relevance_scores` → Resource `get_relevance_scores_resource` (cortex://optimization/relevance-scores/{task_description}, template)
   - `summarize_content` → Resource `summarize_content_resource` (cortex://optimization/summarize/{file_name}, template; file_name '_' or 'all' = all files)
-- Remaining (to do):
-- Continue with Phase 5 Analysis tools:
-  - `analyze` → Resource
-  - `suggest_refactoring` → Resource
-  - `get_refactoring_suggestions` → Resource
-- Continue with other read-only tools:
-  - `get_structure_info` → Resource
-  - `check_structure_health` (read-only mode) → Resource
-  - `rules` (get_relevant) → Resource
-  - `get_synapse_rules` → Resource
-  - `get_synapse_prompts` → Resource
+- Phase 5 Analysis resources added (2026-02-02):
+  - `analyze` → Resource `analyze_resource` (cortex://analysis/analyze/{target}, template; URL-decode target; default params)
+  - `suggest_refactoring` → Resource `suggest_refactoring_resource` (cortex://analysis/suggest-refactoring/{type}, template; URL-decode type; default params)
+- Step 3.2 structure/synapse/rules resources added (2026-02-02):
+  - `get_structure_info` → Resource already present (`get_structure_info_resource`, cortex://structure/info)
+  - `check_structure_health` (read-only) → Resource `check_structure_health_resource` (cortex://structure/health; perform_cleanup=False)
+  - `rules` (get_relevant) → Resource `rules_get_relevant_resource` (cortex://rules/relevant/{task_description}, template; URL-decode)
+  - `get_synapse_rules` → Resource `get_synapse_rules_resource` (cortex://synapse/rules/{task_description}, template; URL-decode; default params)
+  - `get_synapse_prompts` → Resource `get_synapse_prompts_resource` (cortex://synapse/prompts; all prompts, no category)
+- Step 3.2 context/health/scripts/usage resources added (2026-02-02):
+  - `analyze_context_effectiveness` → Resource `analyze_context_effectiveness_resource` (cortex://optimization/context-effectiveness; default params)
+  - `get_context_usage_statistics` → Resource `get_context_usage_statistics_resource` (cortex://optimization/context-usage-statistics)
+  - `check_mcp_connection_health` → Resource `check_mcp_connection_health_resource` (cortex://health/connection)
+  - `analyze_health_check` → Resource `analyze_health_check_resource` (cortex://health/analyze/{analysis_type}, template; default params)
+  - `list_session_scripts` → Resource `list_session_scripts_resource` (cortex://scripts/list)
+  - `analyze_session_scripts` → Resource `analyze_session_scripts_resource` (cortex://scripts/analyze)
+  - `suggest_tool_improvements` → Resource `suggest_tool_improvements_resource` (cortex://scripts/suggest-improvements/{task_description}, template; URL-decode)
+  - `get_tool_usage_stats` → Resource `get_tool_usage_stats_resource` (cortex://usage/stats)
+  - `get_unused_tools` → Resource `get_unused_tools_resource` (cortex://usage/unused)
+  - `get_tool_usage_report` → Resource `get_tool_usage_report_resource` (cortex://usage/report)
+  - `get_optimization_recommendations` → Resource `get_optimization_recommendations_resource` (cortex://usage/optimization-recommendations)
+- Next: Step 3.3 (hybrid operations) or Step 3.4 (update tool registrations); configure get_config resource if desired.
 
 #### Task 3.3: Handle Hybrid Operations
 

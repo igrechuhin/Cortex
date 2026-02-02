@@ -17,6 +17,7 @@ Note: setup_synapse has been replaced by a prompt template in docs/prompts/
 import json
 from collections.abc import Sequence
 from typing import Protocol
+from urllib.parse import unquote
 
 from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_EXTERNAL,
@@ -24,7 +25,11 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.core.models import ModelDict
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
@@ -769,3 +774,27 @@ async def update_synapse_prompt(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+@mcp.resource(uri="cortex://synapse/rules/{task_description}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def get_synapse_rules_resource(task_description: str) -> str:
+    """Resource: Synapse rules for task (default params). Read via cortex://synapse/rules/{task_description}. Task description may be URL-encoded."""
+    decoded = unquote(task_description)
+    return await get_synapse_rules(
+        task_description=decoded,
+        max_tokens=10000,
+        min_relevance_score=0.3,
+        project_files=None,
+        rule_priority="local_overrides_shared",
+        context_aware=True,
+    )
+
+
+@mcp.resource(uri="cortex://synapse/prompts")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_synapse_prompts_resource() -> str:
+    """Resource: All Synapse prompts (no category filter). Read via cortex://synapse/prompts."""
+    return await get_synapse_prompts(category=None)

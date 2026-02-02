@@ -3,19 +3,24 @@ Analysis Operations Tools
 
 This module contains analysis tools for Memory Bank.
 
-Total: 1 tool
-- analyze: Usage patterns/structure/insights analysis
+Total: 1 tool, 1 resource
+- analyze / analyze_resource (cortex://analysis/analyze/{target})
 """
 
 import json
 from pathlib import Path
+from urllib.parse import unquote
 
 from cortex.analysis.insight_engine import InsightEngine
 from cortex.analysis.pattern_analyzer import PatternAnalyzer
 from cortex.analysis.structure_analyzer import StructureAnalyzer
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
@@ -538,4 +543,24 @@ async def dispatch_analysis_target(
         target = parsed
     return await _execute_analysis_target(
         target, analyzers, time_window_days, export_format, categories
+    )
+
+
+@mcp.resource(uri="cortex://analysis/analyze/{target}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
+async def analyze_resource(target: str) -> str:
+    """Resource: Run analysis by target. Read via cortex://analysis/analyze/{target}.
+
+    target may be URL-encoded. Must be one of: usage_patterns, structure,
+    insights. Uses default parameters (project_root=None, time_window_days=None,
+    export_format=json, categories=None).
+    """
+    decoded = unquote(target)
+    return await analyze(
+        target=decoded,
+        project_root=None,
+        time_window_days=None,
+        export_format="json",
+        categories=None,
     )

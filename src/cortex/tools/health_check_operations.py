@@ -13,7 +13,11 @@ from typing import Literal
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.health_check.dependency_mapper import DependencyMapper
 from cortex.health_check.models import (
     HealthCheckReport,
@@ -238,3 +242,25 @@ async def analyze_health_check(
     )
     await log_client(ctx, "info", "analyze_health_check: completed")
     return result
+
+
+# Phase 43: Health check resource (read-only, template param)
+
+
+@mcp.resource(uri="cortex://health/analyze/{analysis_type}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
+async def analyze_health_check_resource(analysis_type: str) -> str:
+    """Resource: Health-check analysis (default params). Read via cortex://health/analyze/{analysis_type}. analysis_type: prompts, rules, tools, or all."""
+    valid: Literal["prompts", "rules", "tools", "all"] = (
+        analysis_type
+        if analysis_type in ("prompts", "rules", "tools", "all")
+        else "all"
+    )
+    return await analyze_health_check(
+        analysis_type=valid,
+        similarity_threshold=0.75,
+        include_dependencies=True,
+        validate_quality=True,
+        project_root=None,
+    )

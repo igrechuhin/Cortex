@@ -3,15 +3,20 @@ Refactoring Operations Tools
 
 This module contains refactoring suggestion tools for Memory Bank.
 
-Total: 1 tool
-- suggest_refactoring: Consolidation/split/reorganization suggestions
+Total: 1 tool, 1 resource
+- suggest_refactoring / suggest_refactoring_resource (cortex://analysis/suggest-refactoring/{type})
 """
 
 from typing import Literal
+from urllib.parse import unquote
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.server import mcp
 from cortex.tools.refactoring_operation_helpers import (
     parse_refactoring_suggestion_type,
@@ -522,4 +527,28 @@ async def suggest_refactoring(
         goal,
         preview_suggestion_id,
         ctx,
+    )
+
+
+@mcp.resource(uri="cortex://analysis/suggest-refactoring/{type}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
+async def suggest_refactoring_resource(type: str) -> str:
+    """Resource: Get refactoring suggestions by type. Read via cortex://analysis/suggest-refactoring/{type}.
+
+    type may be URL-encoded. Must be one of: consolidation, splits,
+    reorganization. Uses default parameters (project_root=None, min_similarity=None,
+    size_threshold=None, goal=None, preview_suggestion_id=None, show_diff=True,
+    estimate_impact=True).
+    """
+    decoded = unquote(type)
+    return await suggest_refactoring(
+        type=decoded,
+        project_root=None,
+        min_similarity=None,
+        size_threshold=None,
+        goal=None,
+        preview_suggestion_id=None,
+        show_diff=True,
+        estimate_impact=True,
     )

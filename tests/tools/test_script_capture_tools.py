@@ -3,15 +3,19 @@
 import json
 import tempfile
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from cortex.tools.script_capture_tools import (
     analyze_session_scripts,
+    analyze_session_scripts_resource,
     capture_session_script,
     list_session_scripts,
+    list_session_scripts_resource,
     promote_session_script,
     suggest_tool_improvements,
+    suggest_tool_improvements_resource,
 )
 
 
@@ -203,3 +207,62 @@ class TestPromoteSessionScript:
             assert "validation_passed" in data
             assert "quality_score" in data
             assert "template_content" in data
+
+
+@pytest.mark.asyncio
+class TestScriptCaptureResources:
+    """Tests for Phase 43 script capture resources (cortex://scripts/...)."""
+
+    async def test_list_session_scripts_resource_returns_json(self) -> None:
+        """list_session_scripts_resource returns JSON (Phase 43)."""
+        payload = json.dumps({"status": "success", "count": 0, "scripts": []}, indent=2)
+        with patch(
+            "cortex.tools.script_capture_tools.list_session_scripts",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result_str = await list_session_scripts_resource()
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["count"] == 0
+        assert result["scripts"] == []
+
+    async def test_analyze_session_scripts_resource_returns_json(self) -> None:
+        """analyze_session_scripts_resource returns JSON (Phase 43)."""
+        payload = json.dumps(
+            {"status": "success", "count": 0, "analyses": []}, indent=2
+        )
+        with patch(
+            "cortex.tools.script_capture_tools.analyze_session_scripts",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result_str = await analyze_session_scripts_resource()
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["count"] == 0
+        assert "analyses" in result
+
+    async def test_suggest_tool_improvements_resource_returns_json(
+        self,
+    ) -> None:
+        """suggest_tool_improvements_resource returns JSON (Phase 43)."""
+        payload = json.dumps(
+            {
+                "status": "success",
+                "task_description": "format code",
+                "recommendations": [],
+            },
+            indent=2,
+        )
+        with patch(
+            "cortex.tools.script_capture_tools.suggest_tool_improvements",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result_str = await suggest_tool_improvements_resource(
+                task_description="format%20code"
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["task_description"] == "format code"

@@ -54,6 +54,7 @@ from cortex.tools.phase8_structure_validation import (
 __all__ = [
     "build_health_result",
     "check_structure_health",
+    "check_structure_health_resource",
     "check_structure_initialized",
     "find_stale_plans",
     "get_structure_info",
@@ -212,6 +213,20 @@ async def get_structure_info(
 async def get_structure_info_resource() -> str:
     """Resource: Project structure info (default params). Read via cortex://structure/info."""
     return await get_structure_info()
+
+
+@mcp.resource(uri="cortex://structure/health")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
+async def check_structure_health_resource() -> str:
+    """Resource: Structure health check (read-only, no cleanup). Read via cortex://structure/health."""
+    return await check_structure_health(
+        project_root=None,
+        perform_cleanup=False,
+        cleanup_actions=None,
+        stale_days=90,
+        dry_run=True,
+    )
 
 
 get_structure_info.__doc__ = GET_STRUCTURE_INFO_DOC

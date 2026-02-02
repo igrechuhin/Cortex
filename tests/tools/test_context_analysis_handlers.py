@@ -6,7 +6,9 @@ import pytest
 
 from cortex.tools.context_analysis_handlers import (
     analyze_context_effectiveness,
+    analyze_context_effectiveness_resource,
     get_context_usage_statistics,
+    get_context_usage_statistics_resource,
 )
 
 
@@ -168,3 +170,44 @@ class TestContextAnalysisContextLogging:
             "info",
             "analyze_context_effectiveness: completed",
         ) in levels_and_messages
+
+
+@pytest.mark.asyncio
+class TestContextAnalysisResources:
+    """Test Phase 43 context analysis resources (cortex://optimization/...)."""
+
+    async def test_analyze_context_effectiveness_resource_returns_json(
+        self, tmp_path: Path
+    ) -> None:
+        """analyze_context_effectiveness_resource returns JSON (Phase 43)."""
+        analysis_result = MagicMock(
+            model_dump=MagicMock(return_value={"status": "success"})
+        )
+        with (
+            patch(
+                "cortex.tools.context_analysis_handlers.analyze_context_effectiveness",
+                new_callable=AsyncMock,
+                return_value=json.dumps(analysis_result.model_dump()),
+            ),
+        ):
+            result_str = await analyze_context_effectiveness_resource()
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+
+    async def test_get_context_usage_statistics_resource_returns_json(
+        self, tmp_path: Path
+    ) -> None:
+        """get_context_usage_statistics_resource returns JSON (Phase 43)."""
+        stats_result = MagicMock(
+            model_dump=MagicMock(return_value={"status": "success"})
+        )
+        with (
+            patch(
+                "cortex.tools.context_analysis_handlers.get_context_usage_statistics",
+                new_callable=AsyncMock,
+                return_value=json.dumps(stats_result.model_dump()),
+            ),
+        ):
+            result_str = await get_context_usage_statistics_resource()
+        result = json.loads(result_str)
+        assert result["status"] == "success"

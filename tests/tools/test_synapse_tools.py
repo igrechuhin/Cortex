@@ -20,7 +20,9 @@ import pytest
 from cortex.managers.types import ManagersDict
 from cortex.rules.models import SynapseSyncResult, SyncChanges
 from cortex.tools.synapse_tools import (
+    get_synapse_prompts_resource,
     get_synapse_rules,
+    get_synapse_rules_resource,
     sync_synapse,
     update_synapse_rule,
 )
@@ -908,3 +910,64 @@ class TestSynapseToolsContextLogging:
         levels_and_messages = [(a[1], a[2]) for a in args_list]
         assert ("info", "get_synapse_rules: starting") in levels_and_messages
         assert ("info", "get_synapse_rules: completed") in levels_and_messages
+
+
+# ============================================================================
+# Test Synapse resources (Phase 43 Step 3.2)
+# ============================================================================
+
+
+@pytest.mark.asyncio
+class TestSynapseResources:
+    """Tests for Synapse resources (cortex://synapse/*)."""
+
+    async def test_get_synapse_rules_resource_returns_json(
+        self,
+        mock_project_root: Path,
+        mock_managers_with_synapse: ManagersDict,
+    ) -> None:
+        """get_synapse_rules_resource returns JSON (Phase 43 cortex://synapse/rules)."""
+        with (
+            patch(
+                "cortex.tools.synapse_tools.get_project_root",
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.synapse_tools.get_managers",
+                return_value=mock_managers_with_synapse,
+            ),
+            patch(
+                "cortex.tools.synapse_tools_helpers.get_manager",
+                new=AsyncMock(side_effect=_get_manager_helper),
+            ),
+            patch(
+                "cortex.managers.manager_utils.get_manager",
+                new=AsyncMock(side_effect=_get_manager_helper),
+            ),
+        ):
+            result_str = await get_synapse_rules_resource(
+                task_description="Implement%20JWT%20authentication"
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "rules_loaded" in result
+
+    async def test_get_synapse_prompts_resource_returns_json(self) -> None:
+        """get_synapse_prompts_resource returns JSON (Phase 43 cortex://synapse/prompts)."""
+        stub_response = json.dumps(
+            {
+                "status": "success",
+                "categories": ["general"],
+                "prompts": [{"file": "test.md", "name": "Test"}],
+                "total_count": 1,
+            },
+            indent=2,
+        )
+        with patch(
+            "cortex.tools.synapse_tools.get_synapse_prompts",
+            new=AsyncMock(return_value=stub_response),
+        ):
+            result_str = await get_synapse_prompts_resource()
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "prompts" in result or "categories" in result

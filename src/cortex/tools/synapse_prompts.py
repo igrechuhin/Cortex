@@ -22,7 +22,7 @@ SYNAPSE_PROMPT_ICONS: dict[str, str] = {
     "implement": "⚡",
     "plan": "📋",
     "create_plan": "📋",
-    "analyze_session_optimization": "🔍",
+    "analyze": "🔍",
 }
 DEFAULT_PROMPT_ICON = "📝"
 

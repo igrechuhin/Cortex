@@ -11,7 +11,11 @@ from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.lazy_manager import LazyManager
 from cortex.managers.usage_tracker import UsageTracker
@@ -299,4 +303,45 @@ async def get_optimization_recommendations(
             ),
         },
         indent=2,
+    )
+
+
+# Phase 43: Usage analytics resources (read-only, default params)
+
+
+@mcp.resource(uri="cortex://usage/stats")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_tool_usage_stats_resource() -> str:
+    """Resource: Tool usage statistics (default date range). Read via cortex://usage/stats."""
+    return await get_tool_usage_stats(
+        start_date=None, end_date=None, tool_name=None, project_root=None
+    )
+
+
+@mcp.resource(uri="cortex://usage/unused")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_unused_tools_resource() -> str:
+    """Resource: Unused tools report (default days/min_usage). Read via cortex://usage/unused."""
+    return await get_unused_tools(days=90, min_usage_count=0, project_root=None)
+
+
+@mcp.resource(uri="cortex://usage/report")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_tool_usage_report_resource() -> str:
+    """Resource: Usage report (default format and recommendations). Read via cortex://usage/report."""
+    return await get_tool_usage_report(
+        format="markdown", include_recommendations=True, project_root=None
+    )
+
+
+@mcp.resource(uri="cortex://usage/optimization-recommendations")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_optimization_recommendations_resource() -> str:
+    """Resource: Optimization recommendations (default threshold/days). Read via cortex://usage/optimization-recommendations."""
+    return await get_optimization_recommendations(
+        min_usage_threshold=5, days=90, project_root=None
     )
