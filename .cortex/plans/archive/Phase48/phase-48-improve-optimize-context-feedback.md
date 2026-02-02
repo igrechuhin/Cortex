@@ -2,7 +2,7 @@
 
 ## Status
 
-**PLANNING** (2026-01-19)
+**COMPLETE** (2026-02-02)
 
 ## Goal
 
@@ -206,12 +206,12 @@ Add entry to `.cortex/synapse/prompts/prompts-manifest.json`:
 
 ## Success Criteria
 
-- [ ] Prompt created at `.cortex/synapse/prompts/analyze-context-effectiveness.md`
-- [ ] Prompt provides clear instructions for session analysis
-- [ ] Scoring metrics are well-defined and calculable
-- [ ] Feedback format is structured and actionable
-- [ ] Prompts manifest updated
-- [ ] Documentation complete
+- [x] Prompt created at `.cortex/synapse/prompts/analyze-context-effectiveness.md`
+- [x] Prompt provides clear instructions for session analysis
+- [x] Scoring metrics are well-defined and calculable
+- [x] Feedback format is structured and actionable
+- [x] Prompts manifest updated
+- [x] Documentation complete
 
 ## Risks and Mitigation
 

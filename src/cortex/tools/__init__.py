@@ -24,13 +24,15 @@ Modules:
 - prompts: MCP prompt templates for one-time operations (7 prompts)
 - script_capture_tools: Session script capture, analysis, promotion (5 tools)
 - usage_analytics: Tool usage statistics and optimization (4 tools) - Phase 29
+- cache_json_tools: Concurrent-safe read/write of .cortex/.cache JSON (2 tools)
 
-Total: 63 tools + 7 prompts
+Total: 65 tools + 7 prompts
 """
 
 # Import all tool modules to register their decorators
 from . import (
     analysis_operations,  # noqa: F401
+    cache_json_tools,  # noqa: F401
     configuration_operations,  # noqa: F401
     connection_health,  # noqa: F401
     file_operations,  # noqa: F401
@@ -65,6 +67,7 @@ _ = synapse_prompts
 
 __all__ = [
     "analysis_operations",
+    "cache_json_tools",
     "configuration_operations",
     "connection_health",
     "file_operations",

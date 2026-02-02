@@ -151,3 +151,29 @@ class TestCommitPromptAlignment:
         """
         assert "markdownlint-cli2" in commit_prompt_content
         assert "MCP connection closed; fallback used" in commit_prompt_content
+
+    def test_commit_prompt_requires_rerun_step_12_3_after_fix_in_step_12_2_or_12_3(
+        self, commit_prompt_content: str
+    ) -> None:
+        """Commit prompt must require re-run of Step 12.3 (quality) after code fixes in 12.2 or 12.3.
+
+        Fix commit workflow (2026-02-02): After any code change in Step 12.2 (type)
+        or 12.3 (lint), agent MUST re-run Step 12.3 and verify results.quality.success
+        with zero errors to prevent CI Ruff failure (e.g. E402) when type/lint fixes
+        introduce new lint.
+        """
+        assert (
+            "re-run Step 12.3" in commit_prompt_content
+            or "re-run 12.3" in commit_prompt_content
+        )
+        assert "12.2" in commit_prompt_content and "12.3" in commit_prompt_content
+        assert "results.quality.success" in commit_prompt_content
+        assert (
+            "Do NOT proceed to Step 12.4" in commit_prompt_content
+            or "until Step 12.3 has been run again" in commit_prompt_content
+        )
+        assert (
+            "E402" in commit_prompt_content
+            or "type or lint fixes" in commit_prompt_content.lower()
+            or "fixes can introduce new lint" in commit_prompt_content
+        )

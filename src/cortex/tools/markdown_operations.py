@@ -19,6 +19,7 @@ from pathlib import Path
 import aiofiles
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.cache_json_access import read_cache_json, write_cache_json
 from cortex.core.constants import (
     GIT_OPERATION_TIMEOUT_SECONDS,
     MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL,
@@ -219,32 +220,33 @@ async def _get_all_markdown_files(project_root: Path) -> list[Path]:
     return await asyncio.to_thread(_collect_markdown_files_sync, project_root)
 
 
-def _get_markdown_lint_cache_path(project_root: Path) -> Path:
-    """Get path to markdown lint cache file."""
-    cache_dir = project_root / ".cortex" / ".cache"
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    return cache_dir / "markdown-lint-index.json"
+_MARKDOWN_LINT_CACHE_KEY = "markdown-lint-index.json"
 
 
-async def _load_markdown_lint_index(cache_path: Path) -> MarkdownLintIndex:
-    """Load markdown lint index from disk."""
-    if not cache_path.exists():
+async def _load_markdown_lint_index(project_root: Path) -> MarkdownLintIndex:
+    """Load markdown lint index from .cortex/.cache/markdown-lint-index.json (concurrent-safe).
+
+    Uses cache_json_access.read_cache_json. Updated automatically by fix_markdown_lint.
+    """
+    raw = await read_cache_json(project_root, _MARKDOWN_LINT_CACHE_KEY)
+    if raw is None or not isinstance(raw, dict):
         return MarkdownLintIndex()
     try:
-        async with aiofiles.open(cache_path, encoding="utf-8") as f:
-            data = await f.read()
-        return MarkdownLintIndex.model_validate_json(data)
+        return MarkdownLintIndex.model_validate(raw)
     except Exception:
-        # On parse/read error, use a fresh index instead of failing.
         return MarkdownLintIndex()
 
 
-async def _save_markdown_lint_index(cache_path: Path, index: MarkdownLintIndex) -> None:
-    """Persist markdown lint index to disk."""
-    if not cache_path.parent.exists():
-        cache_path.parent.mkdir(parents=True, exist_ok=True)
-    async with aiofiles.open(cache_path, "w", encoding="utf-8") as f:
-        _ = await f.write(index.model_dump_json(indent=2))
+async def _save_markdown_lint_index(
+    project_root: Path, index: MarkdownLintIndex
+) -> None:
+    """Persist markdown lint index to .cortex/.cache/markdown-lint-index.json (concurrent-safe).
+
+    Uses cache_json_access.write_cache_json. fix_markdown_lint updates this automatically.
+    """
+    await write_cache_json(
+        project_root, _MARKDOWN_LINT_CACHE_KEY, index.model_dump(), indent=2
+    )
 
 
 async def _calculate_file_hash(file_path: Path) -> str | None:
@@ -659,7 +661,7 @@ def _build_fix_response(results: list[FileResult]) -> str:
 
 async def _update_markdown_lint_cache_from_results(
     index: MarkdownLintIndex,
-    cache_path: Path,
+    project_root: Path,
     results: list[FileResult],
     file_hashes: dict[str, str],
 ) -> None:
@@ -677,7 +679,7 @@ async def _update_markdown_lint_cache_from_results(
             last_checked=now,
             status=status,
         )
-    await _save_markdown_lint_index(cache_path, index)
+    await _save_markdown_lint_index(project_root, index)
 
 
 async def _run_markdownlint_for_files(
@@ -750,8 +752,7 @@ async def _run_markdownlint_with_cache(
     dry_run: bool,
 ) -> str:
     """Run markdownlint with cache handling and build response JSON."""
-    cache_path = _get_markdown_lint_cache_path(root_path)
-    index = await _load_markdown_lint_index(cache_path)
+    index = await _load_markdown_lint_index(root_path)
     files_to_lint, initial_results, file_hashes = await _filter_files_for_linting(
         root_path,
         files,
@@ -768,7 +769,7 @@ async def _run_markdownlint_with_cache(
     )
     await _update_markdown_lint_cache_from_results(
         index,
-        cache_path,
+        root_path,
         results,
         file_hashes,
     )

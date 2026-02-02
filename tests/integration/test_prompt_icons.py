@@ -13,9 +13,9 @@ import pytest
 # Import main so that setup.prompts and tools (synapse_prompts) are loaded
 # and prompts are registered with icons.
 import cortex.main
-
-_ = cortex.main  # Side-effect import for prompt registration
 from cortex.server import mcp
+
+_ = cortex.main  # Side-effect: satisfy reportUnusedImport; keep after imports for E402
 
 
 @pytest.mark.asyncio

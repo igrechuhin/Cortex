@@ -400,7 +400,12 @@ async def _record_usage_if_available(
     error_type: str | None,
     kind: Literal["tool", "resource"] = "tool",
 ) -> None:
-    """Record tool or resource usage if UsageTracker is available (Phase 29/43)."""
+    """Record tool or resource usage if UsageTracker is available (Phase 29/43).
+
+    All tool and resource requests are tracked automatically to
+    .cortex/.cache/usage/events/{date}.json via UsageTracker, which uses
+    cache_json_access (read_modify_write_cache_json) for concurrent-safe writes.
+    """
     try:
         from cortex.managers.lazy_manager import LazyManager
         from cortex.managers.usage_tracker import UsageTracker

@@ -6,13 +6,6 @@
       "description": "Prompts specific to the Cortex MCP project that use Cortex MCP tools",
       "prompts": [
         {
-          "file": "analyze-context-effectiveness.md",
-          "name": "Analyze Context",
-          "description": "End-of-session analysis to evaluate load_context effectiveness and provide feedback for improvement",
-          "keywords": ["context", "optimization", "feedback", "analysis", "metrics", "learning"],
-          "requires": ["cortex-mcp"]
-        },
-        {
           "file": "validate-roadmap-sync.md",
           "name": "Validate Roadmap Sync",
           "description": "Validate that roadmap.md is synchronized with the codebase TODOs",

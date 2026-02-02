@@ -6,9 +6,13 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
+- ✅ **Fix commit workflow: re-run Step 12.3 after code fixes in Step 12** - COMPLETE (2026-02-02) - Commit prompt requires re-run of Step 12.3 after fixes in 12.2/12.3; E402 reminder; Step 13 precondition; integration test. Blocker resolved.
+
 - **Phase 45: Add MCP annotations (IN PROGRESS)** (2026-02-02) - Phases 1–3 done: mcp_annotations.py helpers and unit tests; annotations on manage_file, get_memory_bank_stats, validate, analyze, configure, get_version_history, rollback_file_version, check_structure_health, get_structure_info, check_mcp_connection_health, execute_pre_commit_checks, fix_quality_issues. Next: remaining tools (rules, markdown, synapse, phase4/phase5/linking/refactoring); resolve type_check for `annotations` (stub or CI). Plan: .cortex/plans/phase-45-add-mcp-annotations.md.
 
 - **Phase 43: Reconsider tools registration (Step 3.2 partial complete)** (2026-02-02) - Step 3.1 done; pilot resources cortex://memory-bank/stats, cortex://structure/info. Step 3.2 Phase 1–4 done (foundation, linking, validation, optimization resources). Next: Phase 5 Analysis, etc. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+
+- ✅ **Phase 48: Improve optimize-context feedback** - COMPLETE (2026-02-02) - analyze-context-effectiveness.md enhanced with Pre-Analysis Checklist, Usage Analysis, Scoring Metrics, Feedback Categories, Feedback Schema; manifest entry; integration tests test_analyze_context_effectiveness_prompt.
 
 - ✅ **Phase 47: Add prompt icons and emoji in messages** - COMPLETE (2026-02-02) - Icon helper (create_emoji_icon, create_emoji_icons); PROMPT_ICONS and icons on setup prompts; SYNAPSE_PROMPT_ICONS and icons in synapse_prompts; optional manifest icon; ✅ in manage_file and get_structure_info messages. Quality gate passes.
 
@@ -28,6 +32,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
+- Phase 48 (2026-02-02): analyze-context-effectiveness prompt enhanced (Pre-Analysis Checklist, Usage Analysis, Scoring Metrics, Feedback Categories, Feedback Schema); manifest entry; integration tests test_analyze_context_effectiveness_prompt.
 - Phase 47 (2026-02-02): Icon helper (icon_helpers.py); emoji icons on all setup and Synapse prompts; optional manifest icon; ✅ in manage_file write message and get_structure_info message; unit tests; quality gate passes.
 - Commit (2026-02-02): Quality gate fixes—pre_commit_tools under 400 lines via pre_commit_pipeline.py; function length fixes in pre_commit_tools and python_adapter.
 - Phase 46: ProgressReporter (src/cortex/core/progress.py); mcp_tool_wrapper enable_progress (auto when timeout ≥ 120s); time-based progress loop; unit tests; quality gate passes.

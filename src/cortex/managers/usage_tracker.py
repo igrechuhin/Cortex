@@ -4,8 +4,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import cast
 
-import aiofiles
-
+from cortex.core.cache_json_access import read_cache_json, read_modify_write_cache_json
 from cortex.core.cache_utils import CacheType, get_cache_dir
 from cortex.managers.usage_models import ToolUsageEvent, ToolUsageStats
 
@@ -110,7 +109,7 @@ class UsageTracker:
             ),
             handler_kind=kind,
         )
-        await _persist_event(self._events_dir, event)
+        await _persist_event(self._project_root, event)
 
     async def get_usage_stats(
         self,
@@ -129,7 +128,7 @@ class UsageTracker:
             Dict with keys: tools (list of ToolUsageStats), total_events.
         """
         events = await _load_events_in_range(
-            self._events_dir, start_date, end_date, tool_name
+            self._project_root, start_date, end_date, tool_name
         )
         by_tool: dict[str, list[ToolUsageEvent]] = {}
         for ev in events:
@@ -229,24 +228,26 @@ def _aggregate_events(tool_name: str, events: list[ToolUsageEvent]) -> ToolUsage
     )
 
 
-async def _persist_event(events_dir: Path, event: ToolUsageEvent) -> None:
-    """Append a single event to the daily JSON file."""
-    events_dir.mkdir(parents=True, exist_ok=True)
+async def _persist_event(project_root: Path, event: ToolUsageEvent) -> None:
+    """Append a single event to .cortex/.cache/usage/events/{date}.json (concurrent-safe).
+
+    Uses read_modify_write_cache_json so all tool/resource requests are tracked
+    reliably from multiple chat sessions.
+    """
     date_str = event.timestamp[:10]
-    path = events_dir / f"{date_str}.json"
-    existing: list[dict[str, object]] = []
-    if path.exists():
-        async with aiofiles.open(path, encoding="utf-8") as f:
-            content = await f.read()
-            if content.strip():
-                import json
+    relative_key = f"usage/events/{date_str}.json"
 
-                existing = list(json.loads(content))
-    existing.append(event.model_dump())
-    async with aiofiles.open(path, "w", encoding="utf-8") as f:
-        import json
+    def append_event(existing: list[object] | dict[str, object]) -> list[object]:
+        lst = list(existing) if isinstance(existing, list) else []
+        lst.append(event.model_dump())
+        return lst
 
-        _ = await f.write(json.dumps(existing, indent=2))
+    await read_modify_write_cache_json(
+        project_root,
+        relative_key,
+        append_event,
+        default=[],
+    )
 
 
 def _parse_events_from_content(
@@ -271,32 +272,27 @@ def _parse_events_from_content(
 
 
 async def _load_events_in_range(
-    events_dir: Path,
+    project_root: Path,
     start_date: datetime | None,
     end_date: datetime | None,
     tool_name: str | None,
 ) -> list[ToolUsageEvent]:
-    """Load events from daily JSON files in the given range."""
-    import json
-
-    if not events_dir.is_dir():
-        return []
+    """Load events from daily JSON files in the given range (concurrent-safe)."""
     start_str = (start_date or datetime.now(UTC) - timedelta(days=365)).strftime(
         "%Y-%m-%d"
     )
     end_str = (end_date or datetime.now(UTC)).strftime("%Y-%m-%d")
     events: list[ToolUsageEvent] = []
-    for path in events_dir.glob("*.json"):
-        if (
-            not path.name.endswith(".json")
-            or path.stem < start_str
-            or path.stem > end_str
-        ):
-            continue
-        try:
-            async with aiofiles.open(path, encoding="utf-8") as f:
-                content = await f.read()
-                events.extend(_parse_events_from_content(content, tool_name))
-        except (OSError, json.JSONDecodeError):
-            continue
+    start_d = datetime.strptime(start_str, "%Y-%m-%d").date()
+    end_d = datetime.strptime(end_str, "%Y-%m-%d").date()
+    delta = timedelta(days=1)
+    d = start_d
+    while d <= end_d:
+        date_str = d.strftime("%Y-%m-%d")
+        relative_key = f"usage/events/{date_str}.json"
+        raw = await read_cache_json(project_root, relative_key)
+        if isinstance(raw, list):
+            content = __import__("json").dumps(raw)
+            events.extend(_parse_events_from_content(content, tool_name))
+        d = d + delta
     return events

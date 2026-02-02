@@ -289,7 +289,8 @@ All Cortex data is stored in `.cortex/` directory. For IDE compatibility, `.curs
 10. **Avoid Abstractions**: Don't use `Mapping` or other abstractions when `dict` works - use `dict` directly (MANDATORY)
 11. **Python 3.13+ Features**: Use modern built-ins - `asyncio.timeout()`, `itertools.batched()`, `contextlib.chdir()`, `@cache`, `except*`, `typing.Self`, `Required`/`NotRequired` (MANDATORY)
 12. **DRY Linking**: Use transclusion `{{include:path/to/file.md}}` instead of duplicating content
-13. **Avoid typing Module**: Do NOT use `typing.List`, `typing.Dict`, `typing.Tuple`, `typing.Set`, `typing.Optional`, `typing.Union` - use Python 3.13+ built-ins (`list`, `dict`, `tuple`, `set`, `T | None`) instead (MANDATORY)
+13. **Cache JSON access**: All read/write of JSON under `.cortex/.cache` (e.g. usage events, markdown-lint index) MUST use the `read_cache_json` and `write_cache_json` MCP tools. Do not read or write cache JSON files directly; the tools ensure concurrent-safe access across chat sessions.
+14. **Avoid typing Module**: Do NOT use `typing.List`, `typing.Dict`, `typing.Tuple`, `typing.Set`, `typing.Optional`, `typing.Union` - use Python 3.13+ built-ins (`list`, `dict`, `tuple`, `set`, `T | None`) instead (MANDATORY)
 
 ## Development Workflow
 
