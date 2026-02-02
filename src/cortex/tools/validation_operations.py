@@ -9,7 +9,11 @@ Total: 1 tool
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.server import mcp
 from cortex.tools.validation_dispatch import (
     call_dispatch_validation,
@@ -490,3 +494,31 @@ async def _execute_validation_with_error_handling(
     except Exception as e:
         await log_client(ctx, "error", f"validate: failed: {e}", logger_name=__name__)
         return create_validation_error_response(e)
+
+
+@mcp.resource(uri="cortex://validation/validate/{check_type}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
+async def validate_resource(check_type: str) -> str:
+    """Resource: Run validation by check type. Read via cortex://validation/validate/{check_type}.
+
+    Runs the same validation as the validate tool with default parameters
+    (file_name=None, project_root=None, suggest_fixes=True, infrastructure
+    checks enabled). check_type must be one of: schema, duplications,
+    quality, infrastructure, timestamps, roadmap_sync.
+    """
+    parsed = parse_validation_check_type(check_type)
+    if parsed is None:
+        return create_invalid_check_type_error(check_type or "null")
+    return await _execute_validation_with_error_handling(
+        parsed,
+        None,
+        None,
+        None,
+        True,
+        True,
+        True,
+        True,
+        True,
+        None,
+    )

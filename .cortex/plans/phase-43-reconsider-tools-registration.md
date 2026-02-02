@@ -166,7 +166,7 @@ Current tool registration doesn't align with MCP protocol semantics:
 - Extend usage analytics (UsageTracker / reporting) so `get_tool_usage_stats`, `get_unused_tools`, `get_optimization_recommendations` include resource reads.
 - Add Resource listing/querying capabilities as needed.
 
-#### Task 3.2: Transform Read-Only Tools to Resources — PARTIAL (Phase 2 linking done 2026-02-02)
+#### Task 3.2: Transform Read-Only Tools to Resources — PARTIAL (Phase 3 validation done 2026-02-02)
 
 - Pilot resources (alongside tools, no-arg handlers): `get_memory_bank_stats_resource` (cortex://memory-bank/stats), `get_structure_info_resource` (cortex://structure/info). Tools kept for backward compatibility.
 - Phase 1 Foundation resources added (2026-02-02):
@@ -180,9 +180,9 @@ Current tool registration doesn't align with MCP protocol semantics:
   - `get_link_graph` → Resource `get_link_graph_resource` (cortex://links/graph)
 - manage_file read → Resource added (2026-02-02):
   - `get_file_resource` (cortex://memory-bank/file/{file_name}) in file_operations.py; returns content only (no metadata); tool `manage_file` unchanged.
+- Phase 3 Validation resource added (2026-02-02):
+  - `validate` → Resource `validate_resource` (cortex://validation/validate/{check_type}, template); tool `validate` unchanged.
 - Remaining (to do):
-- Continue with Phase 3 Validation tools:
-  - `validate` (all check types) → Resource
 - Continue with Phase 4 Optimization tools:
   - `optimize_context` → Resource
   - `load_progressive_context` → Resource

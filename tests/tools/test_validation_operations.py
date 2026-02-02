@@ -20,7 +20,7 @@ from cortex.tools.validation_helpers import (
     read_all_memory_bank_files,
 )
 from cortex.tools.validation_infrastructure import handle_infrastructure_validation
-from cortex.tools.validation_operations import validate
+from cortex.tools.validation_operations import validate, validate_resource
 from cortex.tools.validation_quality import (
     handle_quality_validation,
     validate_quality_all_files,
@@ -1831,3 +1831,40 @@ class TestHandleRoadmapSyncValidation:
         assert "valid" in result_data
         assert "summary" in result_data
         assert result_data["summary"]["total_todos_found"] == 0
+
+
+class TestValidateResource:
+    """Test validate_resource (Phase 43 Phase 3 Validation resource)."""
+
+    @pytest.mark.asyncio
+    async def test_validate_resource_returns_json_success(self, tmp_path: Path) -> None:
+        """Test validate_resource returns valid JSON for schema check (Phase 43)."""
+        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir.mkdir(parents=True)
+        with (
+            patch(
+                "cortex.tools.validation_operations.prepare_validation_managers"
+            ) as mock_prepare,
+            patch(
+                "cortex.tools.validation_operations.call_dispatch_validation"
+            ) as mock_dispatch,
+        ):
+            mock_prepare.return_value = (tmp_path, {})
+            mock_dispatch.return_value = json.dumps(
+                {"status": "success", "check_type": "schema"}
+            )
+            result = await validate_resource("schema")
+        result_data = json.loads(result)
+        assert "status" in result_data
+        assert result_data["status"] in ("success", "error")
+        if result_data["status"] == "success":
+            assert result_data["check_type"] == "schema"
+
+    @pytest.mark.asyncio
+    async def test_validate_resource_invalid_check_type_returns_error(self) -> None:
+        """Test validate_resource returns error JSON for invalid check_type (Phase 43)."""
+        result = await validate_resource("invalid")
+        result_data = json.loads(result)
+        assert result_data["status"] == "error"
+        assert "Invalid check_type" in result_data["error"]
+        assert "invalid" in result_data["error"]
