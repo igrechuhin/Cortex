@@ -2,6 +2,10 @@
 
 ## 2026-02-02
 
+- **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; fix_errors, format, markdown lint (4 files fixed: activeContext, progress, roadmap, phase-46-extract-setup), type_check, quality, tests 3359, coverage 90.29%. Memory bank updated.
+
+- **Phase 46: Extract setup to separate MCP server** (2026-02-02) - Setup prompts extracted to cortex.setup (server.py, **init**.py with should_mount_setup, prompts.py); tools/prompts.py stripped to stub; main.py imports cortex.setup.prompts for registration. MCP SDK has no mount(), so dynamic mounting not used; structure tools remain on main server. Unit tests test_setup_module.py, test_prompts_conditional_registration; integration test_conditional_prompts uses cortex.setup.prompts. All 3359 tests pass; quality gate passes. Plan: .cortex/plans/phase-46-extract-setup-to-separate-mcp-server.md.
+
 - **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; fix_errors, format, markdown lint (1 file fixed: activeContext), type_check, quality, tests 3354, coverage 90.29%. 0 plans archived. Memory bank updated.
 
 - **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; fix_errors, format, markdown lint (6 files fixed), type_check, quality, tests 3352, coverage 90.45%. 1 plan archived (Phase 46: phase-46-add-progress-reporting.md). Memory bank links updated.

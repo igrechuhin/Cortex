@@ -12,6 +12,8 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 - **Phase 43: Reconsider tools registration (Step 3.2 partial complete)** (2026-02-02) - Step 3.1 done; pilot resources cortex://memory-bank/stats, cortex://structure/info. Step 3.2 Phase 1–4 done (foundation, linking, validation, optimization resources). Next: Phase 5 Analysis, etc. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
 
+- ✅ **Phase 46: Extract setup to separate MCP server** - COMPLETE (2026-02-02) - Setup prompts in cortex.setup.prompts; should_mount_setup in cortex.setup; main.py imports setup.prompts; tests updated to cortex.setup.prompts; quality gate passes.
+
 - ✅ **Phase 46: Add progress reporting** - COMPLETE (2026-02-02) - ProgressReporter, mcp_tool_wrapper(enable_progress=...), time-based progress loop; unit tests; quality gate passes.
 
 - ✅ **Session optimization (2026-02-02): Commit rules load and Step 12.6 fallback** - COMPLETE (2026-02-02).

@@ -1,11 +1,12 @@
 import importlib
+import sys
 from types import SimpleNamespace
 from unittest.mock import patch
 
 
 def test_prompts_module_registers_conditional_prompts_when_needed() -> None:
-    # Arrange
-    # Force all conditional prompts to be defined during module import.
+    """Setup prompts in cortex.setup.prompts register conditionally."""
+    # Arrange - Force all conditional prompts to be defined during module import
     fake_status = SimpleNamespace(
         memory_bank_initialized=False,
         structure_configured=False,
@@ -14,14 +15,14 @@ def test_prompts_module_registers_conditional_prompts_when_needed() -> None:
         migration_needed=True,
     )
 
-    import cortex.tools.prompts as prompts
-
-    # Act
+    # Act - Patch config so reload sees fake_status
     with patch(
         "cortex.tools.config_status.get_project_config_status",
         return_value=fake_status,
     ):
-        prompts = importlib.reload(prompts)
+        if "cortex.setup.prompts" in sys.modules:
+            del sys.modules["cortex.setup.prompts"]
+        import cortex.setup.prompts as prompts
 
         init_text = prompts.initialize_memory_bank()
         structure_text = prompts.setup_project_structure()
@@ -33,7 +34,9 @@ def test_prompts_module_registers_conditional_prompts_when_needed() -> None:
         synapse_text = prompts.setup_synapse("https://example.com/synapse.git")
 
     # Restore module for other tests
-    _ = importlib.reload(prompts)
+    if "cortex.setup.prompts" in sys.modules:
+        del sys.modules["cortex.setup.prompts"]
+    _ = importlib.import_module("cortex.setup.prompts")
 
     # Assert
     assert "Please initialize a Memory Bank" in init_text

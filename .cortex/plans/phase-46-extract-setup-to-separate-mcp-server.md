@@ -2,7 +2,12 @@
 
 ## Status
 
-Planning
+Implemented (2026-02-02). Setup prompts extracted to cortex.setup.prompts;
+conditional registration unchanged. MCP SDK (mcp>=1.26.0) has no mount(), so
+dynamic mounting was not used; setup prompts register on main server when
+cortex.setup.prompts is imported from main.py. Structure tools remain on
+main server (phase8_structure) for always-available get_structure_info/
+check_structure_health.
 
 ## Goal
 

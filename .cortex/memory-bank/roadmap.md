@@ -108,7 +108,7 @@
 
 - **Phase 46: Add progress reporting** - COMPLETE (2026-02-02) - ProgressReporter in src/cortex/core/progress.py; mcp_tool_wrapper(timeout=..., enable_progress=None) with auto-enable for timeout >= 120s; with_mcp_stability(enable_progress=...); time-based progress loop and _cancel_progress_and_report_done; constants PROGRESS_REPORT_INTERVAL_SECONDS, PROGRESS_THRESHOLD_TIMEOUT_SECONDS. Unit tests tests/unit/test_progress.py, test_mcp_stability_timeouts (enable_progress). Quality gate passes. Plan: .cortex/plans/archive/Phase46/phase-46-add-progress-reporting.md.
 
-- **Phase 46: Extract setup to separate MCP server** - PENDING - Plan: .cortex/plans/phase-46-extract-setup-to-separate-mcp-server.md.
+- **Phase 46: Extract setup to separate MCP server** - COMPLETE (2026-02-02) - Setup prompts extracted to cortex.setup (src/cortex/setup/server.py, src/cortex/setup/**init**.py with should_mount_setup, src/cortex/setup/prompts.py); src/cortex/tools/prompts.py stripped to stub; src/cortex/main.py imports cortex.setup.prompts for registration. MCP SDK has no mount(), so dynamic mounting not used; structure tools remain on main server (get_structure_info, check_structure_health). Unit tests tests/unit/test_setup_module.py, test_prompts_conditional_registration; integration test_conditional_prompts uses cortex.setup.prompts. All 3359 tests pass; quality gate passes. Plan: .cortex/plans/phase-46-extract-setup-to-separate-mcp-server.md.
 
 - **Phase 47: Add prompt icons and emoji in messages** - PENDING - Add emoji icons to prompts; use emoji in messages (e.g. ✅ success, ❌ error) where meaning is obvious. Plan: .cortex/plans/phase-47-add-prompt-icons.md.
 

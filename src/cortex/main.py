@@ -21,12 +21,14 @@ import anyio
 import cortex.core.logging_config  # noqa: F401
 
 # Import tools package to register all @mcp.tool() decorators
+import cortex.setup.prompts  # noqa: F401
 import cortex.tools  # noqa: F401
 from cortex.server import mcp
 
 cortex.core.logging_config.apply_cortex_format_to_third_party_loggers()
 
-# Explicitly reference cortex.tools to satisfy type checker (imported for side effects)
+# Explicitly reference for side effects (tool/prompt registration)
+_ = cortex.setup.prompts
 _ = cortex.tools
 
 logger = logging.getLogger(__name__)
