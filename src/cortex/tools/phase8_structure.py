@@ -21,7 +21,7 @@ import json
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX, MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import ModelDict
 from cortex.managers.initialization import get_project_root
 from cortex.server import mcp
@@ -126,6 +126,7 @@ async def _check_structure_health_with_logging(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def check_structure_health(
     project_root: str | None = None,
@@ -153,6 +154,7 @@ check_structure_health.__doc__ = CHECK_STRUCTURE_HEALTH_DOC
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_structure_info(
     project_root: str | None = None,

@@ -16,7 +16,7 @@ from pathlib import Path
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST, MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.discovery.recommendation_engine import recommend_tools_and_scripts
 from cortex.discovery.tool_registry import get_known_script_names, get_known_tool_names
 from cortex.script_analysis.script_analyzer import analyze_script
@@ -52,6 +52,7 @@ def _record_to_summary(record: object) -> dict[str, object]:
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def capture_session_script(
     script_path: str,
@@ -95,6 +96,7 @@ async def capture_session_script(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def list_session_scripts(
     project_root: str | None = None,
@@ -159,6 +161,7 @@ def _analysis_to_summary(obj: object) -> dict[str, object]:
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def analyze_session_scripts(
     project_root: str | None = None,
@@ -192,6 +195,7 @@ async def analyze_session_scripts(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def suggest_tool_improvements(
     task_description: str,
@@ -231,6 +235,7 @@ async def suggest_tool_improvements(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def promote_session_script(
     script_id: str,

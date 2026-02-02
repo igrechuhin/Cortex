@@ -1,9 +1,19 @@
 # Phase 42: Investigate execute_pre_commit_checks JSON Error During Commit
 
-**Status**: Planning  
+**Status**: COMPLETE  
 **Priority**: FIX-ASAP (Blocker)  
 **Created**: 2026-01-17  
-**Related**: Phase 40, Phase 41
+**Completed**: 2026-02-01  
+**Related**: Phase 40, Phase 41, Phase 33, Phase 35
+
+## Resolution
+
+This investigation is **resolved by Phase 33 and Phase 35** (completed 2026-02-01):
+
+- **Phase 33**: Tool now returns `dict` (ModelDict) instead of a JSON string so FastMCP serializes once (avoids double-encoding). `_build_response` and `_execute_pre_commit_checks_impl` return ModelDict.
+- **Phase 35**: JSON round-trip in `_build_response` via `ensure_json_serializable_for_mcp()` (replace float nan/inf with None, round-trip through `json.dumps`/`json.loads`). Unit tests `TestEnsureJsonSerializableForMcp` and `test_return_value_is_dict_and_json_round_trips_for_mcp` prevent regression.
+
+Current implementation: `pre_commit_tools._build_response()` uses `PreCommitResult.model_dump(mode="json")`, `truncate_large_logs_in_data()`, then `ensure_json_serializable_for_mcp()`; the tool returns ModelDict. All success criteria for this plan are met.
 
 ## Goal
 
@@ -108,9 +118,9 @@ Error: Expected ',' or '}' after property value in JSON at position 14 (line 1 c
 
 ### Current Implementation
 
-- Tool uses `PreCommitResult` TypedDict as return type
-- Response building uses `_build_response()` function
-- Nested results are sanitized via `_sanitize_check_result()` and `_sanitize_test_result()`
+- Tool uses `PreCommitResult` Pydantic BaseModel; `_build_response()` returns ModelDict via `ensure_json_serializable_for_mcp()`.
+- Response building uses `_build_response()` function.
+- Nested results are produced via adapter results and truncated via `truncate_large_logs_in_data()`.
 
 ## Success Criteria
 

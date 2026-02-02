@@ -17,7 +17,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.server import mcp
 from cortex.tools.phase5_execution_helpers import parse_refactoring_action
 from cortex.tools.phase5_execution_monitoring import log_invalid_action_and_return
@@ -62,6 +62,7 @@ async def _apply_refactoring_validate_and_run(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def apply_refactoring(
     action: Literal["approve", "apply", "rollback"] = "apply",
@@ -264,6 +265,7 @@ async def apply_refactoring(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def provide_feedback(
     suggestion_id: str,

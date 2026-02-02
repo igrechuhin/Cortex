@@ -21,7 +21,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.server import mcp
 from cortex.tools.phase4_context_operations import load_context_impl
 from cortex.tools.phase4_progressive_operations import (
@@ -32,6 +32,7 @@ from cortex.tools.phase4_summarization_operations import summarize_content_impl
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def load_context(
     task_description: str,
@@ -85,6 +86,7 @@ async def load_context(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def load_progressive_context(
     task_description: str,
@@ -130,6 +132,7 @@ async def load_progressive_context(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def summarize_content(
     file_name: str | None = None,
@@ -169,6 +172,7 @@ async def summarize_content(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_relevance_scores(
     task_description: str,

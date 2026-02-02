@@ -91,3 +91,33 @@ class TestCommitPromptAlignment:
             "Commit prompt must not contain direct script invocations; "
             "use execute_pre_commit_checks() and fix_markdown_lint() only."
         )
+
+    def test_commit_prompt_requires_script_tooling_when_script_run(
+        self, commit_prompt_content: str
+    ) -> None:
+        """Commit prompt must require script tooling when a script was created or executed.
+
+        Session optimization (2026-02-01): If during the run a script was created or
+        executed, agent MUST use capture_session_script and/or analyze_session_scripts
+        or suggest_tool_improvements.
+        """
+        assert "capture_session_script" in commit_prompt_content
+        assert (
+            "analyze_session_scripts" in commit_prompt_content
+            or "suggest_tool_improvements" in commit_prompt_content
+        )
+        assert (
+            "Script use" in commit_prompt_content
+            or "script tooling" in commit_prompt_content.lower()
+        )
+
+    def test_commit_prompt_lists_script_run_without_analysis_common_error(
+        self, commit_prompt_content: str
+    ) -> None:
+        """Commit prompt must list 'Script run without analysis' as a common error.
+
+        Session optimization (2026-02-01): Process violation when script was run
+        without using script tooling; must be in COMMON ERRORS TO CATCH.
+        """
+        assert "Script run without analysis" in commit_prompt_content
+        assert "COMMON ERRORS TO CATCH" in commit_prompt_content

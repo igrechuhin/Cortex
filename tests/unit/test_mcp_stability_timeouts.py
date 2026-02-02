@@ -242,23 +242,37 @@ def _tools_dir() -> Path:
     return Path(__file__).resolve().parents[2] / "src" / "cortex" / "tools"
 
 
-def _file_has_mcp_tool_without_wrapper(content: str) -> list[int]:
-    """Return line numbers where @mcp.tool() is not followed by @mcp_tool_wrapper."""
+def _file_has_mcp_tool_missing_required_wrappers(content: str) -> list[int]:
+    """Return line numbers where @mcp.tool() lacks required decorator stack.
+
+    Required stack (in order): @mcp.tool(), @ensure_usage_context, @mcp_tool_wrapper(...).
+    """
     lines = content.splitlines()
     bad: list[int] = []
     i = 0
     while i < len(lines):
         stripped = lines[i].strip()
         if stripped == "@mcp.tool()":
-            # Next non-empty line must be @mcp_tool_wrapper(...)
             j = i + 1
             while j < len(lines) and not lines[j].strip():
                 j += 1
             if j >= len(lines):
                 bad.append(i + 1)
                 break
-            next_line = lines[j].strip()
-            if not next_line.startswith("@mcp_tool_wrapper("):
+            first = lines[j].strip()
+            if first != "@ensure_usage_context":
+                bad.append(i + 1)
+                i = j
+                i += 1
+                continue
+            j += 1
+            while j < len(lines) and not lines[j].strip():
+                j += 1
+            if j >= len(lines):
+                bad.append(i + 1)
+                break
+            second = lines[j].strip()
+            if not second.startswith("@mcp_tool_wrapper("):
                 bad.append(i + 1)
             i = j
         i += 1
@@ -266,10 +280,10 @@ def _file_has_mcp_tool_without_wrapper(content: str) -> list[int]:
 
 
 class TestAllToolsHaveTimeoutWrapper:
-    """Phase 34: Verify every @mcp.tool() has @mcp_tool_wrapper immediately below."""
+    """Phase 34: Every @mcp.tool() must have @ensure_usage_context and @mcp_tool_wrapper."""
 
-    def test_every_mcp_tool_has_timeout_wrapper(self) -> None:
-        """Every @mcp.tool() in src/cortex/tools must have @mcp_tool_wrapper(timeout=...)."""
+    def test_every_mcp_tool_has_required_wrappers(self) -> None:
+        """Every @mcp.tool() must have @ensure_usage_context then @mcp_tool_wrapper(timeout=...)."""
         tools_dir = _tools_dir()
         assert tools_dir.is_dir(), f"Tools dir not found: {tools_dir}"
         violations: list[tuple[str, list[int]]] = []
@@ -277,9 +291,10 @@ class TestAllToolsHaveTimeoutWrapper:
             if path.name.startswith("__"):
                 continue
             text = path.read_text()
-            bad_lines = _file_has_mcp_tool_without_wrapper(text)
+            bad_lines = _file_has_mcp_tool_missing_required_wrappers(text)
             if bad_lines:
                 violations.append((path.name, bad_lines))
-        assert not violations, "MCP tools missing @mcp_tool_wrapper: " + ", ".join(
-            f"{f}: lines {lns}" for f, lns in violations
+        assert not violations, (
+            "MCP tools missing required decorator stack (@mcp.tool() -> @ensure_usage_context -> @mcp_tool_wrapper): "
+            + ", ".join(f"{f}: lines {lns}" for f, lns in violations)
         )

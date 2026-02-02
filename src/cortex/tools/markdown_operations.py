@@ -25,7 +25,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_VERY_COMPLEX,
 )
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import GitCommandResult
 from cortex.managers.initialization import get_project_root
 from cortex.server import mcp
@@ -843,6 +843,7 @@ async def _fix_markdown_lint_run_or_error(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
 async def fix_markdown_lint(
     project_root: str | None = None,

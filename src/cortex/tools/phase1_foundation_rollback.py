@@ -13,7 +13,11 @@ from pydantic import BaseModel, ConfigDict, Field
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
-from cortex.core.mcp_stability import execute_tool_with_stability, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    execute_tool_with_stability,
+    mcp_tool_wrapper,
+)
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import SectionMetadata
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -56,6 +60,7 @@ class RollbackProcessingData(BaseModel):
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def rollback_file_version(
     file_name: str,

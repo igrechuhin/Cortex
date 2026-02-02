@@ -7,7 +7,7 @@ stale entries from the metadata index.
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.server import mcp
@@ -38,6 +38,7 @@ async def _process_stale_entries(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def cleanup_metadata_index(
     project_root: str | None = None,

@@ -32,11 +32,12 @@ Original task: {doc[:200]}
 """
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
-from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.server import mcp
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def {snake}(
     project_root: str | None = None,

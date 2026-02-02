@@ -2,7 +2,13 @@
 
 **Implementation sequence**: The implement command picks the **next** step as the **first PENDING item** when reading the roadmap in this order: (1) Blockers (ASAP Priority), (2) Active Work, (3) Future Enhancements, (4) Implementation queue (Pending plans). Order within each section is top-to-bottom. New plans are added by create-plan in the correct place so this order defines execution.
 
-## Current Status (2026-02-01)
+## Blockers (ASAP Priority)
+
+- **Session optimization (2026-02-01): Connection closed handling** - COMPLETE (2026-02-01) - Added "Connection Closed During Long Tool (Retry Then Fallback)" in commit prompt Failure Handling; exception in MCP Tool Failure for Connection closed/ClosedResourceError; fallback for fix_markdown_lint and optional Step 12.6 narrower scope. docs/mcp-tool-timeouts.md: "Client connection closed during long tools" subsection. Plan: .cortex/plans/session-optimization-commit-connection-closed-handling.md.
+
+- **Session optimization (2026-02-01): Require script-analysis when script run** - COMPLETE (2026-02-02) - Commit prompt: "Script use (MANDATORY)" step and "Script run without analysis" in COMMON ERRORS; agent-workflow (Synapse rule) script-use rule; integration tests test_commit_prompt_requires_script_tooling_when_script_run, test_commit_prompt_lists_script_run_without_analysis_common_error. Plan: .cortex/plans/session-optimization-commit-require-script-analysis.md.
+
+## Current Status (2026-02-02)
 
 ### Active Work
 
@@ -90,11 +96,11 @@
 
 - ✅ **Phase 35: Fix execute_pre_commit_checks MCP JSON error** - COMPLETE (2026-02-01) - JSON round-trip in _build_response via ensure_json_serializable_for_mcp (replace float nan/inf with None, round-trip through json.dumps/json.loads); unit tests TestEnsureJsonSerializableForMcp and test_return_value_is_dict_and_json_round_trips_for_mcp. Quality gate passes. Plan: .cortex/plans/archive/Phase35/phase-35-fix-execute-pre-commit-checks-mcp-json-error.md.
 
-- **Phase 36: Enforce MCP tool failure protocol** - PENDING - Plan: .cortex/plans/phase-36-enforce-mcp-tool-failure-protocol.md.
+- ✅ **Phase 36: Enforce MCP tool failure protocol** - COMPLETE (2026-02-01) - Integrated MCPToolFailureHandler with mcp_tool_wrapper in src/cortex/core/mcp_stability.py: on exception,andle_tool_exception_if_failure runs detect_failure and handle_failure (creates investigation plan, adds to roadmap, raises MCPToolFailure). Unit test test_wrapper_invokes_failure_handler_on_json_error. Quality gate passes. Plan: .cortex/plans/archive/Phase36/phase-36-enforce-mcp-tool-failure-protocol.md.
 
-- **Phase 42: Investigate execute_pre_commit_checks JSON error (commit 20260117)** - PENDING - Plan: .cortex/plans/phase-42-investigate-execute-pre-commit-checks-json-error-commit-20260117-122412.md.
+- ✅ **Phase 42: Investigate execute_pre_commit_checks JSON error (commit 20260117)** - COMPLETE (2026-02-01) - Resolved by Phase 33 and Phase 35 (tool returns ModelDict; ensure_json_serializable_for_mcp). Plan: .cortex/plans/archive/Phase42/phase-42-investigate-execute-pre-commit-checks-json-error-commit-20260117-122412.md.
 
-- **Phase 43: Reconsider tools registration** - PENDING - Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+- **Phase 43: Reconsider tools registration** - PENDING (Step 1 complete 2026-02-02) - Audit: .cortex/plans/phase-43-tool-audit.md (45 tools: 28 Resource, 13 Tool, 4 Hybrid); MCP SDK `mcp.resource()` verified. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
 
 - **Phase 45: Add MCP annotations** - PENDING - Plan: .cortex/plans/phase-45-add-mcp-annotations.md.
 

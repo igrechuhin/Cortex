@@ -11,7 +11,7 @@ from typing import Literal
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.server import mcp
 from cortex.tools.refactoring_operation_helpers import (
     parse_refactoring_suggestion_type,
@@ -80,6 +80,7 @@ async def _suggest_refactoring_run(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def suggest_refactoring(
     type: Literal["consolidation", "splits", "reorganization"],

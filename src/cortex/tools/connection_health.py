@@ -6,11 +6,16 @@ This module provides tools for monitoring MCP connection health and stability.
 import json
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
-from cortex.core.mcp_stability import check_connection_health, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    check_connection_health,
+    ensure_usage_context,
+    mcp_tool_wrapper,
+)
 from cortex.server import mcp
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def check_mcp_connection_health() -> str:
     """Check MCP connection health and resource utilization.

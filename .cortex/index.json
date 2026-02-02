@@ -1,37 +1,58 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-01T22:25:02.372067",
+  "last_updated": "2026-02-02T08:15:48.174218",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 4458,
-      "token_count": 1088,
+      "size_bytes": 26759,
+      "token_count": 6504,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-01T18:50:32.287522",
-      "content_hash": "sha256:428db83eb60890cfb03055a8f59bec0eaa8baa26bd60d8f6fd678d5062c90a69",
+      "last_modified": "2026-02-02T08:03:05.867553",
+      "content_hash": "sha256:0c4a1666e8d0bb8e7139a741575e263372c70072c2b2fdf64ff084f933150246",
       "sections": [
         {
-          "title": "## Current Status (2026-02-01)",
+          "title": "## Blockers (ASAP Priority)",
           "level": 2,
           "line_start": 5,
           "line_end": 5,
           "content_hash": null
         },
         {
+          "title": "## Current Status (2026-02-01)",
+          "level": 2,
+          "line_start": 11,
+          "line_end": 11,
+          "content_hash": null
+        },
+        {
           "title": "### Active Work",
           "level": 2,
-          "line_start": 7,
-          "line_end": 7,
+          "line_start": 13,
+          "line_end": 13,
+          "content_hash": null
+        },
+        {
+          "title": "## Future Enhancements",
+          "level": 2,
+          "line_start": 53,
+          "line_end": 53,
+          "content_hash": null
+        },
+        {
+          "title": "## Pending plans (from .cortex/plans)",
+          "level": 2,
+          "line_start": 79,
+          "line_end": 79,
           "content_hash": null
         }
       ],
       "read_count": 2,
-      "write_count": 55,
-      "last_read": "2026-02-01T18:50:32.287522",
+      "write_count": 58,
+      "last_read": "2026-02-02T08:03:05.867553",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -661,50 +682,69 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Mark Phase 27 Script generation prevention as COMPLETE"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-01T22:47:51.101204",
+          "content_hash": "sha256:a45d382ed0ed347d3a50da842cba4e8cb390fa0970af742f2f56fe5490bd9f16",
+          "size_bytes": 25610,
+          "token_count": 6234,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Marked Phase 36 Enforce MCP tool failure protocol complete"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-01T23:11:33.527086",
+          "content_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "size_bytes": 0,
+          "token_count": 0,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Test"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-02T08:03:05.866773",
+          "content_hash": "sha256:0c4a1666e8d0bb8e7139a741575e263372c70072c2b2fdf64ff084f933150246",
+          "size_bytes": 26759,
+          "token_count": 6504,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Marked Session optimization (2026-02-01): Require script-analysis when script run as COMPLETE"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 18858,
-      "token_count": 4902,
+      "size_bytes": 2105,
+      "token_count": 535,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-01T22:24:43.381418",
-      "content_hash": "sha256:ccaf3442ff9ed6258ac4e08c9683a5bf094ec9ec204ced28deea9ac2326ee047",
+      "last_modified": "2026-02-02T08:15:48.172189",
+      "content_hash": "sha256:dadc1abece8774b372b71eca7ffd9edbf36b317435afac7aee780d7a3a947c3f",
       "sections": [
         {
-          "title": "## 2026-02-01",
+          "title": "## 2026-02-02",
           "level": 2,
           "line_start": 3,
           "line_end": 3,
           "content_hash": null
         },
         {
-          "title": "## 2026-01-31",
+          "title": "## 2026-02-01",
           "level": 2,
-          "line_start": 81,
-          "line_end": 81,
-          "content_hash": null
-        },
-        {
-          "title": "## 2026-01-30",
-          "level": 2,
-          "line_start": 121,
-          "line_end": 121,
-          "content_hash": null
-        },
-        {
-          "title": "## 2026-01-29",
-          "level": 2,
-          "line_start": 131,
-          "line_end": 131,
+          "line_start": 11,
+          "line_end": 11,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 96,
-      "last_read": "2026-02-01T22:24:43.381418",
+      "write_count": 99,
+      "last_read": "2026-02-02T08:15:48.172189",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -1763,20 +1803,53 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Updated after commit pipeline run"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-01T22:48:56.134299",
+          "content_hash": "sha256:221dee1be13b71895462fd8bf84182efcc19faf43906c196822886ce12a39839",
+          "size_bytes": 20163,
+          "token_count": 5224,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for Phase 36 Enforce MCP tool failure protocol"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-02T08:09:07.182988",
+          "content_hash": "sha256:4c889c827e05536c75ae75260bcbb9e380ef97de2b9fa5617e509940c8c77cbb",
+          "size_bytes": 22557,
+          "token_count": 5832,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for Phase 43 Step 1 (audit) complete"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-02T08:15:48.171832",
+          "content_hash": "sha256:dadc1abece8774b372b71eca7ffd9edbf36b317435afac7aee780d7a3a947c3f",
+          "size_bytes": 2105,
+          "token_count": 535,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated progress after commit pipeline 2026-02-02"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 6043,
-      "token_count": 1662,
+      "size_bytes": 6389,
+      "token_count": 1639,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-01T22:25:02.370839",
-      "content_hash": "sha256:e1b48858296d208517b88f70fe7689aec4ea313518c45d8fd85b89bbdad8eab5",
+      "last_modified": "2026-02-02T08:09:29.610849",
+      "content_hash": "sha256:5df82d4ecca63cb9d604a6c310c602a9743673771178083ef3674988e71b9a50",
       "sections": [
         {
-          "title": "## Current Focus (2026-02-01)",
+          "title": "## Current Focus (2026-02-02)",
           "level": 2,
           "line_start": 3,
           "line_end": 3,
@@ -1792,28 +1865,28 @@
         {
           "title": "### Recently Completed",
           "level": 2,
-          "line_start": 49,
-          "line_end": 49,
+          "line_start": 41,
+          "line_end": 41,
           "content_hash": null
         },
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 55,
-          "line_end": 55,
+          "line_start": 47,
+          "line_end": 47,
           "content_hash": null
         },
         {
           "title": "## Next Focus",
           "level": 2,
-          "line_start": 66,
-          "line_end": 66,
+          "line_start": 59,
+          "line_end": 59,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 82,
-      "last_read": "2026-02-01T22:25:02.370839",
+      "write_count": 84,
+      "last_read": "2026-02-02T08:09:29.610849",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -2718,6 +2791,28 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Updated after commit pipeline run"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-01T22:49:16.439813",
+          "content_hash": "sha256:31d9de02f37c5ec831641c0150e4c4527c553c1bd5537be3de9dab84bd2c1f82",
+          "size_bytes": 7133,
+          "token_count": 1911,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context after Phase 36 completion; next focus Phase 42"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-02T08:09:29.610033",
+          "content_hash": "sha256:5df82d4ecca63cb9d604a6c310c602a9743673771178083ef3674988e71b9a50",
+          "size_bytes": 6389,
+          "token_count": 1639,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context after Phase 43 Step 1 completion"
         }
       ]
     },
@@ -2955,8 +3050,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 42584,
-    "total_tokens": 10515,
-    "last_full_scan": "2026-02-01T22:25:02.370859"
+    "total_size_bytes": 48478,
+    "total_tokens": 11541,
+    "last_full_scan": "2026-02-02T08:15:48.172215"
   }
 }

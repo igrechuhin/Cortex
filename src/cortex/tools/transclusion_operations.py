@@ -11,7 +11,11 @@ from typing import cast
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
-from cortex.core.mcp_stability import execute_tool_with_stability, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    execute_tool_with_stability,
+    mcp_tool_wrapper,
+)
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.linking.link_parser import LinkParser
@@ -32,6 +36,7 @@ from cortex.tools.models import (
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def resolve_transclusions(
     file_name: str,

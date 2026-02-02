@@ -39,7 +39,7 @@
 
 - **Interpreter selection**: When using Cursor or other IDEs, always point the Python interpreter to `.venv/bin/python` so type information and MCP tools match the runtime.
 - **Typed MCP boundaries**: Define all MCP handlers with explicit parameter and return types, using `TypedDict`/dataclasses for JSON payloads instead of untyped `dict`.
-- **Timeout wrapper (MANDATORY)**: Every new `@mcp.tool()` MUST be guarded with `@mcp_tool_wrapper(timeout=...)` immediately below it; use constants from `cortex.core.constants` (MCP_TOOL_TIMEOUT_FAST/MEDIUM/COMPLEX/VERY_COMPLEX/EXTERNAL). See `.cortex/synapse/rules/python/python-mcp-development.mdc`.
+- **MCP tool decorator stack (MANDATORY)**: Every new `@mcp.tool()` MUST use the full stack in order: `@mcp.tool()`, `@ensure_usage_context`, `@mcp_tool_wrapper(timeout=...)`. Use timeout constants from `cortex.core.constants` (MCP_TOOL_TIMEOUT_FAST/MEDIUM/COMPLEX/VERY_COMPLEX/EXTERNAL). CI fails if any tool misses this stack. See `.cortex/synapse/rules/python/python-mcp-development.mdc` and `docs/mcp-tool-timeouts.md`.
 - **Thin handlers, pure helpers**: Keep `@mcp.tool` handlers as thin async orchestrators that delegate to small, pure helper functions for business logic.
 - **JSON modeling**: Model request/response shapes with `TypedDict` hierarchies where keys are known; only use `dict[str, object]` at true protocol edges.
 - **Refactor strategy**: Prefer refactoring pure helpers (not handlers) when using automated tools, to preserve async behavior and protocol contracts.

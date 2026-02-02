@@ -81,7 +81,9 @@ Current tool registration doesn't align with MCP protocol semantics:
 
 ## Implementation Steps
 
-### Step 1: Audit All Tools (4-6 hours)
+### Step 1: Audit All Tools (4-6 hours) — COMPLETE (2026-02-02)
+
+**Deliverable**: `.cortex/plans/phase-43-tool-audit.md` — tool inventory, decision matrix (28 Resource, 13 Tool, 4 Hybrid), hybrid handling strategy. MCP SDK `mcp.resource()` verified.
 
 #### Task 1.1: Inventory All Tools
 
@@ -136,26 +138,31 @@ Current tool registration doesn't align with MCP protocol semantics:
 
 #### Task 2.4: Plan Backward Compatibility
 
-- Strategy A: Keep Tools as-is, add Resources alongside (gradual migration)
-- Strategy B: Transform immediately, maintain Tool aliases temporarily
-- Strategy C: Version bump with breaking changes
-- Recommend approach and document migration path
+- No backward compatibility (per audit): clients use new Resource/Tool names directly.
+
+#### Task 2.5: Design Resource Wrappers and Usage Tracking (MANDATORY)
+
+- Tools use `ensure_usage_context` + `mcp_tool_wrapper(timeout=...)` (timeout, semaphore, retry, connection health, usage recording). Resources MUST use equivalent guards.
+- Design **mcp_resource_wrapper(timeout=...)** in `mcp_stability.py`: same stability protections as `mcp_tool_wrapper`, plus usage recording (extend `_record_usage_if_available` with `kind="tool"|"resource"` or add `record_resource_usage` in UsageTracker).
+- Resource handler stack: `@mcp.resource(uri=...)` → `@ensure_usage_context` → `@mcp_resource_wrapper(timeout=...)`. No resource registered without this stack.
+- Ensure usage analytics (`get_tool_usage_stats`, `get_unused_tools`, `get_optimization_recommendations`) include resource reads. See audit: .cortex/plans/phase-43-tool-audit.md §5.
 
 **Deliverables:**
 
 - Resource API design document
 - FastMCP 2.0 Resource syntax verification
 - Hybrid operation handling strategy
-- Backward compatibility plan
+- Resource wrappers and usage-tracking design (per audit §5)
 
 ### Step 3: Implement Resources (8-12 hours)
 
 #### Task 3.1: Create Resource Registration Infrastructure
 
-- Add Resource registration support to `server.py`
-- Create Resource decorator wrapper (if needed)
-- Update tool registration system to support Resources
-- Add Resource listing/querying capabilities
+- Add Resource registration support (e.g. in tool modules or a dedicated resources module).
+- Implement **mcp_resource_wrapper(timeout=...)** in `mcp_stability.py`: same stability as `mcp_tool_wrapper` (timeout, semaphore, connection health, retry) and usage recording for resources (extend recording to `kind="resource"` or equivalent so analytics include resources).
+- Every `@mcp.resource()` handler MUST use `@ensure_usage_context` and `@mcp_resource_wrapper(timeout=...)`. Add verification (e.g. test or CI check) that no resource is registered without this stack.
+- Extend usage analytics (UsageTracker / reporting) so `get_tool_usage_stats`, `get_unused_tools`, `get_optimization_recommendations` include resource reads.
+- Add Resource listing/querying capabilities as needed.
 
 #### Task 3.2: Transform Read-Only Tools to Resources
 

@@ -3,6 +3,7 @@
 Extracted to keep pre_commit_tools.py under 400 lines.
 """
 
+import ast
 import json
 import math
 from collections.abc import Sequence
@@ -12,7 +13,7 @@ from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.core.constants import MAX_FILE_LINES
+from cortex.core.constants import MAX_FILE_LINES, MAX_FUNCTION_LINES
 from cortex.core.models import JsonValue, ModelDict
 from cortex.managers.initialization import get_project_root
 from cortex.services.framework_adapters.base import (
@@ -409,6 +410,96 @@ def ensure_json_serializable_for_mcp(data: ModelDict) -> ModelDict:
         sanitized, separators=(",", ":"), default=_json_friendly_default
     )
     return cast(ModelDict, json.loads(serialized))
+
+
+def get_docstring_range(
+    node: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> tuple[int, int] | None:
+    """Get docstring line range if function has a docstring."""
+    if (
+        node.body
+        and isinstance(node.body[0], ast.Expr)
+        and isinstance(node.body[0].value, ast.Constant)
+        and isinstance(node.body[0].value.value, str)
+    ):
+        start = node.body[0].lineno
+        end = node.body[0].end_lineno
+        if end is not None:
+            return (start, end)
+    return None
+
+
+class _FunctionVisitor(ast.NodeVisitor):
+    """AST visitor to find and check function lengths."""
+
+    def __init__(self, source_lines: list[str]) -> None:
+        self.source_lines = source_lines
+        self.violations: list[tuple[str, int, int]] = []
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._check_function(node)
+        self.generic_visit(node)
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._check_function(node)
+        self.generic_visit(node)
+
+    def _check_function(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        start_line = node.lineno
+        end_line = node.end_lineno
+        if end_line is None:
+            return
+        docstring_range = get_docstring_range(node)
+        logical_lines = self._count_logical_lines(start_line, end_line, docstring_range)
+        if logical_lines > MAX_FUNCTION_LINES:
+            self.violations.append((node.name, logical_lines, start_line))
+
+    def _count_logical_lines(
+        self,
+        start_line: int,
+        end_line: int,
+        docstring_range: tuple[int, int] | None,
+    ) -> int:
+        logical_lines = 0
+        for line_num in range(start_line, end_line + 1):
+            if self._should_skip_line(line_num, start_line, docstring_range):
+                continue
+            logical_lines += 1
+        return logical_lines
+
+    def _should_skip_line(
+        self,
+        line_num: int,
+        start_line: int,
+        docstring_range: tuple[int, int] | None,
+    ) -> bool:
+        if line_num <= 0 or line_num > len(self.source_lines):
+            return True
+        line = self.source_lines[line_num - 1].strip()
+        if line_num == start_line:
+            return True
+        if docstring_range and docstring_range[0] <= line_num <= docstring_range[1]:
+            return True
+        if not line or line.startswith("#"):
+            return True
+        return False
+
+
+def check_function_lengths_in_file(path: Path) -> list[tuple[str, int, int]]:
+    """Check all functions in file for length violations."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            source = f.read()
+            source_lines = source.split("\n")
+    except Exception:
+        return []
+    try:
+        tree = ast.parse(source, filename=str(path))
+    except SyntaxError:
+        return []
+    visitor = _FunctionVisitor(source_lines)
+    visitor.visit(tree)
+    return visitor.violations
 
 
 def count_file_lines(path: Path) -> int:

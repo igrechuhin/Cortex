@@ -1380,6 +1380,10 @@ class TestPhase1FoundationContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
+                "cortex.core.mcp_stability.get_current_managers",
+                return_value={},
+            ),
+            patch(
                 "cortex.managers.initialization.get_managers",
                 side_effect=RuntimeError("init failed"),
             ),

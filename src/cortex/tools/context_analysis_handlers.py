@@ -12,7 +12,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.server import mcp
 from cortex.tools.context_analysis_operations import (
     analyze_current_session,
@@ -34,6 +34,7 @@ async def _analyze_context_effectiveness_impl(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def analyze_context_effectiveness(
     project_root: str | None = None,
@@ -93,6 +94,7 @@ async def analyze_context_effectiveness(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_context_usage_statistics(
     project_root: str | None = None,

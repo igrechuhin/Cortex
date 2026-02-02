@@ -292,3 +292,29 @@ class TestMCPToolWrapperIntegration:
         # Act & Assert - ValueError should propagate through
         with pytest.raises(ValueError, match="Validation failed"):
             _ = asyncio.run(tool_with_validation_error())  # type: ignore[arg-type]
+
+    def test_wrapper_invokes_failure_handler_on_json_error(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that mcp_tool_wrapper invokes failure handler when tool raises JSON error."""
+        import asyncio
+
+        from cortex.core.mcp_stability import mcp_tool_wrapper
+
+        (tmp_path / ".cortex" / "plans").mkdir(parents=True)
+        (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
+        monkeypatch.chdir(tmp_path)
+
+        @mcp_tool_wrapper(timeout=1.0)
+        async def tool_raising_json_error() -> dict[str, object]:
+            """Tool that raises JSONDecodeError (detected as MCP tool failure)."""
+            raise json.JSONDecodeError("Expecting value", "", 0)
+
+        with pytest.raises(MCPToolFailure) as exc_info:
+            asyncio.run(tool_raising_json_error())  # type: ignore[arg-type]
+
+        assert exc_info.value.tool_name == "tool_raising_json_error"
+        assert "MCP tool execution" in exc_info.value.step_name
+        plans_dir = tmp_path / ".cortex" / "plans"
+        plan_files = list(plans_dir.glob("phase-investigate-*.md"))
+        assert len(plan_files) >= 1

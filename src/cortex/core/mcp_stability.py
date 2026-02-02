@@ -12,6 +12,7 @@ import logging
 import time
 from collections.abc import Awaitable, Callable
 from inspect import Signature
+from pathlib import Path
 from types import TracebackType
 from typing import Protocol, cast
 
@@ -23,10 +24,56 @@ from cortex.core.constants import (
     MCP_MAX_CONCURRENT_TOOLS,
     MCP_TOOL_TIMEOUT_SECONDS,
 )
+from cortex.core.mcp_failure_handler import MCPToolFailureHandler
 from cortex.core.models import ConnectionHealth, JsonValue, MCPToolArguments
-from cortex.core.usage_context import get_current_managers
+from cortex.core.usage_context import get_current_managers, set_current_managers
 
 logger = logging.getLogger(__name__)
+
+
+def _project_root_from_tool_args(
+    args: tuple[JsonValue, ...], kwargs: dict[str, JsonValue]
+) -> Path:
+    """Resolve project root from tool (args, kwargs) for usage context."""
+    from cortex.managers.initialization import get_project_root
+
+    raw = kwargs.get("project_root") if kwargs else None
+    if raw is None and args:
+        raw = args[0]
+    if isinstance(raw, str):
+        return get_project_root(raw)
+    return get_project_root(None)
+
+
+def ensure_usage_context[T](
+    func: Callable[..., Awaitable[T]],
+) -> Callable[..., Awaitable[T]]:
+    """Decorator that sets usage context (for recording) when not already set.
+
+    Wraps an async MCP tool handler so that get_current_managers() is set
+    before the handler runs, enabling usage recording for tools that do not
+    call get_managers() themselves.
+    """
+    import functools
+    import inspect
+
+    @functools.wraps(func)
+    async def wrapper(
+        *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
+        **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
+    ) -> T:
+        if get_current_managers() is None:
+            from cortex.managers.initialization import get_managers
+
+            root = _project_root_from_tool_args(args, kwargs)
+            mgrs = await get_managers(root)
+            mgrs_dict = mgrs if isinstance(mgrs, dict) else mgrs.model_dump()
+            set_current_managers(mgrs_dict)
+        return await func(*args, **kwargs)
+
+    original_sig = inspect.signature(func)
+    cast(_SignatureAware, wrapper).__signature__ = original_sig
+    return wrapper
 
 
 class _SignatureAware(Protocol):
@@ -428,6 +475,13 @@ async def with_mcp_stability[T](
     )
 
 
+def _handle_tool_exception_if_failure(error: Exception, tool_name: str) -> None:
+    """If error is an MCP tool failure, run protocol and raise; otherwise no-op."""
+    handler = MCPToolFailureHandler(project_root=None)
+    if handler.detect_failure(error, tool_name, "MCP tool execution"):
+        handler.handle_failure(tool_name, error, "MCP tool execution")
+
+
 def mcp_tool_wrapper[T](
     timeout: float = MCP_TOOL_TIMEOUT_SECONDS,
 ) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]:
@@ -435,6 +489,7 @@ def mcp_tool_wrapper[T](
 
     Usage:
         @mcp.tool()
+        @ensure_usage_context
         @mcp_tool_wrapper(timeout=60.0)
         async def my_tool(...):
             ...
@@ -458,16 +513,16 @@ def mcp_tool_wrapper[T](
             *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
             **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
         ) -> T:
-            """Wrapped function with stability protections."""
-            return await with_mcp_stability(
-                func, *args, stability_timeout=timeout, **kwargs
-            )
+            try:
+                return await with_mcp_stability(
+                    func, *args, stability_timeout=timeout, **kwargs
+                )
+            except Exception as e:
+                _handle_tool_exception_if_failure(e, func.__name__)
+                raise
 
-        # Explicitly preserve signature for FastMCP
-        # FastMCP uses inspect.signature() which needs the original signature
         original_sig = inspect.signature(func)
         cast(_SignatureAware, wrapper).__signature__ = original_sig
-
         return wrapper
 
     return decorator

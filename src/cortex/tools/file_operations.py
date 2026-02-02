@@ -19,7 +19,7 @@ from cortex.core.exceptions import (
     GitConflictError,
 )
 from cortex.core.file_system import FileSystemManager
-from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonValue, ModelDict, SectionMetadata, VersionMetadata
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -40,6 +40,7 @@ from cortex.tools.roadmap_corruption import fix_roadmap_content_if_needed
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def manage_file(
     file_name: str | None = None,

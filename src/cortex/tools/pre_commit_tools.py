@@ -9,7 +9,6 @@ Total: 2 tools
   (fix errors, format, type check, markdown lint)
 """
 
-import ast
 import asyncio
 import json
 from collections.abc import Callable, Sequence
@@ -24,7 +23,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_VERY_COMPLEX,
 )
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import JsonValue, ModelDict
 from cortex.server import mcp
 from cortex.services.framework_adapters.base import (
@@ -52,6 +51,7 @@ from cortex.tools.pre_commit_helpers import (
     PreCommitResult,
     QualityCheckResult,
     check_file_sizes,
+    check_function_lengths_in_file,
     collect_remaining_issues,
     create_error_result_dict,
     detect_or_use_language,
@@ -162,6 +162,7 @@ async def _execute_pre_commit_checks_impl(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
 async def execute_pre_commit_checks(
     checks: Sequence[str] | None = None,
@@ -384,104 +385,6 @@ def _execute_fix_errors(
     )
 
 
-def _get_docstring_range(
-    node: ast.FunctionDef | ast.AsyncFunctionDef,
-) -> tuple[int, int] | None:
-    """Get docstring line range if function has a docstring."""
-    if (
-        node.body
-        and isinstance(node.body[0], ast.Expr)
-        and isinstance(node.body[0].value, ast.Constant)
-        and isinstance(node.body[0].value.value, str)
-    ):
-        start = node.body[0].lineno
-        end = node.body[0].end_lineno
-        if end is not None:
-            return (start, end)
-    return None
-
-
-class _FunctionVisitor(ast.NodeVisitor):
-    """AST visitor to find and check function lengths."""
-
-    def __init__(self, source_lines: list[str]) -> None:
-        self.source_lines = source_lines
-        self.violations: list[tuple[str, int, int]] = []
-
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        self._check_function(node)
-        self.generic_visit(node)
-
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-        self._check_function(node)
-        self.generic_visit(node)
-
-    def _check_function(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
-        start_line = node.lineno
-        end_line = node.end_lineno
-        if end_line is None:
-            return
-
-        docstring_range = _get_docstring_range(node)
-        logical_lines = self._count_logical_lines(start_line, end_line, docstring_range)
-
-        if logical_lines > MAX_FUNCTION_LINES:
-            self.violations.append((node.name, logical_lines, start_line))
-
-    def _count_logical_lines(
-        self,
-        start_line: int,
-        end_line: int,
-        docstring_range: tuple[int, int] | None,
-    ) -> int:
-        """Count logical lines in function body."""
-        logical_lines = 0
-        for line_num in range(start_line, end_line + 1):
-            if self._should_skip_line(line_num, start_line, docstring_range):
-                continue
-            logical_lines += 1
-        return logical_lines
-
-    def _should_skip_line(
-        self,
-        line_num: int,
-        start_line: int,
-        docstring_range: tuple[int, int] | None,
-    ) -> bool:
-        """Check if line should be skipped when counting."""
-        if line_num <= 0 or line_num > len(self.source_lines):
-            return True
-        line = self.source_lines[line_num - 1].strip()
-        if line_num == start_line:
-            return True
-        if docstring_range and docstring_range[0] <= line_num <= docstring_range[1]:
-            return True
-        if not line or line.startswith("#"):
-            return True
-        return False
-
-
-def _check_function_lengths_in_file(
-    path: Path,
-) -> list[tuple[str, int, int]]:
-    """Check all functions in file for length violations."""
-    try:
-        with open(path, encoding="utf-8") as f:
-            source = f.read()
-            source_lines = source.split("\n")
-    except Exception:
-        return []
-
-    try:
-        tree = ast.parse(source, filename=str(path))
-    except SyntaxError:
-        return []
-
-    visitor = _FunctionVisitor(source_lines)
-    visitor.visit(tree)
-    return visitor.violations
-
-
 def _check_function_lengths(project_root: Path) -> list[FunctionLengthViolation]:
     """Check all Python files for function length violations."""
     violations: list[FunctionLengthViolation] = []
@@ -493,7 +396,7 @@ def _check_function_lengths(project_root: Path) -> list[FunctionLengthViolation]
     for py_file in src_dir.glob("**/*.py"):
         if "__pycache__" in str(py_file) or py_file.name.startswith("test_"):
             continue
-        file_violations = _check_function_lengths_in_file(py_file)
+        file_violations = check_function_lengths_in_file(py_file)
         for func_name, logical_lines, start_line in file_violations:
             try:
                 relative_path = str(py_file.relative_to(project_root))
@@ -871,6 +774,7 @@ async def _fix_quality_issues_impl(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
 async def fix_quality_issues(
     project_root: str | None = None,

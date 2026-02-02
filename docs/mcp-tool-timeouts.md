@@ -141,16 +141,21 @@ MCP_TOOL_TIMEOUT_EXTERNAL = 120     # External operations (30-120s)
 
 ```python
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM  # or appropriate category
-from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.server import mcp
 ```
 
-### Step 2: Apply Decorator
+### Step 2: Apply Required Decorator Stack
 
-Add the `@mcp_tool_wrapper(timeout=...)` decorator immediately after `@mcp.tool()`:
+Every MCP tool MUST use this decorator stack in order (CI enforces it):
+
+1. `@mcp.tool()`
+2. `@ensure_usage_context` — enables usage recording for analytics
+3. `@mcp_tool_wrapper(timeout=...)` — timeout and stability
 
 ```python
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def my_new_tool(...) -> str:
     """Tool description."""
@@ -209,6 +214,13 @@ Timeout errors follow this format:
 MCP tool <tool_name> exceeded timeout of <timeout>s
 ```
 
+## Client connection closed during long tools
+
+Long-running MCP tools (e.g. `fix_markdown_lint(check_all_files=True)` with many files) may complete on the server after the client has already closed the connection. In that case the transport can raise an error (e.g. `anyio.ClosedResourceError`) and the client may see a message like `{"error":"MCP error -32000: Connection closed"}`.
+
+- **Meaning**: "Connection closed" in this context usually indicates the client disconnected or timed out, not that the tool failed. The tool may have completed successfully on the server.
+- **Recommendation**: In the commit workflow, when an MCP tool reports "Connection closed" or "ClosedResourceError": (1) Retry the tool once. (2) If it fails again with the same class of error, perform the documented fallback for that step (see commit prompt "Connection Closed During Long Tool") and record "MCP connection closed; fallback used" so the pipeline can proceed.
+
 ## Troubleshooting
 
 ### Tool Times Out Prematurely
@@ -252,7 +264,7 @@ MCP tool <tool_name> exceeded timeout of <timeout>s
 
 ## Best Practices
 
-1. **Always use timeout wrapper**: Every `@mcp.tool()` should have `@mcp_tool_wrapper(timeout=...)`
+1. **Always use full decorator stack**: Every `@mcp.tool()` must have `@ensure_usage_context` then `@mcp_tool_wrapper(timeout=...)` (in that order)
 2. **Choose appropriate category**: Match timeout to operation complexity
 3. **Use constants**: Never hardcode timeout values, use constants from `cortex.core.constants`
 4. **Test timeout behavior**: Verify tools timeout correctly in tests
@@ -261,11 +273,11 @@ MCP tool <tool_name> exceeded timeout of <timeout>s
 
 ## Verification
 
-To verify all tools have timeout protection:
+To verify all tools have the required decorator stack:
 
 ```bash
-# Count tools with timeout wrapper
-find src/cortex/tools -name "*.py" -exec grep -l "@mcp_tool_wrapper" {} \; | wc -l
+# Run the enforcement test (required stack: @mcp.tool -> @ensure_usage_context -> @mcp_tool_wrapper)
+./.venv/bin/python -m pytest tests/unit/test_mcp_stability_timeouts.py::TestAllToolsHaveTimeoutWrapper::test_every_mcp_tool_has_required_wrappers -v
 
 # Count tools without timeout wrapper
 find src/cortex/tools -name "*.py" -exec grep -l "@mcp.tool()" {} \; | wc -l

@@ -21,6 +21,7 @@ from cortex.tools.pre_commit_helpers import (
     MAX_LOG_OUTPUT_LENGTH,
     PreCommitCheck,
     check_file_sizes,
+    check_function_lengths_in_file,
     count_file_lines,
     ensure_json_serializable_for_mcp,
 )
@@ -28,7 +29,6 @@ from cortex.tools.pre_commit_synapse import run_synapse_script
 from cortex.tools.pre_commit_tools import (
     SUPPORTED_LANGUAGES,
     _check_function_lengths,  # pyright: ignore[reportPrivateUsage]
-    _check_function_lengths_in_file,  # pyright: ignore[reportPrivateUsage]
     _get_adapter,  # pyright: ignore[reportPrivateUsage]
     execute_pre_commit_checks,
     fix_quality_issues,
@@ -992,14 +992,14 @@ def short_func():
             path = Path(f.name)
 
         try:
-            violations = _check_function_lengths_in_file(path)
+            violations = check_function_lengths_in_file(path)
             assert violations == []  # Should return empty on syntax error
         finally:
             path.unlink()
 
     def test_check_function_lengths_in_file_read_error(self) -> None:
         """Test handling of file read errors."""
-        violations = _check_function_lengths_in_file(Path("/nonexistent/file.py"))
+        violations = check_function_lengths_in_file(Path("/nonexistent/file.py"))
         assert violations == []
 
     def test_skips_test_files(self) -> None:

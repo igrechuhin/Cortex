@@ -11,7 +11,7 @@ from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.lazy_manager import LazyManager
 from cortex.managers.usage_tracker import UsageTracker
@@ -57,6 +57,7 @@ async def _get_tracker(project_root: Path) -> UsageTracker | None:
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_tool_usage_stats(
     start_date: str | None = None,
@@ -104,6 +105,7 @@ async def get_tool_usage_stats(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_unused_tools(
     days: int = 90,
@@ -208,6 +210,7 @@ async def _fetch_report_data(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_tool_usage_report(
     format: str = "markdown",
@@ -246,6 +249,7 @@ async def get_tool_usage_report(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_optimization_recommendations(
     min_usage_threshold: int = 5,

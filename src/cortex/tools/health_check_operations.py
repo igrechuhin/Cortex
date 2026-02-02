@@ -13,7 +13,7 @@ from typing import Literal
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.health_check.dependency_mapper import DependencyMapper
 from cortex.health_check.models import (
     HealthCheckReport,
@@ -205,6 +205,7 @@ async def run_health_check_analysis(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def analyze_health_check(
     analysis_type: Literal["prompts", "rules", "tools", "all"] = "all",

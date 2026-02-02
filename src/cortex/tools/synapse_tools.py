@@ -24,7 +24,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import mcp_tool_wrapper
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import ModelDict
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
@@ -85,6 +85,7 @@ async def _sync_synapse_impl(pull: bool, push: bool, ctx: MCPContext | None) -> 
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_EXTERNAL)
 async def sync_synapse(
     pull: bool = True,
@@ -210,6 +211,7 @@ async def _update_synapse_rule_impl(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_EXTERNAL)
 async def update_synapse_rule(
     category: str,
@@ -302,6 +304,7 @@ async def update_synapse_rule(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_synapse_rules(
     task_description: str,
@@ -547,6 +550,7 @@ async def _get_synapse_prompts_impl(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_synapse_prompts(
     category: str | None = None,
@@ -673,6 +677,7 @@ async def _update_synapse_prompt_impl(
 
 
 @mcp.tool()
+@ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_EXTERNAL)
 async def update_synapse_prompt(
     category: str,
