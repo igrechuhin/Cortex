@@ -19,10 +19,16 @@ import pytest
 from cortex.core.dependency_graph import FileDependencyInfo
 from cortex.core.models import ModelDict
 from cortex.managers.types import ManagersDict
-from cortex.tools.phase1_foundation_dependency import get_dependency_graph
+from cortex.tools.phase1_foundation_dependency import (
+    get_dependency_graph,
+    get_dependency_graph_resource,
+)
 from cortex.tools.phase1_foundation_rollback import rollback_file_version
 from cortex.tools.phase1_foundation_stats import get_memory_bank_stats
-from cortex.tools.phase1_foundation_version import get_version_history
+from cortex.tools.phase1_foundation_version import (
+    get_version_history,
+    get_version_history_resource,
+)
 from tests.helpers.managers import make_test_managers
 
 # ============================================================================
@@ -290,6 +296,23 @@ async def test_get_dependency_graph_default_project_root(mock_managers: dict[str
             assert result_dict["status"] == "success"
 
 
+@pytest.mark.asyncio
+async def test_get_dependency_graph_resource_returns_json(
+    mock_managers: dict[str, Any],
+):
+    """Test get_dependency_graph_resource returns valid JSON (Phase 43 resource)."""
+    with patch("cortex.managers.initialization.get_project_root") as mock_get_root:
+        mock_get_root.return_value = Path("/default/root")
+        with patch(
+            "cortex.managers.initialization.get_managers",
+            new=AsyncMock(return_value=mock_managers),
+        ):
+            result = await get_dependency_graph_resource()
+    result_dict = json.loads(result)
+    assert result_dict["status"] == "success"
+    assert "graph" in result_dict or "format" in result_dict
+
+
 # ============================================================================
 # Test get_version_history
 # ============================================================================
@@ -444,6 +467,27 @@ async def test_get_version_history_invalid_version_history_format(
         result_dict = json.loads(result)
         assert result_dict["status"] == "success"
         assert result_dict["total_versions"] == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.asyncio
+async def test_get_version_history_resource_returns_json(
+    mock_project_root: Path, mock_managers: dict[str, Any]
+):
+    """Test get_version_history_resource returns valid JSON (Phase 43 resource)."""
+    with patch("cortex.managers.initialization.get_project_root") as mock_get_root:
+        mock_get_root.return_value = mock_project_root
+        with patch(
+            "cortex.managers.initialization.get_managers",
+            new=AsyncMock(return_value=mock_managers),
+        ):
+            result = await get_version_history_resource("projectBrief.md")
+    result_dict = json.loads(result)
+    assert "status" in result_dict
+    assert result_dict["status"] in ("success", "error")
+    if result_dict["status"] == "success":
+        assert "file_name" in result_dict
+        assert "versions" in result_dict
 
 
 @pytest.mark.asyncio

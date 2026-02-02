@@ -2,15 +2,19 @@
 
 ## 2026-02-02
 
+- **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; fix_errors, format, markdown lint (4 files fixed), type_check, quality, tests 3314, coverage 90.43%. 2 plans archived (Phase43: phase-43-resource-api-design.md, phase-43-tool-audit.md); memory bank links updated.
+
+- **Phase 43 Step 3.2 (Phase 1 foundation resources): Reconsider tools registration** (2026-02-02) - Added get_dependency_graph_resource (cortex://memory-bank/dependency-graph) and get_version_history_resource (cortex://memory-bank/version-history/{file_name}, template). Unit tests test_get_dependency_graph_resource_returns_json and test_get_version_history_resource_returns_json in tests/tools/test_phase1_foundation.py. Plan Task 3.2 updated; roadmap entry updated. All 3312 tests pass; quality gate passes; coverage 90.41%. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+
 - **Phase 43 Step 3 (Implement Resources, partial): Reconsider tools registration** (2026-02-02) - Infrastructure: mcp_resource_wrapper in mcp_stability.py; handler_kind in ToolUsageEvent and UsageTracker.record_tool_usage; with_mcp_stability(..., kind="tool"|"resource"); usage recording with kind=resource. Verification: test_every_mcp_resource_has_required_wrappers in test_mcp_stability_timeouts.py. Pilot resources: get_memory_bank_stats_resource (cortex://memory-bank/stats), get_structure_info_resource (cortex://structure/info); tools get_memory_bank_stats and get_structure_info kept for backward compatibility. All 3312 tests pass; quality gate passes. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
 
 - **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; markdown MD024 fix (claude-mem-inspired-improvements Plan Dependencies). fix_errors, format, type_check, quality, tests 3312, coverage 90.42%. 2 plans archived (SessionOptimization); links updated.
 
-- **Phase 43 Step 2 (Design Resource API): Reconsider tools registration** (2026-02-02) - Design complete: .cortex/plans/phase-43-resource-api-design.md (URI scheme cortex://, mcp.resource() syntax verified, mcp_resource_wrapper and usage tracking with handler_kind, hybrid split strategy). Plan Step 2 marked COMPLETE; next Step 3 Implement Resources. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+- **Phase 43 Step 2 (Design Resource API): Reconsider tools registration** (2026-02-02) - Design complete: .cortex/plans/archive/Phase43/phase-43-resource-api-design.md (URI scheme cortex://, mcp.resource() syntax verified, mcp_resource_wrapper and usage tracking with handler_kind, hybrid split strategy). Plan Step 2 marked COMPLETE; next Step 3 Implement Resources. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
 
 - **Commit (2026-02-02)** - Pre-commit pipeline; markdown lint 11 files fixed (activeContext, progress, roadmap, phase-43 plans, session-optimization plans, commit prompt, agent-workflow (Synapse rule), docs/mcp-tool-timeouts). fix_errors, format, type_check, quality, tests 3311, coverage 90.42%. 0 plans archived.
 
-- **Phase 43 Step 1 (Audit): Reconsider tools registration** (2026-02-02) - Tool audit complete: .cortex/plans/phase-43-tool-audit.md; 45 tools categorized (28 Resource, 13 Tool, 4 Hybrid); hybrid handling strategy for manage_file, configure, rules, check_structure_health; MCP SDK `mcp.resource()` verified. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md (Step 1 COMPLETE).
+- **Phase 43 Step 1 (Audit): Reconsider tools registration** (2026-02-02) - Tool audit complete: .cortex/plans/archive/Phase43/phase-43-tool-audit.md; 45 tools categorized (28 Resource, 13 Tool, 4 Hybrid); hybrid handling strategy for manage_file, configure, rules, check_structure_health; MCP SDK `mcp.resource()` verified. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md (Step 1 COMPLETE).
 
 - **Session optimization (2026-02-01): Require script-analysis when script run** (2026-02-02) - Commit prompt: "Script use (MANDATORY)" step and "Script run without analysis" in COMMON ERRORS; agent-workflow (Synapse rule) script-use rule; integration tests test_commit_prompt_requires_script_tooling_when_script_run, test_commit_prompt_lists_script_run_without_analysis_common_error. Plan: .cortex/plans/archive/SessionOptimization/session-optimization-commit-require-script-analysis.md (status COMPLETE).
 

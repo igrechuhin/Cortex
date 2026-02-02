@@ -166,13 +166,14 @@ Current tool registration doesn't align with MCP protocol semantics:
 - Extend usage analytics (UsageTracker / reporting) so `get_tool_usage_stats`, `get_unused_tools`, `get_optimization_recommendations` include resource reads.
 - Add Resource listing/querying capabilities as needed.
 
-#### Task 3.2: Transform Read-Only Tools to Resources — PARTIAL (pilot done 2026-02-02)
+#### Task 3.2: Transform Read-Only Tools to Resources — PARTIAL (Phase 1 foundation done 2026-02-02)
 
-- Pilot resources (alongside tools, no-arg handlers): `get_memory_bank_stats_resource` (cortex://memory-bank/stats), `get_structure_info_resource` (cortex://structure/info). Tools `get_memory_bank_stats` and `get_structure_info` kept for backward compatibility.
-- Remaining (to do): Start with Phase 1 Foundation tools:
+- Pilot resources (alongside tools, no-arg handlers): `get_memory_bank_stats_resource` (cortex://memory-bank/stats), `get_structure_info_resource` (cortex://structure/info). Tools kept for backward compatibility.
+- Phase 1 Foundation resources added (2026-02-02):
   - `get_memory_bank_stats` → Resource (pilot done as get_memory_bank_stats_resource)
-  - `get_version_history` → Resource
-  - `get_dependency_graph` → Resource
+  - `get_version_history` → Resource `get_version_history_resource` (cortex://memory-bank/version-history/{file_name}, template)
+  - `get_dependency_graph` → Resource `get_dependency_graph_resource` (cortex://memory-bank/dependency-graph)
+- Remaining (to do):
   - `manage_file` (read operation) → Resource
 - Continue with Phase 2 Linking tools:
   - `parse_file_links` → Resource

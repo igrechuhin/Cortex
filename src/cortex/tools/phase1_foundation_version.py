@@ -10,7 +10,11 @@ from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ModelDict
 from cortex.managers import initialization
@@ -97,6 +101,14 @@ async def get_version_history(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+@mcp.resource(uri="cortex://memory-bank/version-history/{file_name}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_version_history_resource(file_name: str) -> str:
+    """Resource: Version history for a file. Read via cortex://memory-bank/version-history/{file_name}."""
+    return await get_version_history(file_name=file_name, project_root=None, limit=10)
 
 
 async def _get_version_history_impl(

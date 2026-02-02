@@ -11,7 +11,11 @@ from typing import cast
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.dependency_graph import DependencyGraph, FileDependencyInfo
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.core.models import JsonValue, ModelDict
 from cortex.managers import initialization
 from cortex.managers.manager_utils import get_manager
@@ -105,6 +109,14 @@ async def get_dependency_graph(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+@mcp.resource(uri="cortex://memory-bank/dependency-graph")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def get_dependency_graph_resource() -> str:
+    """Resource: Dependency graph (default params). Read via cortex://memory-bank/dependency-graph."""
+    return await get_dependency_graph(project_root=None, format="json")
 
 
 async def _get_dependency_graph_impl(project_root: str | None, format: str) -> str:
