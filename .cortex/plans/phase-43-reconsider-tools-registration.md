@@ -156,9 +156,9 @@ Current tool registration doesn't align with MCP protocol semantics:
 - Hybrid operation handling strategy
 - Resource wrappers and usage-tracking design (per audit §5)
 
-### Step 3: Implement Resources (8-12 hours)
+### Step 3: Implement Resources (8-12 hours) — IN PROGRESS (2026-02-02)
 
-#### Task 3.1: Create Resource Registration Infrastructure
+#### Task 3.1: Create Resource Registration Infrastructure — COMPLETE (2026-02-02)
 
 - Add Resource registration support (e.g. in tool modules or a dedicated resources module).
 - Implement **mcp_resource_wrapper(timeout=...)** in `mcp_stability.py`: same stability as `mcp_tool_wrapper` (timeout, semaphore, connection health, retry) and usage recording for resources (extend recording to `kind="resource"` or equivalent so analytics include resources).
@@ -166,10 +166,11 @@ Current tool registration doesn't align with MCP protocol semantics:
 - Extend usage analytics (UsageTracker / reporting) so `get_tool_usage_stats`, `get_unused_tools`, `get_optimization_recommendations` include resource reads.
 - Add Resource listing/querying capabilities as needed.
 
-#### Task 3.2: Transform Read-Only Tools to Resources
+#### Task 3.2: Transform Read-Only Tools to Resources — PARTIAL (pilot done 2026-02-02)
 
-- Start with Phase 1 Foundation tools:
-  - `get_memory_bank_stats` → Resource
+- Pilot resources (alongside tools, no-arg handlers): `get_memory_bank_stats_resource` (cortex://memory-bank/stats), `get_structure_info_resource` (cortex://structure/info). Tools `get_memory_bank_stats` and `get_structure_info` kept for backward compatibility.
+- Remaining (to do): Start with Phase 1 Foundation tools:
+  - `get_memory_bank_stats` → Resource (pilot done as get_memory_bank_stats_resource)
   - `get_version_history` → Resource
   - `get_dependency_graph` → Resource
   - `manage_file` (read operation) → Resource

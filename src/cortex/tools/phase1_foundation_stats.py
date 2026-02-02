@@ -11,7 +11,11 @@ from typing import Literal, cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.version_manager import VersionManager
@@ -146,6 +150,14 @@ async def get_memory_bank_stats(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+@mcp.resource(uri="cortex://memory-bank/stats")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def get_memory_bank_stats_resource() -> str:
+    """Resource: Memory Bank statistics (default params). Read via cortex://memory-bank/stats."""
+    return await get_memory_bank_stats()
 
 
 async def _get_memory_bank_stats_impl(

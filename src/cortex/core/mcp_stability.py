@@ -14,7 +14,7 @@ from collections.abc import Awaitable, Callable
 from inspect import Signature
 from pathlib import Path
 from types import TracebackType
-from typing import Protocol, cast
+from typing import Literal, Protocol, cast
 
 import anyio
 
@@ -368,8 +368,9 @@ async def _record_usage_if_available(
     duration_ms: float,
     success: bool,
     error_type: str | None,
+    kind: Literal["tool", "resource"] = "tool",
 ) -> None:
-    """Record tool usage if UsageTracker is available (Phase 29)."""
+    """Record tool or resource usage if UsageTracker is available (Phase 29/43)."""
     try:
         from cortex.managers.lazy_manager import LazyManager
         from cortex.managers.usage_tracker import UsageTracker
@@ -388,6 +389,7 @@ async def _record_usage_if_available(
                 duration_ms=duration_ms,
                 success=success,
                 error_type=error_type,
+                handler_kind=kind,
             )
     except Exception as e:
         logger.debug("Usage recording skipped or failed: %s (%s)", type(e).__name__, e)
@@ -403,7 +405,9 @@ def _stability_params(
     tv = _to_timeout_value(timeout)
     effective = st or tv or float(MCP_TOOL_TIMEOUT_SECONDS)
     func_kwargs = {
-        k: v for k, v in kwargs.items() if k not in {"timeout", "stability_timeout"}
+        k: v
+        for k, v in kwargs.items()
+        if k not in {"timeout", "stability_timeout", "kind"}
     }
     return effective, MCPToolArguments.model_validate(func_kwargs)
 
@@ -414,6 +418,7 @@ async def _run_with_retry_and_record[T](
     timeout: JsonValue | None,
     stability_timeout: JsonValue | None,
     kwargs: dict[str, JsonValue],
+    kind: Literal["tool", "resource"] = "tool",
 ) -> T:
     """Run func with retry and record usage (used by with_mcp_stability)."""
     semaphore = _get_semaphore()
@@ -434,7 +439,7 @@ async def _run_with_retry_and_record[T](
     finally:
         duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000.0
         await _record_usage_if_available(
-            func.__name__, duration_ms, success, error_type
+            func.__name__, duration_ms, success, error_type, kind=kind
         )
 
 
@@ -443,21 +448,24 @@ async def with_mcp_stability[T](
     *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
     timeout: JsonValue | None = None,
     stability_timeout: JsonValue | None = None,
+    kind: Literal["tool", "resource"] = "tool",
     **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
 ) -> T:
-    """Execute MCP tool with stability protections.
+    """Execute MCP tool or resource handler with stability protections.
 
     Provides:
     - Timeout protection (prevents hanging operations)
     - Resource limit enforcement (concurrent operations)
     - Connection error handling
     - Automatic retry for transient failures
+    - Usage recording with handler_kind (Phase 43)
 
     Args:
         func: Async function to execute
         *args: Positional arguments for func
         timeout: Maximum execution time in seconds (public API)
         stability_timeout: Internal timeout override (used by wrappers)
+        kind: "tool" or "resource" for usage recording (default "tool")
         **kwargs: Keyword arguments for func
 
     Returns:
@@ -471,7 +479,7 @@ async def with_mcp_stability[T](
     if not health.healthy:
         raise ConnectionError("Connection not healthy before tool execution")
     return await _run_with_retry_and_record(
-        func, args, timeout, stability_timeout, kwargs
+        func, args, timeout, stability_timeout, kwargs, kind=kind
     )
 
 
@@ -515,11 +523,58 @@ def mcp_tool_wrapper[T](
         ) -> T:
             try:
                 return await with_mcp_stability(
-                    func, *args, stability_timeout=timeout, **kwargs
+                    func, *args, stability_timeout=timeout, kind="tool", **kwargs
                 )
             except Exception as e:
                 _handle_tool_exception_if_failure(e, func.__name__)
                 raise
+
+        original_sig = inspect.signature(func)
+        cast(_SignatureAware, wrapper).__signature__ = original_sig
+        return wrapper
+
+    return decorator
+
+
+def mcp_resource_wrapper[T](
+    timeout: float = MCP_TOOL_TIMEOUT_SECONDS,
+) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]:
+    """Decorator for MCP resources to add stability protections (Phase 43).
+
+    Same stability as mcp_tool_wrapper (timeout, semaphore, retry, connection
+    health) and usage recording with handler_kind="resource". Does not run
+    MCP tool failure protocol on exceptions (resource read failures raised
+    as normal exceptions).
+
+    Usage:
+        @mcp.resource(uri="cortex://memory-bank/stats")
+        @ensure_usage_context
+        @mcp_resource_wrapper(timeout=30.0)
+        async def get_memory_bank_stats(...):
+            ...
+
+    Args:
+        timeout: Maximum execution time in seconds
+
+    Returns:
+        Decorator function
+    """
+    import functools
+    import inspect
+
+    def decorator(
+        func: Callable[..., Awaitable[T]],
+    ) -> Callable[..., Awaitable[T]]:
+        """Apply stability wrapper to resource handler."""
+
+        @functools.wraps(func)
+        async def wrapper(
+            *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
+            **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
+        ) -> T:
+            return await with_mcp_stability(
+                func, *args, stability_timeout=timeout, kind="resource", **kwargs
+            )
 
         original_sig = inspect.signature(func)
         cast(_SignatureAware, wrapper).__signature__ = original_sig
@@ -555,7 +610,10 @@ async def execute_tool_with_stability[T](
         TimeoutError: If operation exceeds timeout
         RuntimeError: If resource limits exceeded or connection fails
     """
-    return await with_mcp_stability(func, *args, stability_timeout=timeout, **kwargs)
+    kwargs_no_kind = {k: v for k, v in kwargs.items() if k != "kind"}
+    return await with_mcp_stability(
+        func, *args, stability_timeout=timeout, kind="tool", **kwargs_no_kind
+    )
 
 
 async def check_connection_health() -> ConnectionHealth:

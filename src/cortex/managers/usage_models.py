@@ -1,5 +1,7 @@
 """Pydantic models for MCP tool usage tracking (Phase 29)."""
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -17,6 +19,10 @@ class ToolUsageEvent(BaseModel):
     )
     params_hash: str | None = Field(
         default=None, description="Hash of anonymized parameters for deduplication"
+    )
+    handler_kind: Literal["tool", "resource"] = Field(
+        default="tool",
+        description="Whether the handler is an MCP tool or resource (Phase 43)",
     )
 
 

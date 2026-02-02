@@ -279,6 +279,45 @@ def _file_has_mcp_tool_missing_required_wrappers(content: str) -> list[int]:
     return bad
 
 
+def _file_has_mcp_resource_missing_required_wrappers(content: str) -> list[int]:
+    """Return line numbers where @mcp.resource(uri=...) lacks required stack.
+
+    Required stack (Phase 43): @mcp.resource(uri=...), @ensure_usage_context,
+    @mcp_resource_wrapper(timeout=...).
+    """
+    lines = content.splitlines()
+    bad: list[int] = []
+    i = 0
+    while i < len(lines):
+        stripped = lines[i].strip()
+        if "@mcp.resource(" in stripped and "uri=" in stripped:
+            j = i + 1
+            while j < len(lines) and not lines[j].strip():
+                j += 1
+            if j >= len(lines):
+                bad.append(i + 1)
+                i = j
+                continue
+            first = lines[j].strip()
+            if first != "@ensure_usage_context":
+                bad.append(i + 1)
+                i = j
+                i += 1
+                continue
+            j += 1
+            while j < len(lines) and not lines[j].strip():
+                j += 1
+            if j >= len(lines):
+                bad.append(i + 1)
+                break
+            second = lines[j].strip()
+            if not second.startswith("@mcp_resource_wrapper("):
+                bad.append(i + 1)
+            i = j
+        i += 1
+    return bad
+
+
 class TestAllToolsHaveTimeoutWrapper:
     """Phase 34: Every @mcp.tool() must have @ensure_usage_context and @mcp_tool_wrapper."""
 
@@ -296,5 +335,26 @@ class TestAllToolsHaveTimeoutWrapper:
                 violations.append((path.name, bad_lines))
         assert not violations, (
             "MCP tools missing required decorator stack (@mcp.tool() -> @ensure_usage_context -> @mcp_tool_wrapper): "
+            + ", ".join(f"{f}: lines {lns}" for f, lns in violations)
+        )
+
+
+class TestAllResourcesHaveRequiredWrappers:
+    """Phase 43: Every @mcp.resource(uri=...) must have ensure_usage_context and mcp_resource_wrapper."""
+
+    def test_every_mcp_resource_has_required_wrappers(self) -> None:
+        """Every @mcp.resource(uri=...) must have @ensure_usage_context then @mcp_resource_wrapper(timeout=...)."""
+        tools_dir = _tools_dir()
+        assert tools_dir.is_dir(), f"Tools dir not found: {tools_dir}"
+        violations: list[tuple[str, list[int]]] = []
+        for path in sorted(tools_dir.glob("*.py")):
+            if path.name.startswith("__"):
+                continue
+            text = path.read_text()
+            bad_lines = _file_has_mcp_resource_missing_required_wrappers(text)
+            if bad_lines:
+                violations.append((path.name, bad_lines))
+        assert not violations, (
+            "MCP resources missing required decorator stack (@mcp.resource(uri=...) -> @ensure_usage_context -> @mcp_resource_wrapper): "
             + ", ".join(f"{f}: lines {lns}" for f, lns in violations)
         )

@@ -21,7 +21,11 @@ import json
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX, MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.core.models import ModelDict
 from cortex.managers.initialization import get_project_root
 from cortex.server import mcp
@@ -52,6 +56,7 @@ __all__ = [
     "check_structure_initialized",
     "find_stale_plans",
     "get_structure_info",
+    "get_structure_info_resource",
     "move_stale_plans",
     "perform_archive_stale",
     "perform_cleanup_actions",
@@ -190,6 +195,14 @@ async def get_structure_info(
             {"success": False, "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+@mcp.resource(uri="cortex://structure/info")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_structure_info_resource() -> str:
+    """Resource: Project structure info (default params). Read via cortex://structure/info."""
+    return await get_structure_info()
 
 
 get_structure_info.__doc__ = GET_STRUCTURE_INFO_DOC

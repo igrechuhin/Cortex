@@ -80,15 +80,17 @@ class UsageTracker:
         success: bool,
         error_type: str | None = None,
         params_hash: str | None = None,
+        handler_kind: str = "tool",
     ) -> None:
-        """Record a single tool usage event.
+        """Record a single tool or resource usage event.
 
         Args:
-            tool_name: Name of the MCP tool invoked.
+            tool_name: Name of the MCP tool or resource handler invoked.
             duration_ms: Execution duration in milliseconds.
-            success: Whether the tool completed without error.
+            success: Whether the handler completed without error.
             error_type: Exception type name if failed.
             params_hash: Optional hash of anonymized parameters.
+            handler_kind: "tool" or "resource" (Phase 43); default "tool".
         """
         if not self._is_enabled() or self._is_opt_out(tool_name):
             return
@@ -96,6 +98,7 @@ class UsageTracker:
         min_duration = float(min_val) if isinstance(min_val, (int, float)) else 0.0
         if duration_ms < min_duration:
             return
+        kind = "resource" if handler_kind == "resource" else "tool"
         event = ToolUsageEvent(
             tool_name=tool_name,
             timestamp=datetime.now(UTC).isoformat(),
@@ -105,6 +108,7 @@ class UsageTracker:
             params_hash=(
                 params_hash if self._config.get("anonymize_params", True) else None
             ),
+            handler_kind=kind,
         )
         await _persist_event(self._events_dir, event)
 

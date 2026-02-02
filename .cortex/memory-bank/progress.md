@@ -2,7 +2,9 @@
 
 ## 2026-02-02
 
-- **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; markdown lint 5 files fixed (activeContext, progress, roadmap, phase-43-reconsider-tools-registration, phase-43-resource-api-design). fix_errors, format, type_check, quality, tests 3311, coverage 90.42%. 0 plans archived.
+- **Phase 43 Step 3 (Implement Resources, partial): Reconsider tools registration** (2026-02-02) - Infrastructure: mcp_resource_wrapper in mcp_stability.py; handler_kind in ToolUsageEvent and UsageTracker.record_tool_usage; with_mcp_stability(..., kind="tool"|"resource"); usage recording with kind=resource. Verification: test_every_mcp_resource_has_required_wrappers in test_mcp_stability_timeouts.py. Pilot resources: get_memory_bank_stats_resource (cortex://memory-bank/stats), get_structure_info_resource (cortex://structure/info); tools get_memory_bank_stats and get_structure_info kept for backward compatibility. All 3312 tests pass; quality gate passes. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+
+- **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; markdown MD024 fix (claude-mem-inspired-improvements Plan Dependencies). fix_errors, format, type_check, quality, tests 3312, coverage 90.42%. 2 plans archived (SessionOptimization); links updated.
 
 - **Phase 43 Step 2 (Design Resource API): Reconsider tools registration** (2026-02-02) - Design complete: .cortex/plans/phase-43-resource-api-design.md (URI scheme cortex://, mcp.resource() syntax verified, mcp_resource_wrapper and usage tracking with handler_kind, hybrid split strategy). Plan Step 2 marked COMPLETE; next Step 3 Implement Resources. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
 
@@ -10,10 +12,10 @@
 
 - **Phase 43 Step 1 (Audit): Reconsider tools registration** (2026-02-02) - Tool audit complete: .cortex/plans/phase-43-tool-audit.md; 45 tools categorized (28 Resource, 13 Tool, 4 Hybrid); hybrid handling strategy for manage_file, configure, rules, check_structure_health; MCP SDK `mcp.resource()` verified. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md (Step 1 COMPLETE).
 
-- **Session optimization (2026-02-01): Require script-analysis when script run** (2026-02-02) - Commit prompt: "Script use (MANDATORY)" step and "Script run without analysis" in COMMON ERRORS; agent-workflow (Synapse rule) script-use rule; integration tests test_commit_prompt_requires_script_tooling_when_script_run, test_commit_prompt_lists_script_run_without_analysis_common_error. Plan: .cortex/plans/session-optimization-commit-require-script-analysis.md (status COMPLETE).
+- **Session optimization (2026-02-01): Require script-analysis when script run** (2026-02-02) - Commit prompt: "Script use (MANDATORY)" step and "Script run without analysis" in COMMON ERRORS; agent-workflow (Synapse rule) script-use rule; integration tests test_commit_prompt_requires_script_tooling_when_script_run, test_commit_prompt_lists_script_run_without_analysis_common_error. Plan: .cortex/plans/archive/SessionOptimization/session-optimization-commit-require-script-analysis.md (status COMPLETE).
 
 ## 2026-02-01
 
-- **Session optimization (2026-02-01): Connection closed handling** (2026-02-01) - Added "Connection Closed During Long Tool (Retry Then Fallback)" in commit prompt Failure Handling; exception in MCP Tool Failure for Connection closed/ClosedResourceError; fallback for `fix_markdown_lint` and optional Step 12.6 narrower scope. docs/mcp-tool-timeouts.md: "Client connection closed during long tools" subsection. Plan: .cortex/plans/session-optimization-commit-connection-closed-handling.md.
+- **Session optimization (2026-02-01): Connection closed handling** (2026-02-01) - Added "Connection Closed During Long Tool (Retry Then Fallback)" in commit prompt Failure Handling; exception in MCP Tool Failure for Connection closed/ClosedResourceError; fallback for `fix_markdown_lint` and optional Step 12.6 narrower scope. docs/mcp-tool-timeouts.md: "Client connection closed during long tools" subsection. Plan: .cortex/plans/archive/SessionOptimization/session-optimization-commit-connection-closed-handling.md.
 
 - **Commit (2026-02-01)**: Pre-commit pipeline; fix ensure_usage_context when get_managers returns dict (mcp_stability: accept dict or Pydantic model for set_current_managers). Phase 35 and Phase 36 plans archived to .cortex/plans/archive/Phase35/, .cortex/plans/archive/Phase36/. fix_errors, format, markdown lint, type_check, quality, tests 3309, coverage 90.42%. Memory bank and plan links updated.

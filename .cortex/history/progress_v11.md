@@ -2,6 +2,8 @@
 
 ## 2026-02-02
 
+- **Phase 43 Step 3 (Implement Resources, partial): Reconsider tools registration** (2026-02-02) - Infrastructure: mcp_resource_wrapper in mcp_stability.py; handler_kind in ToolUsageEvent and UsageTracker.record_tool_usage; with_mcp_stability(..., kind="tool"|"resource"); usage recording with kind=resource. Verification: test_every_mcp_resource_has_required_wrappers in test_mcp_stability_timeouts.py. Pilot resources: get_memory_bank_stats_resource (cortex://memory-bank/stats), get_structure_info_resource (cortex://structure/info); tools get_memory_bank_stats and get_structure_info kept for backward compatibility. All 3312 tests pass; quality gate passes. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+
 - **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; markdown lint 5 files fixed (activeContext, progress, roadmap, phase-43-reconsider-tools-registration, phase-43-resource-api-design). fix_errors, format, type_check, quality, tests 3311, coverage 90.42%. 0 plans archived.
 
 - **Phase 43 Step 2 (Design Resource API): Reconsider tools registration** (2026-02-02) - Design complete: .cortex/plans/phase-43-resource-api-design.md (URI scheme cortex://, mcp.resource() syntax verified, mcp_resource_wrapper and usage tracking with handler_kind, hybrid split strategy). Plan Step 2 marked COMPLETE; next Step 3 Implement Resources. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
