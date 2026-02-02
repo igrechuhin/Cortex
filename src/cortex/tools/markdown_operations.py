@@ -598,76 +598,39 @@ async def _filter_files_for_linting(
     return files_to_lint, initial_results, hashes_for_cache
 
 
-async def _process_markdown_files(
+async def _process_markdown_files_sequential(
     files: list[Path],
     root_path: Path,
     markdownlint_cmd: list[str],
     dry_run: bool,
-    max_concurrent: int = 5,
-    batch_size: int = 50,
 ) -> list[FileResult]:
-    """Process list of markdown files with batching and concurrency."""
+    """Process markdown files sequentially (single-threaded).
+
+    This approach is simpler and more reliable than concurrent processing:
+    - Avoids spawning multiple npx processes (each has ~1s startup overhead)
+    - Works better with the cache (cache lookups filter most files)
+    - Reduces MCP connection load during long operations
+    """
     results: list[FileResult] = []
-    semaphore = asyncio.Semaphore(max_concurrent)
-
-    for i in range(0, len(files), batch_size):
-        batch = files[i : i + batch_size]
-        batch_results = await _process_batch(
-            batch,
-            root_path,
-            markdownlint_cmd,
-            dry_run,
-            semaphore,
-        )
-        results.extend(batch_results)
-
-    return results
-
-
-async def _process_batch(
-    batch: list[Path],
-    root_path: Path,
-    markdownlint_cmd: list[str],
-    dry_run: bool,
-    semaphore: asyncio.Semaphore,
-) -> list[FileResult]:
-    """Process a batch of files concurrently."""
-
-    async def process_single(file_path: Path) -> FileResult | None:
+    for file_path in files:
         if not file_path.exists():
-            return None
-        async with semaphore:
-            return await _run_markdownlint_fix(
+            continue
+        try:
+            result = await _run_markdownlint_fix(
                 file_path,
                 root_path,
                 markdownlint_cmd,
                 dry_run,
             )
-
-    raw_results = await asyncio.gather(
-        *[process_single(f) for f in batch], return_exceptions=True
-    )
-    return _filter_batch_results(raw_results)
-
-
-def _filter_batch_results(
-    raw_results: list[FileResult | None | BaseException],
-) -> list[FileResult]:
-    """Filter batch results and convert exceptions to error results."""
-    results: list[FileResult] = []
-    for result in raw_results:
-        if result is None:
-            continue
-        if isinstance(result, BaseException):
+            results.append(result)
+        except Exception as e:
             error_result = FileResult(
-                file="unknown",
+                file=str(file_path.relative_to(root_path)),
                 fixed=False,
-                errors=[str(result)],
-                error_message=str(result),
+                errors=[str(e)],
+                error_message=str(e),
             )
             results.append(error_result)
-        else:
-            results.append(result)
     return results
 
 
@@ -734,13 +697,11 @@ async def _run_markdownlint_for_files(
         config_relative = config_path.relative_to(root_path)
         cmd_with_config.extend(["--config", str(config_relative)])
 
-    lint_results = await _process_markdown_files(
+    lint_results = await _process_markdown_files_sequential(
         files_to_lint,
         root_path,
         cmd_with_config,
         dry_run,
-        max_concurrent=5,
-        batch_size=50,
     )
     return [*initial_results, *lint_results]
 

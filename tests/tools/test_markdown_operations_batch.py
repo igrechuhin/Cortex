@@ -1,6 +1,5 @@
-"""Tests for markdown operations batch processing and concurrency."""
+"""Tests for markdown operations sequential processing."""
 
-import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
@@ -9,20 +8,20 @@ import pytest
 
 from cortex.tools.markdown_operations import (
     FileResult,
-    _process_markdown_files,  # pyright: ignore[reportPrivateUsage]
+    _process_markdown_files_sequential,  # pyright: ignore[reportPrivateUsage]
 )
 
 
-class TestBatchProcessing:
-    """Test batch processing functionality."""
+class TestSequentialProcessing:
+    """Test sequential processing functionality."""
 
     @pytest.mark.asyncio
-    async def test_process_markdown_files_batches(self):
-        """Test that files are processed in batches."""
+    async def test_process_markdown_files_all_files(self):
+        """Test that all files are processed sequentially."""
         # Arrange
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            files = [project_root / f"file{i}.md" for i in range(100)]
+            files = [project_root / f"file{i}.md" for i in range(10)]
             for f in files:
                 _ = f.write_text("# Test\n")
 
@@ -46,65 +45,16 @@ class TestBatchProcessing:
                 "cortex.tools.markdown_operations._run_markdownlint_fix",
                 side_effect=mock_run_markdownlint_fix,
             ):
-                results = await _process_markdown_files(
+                results = await _process_markdown_files_sequential(
                     files,
                     project_root,
                     markdownlint_cmd,
                     False,
-                    max_concurrent=5,
-                    batch_size=20,
-                )
-
-            # Assert
-            assert len(results) == 100
-            assert call_count == 100  # All files processed
-
-    @pytest.mark.asyncio
-    async def test_process_markdown_files_concurrency_limit(self):
-        """Test that concurrency is limited by semaphore."""
-        # Arrange
-        with TemporaryDirectory() as tmpdir:
-            project_root = Path(tmpdir)
-            files = [project_root / f"file{i}.md" for i in range(10)]
-            for f in files:
-                _ = f.write_text("# Test\n")
-
-            markdownlint_cmd = ["markdownlint-cli2"]
-            concurrent_count = 0
-            max_concurrent_seen = 0
-
-            async def mock_run_markdownlint_fix(
-                file_path: Path, root: Path, cmd: list[str], dry_run: bool
-            ) -> FileResult:
-                nonlocal concurrent_count, max_concurrent_seen
-                concurrent_count += 1
-                max_concurrent_seen = max(max_concurrent_seen, concurrent_count)
-                await asyncio.sleep(0.01)  # Small delay to allow concurrency
-                concurrent_count -= 1
-                return FileResult(
-                    file=str(file_path.relative_to(root)),
-                    fixed=False,
-                    errors=[],
-                    error_message=None,
-                )
-
-            # Act
-            with patch(
-                "cortex.tools.markdown_operations._run_markdownlint_fix",
-                side_effect=mock_run_markdownlint_fix,
-            ):
-                results = await _process_markdown_files(
-                    files,
-                    project_root,
-                    markdownlint_cmd,
-                    False,
-                    max_concurrent=3,
-                    batch_size=10,
                 )
 
             # Assert
             assert len(results) == 10
-            assert max_concurrent_seen <= 3  # Should not exceed concurrency limit
+            assert call_count == 10  # All files processed
 
     @pytest.mark.asyncio
     async def test_process_markdown_files_handles_exceptions(self):
@@ -135,13 +85,11 @@ class TestBatchProcessing:
                 "cortex.tools.markdown_operations._run_markdownlint_fix",
                 side_effect=mock_run_markdownlint_fix,
             ):
-                results = await _process_markdown_files(
+                results = await _process_markdown_files_sequential(
                     files,
                     project_root,
                     markdownlint_cmd,
                     False,
-                    max_concurrent=5,
-                    batch_size=10,
                 )
 
             # Assert
@@ -169,15 +117,27 @@ class TestBatchProcessing:
 
             markdownlint_cmd = ["markdownlint-cli2"]
 
+            async def mock_run_markdownlint_fix(
+                file_path: Path, root: Path, cmd: list[str], dry_run: bool
+            ) -> FileResult:
+                return FileResult(
+                    file=str(file_path.relative_to(root)),
+                    fixed=False,
+                    errors=[],
+                    error_message=None,
+                )
+
             # Act
-            results = await _process_markdown_files(
-                files,
-                project_root,
-                markdownlint_cmd,
-                False,
-                max_concurrent=5,
-                batch_size=10,
-            )
+            with patch(
+                "cortex.tools.markdown_operations._run_markdownlint_fix",
+                side_effect=mock_run_markdownlint_fix,
+            ):
+                results = await _process_markdown_files_sequential(
+                    files,
+                    project_root,
+                    markdownlint_cmd,
+                    False,
+                )
 
             # Assert
             # Should only process existing files

@@ -187,7 +187,7 @@ async def get_structure_info(
             {
                 "success": True,
                 "structure_info": info_payload,
-                "message": "Structure information retrieved successfully",
+                "message": "✅ Structure information retrieved successfully",
             },
             indent=2,
         )

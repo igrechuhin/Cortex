@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-02T15:55:02.149712",
+  "last_updated": "2026-02-02T16:33:58.698062",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 27350,
-      "token_count": 6655,
+      "size_bytes": 31747,
+      "token_count": 7676,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-02T09:09:34.787391",
-      "content_hash": "sha256:866a70584cd018473a16c68a0a0602753a717d44512b4adafc2e4dc4fd83e3bd",
+      "last_modified": "2026-02-02T16:33:58.692380",
+      "content_hash": "sha256:7c13ba25cccd3aa73d77379c24473353936b049808a258d39da35c1306ab215f",
       "sections": [
         {
           "title": "## Blockers (ASAP Priority)",
@@ -24,35 +24,35 @@
         {
           "title": "## Current Status (2026-02-02)",
           "level": 2,
-          "line_start": 11,
-          "line_end": 11,
-          "content_hash": null
-        },
-        {
-          "title": "### Active Work",
-          "level": 2,
           "line_start": 13,
           "line_end": 13,
           "content_hash": null
         },
         {
+          "title": "### Active Work",
+          "level": 2,
+          "line_start": 15,
+          "line_end": 15,
+          "content_hash": null
+        },
+        {
           "title": "## Future Enhancements",
           "level": 2,
-          "line_start": 53,
-          "line_end": 53,
+          "line_start": 55,
+          "line_end": 55,
           "content_hash": null
         },
         {
           "title": "## Pending plans (from .cortex/plans)",
           "level": 2,
-          "line_start": 79,
-          "line_end": 79,
+          "line_start": 81,
+          "line_end": 81,
           "content_hash": null
         }
       ],
       "read_count": 2,
-      "write_count": 60,
-      "last_read": "2026-02-02T09:09:34.787391",
+      "write_count": 61,
+      "last_read": "2026-02-02T16:33:58.692380",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -737,17 +737,28 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Added new plan: Claude-mem inspired improvements (usage search, observations, progressive disclosure)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-02T16:33:58.691915",
+          "content_hash": "sha256:7c13ba25cccd3aa73d77379c24473353936b049808a258d39da35c1306ab215f",
+          "size_bytes": 31747,
+          "token_count": 7676,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Added new plan: Make fix_markdown_lint report progress like tests tool"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 13268,
-      "token_count": 3242,
+      "size_bytes": 13905,
+      "token_count": 3397,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-02T15:55:02.148155",
-      "content_hash": "sha256:a0d37a5f50a1190710d643d28a9967b5b13a3cc0c9ba7aba99fee702b9f09c1a",
+      "last_modified": "2026-02-02T16:15:18.998818",
+      "content_hash": "sha256:21b0aa1433ea205d09ffee2737d88986581adae6f3b9740fc5c99f4d7f34c3a9",
       "sections": [
         {
           "title": "## 2026-02-02",
@@ -759,14 +770,14 @@
         {
           "title": "## 2026-02-01",
           "level": 2,
-          "line_start": 57,
-          "line_end": 57,
+          "line_start": 59,
+          "line_end": 59,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 112,
-      "last_read": "2026-02-02T15:55:02.148155",
+      "write_count": 113,
+      "last_read": "2026-02-02T16:15:18.998818",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -2001,17 +2012,28 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Updated after commit pipeline (markdown lint 4 files, tests 3359, coverage 90.29%)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-02T16:15:18.998431",
+          "content_hash": "sha256:21b0aa1433ea205d09ffee2737d88986581adae6f3b9740fc5c99f4d7f34c3a9",
+          "size_bytes": 13905,
+          "token_count": 3397,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for Phase 47 (prompt icons and emoji in messages)"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 5016,
-      "token_count": 1225,
+      "size_bytes": 5659,
+      "token_count": 1378,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-02T15:10:40.746101",
-      "content_hash": "sha256:4ba1eb5d0407b5b324fda8e9a0ebcdc3c587e533c171fc56170d4b2424740a9c",
+      "last_modified": "2026-02-02T16:15:42.588973",
+      "content_hash": "sha256:47ed9ac3426bfe7c4758cf92599aac8f9d83a2aab707f62ae212d21b63629518",
       "sections": [
         {
           "title": "## Current Focus (2026-02-02)",
@@ -2030,28 +2052,28 @@
         {
           "title": "### Recently Completed",
           "level": 2,
-          "line_start": 27,
-          "line_end": 27,
+          "line_start": 29,
+          "line_end": 29,
           "content_hash": null
         },
         {
           "title": "## Project Health",
           "level": 2,
-          "line_start": 34,
-          "line_end": 34,
+          "line_start": 37,
+          "line_end": 37,
           "content_hash": null
         },
         {
           "title": "## Next Focus",
           "level": 2,
-          "line_start": 49,
-          "line_end": 49,
+          "line_start": 53,
+          "line_end": 53,
           "content_hash": null
         }
       ],
       "read_count": 0,
-      "write_count": 95,
-      "last_read": "2026-02-02T15:10:40.746101",
+      "write_count": 96,
+      "last_read": "2026-02-02T16:15:42.588973",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -3099,6 +3121,17 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Updated after commit: quality gate fixes, pre_commit_pipeline extraction"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-02T16:15:42.588633",
+          "content_hash": "sha256:47ed9ac3426bfe7c4758cf92599aac8f9d83a2aab707f62ae212d21b63629518",
+          "size_bytes": 5659,
+          "token_count": 1378,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context after Phase 47 completion (prompt icons and emoji)"
         }
       ]
     },
@@ -3336,8 +3369,8 @@
   },
   "totals": {
     "total_files": 6,
-    "total_size_bytes": 58859,
-    "total_tokens": 13985,
-    "last_full_scan": "2026-02-02T15:55:02.148177"
+    "total_size_bytes": 64536,
+    "total_tokens": 15314,
+    "last_full_scan": "2026-02-02T16:33:58.692417"
   }
 }

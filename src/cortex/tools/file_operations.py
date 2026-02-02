@@ -660,7 +660,7 @@ def build_write_response(
         {
             "status": "success",
             "file_name": file_name,
-            "message": f"File {file_name} written successfully",
+            "message": f"✅ File {file_name} written successfully",
             "snapshot_id": version_info.snapshot_path,
             "version": version_info.version,
             "tokens": token_counter.count_tokens(content),

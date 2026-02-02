@@ -245,7 +245,7 @@ class TestLoadPromptContent:
 class TestCreatePromptFunction:
     """Tests for create_prompt_function()."""
 
-    def test_creates_prompt_function(self):
+    def test_creates_prompt_function(self) -> None:
         """Test creating a prompt function dynamically."""
         # Arrange
         test_name = "test_prompt_func"
@@ -253,8 +253,8 @@ class TestCreatePromptFunction:
         test_description = "Test description"
 
         # Clear any existing function
-        if test_name in globals():
-            del globals()[test_name]
+        if test_name in synapse_prompts.__dict__:
+            del synapse_prompts.__dict__[test_name]
 
         # Act
         synapse_prompts.create_prompt_function(
@@ -267,7 +267,7 @@ class TestCreatePromptFunction:
         assert callable(func)
         assert func() == test_content
 
-    def test_stores_content_in_module_dict(self):
+    def test_stores_content_in_module_dict(self) -> None:
         """Test that content is stored in module-level dict."""
         # Arrange
         test_name = "test_storage"
@@ -280,6 +280,18 @@ class TestCreatePromptFunction:
         assert "_prompt_contents" in synapse_prompts.__dict__
         assert synapse_prompts.__dict__["_prompt_contents"][test_name] == test_content
 
+    def test_create_prompt_function_with_icon_emoji(self) -> None:
+        """create_prompt_function with icon_emoji creates working function."""
+        test_name = "test_icon_prompt"
+        test_content = "Content with icon"
+        if test_name in synapse_prompts.__dict__:
+            del synapse_prompts.__dict__[test_name]
+        synapse_prompts.create_prompt_function(
+            test_name, test_content, "Desc", icon_emoji="🔗"
+        )
+        assert test_name in synapse_prompts.__dict__
+        assert synapse_prompts.__dict__[test_name]() == test_content
+
 
 # ============================================================================
 # Tests for process_prompt_info()
@@ -291,7 +303,7 @@ class TestProcessPromptInfo:
 
     def test_processes_valid_prompt_info(
         self, prompts_dir: Path, sample_prompt_file: Path
-    ):
+    ) -> None:
         """Test processing valid prompt info."""
         # Arrange
         prompt_info = {
@@ -307,6 +319,28 @@ class TestProcessPromptInfo:
 
         # Assert
         assert result == 1
+
+    def test_processes_prompt_info_with_icon(
+        self, prompts_dir: Path, sample_prompt_file: Path
+    ) -> None:
+        """Test processing prompt info with icon field uses that icon."""
+        prompt_info = {
+            "file": "test-prompt.md",
+            "name": "test_with_icon",
+            "description": "Prompt with icon",
+            "icon": "🔧",
+        }
+        # Clear if previously registered
+        if "test_with_icon" in synapse_prompts.__dict__:
+            del synapse_prompts.__dict__["test_with_icon"]
+        result = synapse_prompts.process_prompt_info(
+            cast(ModelDict, prompt_info), prompts_dir, "general"
+        )
+        assert result == 1
+        assert "test_with_icon" in synapse_prompts.__dict__
+        assert synapse_prompts.__dict__["test_with_icon"]() == (
+            "# Test Prompt\n\nThis is a test prompt."
+        )
 
     def test_returns_zero_when_filename_missing(self, prompts_dir: Path):
         """Test returns 0 when filename is missing."""

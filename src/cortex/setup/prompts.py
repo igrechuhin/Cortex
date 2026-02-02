@@ -9,10 +9,22 @@ main.py only when should_mount_setup() is True so that setup prompts are
 conditionally available.
 """
 
+from cortex.core.icon_helpers import create_emoji_icon
 from cortex.server import mcp
 from cortex.tools.config_status import get_project_config_status
 
 _config_status = get_project_config_status()
+
+PROMPT_ICONS: dict[str, str] = {
+    "initialize_memory_bank": "🏗️",
+    "setup_project_structure": "📁",
+    "setup_cursor_integration": "⚙️",
+    "populate_tiktoken_cache": "💾",
+    "setup_synapse": "🔗",
+    "check_migration_status": "🔍",
+    "migrate_memory_bank": "🔄",
+    "migrate_project_structure": "📦",
+}
 
 _INIT_MEMORY_BANK_PROMPT = """Please initialize a Memory Bank in my project.
 
@@ -311,7 +323,7 @@ Expected output format:
 
 if not _config_status.memory_bank_initialized:
 
-    @mcp.prompt()
+    @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["initialize_memory_bank"])])
     def initialize_memory_bank() -> str:
         """Initialize a new Memory Bank with all core files."""
         return _INIT_MEMORY_BANK_PROMPT
@@ -319,7 +331,7 @@ if not _config_status.memory_bank_initialized:
 
 if not _config_status.structure_configured:
 
-    @mcp.prompt()
+    @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["setup_project_structure"])])
     def setup_project_structure() -> str:
         """Setup the standardized .cortex/ project structure."""
         return _SETUP_PROJECT_STRUCTURE_PROMPT
@@ -327,7 +339,7 @@ if not _config_status.structure_configured:
 
 if not _config_status.cursor_integration_configured:
 
-    @mcp.prompt()
+    @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["setup_cursor_integration"])])
     def setup_cursor_integration() -> str:
         """Setup Cursor IDE integration with symlinks and MCP server configuration."""
         return _SETUP_CURSOR_INTEGRATION_PROMPT
@@ -335,13 +347,13 @@ if not _config_status.cursor_integration_configured:
 
 if not _config_status.tiktoken_cache_available:
 
-    @mcp.prompt()
+    @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["populate_tiktoken_cache"])])
     def populate_tiktoken_cache() -> str:
         """Populate bundled tiktoken cache with encoding files for offline operation."""
         return _POPULATE_TIKTOKEN_CACHE_PROMPT
 
 
-@mcp.prompt()
+@mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["setup_synapse"])])
 def setup_synapse(synapse_repo_url: str) -> str:
     """Setup Synapse via Git submodule."""
     return _SETUP_SYNAPSE_PROMPT_TEMPLATE.format(synapse_repo_url=synapse_repo_url)
@@ -349,7 +361,7 @@ def setup_synapse(synapse_repo_url: str) -> str:
 
 if _config_status.migration_needed:
 
-    @mcp.prompt()
+    @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["check_migration_status"])])
     def check_migration_status() -> str:
         """Check if project needs migration to the .cortex/ structure."""
         return _CHECK_MIGRATION_STATUS_PROMPT
@@ -357,7 +369,7 @@ if _config_status.migration_needed:
 
 if _config_status.migration_needed:
 
-    @mcp.prompt()
+    @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["migrate_memory_bank"])])
     def migrate_memory_bank() -> str:
         """Migrate Memory Bank to the .cortex/ structure."""
         return _MIGRATE_MEMORY_BANK_PROMPT
@@ -365,7 +377,7 @@ if _config_status.migration_needed:
 
 if _config_status.migration_needed:
 
-    @mcp.prompt()
+    @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["migrate_project_structure"])])
     def migrate_project_structure() -> str:
         """Migrate project to the .cortex/ structure."""
         return _MIGRATE_PROJECT_STRUCTURE_PROMPT

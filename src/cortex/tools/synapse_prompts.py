@@ -12,8 +12,19 @@ import json
 from pathlib import Path
 from typing import cast
 
+from cortex.core.icon_helpers import create_emoji_icon
 from cortex.core.models import JsonDict, JsonValue, ModelDict
 from cortex.server import mcp
+
+SYNAPSE_PROMPT_ICONS: dict[str, str] = {
+    "commit": "💾",
+    "review": "👀",
+    "implement": "⚡",
+    "plan": "📋",
+    "create_plan": "📋",
+    "analyze_session_optimization": "🔍",
+}
+DEFAULT_PROMPT_ICON = "📝"
 
 # Explicitly reference mcp to satisfy type checker (used in exec() string)
 _ = mcp
@@ -97,7 +108,17 @@ def load_prompt_content(prompts_path: Path, category: str, filename: str) -> str
         return None
 
 
-def create_prompt_function(name: str, content: str, description: str) -> None:
+def _emoji_for_prompt(func_name: str) -> str:
+    """Return emoji for a prompt by name; fallback to default."""
+    return SYNAPSE_PROMPT_ICONS.get(func_name, DEFAULT_PROMPT_ICON)
+
+
+def create_prompt_function(
+    name: str,
+    content: str,
+    description: str,
+    icon_emoji: str | None = None,
+) -> None:
     """Create and register a prompt function dynamically.
 
     Stores content in module-level dict and creates function that references it,
@@ -108,16 +129,23 @@ def create_prompt_function(name: str, content: str, description: str) -> None:
         globals()["_prompt_contents"] = {}
     globals()["_prompt_contents"][name] = content
 
+    emoji = icon_emoji if icon_emoji else _emoji_for_prompt(name)
+    icon = create_emoji_icon(emoji)
+    globals()["_prompt_icon"] = icon
+
     # Create function definition with decorator using exec()
     # Function references the module-level dict to get the content
-    func_code = f'''@mcp.prompt()
+    func_code = f'''@mcp.prompt(icons=[_prompt_icon])
 def {name}() -> str:
     """{description}"""
     return _prompt_contents["{name}"]
 '''
 
     # Execute in module globals so the function is created at module level
-    exec(func_code, globals())
+    try:
+        exec(func_code, globals())
+    finally:
+        globals().pop("_prompt_icon", None)
 
 
 def process_prompt_info(
@@ -140,6 +168,11 @@ def process_prompt_info(
     if not isinstance(description, str):
         description = ""
 
+    icon_emoji: str | None = None
+    icon_raw = prompt_info.get("icon")
+    if isinstance(icon_raw, str):
+        icon_emoji = icon_raw
+
     content = load_prompt_content(prompts_path, category_name, filename)
     if not content:
         return 0
@@ -148,7 +181,7 @@ def process_prompt_info(
     func_name = "".join(c if c.isalnum() or c == "_" else "_" for c in func_name)
 
     try:
-        create_prompt_function(func_name, content, description)
+        create_prompt_function(func_name, content, description, icon_emoji=icon_emoji)
         return 1
     except Exception as e:
         from cortex.core.logging_config import logger

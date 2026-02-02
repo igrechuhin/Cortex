@@ -2,6 +2,10 @@
 
 ## 2026-02-02
 
+- **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; fix_errors, format, markdown lint (5 files fixed: activeContext, progress, roadmap, phase-47-add-prompt-icons, commit), type_check, quality, tests 3370, coverage 90.3%. 1 plan archived (Phase 47: phase-47-add-prompt-icons.md). Memory bank links updated.
+
+- **Phase 47: Add prompt icons and emoji in messages** (2026-02-02) - Icon helper (create_emoji_icon, create_emoji_icons) in src/cortex/core/icon_helpers.py; PROMPT_ICONS and icons on all setup prompts in cortex.setup.prompts; SYNAPSE_PROMPT_ICONS and icons in synapse_prompts create_prompt_function; optional manifest "icon" in process_prompt_info; ✅ in manage_file write message and get_structure_info message. Unit tests tests/unit/test_icon_helpers.py, tests/tools/test_synapse_prompts (create_prompt_function with icon_emoji, process_prompt_info with icon). Quality gate passes. Plan: .cortex/plans/archive/Phase47/phase-47-add-prompt-icons.md.
+
 - **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; fix_errors, format, markdown lint (4 files fixed: activeContext, progress, roadmap, phase-46-extract-setup), type_check, quality, tests 3359, coverage 90.29%. Memory bank updated.
 
 - **Phase 46: Extract setup to separate MCP server** (2026-02-02) - Setup prompts extracted to cortex.setup (server.py, **init**.py with should_mount_setup, prompts.py); tools/prompts.py stripped to stub; main.py imports cortex.setup.prompts for registration. MCP SDK has no mount(), so dynamic mounting not used; structure tools remain on main server. Unit tests test_setup_module.py, test_prompts_conditional_registration; integration test_conditional_prompts uses cortex.setup.prompts. All 3359 tests pass; quality gate passes. Plan: .cortex/plans/phase-46-extract-setup-to-separate-mcp-server.md.
