@@ -10,7 +10,11 @@ from pathlib import Path
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.linking.link_validator import LinkValidator
 from cortex.managers.initialization import get_managers, get_project_root
@@ -204,6 +208,14 @@ async def validate_links(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+@mcp.resource(uri="cortex://links/validate")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def validate_links_resource() -> str:
+    """Resource: Validate all links. Read via cortex://links/validate."""
+    return await validate_links(file_name=None, project_root=None)
 
 
 async def _validate_single_file(

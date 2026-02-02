@@ -2,6 +2,10 @@
 
 ## 2026-02-02
 
+- **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; fix_errors, format, markdown lint (4 files fixed: activeContext, progress, roadmap, phase-43-reconsider-tools-registration), type_check, quality, tests 3318, coverage 90.44%. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+
+- **Phase 43 Step 3.2 (Phase 2 linking resources): Reconsider tools registration** (2026-02-02) - Added parse_file_links_resource (cortex://links/parse/{file_name}), resolve_transclusions_resource (cortex://links/transclusions/{file_name}), validate_links_resource (cortex://links/validate), get_link_graph_resource (cortex://links/graph). Unit tests test_parse_file_links_resource_returns_json, test_resolve_transclusions_resource_returns_json, test_validate_links_resource_returns_json, test_get_link_graph_resource_returns_json in tests/tools/test_phase2_linking.py. Plan Task 3.2 and roadmap updated. All 37 Phase 2 linking tests pass; quality gate passes. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
+
 - **Commit (2026-02-02) (pipeline)** - Pre-commit pipeline; fix_errors, format, markdown lint (4 files fixed), type_check, quality, tests 3314, coverage 90.43%. 2 plans archived (Phase43: phase-43-resource-api-design.md, phase-43-tool-audit.md); memory bank links updated.
 
 - **Phase 43 Step 3.2 (Phase 1 foundation resources): Reconsider tools registration** (2026-02-02) - Added get_dependency_graph_resource (cortex://memory-bank/dependency-graph) and get_version_history_resource (cortex://memory-bank/version-history/{file_name}, template). Unit tests test_get_dependency_graph_resource_returns_json and test_get_version_history_resource_returns_json in tests/tools/test_phase1_foundation.py. Plan Task 3.2 updated; roadmap entry updated. All 3312 tests pass; quality gate passes; coverage 90.41%. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.

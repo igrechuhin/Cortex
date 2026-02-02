@@ -11,7 +11,11 @@ from typing import cast
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.linking.link_parser import LinkParser
@@ -141,6 +145,14 @@ async def parse_file_links(
     """
     await log_client(ctx, "info", "parse_file_links: starting", logger_name=__name__)
     return await _parse_file_links_run_or_error(ctx, file_name, project_root)
+
+
+@mcp.resource(uri="cortex://links/parse/{file_name}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def parse_file_links_resource(file_name: str) -> str:
+    """Resource: Parse links for a file. Read via cortex://links/parse/{file_name}."""
+    return await parse_file_links(file_name=file_name, project_root=None)
 
 
 async def _parse_file_links_run_or_error(

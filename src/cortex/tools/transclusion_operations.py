@@ -14,6 +14,7 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     execute_tool_with_stability,
+    mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
 from cortex.core.models import ModelDict
@@ -175,6 +176,16 @@ async def resolve_transclusions(
     )
     return await _resolve_transclusions_run_or_error(
         ctx, file_name, project_root, max_depth
+    )
+
+
+@mcp.resource(uri="cortex://links/transclusions/{file_name}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def resolve_transclusions_resource(file_name: str) -> str:
+    """Resource: Resolve transclusions for a file. Read via cortex://links/transclusions/{file_name}."""
+    return await resolve_transclusions(
+        file_name=file_name, project_root=None, max_depth=5
     )
 
 

@@ -23,9 +23,13 @@ from cortex.linking.transclusion_engine import (
 from cortex.managers.types import ManagersDict
 from cortex.tools.phase2_linking import (
     get_link_graph,
+    get_link_graph_resource,
     parse_file_links,
+    parse_file_links_resource,
     resolve_transclusions,
+    resolve_transclusions_resource,
     validate_links,
+    validate_links_resource,
 )
 from tests.helpers.managers import make_test_managers
 from tests.helpers.path_helpers import get_test_memory_bank_dir
@@ -1233,3 +1237,78 @@ class TestIntegration:
             validate_result = await validate_links(file_name="missing.md")
             validate_data = json.loads(validate_result)
             assert validate_data["status"] == "error"
+
+
+# ============================================================================
+# Phase 43: Phase 2 linking resources
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_parse_file_links_resource_returns_json(
+    mock_project_root: Path, mock_managers: ManagersDict
+):
+    """Test parse_file_links_resource returns valid JSON (Phase 43 resource)."""
+    with patch("cortex.managers.initialization.get_project_root") as mock_get_root:
+        mock_get_root.return_value = mock_project_root
+        with patch(
+            "cortex.managers.initialization.get_managers",
+            new=AsyncMock(return_value=mock_managers),
+        ):
+            result = await parse_file_links_resource("activeContext.md")
+    result_dict = json.loads(result)
+    assert "status" in result_dict
+    assert result_dict["status"] in ("success", "error")
+
+
+@pytest.mark.asyncio
+async def test_resolve_transclusions_resource_returns_json(
+    mock_project_root: Path, mock_managers: ManagersDict
+):
+    """Test resolve_transclusions_resource returns valid JSON (Phase 43 resource)."""
+    with patch("cortex.managers.initialization.get_project_root") as mock_get_root:
+        mock_get_root.return_value = mock_project_root
+        with patch(
+            "cortex.managers.initialization.get_managers",
+            new=AsyncMock(return_value=mock_managers),
+        ):
+            result = await resolve_transclusions_resource("activeContext.md")
+    result_dict = json.loads(result)
+    assert "status" in result_dict
+    assert result_dict["status"] in ("success", "error")
+
+
+@pytest.mark.asyncio
+async def test_validate_links_resource_returns_json(
+    mock_project_root: Path, mock_managers: ManagersDict
+):
+    """Test validate_links_resource returns valid JSON (Phase 43 resource)."""
+    with patch("cortex.managers.initialization.get_project_root") as mock_get_root:
+        mock_get_root.return_value = mock_project_root
+        with patch(
+            "cortex.managers.initialization.get_managers",
+            new=AsyncMock(return_value=mock_managers),
+        ):
+            result = await validate_links_resource()
+    result_dict = json.loads(result)
+    assert "status" in result_dict
+    assert result_dict["status"] in ("success", "error")
+
+
+@pytest.mark.asyncio
+async def test_get_link_graph_resource_returns_json(
+    mock_project_root: Path, mock_managers: ManagersDict
+):
+    """Test get_link_graph_resource returns valid JSON (Phase 43 resource)."""
+    with patch("cortex.managers.initialization.get_project_root") as mock_get_root:
+        mock_get_root.return_value = mock_project_root
+        with patch(
+            "cortex.managers.initialization.get_managers",
+            new=AsyncMock(return_value=mock_managers),
+        ):
+            result = await get_link_graph_resource()
+    result_dict = json.loads(result)
+    assert "status" in result_dict
+    assert result_dict["status"] in ("success", "error")
+    if result_dict["status"] == "success":
+        assert "format" in result_dict

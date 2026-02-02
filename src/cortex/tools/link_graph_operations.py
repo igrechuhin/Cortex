@@ -10,7 +10,11 @@ from typing import cast
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.dependency_graph import DependencyGraph
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_resource_wrapper,
+    mcp_tool_wrapper,
+)
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.linking.link_parser import LinkParser
@@ -234,6 +238,16 @@ async def get_link_graph(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+@mcp.resource(uri="cortex://links/graph")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def get_link_graph_resource() -> str:
+    """Resource: Link graph (default params). Read via cortex://links/graph."""
+    return await get_link_graph(
+        project_root=None, include_transclusions=True, format="json"
+    )
 
 
 async def _build_link_graph_data(
