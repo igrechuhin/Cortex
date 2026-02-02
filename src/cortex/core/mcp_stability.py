@@ -244,6 +244,7 @@ def _is_connection_error(e: Exception) -> bool:
         OSError,
         RuntimeError,  # FastMCP may raise RuntimeError for connection issues
         anyio.BrokenResourceError,  # anyio resource errors (e.g., stdio closed)
+        anyio.ClosedResourceError,  # send on closed stream after client disconnect
     )
 
     if isinstance(e, connection_error_types):

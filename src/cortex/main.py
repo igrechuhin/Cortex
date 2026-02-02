@@ -35,7 +35,13 @@ logger = logging.getLogger(__name__)
 def _is_connection_error(exc: BaseException) -> bool:
     """Check if exception is a connection-related or shutdown-related error."""
     if isinstance(
-        exc, (anyio.BrokenResourceError, BrokenPipeError, ConnectionResetError)
+        exc,
+        (
+            anyio.BrokenResourceError,
+            anyio.ClosedResourceError,
+            BrokenPipeError,
+            ConnectionResetError,
+        ),
     ):
         return True
     if isinstance(exc, asyncio.CancelledError):
@@ -56,8 +62,8 @@ def _is_connection_error(exc: BaseException) -> bool:
 def _handle_broken_resource_in_group(eg: BaseExceptionGroup) -> bool:
     """Check if BaseExceptionGroup contains connection-related errors.
 
-    Handles BrokenResourceError, BrokenPipeError, ConnectionResetError,
-    and nested exception groups that may contain these errors.
+    Handles BrokenResourceError, ClosedResourceError, BrokenPipeError,
+    ConnectionResetError, and nested exception groups that may contain these.
 
     Args:
         eg: BaseExceptionGroup to check
@@ -90,10 +96,12 @@ def _handle_connection_error(e: Exception) -> None:
     """
     exc_type = type(e).__name__
     exc_msg = str(e)
-    if isinstance(e, (anyio.BrokenResourceError, BrokenPipeError)):
+    if isinstance(
+        e, (anyio.BrokenResourceError, anyio.ClosedResourceError, BrokenPipeError)
+    ):
         logger.warning(
             (
-                "MCP stdio connection broken (client disconnected); "
+                "MCP stdio connection broken or closed (client disconnected); "
                 "exc_type=%s exc_msg=%s"
             ),
             exc_type,
@@ -167,7 +175,13 @@ def main() -> None:
         if _handle_broken_resource_in_group(eg):
             sys.exit(0)  # Graceful shutdown
         _log_and_exit_on_task_group_error(eg)
-    except (anyio.BrokenResourceError, BrokenPipeError, ConnectionError, OSError) as e:
+    except (
+        anyio.BrokenResourceError,
+        anyio.ClosedResourceError,
+        BrokenPipeError,
+        ConnectionError,
+        OSError,
+    ) as e:
         _handle_connection_error(e)
     except Exception as e:
         logger.exception(f"Unexpected error in MCP server: {e}")

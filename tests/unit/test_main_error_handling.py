@@ -2,8 +2,8 @@
 Unit tests for main.py error handling.
 
 Tests the comprehensive error handling for MCP server connection issues,
-including BaseExceptionGroup, anyio.BrokenResourceError, and other
-connection-related exceptions.
+including BaseExceptionGroup, anyio.BrokenResourceError,
+anyio.ClosedResourceError, and other connection-related exceptions.
 """
 
 import asyncio
@@ -62,6 +62,20 @@ class TestMainErrorHandling:
         mock_mcp.run.assert_called_once_with(transport="stdio")
 
     @patch("cortex.main.mcp")
+    def test_anyio_closed_resource_error_handling(self, mock_mcp: MagicMock) -> None:
+        """Test that anyio.ClosedResourceError (send on closed stream) is handled gracefully."""
+        # Arrange
+        mock_mcp.run.side_effect = anyio.ClosedResourceError()
+
+        # Act
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+
+        # Assert
+        assert exc_info.value.code == 0
+        mock_mcp.run.assert_called_once_with(transport="stdio")
+
+    @patch("cortex.main.mcp")
     def test_base_exception_group_with_broken_resource_error(
         self, mock_mcp: MagicMock
     ) -> None:
@@ -71,6 +85,26 @@ class TestMainErrorHandling:
         broken_resource_error = anyio.BrokenResourceError("Resource broken")
         exception_group = BaseExceptionGroup(
             "unhandled errors in a TaskGroup", [broken_resource_error]
+        )
+        mock_mcp.run.side_effect = exception_group
+
+        # Act
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+
+        # Assert
+        assert exc_info.value.code == 0
+        mock_mcp.run.assert_called_once_with(transport="stdio")
+
+    @patch("cortex.main.mcp")
+    def test_base_exception_group_with_closed_resource_error(
+        self, mock_mcp: MagicMock
+    ) -> None:
+        """Test that BaseExceptionGroup containing ClosedResourceError exits gracefully."""
+        # Arrange
+        closed_resource_error = anyio.ClosedResourceError()
+        exception_group = BaseExceptionGroup(
+            "unhandled errors in a TaskGroup", [closed_resource_error]
         )
         mock_mcp.run.side_effect = exception_group
 
@@ -289,6 +323,21 @@ class TestMCPStabilityConnectionErrorDetection:
         )
 
         error = anyio.BrokenResourceError("Resource broken")
+
+        # Act
+        result = _is_connection_error(error)
+
+        # Assert
+        assert result is True
+
+    def test_closed_resource_error_is_connection_error(self) -> None:
+        """Test that anyio.ClosedResourceError is recognized as connection error."""
+        # Arrange
+        from cortex.core.mcp_stability import (
+            _is_connection_error,  # type: ignore[reportPrivateUsage]
+        )
+
+        error = anyio.ClosedResourceError()
 
         # Act
         result = _is_connection_error(error)

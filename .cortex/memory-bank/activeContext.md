@@ -6,6 +6,8 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Active Work
 
+- **Commit (2026-02-02)**: Pre-commit pipeline; markdown lint 0 files fixed; tests 3326, coverage 90.45%; 0 plans archived. Changes: mcp_stability, main (connection error handling), test_main_error_handling.
+
 - **Commit (2026-02-02)**: Pre-commit pipeline; markdown lint 4 files fixed; tests 3323, coverage 90.45%; 0 plans archived.
 
 - **Phase 43: Reconsider tools registration (Step 3.2 partial complete)** (2026-02-02) - Step 3.1 done; pilot resources cortex://memory-bank/stats, cortex://structure/info. Step 3.2 Phase 1 foundation done: get_dependency_graph_resource, get_version_history_resource. Step 3.2 Phase 2 linking done: parse_file_links_resource, resolve_transclusions_resource, validate_links_resource, get_link_graph_resource. manage_file read done: get_file_resource (cortex://memory-bank/file/{file_name}). Step 3.2 Phase 3 validation done: validate_resource (cortex://validation/validate/{check_type}). Next: Phase 4 Optimization, etc. Plan: .cortex/plans/phase-43-reconsider-tools-registration.md.
