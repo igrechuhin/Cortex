@@ -87,6 +87,12 @@ MCP_TOOL_TIMEOUT_COMPLEX = 300.0  # Complex operations: analysis, multi-file ops
 MCP_TOOL_TIMEOUT_VERY_COMPLEX = 600.0  # Very complex: full tests, large refactors
 MCP_TOOL_TIMEOUT_EXTERNAL = 120.0  # External operations: network, git sync
 
+# Progress reporting (Phase 46)
+PROGRESS_REPORT_INTERVAL_SECONDS = 10  # Report progress every N seconds
+PROGRESS_THRESHOLD_TIMEOUT_SECONDS = (
+    120.0  # Enable progress for tools with timeout >= this
+)
+
 # =============================================================================
 # Performance Thresholds
 # =============================================================================

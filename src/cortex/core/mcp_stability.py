@@ -23,6 +23,8 @@ from cortex.core.constants import (
     MCP_CONNECTION_RETRY_DELAY_SECONDS,
     MCP_MAX_CONCURRENT_TOOLS,
     MCP_TOOL_TIMEOUT_SECONDS,
+    PROGRESS_REPORT_INTERVAL_SECONDS,
+    PROGRESS_THRESHOLD_TIMEOUT_SECONDS,
 )
 from cortex.core.mcp_failure_handler import MCPToolFailureHandler
 from cortex.core.models import ConnectionHealth, JsonValue, MCPToolArguments
@@ -372,6 +374,25 @@ def _to_timeout_value(value: JsonValue | None) -> float | None:
     return None
 
 
+async def _progress_report_loop(
+    ctx: JsonValue,
+    timeout_sec: float,
+    _tool_name: str,
+) -> None:
+    """Background task: report progress every N seconds (Phase 46)."""
+    from cortex.core.context_logging import MCPContext, report_progress_safe
+
+    start = time.perf_counter()
+    while True:
+        await asyncio.sleep(PROGRESS_REPORT_INTERVAL_SECONDS)
+        elapsed = time.perf_counter() - start
+        if elapsed >= timeout_sec:
+            break
+        pct = min(95, int((elapsed / timeout_sec) * 100))
+        mcp_ctx = cast(MCPContext | None, ctx)
+        await report_progress_safe(mcp_ctx, float(pct), 100.0)
+
+
 async def _record_usage_if_available(
     tool_name: str,
     duration_ms: float,
@@ -429,6 +450,55 @@ def _stability_params(
     return effective, MCPToolArguments.model_validate(func_kwargs), ctx
 
 
+def _create_progress_task_if_needed(
+    enable_progress: bool,
+    ctx: JsonValue | None,
+    effective_timeout: float,
+    tool_name: str,
+) -> asyncio.Task[None] | None:
+    """Create background progress task when enabled and ctx present (Phase 46)."""
+    if (
+        enable_progress
+        and ctx is not None
+        and effective_timeout >= PROGRESS_THRESHOLD_TIMEOUT_SECONDS
+    ):
+        return asyncio.create_task(
+            _progress_report_loop(ctx, effective_timeout, tool_name)
+        )
+    return None
+
+
+async def _cancel_progress_and_report_done(
+    progress_task: asyncio.Task[None] | None, ctx: JsonValue | None
+) -> None:
+    """Cancel progress task and report 100% (Phase 46)."""
+    from cortex.core.context_logging import MCPContext, report_progress_safe
+
+    if progress_task is None:
+        return
+    _ = progress_task.cancel()
+    try:
+        await progress_task
+    except asyncio.CancelledError:
+        pass
+    mcp_ctx = cast(MCPContext | None, ctx)
+    await report_progress_safe(mcp_ctx, 100.0, 100.0)
+
+
+async def _record_usage_finish(
+    tool_name: str,
+    start_ns: int,
+    success: bool,
+    error_type: str | None,
+    kind: Literal["tool", "resource"],
+) -> None:
+    """Record usage after tool run (duration and outcome)."""
+    duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000.0
+    await _record_usage_if_available(
+        tool_name, duration_ms, success, error_type, kind=kind
+    )
+
+
 async def _run_with_retry_and_record[T](
     func: Callable[..., Awaitable[T]],
     args: tuple[JsonValue, ...],
@@ -436,27 +506,29 @@ async def _run_with_retry_and_record[T](
     stability_timeout: JsonValue | None,
     kwargs: dict[str, JsonValue],
     kind: Literal["tool", "resource"] = "tool",
+    enable_progress: bool = False,
 ) -> T:
     """Run func with retry and record usage (used by with_mcp_stability)."""
     semaphore = _get_semaphore()
     effective_timeout, kwargs_model, ctx = _stability_params(
         timeout, stability_timeout, kwargs
     )
+    progress_task = _create_progress_task_if_needed(
+        enable_progress, ctx, effective_timeout, func.__name__
+    )
     start_ns = time.perf_counter_ns()
-    success = True
-    error_type: str | None = None
+    success, error_type = True, None
     try:
         return await _execute_with_retry(
             func, semaphore, effective_timeout, args, kwargs_model, ctx
         )
     except Exception as e:
-        success = False
-        error_type = type(e).__name__
+        success, error_type = False, type(e).__name__
         raise
     finally:
-        duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000.0
-        await _record_usage_if_available(
-            func.__name__, duration_ms, success, error_type, kind=kind
+        await _cancel_progress_and_report_done(progress_task, ctx)
+        await _record_usage_finish(
+            func.__name__, start_ns, success, error_type, kind=kind
         )
 
 
@@ -466,6 +538,7 @@ async def with_mcp_stability[T](
     timeout: JsonValue | None = None,
     stability_timeout: JsonValue | None = None,
     kind: Literal["tool", "resource"] = "tool",
+    enable_progress: bool = False,
     **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
 ) -> T:
     """Execute MCP tool or resource handler with stability protections.
@@ -476,6 +549,7 @@ async def with_mcp_stability[T](
     - Connection error handling
     - Automatic retry for transient failures
     - Usage recording with handler_kind (Phase 43)
+    - Optional progress reporting for long-running tools (Phase 46)
 
     Args:
         func: Async function to execute
@@ -483,6 +557,7 @@ async def with_mcp_stability[T](
         timeout: Maximum execution time in seconds (public API)
         stability_timeout: Internal timeout override (used by wrappers)
         kind: "tool" or "resource" for usage recording (default "tool")
+        enable_progress: If True, report progress every N seconds when ctx present
         **kwargs: Keyword arguments for func
 
     Returns:
@@ -496,7 +571,13 @@ async def with_mcp_stability[T](
     if not health.healthy:
         raise ConnectionError("Connection not healthy before tool execution")
     return await _run_with_retry_and_record(
-        func, args, timeout, stability_timeout, kwargs, kind=kind
+        func,
+        args,
+        timeout,
+        stability_timeout,
+        kwargs,
+        kind=kind,
+        enable_progress=enable_progress,
     )
 
 
@@ -507,10 +588,44 @@ def _handle_tool_exception_if_failure(error: Exception, tool_name: str) -> None:
         handler.handle_failure(tool_name, error, "MCP tool execution")
 
 
+def _make_tool_wrapper_func[T](
+    func: Callable[..., Awaitable[T]],
+    timeout: float,
+    progress_enabled: bool,
+) -> Callable[..., Awaitable[T]]:
+    """Build wrapped async tool with stability and optional progress (Phase 46)."""
+    import functools
+
+    @functools.wraps(func)
+    async def wrapper(
+        *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
+        **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
+    ) -> T:
+        kwargs_no_progress = {k: v for k, v in kwargs.items() if k != "enable_progress"}
+        try:
+            return await with_mcp_stability(
+                func,
+                *args,
+                stability_timeout=timeout,
+                kind="tool",
+                enable_progress=progress_enabled,
+                **kwargs_no_progress,
+            )
+        except Exception as e:
+            _handle_tool_exception_if_failure(e, func.__name__)
+            raise
+
+    return wrapper
+
+
 def mcp_tool_wrapper[T](
     timeout: float = MCP_TOOL_TIMEOUT_SECONDS,
+    enable_progress: bool | None = None,
 ) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]:
     """Decorator for MCP tools to add stability protections.
+
+    When enable_progress is None, progress is auto-enabled for tools with
+    timeout >= PROGRESS_THRESHOLD_TIMEOUT_SECONDS (120s).
 
     Usage:
         @mcp.tool()
@@ -521,33 +636,25 @@ def mcp_tool_wrapper[T](
 
     Args:
         timeout: Maximum execution time in seconds
+        enable_progress: If True, report progress every N seconds when ctx
+            present. If None, auto-enable for timeout >= 120s.
 
     Returns:
         Decorator function
     """
-    import functools
     import inspect
+
+    progress_enabled = (
+        enable_progress
+        if enable_progress is not None
+        else timeout >= PROGRESS_THRESHOLD_TIMEOUT_SECONDS
+    )
 
     def decorator(
         func: Callable[..., Awaitable[T]],
     ) -> Callable[..., Awaitable[T]]:
-        """Apply stability wrapper to function."""
-
-        @functools.wraps(func)
-        async def wrapper(
-            *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
-            **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
-        ) -> T:
-            try:
-                return await with_mcp_stability(
-                    func, *args, stability_timeout=timeout, kind="tool", **kwargs
-                )
-            except Exception as e:
-                _handle_tool_exception_if_failure(e, func.__name__)
-                raise
-
-        original_sig = inspect.signature(func)
-        cast(_SignatureAware, wrapper).__signature__ = original_sig
+        wrapper = _make_tool_wrapper_func(func, timeout, progress_enabled)
+        cast(_SignatureAware, wrapper).__signature__ = inspect.signature(func)
         return wrapper
 
     return decorator
@@ -589,8 +696,16 @@ def mcp_resource_wrapper[T](
             *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
             **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
         ) -> T:
+            kwargs_no_progress = {
+                k: v for k, v in kwargs.items() if k != "enable_progress"
+            }
             return await with_mcp_stability(
-                func, *args, stability_timeout=timeout, kind="resource", **kwargs
+                func,
+                *args,
+                stability_timeout=timeout,
+                kind="resource",
+                enable_progress=False,
+                **kwargs_no_progress,
             )
 
         original_sig = inspect.signature(func)
@@ -627,9 +742,16 @@ async def execute_tool_with_stability[T](
         TimeoutError: If operation exceeds timeout
         RuntimeError: If resource limits exceeded or connection fails
     """
-    kwargs_no_kind = {k: v for k, v in kwargs.items() if k != "kind"}
+    kwargs_clean = {
+        k: v for k, v in kwargs.items() if k not in ("kind", "enable_progress")
+    }
     return await with_mcp_stability(
-        func, *args, stability_timeout=timeout, kind="tool", **kwargs_no_kind
+        func,
+        *args,
+        stability_timeout=timeout,
+        kind="tool",
+        enable_progress=False,
+        **kwargs_clean,
     )
 
 

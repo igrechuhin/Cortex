@@ -19,6 +19,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_FAST,
     MCP_TOOL_TIMEOUT_MEDIUM,
     MCP_TOOL_TIMEOUT_VERY_COMPLEX,
+    PROGRESS_THRESHOLD_TIMEOUT_SECONDS,
 )
 from cortex.core.mcp_stability import mcp_tool_wrapper, with_mcp_stability
 
@@ -118,6 +119,33 @@ class TestTimeoutDecorator:
         assert "arg2" in params
         assert "kwarg" in params
         assert sig.return_annotation is str
+
+    @pytest.mark.asyncio
+    async def test_decorator_with_enable_progress_false_completes(self) -> None:
+        """Decorator with enable_progress=False completes without progress task."""
+
+        @mcp_tool_wrapper(
+            timeout=PROGRESS_THRESHOLD_TIMEOUT_SECONDS + 10,
+            enable_progress=False,
+        )
+        async def long_timeout_tool() -> str:
+            await asyncio.sleep(0.1)
+            return "ok"
+
+        result = await long_timeout_tool()
+        assert result == "ok"
+
+    @pytest.mark.asyncio
+    async def test_decorator_with_timeout_above_threshold_completes(self) -> None:
+        """Decorator with timeout >= threshold completes (progress only when ctx present)."""
+
+        @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
+        async def complex_tool() -> str:
+            await asyncio.sleep(0.1)
+            return "ok"
+
+        result = await complex_tool()
+        assert result == "ok"
 
 
 class TestTimeoutCategories:

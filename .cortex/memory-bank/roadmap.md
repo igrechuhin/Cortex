@@ -106,7 +106,7 @@
 
 - **Phase 45: Add MCP annotations** - IN PROGRESS (Phases 1–3 done, Phase 4 partial 2026-02-02) - Plan: .cortex/plans/phase-45-add-mcp-annotations.md.
 
-- **Phase 46: Add progress reporting** - PENDING - Plan: .cortex/plans/phase-46-add-progress-reporting.md.
+- **Phase 46: Add progress reporting** - COMPLETE (2026-02-02) - ProgressReporter in src/cortex/core/progress.py; mcp_tool_wrapper(timeout=..., enable_progress=None) with auto-enable for timeout >= 120s; with_mcp_stability(enable_progress=...); time-based progress loop and _cancel_progress_and_report_done; constants PROGRESS_REPORT_INTERVAL_SECONDS, PROGRESS_THRESHOLD_TIMEOUT_SECONDS. Unit tests tests/unit/test_progress.py, test_mcp_stability_timeouts (enable_progress). Quality gate passes. Plan: .cortex/plans/archive/Phase46/phase-46-add-progress-reporting.md.
 
 - **Phase 46: Extract setup to separate MCP server** - PENDING - Plan: .cortex/plans/phase-46-extract-setup-to-separate-mcp-server.md.
 
@@ -141,3 +141,5 @@
 - **Structured plan creation via Cortex MCP tools** - PENDING - Replace manual plan creation (Write + full roadmap manage_file) with tool-driven flow: create_plan and register_plan_in_roadmap MCP tools; update create-plan prompt to prefer these tools. Plan: .cortex/plans/structured-planning-cortex-mcp-tools.md.
 
 - **Claude-mem inspired improvements (usage search, observations, progressive disclosure)** - PENDING - Token-efficient usage search (search index → fetch by ID), observation IDs and cortex://usage/observation/{id}, progressive disclosure in docs/prompts, privacy convention. Plan: .cortex/plans/claude-mem-inspired-improvements.md.
+
+- **Session optimization (2026-02-02): Implement prompt memory bank and function length** - PENDING - Implement recommendations from .cortex/reviews/session-optimization-2026-02-02T14-28.md: (1) Implement prompt Step 5 require manage_file for all memory bank writes and prohibit Write/StrReplace/ApplyPatch. (2) Step 4 or 4.6 reminder to keep new functions ≤30 lines. (3) Optional: analyze-session-optimization rules fallback when rules() disabled. Plan: .cortex/plans/session-optimization-implement-prompt-memory-bank.md.
