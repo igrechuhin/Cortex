@@ -16,6 +16,7 @@ from typing import cast
 
 import pytest
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.validation.models import ValidationConfigModel
 from cortex.validation.validation_config import ValidationConfig
 
@@ -31,7 +32,10 @@ class TestValidationConfigInitialization:
         defaults = ValidationConfigModel()
 
         assert config.project_root == tmp_path
-        assert config.config_path == tmp_path / ".cortex/validation.json"
+        expected_config_path = (
+            get_cortex_path(tmp_path, CortexResourceType.CONFIG) / "validation.json"
+        )
+        assert config.config_path == expected_config_path
         assert config.config is not None
         assert config.config.enabled == defaults.enabled
 
@@ -39,7 +43,9 @@ class TestValidationConfigInitialization:
     async def test_initialization_with_existing_config(self, tmp_path: Path) -> None:
         """Test initialization loads user config from file."""
         # Create custom config
-        config_path = tmp_path / ".cortex/validation.json"
+        config_path = (
+            get_cortex_path(tmp_path, CortexResourceType.CONFIG) / "validation.json"
+        )
         config_path.parent.mkdir(parents=True, exist_ok=True)
         custom_config = {"enabled": False, "strict_mode": True}
         with open(config_path, "w") as f:
@@ -57,7 +63,9 @@ class TestValidationConfigInitialization:
     async def test_initialization_with_invalid_json(self, tmp_path: Path) -> None:
         """Test initialization handles invalid JSON gracefully."""
         # Create invalid JSON file
-        config_path = tmp_path / ".cortex/validation.json"
+        config_path = (
+            get_cortex_path(tmp_path, CortexResourceType.CONFIG) / "validation.json"
+        )
         config_path.parent.mkdir(parents=True, exist_ok=True)
         with open(config_path, "w") as f:
             _ = f.write("{invalid json")
@@ -152,8 +160,10 @@ class TestSaveConfig:
     @pytest.mark.asyncio
     async def test_save_creates_config_file(self, tmp_path: Path) -> None:
         """Test save creates configuration file."""
-        # Create .cortex directory
-        (tmp_path / ".cortex").mkdir(parents=True, exist_ok=True)
+        # Create config directory
+        get_cortex_path(tmp_path, CortexResourceType.CONFIG).mkdir(
+            parents=True, exist_ok=True
+        )
         config = ValidationConfig(project_root=tmp_path)
         config.set("enabled", False)
 
@@ -164,8 +174,10 @@ class TestSaveConfig:
     @pytest.mark.asyncio
     async def test_save_persists_changes(self, tmp_path: Path) -> None:
         """Test save persists configuration changes."""
-        # Create .cortex directory
-        (tmp_path / ".cortex").mkdir(parents=True, exist_ok=True)
+        # Create config directory
+        get_cortex_path(tmp_path, CortexResourceType.CONFIG).mkdir(
+            parents=True, exist_ok=True
+        )
         config = ValidationConfig(project_root=tmp_path)
         config.set("enabled", False)
         config.set("strict_mode", True)
@@ -182,8 +194,10 @@ class TestSaveConfig:
     @pytest.mark.asyncio
     async def test_save_can_be_reloaded(self, tmp_path: Path) -> None:
         """Test saved config can be reloaded correctly."""
-        # Create .cortex directory
-        (tmp_path / ".cortex").mkdir(parents=True, exist_ok=True)
+        # Create config directory
+        get_cortex_path(tmp_path, CortexResourceType.CONFIG).mkdir(
+            parents=True, exist_ok=True
+        )
         # Save config
         config1 = ValidationConfig(project_root=tmp_path)
         config1.set("enabled", False)

@@ -31,7 +31,9 @@ def test_prompts_module_registers_conditional_prompts_when_needed() -> None:
         mig_status_text = prompts.check_migration_status()
         mig_mb_text = prompts.migrate_memory_bank()
         mig_proj_text = prompts.migrate_project_structure()
-        synapse_text = prompts.setup_synapse("https://example.com/synapse.git")
+    import cortex.setup.prompts_always as prompts_always
+
+    synapse_text = prompts_always.setup_synapse("https://example.com/synapse.git")
 
     # Restore module for other tests
     if "cortex.setup.prompts" in sys.modules:

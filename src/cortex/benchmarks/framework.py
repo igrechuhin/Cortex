@@ -196,7 +196,7 @@ class BenchmarkRunner:
         Args:
             output_dir: Directory for benchmark results
         """
-        self.output_dir = output_dir or Path("benchmark_results")
+        self.output_dir = output_dir or Path(".cortex/benchmark_results")
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.suites: list[BenchmarkSuite] = []
 

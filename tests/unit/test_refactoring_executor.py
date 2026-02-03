@@ -13,10 +13,15 @@ from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ModelDict
 from cortex.linking.link_parser import LinkParser
 from cortex.refactoring.models import (
+    ActionDetails,
     OperationParameters,
+    RefactoringActionModel,
     RefactoringExecutionModel,
     RefactoringOperationModel,
+    RefactoringPriority,
     RefactoringStatus,
+    RefactoringSuggestionModel,
+    RefactoringType,
 )
 from cortex.refactoring.refactoring_executor import RefactoringExecutor
 
@@ -192,15 +197,23 @@ class TestExecuteRefactoring:
             metadata_index=mock_metadata_index,
         )
 
-        suggestion = cast(
-            ModelDict,
-            {
-                "suggestion_id": "sug-1",
-                "type": "consolidation",
-                "target_file": "nonexistent.md",
-                "files": [],
-                "sections": [],
-            },
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-1",
+            refactoring_type=RefactoringType.CONSOLIDATION,
+            priority=RefactoringPriority.MEDIUM,
+            title="Consolidate",
+            description="Consolidate",
+            reasoning="Test",
+            affected_files=[],
+            actions=[
+                RefactoringActionModel(
+                    action_type="consolidate",
+                    target_file="nonexistent.md",
+                    description="Consolidate",
+                    details=ActionDetails(destination_file="nonexistent.md"),
+                ),
+            ],
+            confidence_score=0.8,
         )
 
         # Act
@@ -305,15 +318,23 @@ class TestExecuteRefactoring:
         target_file = memory_bank_dir / "target.md"
         _ = target_file.write_text("Original content")
 
-        suggestion = cast(
-            ModelDict,
-            {
-                "suggestion_id": "sug-1",
-                "type": "reorganization",
-                "actions": [
-                    {"action": "rename", "file": "target.md", "new_name": "renamed.md"}
-                ],
-            },
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-1",
+            refactoring_type=RefactoringType.REORGANIZATION,
+            priority=RefactoringPriority.MEDIUM,
+            title="Reorganize",
+            description="Reorganize",
+            reasoning="Test",
+            affected_files=[],
+            actions=[
+                RefactoringActionModel(
+                    action_type="rename",
+                    target_file="target.md",
+                    description="Rename",
+                    details=ActionDetails(destination_file="renamed.md"),
+                ),
+            ],
+            confidence_score=0.8,
         )
 
         # Mock version manager
@@ -796,15 +817,26 @@ class TestValidateRefactoring:
         file1 = memory_bank_dir / "file1.md"
         _ = file1.write_text("# Section\nContent")
 
-        suggestion = cast(
-            ModelDict,
-            {
-                "suggestion_id": "sug-1",
-                "type": "consolidation",
-                "files": ["file1.md"],
-                "sections": ["Section"],
-                "target_file": "consolidated.md",
-            },
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-1",
+            refactoring_type=RefactoringType.CONSOLIDATION,
+            priority=RefactoringPriority.MEDIUM,
+            title="Consolidate",
+            description="Consolidate",
+            reasoning="Test",
+            affected_files=["file1.md"],
+            actions=[
+                RefactoringActionModel(
+                    action_type="consolidate",
+                    target_file="consolidated.md",
+                    description="Consolidate",
+                    details=ActionDetails(
+                        destination_file="consolidated.md",
+                        sections=["Section"],
+                    ),
+                ),
+            ],
+            confidence_score=0.8,
         )
 
         # Act
@@ -849,20 +881,27 @@ class TestValidateRefactoring:
         source = memory_bank_dir / "source.md"
         _ = source.write_text("# Part1\nContent1\n# Part2\nContent2")
 
-        suggestion = cast(
-            ModelDict,
-            {
-                "suggestion_id": "sug-1",
-                "type": "split",
-                "file": "source.md",
-                "split_points": [
-                    {
-                        "new_file": "part1.md",
-                        "sections": ["Part1"],
-                        "content": "# Part1\nContent1",
-                    }
-                ],
-            },
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-1",
+            refactoring_type=RefactoringType.SPLIT,
+            priority=RefactoringPriority.MEDIUM,
+            title="Split",
+            description="Split",
+            reasoning="Test",
+            affected_files=["source.md"],
+            actions=[
+                RefactoringActionModel(
+                    action_type="split",
+                    target_file="source.md",
+                    description="Split",
+                    details=ActionDetails(
+                        destination_file="part1.md",
+                        sections=["Part1"],
+                        content="# Part1\nContent1",
+                    ),
+                ),
+            ],
+            confidence_score=0.8,
         )
 
         # Act
@@ -1138,14 +1177,26 @@ class TestExtractOperations:
             metadata_index=mock_metadata_index,
         )
 
-        suggestion = cast(
-            ModelDict,
-            {
-                "type": "consolidation",
-                "files": ["file1.md", "file2.md"],
-                "sections": ["Section1"],
-                "target_file": "consolidated.md",
-            },
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-1",
+            refactoring_type=RefactoringType.CONSOLIDATION,
+            priority=RefactoringPriority.MEDIUM,
+            title="Consolidate",
+            description="Consolidate",
+            reasoning="Test",
+            affected_files=["file1.md", "file2.md"],
+            actions=[
+                RefactoringActionModel(
+                    action_type="consolidate",
+                    target_file="consolidated.md",
+                    description="Consolidate",
+                    details=ActionDetails(
+                        destination_file="consolidated.md",
+                        sections=["Section1"],
+                    ),
+                ),
+            ],
+            confidence_score=0.8,
         )
 
         # Act
@@ -1183,15 +1234,27 @@ class TestExtractOperations:
             metadata_index=mock_metadata_index,
         )
 
-        suggestion = cast(
-            ModelDict,
-            {
-                "type": "split",
-                "file": "large.md",
-                "split_points": [
-                    {"new_file": "part1.md", "sections": [], "content": "Content1"}
-                ],
-            },
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-1",
+            refactoring_type=RefactoringType.SPLIT,
+            priority=RefactoringPriority.MEDIUM,
+            title="Split",
+            description="Split",
+            reasoning="Test",
+            affected_files=["large.md"],
+            actions=[
+                RefactoringActionModel(
+                    action_type="split",
+                    target_file="large.md",
+                    description="Split",
+                    details=ActionDetails(
+                        destination_file="part1.md",
+                        sections=[],
+                        content="Content1",
+                    ),
+                ),
+            ],
+            confidence_score=0.8,
         )
 
         # Act
@@ -1229,19 +1292,29 @@ class TestExtractOperations:
             metadata_index=mock_metadata_index,
         )
 
-        suggestion = cast(
-            ModelDict,
-            {
-                "type": "reorganization",
-                "actions": [
-                    {
-                        "action": "move",
-                        "file": "file1.md",
-                        "destination": "newdir/file1.md",
-                    },
-                    {"action": "rename", "file": "file2.md", "new_name": "renamed.md"},
-                ],
-            },
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-1",
+            refactoring_type=RefactoringType.REORGANIZATION,
+            priority=RefactoringPriority.MEDIUM,
+            title="Reorganize",
+            description="Reorganize",
+            reasoning="Test",
+            affected_files=[],
+            actions=[
+                RefactoringActionModel(
+                    action_type="move",
+                    target_file="file1.md",
+                    description="Move",
+                    details=ActionDetails(destination_file="newdir/file1.md"),
+                ),
+                RefactoringActionModel(
+                    action_type="rename",
+                    target_file="file2.md",
+                    description="Rename",
+                    details=ActionDetails(destination_file="renamed.md"),
+                ),
+            ],
+            confidence_score=0.8,
         )
 
         # Act

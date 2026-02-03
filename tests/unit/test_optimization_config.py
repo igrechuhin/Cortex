@@ -11,6 +11,7 @@ from typing import cast
 import pytest
 
 from cortex.core.models import ModelDict
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.optimization.optimization_config import (
     DEFAULT_OPTIMIZATION_CONFIG,
     OptimizationConfig,
@@ -28,7 +29,11 @@ class TestOptimizationConfigInitialization:
         # Assert
         assert config is not None
         assert config.project_root == temp_project_root
-        assert config.config_path == temp_project_root / ".cortex/optimization.json"
+        expected_config_path = (
+            get_cortex_path(temp_project_root, CortexResourceType.CONFIG)
+            / "optimization.json"
+        )
+        assert config.config_path == expected_config_path
 
     def test_initialization_loads_defaults_when_no_file(
         self, temp_project_root: Path
@@ -45,7 +50,11 @@ class TestOptimizationConfigInitialization:
     ) -> None:
         """Test OptimizationConfig loads existing config file."""
         # Arrange
-        config_path = temp_project_root / ".cortex/optimization.json"
+        config_path = (
+            get_cortex_path(temp_project_root, CortexResourceType.CONFIG)
+            / "optimization.json"
+        )
+        config_path.parent.mkdir(parents=True, exist_ok=True)
         custom_config = {
             "enabled": False,
             "token_budget": {
@@ -75,7 +84,11 @@ class TestConfigFileOperations:
         import logging
 
         # Arrange
-        config_path = temp_project_root / ".cortex/optimization.json"
+        config_path = (
+            get_cortex_path(temp_project_root, CortexResourceType.CONFIG)
+            / "optimization.json"
+        )
+        config_path.parent.mkdir(parents=True, exist_ok=True)
         _ = config_path.write_text("{invalid json")
 
         # Act

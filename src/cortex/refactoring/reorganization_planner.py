@@ -196,7 +196,7 @@ class ReorganizationPlanner:
                 ReorganizationActionPreview(
                     type=action.action_type,
                     description=(
-                        f"{action.action_type}: {action.source} -> " f"{action.target}"
+                        f"{action.action_type}: {action.source} -> {action.target}"
                     ),
                     reason=action.reason,
                 )

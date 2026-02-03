@@ -209,9 +209,11 @@ async def provide_feedback_impl(
     """Run provide_feedback logic and return JSON result."""
     root = get_project_root(project_root)
     mgrs = await get_managers(root)
-    learning_engine, refactoring_engine, approval_manager = (
-        await extract_feedback_managers(mgrs)
-    )
+    (
+        learning_engine,
+        refactoring_engine,
+        approval_manager,
+    ) = await extract_feedback_managers(mgrs)
     suggestion = await get_suggestion_for_feedback(refactoring_engine, suggestion_id)
     if isinstance(suggestion, str):
         return await warn_suggestion_not_found_and_return(ctx, suggestion)

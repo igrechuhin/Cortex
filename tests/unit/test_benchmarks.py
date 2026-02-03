@@ -12,6 +12,7 @@ This module provides extensive test coverage for:
 import json
 import tempfile
 from collections.abc import Generator
+from contextlib import chdir
 from pathlib import Path
 
 import pytest
@@ -35,6 +36,7 @@ from cortex.benchmarks.framework import (
     BenchmarkRunner,
     BenchmarkSuite,
 )
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 # ==============================================================================
 # Test Fixtures
@@ -341,14 +343,22 @@ class TestBenchmarkRunner:
         assert runner.output_dir.exists()
         assert runner.suites == []
 
-    def test_runner_initialization_default_dir(self):
-        """Test runner initialization with default output directory."""
-        # Arrange/Act
-        runner = BenchmarkRunner()
+    def test_runner_initialization_default_dir(self, tmp_path: Path):
+        """Test runner initialization with default output directory.
 
-        # Assert
-        assert runner.output_dir == Path("benchmark_results")
+        Runs in a temp dir so default .cortex/benchmark_results is created
+        there, not in repo root (avoids wrong legacy artifact locations).
+        """
+        with chdir(tmp_path):
+            runner = BenchmarkRunner()
+        assert runner.output_dir == Path(".cortex/benchmark_results")
         assert runner.suites == []
+        # Dir was created under tmp_path, not repo root
+        benchmark_results_dir = (
+            get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR)
+            / "benchmark_results"
+        )
+        assert benchmark_results_dir.exists()
 
     def test_runner_add_suite(self, temp_output_dir: Path) -> None:
         """Test adding suites to runner."""

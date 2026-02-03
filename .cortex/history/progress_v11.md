@@ -1,5 +1,11 @@
 # Progress Log
 
+## 2026-02-03
+
+- **Commit (pause-after-step)** - Steps 0–4 completed; fix_markdown_lint fixed roadmap.md (1 file); tests 3443, coverage 90.09%. Pipeline continuing through Step 12 and commit.
+
+- **Commit (2026-02-03)** - Pre-commit pipeline (pause-after-step). Function length refactors: pre_commit_helpers (_detect_language_in_cortex_subdirs,_resolve_language_at_root), markdown_operations (_process_one_markdown_file, _apply_validation_error_hint). Health-check CLI: src/cortex/health_check/**main**.py (python -m cortex.health_check). BenchmarkRunner default output_dir .cortex/benchmark_results. Test fixes: health_check_cli (parse_args/main coverage), test_execute_all_checks_by_default (5 checks), test_runner_initialization_default_dir. Tests 3441, coverage 90.11%.
+
 ## 2026-02-02
 
 - **Commit (2026-02-02)** - Pre-commit pipeline; fix_errors, format, markdown lint (4 files fixed), type_check, quality, tests 3415, coverage 90.29%. 1 plan archived (phase-merge-analyze-prompts-blocker). Memory bank link updated.

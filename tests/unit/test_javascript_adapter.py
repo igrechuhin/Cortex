@@ -346,8 +346,7 @@ class TestJavaScriptAdapter:
         """parse_eslint_output separates error and warning lines."""
         adapter = JavaScriptAdapter()
         output = (
-            "src/a.js:1:1: error Unexpected var\n"
-            "src/b.js:2:2: warning Prefer const\n"
+            "src/a.js:1:1: error Unexpected var\nsrc/b.js:2:2: warning Prefer const\n"
         )
         errs, warns = adapter.parse_eslint_output(output)
         assert len(errs) == 1

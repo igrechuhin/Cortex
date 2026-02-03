@@ -147,10 +147,12 @@ class OptimizationStrategies:
         token_budget: int,
     ) -> OptimizationResult:
         """Section-level optimization: include partial files when beneficial."""
-        selected_files, selected_sections, total_tokens = (
-            await self._run_sections_phase(
-                task_description, relevance_scores, files_content, token_budget
-            )
+        (
+            selected_files,
+            selected_sections,
+            total_tokens,
+        ) = await self._run_sections_phase(
+            task_description, relevance_scores, files_content, token_budget
         )
         return self._build_sections_result(
             selected_files, selected_sections, files_content, total_tokens, token_budget

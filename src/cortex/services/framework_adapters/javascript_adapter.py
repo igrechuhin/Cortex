@@ -9,6 +9,8 @@ import subprocess
 from collections.abc import Sequence
 from pathlib import Path
 
+from cortex.services.language_detector import LanguageDetector, LanguageInfo
+
 from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
 
 _ESLINT_LINE_RE = re.compile(r"^.+?:\d+:\d+:\s+(error|warning)\s+", re.IGNORECASE)
@@ -22,6 +24,14 @@ _NO_TSC_INDICATORS = (
 
 class JavaScriptAdapter(FrameworkAdapter):
     """Adapter for JavaScript (plain JS) projects."""
+
+    @classmethod
+    def detect(cls, path: Path) -> LanguageInfo | None:
+        """Detect if path is a JavaScript project. Reuses LanguageDetector."""
+        info = LanguageDetector(str(path)).detect_language()
+        if info is not None and info.language == "javascript":
+            return info
+        return None
 
     def __init__(self, project_root: str | None = None) -> None:
         """Initialize JavaScript adapter.

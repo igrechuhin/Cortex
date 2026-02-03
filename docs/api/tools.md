@@ -1197,7 +1197,7 @@ View or update optimization configuration.
 
 **Description:**
 
-Allows viewing and modifying optimization settings like token budgets, loading strategies, and relevance weights stored in `.memory-bank-optimization.json`.
+Allows viewing and modifying optimization settings like token budgets, loading strategies, and relevance weights stored in `.cortex/config/optimization.json`.
 
 **Returns:**
 
@@ -1221,7 +1221,7 @@ View configuration:
       "target_reduction": 0.5
     }
   },
-  "config_file": "/path/to/.memory-bank-optimization.json"
+  "config_file": "/path/to/.cortex/config/optimization.json"
 }
 ```
 
@@ -2323,7 +2323,7 @@ Creates the standardized `.memory-bank/` directory structure including:
     "files_created": [
       ".memory-bank/knowledge/projectBrief.md",
       ".memory-bank/rules/local/main.cursorrules",
-      ".memory-bank/config/structure.json"
+      ".cortex/config/structure.json"
     ],
     "symlinks_created": [
       ".cursor/knowledge -> ../.memory-bank/knowledge",

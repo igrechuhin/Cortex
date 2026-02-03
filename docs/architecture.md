@@ -56,7 +56,7 @@ Cortex is structured as an MCP (Model Context Protocol) server that provides 52 
 │  ┌─────────────────────────────────────────────────────┐    │
 │  │          Metadata (NOT Git-tracked)                 │    │
 │  │  .memory-bank-index                                 │    │
-│  │  .memory-bank-history/                              │    │
+│  │  .cortex/history/                                   │    │
 │  │  .memory-bank-access-log.json                       │    │
 │  │  .memory-bank-learning.json                         │    │
 │  └─────────────────────────────────────────────────────┘    │
@@ -192,7 +192,7 @@ Each manager/service module has a single responsibility:
 #### Not Git-Tracked
 
 - `.memory-bank-index` - Metadata JSON
-- `.memory-bank-history/` - Version snapshots
+- `.cortex/history/` - Version snapshots
 - `.memory-bank-access-log.json` - Usage patterns
 - `.memory-bank-learning.json` - Learning data
 - `.memory-bank-approvals.json` - Approval records

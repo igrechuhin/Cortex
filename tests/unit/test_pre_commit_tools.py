@@ -23,6 +23,7 @@ from cortex.tools.pre_commit_helpers import (
     check_file_sizes,
     check_function_lengths_in_file,
     count_file_lines,
+    detect_or_use_language,
     ensure_json_serializable_for_mcp,
 )
 from cortex.tools.pre_commit_pipeline import (
@@ -103,12 +104,23 @@ class TestExecutePreCommitChecks:
 
     @pytest.mark.asyncio
     async def test_detect_language_error_when_no_language_detected(self) -> None:
-        """Test error when language cannot be detected."""
+        """Test error when language cannot be detected (no markers in root or ancestors)."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            result = await execute_pre_commit_checks(
-                checks=["fix_errors"],
-                project_root=str(tmpdir),
-            )
+            # Force root_str to tmpdir; ensure adapter-based detection finds nothing
+            with (
+                patch(
+                    "cortex.tools.pre_commit_helpers.get_project_root_str",
+                    return_value=str(Path(tmpdir).resolve()),
+                ),
+                patch(
+                    "cortex.tools.pre_commit_helpers.detect_language_at_path",
+                    return_value=None,
+                ),
+            ):
+                result = await execute_pre_commit_checks(
+                    checks=["fix_errors"],
+                    project_root=str(tmpdir),
+                )
 
             assert result["status"] == "error"
             assert "Could not detect project language" in result["error"]
@@ -170,6 +182,24 @@ class TestExecutePreCommitChecks:
                 assert result["language"] == "python"
                 assert "fix_errors" in result["checks_performed"]
                 assert result["total_errors"] == 0
+
+    @pytest.mark.asyncio
+    async def test_language_detected_by_walking_up_from_subdir(self) -> None:
+        """When root_str is a subdir of a Python project, language is detected by walking up."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            _ = (root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            subdir = root / "src" / "app"
+            subdir.mkdir(parents=True)
+
+            result = detect_or_use_language(language=None, root_str=str(subdir))
+
+            assert not isinstance(
+                result, str
+            ), "Expected (LanguageInfo, root), not error JSON"
+            language_info, root_to_use = result
+            assert language_info.language == "python"
+            assert Path(root_to_use).resolve() == root.resolve()
 
     @pytest.mark.asyncio
     async def test_execute_all_checks_by_default(self) -> None:

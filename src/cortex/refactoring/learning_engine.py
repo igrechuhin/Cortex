@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.models import ModelDict
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.refactoring.models import (
     FeedbackRecordResult,
     LearningInsights,
@@ -94,8 +95,10 @@ class LearningEngine:
         self.memory_bank_dir: Path = Path(memory_bank_dir)
         self.config: ModelDict = config or {}
 
-        # Learning data file
-        learning_file = self.memory_bank_dir.parent / "learning.json"
+        # Learning data file (under .cortex/config/)
+        project_root = self.memory_bank_dir.parent.parent
+        config_dir = get_cortex_path(project_root, CortexResourceType.CONFIG)
+        learning_file = config_dir / "learning.json"
 
         # Initialize data manager for persistence
         self.data_manager = LearningDataManager(learning_file)

@@ -2,9 +2,12 @@
 
 import subprocess
 import tempfile
+from contextlib import chdir
 from pathlib import Path
 from typing import cast
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from cortex.services.framework_adapters.base import TestResult
 from cortex.services.framework_adapters.python_adapter import PythonAdapter
@@ -132,6 +135,27 @@ class TestPythonAdapter:
 
             assert result["check_type"] == "fix_errors"
             assert result["success"] is True
+
+    def test_get_command_raises_when_tool_missing(self) -> None:
+        """_get_command raises FileNotFoundError when tool not in project or cwd venv."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with chdir(tmpdir):
+                adapter = PythonAdapter(tmpdir)
+                with pytest.raises(FileNotFoundError) as exc_info:
+                    adapter._get_command("ruff")  # type: ignore[attr-defined]
+                assert "ruff not found" in str(exc_info.value)
+                assert "execute_pre_commit_checks" in str(exc_info.value)
+
+    def test_get_command_uses_cwd_venv_when_project_venv_missing(self) -> None:
+        """_get_command uses cwd/.venv/bin when project_root has no .venv (MCP fallback)."""
+        cwd_venv_bin = Path.cwd() / ".venv" / "bin"
+        if not (cwd_venv_bin / "ruff").exists():
+            pytest.skip(reason="repo .venv/bin/ruff not present (e.g. minimal CI)")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            adapter = PythonAdapter(str(project_root))
+            path = adapter._get_command("ruff")  # type: ignore[attr-defined]
+            assert path == str(cwd_venv_bin / "ruff")
 
     def test_parse_lint_errors_ignores_ruff_summary_lines(self) -> None:
         """Ensure ruff summary lines don't count as remaining errors."""

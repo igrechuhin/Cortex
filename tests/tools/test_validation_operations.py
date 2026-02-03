@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.core.models import ModelDict
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.validation_dispatch import setup_validation_managers
 from cortex.tools.validation_duplication import (
     handle_duplications_validation,
@@ -48,7 +49,7 @@ class TestValidateSchemaHelpers:
     ) -> None:
         """Test successful single file schema validation."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         test_file = memory_bank_dir / "projectBrief.md"
         _ = test_file.write_text("# Test content\n## Section 1\n")
@@ -131,7 +132,7 @@ class TestValidateSchemaHelpers:
     ) -> None:
         """Test schema validation when file does not exist."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         nonexistent_file = memory_bank_dir / "nonexistent.md"
 
@@ -155,8 +156,7 @@ class TestValidateSchemaHelpers:
     ) -> None:
         """Test successful all files schema validation."""
         # Arrange
-        cortex_dir = tmp_path / ".cortex"
-        memory_bank_dir = cortex_dir / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         _ = memory_bank_dir.mkdir(parents=True)
 
         file1 = memory_bank_dir / "file1.md"
@@ -212,7 +212,7 @@ class TestReadAllMemoryBankFiles:
     ) -> None:
         """Test successful reading of all memory bank files."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
 
         file1 = memory_bank_dir / "file1.md"
@@ -239,7 +239,7 @@ class TestReadAllMemoryBankFiles:
     ) -> None:
         """Test reading from empty memory bank directory."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
 
         # Act
@@ -344,7 +344,7 @@ class TestValidateDuplications:
     ) -> None:
         """Test duplication validation with custom threshold."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
 
         mock_fs_manager.read_file = AsyncMock(return_value=("Content", None))
@@ -386,7 +386,7 @@ class TestValidateDuplications:
     ) -> None:
         """Test duplication validation with default threshold from config."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
 
         mock_fs_manager.read_file = AsyncMock(return_value=("Content", None))
@@ -427,7 +427,7 @@ class TestValidateDuplications:
     ) -> None:
         """Test duplication validation with fix suggestions."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
 
         mock_fs_manager.read_file = AsyncMock(return_value=("Content", None))
@@ -475,7 +475,7 @@ class TestValidateQuality:
     ) -> None:
         """Test successful quality validation for single file."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         test_file = memory_bank_dir / "projectBrief.md"
         _ = test_file.write_text("# Content\n")
@@ -547,7 +547,7 @@ class TestValidateQuality:
     ) -> None:
         """Test quality validation when file does not exist."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         nonexistent = memory_bank_dir / "nonexistent.md"
 
@@ -572,7 +572,7 @@ class TestValidateQuality:
     ) -> None:
         """Test successful quality validation for all files."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         file1 = memory_bank_dir / "file1.md"
         file2 = memory_bank_dir / "file2.md"
@@ -631,7 +631,7 @@ class TestValidationHandlers:
             "schema_validator": MagicMock(),
         }
 
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         test_file = memory_bank_dir / "test.md"
         _ = test_file.write_text("Content")
@@ -668,7 +668,7 @@ class TestValidationHandlers:
             "schema_validator": MagicMock(),
         }
 
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
 
         mock_managers["fs_manager"].read_file = AsyncMock(
@@ -702,7 +702,7 @@ class TestValidationHandlers:
             "validation_config": MagicMock(),
         }
 
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
 
         mock_managers["fs_manager"].read_file = AsyncMock(
@@ -743,7 +743,7 @@ class TestValidationHandlers:
             "duplication_detector": MagicMock(),
         }
 
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         test_file = memory_bank_dir / "test.md"
         _ = test_file.write_text("Content")
@@ -794,7 +794,7 @@ class TestValidationHandlers:
             "duplication_detector": MagicMock(),
         }
 
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
 
         mock_managers["fs_manager"].read_file = AsyncMock(
@@ -893,14 +893,17 @@ class TestHandleInfrastructureValidation:
             "name: Test\njobs:\n  test:\n    steps:\n      - name: Test step"
         )
 
-        synapse_dir = tmp_path / ".cortex" / "synapse" / "prompts"
+        synapse_dir = get_cortex_path(tmp_path, CortexResourceType.SYNAPSE) / "prompts"
         synapse_dir.mkdir(parents=True)
         commit_file = synapse_dir / "commit.md"
         _ = commit_file.write_text("# Commit\n\n1. **Test step**\n   Description")
 
-        scripts_dir = tmp_path / "scripts"
-        scripts_dir.mkdir()
+        scripts_dir = (
+            get_cortex_path(tmp_path, CortexResourceType.SYNAPSE) / "scripts" / "python"
+        )
+        scripts_dir.mkdir(parents=True)
         _ = (scripts_dir / "check_file_sizes.py").write_text("# Script")
+        _ = (scripts_dir / "check_function_lengths.py").write_text("# Script")
 
         # Act
         result = await handle_infrastructure_validation(
@@ -925,7 +928,7 @@ class TestHandleInfrastructureValidation:
     ) -> None:
         """Test infrastructure validation with missing CI workflow file."""
         # Arrange
-        synapse_dir = tmp_path / ".cortex" / "synapse" / "prompts"
+        synapse_dir = get_cortex_path(tmp_path, CortexResourceType.SYNAPSE) / "prompts"
         synapse_dir.mkdir(parents=True)
         commit_file = synapse_dir / "commit.md"
         _ = commit_file.write_text("# Commit\n\n1. **Test step**\n   Description")
@@ -1115,7 +1118,7 @@ class TestHandleInfrastructureValidation:
         workflow_file = github_dir / "quality.yml"
         _ = workflow_file.write_text("name: Test")
 
-        synapse_dir = tmp_path / ".cortex" / "synapse" / "prompts"
+        synapse_dir = get_cortex_path(tmp_path, CortexResourceType.SYNAPSE) / "prompts"
         synapse_dir.mkdir(parents=True)
         commit_file = synapse_dir / "commit.md"
         _ = commit_file.write_text("# Commit")
@@ -1191,7 +1194,7 @@ class TestValidateMainFunction:
     async def test_validate_schema_check(self, tmp_path: Path) -> None:
         """Test validate function with schema check type."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
 
         with (
@@ -1217,7 +1220,7 @@ class TestValidateMainFunction:
     async def test_validate_duplications_check(self, tmp_path: Path) -> None:
         """Test validate function with duplications check type."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
 
         with (
@@ -1245,7 +1248,7 @@ class TestValidateMainFunction:
     async def test_validate_quality_check(self, tmp_path: Path) -> None:
         """Test validate function with quality check type."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
 
         with (
@@ -1271,7 +1274,7 @@ class TestValidateMainFunction:
     async def test_validate_infrastructure_check(self, tmp_path: Path) -> None:
         """Test validate function with infrastructure check type."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
 
         with (
@@ -1312,7 +1315,7 @@ class TestValidateMainFunction:
     async def test_validate_invalid_check_type(self, tmp_path: Path) -> None:
         """Test validate function with invalid check type."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
 
         with patch(
@@ -1353,7 +1356,7 @@ class TestValidateMainFunction:
     async def test_validate_with_all_parameters(self, tmp_path: Path) -> None:
         """Test validate function with all optional parameters."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
 
         with (
@@ -1394,7 +1397,7 @@ class TestValidateContextLogging:
     ) -> None:
         """When ctx is passed, validate logs start and completion via log_client."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         mock_ctx = AsyncMock()
         with (
@@ -1434,7 +1437,7 @@ class TestValidateContextLogging:
     ) -> None:
         """When check_type is invalid and ctx is passed, validate logs warning."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         mock_ctx = AsyncMock()
         with patch(
@@ -1463,7 +1466,7 @@ class TestValidateContextLogging:
     ) -> None:
         """When validation raises and ctx is passed, validate logs error."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         mock_ctx = AsyncMock()
         with (
@@ -1506,7 +1509,7 @@ class TestValidateTimestamps:
     ) -> None:
         """Test timestamp validation with valid YYYY-MM-DD date-only timestamps."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         test_file = memory_bank_dir / "activeContext.md"
         content = (
@@ -1538,7 +1541,7 @@ class TestValidateTimestamps:
     ) -> None:
         """Test timestamp validation with invalid datetime formats."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         test_file = memory_bank_dir / "progress.md"
         content = (
@@ -1570,7 +1573,7 @@ class TestValidateTimestamps:
     ) -> None:
         """Test timestamp validation with timezone components."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         test_file = memory_bank_dir / "roadmap.md"
         content = (
@@ -1600,7 +1603,7 @@ class TestValidateTimestamps:
     ) -> None:
         """Test timestamp validation when file doesn't exist."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         test_file = memory_bank_dir / "nonexistent.md"
 
@@ -1643,7 +1646,7 @@ class TestValidateTimestamps:
     ) -> None:
         """Test timestamp validation across all files with valid timestamps."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         _ = (memory_bank_dir / "activeContext.md").write_text(
             "# Active Context\n\n## Current Focus (2026-01-14T10:00)\n"
@@ -1686,7 +1689,7 @@ class TestValidateTimestamps:
     ) -> None:
         """Test timestamp validation across all files with violations."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         _ = (memory_bank_dir / "progress.md").write_text(
             "# Progress\n\n- ✅ Feature (2026-01-13 12:00)\n"
@@ -1733,7 +1736,7 @@ class TestHandleTimestampsValidation:
     ) -> None:
         """Test handle_timestamps_validation with file_name parameter."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         test_file = memory_bank_dir / "activeContext.md"
         content = "# Active Context\n\n## Current Focus (2026-01-14)\n"
@@ -1759,7 +1762,7 @@ class TestHandleTimestampsValidation:
     ) -> None:
         """Test handle_timestamps_validation without file_name parameter."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         _ = (memory_bank_dir / "activeContext.md").write_text(
             "# Active Context\n\n## Current Focus (2026-01-14)\n"
@@ -1791,7 +1794,7 @@ class TestHandleRoadmapSyncValidation:
     ) -> None:
         """Test handle_roadmap_sync_validation when roadmap.md doesn't exist."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         # Don't create roadmap.md
 
@@ -1809,7 +1812,7 @@ class TestHandleRoadmapSyncValidation:
     ) -> None:
         """Test handle_roadmap_sync_validation with valid roadmap."""
         # Arrange
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         roadmap_path = memory_bank_dir / "roadmap.md"
         roadmap_content = "# Roadmap\n\n## Phase 1\nSee `src/module.py` for details.\n"
@@ -1839,7 +1842,7 @@ class TestValidateResource:
     @pytest.mark.asyncio
     async def test_validate_resource_returns_json_success(self, tmp_path: Path) -> None:
         """Test validate_resource returns valid JSON for schema check (Phase 43)."""
-        memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         with (
             patch(

@@ -75,10 +75,14 @@ GIT_OPERATION_TIMEOUT_SECONDS = 30  # Timeout for git operations
 
 MCP_TOOL_TIMEOUT_SECONDS = 300  # Maximum time for MCP tool execution (5 minutes)
 MCP_CONNECTION_TIMEOUT_SECONDS = 30  # Timeout for stdio connection operations
+MCP_ROOTS_LIST_TIMEOUT_SECONDS = 5  # Timeout for roots/list request (fallback if slow)
 MCP_MAX_CONCURRENT_TOOLS = 5  # Maximum concurrent MCP tool executions
 MCP_CONNECTION_RETRY_ATTEMPTS = 3  # Maximum retry attempts for transient failures
 MCP_CONNECTION_RETRY_DELAY_SECONDS = 1.0  # Delay between retry attempts
 MCP_HEALTH_CHECK_INTERVAL_SECONDS = 60  # Interval for connection health checks
+MCP_RESOURCE_CACHE_TTL_SECONDS = (
+    30  # TTL for cached MCP resource responses (drain queue faster)
+)
 
 # MCP Tool Timeout Categories (in seconds)
 MCP_TOOL_TIMEOUT_FAST = 60.0  # Fast operations: health checks, simple queries
@@ -86,9 +90,15 @@ MCP_TOOL_TIMEOUT_MEDIUM = 120.0  # Medium operations: file reads, single validat
 MCP_TOOL_TIMEOUT_COMPLEX = 300.0  # Complex operations: analysis, multi-file ops
 MCP_TOOL_TIMEOUT_VERY_COMPLEX = 600.0  # Very complex: full tests, large refactors
 MCP_TOOL_TIMEOUT_EXTERNAL = 120.0  # External operations: network, git sync
+MCP_TOOL_TIMEOUT_QUALITY_FIXES = (
+    60.0  # Quality auto-fix tools (e.g. fix_quality_issues)
+)
 
 # Progress reporting (Phase 46)
 PROGRESS_REPORT_INTERVAL_SECONDS = 10  # Report progress every N seconds
+PROGRESS_REPORT_INTERVAL_LONG_RUNNING_SECONDS = (
+    5  # Shorter interval for tools with timeout >= 300s to avoid client idle timeout
+)
 PROGRESS_THRESHOLD_TIMEOUT_SECONDS = (
     120.0  # Enable progress for tools with timeout >= this
 )

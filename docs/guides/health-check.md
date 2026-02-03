@@ -12,19 +12,19 @@ The system is **read-only**: it suggests changes but does not modify files.
 
 ## Running Health-Check
 
-### CLI (scripts/health_check.py)
+### CLI (cortex.health_check)
 
-Run from the project root:
+The health-check CLI lives in `src/cortex/health_check/__main__.py`. Run from the project root:
 
 ```bash
 # Analyze all (prompts, rules, tools) with default threshold 0.75
-uv run python scripts/health_check.py --type all --output report.json
+uv run python -m cortex.health_check --type all --output report.json
 
 # Prompts only, higher threshold, Markdown report
-uv run python scripts/health_check.py --type prompts --threshold 0.8 --format markdown
+uv run python -m cortex.health_check --type prompts --threshold 0.8 --format markdown
 
 # JSON to stdout
-uv run python scripts/health_check.py --type rules --format json
+uv run python -m cortex.health_check --type rules --format json
 ```
 
 **Options:**
@@ -76,7 +76,7 @@ The Code Quality workflow (`.github/workflows/quality.yml`) runs health-check af
 To run locally in a CI-like way:
 
 ```bash
-uv run python scripts/health_check.py --type all --threshold 0.75 --output health-check-report.json --format json
+uv run python -m cortex.health_check --type all --threshold 0.75 --output health-check-report.json --format json
 ```
 
 ## Quality Preservation

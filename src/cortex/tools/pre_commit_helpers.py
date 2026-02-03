@@ -15,12 +15,14 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.constants import MAX_FILE_LINES, MAX_FUNCTION_LINES
 from cortex.core.models import JsonValue, ModelDict
+from cortex.core.path_resolver import has_memory_bank
 from cortex.managers.initialization import get_project_root
 from cortex.services.framework_adapters.base import (
     CheckResult,
     TestResult,
 )
-from cortex.services.language_detector import LanguageDetector, LanguageInfo
+from cortex.services.framework_adapters.detection import detect_language_at_path
+from cortex.services.language_detector import LanguageInfo
 
 
 class PreCommitCheck(str, Enum):
@@ -308,18 +310,110 @@ def unsupported_language_result_dict(
     return create_error_result_dict(msg)
 
 
-def detect_or_use_language(language: str | None, root_str: str) -> LanguageInfo | str:
-    """Detect language or use provided language."""
+_MAX_ANCESTOR_WALK = 20
+
+
+def _detect_language_in_cortex_subdirs(
+    candidate: Path,
+) -> tuple[LanguageInfo, Path] | None:
+    """Try detecting language in subdirs of a Cortex root (1–2 levels)."""
+    try:
+        for sub in candidate.iterdir():
+            if not sub.is_dir() or sub.name.startswith("."):
+                continue
+            if not has_memory_bank(sub):
+                for sub2 in sub.iterdir():
+                    if (
+                        not sub2.is_dir()
+                        or sub2.name.startswith(".")
+                        or not has_memory_bank(sub2)
+                    ):
+                        continue
+                    result = detect_language_at_path(sub2)
+                    if result is not None:
+                        return result
+                continue
+            result = detect_language_at_path(sub)
+            if result is not None:
+                return result
+    except OSError:
+        pass
+    return None
+
+
+def _detect_language_at_cortex_root(
+    start_path: Path,
+) -> tuple[LanguageInfo, Path] | None:
+    """If start_path or an ancestor is a Cortex root, detect language there.
+
+    Uses framework adapters for detection (language-agnostic). Returns
+    (LanguageInfo, project_root_path) when found so the adapter runs in
+    the actual project (e.g. ~/Repo/Cortex) not the wrong root (e.g. ~).
+    """
+    for candidate in [start_path, *list(start_path.parents)[:_MAX_ANCESTOR_WALK]]:
+        if candidate == candidate.parent:
+            continue
+        if not has_memory_bank(candidate):
+            continue
+        result = detect_language_at_path(candidate)
+        if result is not None:
+            return result
+        result = _detect_language_in_cortex_subdirs(candidate)
+        if result is not None:
+            return result
+    return None
+
+
+def _detect_language_from_ancestors(
+    start_path: Path,
+) -> tuple[LanguageInfo, Path] | None:
+    """Walk up from start_path and run language detection until a language is found.
+
+    Uses framework adapters for detection. Returns (LanguageInfo, project_root_path).
+    """
+    ancestors = [start_path, *list(start_path.parents)[:_MAX_ANCESTOR_WALK]]
+    for candidate in ancestors:
+        if candidate == candidate.parent:
+            continue
+        result = detect_language_at_path(candidate)
+        if result is not None:
+            return result
+    return None
+
+
+def _resolve_language_at_root(root_path: Path) -> tuple[LanguageInfo, str] | str:
+    """Detect language at root or ancestors or Cortex root; return (info, root) or error str."""
+    result = detect_language_at_path(root_path)
+    if result is not None:
+        info, path = result
+        return (info, str(path))
+    resolved = _detect_language_from_ancestors(root_path)
+    if resolved is not None:
+        info, path = resolved
+        return (info, str(path))
+    resolved = _detect_language_at_cortex_root(root_path)
+    if resolved is not None:
+        info, path = resolved
+        return (info, str(path))
+    msg = (
+        "Could not detect project language. Pass language (e.g. 'python') "
+        + "to execute_pre_commit_checks when invoking the tool."
+    )
+    return create_error_result(msg)
+
+
+def detect_or_use_language(
+    language: str | None, root_str: str
+) -> tuple[LanguageInfo, str] | str:
+    """Detect language or use provided language.
+
+    Returns (LanguageInfo, root_to_use) so the adapter runs in the correct
+    project (e.g. when project was found in a subdir). Returns error JSON str on failure.
+    """
     if language is None:
-        detector = LanguageDetector(root_str)
-        language_info = detector.detect_language()
-        if language_info is None:
-            return create_error_result(
-                "Could not detect project language. Please specify language parameter."
-            )
-        return language_info
+        return _resolve_language_at_root(Path(root_str).resolve())
     detected_language = language.lower()
-    return LanguageInfo(
+    info = LanguageInfo(
         language=detected_language,
         test_framework=None,
         formatter=None,
@@ -328,6 +422,7 @@ def detect_or_use_language(language: str | None, root_str: str) -> LanguageInfo 
         build_tool=None,
         confidence=0.5,
     )
+    return (info, root_str)
 
 
 def determine_checks_to_perform(checks: Sequence[str] | None) -> list[PreCommitCheck]:

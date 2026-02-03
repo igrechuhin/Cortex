@@ -214,9 +214,9 @@ jobs:
         id: spelling
         run: |
           echo "::group::Running spelling check"
-          # Install cspell if not available
+          # Install cspell if not available (pin to 8.x to avoid npm 404 for @cspell/rpc in 9.x)
           if ! command -v cspell &> /dev/null; then
-            npm install -g cspell
+            npm install -g cspell@8.6.1
           fi
           
           # Run spelling check using the script
@@ -298,7 +298,7 @@ jobs:
         id: health_check
         run: |
           echo "::group::Running health-check analysis"
-          uv run python scripts/health_check.py \
+          uv run python -m cortex.health_check \
             --type all \
             --threshold 0.75 \
             --output health-check-report.json \

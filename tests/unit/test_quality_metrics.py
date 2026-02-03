@@ -225,9 +225,7 @@ class TestOverallScoreCalculation:
         """Test overall score calculation with poor inputs."""
         result = await quality_metrics.calculate_overall_score(
             files_content=incomplete_files_content,
-            files_metadata={
-                k: cast(ModelDict, v) for k, v in stale_metadata.items()
-            },  # type: ignore[arg-type] - ModelDict is compatible
+            files_metadata={k: cast(ModelDict, v) for k, v in stale_metadata.items()},  # type: ignore[arg-type] - ModelDict is compatible
             duplication_data=cast(ModelDict, with_duplications),
         )
 
@@ -249,9 +247,7 @@ class TestOverallScoreCalculation:
         """Test breakdown contains all expected categories."""
         result = await quality_metrics.calculate_overall_score(
             files_content=perfect_files_content,
-            files_metadata={
-                k: cast(ModelDict, v) for k, v in recent_metadata.items()
-            },  # type: ignore[arg-type] - ModelDict is compatible
+            files_metadata={k: cast(ModelDict, v) for k, v in recent_metadata.items()},  # type: ignore[arg-type] - ModelDict is compatible
             duplication_data=cast(ModelDict, no_duplications),
         )
 
@@ -283,9 +279,7 @@ class TestOverallScoreCalculation:
 
         result = await quality_metrics.calculate_overall_score(
             files_content=perfect_files_content,
-            files_metadata={
-                k: cast(ModelDict, v) for k, v in recent_metadata.items()
-            },  # type: ignore[arg-type] - ModelDict is compatible
+            files_metadata={k: cast(ModelDict, v) for k, v in recent_metadata.items()},  # type: ignore[arg-type] - ModelDict is compatible
             duplication_data=cast(ModelDict, no_duplications),
             link_validation=link_validation,
         )
@@ -305,9 +299,7 @@ class TestOverallScoreCalculation:
         """Test recommendations are generated for issues."""
         result = await quality_metrics.calculate_overall_score(
             files_content=incomplete_files_content,
-            files_metadata={
-                k: cast(ModelDict, v) for k, v in stale_metadata.items()
-            },  # type: ignore[arg-type] - ModelDict is compatible
+            files_metadata={k: cast(ModelDict, v) for k, v in stale_metadata.items()},  # type: ignore[arg-type] - ModelDict is compatible
             duplication_data=cast(ModelDict, with_duplications),
         )
 

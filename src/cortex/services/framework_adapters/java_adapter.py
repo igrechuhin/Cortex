@@ -9,6 +9,8 @@ import subprocess
 from collections.abc import Sequence
 from pathlib import Path
 
+from cortex.services.language_detector import LanguageDetector, LanguageInfo
+
 from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
 
 _JAVA_ERROR_RE = re.compile(r"^\[ERROR\].*|error:\s+.*", re.IGNORECASE)
@@ -58,6 +60,14 @@ def _infer_from_build_status(output: str, passed: int, failed: int) -> tuple[int
 
 class JavaAdapter(FrameworkAdapter):
     """Adapter for Java projects (Maven or Gradle)."""
+
+    @classmethod
+    def detect(cls, path: Path) -> LanguageInfo | None:
+        """Detect if path is a Java project. Reuses LanguageDetector."""
+        info = LanguageDetector(str(path)).detect_language()
+        if info is not None and info.language == "java":
+            return info
+        return None
 
     def __init__(self, project_root: str | None = None) -> None:
         """Initialize Java adapter.

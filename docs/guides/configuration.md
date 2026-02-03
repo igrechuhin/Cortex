@@ -8,11 +8,11 @@ Cortex uses JSON configuration files for various features. Configuration files a
 
 ## Configuration Files
 
-### `.memory-bank-validation.json`
+### `.cortex/config/validation.json`
 
 Controls validation behavior for schema validation, duplication detection, and quality metrics.
 
-**Location**: Project root
+**Location**: `.cortex/config/` (under project root)
 
 **Default Values**:
 
@@ -103,11 +103,11 @@ Controls validation behavior for schema validation, duplication detection, and q
 }
 ```
 
-### `.memory-bank-optimization.json`
+### `.cortex/config/optimization.json`
 
 Controls context optimization, progressive loading, and summarization.
 
-**Location**: Project root
+**Location**: `.cortex/config/` (under project root)
 
 **Default Values**:
 
@@ -267,11 +267,11 @@ Controls context optimization, progressive loading, and summarization.
 }
 ```
 
-### `.memory-bank-learning.json`
+### `.cortex/.cache/learning.json`
 
-Controls learning engine behavior for refactoring adaptation.
+Controls learning engine behavior for refactoring adaptation (feedback, patterns, preferences).
 
-**Location**: Project root (auto-created)
+**Location**: `.cortex/.cache/` (unified cache directory)
 
 **Structure**:
 
@@ -299,6 +299,26 @@ Controls learning engine behavior for refactoring adaptation.
 ```
 
 **Note**: This file is managed automatically by the learning engine. Manual edits are not recommended.
+
+### `.cortex/config/structure.json`
+
+Defines project structure layout, Cursor symlinks, housekeeping, and rules (e.g. shared rules submodule). Optional; created by `setup_project_structure` and defaults used if missing.
+
+**Location**: `.cortex/config/` (under project root)
+
+**Note**: This is user/editor configuration, not cache. Only the repo root’s `.cortex/` is canonical; avoid sibling copies (e.g. top-level `/structure/`).
+
+### Version history (`.cortex/history/`)
+
+Version snapshots for Memory Bank files (create_snapshot, rollback) are stored under `.cortex/history/`. This directory is generated at runtime and should not be tracked in Git. Legacy path `.memory-bank-history/` is no longer used; ignore it via `.gitignore` if present.
+
+### Summary cache (`.cortex/.cache/summaries/`)
+
+Summarization cache (summarize_content with `cache_summaries` enabled) is stored under `.cortex/.cache/summaries/`. This directory is generated at runtime and should not be tracked in Git. Legacy path `.memory-bank-summaries/` is not used; ignore it via `.gitignore` if present.
+
+### Quality/check scripts (`.cortex/synapse/scripts/{language}/`)
+
+Canonical location for quality and check scripts (e.g. `check_formatting.py`, `check_types.py`, `check_file_sizes.py`) is `.cortex/synapse/scripts/{language}/` (e.g. `python/`). CI and `execute_pre_commit_checks` use these paths. Root `scripts/` is **restricted legacy**: use only for project-specific utilities; do not place Synapse check scripts there.
 
 ### `.memory-bank-approvals.json`
 
@@ -441,12 +461,12 @@ Adjust weights based on your workflow:
 
 ```gitignore
 # Memory Bank Configuration (not tracked)
-.memory-bank-validation.json
-.memory-bank-optimization.json
-.memory-bank-learning.json
+.cortex/config/validation.json
+.cortex/config/optimization.json
+.cortex/config/learning.json
 .memory-bank-approvals.json
 .memory-bank-index
-.memory-bank-history/
+.cortex/history/
 .memory-bank-access-log.json
 .memory-bank-refactoring-history.json
 .memory-bank-rollbacks.json

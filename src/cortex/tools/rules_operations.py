@@ -52,7 +52,7 @@ async def check_rules_enabled(
                 "status": "disabled",
                 "message": (
                     "Rules indexing is disabled. "
-                    "Enable it in .cortex/optimization.json"
+                    "Enable it in .cortex/config/optimization.json"
                 ),
             },
             indent=2,
@@ -217,7 +217,7 @@ async def rules(
        rules (generic, language-specific, local) with relevance scores and token
        counts.
 
-    Rules indexing must be enabled in .cortex/optimization.json configuration
+    Rules indexing must be enabled in .cortex/config/optimization.json configuration
     file with rules_enabled: true and rules_folder path specified.
 
     Args:
@@ -323,7 +323,7 @@ async def rules(
             "status": "disabled",
             "message": (
                 "Rules indexing is disabled. "
-                "Enable it in .cortex/optimization.json"
+                "Enable it in .cortex/config/optimization.json"
             )
         }
 
@@ -437,7 +437,7 @@ async def rules(
         }
 
     Note:
-        - Rules indexing must be enabled in .cortex/optimization.json with
+        - Rules indexing must be enabled in .cortex/config/optimization.json with
           rules_enabled: true and rules_folder path configured
         - Index operation uses incremental caching by default; use force=True to
           rebuild entire index from scratch

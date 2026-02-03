@@ -18,6 +18,7 @@ class CortexResourceType(Enum):
     RULES = "rules"
     HISTORY = "history"
     CONFIG = "config"
+    SYNAPSE = "synapse"
     ARCHIVED = "archived"
     REVIEWS = "reviews"
     SESSION = ".session"
@@ -79,3 +80,27 @@ def get_cache_path(project_root: Path, cache_type: str | None = None) -> Path:
         return cache_dir / cache_type
 
     return cache_dir
+
+
+def has_memory_bank(project_root: Path) -> bool:
+    """Return True if project_root has .cortex/memory-bank directory."""
+    return get_cortex_path(project_root, CortexResourceType.MEMORY_BANK).is_dir()
+
+
+_MEMORY_BANK_CORE_FILES = (
+    "projectBrief.md",
+    "productContext.md",
+    "activeContext.md",
+    "systemPatterns.md",
+    "techContext.md",
+    "progress.md",
+    "roadmap.md",
+)
+
+
+def is_memory_bank_fully_initialized(project_root: Path) -> bool:
+    """Return True if .cortex/memory-bank exists and has all 7 core files."""
+    mb_dir = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
+    return mb_dir.is_dir() and all(
+        (mb_dir / fname).exists() for fname in _MEMORY_BANK_CORE_FILES
+    )

@@ -1036,14 +1036,14 @@ User's Project
 │   └── swift/
 │       └── naming.md
 ├── .memory-bank-index        (Metadata, NOT in Git)
-├── .memory-bank-history/     (Version snapshots, NOT in Git)
+├── .cortex/history/          (Version snapshots, NOT in Git)
 ├── .memory-bank-access-log.json (Usage patterns, NOT in Git)
-├── .memory-bank-validation.json (Validation config, optional)
-├── .memory-bank-optimization.json (Optimization config, optional)
+├── .cortex/config/validation.json (Validation config, optional)
+├── .cortex/config/optimization.json (Optimization config, optional)
 ├── .memory-bank-approvals.json (Approval records, NOT in Git)
 ├── .memory-bank-refactoring-history.json (Execution history, NOT in Git)
 ├── .memory-bank-rollbacks.json (Rollback history, NOT in Git)
-├── .memory-bank-learning.json (Learning data, NOT in Git)
+├── .cortex/.cache/learning.json (Learning data, NOT in Git)
 └── .gitignore               (Excludes metadata)
 
 MCP Server (47 modules) ⭐ Phase 9.1.6 expanded

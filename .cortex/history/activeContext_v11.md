@@ -1,6 +1,6 @@
 # Active Context: Cortex
 
-## Current Focus (2026-02-02)
+## Current Focus (2026-02-03)
 
 See [roadmap.md](roadmap.md) for current status and milestones.
 
@@ -34,6 +34,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
+- Commit (2026-02-03) (pause-after-step): Steps 0–4 completed; fix_markdown_lint fixed roadmap.md; tests 3443, coverage 90.09%. Steps 5–12 and commit pending.
 - Phase 43 Step 3.2 context/health/scripts/usage resources (2026-02-02): analyze_context_effectiveness_resource, get_context_usage_statistics_resource, check_mcp_connection_health_resource, analyze_health_check_resource, list_session_scripts_resource, analyze_session_scripts_resource, suggest_tool_improvements_resource, get_tool_usage_stats_resource, get_unused_tools_resource, get_tool_usage_report_resource, get_optimization_recommendations_resource; unit tests; test_usage_analytics.py; quality gate passes.
 - Phase 43 Step 3.2 structure/synapse/rules resources (2026-02-02): check_structure_health_resource, rules_get_relevant_resource, get_synapse_rules_resource, get_synapse_prompts_resource; unit tests; quality gate passes.
 - Merge analyze* prompts blocker (2026-02-02): Unified analyze.md; manifest and icons; old prompts archived; integration tests; README; quality gate passes.
@@ -41,6 +42,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 - Phase 48 Optimize-context feedback analysis (2026-02-02): Marked COMPLETE; plan archived to .cortex/plans/archive/Phase48/phase-48-optimize-context-feedback-analysis.md.
 - Phase 48 (2026-02-02): Replaced by unified Analyze prompt (analyze.md); former analyze-context-effectiveness and analyze-session-optimization archived.
 - Phase 47 (2026-02-02): Icon helper (icon_helpers.py); emoji icons on all setup and Synapse prompts; optional manifest icon; ✅ in manage_file write message and get_structure_info message; unit tests; quality gate passes.
+- Commit (2026-02-03): Pre-commit pipeline (pause-after-step); function length refactors (pre_commit_helpers, markdown_operations); health_check **main**.py CLI; BenchmarkRunner default .cortex/benchmark_results; test fixes (health_check_cli, test_execute_all_checks_by_default); tests 3441, coverage 90.11%.
 - Commit (2026-02-02): Quality gate fixes—pre_commit_tools under 400 lines via pre_commit_pipeline.py; function length fixes in pre_commit_tools and python_adapter.
 - Phase 46: ProgressReporter (src/cortex/core/progress.py); mcp_tool_wrapper enable_progress (auto when timeout ≥ 120s); time-based progress loop; unit tests; quality gate passes.
 - Phase 45 (partial): mcp_annotations.py helpers; annotations on 12 MCP tools.
@@ -48,11 +50,11 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Project Health
 
-- **Tests**: 3354+ passing; coverage ≥ 90%.
+- **Tests**: 3443+ passing; coverage ≥ 90%.
 - **Linting/Types**: Pyright 0 errors, 0 warnings.
 - **Quality**: File size and function length gates passing; pre_commit_tools <400 lines (pipeline in pre_commit_pipeline.py).
 - **Pre-commit adapters**: Python, TypeScript, JavaScript, Rust, Go, Java, Kotlin, Swift full implementations.
-- **Health-check**: CLI scripts/health_check.py; CI step in quality.yml; analyze_health_check MCP tool.
+- **Health-check**: CLI `python -m cortex.health_check` (src/cortex/health_check/**main**.py); CI step in quality.yml; analyze_health_check MCP tool.
 - **Script capture**: capture_session_script, list_session_scripts, analyze_session_scripts, suggest_tool_improvements, promote_session_script MCP tools; script_promotion and discovery modules; .cortex/script-capture/ storage.
 - **MCP tool failure protocol**: mcp_tool_wrapper invokes MCPToolFailureHandler on detected failures; investigation plan created, roadmap updated, MCPToolFailure raised.
 - **Progress reporting (Phase 46)**: ProgressReporter for stage-based progress; mcp_tool_wrapper(enable_progress=None) auto-enables for timeout ≥ 120s; time-based progress every 10s when ctx present; PROGRESS_REPORT_INTERVAL_SECONDS, PROGRESS_THRESHOLD_TIMEOUT_SECONDS.

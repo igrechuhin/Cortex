@@ -9,12 +9,25 @@ import pytest
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ModelDict
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.refactoring.execution_validator import ExecutionValidator
 from cortex.refactoring.models import (
+    ActionDetails,
     OperationParameters,
+    RefactoringActionModel,
+    RefactoringImpactMetrics,
     RefactoringOperationModel,
+    RefactoringPriority,
     RefactoringStatus,
+    RefactoringSuggestionModel,
+    RefactoringType,
 )
+
+
+@pytest.fixture
+def memory_bank_dir(temp_project_root: Path) -> Path:
+    """Memory bank directory for ExecutionValidator tests (uses path_resolver)."""
+    return get_cortex_path(temp_project_root, CortexResourceType.MEMORY_BANK)
 
 
 class TestRefactoringOperation:
@@ -112,24 +125,38 @@ class TestExtractOperations:
             fs_manager=mock_file_system,
             metadata_index=mock_metadata_index,
         )
-
-        suggestion = {
-            "suggestion_id": "sug-1",
-            "type": "consolidation",
-            "target_file": "consolidated.md",
-            "files": ["file1.md", "file2.md"],
-            "sections": ["Section1"],
-            "extraction_target": "common.md",
-        }
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-1",
+            refactoring_type=RefactoringType.CONSOLIDATION,
+            priority=RefactoringPriority.MEDIUM,
+            title="Consolidate",
+            description="Consolidate duplicate content",
+            reasoning="Reduce duplication",
+            affected_files=["file1.md", "file2.md"],
+            actions=[
+                RefactoringActionModel(
+                    action_type="consolidate",
+                    target_file="consolidated.md",
+                    description="Consolidate",
+                    details=ActionDetails(
+                        destination_file="consolidated.md",
+                        sections=["Section1"],
+                    ),
+                ),
+            ],
+            confidence_score=0.8,
+        )
 
         # Act
-        operations = validator.extract_operations(cast(ModelDict, suggestion))
+        operations = validator.extract_operations(suggestion)
 
         # Assert
         assert len(operations) == 1
         assert operations[0].operation_type == "consolidate"
         assert operations[0].target_file == "consolidated.md"
-        assert operations[0].parameters.source_files == ["file1.md", "file2.md"]
+        assert operations[0].parameters.source_file == "file1.md"
+        assert operations[0].parameters.destination_file == "consolidated.md"
+        assert operations[0].parameters.sections == ["Section1"]
 
     @pytest.mark.asyncio
     async def test_extract_split_operations(
@@ -145,27 +172,41 @@ class TestExtractOperations:
             fs_manager=mock_file_system,
             metadata_index=mock_metadata_index,
         )
-
-        suggestion = {
-            "suggestion_id": "sug-2",
-            "type": "split",
-            "file": "large.md",
-            "split_points": [
-                {
-                    "new_file": "part1.md",
-                    "sections": ["Section1"],
-                    "content": "Content1",
-                },
-                {
-                    "new_file": "part2.md",
-                    "sections": ["Section2"],
-                    "content": "Content2",
-                },
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-2",
+            refactoring_type=RefactoringType.SPLIT,
+            priority=RefactoringPriority.MEDIUM,
+            title="Split",
+            description="Split file",
+            reasoning="Test",
+            affected_files=["large.md"],
+            actions=[
+                RefactoringActionModel(
+                    action_type="split",
+                    target_file="large.md",
+                    description="Split",
+                    details=ActionDetails(
+                        destination_file="part1.md",
+                        sections=["Section1"],
+                        content="Content1",
+                    ),
+                ),
+                RefactoringActionModel(
+                    action_type="split",
+                    target_file="large.md",
+                    description="Split",
+                    details=ActionDetails(
+                        destination_file="part2.md",
+                        sections=["Section2"],
+                        content="Content2",
+                    ),
+                ),
             ],
-        }
+            confidence_score=0.8,
+        )
 
         # Act
-        operations = validator.extract_operations(cast(ModelDict, suggestion))
+        operations = validator.extract_operations(suggestion)
 
         # Assert
         assert len(operations) == 2
@@ -188,19 +229,39 @@ class TestExtractOperations:
             fs_manager=mock_file_system,
             metadata_index=mock_metadata_index,
         )
-
-        suggestion = {
-            "suggestion_id": "sug-3",
-            "type": "reorganization",
-            "actions": [
-                {"action": "move", "file": "file1.md", "destination": "subdir/"},
-                {"action": "rename", "file": "file2.md", "new_name": "renamed.md"},
-                {"action": "create_category", "name": "newdir"},
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-3",
+            refactoring_type=RefactoringType.REORGANIZATION,
+            priority=RefactoringPriority.MEDIUM,
+            title="Reorganize",
+            description="Reorganize",
+            reasoning="Test",
+            affected_files=[],
+            actions=[
+                RefactoringActionModel(
+                    action_type="move",
+                    target_file="file1.md",
+                    description="Move",
+                    details=ActionDetails(destination_file="subdir/"),
+                ),
+                RefactoringActionModel(
+                    action_type="rename",
+                    target_file="file2.md",
+                    description="Rename",
+                    details=ActionDetails(destination_file="renamed.md"),
+                ),
+                RefactoringActionModel(
+                    action_type="create_category",
+                    target_file="newdir",
+                    description="Create category",
+                    details=ActionDetails(),
+                ),
             ],
-        }
+            confidence_score=0.8,
+        )
 
         # Act
-        operations = validator.extract_operations(cast(ModelDict, suggestion))
+        operations = validator.extract_operations(suggestion)
 
         # Assert
         assert len(operations) == 3
@@ -250,18 +311,27 @@ class TestValidateRefactoring:
             metadata_index=mock_metadata_index,
         )
 
-        suggestion: dict[str, str | list[str]] = {
-            "suggestion_id": "sug-1",
-            "type": "consolidation",
-            "target_file": "nonexistent.md",
-            "files": [],
-            "sections": [],
-        }
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-1",
+            refactoring_type=RefactoringType.CONSOLIDATION,
+            priority=RefactoringPriority.MEDIUM,
+            title="Consolidate",
+            description="Consolidate",
+            reasoning="Test",
+            affected_files=[],
+            actions=[
+                RefactoringActionModel(
+                    action_type="consolidate",
+                    target_file="nonexistent.md",
+                    description="Consolidate",
+                    details=ActionDetails(destination_file="nonexistent.md"),
+                ),
+            ],
+            confidence_score=0.8,
+        )
 
         # Act
-        result = await validator.validate_refactoring(
-            cast(ModelDict, suggestion), dry_run=True
-        )
+        result = await validator.validate_refactoring(suggestion, dry_run=True)
 
         # Assert
         assert result.valid is False
@@ -287,18 +357,27 @@ class TestValidateRefactoring:
         existing_file = memory_bank_dir / "existing.md"
         _ = existing_file.write_text("Content")
 
-        suggestion = {
-            "suggestion_id": "sug-2",
-            "type": "reorganization",
-            "actions": [
-                {"action": "create_category", "name": "existing.md"},
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-2",
+            refactoring_type=RefactoringType.REORGANIZATION,
+            priority=RefactoringPriority.MEDIUM,
+            title="Reorganize",
+            description="Reorganize",
+            reasoning="Test",
+            affected_files=[],
+            actions=[
+                RefactoringActionModel(
+                    action_type="create_category",
+                    target_file="existing.md",
+                    description="Create category",
+                    details=ActionDetails(),
+                ),
             ],
-        }
+            confidence_score=0.8,
+        )
 
         # Act
-        result = await validator.validate_refactoring(
-            cast(ModelDict, suggestion), dry_run=True
-        )
+        result = await validator.validate_refactoring(suggestion, dry_run=True)
 
         # Assert
         assert result.valid is False
@@ -328,18 +407,27 @@ class TestValidateRefactoring:
             return_value={"modified_externally": True}
         )
 
-        suggestion = {
-            "suggestion_id": "sug-3",
-            "type": "reorganization",
-            "actions": [
-                {"action": "rename", "file": "modified.md", "new_name": "new.md"}
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-3",
+            refactoring_type=RefactoringType.REORGANIZATION,
+            priority=RefactoringPriority.MEDIUM,
+            title="Reorganize",
+            description="Reorganize",
+            reasoning="Test",
+            affected_files=[],
+            actions=[
+                RefactoringActionModel(
+                    action_type="rename",
+                    target_file="modified.md",
+                    description="Rename",
+                    details=ActionDetails(destination_file="new.md"),
+                ),
             ],
-        }
+            confidence_score=0.8,
+        )
 
         # Act
-        result = await validator.validate_refactoring(
-            cast(ModelDict, suggestion), dry_run=True
-        )
+        result = await validator.validate_refactoring(suggestion, dry_run=True)
 
         # Assert
         assert len(result.warnings) > 0
@@ -360,18 +448,21 @@ class TestValidateRefactoring:
             metadata_index=mock_metadata_index,
         )
 
-        suggestion: dict[str, str | list[dict[str, int]] | dict[str, int]] = {
-            "suggestion_id": "sug-4",
-            "type": "split",
-            "file": "large.md",
-            "split_points": [],
-            "estimated_impact": {"token_savings": -1500},
-        }
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-4",
+            refactoring_type=RefactoringType.SPLIT,
+            priority=RefactoringPriority.MEDIUM,
+            title="Split",
+            description="Split",
+            reasoning="Test",
+            affected_files=["large.md"],
+            actions=[],
+            confidence_score=0.8,
+            estimated_impact=RefactoringImpactMetrics(token_savings=-1500),
+        )
 
         # Act
-        result = await validator.validate_refactoring(
-            cast(ModelDict, suggestion), dry_run=True
-        )
+        result = await validator.validate_refactoring(suggestion, dry_run=True)
 
         # Assert
         assert len(result.warnings) > 0
@@ -392,19 +483,28 @@ class TestValidateRefactoring:
             metadata_index=mock_metadata_index,
         )
 
-        suggestion: dict[str, str | list[str] | dict[str, float]] = {
-            "suggestion_id": "sug-5",
-            "type": "consolidation",
-            "target_file": "test.md",
-            "files": [],
-            "sections": [],
-            "estimated_impact": {"complexity_reduction": -0.2},
-        }
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-5",
+            refactoring_type=RefactoringType.CONSOLIDATION,
+            priority=RefactoringPriority.MEDIUM,
+            title="Consolidate",
+            description="Consolidate",
+            reasoning="Test",
+            affected_files=[],
+            actions=[
+                RefactoringActionModel(
+                    action_type="consolidate",
+                    target_file="test.md",
+                    description="Consolidate",
+                    details=ActionDetails(destination_file="test.md"),
+                ),
+            ],
+            confidence_score=0.8,
+            estimated_impact=RefactoringImpactMetrics(complexity_reduction=-0.2),
+        )
 
         # Act
-        result = await validator.validate_refactoring(
-            cast(ModelDict, suggestion), dry_run=True
-        )
+        result = await validator.validate_refactoring(suggestion, dry_run=True)
 
         # Assert
         assert len(result.warnings) > 0
@@ -436,16 +536,27 @@ class TestValidateRefactoring:
             return_value=("Link to [target](target.md)", None)
         )
 
-        suggestion = {
-            "suggestion_id": "sug-6",
-            "type": "reorganization",
-            "actions": [{"action": "move", "file": "target.md", "destination": "new/"}],
-        }
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-6",
+            refactoring_type=RefactoringType.REORGANIZATION,
+            priority=RefactoringPriority.MEDIUM,
+            title="Reorganize",
+            description="Reorganize",
+            reasoning="Test",
+            affected_files=[],
+            actions=[
+                RefactoringActionModel(
+                    action_type="move",
+                    target_file="target.md",
+                    description="Move",
+                    details=ActionDetails(destination_file="new/"),
+                ),
+            ],
+            confidence_score=0.8,
+        )
 
         # Act
-        result = await validator.validate_refactoring(
-            cast(ModelDict, suggestion), dry_run=False
-        )
+        result = await validator.validate_refactoring(suggestion, dry_run=False)
 
         # Assert
         assert len(result.warnings) > 0
@@ -466,20 +577,41 @@ class TestValidateRefactoring:
             metadata_index=mock_metadata_index,
         )
 
-        suggestion: dict[str, str | list[dict[str, str | list[str]]]] = {
-            "suggestion_id": "sug-7",
-            "type": "split",
-            "file": "test.md",
-            "split_points": [
-                {"new_file": "part1.md", "sections": [], "content": ""},
-                {"new_file": "part2.md", "sections": [], "content": ""},
+        suggestion = RefactoringSuggestionModel(
+            suggestion_id="sug-7",
+            refactoring_type=RefactoringType.SPLIT,
+            priority=RefactoringPriority.MEDIUM,
+            title="Split",
+            description="Split",
+            reasoning="Test",
+            affected_files=["test.md"],
+            actions=[
+                RefactoringActionModel(
+                    action_type="split",
+                    target_file="test.md",
+                    description="Split",
+                    details=ActionDetails(
+                        destination_file="part1.md",
+                        sections=[],
+                        content="",
+                    ),
+                ),
+                RefactoringActionModel(
+                    action_type="split",
+                    target_file="test.md",
+                    description="Split",
+                    details=ActionDetails(
+                        destination_file="part2.md",
+                        sections=[],
+                        content="",
+                    ),
+                ),
             ],
-        }
+            confidence_score=0.8,
+        )
 
         # Act
-        result = await validator.validate_refactoring(
-            cast(ModelDict, suggestion), dry_run=True
-        )
+        result = await validator.validate_refactoring(suggestion, dry_run=True)
 
         # Assert
         assert result.operations_count == 2

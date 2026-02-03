@@ -183,8 +183,7 @@ class TestTypeScriptAdapter:
         """_parse_eslint_output separates error and warning lines."""
         adapter = TypeScriptAdapter()
         output = (
-            "src/a.ts:1:1: error Unexpected var\n"
-            "src/b.ts:2:2: warning Prefer const\n"
+            "src/a.ts:1:1: error Unexpected var\nsrc/b.ts:2:2: warning Prefer const\n"
         )
         errs, warns = adapter.parse_eslint_output(
             output

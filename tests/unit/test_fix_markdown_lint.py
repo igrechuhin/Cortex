@@ -511,7 +511,8 @@ class TestFixMarkdownLintTool:
 
         with (
             patch(
-                "cortex.tools.markdown_operations.get_project_root",
+                "cortex.tools.markdown_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
@@ -556,7 +557,8 @@ class TestFixMarkdownLintTool:
 
         with (
             patch(
-                "cortex.tools.markdown_operations.get_project_root",
+                "cortex.tools.markdown_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
@@ -580,6 +582,41 @@ class TestFixMarkdownLintTool:
             assert "git repository" in result["error_message"]
 
     @pytest.mark.asyncio
+    async def test_fix_markdown_lint_not_git_repo_with_none_project_root_includes_hint(
+        self, tmp_path: Path
+    ):
+        """When project_root is None and git check fails, error includes MCP hint."""
+        from cortex.tools.markdown_operations import fix_markdown_lint
+
+        with (
+            patch(
+                "cortex.tools.markdown_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.markdown_operations._run_command",
+                new_callable=AsyncMock,
+                return_value=GitCommandResult(
+                    success=False,
+                    stdout="",
+                    stderr="",
+                    returncode=128,
+                    error="not a git repository",
+                ),
+            ),
+        ):
+            result_str = await fix_markdown_lint(project_root=None)
+            result = json.loads(result_str)
+            assert result["success"] is False
+            assert "Not in a git repository" in result["error_message"]
+            assert "project_root" in result["error_message"]
+            assert (
+                "MCP client" in result["error_message"]
+                or "workspace" in result["error_message"]
+            )
+
+    @pytest.mark.asyncio
     async def test_fix_markdown_lint_markdownlint_not_available(self, tmp_path: Path):
         """Test error when markdownlint-cli2 is not available."""
         # Arrange
@@ -587,7 +624,8 @@ class TestFixMarkdownLintTool:
 
         with (
             patch(
-                "cortex.tools.markdown_operations.get_project_root",
+                "cortex.tools.markdown_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
@@ -622,7 +660,8 @@ class TestFixMarkdownLintTool:
 
         with (
             patch(
-                "cortex.tools.markdown_operations.get_project_root",
+                "cortex.tools.markdown_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
@@ -654,19 +693,16 @@ class TestFixMarkdownLintTool:
 
     @pytest.mark.asyncio
     async def test_fix_markdown_lint_exception(self, tmp_path: Path):
-        """Test exception handling."""
-        # Arrange
+        """Test exception handling (e.g. from validation or later step)."""
         from cortex.tools.markdown_operations import fix_markdown_lint
 
         with patch(
-            "cortex.tools.markdown_operations.get_project_root",
+            "cortex.tools.markdown_operations._validate_markdown_prerequisites",
+            new_callable=AsyncMock,
             side_effect=ValueError("Test error"),
         ):
-            # Act
             result_str = await fix_markdown_lint(project_root=str(tmp_path))
             result = json.loads(result_str)
-
-            # Assert
             assert result["success"] is False
             assert "Test error" in result["error_message"]
 
@@ -692,13 +728,15 @@ class TestFixMarkdownLintTool:
             markdownlint_cmd: list[str],
             config_path: Path | None,
             dry_run: bool,
+            ctx: object = None,
         ) -> str:
             run_markdownlint_with_cache_called_with.append(files)
             return _create_empty_success_response()
 
         with (
             patch(
-                "cortex.tools.markdown_operations.get_project_root",
+                "cortex.tools.markdown_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
@@ -747,7 +785,8 @@ class TestFixMarkdownLintContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.markdown_operations.get_project_root",
+                "cortex.tools.markdown_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
@@ -787,7 +826,6 @@ class TestFixMarkdownLintContextLogging:
         self, tmp_path: Path
     ) -> None:
         """When impl raises and ctx is passed, fix_markdown_lint logs error."""
-        # Arrange
         from cortex.tools.markdown_operations import fix_markdown_lint
 
         mock_ctx = AsyncMock()
@@ -797,17 +835,15 @@ class TestFixMarkdownLintContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.markdown_operations.get_project_root",
+                "cortex.tools.markdown_operations._validate_markdown_prerequisites",
+                new_callable=AsyncMock,
                 side_effect=ValueError("Test error"),
             ),
         ):
-            # Act
             result_str = await fix_markdown_lint(
                 project_root=str(tmp_path), ctx=mock_ctx
             )
             result = json.loads(result_str)
-
-            # Assert
             assert result["success"] is False
             assert any(
                 c[0][1] == "error" and "fix_markdown_lint: failed:" in str(c[0][2])

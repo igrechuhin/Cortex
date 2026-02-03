@@ -6,6 +6,9 @@ Adapter for Python projects using pytest, ruff, pyright, and black.
 import re
 import subprocess
 from collections.abc import Sequence
+from pathlib import Path
+
+from cortex.services.language_detector import LanguageDetector, LanguageInfo
 
 from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
 
@@ -20,6 +23,14 @@ _PROGRESS_REPORT_EVERY_N_TESTS = 50
 class PythonAdapter(FrameworkAdapter):
     """Adapter for Python projects."""
 
+    @classmethod
+    def detect(cls, path: Path) -> LanguageInfo | None:
+        """Detect if path is a Python project. Reuses LanguageDetector."""
+        info = LanguageDetector(str(path)).detect_language()
+        if info is not None and info.language == "python":
+            return info
+        return None
+
     def __init__(self, project_root: str | None = None) -> None:
         """Initialize Python adapter.
 
@@ -30,11 +41,24 @@ class PythonAdapter(FrameworkAdapter):
         self.venv_bin = self.project_root / ".venv" / "bin"
 
     def _get_command(self, tool: str) -> str:
-        """Get full path to tool command."""
+        """Get full path to tool command. Never relies on PATH (MCP-safe).
+
+        Tries project_root/.venv/bin/<tool>, then cwd/.venv/bin/<tool>.
+        Raises FileNotFoundError with clear message if neither exists.
+        """
         venv_tool = self.venv_bin / tool
         if venv_tool.exists():
             return str(venv_tool)
-        return tool
+        cwd_venv = Path.cwd() / ".venv" / "bin" / tool
+        if cwd_venv.exists():
+            return str(cwd_venv)
+        expected = str(venv_tool)
+        msg = (
+            f"{tool} not found at {expected} or at {cwd_venv}. "
+            + "Ensure .venv is set up (e.g. uv sync) and run from project root or "
+            + "pass project_root to execute_pre_commit_checks."
+        )
+        raise FileNotFoundError(msg)
 
     def run_tests(
         self,

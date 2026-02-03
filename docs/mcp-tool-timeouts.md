@@ -25,6 +25,7 @@ MCP_TOOL_TIMEOUT_MEDIUM = 120        # Medium operations (60-120s)
 MCP_TOOL_TIMEOUT_COMPLEX = 300      # Complex operations (120-300s)
 MCP_TOOL_TIMEOUT_VERY_COMPLEX = 600  # Very complex operations (300-600s)
 MCP_TOOL_TIMEOUT_EXTERNAL = 120     # External operations (30-120s)
+MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60  # Quality auto-fix tools (e.g. fix_quality_issues)
 ```
 
 ## Timeout Categories
@@ -219,8 +220,30 @@ MCP tool <tool_name> exceeded timeout of <timeout>s
 Long-running MCP tools (e.g. `fix_markdown_lint(check_all_files=True)` with many files) may complete on the server after the client has already closed the connection. In that case the transport can raise an error (e.g. `anyio.ClosedResourceError`) and the client may see a message like `{"error":"MCP error -32000: Connection closed"}`.
 
 - **Meaning**: "Connection closed" in this context usually indicates the client disconnected or timed out, not that the tool failed. The tool may have completed successfully on the server.
+- **Server-side mitigations**: To reduce the chance of client idle timeout, the server (1) sends progress more frequently (every 5s instead of 10s) for tools with timeout ≥ 300s, and (2) for `fix_markdown_lint`, reports progress at start (0%) then every 3 files so the connection sees activity during long runs.
 - **Recommendation**: In the commit workflow, when an MCP tool reports "Connection closed" or "ClosedResourceError": (1) Retry the tool once. (2) If it fails again with the same class of error, perform the documented fallback for that step (see commit prompt "Connection Closed During Long Tool") and record "MCP connection closed; fallback used" so the pipeline can proceed.
 - **Tool unavailability after disconnect**: After a connection closed error, a retry may fail with "tool not found" or similar (e.g. client/MCP reconnection or tool registration). In that case proceed with the documented fallback for that step (e.g. markdown lint via shell) and do not block the pipeline.
+
+## Resource read timeouts and "unknown message ID"
+
+When the client (e.g. Cursor) fetches many MCP **resources** in parallel (e.g. when opening the MCP resources panel or loading instructions), you may see:
+
+- **`MCP error -32001: Request timed out`** on resource reads (`cortex://structure/health`, `cortex://memory-bank/stats`, `cortex://usage/stats`, etc.)
+- **`Request X cancelled - duplicate response suppressed`** in server logs
+- **`Received a response for an unknown message ID: Request cancelled`** on the client
+
+**Cause**: The MCP server handles one request at a time over stdio. If a long-running **tool** is executing (e.g. `rules`, `manage_file`, `fix_quality_issues`), all **ReadResource** requests are queued. The client applies its own timeout (often ~5–10 seconds) per request. Queued resource reads exceed that timeout, so the client cancels them. When the server later sends the response, the client has already discarded that request ID → "unknown message ID" and "duplicate response suppressed".
+
+**Recommendations**:
+
+1. **Prefer tools over resources during commit or long workflows**: Use MCP tools (e.g. `get_structure_info()`, `manage_file()`, `get_memory_bank_stats()`) instead of reading `cortex://...` resources when running the commit flow or other long operations. Tools are invoked explicitly and are not affected by the client’s parallel resource prefetch.
+2. **Avoid resource-heavy UI during long tools**: If the commit prompt or a long tool is running, avoid opening views that trigger many parallel resource reads (e.g. MCP resources panel) until the run completes.
+3. **Ignore transient resource errors in logs**: Timeout and "unknown message ID" for resources during or right after a long tool run are expected; they do not indicate a server bug and do not require action.
+
+**Server-side mitigations (Cortex)**:
+
+- **Short-TTL cache for expensive resources**: Cortex caches responses for `cortex://structure/info` and `cortex://structure/health` with a 30-second TTL (`MCP_RESOURCE_CACHE_TTL_SECONDS`). When many ReadResource requests are queued behind a long tool, the first read after the tool completes populates the cache; subsequent reads for the same resource return immediately. This speeds up queue draining and makes later resource panel loads fast. Other heavy resources may get the same treatment in future updates.
+- **Stdio is sequential**: The MCP Python SDK over stdio processes one request at a time. The server cannot process ReadResource requests while a tool is running. Concurrency would require a different transport (e.g. HTTP/SSE); for stdio, caching and the recommendations above are the available mitigations.
 
 ## Troubleshooting
 

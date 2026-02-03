@@ -415,7 +415,7 @@ async def cleanup_old_versions()
 
 **Snapshot Storage:**
 
-- Directory: `.memory-bank-history/`
+- Directory: `.cortex/history/`
 - Naming: `{filename}_v{version}.md`
 - Full content snapshots (not diffs)
 - Version metadata includes: timestamp, hash, size, tokens, change type, description

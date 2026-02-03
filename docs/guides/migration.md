@@ -375,19 +375,21 @@ done
 
 ### 1. Update .gitignore
 
+Configuration files (`validation.json`, `optimization.json`, `learning.json`) live under `.cortex/config/`. If you have existing files at `.cortex/validation.json`, `.cortex/optimization.json`, or `.cortex/learning.json`, move them into `.cortex/config/`.
+
 Add metadata files to `.gitignore`:
 
 ```gitignore
 # Memory Bank Metadata (not tracked)
 .memory-bank-index
-.memory-bank-history/
+.cortex/history/
 .memory-bank-access-log.json
-.memory-bank-learning.json
+.cortex/config/learning.json
 .memory-bank-approvals.json
 .memory-bank-refactoring-history.json
 .memory-bank-rollbacks.json
 .memory-bank-validation.json
-.memory-bank-optimization.json
+.cortex/config/optimization.json
 .memory-bank-migration-backup-*/
 ```
 

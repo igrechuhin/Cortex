@@ -95,7 +95,7 @@ def validate_rules_manager(managers: ManagersDict) -> ModelDict | None:
         return {
             "status": "error",
             "error": (
-                "Rules manager not initialized. Enable rules in " "configuration first."
+                "Rules manager not initialized. Enable rules in configuration first."
             ),
         }
     return None

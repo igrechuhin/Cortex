@@ -71,8 +71,7 @@ def _validate_summarize_inputs(target_reduction: float, strategy: str) -> str | 
             {
                 "status": "error",
                 "error": (
-                    f"Invalid strategy: {strategy}. Use "
-                    f"{', '.join(valid_strategies)}."
+                    f"Invalid strategy: {strategy}. Use {', '.join(valid_strategies)}."
                 ),
             },
             indent=2,

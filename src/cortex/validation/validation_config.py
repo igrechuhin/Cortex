@@ -11,6 +11,7 @@ from typing import cast
 
 from cortex.core.async_file_utils import open_async_text_file
 from cortex.core.models import JsonValue, ModelDict
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.validation.models import ValidationConfigModel
 
 
@@ -25,7 +26,8 @@ class ValidationConfig:
             project_root: Path to project root
         """
         self.project_root: Path = project_root
-        self.config_path: Path = project_root / ".cortex" / "validation.json"
+        config_dir = get_cortex_path(project_root, CortexResourceType.CONFIG)
+        self.config_path: Path = config_dir / "validation.json"
         self.config: ValidationConfigModel = self._load_config()
 
     def _load_config(self) -> ValidationConfigModel:
@@ -181,6 +183,7 @@ class ValidationConfig:
             IOError: If save fails
         """
         try:
+            self.config_path.parent.mkdir(parents=True, exist_ok=True)
             async with open_async_text_file(self.config_path, "w", "utf-8") as f:
                 config_dict = self.config.model_dump(mode="json")
                 _ = await f.write(json.dumps(config_dict, indent=2))
@@ -221,7 +224,7 @@ class ValidationConfig:
                 + "(true/false). "
                 + f"Got {type(enabled).__name__}. "
                 + "Try: Set 'enabled' to true or false in "
-                + "'.cortex/validation.json'."
+                + "'.cortex/config/validation.json'."
             )
             errors.append(msg)
 

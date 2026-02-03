@@ -18,6 +18,7 @@ import pytest
 
 from cortex.core.dependency_graph import FileDependencyInfo
 from cortex.core.models import ModelDict
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.managers.types import ManagersDict
 from cortex.tools.phase1_foundation_dependency import (
     get_dependency_graph,
@@ -39,8 +40,8 @@ from tests.helpers.managers import make_test_managers
 @pytest.fixture
 def mock_project_root(tmp_path: Path) -> Path:
     """Create mock project root with memory-bank directory."""
-    memory_bank = tmp_path / "memory-bank"
-    memory_bank.mkdir()
+    memory_bank = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+    memory_bank.mkdir(parents=True)
     return tmp_path
 
 
@@ -134,9 +135,8 @@ def mock_version_manager() -> MagicMock:
     """Create mock VersionManager."""
     mock = MagicMock()
     mock.get_disk_usage = AsyncMock(return_value={"total_bytes": 10240})
-    mock.get_snapshot_path = MagicMock(
-        return_value=Path("/mock/.memory-bank-history/test.md/v2.md")
-    )
+    _mock_history = get_cortex_path(Path("/mock"), CortexResourceType.HISTORY)
+    mock.get_snapshot_path = MagicMock(return_value=_mock_history / "test_v2.md")
     mock.get_snapshot_content = AsyncMock(return_value="# Old Content\n\nTest content")
     mock.create_snapshot = AsyncMock(
         return_value={
@@ -156,7 +156,8 @@ def mock_version_manager() -> MagicMock:
 def mock_file_system_manager() -> MagicMock:
     """Create mock FileSystemManager."""
     mock = MagicMock()
-    mock.construct_safe_path = MagicMock(return_value=Path("/mock/memory-bank/test.md"))
+    _mock_mb = get_cortex_path(Path("/mock"), CortexResourceType.MEMORY_BANK)
+    mock.construct_safe_path = MagicMock(return_value=_mock_mb / "test.md")
     mock.write_file = AsyncMock(return_value="new_hash_123")
     mock.parse_sections = MagicMock(
         return_value=[
@@ -596,7 +597,8 @@ async def test_rollback_file_version_snapshot_not_found(
 ):
     """Test rollback_file_version handles missing snapshot."""
     # Arrange
-    nonexistent_path = mock_project_root / ".memory-bank-history/test.md/v99.md"
+    history_dir = get_cortex_path(mock_project_root, CortexResourceType.HISTORY)
+    nonexistent_path = history_dir / "test_v99.md"
     mock_managers.versions.get_snapshot_path = MagicMock(return_value=nonexistent_path)
 
     with patch(

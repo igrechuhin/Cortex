@@ -19,7 +19,12 @@ perform_cleanup=True parameter.
 
 import json
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX, MCP_TOOL_TIMEOUT_FAST
+from cortex.core.cache import TTLCache
+from cortex.core.constants import (
+    MCP_RESOURCE_CACHE_TTL_SECONDS,
+    MCP_TOOL_TIMEOUT_COMPLEX,
+    MCP_TOOL_TIMEOUT_FAST,
+)
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import read_only_annotations, safe_write_annotations
 from cortex.core.mcp_stability import (
@@ -49,6 +54,9 @@ from cortex.tools.phase8_structure_validation import (
     build_health_result,
     check_structure_initialized,
 )
+
+# Short-TTL cache for structure resources so queued reads after a long tool drain quickly
+_structure_resource_cache: TTLCache[str] = TTLCache(MCP_RESOURCE_CACHE_TTL_SECONDS)
 
 # Re-export for tests and backward compatibility
 __all__ = [
@@ -212,7 +220,12 @@ async def get_structure_info(
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_structure_info_resource() -> str:
     """Resource: Project structure info (default params). Read via cortex://structure/info."""
-    return await get_structure_info()
+    cached = _structure_resource_cache.get("structure/info")
+    if cached is not None:
+        return cached
+    result = await get_structure_info()
+    _structure_resource_cache.set("structure/info", result)
+    return result
 
 
 @mcp.resource(uri="cortex://structure/health")
@@ -220,13 +233,18 @@ async def get_structure_info_resource() -> str:
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def check_structure_health_resource() -> str:
     """Resource: Structure health check (read-only, no cleanup). Read via cortex://structure/health."""
-    return await check_structure_health(
+    cached = _structure_resource_cache.get("structure/health")
+    if cached is not None:
+        return cached
+    result = await check_structure_health(
         project_root=None,
         perform_cleanup=False,
         cleanup_actions=None,
         stale_days=90,
         dry_run=True,
     )
+    _structure_resource_cache.set("structure/health", result)
+    return result
 
 
 get_structure_info.__doc__ = GET_STRUCTURE_INFO_DOC

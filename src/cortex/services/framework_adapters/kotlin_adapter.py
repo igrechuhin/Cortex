@@ -9,6 +9,8 @@ import subprocess
 from collections.abc import Sequence
 from pathlib import Path
 
+from cortex.services.language_detector import LanguageDetector, LanguageInfo
+
 from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
 
 _KOTLIN_ERROR_RE = re.compile(r"^\[ERROR\].*|error:\s+.*|e:.*", re.IGNORECASE)
@@ -41,6 +43,14 @@ def _error_check_result(check_type: str, e: Exception) -> CheckResult:
 
 class KotlinAdapter(FrameworkAdapter):
     """Adapter for Kotlin projects (Maven or Gradle)."""
+
+    @classmethod
+    def detect(cls, path: Path) -> LanguageInfo | None:
+        """Detect if path is a Kotlin project. Reuses LanguageDetector."""
+        info = LanguageDetector(str(path)).detect_language()
+        if info is not None and info.language == "kotlin":
+            return info
+        return None
 
     def __init__(self, project_root: str | None = None) -> None:
         """Initialize Kotlin adapter.

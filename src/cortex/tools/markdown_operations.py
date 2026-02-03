@@ -25,11 +25,11 @@ from cortex.core.constants import (
     MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL,
     MCP_TOOL_TIMEOUT_VERY_COMPLEX,
 )
-from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
 from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import GitCommandResult
-from cortex.managers.initialization import get_project_root
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.roadmap_corruption import CorruptionMatch
 
@@ -499,9 +499,19 @@ async def _validate_markdown_prerequisites(
             None,
             None,
         )
-
     config_path = _find_markdownlint_config(root_path)
     return None, markdownlint_cmd, config_path
+
+
+def _not_in_git_repo_hint(project_root_was_none: bool) -> str:
+    """Return hint when git check fails; callers can append to error message."""
+    if not project_root_was_none:
+        return ""
+    return (
+        " When running under an MCP client (e.g. Cursor), the server's working "
+        "directory may not be your workspace. Pass project_root explicitly set "
+        "to your workspace root path (the folder opened in the IDE)."
+    )
 
 
 async def _get_markdown_files_to_process(
@@ -600,11 +610,36 @@ async def _filter_files_for_linting(
     return files_to_lint, initial_results, hashes_for_cache
 
 
+async def _process_one_markdown_file(
+    file_path: Path,
+    root_path: Path,
+    markdownlint_cmd: list[str],
+    dry_run: bool,
+) -> FileResult | None:
+    """Run markdownlint on one file; return FileResult or None if file missing."""
+    if not file_path.exists():
+        return None
+    try:
+        return await _run_markdownlint_fix(
+            file_path, root_path, markdownlint_cmd, dry_run
+        )
+    except Exception as e:
+        return FileResult(
+            file=str(file_path.relative_to(root_path)),
+            fixed=False,
+            errors=[str(e)],
+            error_message=str(e),
+        )
+
+
 async def _process_markdown_files_sequential(
     files: list[Path],
     root_path: Path,
     markdownlint_cmd: list[str],
     dry_run: bool,
+    *,
+    progress_ctx: MCPContext | None = None,
+    progress_total: int | None = None,
 ) -> list[FileResult]:
     """Process markdown files sequentially (single-threaded).
 
@@ -612,27 +647,24 @@ async def _process_markdown_files_sequential(
     - Avoids spawning multiple npx processes (each has ~1s startup overhead)
     - Works better with the cache (cache lookups filter most files)
     - Reduces MCP connection load during long operations
+
+    When progress_ctx and progress_total are set, reports progress every 3 files
+    to keep the MCP connection alive and avoid client idle timeout (Connection closed).
     """
     results: list[FileResult] = []
+    report_every = 3
     for file_path in files:
-        if not file_path.exists():
-            continue
-        try:
-            result = await _run_markdownlint_fix(
-                file_path,
-                root_path,
-                markdownlint_cmd,
-                dry_run,
-            )
+        result = await _process_one_markdown_file(
+            file_path, root_path, markdownlint_cmd, dry_run
+        )
+        if result is not None:
             results.append(result)
-        except Exception as e:
-            error_result = FileResult(
-                file=str(file_path.relative_to(root_path)),
-                fixed=False,
-                errors=[str(e)],
-                error_message=str(e),
-            )
-            results.append(error_result)
+        if progress_ctx is not None and progress_total is not None and result:
+            n = len(results)
+            if n == 1 or n % report_every == 0 or n == progress_total:
+                await report_progress_safe(
+                    progress_ctx, float(n), float(progress_total)
+                )
     return results
 
 
@@ -689,10 +721,15 @@ async def _run_markdownlint_for_files(
     markdownlint_cmd: list[str],
     config_path: Path | None,
     dry_run: bool,
+    *,
+    ctx: MCPContext | None = None,
 ) -> list[FileResult]:
     """Run markdownlint for the given files and combine with initial results."""
     if not files_to_lint:
         return initial_results
+
+    if ctx is not None:
+        await report_progress_safe(ctx, 0.0, float(len(files_to_lint)))
 
     cmd_with_config = markdownlint_cmd.copy()
     if config_path is not None:
@@ -704,8 +741,24 @@ async def _run_markdownlint_for_files(
         root_path,
         cmd_with_config,
         dry_run,
+        progress_ctx=ctx,
+        progress_total=len(files_to_lint),
     )
     return [*initial_results, *lint_results]
+
+
+def _apply_validation_error_hint(
+    validation_error: str, project_root: str | None
+) -> str:
+    """Apply not-in-git hint to validation error JSON when applicable; return final JSON."""
+    if project_root is None and "Not in a git repository" in validation_error:
+        hint = _not_in_git_repo_hint(True)
+        if hint:
+            data = json.loads(validation_error)
+            if data.get("error_message"):
+                data["error_message"] = data["error_message"].rstrip() + hint
+                return json.dumps(data, indent=2)
+    return validation_error
 
 
 async def _fix_markdown_lint_impl(
@@ -713,34 +766,25 @@ async def _fix_markdown_lint_impl(
     include_untracked_markdown: bool,
     dry_run: bool,
     check_all_files: bool,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Core implementation for fix_markdown_lint MCP tool."""
-    root_path = Path(get_project_root(project_root))
-
+    root_path = await resolve_project_root_async(project_root, ctx)
     validation_error, markdownlint_cmd, config_path = (
         await _validate_markdown_prerequisites(root_path)
     )
     if validation_error:
-        return validation_error
+        return _apply_validation_error_hint(validation_error, project_root)
     assert markdownlint_cmd is not None
-
     files = await _get_markdown_files_to_process(
-        root_path,
-        check_all_files,
-        include_untracked_markdown,
+        root_path, check_all_files, include_untracked_markdown
     )
     if not files:
         return _create_empty_success_response()
-
     if check_all_files and len(files) > MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL:
         files = files[:MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL]
-
     return await _run_markdownlint_with_cache(
-        root_path,
-        files,
-        markdownlint_cmd,
-        config_path,
-        dry_run,
+        root_path, files, markdownlint_cmd, config_path, dry_run, ctx
     )
 
 
@@ -750,6 +794,7 @@ async def _run_markdownlint_with_cache(
     markdownlint_cmd: list[str],
     config_path: Path | None,
     dry_run: bool,
+    ctx: MCPContext | None = None,
 ) -> str:
     """Run markdownlint with cache handling and build response JSON."""
     index = await _load_markdown_lint_index(root_path)
@@ -766,6 +811,7 @@ async def _run_markdownlint_with_cache(
         markdownlint_cmd,
         config_path,
         dry_run,
+        ctx=ctx,
     )
     await _update_markdown_lint_cache_from_results(
         index,
@@ -790,6 +836,7 @@ async def _fix_markdown_lint_run_or_error(
             include_untracked_markdown,
             dry_run,
             check_all_files,
+            ctx,
         )
         return (result, True)
     except asyncio.CancelledError:
@@ -834,6 +881,11 @@ async def fix_markdown_lint(
 
     The return value is a JSON string encoded from `FixMarkdownLintResult`
     with aggregate counts and per-file `FileResult` entries.
+
+    When project_root is not provided, the server resolves it via MCP roots
+    (roots/list) when the client supports them, so the agent does not need to
+    pass it. If resolution fails, the error message suggests passing
+    project_root explicitly.
     """
     await log_client(ctx, "info", "fix_markdown_lint: starting", logger_name=__name__)
     result, ok = await _fix_markdown_lint_run_or_error(

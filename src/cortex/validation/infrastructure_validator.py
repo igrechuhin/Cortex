@@ -18,6 +18,7 @@ import yaml as _yaml
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import JsonValue, ModelDict
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.validation.models import JobConfigModel
 
 # Exposed for tests (they patch `cortex.validation.infrastructure_validator.yaml`)
@@ -68,9 +69,8 @@ class InfrastructureValidator:
         """
         self.project_root = project_root
         self.ci_workflow_path = project_root / ".github" / "workflows" / "quality.yml"
-        self.commit_prompt_path = (
-            project_root / ".cortex" / "synapse" / "prompts" / "commit.md"
-        )
+        synapse_dir = get_cortex_path(project_root, CortexResourceType.SYNAPSE)
+        self.commit_prompt_path = synapse_dir / "prompts" / "commit.md"
 
     async def validate_infrastructure(
         self,
@@ -477,7 +477,7 @@ class InfrastructureValidator:
         issues: list[InfrastructureIssue] = []
         recommendations: list[str] = []
 
-        config_dir = self.project_root / ".cortex"
+        config_dir = get_cortex_path(self.project_root, CortexResourceType.CONFIG)
         required_configs = [
             "validation.json",
             "optimization.json",

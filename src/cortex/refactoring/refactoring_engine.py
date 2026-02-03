@@ -460,8 +460,7 @@ def _generate_consolidation_actions(
                 action_type="modify",
                 target_file=f,
                 description=(
-                    f"Replace duplicated content with transclusion in "
-                    f"{Path(f).name}"
+                    f"Replace duplicated content with transclusion in {Path(f).name}"
                 ),
                 details=ActionDetails(source_file=f),
             )
@@ -535,8 +534,7 @@ def _get_refactoring_type_reasoning(refactoring_type: RefactoringType) -> str:
         )
     elif refactoring_type == RefactoringType.SPLIT:
         return (
-            "Splitting large files improves context loading efficiency "
-            "and navigation."
+            "Splitting large files improves context loading efficiency and navigation."
         )
     elif refactoring_type == RefactoringType.REORGANIZATION:
         return (

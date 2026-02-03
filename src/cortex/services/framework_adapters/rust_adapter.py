@@ -6,6 +6,9 @@ Adapter for Rust projects using cargo fmt, cargo clippy, cargo check, cargo test
 import re
 import subprocess
 from collections.abc import Sequence
+from pathlib import Path
+
+from cortex.services.language_detector import LanguageDetector, LanguageInfo
 
 from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
 
@@ -15,6 +18,14 @@ _RUST_WARNING_RE = re.compile(r"^warning(\[W\d+\]|\s+\(.*\))?:\s+", re.IGNORECAS
 
 class RustAdapter(FrameworkAdapter):
     """Adapter for Rust projects."""
+
+    @classmethod
+    def detect(cls, path: Path) -> LanguageInfo | None:
+        """Detect if path is a Rust project. Reuses LanguageDetector."""
+        info = LanguageDetector(str(path)).detect_language()
+        if info is not None and info.language == "rust":
+            return info
+        return None
 
     def __init__(self, project_root: str | None = None) -> None:
         """Initialize Rust adapter.

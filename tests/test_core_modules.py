@@ -13,6 +13,7 @@ from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.exceptions import FileConflictError, MemoryBankError
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 
@@ -162,7 +163,8 @@ async def test_version_manager():
     # Cleanup
     import shutil
 
-    shutil.rmtree(test_dir / ".memory-bank-history", ignore_errors=True)
+    history_dir = get_cortex_path(test_dir, CortexResourceType.HISTORY)
+    shutil.rmtree(history_dir, ignore_errors=True)
 
 
 def test_exceptions():

@@ -615,7 +615,7 @@ tar -czf memory-bank-backup-$(date +%Y%m%d).tar.gz memory-bank/ .memory-bank-*
 # 2. Remove all metadata
 rm .memory-bank-index
 rm .memory-bank-validation.json
-rm .memory-bank-history/*
+rm .cortex/history/*
 
 # 3. Reinitialize
 initialize_memory_bank()

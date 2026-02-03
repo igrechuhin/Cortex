@@ -60,17 +60,17 @@ JSON string with:
 }
 ```
 
-## CLI: scripts/health_check.py
+## CLI: python -m cortex.health_check
 
-Standalone script for manual or CI runs.
+Package entry point for manual or CI runs (implementation: `src/cortex/health_check/__main__.py`).
 
 **Usage:**
 
 ```bash
-uv run python scripts/health_check.py --type all --threshold 0.75 --output report.json --format json
+uv run python -m cortex.health_check --type all --threshold 0.75 --output report.json --format json
 ```
 
-**Arguments:** See [Health-Check Guide](../guides/health-check.md#cli-scriptshealth_checkpy).
+**Arguments:** See [Health-Check Guide](../guides/health-check.md#cli-cortexhealth_check).
 
 ## Report types
 

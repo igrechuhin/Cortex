@@ -93,7 +93,7 @@ Implement features in order of risk/value:
 - [ ] Implement `defer_loading` support in tool registration
 - [ ] Create tool search mechanism (regex or BM25)
 - [ ] Update server.py to support deferred tool loading
-- [ ] Configure tool categories in optimization.json
+- [ ] Configure tool categories in .cortex/config/optimization.json
 
 ### Step 6: Tool Search Tool - Testing
 

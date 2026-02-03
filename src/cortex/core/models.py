@@ -806,8 +806,7 @@ class StructureMetrics(BaseModel):
     organization: str | None = Field(
         default=None,
         description=(
-            "Organization type: flat, category_based, "
-            "dependency_optimized, simplified"
+            "Organization type: flat, category_based, dependency_optimized, simplified"
         ),
     )
 

@@ -2,16 +2,38 @@
 
 Provides helpers that log to MCP Context when available (client-visible)
 and fall back to standard Python logging when Context is not available
-(e.g. in tests or non-request code).
+(e.g. in tests or non-request code). Connection errors during log/progress
+are caught so client disconnect does not propagate (avoids TaskGroup noise).
 """
 
 import logging
 from typing import Literal
 
+import anyio
 from mcp.server.fastmcp import Context
 from mcp.server.session import ServerSession
 
 logger = logging.getLogger(__name__)
+
+
+def _is_connection_error(exc: BaseException) -> bool:
+    """True if exception indicates client disconnect or broken stdio."""
+    if isinstance(
+        exc,
+        (
+            anyio.BrokenResourceError,
+            anyio.ClosedResourceError,
+            BrokenPipeError,
+            ConnectionResetError,
+        ),
+    ):
+        return True
+    if isinstance(exc, OSError) and (
+        "Broken pipe" in str(exc) or "Connection reset" in str(exc)
+    ):
+        return True
+    return False
+
 
 # Public type aliases for use in tool signatures and callers.
 LogLevel = Literal["debug", "info", "warning", "error"]
@@ -41,7 +63,16 @@ async def log_client(
         logger_name: Optional logger name for Context logging.
     """
     if ctx is not None:
-        await ctx.log(level, message, logger_name=logger_name)
+        try:
+            await ctx.log(level, message, logger_name=logger_name)
+        except BaseException as e:
+            if _is_connection_error(e):
+                logger.debug(
+                    "log_client: connection closed (client disconnected); %s",
+                    type(e).__name__,
+                )
+                return
+            raise
     else:
         getattr(logger, level)(message)
 
@@ -61,4 +92,13 @@ async def report_progress_safe(
         total: Optional total value (e.g. 100) for percentage display.
     """
     if ctx is not None:
-        await ctx.report_progress(progress, total)
+        try:
+            await ctx.report_progress(progress, total)
+        except BaseException as e:
+            if _is_connection_error(e):
+                logger.debug(
+                    "report_progress_safe: connection closed (client disconnected); %s",
+                    type(e).__name__,
+                )
+                return
+            raise

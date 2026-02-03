@@ -21,14 +21,22 @@ import anyio
 import cortex.core.logging_config  # noqa: F401
 
 # Import tools package to register all @mcp.tool() decorators
-import cortex.setup.prompts  # noqa: F401
+import cortex.setup.prompts_always  # noqa: F401
 import cortex.tools  # noqa: F401
 from cortex.server import mcp
+from cortex.setup import should_mount_setup
 
 cortex.core.logging_config.apply_cortex_format_to_third_party_loggers()
 
+# Setup prompts (initialize_memory_bank, migration, etc.) only when project
+# needs setup; setup_synapse is always available via prompts_always.
+if should_mount_setup():
+    import cortex.setup.prompts as _setup_prompts  # noqa: F401
+
+    _ = _setup_prompts  # side-effect registration only
+
 # Explicitly reference for side effects (tool/prompt registration)
-_ = cortex.setup.prompts
+_ = cortex.setup.prompts_always
 _ = cortex.tools
 
 logger = logging.getLogger(__name__)
@@ -116,10 +124,7 @@ def _handle_connection_error(e: Exception) -> None:
     elif isinstance(e, OSError):
         if "Broken pipe" in exc_msg or "Connection reset" in exc_msg:
             logger.warning(
-                (
-                    "MCP connection reset (client disconnected); "
-                    "exc_type=%s exc_msg=%s"
-                ),
+                ("MCP connection reset (client disconnected); exc_type=%s exc_msg=%s"),
                 exc_type,
                 exc_msg,
             )

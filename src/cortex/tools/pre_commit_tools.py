@@ -16,7 +16,10 @@ from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_VERY_COMPLEX
+from cortex.core.constants import (
+    MCP_TOOL_TIMEOUT_QUALITY_FIXES,
+    MCP_TOOL_TIMEOUT_VERY_COMPLEX,
+)
 from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
 from cortex.core.mcp_annotations import external_annotations, safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
@@ -98,16 +101,17 @@ async def _resolve_language_and_adapter(
     language: str | None,
 ) -> ModelDict | tuple[FrameworkAdapter, LanguageInfo]:
     """Resolve language and adapter; return error dict or (adapter, lang_info)."""
-    language_info = detect_or_use_language(language, root_str)
-    if isinstance(language_info, str):
+    result = detect_or_use_language(language, root_str)
+    if isinstance(result, str):
         await log_client(
             ctx,
             "warning",
             "execute_pre_commit_checks: language detection failed",
             logger_name=__name__,
         )
-        return cast(ModelDict, json.loads(language_info))
-    adapter = _get_adapter(language_info, root_str)
+        return cast(ModelDict, json.loads(result))
+    language_info, root_to_use = result
+    adapter = _get_adapter(language_info, root_to_use)
     if adapter is None:
         await log_client(
             ctx,
@@ -582,7 +586,10 @@ async def _fix_quality_issues_impl(
     ),  # pyright: ignore[reportCallIssue]
 )
 @ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
+@mcp_tool_wrapper(
+    timeout=MCP_TOOL_TIMEOUT_QUALITY_FIXES,
+    enable_progress=True,
+)
 async def fix_quality_issues(
     project_root: str | None = None,
     include_untracked_markdown: bool = True,

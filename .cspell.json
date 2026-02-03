@@ -122,6 +122,7 @@
     "setuptools",
     "sharedrules",
     "slugification",
+    "Streamable",
     "structureanalyzer",
     "structuremanager",
     "submodule",

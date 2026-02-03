@@ -368,8 +368,7 @@ def _build_circular_dependency_error(
         error=error_message,
         error_type="CircularDependencyError",
         message=(
-            "Circular transclusion detected. Fix the circular reference "
-            "and try again."
+            "Circular transclusion detected. Fix the circular reference and try again."
         ),
     )
 

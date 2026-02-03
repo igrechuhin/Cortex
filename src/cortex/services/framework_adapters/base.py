@@ -10,6 +10,7 @@ from pathlib import Path
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import DictLikeModel
+from cortex.services.language_detector import LanguageInfo
 
 ProgressCallback = Callable[[int, int], None]
 
@@ -54,6 +55,21 @@ class FrameworkAdapter(ABC):
             project_root: Path to project root directory.
         """
         self.project_root = Path(project_root) if project_root else Path.cwd()
+
+    @classmethod
+    def detect(cls, path: Path) -> LanguageInfo | None:
+        """Detect if the given path is a project for this adapter's language.
+
+        Override in subclasses to support detection. Default returns None.
+        Reuses LanguageDetector so marker logic stays in one place.
+
+        Args:
+            path: Candidate project root path.
+
+        Returns:
+            LanguageInfo if this adapter handles the project at path, None otherwise.
+        """
+        return None
 
     @abstractmethod
     def run_tests(

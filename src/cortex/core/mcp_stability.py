@@ -23,6 +23,7 @@ from cortex.core.constants import (
     MCP_CONNECTION_RETRY_DELAY_SECONDS,
     MCP_MAX_CONCURRENT_TOOLS,
     MCP_TOOL_TIMEOUT_SECONDS,
+    PROGRESS_REPORT_INTERVAL_LONG_RUNNING_SECONDS,
     PROGRESS_REPORT_INTERVAL_SECONDS,
     PROGRESS_THRESHOLD_TIMEOUT_SECONDS,
 )
@@ -31,6 +32,9 @@ from cortex.core.models import ConnectionHealth, JsonValue, MCPToolArguments
 from cortex.core.usage_context import get_current_managers, set_current_managers
 
 logger = logging.getLogger(__name__)
+
+# Tools that report their own progress (file/step-based); skip wrapper time-based progress.
+_TOOLS_WITH_OWN_PROGRESS = frozenset({"execute_pre_commit_checks", "fix_markdown_lint"})
 
 
 def _project_root_from_tool_args(
@@ -379,12 +383,21 @@ async def _progress_report_loop(
     timeout_sec: float,
     _tool_name: str,
 ) -> None:
-    """Background task: report progress every N seconds (Phase 46)."""
+    """Background task: report progress every N seconds (Phase 46).
+
+    Uses a shorter interval for long-running tools (timeout >= 300s) to reduce
+    client idle timeout risk (Connection closed -32000).
+    """
     from cortex.core.context_logging import MCPContext, report_progress_safe
 
+    interval = (
+        PROGRESS_REPORT_INTERVAL_LONG_RUNNING_SECONDS
+        if timeout_sec >= 300
+        else PROGRESS_REPORT_INTERVAL_SECONDS
+    )
     start = time.perf_counter()
     while True:
-        await asyncio.sleep(PROGRESS_REPORT_INTERVAL_SECONDS)
+        await asyncio.sleep(interval)
         elapsed = time.perf_counter() - start
         if elapsed >= timeout_sec:
             break
@@ -463,14 +476,15 @@ def _create_progress_task_if_needed(
 ) -> asyncio.Task[None] | None:
     """Create background progress task when enabled and ctx present (Phase 46).
 
-    Skips time-based progress for execute_pre_commit_checks so the tool
-    can report (tests executed, total tests) only.
+    Skips time-based progress for tools that report their own progress
+    (e.g. execute_pre_commit_checks, fix_markdown_lint) to avoid mixing
+    two progress scales (0-100 vs n/total).
     """
     if (
         enable_progress
         and ctx is not None
         and effective_timeout >= PROGRESS_THRESHOLD_TIMEOUT_SECONDS
-        and tool_name != "execute_pre_commit_checks"
+        and tool_name not in _TOOLS_WITH_OWN_PROGRESS
     ):
         return asyncio.create_task(
             _progress_report_loop(ctx, effective_timeout, tool_name)

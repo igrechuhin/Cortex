@@ -563,7 +563,7 @@ def __init__(self, project_root: Path, keep_versions: int = 10)
 **Attributes:**
 
 - `project_root` (Path) - Project root path
-- `history_dir` (Path) - Path to .memory-bank-history/ directory
+- `history_dir` (Path) - Path to .cortex/history/ directory
 - `keep_versions` (int) - Version retention limit
 
 **Key Methods:**
@@ -638,7 +638,7 @@ Remove old versions beyond retention limit.
 **Snapshot File Naming:**
 
 ```text
-.memory-bank-history/
+.cortex/history/
   projectBrief_v1.md
   projectBrief_v2.md
   activeContext_v1.md
@@ -655,7 +655,7 @@ Remove old versions beyond retention limit.
     "size_bytes": 1234,
     "token_count": 500,
     "change_type": "modified",
-    "snapshot_path": ".memory-bank-history/projectBrief_v2.md",
+    "snapshot_path": ".cortex/history/projectBrief_v2.md",
     "changed_sections": ["## Overview", "## Goals"],
     "change_description": "Updated project goals"
 }

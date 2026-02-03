@@ -59,9 +59,24 @@ coverage.xml
 # Legacy memory bank paths (for migration)
 /.memory-bank/
 /.memory-bank-*
+/.memory-bank-history/
+/.memory-bank-summaries/
 /memory-bank/
 /.plan/
 
 # Cortex backup directories
 .cortex-backup-*
 .session
+
+# Test/benchmark artifacts (must not be created at repo root; use .cortex or tmp)
+/benchmark_results/
+.cortex/benchmark_results/
+
+# Sibling/legacy project copies (use only .cortex paths in repo root)
+/schema/
+/optimization/
+/structure/
+/consolidation/
+/invalid/
+/learning/
+/validation/

@@ -629,7 +629,7 @@ RollbackError: Failed to rollback refactoring split_002
 
    ```bash
    # Restore from version history
-   cp .memory-bank-history/<timestamp>/file.md memory-bank/file.md
+   cp .cortex/history/<snapshot>.md .cortex/memory-bank/file.md
    ```
 
 3. Update metadata:

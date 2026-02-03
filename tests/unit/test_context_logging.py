@@ -2,6 +2,7 @@
 
 from unittest.mock import AsyncMock, patch
 
+import anyio
 import pytest
 
 from cortex.core.context_logging import log_client, report_progress_safe
@@ -58,3 +59,29 @@ async def test_report_progress_safe_with_total_none() -> None:
     ctx.report_progress = AsyncMock()
     await report_progress_safe(ctx, 25)
     ctx.report_progress.assert_awaited_once_with(25, None)
+
+
+@pytest.mark.asyncio
+async def test_log_client_swallows_connection_error_when_ctx_present() -> None:
+    """When ctx.log raises connection error (client disconnected), log_client returns without re-raising."""
+    ctx = AsyncMock()
+    ctx.log = AsyncMock(side_effect=anyio.BrokenResourceError())
+    with patch(f"{_CONTEXT_LOGGING_LOGGER}.logger") as mock_logger:
+        await log_client(ctx, "info", "msg")
+    ctx.log.assert_awaited_once()
+    mock_logger.debug.assert_called_once()
+    assert "connection closed" in mock_logger.debug.call_args[0][0].lower()
+
+
+@pytest.mark.asyncio
+async def test_report_progress_safe_swallows_connection_error_when_ctx_present() -> (
+    None
+):
+    """When ctx.report_progress raises connection error (client disconnected), report_progress_safe returns without re-raising."""
+    ctx = AsyncMock()
+    ctx.report_progress = AsyncMock(side_effect=anyio.BrokenResourceError())
+    with patch(f"{_CONTEXT_LOGGING_LOGGER}.logger") as mock_logger:
+        await report_progress_safe(ctx, 50, 100)
+    ctx.report_progress.assert_awaited_once_with(50, 100)
+    mock_logger.debug.assert_called_once()
+    assert "connection closed" in mock_logger.debug.call_args[0][0].lower()

@@ -560,7 +560,8 @@ async def _create_schema_validator(
 ) -> SchemaValidator:
     """Create SchemaValidator instance."""
     _ = managers  # Kept for API compatibility
-    return SchemaValidator(config_path=project_root / ".cortex" / "validation.json")
+    config_dir = get_cortex_path(project_root, CortexResourceType.CONFIG)
+    return SchemaValidator(config_path=config_dir / "validation.json")
 
 
 async def _create_duplication_detector() -> DuplicationDetector:

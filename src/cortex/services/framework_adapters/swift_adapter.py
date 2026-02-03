@@ -7,6 +7,9 @@ swift build (type check / lint), swift test.
 import re
 import subprocess
 from collections.abc import Sequence
+from pathlib import Path
+
+from cortex.services.language_detector import LanguageDetector, LanguageInfo
 
 from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
 
@@ -15,6 +18,14 @@ _SWIFT_ERROR_LINE_RE = re.compile(r"error:\s+.*|\.swift:\d+:\d+:\s+error:", re.I
 
 class SwiftAdapter(FrameworkAdapter):
     """Adapter for Swift projects (Swift Package Manager)."""
+
+    @classmethod
+    def detect(cls, path: Path) -> LanguageInfo | None:
+        """Detect if path is a Swift project. Reuses LanguageDetector."""
+        info = LanguageDetector(str(path)).detect_language()
+        if info is not None and info.language == "swift":
+            return info
+        return None
 
     def __init__(self, project_root: str | None = None) -> None:
         """Initialize Swift adapter.

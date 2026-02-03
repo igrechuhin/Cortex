@@ -741,8 +741,7 @@ class MemoryBankStructureData(RefactoringBaseModel):
     organization: str = Field(
         default="flat",
         description=(
-            "Organization type: flat, category_based, "
-            "dependency_optimized, simplified"
+            "Organization type: flat, category_based, dependency_optimized, simplified"
         ),
     )
     categories: dict[str, list[str]] = Field(

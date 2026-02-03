@@ -531,7 +531,7 @@ class ConsolidationDetector:
             similarity_score=avg_similarity,
             token_savings=token_savings,
             suggested_action=(
-                f"Create shared section for '{heading}' and use " "transclusion"
+                f"Create shared section for '{heading}' and use transclusion"
             ),
             extraction_target=extraction_target,
             transclusion_syntax=transclusion_syntax,
@@ -803,7 +803,7 @@ class ConsolidationDetector:
             similarity_score=1.0,
             token_savings=token_savings,
             suggested_action=(
-                f"Extract section '{heading}' to shared file and use " "transclusion"
+                f"Extract section '{heading}' to shared file and use transclusion"
             ),
             extraction_target=extraction_target,
             transclusion_syntax=transclusion_syntax,

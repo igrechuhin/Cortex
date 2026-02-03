@@ -63,7 +63,9 @@ class TestConditionalPromptRegistration:
             assert not hasattr(prompts_module, "check_migration_status")
             assert not hasattr(prompts_module, "migrate_memory_bank")
             assert not hasattr(prompts_module, "migrate_project_structure")
-            assert hasattr(prompts_module, "setup_synapse")
+            import cortex.setup.prompts_always as always_module
+
+            assert hasattr(always_module, "setup_synapse")
 
     def test_prompts_registered_when_not_configured(self, tmp_path: Path):
         """Test that setup prompts are registered when project is not configured."""
@@ -79,7 +81,9 @@ class TestConditionalPromptRegistration:
             assert not hasattr(prompts_module, "check_migration_status")
             assert not hasattr(prompts_module, "migrate_memory_bank")
             assert not hasattr(prompts_module, "migrate_project_structure")
-            assert hasattr(prompts_module, "setup_synapse")
+            import cortex.setup.prompts_always as always_module
+
+            assert hasattr(always_module, "setup_synapse")
 
     def test_migration_prompts_registered_when_migration_needed(self, tmp_path: Path):
         """Test that migration prompts are registered when migration is needed."""
@@ -99,7 +103,9 @@ class TestConditionalPromptRegistration:
             assert hasattr(prompts_module, "initialize_memory_bank")
             assert hasattr(prompts_module, "setup_project_structure")
             assert hasattr(prompts_module, "setup_cursor_integration")
-            assert hasattr(prompts_module, "setup_synapse")
+            import cortex.setup.prompts_always as always_module
+
+            assert hasattr(always_module, "setup_synapse")
 
     def test_partial_configuration_registers_partial_prompts(self, tmp_path: Path):
         """Test that partial configuration registers only needed prompts."""
@@ -129,48 +135,15 @@ class TestConditionalPromptRegistration:
             assert not hasattr(prompts_module, "initialize_memory_bank")
             assert hasattr(prompts_module, "setup_project_structure")
             assert hasattr(prompts_module, "setup_cursor_integration")
-            assert hasattr(prompts_module, "setup_synapse")
+            import cortex.setup.prompts_always as always_module
+
+            assert hasattr(always_module, "setup_synapse")
 
     def test_setup_synapse_always_available(self, tmp_path: Path):
-        """Test that setup_synapse is always available regardless of configuration."""
-        with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
-        ):
-            _clear_setup_prompts_cache()
-            import cortex.setup.prompts as prompts_module
+        """Test that setup_synapse is always available from prompts_always."""
+        import cortex.setup.prompts_always as always_module
 
-            assert hasattr(prompts_module, "setup_synapse")
-
-        cortex_dir = tmp_path / ".cortex"
-        cortex_dir.mkdir()
-        (cortex_dir / "memory-bank").mkdir()
-        (cortex_dir / "rules").mkdir()
-        (cortex_dir / "plans").mkdir()
-        (cortex_dir / "config").mkdir()
-
-        memory_bank_dir = cortex_dir / "memory-bank"
-        for core_file in [
-            "projectBrief.md",
-            "productContext.md",
-            "activeContext.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "progress.md",
-            "roadmap.md",
-        ]:
-            _ = (memory_bank_dir / core_file).write_text("# Test")
-
-        cursor_dir = tmp_path / ".cursor"
-        cursor_dir.mkdir()
-        (cortex_dir / "synapse").mkdir()
-        (cursor_dir / "memory-bank").symlink_to(cortex_dir / "memory-bank")
-        (cursor_dir / "synapse").symlink_to(cortex_dir / "synapse")
-        (cursor_dir / "plans").symlink_to(cortex_dir / "plans")
-
-        with patch(
-            "cortex.tools.config_status.get_project_root", return_value=tmp_path
-        ):
-            _clear_setup_prompts_cache()
-            import cortex.setup.prompts as prompts_module
-
-            assert hasattr(prompts_module, "setup_synapse")
+        assert hasattr(always_module, "setup_synapse")
+        text = always_module.setup_synapse("https://example.com/repo.git")
+        assert "synapse" in text.lower()
+        assert "https://example.com/repo.git" in text

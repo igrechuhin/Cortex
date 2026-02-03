@@ -242,11 +242,14 @@ Cortex stores all data in `.cortex/` directory:
 
 - `.cortex/memory-bank/` - Core memory bank files
 - `.cortex/synapse/` - Synapse repository (shared rules, prompts, and configuration)
+  - `.cortex/synapse/scripts/{language}/` - Canonical location for quality/check scripts (e.g. `check_formatting.py`, `check_types.py`). Root `scripts/` is restricted legacy (project-specific utilities only).
 - `.cortex/plans/` - Development plans and roadmaps
-- `.cortex/config/` - Configuration files
+- `.cortex/config/` - Configuration files (e.g. `validation.json`, `optimization.json`)
 - `.cortex/history/` - Version history
-- `.cortex/.cache/` - Unified cache directory for all Cortex tools
+- `.cortex/.cache/` - Unified cache directory for all Cortex tools (use only in repo root; sibling dirs like `schema/` or `optimization/` are ignored)
   - `.cortex/.cache/summaries/` - Summary cache files
+  - `.cortex/.cache/usage/` - Usage events and analytics
+  - `.cortex/.cache/learning.json` - Learning data
   - `.cortex/.cache/relevance/` - Future: Relevance scoring cache
   - `.cortex/.cache/patterns/` - Future: Pattern analysis cache
   - `.cortex/.cache/refactoring/` - Future: Refactoring suggestions cache

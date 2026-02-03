@@ -14,8 +14,9 @@ from typing import cast
 import pytest
 from pydantic import ValidationError
 
-from cortex.core.models import ModelDict
+from cortex.core.models import DetailedFileMetadata, ModelDict
 from cortex.validation.duplication_detector import DuplicationDetector
+from cortex.validation.models import FileMetadataForQuality
 from cortex.validation.quality_metrics import QualityMetrics
 from cortex.validation.schema_validator import SchemaValidator
 from cortex.validation.validation_config import ValidationConfig
@@ -286,7 +287,9 @@ Criteria content.
 """
         }
 
-        files_metadata: dict[str, ModelDict] = {
+        files_metadata: dict[
+            str, DetailedFileMetadata | FileMetadataForQuality | ModelDict
+        ] = {
             "projectBrief.md": cast(
                 ModelDict,
                 {
@@ -306,7 +309,9 @@ Criteria content.
         )
 
         result = await metrics.calculate_overall_score(
-            files_content, files_metadata, duplication_data  # type: ignore[arg-type] - ModelDict is compatible
+            files_content,
+            files_metadata,
+            duplication_data,  # type: ignore[arg-type] - ModelDict is compatible
         )
 
         assert result.overall_score >= 80
@@ -326,7 +331,9 @@ Just an overview.
 """  # Missing required sections
         }
 
-        files_metadata: dict[str, ModelDict] = {
+        files_metadata: dict[
+            str, DetailedFileMetadata | FileMetadataForQuality | ModelDict
+        ] = {
             "projectBrief.md": cast(
                 ModelDict,
                 {
@@ -346,7 +353,9 @@ Just an overview.
         )
 
         result = await metrics.calculate_overall_score(
-            files_content, files_metadata, duplication_data  # type: ignore[arg-type] - ModelDict is compatible
+            files_content,
+            files_metadata,
+            duplication_data,  # type: ignore[arg-type] - ModelDict is compatible
         )
 
         assert result.overall_score < 80
@@ -535,7 +544,9 @@ Test everything.
 """,
         }
 
-        files_metadata: dict[str, ModelDict] = {
+        files_metadata: dict[
+            str, DetailedFileMetadata | FileMetadataForQuality | ModelDict
+        ] = {
             "projectBrief.md": cast(
                 ModelDict,
                 {
@@ -567,7 +578,9 @@ Test everything.
 
         # Calculate quality score
         quality_data = await metrics.calculate_overall_score(
-            files_content, files_metadata, duplication_data  # type: ignore[arg-type] - ModelDict is compatible
+            files_content,
+            files_metadata,
+            duplication_data,  # type: ignore[arg-type] - ModelDict is compatible
         )
 
         # Assertions

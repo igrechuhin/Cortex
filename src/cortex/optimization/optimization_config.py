@@ -12,6 +12,7 @@ from typing import cast
 
 from cortex.core.async_file_utils import open_async_text_file
 from cortex.core.models import JsonValue, ModelDict
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.optimization.models import OptimizationConfigModel
 
 DEFAULT_OPTIMIZATION_CONFIG = {
@@ -89,7 +90,7 @@ DEFAULT_OPTIMIZATION_CONFIG = {
     },
     "synapse": {
         "enabled": False,
-        "synapse_folder": ".cortex/synapse",
+        "synapse_folder": f".cortex/{CortexResourceType.SYNAPSE.value}",
         "synapse_repo": "",
         "auto_sync": True,
         "sync_interval_minutes": 60,
@@ -128,7 +129,8 @@ class OptimizationConfig:
             project_root: Project root directory
         """
         self.project_root: Path = Path(project_root)
-        self.config_path: Path = self.project_root / ".cortex" / "optimization.json"
+        config_dir = get_cortex_path(self.project_root, CortexResourceType.CONFIG)
+        self.config_path: Path = config_dir / "optimization.json"
         self.config: ModelDict = self._load_config()
 
     def _load_config(self) -> ModelDict:
@@ -388,8 +390,9 @@ class OptimizationConfig:
 
     def get_synapse_folder(self) -> str:
         """Get Synapse folder path."""
-        value = self.get("synapse.synapse_folder", ".cortex/synapse")
-        return str(value) if isinstance(value, str) else ".cortex/synapse"
+        default = f".cortex/{CortexResourceType.SYNAPSE.value}"
+        value = self.get("synapse.synapse_folder", default)
+        return str(value) if isinstance(value, str) else default
 
     def get_synapse_repo(self) -> str:
         """Get Synapse repository URL."""

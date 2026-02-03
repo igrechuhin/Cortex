@@ -6,6 +6,12 @@ from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.path_resolver import (
+    CortexResourceType,
+    get_cortex_path,
+    has_memory_bank,
+    is_memory_bank_fully_initialized,
+)
 from cortex.managers.builder_types import ManagersBuilder
 from cortex.managers.manager_initialization import (
     add_analysis_managers,
@@ -19,51 +25,187 @@ from cortex.managers.manager_initialization import (
 from cortex.managers.types import CoreManagersDict, ManagersDict
 
 
-def get_project_root(project_root: str | None = None) -> Path:
-    """Get project root directory.
+def _detect_root_from(path: Path) -> Path | None:
+    """Walk up from path to find first directory with .cortex/memory-bank."""
+    for candidate in [path, *path.parents]:
+        if has_memory_bank(candidate):
+            return candidate
+    return None
 
-    When project_root is None, automatically detects the project root by walking
-    up from the current working directory or script location to find a directory
-    containing .cortex/. Prefers the .cortex/ closest to the starting point.
 
-    Args:
-        project_root: Optional project root path. If provided, returns resolved path.
-                     If None, attempts to detect project root from .cortex/ directory.
+def _topmost_cortex_root(candidates: set[Path]) -> Path | None:
+    """Return the topmost Cortex root (not contained in any other candidate)."""
+    if not candidates:
+        return None
+    for c in candidates:
+        if not any(d != c and c.is_relative_to(d) for d in candidates):
+            return c
+    return next(iter(candidates))
 
-    Returns:
-        Resolved absolute path to project root
+
+def _reject_package_subdir_as_root(path: Path) -> Path:
+    """Prefer topmost Cortex root over a subdir that has .cortex/memory-bank.
+
+    When path has .cortex/memory-bank, walk up and return the first ancestor that
+    also has .cortex/memory-bank (layout-agnostic; no assumption about src/).
+
+    Updated to stop walking once we reach a path that looks like a real project
+    root (has language/build markers like pyproject.toml). This prevents
+    accidentally treating a higher-level ~/.cortex as the root when the actual
+    project lives in a nested repo with its own .cortex/.
     """
-    if project_root:
-        return Path(project_root).resolve()
+    p = path.resolve()
+    if not has_memory_bank(p):
+        return path
+    # Track the last path in the chain that has a memory bank; if we never find
+    # a path with language markers, fall back to that.
+    last_with_memory_bank = p
+    # If this path already looks like a project root, don't walk past it to
+    # higher-level directories (e.g., ~/.cortex).
+    if _has_language_markers(p):
+        return p
+    for ancestor in [p.parent, *p.parents]:
+        if not has_memory_bank(ancestor):
+            continue
+        last_with_memory_bank = ancestor
+        if _has_language_markers(ancestor):
+            return ancestor
+    return last_with_memory_bank
 
-    # Try to detect project root by finding .cortex/ directory
-    # Prefer script location over CWD to avoid finding wrong .cortex/ in home directory
-    current = Path.cwd().resolve()
 
-    # First, try from script location (more reliable for MCP server)
+def _collect_candidate_roots(resolved: Path) -> set[Path]:
+    """Collect candidate Cortex roots from resolved, cwd, and script location."""
+    candidates: set[Path] = {resolved}
+    cwd_root = _detect_root_from(Path.cwd().resolve())
+    if cwd_root is not None:
+        candidates.add(cwd_root)
+    try:
+        import sys
+
+        if sys.argv and sys.argv[0]:
+            script_path = Path(sys.argv[0]).resolve().parent
+            script_root = _detect_root_from(script_path)
+            if script_root is not None:
+                candidates.add(script_root)
+    except Exception:
+        pass
+    return candidates
+
+
+def _resolve_given_root_restricted_to_tree(resolved: Path) -> Path:
+    """Resolve a provided root using topmost among resolved and its ancestors only.
+
+    Use when the caller explicitly passed a path: never return a path outside
+    that tree (e.g. ~/.cortex when the user passed /path/to/repo).
+    """
+    candidates = _collect_candidate_roots(resolved)
+    in_tree = {
+        c
+        for c in candidates
+        if c == resolved or (c != resolved and resolved.is_relative_to(c))
+    }
+    if not in_tree:
+        return _reject_package_subdir_as_root(resolved)
+    topmost = _topmost_cortex_root(in_tree)
+    if topmost is not None and topmost != resolved and resolved.is_relative_to(topmost):
+        return _reject_package_subdir_as_root(topmost)
+    return _reject_package_subdir_as_root(resolved)
+
+
+def _find_root_from_script() -> Path | None:
+    """Try to find Cortex root from script location."""
     try:
         import sys
 
         if sys.argv and sys.argv[0]:
             script_path = Path(sys.argv[0]).resolve()
             for path in [script_path.parent, *script_path.parent.parents]:
-                cortex_dir = path / ".cortex"
-                if cortex_dir.is_dir():
-                    memory_bank_dir = cortex_dir / "memory-bank"
-                    if memory_bank_dir.is_dir():
-                        return path
+                if has_memory_bank(path):
+                    return _reject_package_subdir_as_root(path)
     except Exception:
         pass
+    return None
 
-    # Also try from current working directory
+
+def _find_root_from_cwd() -> Path | None:
+    """Try to find Cortex root from current working directory."""
+    current = Path.cwd().resolve()
     for path in [current, *current.parents]:
-        cortex_dir = path / ".cortex"
-        if cortex_dir.is_dir():
-            memory_bank_dir = cortex_dir / "memory-bank"
-            if memory_bank_dir.is_dir():
-                return path
+        if has_memory_bank(path):
+            return _reject_package_subdir_as_root(path)
+    return None
 
-    return current
+
+def _has_language_markers(path: Path) -> bool:
+    """Return True if path looks like a project (has language/build markers)."""
+    return (
+        (path / "pyproject.toml").exists()
+        or (path / "package.json").exists()
+        or (path / "Cargo.toml").exists()
+        or (path / "go.mod").exists()
+        or (path / "go.sum").exists()
+    )
+
+
+def _is_subdir_of_cortex_root(resolved: Path) -> bool:
+    """True if resolved path is a direct subdirectory of a Cortex root.
+
+    When the client passes a segment like 'optimization' or 'validation',
+    resolve() yields repo/optimization; that path has no .cortex/memory-bank
+    but its parent does. Using it as project_root would create repo/optimization/.cortex/
+    and thus pollute the repo root with segment dirs. Callers should treat
+    this as invalid and fall back to auto-detection.
+    """
+    try:
+        return bool(resolved.parent and has_memory_bank(resolved.parent))
+    except (OSError, ValueError):
+        return False
+
+
+def get_project_root(project_root: str | None = None) -> Path:
+    """Get project root directory.
+
+    When project_root is provided, returns that path (resolved) only if it
+    is a Cortex root or an unrelated path. If it resolves to a subdirectory
+    of a Cortex root (e.g. client passed 'optimization'), falls back to
+    auto-detection to avoid creating spurious dirs at repo root. When
+    project_root is None, detects the project root by walking up from cwd
+    or script to find .cortex/memory-bank.
+
+    Args:
+        project_root: Optional project root path. If provided, returns its
+                     resolved path when it is a valid Cortex root. If None,
+                     attempts to detect from .cortex/.
+
+    Returns:
+        Resolved absolute path to project root
+    """
+    if project_root:
+        resolved = Path(project_root).resolve()
+        if has_memory_bank(resolved):
+            return _resolve_given_root_restricted_to_tree(resolved)
+        if _is_subdir_of_cortex_root(resolved):
+            return get_project_root(None)
+        return resolved
+    script_root = _find_root_from_script()
+    cwd_root = _find_root_from_cwd()
+    candidates: list[Path] = []
+    if script_root is not None:
+        candidates.append(script_root)
+    if cwd_root is not None and cwd_root not in candidates:
+        candidates.append(cwd_root)
+    if not candidates:
+        return Path.cwd().resolve()
+    # Prefer a root with fully initialized memory bank (all 7 core files) so we
+    # don't pick e.g. ~/.cortex when the real workspace is the repo.
+    for c in candidates:
+        if is_memory_bank_fully_initialized(c):
+            return _reject_package_subdir_as_root(c)
+    # Else prefer a Cortex root that has language markers (actual project)
+    for c in candidates:
+        if _has_language_markers(c):
+            return _reject_package_subdir_as_root(c)
+    return _reject_package_subdir_as_root(candidates[0])
 
 
 async def get_managers(project_root: Path) -> ManagersDict:
@@ -163,7 +305,7 @@ async def _post_init_setup(project_root: Path, managers: ManagersBuilder) -> Non
     index = cast(MetadataIndex, managers["index"])
     fs_manager = cast(FileSystemManager, managers["fs"])
 
-    index_path = project_root / ".cortex" / "index.json"
+    index_path = get_cortex_path(project_root, CortexResourceType.INDEX)
     if index_path.exists():
         try:
             _ = await index.load()

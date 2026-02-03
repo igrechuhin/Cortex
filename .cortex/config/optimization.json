@@ -7,9 +7,7 @@
   },
   "loading_strategy": {
     "default": "dependency_aware",
-    "mandatory_files": [
-      "memorybankinstructions.md"
-    ],
+    "mandatory_files": ["memorybankinstructions.md"],
     "priority_order": [
       "memorybankinstructions.md",
       "projectBrief.md",
@@ -40,7 +38,7 @@
     "max_cache_size_mb": 50
   },
   "rules": {
-    "enabled": false,
+    "enabled": true,
     "rules_folder": ".cursorrules",
     "reindex_interval_minutes": 30,
     "auto_include_in_context": true,
@@ -54,22 +52,8 @@
       "detect_from_task": true,
       "detect_from_files": true,
       "language_keywords": {
-        "python": [
-          "python",
-          "django",
-          "flask",
-          "fastapi",
-          "pytest",
-          "py"
-        ],
-        "swift": [
-          "swift",
-          "swiftui",
-          "ios",
-          "uikit",
-          "combine",
-          "cocoa"
-        ],
+        "python": ["python", "django", "flask", "fastapi", "pytest", "py"],
+        "swift": ["swift", "swiftui", "ios", "uikit", "combine", "cocoa"],
         "javascript": [
           "javascript",
           "js",
@@ -79,44 +63,18 @@
           "typescript",
           "ts"
         ],
-        "rust": [
-          "rust",
-          "cargo",
-          "rustc"
-        ],
-        "go": [
-          "golang",
-          "go"
-        ],
-        "java": [
-          "java",
-          "spring",
-          "maven",
-          "gradle"
-        ],
-        "csharp": [
-          "c#",
-          "csharp",
-          "dotnet",
-          ".net"
-        ],
-        "cpp": [
-          "c++",
-          "cpp",
-          "cmake"
-        ]
+        "rust": ["rust", "cargo", "rustc"],
+        "go": ["golang", "go"],
+        "java": ["java", "spring", "maven", "gradle"],
+        "csharp": ["c#", "csharp", "dotnet", ".net"],
+        "cpp": ["c++", "cpp", "cmake"]
       }
-    },
-    "shared_rules_enabled": false,
-    "shared_rules_folder": ".shared-rules",
-    "shared_rules_repo": "",
-    "auto_sync_shared_rules": true,
-    "sync_interval_minutes": 60
+    }
   },
   "synapse": {
-    "enabled": false,
+    "enabled": true,
     "synapse_folder": ".cortex/synapse",
-    "synapse_repo": "",
+    "synapse_repo": "https://github.com/igrechuhin/Synapse.git",
     "auto_sync": true,
     "sync_interval_minutes": 60
   },
@@ -124,7 +82,7 @@
     "enabled": true,
     "analysis": {
       "track_usage_patterns": true,
-      "pattern_window_days": 30,
+      "pattern_window_days": 5,
       "min_access_count": 5,
       "track_task_patterns": true
     },
@@ -139,8 +97,5 @@
         "quality"
       ]
     }
-  },
-  "loading": {
-    "strategy": "\"by_dependencies\""
   }
 }

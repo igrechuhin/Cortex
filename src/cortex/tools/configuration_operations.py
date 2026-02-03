@@ -162,9 +162,9 @@ async def configure(
 
         project_root: Path to project root directory. Defaults to current directory.
             Configuration files are stored in .cortex/ as:
-            - .cortex/validation.json
-            - .cortex/optimization.json
-            - .cortex/learning.json
+            - .cortex/config/validation.json
+            - .cortex/config/optimization.json
+            - .cortex/config/learning.json
             Example: "/Users/name/project"
 
     Returns:
@@ -451,9 +451,11 @@ async def configure_learning(
     value: JsonValue | None,
 ) -> str:
     """Configure learning settings."""
-    learning_engine, optimization_config, adaptation_config = (
-        await _initialize_learning_components(mgrs)
-    )
+    (
+        learning_engine,
+        optimization_config,
+        adaptation_config,
+    ) = await _initialize_learning_components(mgrs)
 
     if action == ConfigAction.VIEW:
         return handle_learning_view(learning_engine, adaptation_config)

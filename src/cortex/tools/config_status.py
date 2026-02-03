@@ -10,7 +10,11 @@ from pathlib import Path
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import DictLikeModel
-from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.path_resolver import (
+    CortexResourceType,
+    get_cortex_path,
+    is_memory_bank_fully_initialized,
+)
 from cortex.core.tiktoken_cache import ensure_bundled_cache_available
 from cortex.managers.initialization import get_project_root
 
@@ -35,20 +39,9 @@ class ProjectConfigStatus(DictLikeModel):
     )
 
 
-def _check_memory_bank_initialized(memory_bank_dir: Path) -> bool:
+def _check_memory_bank_initialized(project_root: Path) -> bool:
     """Check if memory bank is initialized with core files."""
-    core_files = [
-        "projectBrief.md",
-        "productContext.md",
-        "activeContext.md",
-        "systemPatterns.md",
-        "techContext.md",
-        "progress.md",
-        "roadmap.md",
-    ]
-    return memory_bank_dir.is_dir() and all(
-        (memory_bank_dir / fname).exists() for fname in core_files
-    )
+    return is_memory_bank_fully_initialized(project_root)
 
 
 def _check_structure_configured(cortex_dir: Path) -> bool:
@@ -114,10 +107,9 @@ def get_project_config_status() -> ProjectConfigStatus:
     try:
         project_root = get_project_root()
         cortex_dir = get_cortex_path(project_root, CortexResourceType.CORTEX_DIR)
-        memory_bank_dir = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
         cursor_dir = project_root / ".cursor"
 
-        memory_bank_initialized = _check_memory_bank_initialized(memory_bank_dir)
+        memory_bank_initialized = _check_memory_bank_initialized(project_root)
         structure_configured = _check_structure_configured(cortex_dir)
         cursor_integration_configured = _check_cursor_integration(
             cursor_dir, cortex_dir
