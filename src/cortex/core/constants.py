@@ -102,6 +102,8 @@ PROGRESS_REPORT_INTERVAL_LONG_RUNNING_SECONDS = (
 PROGRESS_THRESHOLD_TIMEOUT_SECONDS = (
     120.0  # Enable progress for tools with timeout >= this
 )
+# Heartbeat during long markdown lint runs to avoid client idle timeout (-32000)
+MARKDOWN_LINT_PROGRESS_HEARTBEAT_SECONDS = 15
 
 # =============================================================================
 # Performance Thresholds

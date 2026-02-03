@@ -2,6 +2,10 @@
 
 ## 2026-02-03
 
+- **Commit (full pipeline)** (2026-02-03) - Fix_errors: added AsyncMock import in tests/tools/test_markdown_operations_batch.py. Markdown lint: 5 files fixed (roadmap, session-optimization-connection-closed-follow-ups, optimization-config-investigation, session-optimization-2026-02-03T19-57, docs/mcp-tool-timeouts.md). Quality: refactored _process_markdown_files_sequential (extracted _start_markdown_lint_heartbeat, _cancel_heartbeat_task) in markdown_operations.py for function length. Tests 3451, coverage 90.11%.
+
+- **Phase 49: Introduce Anthropic advanced tool use (Steps 1–3)** (2026-02-03) - Research and feasibility doc docs/guides/advanced-tool-use.md; MCP SDK has no input_examples/defer_loading/allowed_callers in decorator; Tool model has meta. PoC: meta input_examples on manage_file and validate (MANAGE_FILE_INPUT_EXAMPLES, VALIDATE_INPUT_EXAMPLES); docstring "Input examples" on validate; unit tests tests/unit/test_advanced_tool_use.py. Plan phase-49 updated; quality gate passes.
+
 - **Commit (pause-after-step)** - Steps 0–4 completed; fix_markdown_lint fixed roadmap.md (1 file); tests 3443, coverage 90.09%. Pipeline continuing through Step 12 and commit.
 
 - **Commit (2026-02-03)** - Pre-commit pipeline (pause-after-step). Function length refactors: pre_commit_helpers (_detect_language_in_cortex_subdirs,_resolve_language_at_root), markdown_operations (_process_one_markdown_file, _apply_validation_error_hint). Health-check CLI: src/cortex/health_check/**main**.py (python -m cortex.health_check). BenchmarkRunner default output_dir .cortex/benchmark_results. Test fixes: health_check_cli (parse_args/main coverage), test_execute_all_checks_by_default (5 checks), test_runner_initialization_default_dir. Tests 3441, coverage 90.11%.

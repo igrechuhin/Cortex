@@ -23,6 +23,7 @@ from cortex.core.cache_json_access import read_cache_json, write_cache_json
 from cortex.core.constants import (
     GIT_OPERATION_TIMEOUT_SECONDS,
     MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL,
+    MARKDOWN_LINT_PROGRESS_HEARTBEAT_SECONDS,
     MCP_TOOL_TIMEOUT_VERY_COMPLEX,
 )
 from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
@@ -632,6 +633,42 @@ async def _process_one_markdown_file(
         )
 
 
+async def _markdown_lint_heartbeat_loop(
+    progress_ctx: MCPContext,
+    current_n: list[int],
+    total: int,
+) -> None:
+    """Send progress (current_n, total) every N seconds to keep MCP connection alive."""
+    while True:
+        await asyncio.sleep(MARKDOWN_LINT_PROGRESS_HEARTBEAT_SECONDS)
+        n = current_n[0]
+        await report_progress_safe(progress_ctx, float(n), float(total))
+
+
+def _start_markdown_lint_heartbeat(
+    progress_ctx: MCPContext | None,
+    current_n: list[int],
+    total: int,
+) -> asyncio.Task[None] | None:
+    """Start heartbeat task if progress reporting is enabled."""
+    if progress_ctx is None or total <= 0:
+        return None
+    return asyncio.create_task(
+        _markdown_lint_heartbeat_loop(progress_ctx, current_n, total)
+    )
+
+
+async def _cancel_heartbeat_task(task: asyncio.Task[None] | None) -> None:
+    """Cancel and await the heartbeat task if present."""
+    if task is None:
+        return
+    _ = task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+
 async def _process_markdown_files_sequential(
     files: list[Path],
     root_path: Path,
@@ -648,24 +685,29 @@ async def _process_markdown_files_sequential(
     - Works better with the cache (cache lookups filter most files)
     - Reduces MCP connection load during long operations
 
-    When progress_ctx and progress_total are set, reports progress every 3 files
-    to keep the MCP connection alive and avoid client idle timeout (Connection closed).
+    When progress_ctx and progress_total are set, reports progress after every
+    file and runs a heartbeat every N seconds to avoid client idle timeout
+    (MCP error -32000 Connection closed).
     """
     results: list[FileResult] = []
-    report_every = 3
-    for file_path in files:
-        result = await _process_one_markdown_file(
-            file_path, root_path, markdownlint_cmd, dry_run
-        )
-        if result is not None:
-            results.append(result)
-        if progress_ctx is not None and progress_total is not None and result:
-            n = len(results)
-            if n == 1 or n % report_every == 0 or n == progress_total:
+    current_n: list[int] = [0]
+    total = progress_total if progress_total is not None else 0
+    heartbeat_task = _start_markdown_lint_heartbeat(progress_ctx, current_n, total)
+    try:
+        for file_path in files:
+            result = await _process_one_markdown_file(
+                file_path, root_path, markdownlint_cmd, dry_run
+            )
+            if result is not None:
+                results.append(result)
+            current_n[0] = len(results)
+            if progress_ctx and progress_total and result:
                 await report_progress_safe(
-                    progress_ctx, float(n), float(progress_total)
+                    progress_ctx, float(len(results)), float(progress_total)
                 )
-    return results
+        return results
+    finally:
+        await _cancel_heartbeat_task(heartbeat_task)
 
 
 def _calculate_statistics(results: list[FileResult]) -> tuple[int, int, int]:

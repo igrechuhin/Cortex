@@ -9,11 +9,12 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch: {}  # Allow manual run when auto-trigger missed (e.g. after 32ebd2b)
 
-# Cancel redundant runs when new commits are pushed to the same branch/PR
+# Allow every push to complete its run (do not cancel when a newer push happens)
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   quality:

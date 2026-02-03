@@ -44,8 +44,19 @@ from cortex.tools.file_operation_helpers import (
 )
 from cortex.tools.roadmap_corruption import fix_roadmap_content_if_needed
 
+MANAGE_FILE_INPUT_EXAMPLES: list[dict[str, object]] = [
+    {"file_name": "projectBrief.md", "operation": "read", "include_metadata": True},
+    {
+        "file_name": "activeContext.md",
+        "operation": "write",
+        "content": "# Active Context\n\n## Current Work\n\n...",
+        "change_description": "Updated current work focus",
+    },
+    {"file_name": "roadmap.md", "operation": "metadata"},
+]
 
-@mcp.tool()
+
+@mcp.tool(meta={"input_examples": MANAGE_FILE_INPUT_EXAMPLES})
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def manage_file(

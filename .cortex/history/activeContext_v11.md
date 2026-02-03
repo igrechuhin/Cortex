@@ -34,6 +34,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ### Recently Completed
 
+- Commit (2026-02-03) (full pipeline): fix_errors (AsyncMock in test_markdown_operations_batch); markdown lint (5 files); quality (markdown_operations:_start_markdown_lint_heartbeat,_cancel_heartbeat_task); tests 3451, coverage 90.11%.
 - Commit (2026-02-03) (pause-after-step): Steps 0–4 completed; fix_markdown_lint fixed roadmap.md; tests 3443, coverage 90.09%. Steps 5–12 and commit pending.
 - Phase 43 Step 3.2 context/health/scripts/usage resources (2026-02-02): analyze_context_effectiveness_resource, get_context_usage_statistics_resource, check_mcp_connection_health_resource, analyze_health_check_resource, list_session_scripts_resource, analyze_session_scripts_resource, suggest_tool_improvements_resource, get_tool_usage_stats_resource, get_unused_tools_resource, get_tool_usage_report_resource, get_optimization_recommendations_resource; unit tests; test_usage_analytics.py; quality gate passes.
 - Phase 43 Step 3.2 structure/synapse/rules resources (2026-02-02): check_structure_health_resource, rules_get_relevant_resource, get_synapse_rules_resource, get_synapse_prompts_resource; unit tests; quality gate passes.
@@ -50,7 +51,7 @@ See [roadmap.md](roadmap.md) for current status and milestones.
 
 ## Project Health
 
-- **Tests**: 3443+ passing; coverage ≥ 90%.
+- **Tests**: 3451+ passing; coverage ≥ 90%.
 - **Linting/Types**: Pyright 0 errors, 0 warnings.
 - **Quality**: File size and function length gates passing; pre_commit_tools <400 lines (pipeline in pre_commit_pipeline.py).
 - **Pre-commit adapters**: Python, TypeScript, JavaScript, Rust, Go, Java, Kotlin, Swift full implementations.

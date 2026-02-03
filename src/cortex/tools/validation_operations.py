@@ -26,8 +26,14 @@ from cortex.tools.validation_helpers import (
     parse_validation_check_type,
 )
 
+VALIDATE_INPUT_EXAMPLES: list[dict[str, object]] = [
+    {"check_type": "schema", "file_name": "projectBrief.md"},
+    {"check_type": "duplications", "similarity_threshold": 0.8},
+    {"check_type": "roadmap_sync"},
+]
 
-@mcp.tool()
+
+@mcp.tool(meta={"input_examples": VALIDATE_INPUT_EXAMPLES})
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def validate(
@@ -117,6 +123,13 @@ async def validate(
             - Only applicable for check_type="infrastructure"
         check_config_consistency: Check configuration consistency (default: True)
             - Only applicable for check_type="infrastructure"
+
+    Input examples (for tool selection):
+        - Basic: check_type="schema", file_name="projectBrief.md"
+        - All files: check_type="schema" (file_name omitted)
+        - Duplications: check_type="duplications", similarity_threshold=0.8
+        - Infrastructure: check_type="infrastructure", check_commit_ci_alignment=True
+        - Roadmap sync: check_type="roadmap_sync"
 
     Returns:
         JSON string with validation results. Structure varies by check_type:

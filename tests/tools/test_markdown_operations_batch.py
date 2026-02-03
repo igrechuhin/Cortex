@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -146,6 +146,60 @@ class TestSequentialProcessing:
             assert "exists.md" in file_names
             assert "also_exists.md" in file_names
             assert "nonexistent.md" not in file_names
+
+    @pytest.mark.asyncio
+    async def test_process_markdown_files_reports_progress_every_file_and_heartbeat_cancelled(
+        self,
+    ):
+        """With progress_ctx set, progress is reported after every file; heartbeat task is cancelled on exit."""
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            files = [
+                project_root / "a.md",
+                project_root / "b.md",
+                project_root / "c.md",
+            ]
+            for f in files:
+                _ = f.write_text("# x\n")
+            markdownlint_cmd = ["markdownlint-cli2"]
+            mock_ctx = AsyncMock()
+            progress_calls: list[tuple[float, float]] = []
+
+            async def capture_progress(progress: float, total: float | None) -> None:
+                if total is not None:
+                    progress_calls.append((progress, total))
+
+            mock_ctx.report_progress = capture_progress
+
+            async def mock_run_markdownlint_fix(
+                file_path: Path, root: Path, cmd: list[str], dry_run: bool
+            ) -> FileResult:
+                return FileResult(
+                    file=str(file_path.relative_to(root)),
+                    fixed=False,
+                    errors=[],
+                    error_message=None,
+                )
+
+            with patch(
+                "cortex.tools.markdown_operations._run_markdownlint_fix",
+                side_effect=mock_run_markdownlint_fix,
+            ):
+                results = await _process_markdown_files_sequential(
+                    files,
+                    project_root,
+                    markdownlint_cmd,
+                    False,
+                    progress_ctx=mock_ctx,
+                    progress_total=3,
+                )
+
+            assert len(results) == 3
+            # Progress after each file: (1,3), (2,3), (3,3); may also have (0,3) from start
+            assert (1.0, 3.0) in progress_calls
+            assert (2.0, 3.0) in progress_calls
+            assert (3.0, 3.0) in progress_calls
+            assert len(progress_calls) >= 3
 
 
 class TestRoadmapCorruption:

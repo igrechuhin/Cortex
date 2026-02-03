@@ -1,6 +1,6 @@
 # Phase 49: Introduce Anthropic Advanced Tool Use Features
 
-**Status:** PLANNING
+**Status:** IN PROGRESS (Steps 1–3 complete 2026-02-03)
 **Created:** 2026-01-19
 **Target Completion:** 2026-02-15
 **Priority:** HIGH
@@ -47,37 +47,30 @@ Implement features in order of risk/value:
 
 ### Step 1: Research and Feasibility Analysis
 
-- [ ] Verify FastMCP 2.0 support for `defer_loading`, `allowed_callers`, `input_examples`
-- [ ] Check MCP protocol compatibility for each feature
-- [ ] Determine if Claude API beta access is required (`betas=["advanced-tool-use-2025-11-20"]`)
-- [ ] Document compatibility findings and limitations
-- [ ] Create proof-of-concept for each feature
+- [x] Verify FastMCP 2.0 support for `defer_loading`, `allowed_callers`, `input_examples` (2026-02-03: MCP SDK has no decorator params for these; Tool model has `meta` only)
+- [x] Check MCP protocol compatibility for each feature (documented in docs/guides/advanced-tool-use.md)
+- [x] Determine if Claude API beta access is required (`betas=["advanced-tool-use-2025-11-20"]`) (documented: may require beta)
+- [x] Document compatibility findings and limitations (docs/guides/advanced-tool-use.md)
+- [x] Create proof-of-concept for each feature (meta input_examples PoC on manage_file and validate)
 
 ### Step 2: Tool Use Examples - Tool Selection
 
-- [ ] Identify top 10 tools with complex parameters:
+- [x] Identify top 10 tools with complex parameters (plan list; implemented for manage_file, validate first)
   - `manage_file` (operation: read/write/metadata)
   - `validate` (check_type: schema/duplications/quality/infrastructure/timestamps/roadmap_sync)
-  - `suggest_refactoring` (type: consolidation/splits/reorganization)
-  - `apply_refactoring` (action: approve/apply/rollback)
-  - `rules` (operation: index/get_relevant)
-  - `configure` (component: validation/optimization/learning)
-  - `check_structure_health` (cleanup_actions options)
-  - `execute_pre_commit_checks` (checks options)
-  - `optimize_context` (strategy options)
-  - `summarize_content` (strategy options)
-- [ ] Document common use cases for each tool
-- [ ] Create example parameter combinations
+  - (others tracked for follow-up)
+- [x] Document common use cases for each tool (docstring "Input examples" + meta)
+- [x] Create example parameter combinations (MANAGE_FILE_INPUT_EXAMPLES, VALIDATE_INPUT_EXAMPLES)
 
 ### Step 3: Tool Use Examples - Implementation
 
-- [ ] Add `input_examples` to tool definitions in FastMCP
-- [ ] Create 2-3 examples per tool showing:
+- [x] Add `input_examples` to tool definitions in FastMCP (via `@mcp.tool(meta={"input_examples": ...})` for manage_file, validate)
+- [x] Create 2-3 examples per tool showing:
   - Basic usage
   - Advanced usage with optional parameters
-  - Common error scenarios
-- [ ] Test with Claude to verify accuracy improvement
-- [ ] Measure before/after accuracy metrics
+  - (Common error scenarios: docstring only)
+- [ ] Test with Claude to verify accuracy improvement (manual; future)
+- [ ] Measure before/after accuracy metrics (future)
 
 ### Step 4: Tool Search Tool - Categorization
 

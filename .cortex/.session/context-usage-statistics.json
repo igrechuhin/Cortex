@@ -1,14 +1,14 @@
 {
-  "last_updated": "2026-01-29T17:56",
-  "total_sessions_analyzed": 3,
-  "total_load_context_calls": 4,
-  "avg_token_utilization": 0.228,
-  "avg_files_selected": 9.5,
-  "avg_relevance_score": 0.558,
+  "last_updated": "2026-02-03T19:37",
+  "total_sessions_analyzed": 4,
+  "total_load_context_calls": 5,
+  "avg_token_utilization": 0.281,
+  "avg_files_selected": 9.2,
+  "avg_relevance_score": 0.58,
   "common_task_patterns": {
     "fix/debug": 1,
     "other": 2,
-    "implement/add": 1
+    "implement/add": 2
   },
   "insights": {
     "task_type_recommendations": {
@@ -39,7 +39,7 @@
         "notes": "Low utilization - consider smaller token budgets; Limited data - insights will improve with more samples"
       },
       "implement/add": {
-        "calls_count": 1,
+        "calls_count": 2,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
@@ -47,59 +47,59 @@
           "progress.md",
           "file.md"
         ],
-        "avg_utilization": 0.245,
-        "avg_relevance": 0.625,
-        "notes": "Low utilization - consider smaller token budgets; Limited data - insights will improve with more samples"
+        "avg_utilization": 0.369,
+        "avg_relevance": 0.645,
+        "notes": "Moderate utilization - some budget optimization possible; Limited data - insights will improve with more samples"
       }
     },
     "file_effectiveness": {
       "activeContext.md": {
-        "times_selected": 4,
-        "avg_relevance": 0.782,
+        "times_selected": 5,
+        "avg_relevance": 0.798,
         "task_types_used": [
-          "implement/add",
           "other",
-          "fix/debug"
+          "fix/debug",
+          "implement/add"
         ],
         "recommendation": "High value - prioritize for loading"
       },
       "techContext.md": {
-        "times_selected": 4,
+        "times_selected": 5,
         "avg_relevance": 0.5,
         "task_types_used": [
-          "implement/add",
           "other",
-          "fix/debug"
+          "fix/debug",
+          "implement/add"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "roadmap.md": {
-        "times_selected": 4,
-        "avg_relevance": 0.642,
+        "times_selected": 5,
+        "avg_relevance": 0.643,
         "task_types_used": [
-          "implement/add",
           "other",
-          "fix/debug"
+          "fix/debug",
+          "implement/add"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "file.md": {
-        "times_selected": 4,
-        "avg_relevance": 0.389,
+        "times_selected": 5,
+        "avg_relevance": 0.413,
         "task_types_used": [
-          "implement/add",
           "other",
-          "fix/debug"
+          "fix/debug",
+          "implement/add"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "projectBrief.md": {
-        "times_selected": 4,
+        "times_selected": 5,
         "avg_relevance": 0.5,
         "task_types_used": [
-          "implement/add",
           "other",
-          "fix/debug"
+          "fix/debug",
+          "implement/add"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -122,39 +122,39 @@
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "progress.md": {
-        "times_selected": 4,
-        "avg_relevance": 0.578,
+        "times_selected": 5,
+        "avg_relevance": 0.592,
         "task_types_used": [
-          "implement/add",
           "other",
-          "fix/debug"
+          "fix/debug",
+          "implement/add"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "systemPatterns.md": {
-        "times_selected": 4,
+        "times_selected": 5,
         "avg_relevance": 0.5,
         "task_types_used": [
-          "implement/add",
           "other",
-          "fix/debug"
+          "fix/debug",
+          "implement/add"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "productContext.md": {
-        "times_selected": 4,
+        "times_selected": 5,
         "avg_relevance": 0.5,
         "task_types_used": [
-          "implement/add",
           "other",
-          "fix/debug"
+          "fix/debug",
+          "implement/add"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       }
     },
     "learned_patterns": [
-      "Average 22% budget utilization - ~33k tokens unused per call",
-      "'activeContext.md' is most frequently loaded (4/4 calls)",
+      "Average 28% budget utilization - ~29k tokens unused per call",
+      "'activeContext.md' is most frequently loaded (5/5 calls)",
       "Most common task type: 'other' (2 calls)"
     ],
     "budget_recommendations": {
@@ -290,6 +290,35 @@
         "progress.md": 0.558,
         "activeContext.md": 0.763,
         "file.md": 0.539
+      }
+    },
+    {
+      "session_id": "b188e21812f9",
+      "timestamp": "2026-02-03T19:26",
+      "task_description": "Phase 49 Introduce Anthropic advanced tool use: research FastMCP support for input_examples, defer_loading, allowed_callers; implement tool use examples for complex tools",
+      "token_budget": 25000,
+      "total_tokens": 12333,
+      "utilization": 0.49332,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.666,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "projectBrief.md",
+        "productContext.md",
+        "progress.md",
+        "systemPatterns.md",
+        "activeContext.md",
+        "roadmap.md",
+        "file.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.649,
+        "activeContext.md": 0.859,
+        "file.md": 0.509
       }
     }
   ]
