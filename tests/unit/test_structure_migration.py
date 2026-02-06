@@ -3,6 +3,7 @@ from typing import cast
 from unittest.mock import patch
 
 from cortex.core.models import ModelDict
+from cortex.core.path_resolver import CursorResourceType, get_cursor_path
 from cortex.structure.structure_migration import StructureMigrationManager
 
 
@@ -76,7 +77,7 @@ def test_migrate_memory_bank_files_copies_standard_files(tmp_path: Path) -> None
 
 def test_migrate_plans_copies_cursor_plans(tmp_path: Path) -> None:
     # Arrange
-    cursor_plans_dir = tmp_path / ".cursor" / "plans"
+    cursor_plans_dir = get_cursor_path(tmp_path, CursorResourceType.PLANS)
     cursor_plans_dir.mkdir(parents=True, exist_ok=True)
     _ = (cursor_plans_dir / "plan.md").write_text("# Plan", encoding="utf-8")
     manager = StructureMigrationManager(tmp_path)
@@ -122,7 +123,9 @@ def test_migrate_cursorrules_copies_rules_file(tmp_path: Path) -> None:
 
 def test_detect_legacy_structure_when_tradewing_style_detected(tmp_path: Path) -> None:
     # Arrange
-    (tmp_path / ".cursor" / "plans").mkdir(parents=True, exist_ok=True)
+    get_cursor_path(tmp_path, CursorResourceType.PLANS).mkdir(
+        parents=True, exist_ok=True
+    )
     _ = (tmp_path / "projectBrief.md").write_text("# Brief", encoding="utf-8")
     manager = StructureMigrationManager(tmp_path)
 
@@ -135,7 +138,9 @@ def test_detect_legacy_structure_when_tradewing_style_detected(tmp_path: Path) -
 
 def test_detect_legacy_structure_when_doc_mcp_style_detected(tmp_path: Path) -> None:
     # Arrange
-    (tmp_path / ".cursor" / "plans").mkdir(parents=True, exist_ok=True)
+    get_cursor_path(tmp_path, CursorResourceType.PLANS).mkdir(
+        parents=True, exist_ok=True
+    )
     (tmp_path / "docs" / "memory-bank").mkdir(parents=True, exist_ok=True)
     manager = StructureMigrationManager(tmp_path)
 
@@ -162,7 +167,9 @@ def test_detect_legacy_structure_when_scattered_files_detected(tmp_path: Path) -
 
 def test_detect_legacy_structure_when_cursor_default_detected(tmp_path: Path) -> None:
     # Arrange
-    (tmp_path / ".cursor").mkdir(parents=True, exist_ok=True)
+    get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR).mkdir(
+        parents=True, exist_ok=True
+    )
     manager = StructureMigrationManager(tmp_path)
 
     # Act

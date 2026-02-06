@@ -12,11 +12,13 @@ from urllib.parse import unquote
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.refactoring_operation_helpers import (
     parse_refactoring_suggestion_type,
@@ -84,12 +86,11 @@ async def _suggest_refactoring_run(
         return suggest_refactoring_error_json(e)
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Suggest Refactoring"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def suggest_refactoring(
     type: Literal["consolidation", "splits", "reorganization"],
-    project_root: str | None = None,
     min_similarity: float | None = None,
     size_threshold: int | None = None,
     goal: str | None = None,
@@ -133,10 +134,6 @@ async def suggest_refactoring(
             - "consolidation": Find duplicate content to consolidate
             - "splits": Find large files to split
             - "reorganization": Generate structure reorganization plan
-
-        project_root: Absolute path to project root directory.
-            Example: "/Users/username/projects/my-project"
-            If None, uses current working directory.
 
         min_similarity: Minimum similarity threshold for consolidation
             suggestions (0.0-1.0).
@@ -519,9 +516,10 @@ async def suggest_refactoring(
           to apply changes after reviewing suggestions.
     """
     await log_client(ctx, "info", "suggest_refactoring: starting", logger_name=__name__)
+    root = await resolve_project_root_async(None, ctx)
     return await _suggest_refactoring_run(
         type,
-        project_root,
+        str(root),
         min_similarity,
         size_threshold,
         goal,
@@ -537,14 +535,13 @@ async def suggest_refactoring_resource(type: str) -> str:
     """Resource: Get refactoring suggestions by type. Read via cortex://analysis/suggest-refactoring/{type}.
 
     type may be URL-encoded. Must be one of: consolidation, splits,
-    reorganization. Uses default parameters (project_root=None, min_similarity=None,
+    reorganization. Uses default parameters (min_similarity=None,
     size_threshold=None, goal=None, preview_suggestion_id=None, show_diff=True,
     estimate_impact=True).
     """
     decoded = unquote(type)
     return await suggest_refactoring(
         type=decoded,
-        project_root=None,
         min_similarity=None,
         size_threshold=None,
         goal=None,

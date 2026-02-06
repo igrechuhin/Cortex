@@ -205,7 +205,8 @@ async def test_get_dependency_graph_success_json_format(
     """Test get_dependency_graph with JSON format returns correct structure."""
     # Arrange
     with patch(
-        "cortex.managers.initialization.get_project_root",
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
         return_value=mock_project_root,
     ):
         with patch(
@@ -213,9 +214,7 @@ async def test_get_dependency_graph_success_json_format(
             new=AsyncMock(return_value=mock_managers),
         ):
             # Act
-            result = await get_dependency_graph(
-                project_root=str(mock_project_root), format="json"
-            )
+            result = await get_dependency_graph(format="json")
 
             # Assert
             result_dict = json.loads(result)
@@ -237,7 +236,8 @@ async def test_get_dependency_graph_success_mermaid_format(
     """Test get_dependency_graph with mermaid format returns diagram."""
     # Arrange
     with patch(
-        "cortex.managers.initialization.get_project_root",
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
         return_value=mock_project_root,
     ):
         with patch(
@@ -245,9 +245,7 @@ async def test_get_dependency_graph_success_mermaid_format(
             new=AsyncMock(return_value=mock_managers),
         ):
             # Act
-            result = await get_dependency_graph(
-                project_root=str(mock_project_root), format="mermaid"
-            )
+            result = await get_dependency_graph(format="mermaid")
 
             # Assert
             result_dict = json.loads(result)
@@ -268,7 +266,7 @@ async def test_get_dependency_graph_error_handling(mock_project_root: Path):
         side_effect=ValueError("Invalid project root"),
     ):
         # Act
-        result = await get_dependency_graph(project_root=str(mock_project_root))
+        result = await get_dependency_graph(format="json")
 
         # Assert
         result_dict = json.loads(result)
@@ -279,20 +277,21 @@ async def test_get_dependency_graph_error_handling(mock_project_root: Path):
 
 @pytest.mark.asyncio
 async def test_get_dependency_graph_default_project_root(mock_managers: dict[str, Any]):
-    """Test get_dependency_graph with None project_root uses default."""
+    """Test get_dependency_graph resolves root via resolve_project_root_async."""
     # Arrange
-    with patch("cortex.managers.initialization.get_project_root") as mock_get_root:
-        mock_get_root.return_value = Path("/default/root")
+    with patch(
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=Path("/default/root"),
+    ):
         with patch(
             "cortex.managers.initialization.get_managers",
             new=AsyncMock(return_value=mock_managers),
         ):
             # Act
-            result = await get_dependency_graph(project_root=None, format="json")
+            result = await get_dependency_graph(format="json")
 
             # Assert
-            # get_project_root may be called multiple times or not at all
-            # depending on implementation
             result_dict = json.loads(result)
             assert result_dict["status"] == "success"
 
@@ -302,8 +301,11 @@ async def test_get_dependency_graph_resource_returns_json(
     mock_managers: dict[str, Any],
 ):
     """Test get_dependency_graph_resource returns valid JSON (Phase 43 resource)."""
-    with patch("cortex.managers.initialization.get_project_root") as mock_get_root:
-        mock_get_root.return_value = Path("/default/root")
+    with patch(
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=Path("/default/root"),
+    ):
         with patch(
             "cortex.managers.initialization.get_managers",
             new=AsyncMock(return_value=mock_managers),
@@ -357,9 +359,7 @@ async def test_get_version_history_success(
         new=AsyncMock(return_value=file_metadata),
     ):
         # Act
-        result = await get_version_history(
-            file_name="test.md", project_root=str(mock_project_root), limit=10
-        )
+        result = await get_version_history(file_name="test.md", limit=10)
 
         # Assert
         result_dict = json.loads(result)
@@ -396,9 +396,7 @@ async def test_get_version_history_with_limit(
         new=AsyncMock(return_value=file_metadata),
     ):
         # Act
-        result = await get_version_history(
-            file_name="test.md", project_root=str(mock_project_root), limit=2
-        )
+        result = await get_version_history(file_name="test.md", limit=2)
 
         # Assert
         result_dict = json.loads(result)
@@ -418,9 +416,7 @@ async def test_get_version_history_file_not_found(
         new=AsyncMock(return_value=None),
     ):
         # Act
-        result = await get_version_history(
-            file_name="nonexistent.md", project_root=str(mock_project_root)
-        )
+        result = await get_version_history(file_name="nonexistent.md")
 
         # Assert
         result_dict = json.loads(result)
@@ -437,9 +433,7 @@ async def test_get_version_history_error_handling(mock_project_root: Path):
         side_effect=RuntimeError("Test error"),
     ):
         # Act
-        result = await get_version_history(
-            file_name="test.md", project_root=str(mock_project_root)
-        )
+        result = await get_version_history(file_name="test.md")
 
         # Assert
         result_dict = json.loads(result)
@@ -460,9 +454,7 @@ async def test_get_version_history_invalid_version_history_format(
         new=AsyncMock(return_value=file_metadata),
     ):
         # Act
-        result = await get_version_history(
-            file_name="test.md", project_root=str(mock_project_root)
-        )
+        result = await get_version_history(file_name="test.md")
 
         # Assert
         result_dict = json.loads(result)
@@ -476,8 +468,11 @@ async def test_get_version_history_resource_returns_json(
     mock_project_root: Path, mock_managers: dict[str, Any]
 ):
     """Test get_version_history_resource returns valid JSON (Phase 43 resource)."""
-    with patch("cortex.managers.initialization.get_project_root") as mock_get_root:
-        mock_get_root.return_value = mock_project_root
+    with patch(
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=mock_project_root,
+    ):
         with patch(
             "cortex.managers.initialization.get_managers",
             new=AsyncMock(return_value=mock_managers),
@@ -511,9 +506,7 @@ async def test_get_version_history_missing_optional_fields(
         new=AsyncMock(return_value=file_metadata),
     ):
         # Act
-        result = await get_version_history(
-            file_name="test.md", project_root=str(mock_project_root)
-        )
+        result = await get_version_history(file_name="test.md")
 
         # Assert
         result_dict = json.loads(result)
@@ -548,9 +541,7 @@ async def test_rollback_file_version_success(
         new=AsyncMock(return_value=rollback_result),
     ):
         # Act
-        result = await rollback_file_version(
-            file_name="test.md", version=2, project_root=str(mock_project_root)
-        )
+        result = await rollback_file_version(file_name="test.md", version=2)
 
         # Assert
         result_dict = json.loads(result)
@@ -571,7 +562,8 @@ async def test_rollback_file_version_invalid_file_name(
         side_effect=ValueError("Invalid file name")
     )
     with patch(
-        "cortex.managers.initialization.get_project_root",
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
         return_value=mock_project_root,
     ):
         with patch(
@@ -582,7 +574,6 @@ async def test_rollback_file_version_invalid_file_name(
             result = await rollback_file_version(
                 file_name="../../../etc/passwd",
                 version=1,
-                project_root=str(mock_project_root),
             )
 
             # Assert
@@ -602,7 +593,8 @@ async def test_rollback_file_version_snapshot_not_found(
     mock_managers.versions.get_snapshot_path = MagicMock(return_value=nonexistent_path)
 
     with patch(
-        "cortex.managers.initialization.get_project_root",
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
         return_value=mock_project_root,
     ):
         with patch(
@@ -610,9 +602,7 @@ async def test_rollback_file_version_snapshot_not_found(
             new=AsyncMock(return_value=mock_managers),
         ):
             # Act
-            result = await rollback_file_version(
-                file_name="test.md", version=99, project_root=str(mock_project_root)
-            )
+            result = await rollback_file_version(file_name="test.md", version=99)
 
             # Assert
             result_dict = json.loads(result)
@@ -629,9 +619,7 @@ async def test_rollback_file_version_error_handling(mock_project_root: Path):
         side_effect=RuntimeError("Test error"),
     ):
         # Act
-        result = await rollback_file_version(
-            file_name="test.md", version=1, project_root=str(mock_project_root)
-        )
+        result = await rollback_file_version(file_name="test.md", version=1)
 
         # Assert - Phase 32: connection-related RuntimeError becomes ConnectionError
         result_dict = json.loads(result)
@@ -683,7 +671,6 @@ async def test_get_memory_bank_stats_success_basic(
         ):
             # Act
             result = await get_memory_bank_stats(
-                project_root=str(mock_project_root),
                 include_token_budget=False,
                 include_refactoring_history=False,
             )
@@ -706,7 +693,8 @@ async def test_get_memory_bank_stats_with_token_budget(
     """Test get_memory_bank_stats includes token budget analysis."""
     # Arrange
     with patch(
-        "cortex.managers.initialization.get_project_root",
+        "cortex.tools.phase1_foundation_stats.resolve_project_root_async",
+        new_callable=AsyncMock,
         return_value=mock_project_root,
     ):
         with patch(
@@ -715,7 +703,6 @@ async def test_get_memory_bank_stats_with_token_budget(
         ):
             # Act
             result = await get_memory_bank_stats(
-                project_root=str(mock_project_root),
                 include_token_budget=True,
                 include_refactoring_history=False,
             )
@@ -768,7 +755,6 @@ async def test_get_memory_bank_stats_with_refactoring_history(
         ):
             # Act
             result = await get_memory_bank_stats(
-                project_root=str(mock_project_root),
                 include_token_budget=False,
                 include_refactoring_history=True,
                 refactoring_days=30,
@@ -813,7 +799,6 @@ async def test_get_memory_bank_stats_refactoring_executor_unavailable(
         ):
             # Act
             result = await get_memory_bank_stats(
-                project_root=str(mock_project_root),
                 include_token_budget=False,
                 include_refactoring_history=True,
             )
@@ -834,7 +819,7 @@ async def test_get_memory_bank_stats_error_handling(mock_project_root: Path):
         side_effect=RuntimeError("Test error"),
     ):
         # Act
-        result = await get_memory_bank_stats(project_root=str(mock_project_root))
+        result = await get_memory_bank_stats()
 
         # Assert
         result_dict = json.loads(result)
@@ -851,7 +836,8 @@ async def test_get_memory_bank_stats_empty_metadata(
     # Arrange
     mock_managers.index.get_all_files_metadata = AsyncMock(return_value={})
     with patch(
-        "cortex.managers.initialization.get_project_root",
+        "cortex.tools.phase1_foundation_stats.resolve_project_root_async",
+        new_callable=AsyncMock,
         return_value=mock_project_root,
     ):
         with patch(
@@ -859,9 +845,7 @@ async def test_get_memory_bank_stats_empty_metadata(
             new=AsyncMock(return_value=mock_managers),
         ):
             # Act
-            result = await get_memory_bank_stats(
-                project_root=str(mock_project_root), include_token_budget=False
-            )
+            result = await get_memory_bank_stats(include_token_budget=False)
 
             # Assert
             result_dict = json.loads(result)
@@ -1329,7 +1313,6 @@ class TestPhase1FoundationContextLogging:
         ):
             result = await get_version_history(
                 file_name="test.md",
-                project_root=str(mock_project_root),
                 limit=10,
                 ctx=mock_ctx,
             )
@@ -1350,7 +1333,6 @@ class TestPhase1FoundationContextLogging:
         ) as mock_log:
             result = await get_version_history(
                 file_name="missing.md",
-                project_root=str(mock_project_root),
                 ctx=mock_ctx,
             )
             _ = json.loads(result)
@@ -1377,7 +1359,6 @@ class TestPhase1FoundationContextLogging:
         ):
             result = await get_version_history(
                 file_name="test.md",
-                project_root=str(mock_project_root),
                 ctx=mock_ctx,
             )
             assert json.loads(result)["status"] == "error"
@@ -1398,7 +1379,8 @@ class TestPhase1FoundationContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.managers.initialization.get_project_root",
+                "cortex.tools.phase1_foundation_stats.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -1406,9 +1388,7 @@ class TestPhase1FoundationContextLogging:
                 new=AsyncMock(return_value=mock_managers),
             ),
         ):
-            result = await get_memory_bank_stats(
-                project_root=str(mock_project_root), ctx=mock_ctx
-            )
+            result = await get_memory_bank_stats(ctx=mock_ctx)
             assert json.loads(result)["status"] == "success"
             args_list = [c[0] for c in mock_log.call_args_list]
             levels_and_messages = [(a[1], a[2]) for a in args_list]
@@ -1434,9 +1414,7 @@ class TestPhase1FoundationContextLogging:
                 side_effect=RuntimeError("init failed"),
             ),
         ):
-            result = await get_memory_bank_stats(
-                project_root=str(mock_project_root), ctx=mock_ctx
-            )
+            result = await get_memory_bank_stats(ctx=mock_ctx)
             assert json.loads(result)["status"] == "error"
             assert any(
                 c[0][1] == "error" and "failed" in (c[0][2] or "")
@@ -1455,7 +1433,8 @@ class TestPhase1FoundationContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.managers.initialization.get_project_root",
+                "cortex.core.project_root_resolver.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -1463,9 +1442,7 @@ class TestPhase1FoundationContextLogging:
                 new=AsyncMock(return_value=mock_managers),
             ),
         ):
-            result = await get_dependency_graph(
-                project_root=str(mock_project_root), format="json", ctx=mock_ctx
-            )
+            result = await get_dependency_graph(format="json", ctx=mock_ctx)
             assert json.loads(result)["status"] == "success"
             args_list = [c[0] for c in mock_log.call_args_list]
             levels_and_messages = [(a[1], a[2]) for a in args_list]
@@ -1483,7 +1460,8 @@ class TestPhase1FoundationContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.managers.initialization.get_project_root",
+                "cortex.core.project_root_resolver.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -1495,9 +1473,7 @@ class TestPhase1FoundationContextLogging:
                 side_effect=RuntimeError("graph build failed"),
             ),
         ):
-            result = await get_dependency_graph(
-                project_root=str(mock_project_root), ctx=mock_ctx
-            )
+            result = await get_dependency_graph(ctx=mock_ctx)
             assert json.loads(result)["status"] == "error"
             assert any(
                 c[0][1] == "error" and "failed" in (c[0][2] or "")
@@ -1530,7 +1506,6 @@ class TestPhase1FoundationContextLogging:
             result = await rollback_file_version(
                 file_name="test.md",
                 version=1,
-                project_root=str(mock_project_root),
                 ctx=mock_ctx,
             )
             assert json.loads(result)["status"] == "success"
@@ -1557,7 +1532,6 @@ class TestPhase1FoundationContextLogging:
             result = await rollback_file_version(
                 file_name="test.md",
                 version=1,
-                project_root=str(mock_project_root),
                 ctx=mock_ctx,
             )
             assert json.loads(result)["status"] == "error"

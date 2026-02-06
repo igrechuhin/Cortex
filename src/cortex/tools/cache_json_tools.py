@@ -7,7 +7,6 @@ cache JSON so that multiple chat sessions do not corrupt data.
 """
 
 import json
-from pathlib import Path
 from typing import cast
 
 from cortex.core.cache_json_access import (
@@ -20,15 +19,8 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import read_only_annotations, safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
-from cortex.managers.initialization import get_project_root
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
-
-
-def _resolve_root(project_root: str | None) -> Path:
-    """Resolve project root path."""
-    if project_root:
-        return Path(project_root).resolve()
-    return get_project_root()
 
 
 def _parse_write_content(
@@ -50,6 +42,13 @@ def _parse_write_content(
         return (None, f"Invalid JSON: {e!s}")
 
 
+def parse_write_content(
+    content: str,
+) -> tuple[dict[str, object] | list[object] | None, str | None]:
+    """Public wrapper around _parse_write_content for testing and callers."""
+    return _parse_write_content(content)
+
+
 def _error_response(
     message: str,
     relative_path: str,
@@ -66,12 +65,20 @@ def _error_response(
     return json.dumps(out, indent=2)
 
 
+def error_response(
+    message: str,
+    relative_path: str,
+    error_type: str | None = None,
+) -> str:
+    """Public wrapper around _error_response for testing and callers."""
+    return _error_response(message, relative_path, error_type)
+
+
 @mcp.tool(annotations=read_only_annotations("Read Cache JSON"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def read_cache_json(
     relative_path: str,
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Read a JSON file from .cortex/.cache with concurrent-safe locking.
@@ -87,8 +94,8 @@ async def read_cache_json(
     """
     if ctx is not None:
         await log_client(ctx, "debug", "read_cache_json: starting")
+    root = await resolve_project_root_async(None, ctx)
     try:
-        root = _resolve_root(project_root)
         data = await _read_cache_json(root, relative_path)
         if data is None:
             return json.dumps({"status": "missing", "relative_path": relative_path})
@@ -116,7 +123,6 @@ async def read_cache_json(
 async def write_cache_json(
     relative_path: str,
     content: str,
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Write a JSON file under .cortex/.cache with concurrent-safe locking.
@@ -131,8 +137,8 @@ async def write_cache_json(
     """
     if ctx is not None:
         await log_client(ctx, "debug", "write_cache_json: starting")
+    root = await resolve_project_root_async(None, ctx)
     try:
-        root = _resolve_root(project_root)
         payload, err_msg = _parse_write_content(content)
         if err_msg is not None:
             return _error_response(err_msg, relative_path)

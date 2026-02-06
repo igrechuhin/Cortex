@@ -13,11 +13,13 @@ from typing import Literal
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.health_check.dependency_mapper import DependencyMapper
 from cortex.health_check.models import (
     HealthCheckReport,
@@ -31,14 +33,13 @@ from cortex.health_check.quality_validator import QualityValidator
 from cortex.health_check.rule_analyzer import RuleAnalyzer
 from cortex.health_check.similarity_engine import SimilarityEngine
 from cortex.health_check.tool_analyzer import ToolAnalyzer
+from cortex.managers.initialization import get_project_root as _get_project_root
 from cortex.server import mcp
 
 
 def get_project_root(project_root: str | None) -> Path:
-    """Resolve project root path."""
-    if project_root:
-        return Path(project_root).resolve()
-    return Path.cwd()
+    """Resolve project root for the health-check CLI (python -m cortex.health_check)."""
+    return _get_project_root(project_root)
 
 
 def empty_prompt_result() -> PromptAnalysisResult:
@@ -208,7 +209,7 @@ async def run_health_check_analysis(
     return _build_report_json(report, pdeps, rdeps)
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Analyze Health Check"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def analyze_health_check(
@@ -216,7 +217,6 @@ async def analyze_health_check(
     similarity_threshold: float = 0.75,
     include_dependencies: bool = True,
     validate_quality: bool = True,
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Analyze prompts, rules, and/or MCP tools for merge and optimization opportunities.
@@ -231,8 +231,8 @@ async def analyze_health_check(
     merge_opportunities, optimization_opportunities, recommendations, and
     optional prompt_dependencies/rule_dependencies.
     """
-    root = get_project_root(project_root)
     await log_client(ctx, "info", "analyze_health_check: starting")
+    root = await resolve_project_root_async(None, ctx)
     result = await run_health_check_analysis(
         analysis_type=analysis_type,
         similarity_threshold=similarity_threshold,
@@ -262,5 +262,4 @@ async def analyze_health_check_resource(analysis_type: str) -> str:
         similarity_threshold=0.75,
         include_dependencies=True,
         validate_quality=True,
-        project_root=None,
     )

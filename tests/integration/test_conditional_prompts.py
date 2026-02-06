@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 
+from cortex.core.path_resolver import CursorResourceType, get_cursor_path
+
 
 def _clear_setup_prompts_cache() -> None:
     """Remove cortex.setup.prompts from sys.modules so it is re-imported."""
@@ -42,7 +44,7 @@ class TestConditionalPromptRegistration:
         for core_file in core_files:
             _ = (memory_bank_dir / core_file).write_text("# Test")
 
-        cursor_dir = tmp_path / ".cursor"
+        cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
         cursor_dir.mkdir()
         (cortex_dir / "synapse").mkdir()
         (cursor_dir / "memory-bank").symlink_to(cortex_dir / "memory-bank")
@@ -87,7 +89,7 @@ class TestConditionalPromptRegistration:
 
     def test_migration_prompts_registered_when_migration_needed(self, tmp_path: Path):
         """Test that migration prompts are registered when migration is needed."""
-        legacy_path = tmp_path / ".cursor" / "memory-bank"
+        legacy_path = get_cursor_path(tmp_path, CursorResourceType.MEMORY_BANK)
         legacy_path.mkdir(parents=True)
         _ = (legacy_path / "old.md").write_text("# Test")
 

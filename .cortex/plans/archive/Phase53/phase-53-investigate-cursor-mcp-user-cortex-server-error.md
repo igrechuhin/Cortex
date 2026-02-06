@@ -83,3 +83,8 @@ Verified end-to-end (when recovered) via:
   - `.../mcps/user-cortex/tools/`
   - `.../mcps/user-cortex/prompts/` (if applicable)
 - Cortex tool calls succeed again (e.g., `manage_file(operation="metadata")`).
+
+## Status: COMPLETED (2026-02-04)
+
+- **Verification**: Fix in `src/cortex/core/logging_config.py` confirmed (`logger.propagate = False`, logs to stderr). `check_mcp_connection_health()` returned `healthy: true`. `manage_file(operation="metadata", file_name="roadmap.md")` and other Cortex MCP tools succeeded. Descriptor directory `.../mcps/user-cortex/tools/` populated. Exit criteria met.
+- **Blocker**: Removed from roadmap Blockers; next implement step is the following blocker.

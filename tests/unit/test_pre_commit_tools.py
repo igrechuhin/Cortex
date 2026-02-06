@@ -1,5 +1,6 @@
 """Tests for pre-commit tools."""
 
+import ast
 import json
 import tempfile
 from collections.abc import Callable
@@ -18,6 +19,7 @@ from cortex.services.framework_adapters.base import (
 )
 from cortex.services.language_detector import LanguageInfo
 from cortex.tools.pre_commit_helpers import (
+    DEFAULT_CHECKS,
     MAX_LOG_OUTPUT_LENGTH,
     PreCommitCheck,
     check_file_sizes,
@@ -25,6 +27,7 @@ from cortex.tools.pre_commit_helpers import (
     count_file_lines,
     detect_or_use_language,
     ensure_json_serializable_for_mcp,
+    get_docstring_range,
 )
 from cortex.tools.pre_commit_pipeline import (
     _check_function_lengths,  # pyright: ignore[reportPrivateUsage]
@@ -36,6 +39,13 @@ from cortex.tools.pre_commit_tools import (
     execute_pre_commit_checks,
     fix_quality_issues,
 )
+
+# Required parameters for execute_pre_commit_checks (tool requires all params).
+_EXECUTE_REQUIRED = {
+    "test_timeout": 300,
+    "coverage_threshold": 0.9,
+    "strict_mode": False,
+}
 
 
 class TestExecutePreCommitChecks:
@@ -68,6 +78,11 @@ class TestExecutePreCommitChecks:
                     "cortex.tools.pre_commit_tools.PythonAdapter",
                 ) as mock_adapter_class,
                 patch(
+                    "cortex.tools.pre_commit_tools.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=project_root,
+                ),
+                patch(
                     "cortex.tools.pre_commit_tools.asyncio.to_thread",
                     new_callable=AsyncMock,
                 ) as mock_to_thread,
@@ -93,7 +108,7 @@ class TestExecutePreCommitChecks:
 
                 result = await execute_pre_commit_checks(
                     checks=["fix_errors"],
-                    project_root=str(project_root),
+                    **_EXECUTE_REQUIRED,
                 )
 
                 mock_to_thread.assert_called_once()
@@ -116,10 +131,15 @@ class TestExecutePreCommitChecks:
                     "cortex.tools.pre_commit_helpers.detect_language_at_path",
                     return_value=None,
                 ),
+                patch(
+                    "cortex.tools.pre_commit_tools.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=Path(tmpdir).resolve(),
+                ),
             ):
                 result = await execute_pre_commit_checks(
                     checks=["fix_errors"],
-                    project_root=str(tmpdir),
+                    **_EXECUTE_REQUIRED,
                 )
 
             assert result["status"] == "error"
@@ -128,10 +148,31 @@ class TestExecutePreCommitChecks:
     @pytest.mark.asyncio
     async def test_error_for_unsupported_language(self) -> None:
         """Test error for unsupported language includes supported list."""
-        result = await execute_pre_commit_checks(
-            checks=["fix_errors"],
+        haskell_info = LanguageInfo(
             language="haskell",
+            test_framework=None,
+            formatter=None,
+            linter=None,
+            type_checker=None,
+            build_tool=None,
+            confidence=0.5,
         )
+
+        with (
+            patch(
+                "cortex.tools.pre_commit_tools.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/some/root"),
+            ),
+            patch(
+                "cortex.tools.pre_commit_tools.detect_or_use_language",
+                return_value=(haskell_info, "/some/root"),
+            ),
+        ):
+            result = await execute_pre_commit_checks(
+                checks=["fix_errors"],
+                **_EXECUTE_REQUIRED,
+            )
 
         assert result["status"] == "error"
         assert "not yet supported" in result["error"]
@@ -141,10 +182,30 @@ class TestExecutePreCommitChecks:
     @pytest.mark.asyncio
     async def test_return_value_is_dict_and_json_round_trips_for_mcp(self) -> None:
         """Return value must be dict (not JSON string) and round-trip for MCP."""
-        result = await execute_pre_commit_checks(
-            checks=["fix_errors"],
+        haskell_info = LanguageInfo(
             language="haskell",
+            test_framework=None,
+            formatter=None,
+            linter=None,
+            type_checker=None,
+            build_tool=None,
+            confidence=0.5,
         )
+        with (
+            patch(
+                "cortex.tools.pre_commit_tools.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/some/root"),
+            ),
+            patch(
+                "cortex.tools.pre_commit_tools.detect_or_use_language",
+                return_value=(haskell_info, "/some/root"),
+            ),
+        ):
+            result = await execute_pre_commit_checks(
+                checks=["fix_errors"],
+                **_EXECUTE_REQUIRED,
+            )
         assert isinstance(result, dict), "MCP tool must return dict, not JSON string"
         serialized = json.dumps(result)
         parsed = json.loads(serialized)
@@ -158,9 +219,16 @@ class TestExecutePreCommitChecks:
             _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
             (project_root / ".venv").mkdir()
 
-            with patch(
-                "cortex.tools.pre_commit_tools.PythonAdapter"
-            ) as mock_adapter_class:
+            with (
+                patch(
+                    "cortex.tools.pre_commit_tools.PythonAdapter"
+                ) as mock_adapter_class,
+                patch(
+                    "cortex.tools.pre_commit_tools.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=project_root,
+                ),
+            ):
                 mock_adapter = MagicMock()
                 mock_adapter_class.return_value = mock_adapter
 
@@ -175,7 +243,7 @@ class TestExecutePreCommitChecks:
 
                 result = await execute_pre_commit_checks(
                     checks=["fix_errors"],
-                    project_root=str(project_root),
+                    **_EXECUTE_REQUIRED,
                 )
 
                 assert result["status"] == "success"
@@ -238,10 +306,15 @@ class TestExecutePreCommitChecks:
                     errors=[],
                 )
 
-                result = await execute_pre_commit_checks(
-                    checks=None,
-                    project_root=str(project_root),
-                )
+                with patch(
+                    "cortex.tools.pre_commit_tools.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=project_root,
+                ):
+                    result = await execute_pre_commit_checks(
+                        checks=[c.value for c in DEFAULT_CHECKS],
+                        **_EXECUTE_REQUIRED,
+                    )
 
                 assert result["status"] == "success"
                 assert len(result["checks_performed"]) == 5
@@ -254,10 +327,16 @@ class TestExecutePreCommitChecks:
     @pytest.mark.asyncio
     async def test_error_handling(self) -> None:
         """Test error handling in tool."""
-        with patch("cortex.tools.pre_commit_tools.get_project_root_str") as mock_root:
-            mock_root.side_effect = Exception("Test error")
+        with patch(
+            "cortex.tools.pre_commit_tools.resolve_project_root_async",
+            new_callable=AsyncMock,
+            side_effect=Exception("Test error"),
+        ):
 
-            result = await execute_pre_commit_checks(checks=["fix_errors"])
+            result = await execute_pre_commit_checks(
+                checks=["fix_errors"],
+                **_EXECUTE_REQUIRED,
+            )
 
             assert result["status"] == "error"
             assert "Test error" in result["error"]
@@ -280,11 +359,15 @@ class TestExecutePreCommitChecks:
                 mock_adapter_class.return_value = mock_adapter
                 mock_adapter.project_root = project_root
 
-                result = await execute_pre_commit_checks(
-                    checks=["format_ci_parity"],
-                    project_root=str(project_root),
-                    language="python",
-                )
+                with patch(
+                    "cortex.tools.pre_commit_tools.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=project_root,
+                ):
+                    result = await execute_pre_commit_checks(
+                        checks=["format_ci_parity"],
+                        **_EXECUTE_REQUIRED,
+                    )
 
                 assert result["status"] == "success"
                 assert "format_ci_parity" in result["checks_performed"]
@@ -308,11 +391,15 @@ class TestExecutePreCommitChecks:
                 mock_adapter_class.return_value = mock_adapter
                 mock_adapter.project_root = project_root
 
-                result = await execute_pre_commit_checks(
-                    checks=["test_naming"],
-                    project_root=str(project_root),
-                    language="python",
-                )
+                with patch(
+                    "cortex.tools.pre_commit_tools.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=project_root,
+                ):
+                    result = await execute_pre_commit_checks(
+                        checks=["test_naming"],
+                        **_EXECUTE_REQUIRED,
+                    )
 
                 assert result["status"] == "success"
                 assert "test_naming" in result["checks_performed"]
@@ -647,7 +734,12 @@ class TestFixQualityIssues:
             ) as mock_execute:
                 mock_execute.return_value = {"status": "error", "error": "Test error"}
 
-                result_json = await fix_quality_issues(project_root=str(project_root))
+                with patch(
+                    "cortex.tools.pre_commit_tools.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=project_root,
+                ):
+                    result_json = await fix_quality_issues()
                 result = json.loads(result_json)
 
                 assert result["status"] == "error"
@@ -693,7 +785,12 @@ class TestFixQualityIssues:
                     {"success": True, "files_fixed": 0, "files_processed": 0}
                 )
 
-                result_json = await fix_quality_issues(project_root=str(project_root))
+                with patch(
+                    "cortex.tools.pre_commit_tools.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=project_root,
+                ):
+                    result_json = await fix_quality_issues()
                 result = json.loads(result_json)
 
                 assert result["status"] == "success"
@@ -709,8 +806,11 @@ class TestFixQualityIssues:
     @pytest.mark.asyncio
     async def test_fix_quality_issues_exception_handling(self) -> None:
         """Test exception handling in fix_quality_issues."""
-        with patch("cortex.tools.pre_commit_tools.get_project_root_str") as mock_root:
-            mock_root.side_effect = Exception("Root error")
+        with patch(
+            "cortex.tools.pre_commit_tools.resolve_project_root_async",
+            new_callable=AsyncMock,
+            side_effect=Exception("Root error"),
+        ):
 
             result_json = await fix_quality_issues()
             result = json.loads(result_json)
@@ -751,7 +851,12 @@ class TestFixQualityIssues:
                     {"success": True, "files_fixed": 1, "files_processed": 1}
                 )
 
-                result_json = await fix_quality_issues(project_root=str(project_root))
+                with patch(
+                    "cortex.tools.pre_commit_tools.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=project_root,
+                ):
+                    result_json = await fix_quality_issues()
                 result = json.loads(result_json)
 
                 assert result["status"] == "success"
@@ -816,7 +921,12 @@ class TestFixQualityIssues:
                     {"success": True, "files_fixed": 0, "files_processed": 0}
                 )
 
-                result_json = await fix_quality_issues(project_root=str(project_root))
+                with patch(
+                    "cortex.tools.pre_commit_tools.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=project_root,
+                ):
+                    result_json = await fix_quality_issues()
                 result = json.loads(result_json)
 
                 assert result["status"] == "success"
@@ -970,6 +1080,90 @@ class TestEnsureJsonSerializableForMcp:
         assert result["value"] is None
         assert json.loads(json.dumps(result)) == result
 
+    def test_converts_nested_nan_in_list(self) -> None:
+        """Nested list with nan is converted."""
+        data: ModelDict = cast(ModelDict, {"items": [1.0, float("nan"), 2.0]})
+        result = ensure_json_serializable_for_mcp(data)
+        assert result["items"] == [1.0, None, 2.0]
+        assert json.loads(json.dumps(result)) == result
+
+    def test_converts_nested_inf_in_dict(self) -> None:
+        """Nested dict with inf is converted."""
+        data: ModelDict = cast(
+            ModelDict, {"nested": {"a": 1, "b": float("inf"), "c": 2}}
+        )
+        result = ensure_json_serializable_for_mcp(data)
+        assert cast(dict[str, object], result["nested"])["b"] is None
+        assert json.loads(json.dumps(result)) == result
+
+
+class TestGetDocstringRange:
+    """Test get_docstring_range helper (docstring line range from AST)."""
+
+    def test_returns_range_when_function_has_docstring(self) -> None:
+        """Function with docstring returns (start, end) line range."""
+        source = 'def foo():\n    """Docstring here."""\n    pass\n'
+        tree = ast.parse(source)
+        func = tree.body[0]
+        assert isinstance(func, ast.FunctionDef)
+        result = get_docstring_range(func)
+        assert result is not None
+        start, end = result
+        assert start == 2
+        assert end == 2
+
+    def test_returns_none_when_no_docstring(self) -> None:
+        """Function without docstring returns None."""
+        source = "def bar():\n    pass\n"
+        tree = ast.parse(source)
+        func = tree.body[0]
+        assert isinstance(func, ast.FunctionDef)
+        result = get_docstring_range(func)
+        assert result is None
+
+    def test_works_for_async_function(self) -> None:
+        """Async function with docstring returns range."""
+        source = 'async def baz():\n    """Async doc."""\n    return 1\n'
+        tree = ast.parse(source)
+        func = tree.body[0]
+        assert isinstance(func, ast.AsyncFunctionDef)
+        result = get_docstring_range(func)
+        assert result is not None
+        assert result[0] == 2
+        assert result[1] == 2
+
+    def test_multiline_docstring_returns_full_range(self) -> None:
+        """Function with multiline docstring returns (start, end) spanning lines."""
+        source = 'def f():\n    """Line one.\n    Line two."""\n    pass\n'
+        tree = ast.parse(source)
+        func = tree.body[0]
+        assert isinstance(func, ast.FunctionDef)
+        result = get_docstring_range(func)
+        assert result is not None
+        start, end = result
+        assert start == 2
+        assert end >= 2
+
+    def test_function_with_only_docstring_no_other_body(self) -> None:
+        """Function whose only body element is docstring still returns range."""
+        source = 'def only_doc():\n    """Only docstring."""\n'
+        tree = ast.parse(source)
+        func = tree.body[0]
+        assert isinstance(func, ast.FunctionDef)
+        result = get_docstring_range(func)
+        assert result is not None
+        assert result[0] == 2
+        assert result[1] == 2
+
+    def test_function_with_empty_body_returns_none(self) -> None:
+        """Function with no statements (empty body) returns None."""
+        source = "def empty():\n    pass\n"
+        tree = ast.parse(source)
+        func = tree.body[0]
+        assert isinstance(func, ast.FunctionDef)
+        result = get_docstring_range(func)
+        assert result is None
+
 
 class TestCheckFunctionLengths:
     """Test _check_function_lengths and _check_function_lengths_in_file."""
@@ -1111,10 +1305,15 @@ class TestQualityCheckIntegration:
                     files_modified=[],
                 )
 
-                result = await execute_pre_commit_checks(
-                    checks=["quality"],
-                    project_root=str(project_root),
-                )
+                with patch(
+                    "cortex.tools.pre_commit_tools.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=project_root,
+                ):
+                    result = await execute_pre_commit_checks(
+                        checks=["quality"],
+                        **_EXECUTE_REQUIRED,
+                    )
 
                 assert result["status"] == "success"
                 assert "quality" in result["checks_performed"]
@@ -1167,10 +1366,15 @@ class TestLogTruncationBehavior:
                     files_modified=[],
                 )
 
-                result = await execute_pre_commit_checks(
-                    checks=["quality"],
-                    project_root=str(project_root),
-                )
+                with patch(
+                    "cortex.tools.pre_commit_tools.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=project_root,
+                ):
+                    result = await execute_pre_commit_checks(
+                        checks=["quality"],
+                        **_EXECUTE_REQUIRED,
+                    )
 
                 assert result["status"] == "error"
                 quality_result = result["results"]["quality"]
@@ -1201,6 +1405,11 @@ class TestPreCommitToolsContextLogging:
                 patch(
                     "cortex.tools.pre_commit_tools.PythonAdapter",
                 ) as mock_adapter_class,
+                patch(
+                    "cortex.tools.pre_commit_tools.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=project_root,
+                ),
                 patch(
                     "cortex.tools.pre_commit_tools.asyncio.to_thread",
                     new_callable=AsyncMock,
@@ -1246,7 +1455,7 @@ class TestPreCommitToolsContextLogging:
 
                 result = await execute_pre_commit_checks(
                     checks=["fix_errors"],
-                    project_root=str(project_root),
+                    **_EXECUTE_REQUIRED,
                     ctx=mock_ctx,
                 )
             assert result["status"] == "success"

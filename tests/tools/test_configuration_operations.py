@@ -8,6 +8,7 @@ import pytest
 
 from cortex.core.models import JsonValue, ModelDict
 from cortex.tools.configuration_helpers import ConfigAction
+from cortex.tools.configuration_hybrid import get_config_resource, update_config
 from cortex.tools.configuration_operations import (
     apply_config_updates,
     configure,
@@ -50,11 +51,15 @@ class TestConfigureMainHandler:
             )
 
             # Act
-            result = await configure(
-                component="validation",
-                action="view",
-                project_root=str(tmp_path),
-            )
+            with patch(
+                "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ):
+                result = await configure(
+                    component="validation",
+                    action="view",
+                )
 
             # Assert
             result_data = json.loads(result)
@@ -80,11 +85,15 @@ class TestConfigureMainHandler:
             )
 
             # Act
-            result = await configure(
-                component="optimization",
-                action="view",
-                project_root=str(tmp_path),
-            )
+            with patch(
+                "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ):
+                result = await configure(
+                    component="optimization",
+                    action="view",
+                )
 
             # Assert
             result_data = json.loads(result)
@@ -111,11 +120,15 @@ class TestConfigureMainHandler:
             )
 
             # Act
-            result = await configure(
-                component="learning",
-                action="view",
-                project_root=str(tmp_path),
-            )
+            with patch(
+                "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ):
+                result = await configure(
+                    component="learning",
+                    action="view",
+                )
 
             # Assert
             result_data = json.loads(result)
@@ -134,11 +147,15 @@ class TestConfigureMainHandler:
             mock_get_managers.return_value = {}
 
             # Act
-            result = await configure(
-                component="unknown",  # type: ignore[arg-type]
-                action="view",
-                project_root=str(tmp_path),
-            )
+            with patch(
+                "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ):
+                result = await configure(
+                    component="unknown",  # type: ignore[arg-type]
+                    action="view",
+                )
 
             # Assert
             result_data = json.loads(result)
@@ -156,17 +173,127 @@ class TestConfigureMainHandler:
             mock_get_managers.side_effect = RuntimeError("Test error")
 
             # Act
-            result = await configure(
-                component="validation",
-                action="view",
-                project_root=str(tmp_path),
-            )
+            with patch(
+                "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ):
+                result = await configure(
+                    component="validation",
+                    action="view",
+                )
 
             # Assert
             result_data = json.loads(result)
             assert result_data["status"] == "error"
             assert "Test error" in result_data["error"]
             assert result_data["error_type"] == "RuntimeError"
+
+
+class TestGetConfigResourceAndUpdateConfig:
+    """Test get_config_resource (Phase 43 Resource) and update_config (Phase 43 Tool)."""
+
+    @pytest.mark.asyncio
+    async def test_get_config_resource_validation_returns_success(self) -> None:
+        """Test get_config_resource returns view result for validation component."""
+        # Arrange
+        with patch(
+            "cortex.tools.configuration_hybrid.get_managers"
+        ) as mock_get_managers:
+            mock_validation_config = MagicMock()
+            mock_validation_config.config = MagicMock()
+            mock_validation_config.config.model_dump.return_value = {
+                "enabled": True,
+                "strict_mode": False,
+            }
+            mock_get_managers.return_value = make_test_managers(
+                validation_config=mock_validation_config
+            )
+            with patch(
+                "cortex.tools.configuration_hybrid.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ):
+                # Act
+                result = await get_config_resource(component="validation")
+
+                # Assert
+                result_data = json.loads(result)
+                assert result_data["status"] == "success"
+                assert result_data["component"] == "validation"
+                assert "configuration" in result_data
+
+    @pytest.mark.asyncio
+    async def test_get_config_resource_unknown_component_returns_error(self) -> None:
+        """Test get_config_resource with unknown component returns error."""
+        with patch(
+            "cortex.tools.configuration_hybrid.get_managers",
+            return_value=make_test_managers(),
+        ):
+            with patch(
+                "cortex.tools.configuration_hybrid.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ):
+                result = await get_config_resource(component="unknown")
+                result_data = json.loads(result)
+                assert result_data["status"] == "error"
+                assert "Unknown component" in result_data["error"]
+
+    @pytest.mark.asyncio
+    async def test_update_config_invalid_action_returns_error(self) -> None:
+        """Test update_config with action view returns invalid action error."""
+        with patch(
+            "cortex.tools.configuration_hybrid.get_managers",
+            return_value=make_test_managers(),
+        ):
+            with patch(
+                "cortex.tools.configuration_hybrid.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ):
+                result = await update_config(
+                    component="validation",
+                    action="view",
+                )
+                result_data = json.loads(result)
+                assert result_data["status"] == "error"
+                assert (
+                    "Unknown action" in result_data["error"]
+                    or "valid_actions" in result_data
+                )
+
+    @pytest.mark.asyncio
+    async def test_update_config_validation_update_success(self) -> None:
+        """Test update_config update action succeeds for validation."""
+        with patch(
+            "cortex.tools.configuration_hybrid.get_managers"
+        ) as mock_get_managers:
+            mock_validation_config = MagicMock()
+            mock_validation_config.config = MagicMock()
+            mock_validation_config.config.model_dump.return_value = {
+                "enabled": True,
+                "strict_mode": True,
+            }
+            mock_validation_config.save = AsyncMock()
+            mock_get_managers.return_value = make_test_managers(
+                validation_config=mock_validation_config
+            )
+            with patch(
+                "cortex.tools.configuration_hybrid.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ):
+                result = await update_config(
+                    component="validation",
+                    action="update",
+                    key="strict_mode",
+                    value=True,
+                )
+                result_data = json.loads(result)
+                assert result_data["status"] == "success"
+                assert result_data["component"] == "validation"
+                assert "Configuration updated" in result_data.get("message", "")
 
 
 class TestValidationConfiguration:
@@ -872,12 +999,16 @@ class TestConfigureContextLogging:
             )
 
             # Act
-            result = await configure(
-                component="validation",
-                action="view",
-                project_root=str(tmp_path),
-                ctx=mock_ctx,
-            )
+            with patch(
+                "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ):
+                result = await configure(
+                    component="validation",
+                    action="view",
+                    ctx=mock_ctx,
+                )
 
             # Assert
             assert json.loads(result)["status"] == "success"
@@ -901,7 +1032,6 @@ class TestConfigureContextLogging:
             result = await configure(
                 component="validation",
                 action="invalid",  # type: ignore[arg-type]
-                project_root=str(tmp_path),
                 ctx=mock_ctx,
             )
 
@@ -937,7 +1067,6 @@ class TestConfigureContextLogging:
             result = await configure(
                 component="unknown",
                 action="view",
-                project_root=str(tmp_path),
                 ctx=mock_ctx,
             )
 
@@ -972,7 +1101,6 @@ class TestConfigureContextLogging:
             result = await configure(
                 component="validation",
                 action="view",
-                project_root=str(tmp_path),
                 ctx=mock_ctx,
             )
 

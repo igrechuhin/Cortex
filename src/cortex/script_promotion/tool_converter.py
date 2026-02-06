@@ -39,9 +39,7 @@ from cortex.server import mcp
 @mcp.tool()
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
-async def {snake}(
-    project_root: str | None = None,
-) -> str:
+async def {snake}() -> str:
     """{doc[:200]}."""
     # TODO: Port logic from captured script (see script_content).
     return '{{"status": "success", "message": "Not yet implemented"}}'

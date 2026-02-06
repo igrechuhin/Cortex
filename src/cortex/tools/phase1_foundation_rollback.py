@@ -22,6 +22,7 @@ from cortex.core.mcp_stability import (
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import SectionMetadata
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.managers import initialization
@@ -70,7 +71,6 @@ class RollbackProcessingData(BaseModel):
 async def rollback_file_version(
     file_name: str,
     version: int,
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Rollback a Memory Bank file to a previous version.
@@ -92,7 +92,6 @@ async def rollback_file_version(
     Args:
         file_name: Name of the file (e.g., "projectBrief.md")
         version: Version number to rollback to (must exist in history)
-        project_root: Optional path to project root directory
 
     Returns:
         JSON string with rollback status including the new version number
@@ -130,7 +129,8 @@ async def rollback_file_version(
         ctx, "info", "rollback_file_version: starting", logger_name=__name__
     )
     try:
-        result = await _rollback_file_version_run(file_name, version, project_root)
+        root = await resolve_project_root_async(None, ctx)
+        result = await _rollback_file_version_run(file_name, version, root)
         await log_client(
             ctx, "info", "rollback_file_version: completed", logger_name=__name__
         )
@@ -150,7 +150,7 @@ async def rollback_file_version(
 
 
 async def _rollback_file_version_run(
-    file_name: str, version: int, project_root: str | None
+    file_name: str, version: int, root: Path
 ) -> (
     RollbackFileVersionResult
     | RollbackFileVersionErrorResult
@@ -158,25 +158,25 @@ async def _rollback_file_version_run(
 ):
     """Execute rollback and return result or dict for JSON serialization."""
     return await execute_tool_with_stability(
-        _execute_rollback, file_name, version, project_root
+        _execute_rollback, file_name, version, str(root)
     )
 
 
 async def _execute_rollback(
-    file_name: str, version: int, project_root: str | None
+    file_name: str, version: int, root: str
 ) -> RollbackFileVersionResult | RollbackFileVersionErrorResult:
     """Execute rollback workflow.
 
     Args:
         file_name: Name of file to rollback
         version: Version number to rollback to
-        project_root: Optional project root path
+        root: Project root path
 
     Returns:
         RollbackFileVersionResult or RollbackFileVersionErrorResult
     """
-    root = initialization.get_project_root(project_root)
-    mgrs = await initialization.get_managers(root)
+    root_path = Path(root)
+    mgrs = await initialization.get_managers(root_path)
     # These managers are produced by our initialization pipeline.
     # Avoid re-validating concrete manager instance types here; it makes
     # tests unnecessarily brittle (MagicMock) without improving safety.
@@ -188,7 +188,7 @@ async def _execute_rollback(
     )
 
     validation_result = await _validate_and_get_snapshot(
-        managers, root, file_name, version
+        managers, root_path, file_name, version
     )
     if isinstance(validation_result, RollbackFileVersionErrorResult):
         return validation_result

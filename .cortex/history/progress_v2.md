@@ -948,7 +948,7 @@ Fixed all type errors, reduced warnings, and improved code organization by extra
 
 ### Summary (Roadmap Update)
 
-Added Multi-Language Pre-Commit Support as a future enhancement to the roadmap to track the TODO comment in `pre_commit_tools.py`. This enhancement would extend pre-commit check support beyond Python to include other languages (JavaScript/TypeScript, Rust, Go, Java, etc.) for multi-language projects.
+Added Multi-Language Pre-Commit Support as a future enhancement to the roadmap to track the pre-commit tooling TODO. This enhancement would extend pre-commit check support beyond Python to include other languages (JavaScript/TypeScript, Rust, Go, Java, etc.) for multi-language projects.
 
 ### Changes Made (Roadmap Update)
 
@@ -957,8 +957,7 @@ Added Multi-Language Pre-Commit Support as a future enhancement to the roadmap t
 - **Added Future Enhancement Section**:
   - Created "Future Enhancements" subsection under "Upcoming Milestones" in roadmap.md
   - Added "Multi-Language Pre-Commit Support" entry with details:
-    - Location: `src/cortex/tools/pre_commit_tools.py:56`
-    - Current state: Only Python adapter (`PythonAdapter`) implemented
+    - Current state: Only the Python adapter (`PythonAdapter`) is implemented
     - Future work: Add other language adapters as needed
     - Benefit: Enable pre-commit checks for multi-language projects
 

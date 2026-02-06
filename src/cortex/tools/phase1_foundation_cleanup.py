@@ -5,11 +5,15 @@ This module provides the cleanup_metadata_index tool for cleaning up
 stale entries from the metadata index.
 """
 
+from pathlib import Path
+
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.mcp_annotations import destructive_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.metadata_index import MetadataIndex
-from cortex.managers.initialization import get_managers, get_project_root
+from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.managers.initialization import get_managers
 from cortex.server import mcp
 from cortex.tools.models import (
     CleanupMetadataIndexErrorResult,
@@ -37,11 +41,10 @@ async def _process_stale_entries(
     )
 
 
-@mcp.tool()
+@mcp.tool(annotations=destructive_annotations("Cleanup Metadata Index"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def cleanup_metadata_index(
-    project_root: str | None = None,
     dry_run: bool = False,
     ctx: MCPContext | None = None,
 ) -> CleanupMetadataIndexResultUnion:
@@ -63,7 +66,8 @@ async def cleanup_metadata_index(
         ctx, "info", "cleanup_metadata_index: starting", logger_name=__name__
     )
     try:
-        result = await _cleanup_metadata_index_impl(project_root, dry_run)
+        root = await resolve_project_root_async(None, ctx)
+        result = await _cleanup_metadata_index_impl(root, dry_run)
         await log_client(
             ctx, "info", "cleanup_metadata_index: completed", logger_name=__name__
         )
@@ -81,10 +85,9 @@ async def cleanup_metadata_index(
 
 
 async def _cleanup_metadata_index_impl(
-    project_root: str | None, dry_run: bool
+    root: Path, dry_run: bool
 ) -> CleanupMetadataIndexResultUnion:
     """Run cleanup logic and return result."""
-    root = get_project_root(project_root)
     mgrs = await get_managers(root)
     metadata_index: MetadataIndex = mgrs.index
     stale_files = await metadata_index.validate_index_consistency()

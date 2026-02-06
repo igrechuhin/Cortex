@@ -22,6 +22,26 @@ from cortex.optimization.optimization_strategies import OptimizationResult
 logger = logging.getLogger(__name__)
 
 
+def _calculate_effective_budget(
+    token_budget: int | None, optimization_config: OptimizationConfig
+) -> int:
+    """Calculate effective token budget with max and reserve applied.
+
+    Args:
+        token_budget: Requested budget or None for default
+        optimization_config: Optimization configuration
+
+    Returns:
+        Effective budget after applying max_budget and reserve_for_response
+    """
+    if token_budget is None:
+        token_budget = optimization_config.get_token_budget()
+    max_budget = optimization_config.get_max_token_budget()
+    reserve = optimization_config.get_reserve_for_response()
+    token_budget = min(token_budget, max_budget)
+    return max(token_budget - reserve, 0)
+
+
 async def load_context_impl(
     mgrs: ManagersDict,
     task_description: str,
@@ -48,9 +68,7 @@ async def load_context_impl(
         fs_manager,
     ) = await _setup_optimization_managers(mgrs)
 
-    if token_budget is None:
-        token_budget = optimization_config.get_token_budget()
-
+    effective_budget = _calculate_effective_budget(token_budget, optimization_config)
     files_content, files_metadata = await _read_all_files_for_context_loading(
         metadata_index, fs_manager
     )
@@ -59,17 +77,19 @@ async def load_context_impl(
         task_description=task_description,
         files_content=files_content,
         files_metadata=files_metadata,
-        token_budget=token_budget,
+        token_budget=effective_budget,
         strategy=strategy,
     )
 
     # Log the call for effectiveness analysis
     if project_root is not None:
         _log_context_call(
-            project_root, task_description, token_budget, strategy, result
+            project_root, task_description, effective_budget, strategy, result
         )
 
-    return _format_load_context_result(task_description, token_budget, strategy, result)
+    return _format_load_context_result(
+        task_description, effective_budget, strategy, result
+    )
 
 
 async def _setup_optimization_managers(

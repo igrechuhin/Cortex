@@ -12,16 +12,17 @@ Total: 5 tools
 """
 
 import json
-from pathlib import Path
 from urllib.parse import unquote
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST, MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.mcp_annotations import read_only_annotations, safe_write_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.discovery.recommendation_engine import recommend_tools_and_scripts
 from cortex.discovery.tool_registry import get_known_script_names, get_known_tool_names
 from cortex.script_analysis.script_analyzer import analyze_script
@@ -33,13 +34,6 @@ from cortex.script_promotion.script_integrator import script_integration_templat
 from cortex.script_promotion.script_validator import validate_for_promotion
 from cortex.script_promotion.tool_converter import tool_conversion_template
 from cortex.server import mcp
-
-
-def _project_root(project_root: str | None) -> Path:
-    """Resolve project root path."""
-    if project_root:
-        return Path(project_root).resolve()
-    return Path.cwd()
 
 
 def _record_to_summary(record: object) -> dict[str, object]:
@@ -56,7 +50,7 @@ def _record_to_summary(record: object) -> dict[str, object]:
     }
 
 
-@mcp.tool()
+@mcp.tool(annotations=safe_write_annotations("Capture Session Script"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def capture_session_script(
@@ -66,7 +60,6 @@ async def capture_session_script(
     script_type: str = "python",
     purpose: str = "utility",
     usage_context: str | None = None,
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Record a session-generated script with metadata for later analysis.
@@ -79,7 +72,7 @@ async def capture_session_script(
 
     RETURNS: JSON with status, script_id, timestamp, and message.
     """
-    root = _project_root(project_root)
+    root = await resolve_project_root_async(None, ctx)
     await log_client(ctx, "info", "capture_session_script: starting")
     record = await capture_script(
         project_root=root,
@@ -100,11 +93,10 @@ async def capture_session_script(
     return json.dumps(payload, indent=2)
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("List Session Scripts"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def list_session_scripts(
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """List captured session scripts for analysis and promotion review.
@@ -116,7 +108,7 @@ async def list_session_scripts(
 
     RETURNS: JSON with status, count, and list of script summaries.
     """
-    root = _project_root(project_root)
+    root = await resolve_project_root_async(None, ctx)
     await log_client(ctx, "info", "list_session_scripts: starting")
     records = await list_captures(root)
     summaries = [_record_to_summary(r) for r in records]
@@ -165,11 +157,10 @@ def _analysis_to_summary(obj: object) -> dict[str, object]:
     }
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Analyze Session Scripts"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def analyze_session_scripts(
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Analyze captured session scripts for use case, gap, and promotion potential.
@@ -181,7 +172,7 @@ async def analyze_session_scripts(
 
     RETURNS: JSON with status, count, and list of analysis summaries.
     """
-    root = _project_root(project_root)
+    root = await resolve_project_root_async(None, ctx)
     await log_client(ctx, "info", "analyze_session_scripts: starting")
     records = await list_captures(root)
     tool_names = get_known_tool_names()
@@ -199,12 +190,11 @@ async def analyze_session_scripts(
     return json.dumps(payload, indent=2)
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Suggest Tool Improvements"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def suggest_tool_improvements(
     task_description: str,
-    project_root: str | None = None,
     max_results: int = 15,
     ctx: MCPContext | None = None,
 ) -> str:
@@ -217,7 +207,7 @@ async def suggest_tool_improvements(
 
     RETURNS: JSON with status, recommendations (name, type, score).
     """
-    root = _project_root(project_root)
+    root = await resolve_project_root_async(None, ctx)
     await log_client(ctx, "info", "suggest_tool_improvements: starting")
     tool_names = get_known_tool_names()
     script_names = get_known_script_names(root)
@@ -247,7 +237,7 @@ async def suggest_tool_improvements(
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def list_session_scripts_resource() -> str:
     """Resource: List captured session scripts (default project). Read via cortex://scripts/list."""
-    return await list_session_scripts(project_root=None)
+    return await list_session_scripts()
 
 
 @mcp.resource(uri="cortex://scripts/analyze")
@@ -255,7 +245,7 @@ async def list_session_scripts_resource() -> str:
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def analyze_session_scripts_resource() -> str:
     """Resource: Analyze captured scripts (default project). Read via cortex://scripts/analyze."""
-    return await analyze_session_scripts(project_root=None)
+    return await analyze_session_scripts()
 
 
 @mcp.resource(uri="cortex://scripts/suggest-improvements/{task_description}")
@@ -264,17 +254,14 @@ async def analyze_session_scripts_resource() -> str:
 async def suggest_tool_improvements_resource(task_description: str) -> str:
     """Resource: Suggest tools/scripts for task (default params). Read via cortex://scripts/suggest-improvements/{task_description}. Task description may be URL-encoded."""
     decoded = unquote(task_description)
-    return await suggest_tool_improvements(
-        task_description=decoded, project_root=None, max_results=15
-    )
+    return await suggest_tool_improvements(task_description=decoded, max_results=15)
 
 
-@mcp.tool()
+@mcp.tool(annotations=safe_write_annotations("Promote Session Script"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def promote_session_script(
     script_id: str,
-    project_root: str | None = None,
     output_type: str = "tool",
     ctx: MCPContext | None = None,
 ) -> str:
@@ -287,7 +274,7 @@ async def promote_session_script(
 
     RETURNS: JSON with status, validation, and template or issues.
     """
-    root = _project_root(project_root)
+    root = await resolve_project_root_async(None, ctx)
     await log_client(ctx, "info", "promote_session_script: starting")
     record = await get_capture_by_id(root, script_id)
     if record is None:

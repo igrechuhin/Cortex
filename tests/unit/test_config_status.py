@@ -5,9 +5,8 @@ Unit tests for config_status module.
 from pathlib import Path
 from unittest.mock import patch
 
-from cortex.tools.config_status import (
-    get_project_config_status,
-)
+from cortex.core.path_resolver import CursorResourceType, get_cursor_path
+from cortex.tools.config_status import get_project_config_status
 
 
 class TestGetProjectConfigStatus:
@@ -106,7 +105,7 @@ class TestGetProjectConfigStatus:
     def test_cursor_integration_configured(self, tmp_path: Path):
         """Test Cursor integration configured detection."""
         # Arrange
-        cursor_dir = tmp_path / ".cursor"
+        cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
         cursor_dir.mkdir()
 
         # Create symlinks
@@ -128,7 +127,7 @@ class TestGetProjectConfigStatus:
     def test_cursor_integration_not_configured_missing_symlinks(self, tmp_path: Path):
         """Test Cursor integration not configured when symlinks missing."""
         # Arrange
-        cursor_dir = tmp_path / ".cursor"
+        cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
         cursor_dir.mkdir()
         # Don't create symlinks
 
@@ -144,7 +143,7 @@ class TestGetProjectConfigStatus:
     def test_cursor_integration_not_configured_broken_symlinks(self, tmp_path: Path):
         """Test Cursor integration not configured when symlinks broken."""
         # Arrange
-        cursor_dir = tmp_path / ".cursor"
+        cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
         cursor_dir.mkdir()
 
         # Create symlink pointing to wrong location
@@ -163,7 +162,7 @@ class TestGetProjectConfigStatus:
     def test_migration_needed_legacy_cursor_format(self, tmp_path: Path):
         """Test migration needed when legacy .cursor/memory-bank/ exists."""
         # Arrange
-        legacy_dir = tmp_path / ".cursor" / "memory-bank"
+        legacy_dir = get_cursor_path(tmp_path, CursorResourceType.MEMORY_BANK)
         legacy_dir.mkdir(parents=True)
 
         with patch(
@@ -263,7 +262,7 @@ class TestGetProjectConfigStatus:
         cortex_dir = tmp_path / ".cortex"
         memory_bank_dir = cortex_dir / "memory-bank"
         memory_bank_dir.mkdir(parents=True)
-        cursor_dir = tmp_path / ".cursor"
+        cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
         cursor_dir.mkdir()
 
         # Create all required directories

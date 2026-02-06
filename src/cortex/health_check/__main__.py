@@ -7,8 +7,8 @@ import sys
 from pathlib import Path
 
 from cortex.health_check.report_generator import ReportGenerator
+from cortex.managers.initialization import get_project_root
 from cortex.tools.health_check_operations import (
-    get_project_root,
     run_health_check_analysis,
 )
 

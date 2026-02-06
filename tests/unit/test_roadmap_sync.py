@@ -60,6 +60,31 @@ class TestValidateRoadmapSyncEnhancements:
             # Assert
             assert result.valid is True
             assert len(result.invalid_references) == 0
+            assert result.unlinked_plans == []
+
+    def test_validate_sync_detects_unlinked_plans(self) -> None:
+        """Validation fails when non-archived plans are not referenced in roadmap.md."""
+        # Arrange
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            cortex_dir = project_root / ".cortex"
+            plans_dir = cortex_dir / "plans"
+            plans_dir.mkdir(parents=True)
+            plan_file = plans_dir / "phase-68-investigate-fix-quality-issues.md"
+            _ = plan_file.write_text("# Phase 68 plan\n")
+
+            # Roadmap has no reference to the plan file
+            roadmap_content = "## Blockers (ASAP Priority)\n\nNo entries yet.\n"
+
+            # Act
+            result = validate_roadmap_sync(project_root, roadmap_content)
+
+            # Assert
+            assert result.valid is False
+            assert result.missing_roadmap_entries == []
+            assert result.invalid_references == []
+            # Path is reported relative to project root
+            assert str(plan_file.relative_to(project_root)) in result.unlinked_plans
 
     def test_validate_sync_resolves_dot_cortex_plans_archive_reference(self) -> None:
         """Archive PhaseX refs resolve to .cortex/plans (no path-style mismatch)."""
@@ -81,6 +106,27 @@ class TestValidateRoadmapSyncEnhancements:
             result = validate_roadmap_sync(project_root, roadmap_content)
 
             # Assert: valid, no invalid_references (path-style mismatch fixed)
+            assert result.valid is True
+            assert len(result.invalid_references) == 0
+
+    def test_validate_sync_resolves_bare_memory_bank_md_reference(self) -> None:
+        """Bare .md filenames (e.g. activeContext.md) resolve to .cortex/memory-bank."""
+        # Arrange
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            memory_bank_dir = project_root / ".cortex" / "memory-bank"
+            memory_bank_dir.mkdir(parents=True)
+            active_context = memory_bank_dir / "activeContext.md"
+            _ = active_context.write_text("# Active Context\n")
+
+            roadmap_content = (
+                "Completed work is recorded in [activeContext.md](activeContext.md).\n"
+            )
+
+            # Act
+            result = validate_roadmap_sync(project_root, roadmap_content)
+
+            # Assert
             assert result.valid is True
             assert len(result.invalid_references) == 0
 
@@ -420,3 +466,76 @@ class TestValidateRoadmapSync:
             # "module.py" (same case)
             assert result.valid is True  # Matching case succeeds
             assert len(result.missing_roadmap_entries) == 0
+
+    def test_validate_sync_no_ghost_phases(self):
+        """Test validation does not report references from non-existent phases."""
+        # Arrange: Roadmap without "Recent Findings" or "Completed Milestones" sections
+        roadmap_content = (
+            "# Roadmap\n\n"
+            "## Blockers (ASAP Priority)\n\n"
+            "- Some blocker.\n\n"
+            "## Active Work\n\n"
+            "- See `src/file.py` for details.\n\n"
+            "## Future Enhancements\n\n"
+            "- See `src/other.py` for details.\n"
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            src_dir = project_root / "src"
+            _ = src_dir.mkdir()
+            file1 = src_dir / "file.py"
+            _ = file1.write_text("# File content\n")
+            file2 = src_dir / "other.py"
+            _ = file2.write_text("# Other content\n")
+
+            # Act
+            result = validate_roadmap_sync(project_root, roadmap_content)
+
+            # Assert: No references from ghost phases
+            ghost_phases = ["Recent Findings", "Completed Milestones", "Planned Phases"]
+            invalid_refs_from_ghost_phases = [
+                ref for ref in result.invalid_references if ref.phase in ghost_phases
+            ]
+            assert (
+                len(invalid_refs_from_ghost_phases) == 0
+            ), f"Found {len(invalid_refs_from_ghost_phases)} invalid references from ghost phases: {invalid_refs_from_ghost_phases}"
+            # Validation should pass since all references exist
+            assert result.valid is True
+
+    def test_validate_sync_filters_ghost_phase_references(self):
+        """Test validation filters out references from ghost phases if they exist in content."""
+        # Arrange: Roadmap with ghost sections (simulating reading from wrong file)
+        roadmap_content = (
+            "# Roadmap\n\n"
+            "## Blockers (ASAP Priority)\n\n"
+            "- Some blocker.\n\n"
+            "## Recent Findings\n\n"
+            "- See `src/ghost1.py` for details.\n\n"
+            "## Completed Milestones\n\n"
+            "- See `src/ghost2.py` for details.\n\n"
+            "## Future Enhancements\n\n"
+            "- See `src/valid.py` for details.\n"
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            src_dir = project_root / "src"
+            _ = src_dir.mkdir()
+            valid_file = src_dir / "valid.py"
+            _ = valid_file.write_text("# Valid content\n")
+
+            # Act
+            result = validate_roadmap_sync(project_root, roadmap_content)
+
+            # Assert: References from ghost phases are filtered out
+            ghost_phases = ["Recent Findings", "Completed Milestones", "Planned Phases"]
+            invalid_refs_from_ghost_phases = [
+                ref for ref in result.invalid_references if ref.phase in ghost_phases
+            ]
+            assert (
+                len(invalid_refs_from_ghost_phases) == 0
+            ), f"Found {len(invalid_refs_from_ghost_phases)} invalid references from ghost phases (should be filtered): {invalid_refs_from_ghost_phases}"
+            # Only valid.py reference should be validated (and it exists, so no invalid refs)
+            assert len(result.invalid_references) == 0
+            assert result.valid is True

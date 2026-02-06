@@ -17,13 +17,12 @@ class TestFixRoadmapCorruption:
     ) -> None:
         # Arrange
         with patch(
-            "cortex.tools.roadmap_corruption.get_project_root",
-            return_value=str(tmp_path),
+            "cortex.tools.roadmap_corruption.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
         ):
             # Act
-            result_str = await fix_roadmap_corruption(
-                project_root=str(tmp_path), dry_run=True
-            )
+            result_str = await fix_roadmap_corruption(dry_run=True)
             result = json.loads(result_str)
 
         # Assert
@@ -40,13 +39,12 @@ class TestFixRoadmapCorruption:
         _ = roadmap_path.write_text(original, encoding="utf-8")
 
         with patch(
-            "cortex.tools.roadmap_corruption.get_project_root",
-            return_value=str(tmp_path),
+            "cortex.tools.roadmap_corruption.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
         ):
             # Act
-            result_str = await fix_roadmap_corruption(
-                project_root=str(tmp_path), dry_run=True
-            )
+            result_str = await fix_roadmap_corruption(dry_run=True)
             result = json.loads(result_str)
 
         # Assert
@@ -64,13 +62,12 @@ class TestFixRoadmapCorruption:
         _ = roadmap_path.write_text(original, encoding="utf-8")
 
         with patch(
-            "cortex.tools.roadmap_corruption.get_project_root",
-            return_value=str(tmp_path),
+            "cortex.tools.roadmap_corruption.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
         ):
             # Act
-            result_str = await fix_roadmap_corruption(
-                project_root=str(tmp_path), dry_run=False
-            )
+            result_str = await fix_roadmap_corruption(dry_run=False)
             result = json.loads(result_str)
 
         # Assert
@@ -117,14 +114,13 @@ class TestFixRoadmapCorruptionContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.roadmap_corruption.get_project_root",
-                return_value=str(tmp_path),
+                "cortex.tools.roadmap_corruption.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
             ),
         ):
             # Act
-            result_str = await fix_roadmap_corruption(
-                project_root=str(tmp_path), dry_run=True, ctx=mock_ctx
-            )
+            result_str = await fix_roadmap_corruption(dry_run=True, ctx=mock_ctx)
             result = json.loads(result_str)
 
             # Assert
@@ -153,14 +149,13 @@ class TestFixRoadmapCorruptionContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.roadmap_corruption.get_project_root",
-                return_value=str(tmp_path),
+                "cortex.tools.roadmap_corruption.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
             ),
         ):
             # Act
-            result_str = await fix_roadmap_corruption(
-                project_root=str(tmp_path), dry_run=True, ctx=mock_ctx
-            )
+            result_str = await fix_roadmap_corruption(dry_run=True, ctx=mock_ctx)
             result = json.loads(result_str)
 
             # Assert

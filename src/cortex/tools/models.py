@@ -2618,3 +2618,23 @@ class ManagersInitResult(StrictBaseModel):
         validate_assignment=True,
         arbitrary_types_allowed=True,
     )
+
+
+# ============================================================================
+# Roadmap Entry Addition Models (for roadmap_operations.py)
+# ============================================================================
+
+
+class AddRoadmapEntryResult(StrictBaseModel):
+    """Result of adding a roadmap entry."""
+
+    status: Literal["success", "error"] = Field(description="Operation status")
+    file_name: str = Field(description="File that was modified")
+    message: str = Field(description="Success or error message")
+    line_inserted: int | None = Field(
+        None, ge=1, description="Line number where entry was inserted"
+    )
+    section: str | None = Field(None, description="Section where entry was added")
+    error: str | None = Field(None, description="Error message if status is error")
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)

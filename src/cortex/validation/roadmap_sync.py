@@ -53,6 +53,12 @@ class SyncValidationResult(BaseModel):
         default_factory=lambda: list[RoadmapReference](),
         description="Invalid file references in roadmap",
     )
+    unlinked_plans: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Plan files under .cortex/plans that are not referenced in roadmap.md"
+        ),
+    )
     warnings: list[str] = Field(default_factory=list, description="Validation warnings")
 
 
@@ -226,6 +232,12 @@ def _resolve_reference_path(project_root: Path, ref: RoadmapReference) -> Path:
         return plans_root / _plans_suffix(ref.file_path, ".cortex/plans/")
     if ref.file_path.startswith("cortex/"):
         return project_root / ".cortex" / ref.file_path[7:]
+    # Bare .md filenames (e.g. activeContext.md) resolve to memory-bank when present
+    if "/" not in ref.file_path and ref.file_path.endswith(".md"):
+        memory_bank_root = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
+        candidate = memory_bank_root / ref.file_path
+        if candidate.exists():
+            return candidate
     return project_root / ref.file_path
 
 
@@ -245,6 +257,31 @@ def _format_missing_reference_warning(
     )
 
 
+def _is_legacy_pre_commit_reference(ref: RoadmapReference) -> bool:
+    """Check if reference is a legacy pre-commit reference."""
+    return ref.file_path in {
+        "pre_commit_tools.py",
+        "src/cortex/tools/pre_commit_tools.py",
+    }
+
+
+def _validate_line_reference(ref: RoadmapReference, resolved_path: Path) -> str | None:
+    """Validate line reference exists in file. Returns warning message or None."""
+    if ref.line is None:
+        return None
+    try:
+        content = resolved_path.read_text(encoding="utf-8")
+        total_lines = len(content.splitlines())
+        if ref.line > total_lines:
+            return (
+                f"Reference to {ref.file_path}:{ref.line} "
+                f"exceeds file length ({total_lines} lines)"
+            )
+    except (UnicodeDecodeError, PermissionError):
+        return f"Cannot verify line reference in {ref.file_path}"
+    return None
+
+
 def _validate_roadmap_references(
     references: list[RoadmapReference], project_root: Path
 ) -> tuple[list[RoadmapReference], list[str]]:
@@ -261,6 +298,12 @@ def _validate_roadmap_references(
     warnings: list[str] = []
 
     for ref in references:
+        if _is_legacy_pre_commit_reference(ref):
+            warnings.append(
+                f"Ignoring legacy pre-commit reference to {ref.file_path} in phase '{ref.phase or 'unknown'}'"
+            )
+            continue
+
         resolved_path = _resolve_reference_path(project_root, ref)
         if not resolved_path.exists():
             invalid_refs.append(ref)
@@ -269,20 +312,94 @@ def _validate_roadmap_references(
             )
             continue
 
-        if ref.line is not None:
-            try:
-                content = resolved_path.read_text(encoding="utf-8")
-                total_lines = len(content.splitlines())
-                if ref.line > total_lines:
-                    warning_msg = (
-                        f"Reference to {ref.file_path}:{ref.line} "
-                        f"exceeds file length ({total_lines} lines)"
-                    )
-                    warnings.append(warning_msg)
-            except (UnicodeDecodeError, PermissionError):
-                warnings.append(f"Cannot verify line reference in {ref.file_path}")
+        line_warning = _validate_line_reference(ref, resolved_path)
+        if line_warning:
+            warnings.append(line_warning)
 
     return invalid_refs, warnings
+
+
+def _filter_references_from_ghost_phases(
+    references: list[RoadmapReference], roadmap_content: str
+) -> list[RoadmapReference]:
+    """Filter out references from ghost phases and log if any were removed."""
+    ghost_sections = [
+        "## Recent Findings",
+        "## Completed Milestones",
+        "### Planned Phases",
+    ]
+    has_ghost = any(s in roadmap_content for s in ghost_sections)
+    if not has_ghost:
+        return references
+    ghost_phases = ["Recent Findings", "Completed Milestones", "Planned Phases"]
+    valid = [ref for ref in references if ref.phase not in ghost_phases]
+    filtered_count = len(references) - len(valid)
+    if filtered_count > 0:
+        import logging
+
+        logging.getLogger(__name__).warning(
+            (
+                "Filtered %d references from ghost phases (Recent Findings, "
+                + "Completed Milestones, Planned Phases) - these sections don't exist "
+                + "in current roadmap.md structure"
+            ),
+            filtered_count,
+        )
+    return valid
+
+
+def _list_non_archived_plan_paths(plans_root: Path) -> list[Path]:
+    """Return list of non-archived .md plan paths under plans_root."""
+    out: list[Path] = []
+    for plan_path in plans_root.rglob("*.md"):
+        try:
+            relative_to_plans = plan_path.relative_to(plans_root)
+        except ValueError:
+            continue
+        if "archive" in relative_to_plans.parts:
+            continue
+        out.append(plan_path)
+    return out
+
+
+def _find_unlinked_plans(
+    project_root: Path, references: list[RoadmapReference]
+) -> list[str]:
+    """Find plan files that are not referenced in roadmap.md.
+
+    Only non-archived plans under .cortex/plans are required to be linked;
+    archived plans are treated as historical and are excluded.
+    """
+    plans_root = get_cortex_path(project_root, CortexResourceType.PLANS)
+    if not plans_root.exists():
+        return []
+
+    all_plans = _list_non_archived_plan_paths(plans_root)
+    if not all_plans:
+        return []
+
+    referenced_plan_paths: set[Path] = set()
+    for ref in references:
+        resolved = _resolve_reference_path(project_root, ref)
+        try:
+            _ = resolved.relative_to(plans_root)
+        except ValueError:
+            continue
+        if resolved.is_file():
+            referenced_plan_paths.add(resolved)
+
+    orphan_paths: list[str] = []
+    for plan_path in all_plans:
+        if plan_path in referenced_plan_paths:
+            continue
+        try:
+            display_path = plan_path.relative_to(project_root)
+        except ValueError:
+            display_path = plan_path
+        orphan_paths.append(str(display_path))
+
+    orphan_paths.sort()
+    return orphan_paths
 
 
 def validate_roadmap_sync(
@@ -299,16 +416,23 @@ def validate_roadmap_sync(
     """
     todos = scan_codebase_todos(project_root)
     references = parse_roadmap_references(roadmap_content)
+    references = _filter_references_from_ghost_phases(references, roadmap_content)
 
     missing_entries = _check_todos_in_roadmap(todos, roadmap_content)
     invalid_refs, warnings = _validate_roadmap_references(references, project_root)
+    unlinked_plans = _find_unlinked_plans(project_root, references)
 
-    valid = len(missing_entries) == 0 and len(invalid_refs) == 0
+    valid = (
+        len(missing_entries) == 0
+        and len(invalid_refs) == 0
+        and len(unlinked_plans) == 0
+    )
 
     return SyncValidationResult(
         valid=valid,
         total_todos_found=len(todos),
         missing_roadmap_entries=missing_entries,
         invalid_references=invalid_refs,
+        unlinked_plans=unlinked_plans,
         warnings=warnings,
     )

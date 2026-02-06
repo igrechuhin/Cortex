@@ -55,7 +55,7 @@ class TestLoadContextSkipsStaleIndexEntries:
         result_json = await load_context_impl(
             mgrs,
             task_description="test",
-            token_budget=5000,
+            token_budget=50000,  # Enough budget after subtracting 10000 reserve
             strategy="dependency_aware",
             project_root=temp_project_root,
         )

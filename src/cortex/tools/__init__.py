@@ -25,14 +25,18 @@ Modules:
 - script_capture_tools: Session script capture, analysis, promotion (5 tools)
 - usage_analytics: Tool usage statistics and optimization (4 tools) - Phase 29
 - cache_json_tools: Concurrent-safe read/write of .cortex/.cache JSON (2 tools)
+- roadmap_operations: Roadmap entry management (1 tool)
+- plan_operations: Structured plan creation and roadmap registration (2 tools)
+- plan_completion: Complete plan (move from roadmap to activeContext) (1 tool)
 
-Total: 65 tools + 7 prompts
+Total: 69 tools + 7 prompts
 """
 
 # Import all tool modules to register their decorators
 from . import (
     analysis_operations,  # noqa: F401
     cache_json_tools,  # noqa: F401
+    configuration_hybrid,  # noqa: F401
     configuration_operations,  # noqa: F401
     connection_health,  # noqa: F401
     file_operations,  # noqa: F401
@@ -49,10 +53,13 @@ from . import (
     phase5_execution,  # noqa: F401
     phase5_refactoring,  # noqa: F401
     phase8_structure,  # noqa: F401
+    plan_completion,  # noqa: F401
+    plan_operations,  # noqa: F401
     pre_commit_tools,  # noqa: F401
     prompts,  # noqa: F401
     refactoring_operations,  # noqa: F401
     roadmap_corruption,  # noqa: F401
+    roadmap_operations,  # noqa: F401
     rules_operations,  # noqa: F401
     script_capture_tools,  # noqa: F401
     synapse_prompts,  # noqa: F401  # Dynamic Synapse prompts registration
@@ -68,6 +75,7 @@ _ = synapse_prompts
 __all__ = [
     "analysis_operations",
     "cache_json_tools",
+    "configuration_hybrid",
     "configuration_operations",
     "connection_health",
     "file_operations",
@@ -85,6 +93,9 @@ __all__ = [
     "phase5_execution",
     "synapse_tools",
     "roadmap_corruption",
+    "roadmap_operations",
+    "plan_completion",
+    "plan_operations",
     "phase8_structure",
     "pre_commit_tools",
     "prompts",

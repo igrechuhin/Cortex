@@ -1209,7 +1209,7 @@ class TestValidateMainFunction:
             mock_handle.return_value = json.dumps({"status": "success"})
 
             # Act
-            result = await validate(check_type="schema", project_root=str(tmp_path))
+            result = await validate(check_type="schema")
 
             # Assert
             result_data = json.loads(result)
@@ -1235,9 +1235,7 @@ class TestValidateMainFunction:
             mock_handle.return_value = json.dumps({"status": "success"})
 
             # Act
-            result = await validate(
-                check_type="duplications", project_root=str(tmp_path)
-            )
+            result = await validate(check_type="duplications")
 
             # Assert
             result_data = json.loads(result)
@@ -1263,7 +1261,7 @@ class TestValidateMainFunction:
             mock_handle.return_value = json.dumps({"status": "success"})
 
             # Act
-            result = await validate(check_type="quality", project_root=str(tmp_path))
+            result = await validate(check_type="quality")
 
             # Assert
             result_data = json.loads(result)
@@ -1302,7 +1300,6 @@ class TestValidateMainFunction:
             # Act
             result = await validate(
                 check_type="infrastructure",  # type: ignore[arg-type]
-                project_root=str(tmp_path),
             )
 
             # Assert
@@ -1326,7 +1323,6 @@ class TestValidateMainFunction:
             # Act
             result = await validate(
                 check_type="invalid",  # type: ignore[arg-type]
-                project_root=str(tmp_path),
             )
 
             # Assert
@@ -1344,7 +1340,7 @@ class TestValidateMainFunction:
             mock_setup.side_effect = RuntimeError("Setup failed")
 
             # Act
-            result = await validate(check_type="schema", project_root=str(tmp_path))
+            result = await validate(check_type="schema")
 
             # Assert
             result_data = json.loads(result)
@@ -1376,7 +1372,6 @@ class TestValidateMainFunction:
             result = await validate(
                 check_type="duplications",
                 file_name="test.md",
-                project_root=str(tmp_path),
                 strict_mode=True,
                 similarity_threshold=0.9,
                 suggest_fixes=False,
@@ -1420,7 +1415,6 @@ class TestValidateContextLogging:
             # Act
             result = await validate(
                 check_type="schema",
-                project_root=str(tmp_path),
                 ctx=mock_ctx,
             )
 
@@ -1447,7 +1441,6 @@ class TestValidateContextLogging:
             # Act
             result = await validate(
                 check_type="invalid",  # type: ignore[arg-type]
-                project_root=str(tmp_path),
                 ctx=mock_ctx,
             )
 
@@ -1483,7 +1476,6 @@ class TestValidateContextLogging:
             # Act
             result = await validate(
                 check_type="schema",
-                project_root=str(tmp_path),
                 ctx=mock_ctx,
             )
 

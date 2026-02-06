@@ -12,14 +12,12 @@ Total: 2 tools
 import asyncio
 import hashlib
 import json
-from datetime import UTC, datetime
 from importlib import import_module
 from pathlib import Path
 
 import aiofiles
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.core.cache_json_access import read_cache_json, write_cache_json
 from cortex.core.constants import (
     GIT_OPERATION_TIMEOUT_SECONDS,
     MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL,
@@ -32,6 +30,11 @@ from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import GitCommandResult
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
+from cortex.tools.markdown_lint_cache import (
+    MarkdownLintIndex,
+    load_markdown_lint_index_safe,
+    save_markdown_lint_index,
+)
 from cortex.tools.roadmap_corruption import CorruptionMatch
 
 
@@ -60,33 +63,6 @@ class FixMarkdownLintResult(BaseModel):
         default_factory=lambda: list[FileResult](), description="File results"
     )
     error_message: str | None = Field(default=None, description="Error message if any")
-
-
-class MarkdownLintFileCache(BaseModel):
-    """Cache entry for a single markdown file."""
-
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
-
-    path: str = Field(description="Relative file path from project root")
-    content_hash: str = Field(description="File content hash (sha256:...)")
-    last_checked: str | None = Field(
-        default=None, description="UTC timestamp when file was last linted"
-    )
-    status: str = Field(
-        default="clean",
-        description="Lint status: 'clean' (no errors) or 'dirty' (errors present)",
-    )
-
-
-class MarkdownLintIndex(BaseModel):
-    """On-disk index for markdown lint cache."""
-
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
-
-    version: str = Field(default="1.0", description="Schema version")
-    files: dict[str, MarkdownLintFileCache] = Field(
-        default_factory=dict, description="Map of relative path to cache entry"
-    )
 
 
 def _create_error_result(error: str) -> GitCommandResult:
@@ -217,37 +193,20 @@ async def _get_all_markdown_files(project_root: Path) -> list[Path]:
 
     Runs synchronous rglob in a thread so the event loop stays responsive
     and the MCP tool timeout can cancel the operation if needed.
+
+    Catches exceptions from thread execution to prevent server crashes.
     """
-    return await asyncio.to_thread(_collect_markdown_files_sync, project_root)
-
-
-_MARKDOWN_LINT_CACHE_KEY = "markdown-lint-index.json"
-
-
-async def _load_markdown_lint_index(project_root: Path) -> MarkdownLintIndex:
-    """Load markdown lint index from .cortex/.cache/markdown-lint-index.json (concurrent-safe).
-
-    Uses cache_json_access.read_cache_json. Updated automatically by fix_markdown_lint.
-    """
-    raw = await read_cache_json(project_root, _MARKDOWN_LINT_CACHE_KEY)
-    if raw is None or not isinstance(raw, dict):
-        return MarkdownLintIndex()
     try:
-        return MarkdownLintIndex.model_validate(raw)
-    except Exception:
-        return MarkdownLintIndex()
-
-
-async def _save_markdown_lint_index(
-    project_root: Path, index: MarkdownLintIndex
-) -> None:
-    """Persist markdown lint index to .cortex/.cache/markdown-lint-index.json (concurrent-safe).
-
-    Uses cache_json_access.write_cache_json. fix_markdown_lint updates this automatically.
-    """
-    await write_cache_json(
-        project_root, _MARKDOWN_LINT_CACHE_KEY, index.model_dump(), indent=2
-    )
+        return await asyncio.to_thread(_collect_markdown_files_sync, project_root)
+    except Exception as e:
+        # Log error and return empty list - file discovery failures should not crash server
+        await log_client(
+            None,
+            "error",
+            f"Failed to collect markdown files: {e}",
+            logger_name=__name__,
+        )
+        return []
 
 
 async def _calculate_file_hash(file_path: Path) -> str | None:
@@ -316,12 +275,14 @@ async def _find_markdownlint_command() -> list[str] | None:
     """
     # Try direct command first
     result = await _run_command(["markdownlint-cli2", "--version"])
-    if _result_success(result):
+    if _result_success(result) or "markdownlint-cli2" in _result_stdout(result):
         return ["markdownlint-cli2"]
 
     # Try npx as fallback (doesn't require global installation)
+    # Note: npx may return non-zero exit code even when version check succeeds
+    # (if it lints files), so check stdout for version string
     result = await _run_command(["npx", "--yes", "markdownlint-cli2", "--version"])
-    if _result_success(result):
+    if _result_success(result) or "markdownlint-cli2" in _result_stdout(result):
         return ["npx", "--yes", "markdownlint-cli2"]
 
     return None
@@ -403,19 +364,7 @@ async def _run_markdownlint_fix(
     markdownlint_cmd: list[str],
     dry_run: bool = False,
 ) -> FileResult:
-    """Run markdownlint --fix on a file.
-
-    Args:
-        file_path: Path to the markdown file
-        project_root: Root directory of the project
-        markdownlint_cmd: Command to use (e.g., ["markdownlint-cli2"] or
-        ["npx", "--yes", "markdownlint-cli2"])
-        config_path: Optional path to config file (e.g., .markdownlint-cli2.yaml)
-        dry_run: If True, only check without fixing (default: False)
-
-    Returns:
-        FileResult with processing status
-    """
+    """Run markdownlint --fix on a file; returns FileResult."""
     relative_path = file_path.relative_to(project_root)
     cmd = markdownlint_cmd.copy()
 
@@ -445,46 +394,22 @@ async def _run_markdownlint_fix(
 
 def _create_error_response(error_message: str) -> str:
     """Create error response JSON."""
-    return json.dumps(
-        {
-            "success": False,
-            "files_processed": 0,
-            "files_fixed": 0,
-            "files_unchanged": 0,
-            "files_with_errors": 0,
-            "results": [],
-            "error_message": error_message,
-        },
-        indent=2,
-    )
+    # fmt: off
+    return json.dumps({"success": False, "files_processed": 0, "files_fixed": 0, "files_unchanged": 0, "files_with_errors": 0, "results": [], "error_message": error_message}, indent=2)
+    # fmt: on
 
 
 def _create_empty_success_response() -> str:
     """Create empty success response JSON."""
-    return json.dumps(
-        {
-            "success": True,
-            "files_processed": 0,
-            "files_fixed": 0,
-            "files_unchanged": 0,
-            "files_with_errors": 0,
-            "results": [],
-            "error_message": None,
-        },
-        indent=2,
-    )
+    # fmt: off
+    return json.dumps({"success": True, "files_processed": 0, "files_fixed": 0, "files_unchanged": 0, "files_with_errors": 0, "results": [], "error_message": None}, indent=2)
+    # fmt: on
 
 
 async def _validate_markdown_prerequisites(
     root_path: Path,
 ) -> tuple[str | None, list[str] | None, Path | None]:
-    """Validate git repository and markdownlint availability.
-
-    Returns:
-        Tuple of (error_response_string_or_none, markdownlint_command_or_none,
-        config_path_or_none). If error_response is not None, markdownlint_command
-        and config_path will be None.
-    """
+    """Validate git and markdownlint; return (error_or_none, cmd_or_none, config_or_none)."""
     git_check = await _run_command(["git", "rev-parse", "--git-dir"], cwd=root_path)
     if not _result_success(git_check):
         return _create_error_response("Not in a git repository"), None, None
@@ -505,14 +430,10 @@ async def _validate_markdown_prerequisites(
 
 
 def _not_in_git_repo_hint(project_root_was_none: bool) -> str:
-    """Return hint when git check fails; callers can append to error message."""
+    """Return hint when git check fails."""
     if not project_root_was_none:
         return ""
-    return (
-        " When running under an MCP client (e.g. Cursor), the server's working "
-        "directory may not be your workspace. Pass project_root explicitly set "
-        "to your workspace root path (the folder opened in the IDE)."
-    )
+    return " When running under MCP, use workspace root or client roots (roots/list)."
 
 
 async def _get_markdown_files_to_process(
@@ -525,17 +446,12 @@ async def _get_markdown_files_to_process(
 
 
 def _is_cached_clean_entry(
-    cache_entry: MarkdownLintFileCache | None,
+    stored_hash: str | None,
     content_hash: str,
     dry_run: bool,
 ) -> bool:
-    """Return True if cache entry indicates a clean file we can skip."""
-    return (
-        cache_entry is not None
-        and cache_entry.content_hash == content_hash
-        and cache_entry.status == "clean"
-        and not dry_run
-    )
+    """Return True if stored hash equals current hash (clean, skip lint)."""
+    return stored_hash is not None and stored_hash == content_hash and not dry_run
 
 
 _HASH_CONCURRENCY = 32
@@ -544,11 +460,7 @@ _HASH_CONCURRENCY = 32
 async def _compute_file_hashes(
     files: list[Path], project_root: Path, max_concurrent: int = _HASH_CONCURRENCY
 ) -> dict[str, str | None]:
-    """Compute content hashes for files in parallel.
-
-    Returns:
-        Mapping of relative path -> content hash (or None if unreadable).
-    """
+    """Compute content hashes for files in parallel; path -> hash or None."""
     semaphore = asyncio.Semaphore(max_concurrent)
 
     async def hash_one(file_path: Path) -> tuple[str, str | None]:
@@ -594,8 +506,8 @@ async def _filter_files_for_linting(
             continue
 
         hashes_for_cache[rel_path] = content_hash
-        cache_entry = index.files.get(rel_path)
-        if _is_cached_clean_entry(cache_entry, content_hash, dry_run):
+        stored_hash = index.files.get(rel_path)
+        if _is_cached_clean_entry(stored_hash, content_hash, dry_run):
             initial_results.append(
                 FileResult(
                     file=rel_path,
@@ -669,6 +581,75 @@ async def _cancel_heartbeat_task(task: asyncio.Task[None] | None) -> None:
         pass
 
 
+async def _update_index_after_file(
+    result: FileResult,
+    index: MarkdownLintIndex,
+    file_hashes: dict[str, str],
+    root_path: Path,
+) -> None:
+    """Update markdown-lint cache after one file; persist so work is not lost (clean only)."""
+    rel_path = result.file
+    content_hash = file_hashes.get(rel_path)
+    if content_hash is None:
+        return
+    if result.error_message is None:
+        index.files[rel_path] = content_hash
+    else:
+        _ = index.files.pop(rel_path, None)
+    await save_markdown_lint_index(root_path, index)
+
+
+async def _after_one_file(
+    result: FileResult | None,
+    results: list[FileResult],
+    current_n: list[int],
+    index: MarkdownLintIndex | None,
+    file_hashes: dict[str, str] | None,
+    root_path: Path,
+    progress_ctx: MCPContext | None,
+    progress_total: int | None,
+) -> None:
+    """Append result, update cache, and report progress after one file."""
+    if result is not None:
+        results.append(result)
+        if index is not None and file_hashes is not None:
+            await _update_index_after_file(result, index, file_hashes, root_path)
+    current_n[0] = len(results)
+    if progress_ctx and progress_total and result is not None:
+        await report_progress_safe(
+            progress_ctx, float(len(results)), float(progress_total)
+        )
+
+
+async def _run_sequential_markdown_loop(
+    files: list[Path],
+    root_path: Path,
+    markdownlint_cmd: list[str],
+    dry_run: bool,
+    results: list[FileResult],
+    current_n: list[int],
+    index: MarkdownLintIndex | None,
+    file_hashes: dict[str, str] | None,
+    progress_ctx: MCPContext | None,
+    progress_total: int | None,
+) -> None:
+    """Run the sequential markdown lint loop; appends to results and updates current_n."""
+    for file_path in files:
+        result = await _process_one_markdown_file(
+            file_path, root_path, markdownlint_cmd, dry_run
+        )
+        await _after_one_file(
+            result,
+            results,
+            current_n,
+            index,
+            file_hashes,
+            root_path,
+            progress_ctx,
+            progress_total,
+        )
+
+
 async def _process_markdown_files_sequential(
     files: list[Path],
     root_path: Path,
@@ -677,45 +658,38 @@ async def _process_markdown_files_sequential(
     *,
     progress_ctx: MCPContext | None = None,
     progress_total: int | None = None,
+    index: MarkdownLintIndex | None = None,
+    file_hashes: dict[str, str] | None = None,
 ) -> list[FileResult]:
-    """Process markdown files sequentially (single-threaded).
-
-    This approach is simpler and more reliable than concurrent processing:
-    - Avoids spawning multiple npx processes (each has ~1s startup overhead)
-    - Works better with the cache (cache lookups filter most files)
-    - Reduces MCP connection load during long operations
-
-    When progress_ctx and progress_total are set, reports progress after every
-    file and runs a heartbeat every N seconds to avoid client idle timeout
-    (MCP error -32000 Connection closed).
-    """
+    """Process markdown files sequentially. Heartbeat avoids MCP client idle timeout."""
     results: list[FileResult] = []
     current_n: list[int] = [0]
     total = progress_total if progress_total is not None else 0
     heartbeat_task = _start_markdown_lint_heartbeat(progress_ctx, current_n, total)
     try:
-        for file_path in files:
-            result = await _process_one_markdown_file(
-                file_path, root_path, markdownlint_cmd, dry_run
-            )
-            if result is not None:
-                results.append(result)
-            current_n[0] = len(results)
-            if progress_ctx and progress_total and result:
-                await report_progress_safe(
-                    progress_ctx, float(len(results)), float(progress_total)
-                )
+        await _run_sequential_markdown_loop(
+            files,
+            root_path,
+            markdownlint_cmd,
+            dry_run,
+            results,
+            current_n,
+            index,
+            file_hashes,
+            progress_ctx,
+            progress_total,
+        )
         return results
     finally:
         await _cancel_heartbeat_task(heartbeat_task)
 
 
 def _calculate_statistics(results: list[FileResult]) -> tuple[int, int, int]:
-    """Calculate statistics from file results."""
+    """Return (files_fixed, files_with_errors, files_unchanged)."""
     files_fixed = sum(1 for r in results if r.fixed)
     files_with_errors = sum(1 for r in results if r.error_message is not None)
     files_unchanged = len(results) - files_fixed - files_with_errors
-    return files_fixed, files_with_errors, files_unchanged
+    return (files_fixed, files_with_errors, files_unchanged)
 
 
 def _build_fix_response(results: list[FileResult]) -> str:
@@ -739,21 +713,17 @@ async def _update_markdown_lint_cache_from_results(
     results: list[FileResult],
     file_hashes: dict[str, str],
 ) -> None:
-    """Update markdown lint cache with latest hashes and statuses."""
-    now = datetime.now(UTC).isoformat(timespec="seconds")
+    """Update markdown lint cache: add clean entries, remove dirty. Cache errors handled by save_markdown_lint_index."""
     for result in results:
         file_path = result.file
         content_hash = file_hashes.get(file_path)
         if content_hash is None:
             continue
-        status = "clean" if result.error_message is None else "dirty"
-        index.files[file_path] = MarkdownLintFileCache(
-            path=file_path,
-            content_hash=content_hash,
-            last_checked=now,
-            status=status,
-        )
-    await _save_markdown_lint_index(project_root, index)
+        if result.error_message is None:
+            index.files[file_path] = content_hash
+        else:
+            _ = index.files.pop(file_path, None)
+    await save_markdown_lint_index(project_root, index)
 
 
 async def _run_markdownlint_for_files(
@@ -765,6 +735,8 @@ async def _run_markdownlint_for_files(
     dry_run: bool,
     *,
     ctx: MCPContext | None = None,
+    index: MarkdownLintIndex | None = None,
+    file_hashes: dict[str, str] | None = None,
 ) -> list[FileResult]:
     """Run markdownlint for the given files and combine with initial results."""
     if not files_to_lint:
@@ -785,15 +757,15 @@ async def _run_markdownlint_for_files(
         dry_run,
         progress_ctx=ctx,
         progress_total=len(files_to_lint),
+        index=index,
+        file_hashes=file_hashes,
     )
     return [*initial_results, *lint_results]
 
 
-def _apply_validation_error_hint(
-    validation_error: str, project_root: str | None
-) -> str:
+def _apply_validation_error_hint(validation_error: str) -> str:
     """Apply not-in-git hint to validation error JSON when applicable; return final JSON."""
-    if project_root is None and "Not in a git repository" in validation_error:
+    if "Not in a git repository" in validation_error:
         hint = _not_in_git_repo_hint(True)
         if hint:
             data = json.loads(validation_error)
@@ -804,19 +776,18 @@ def _apply_validation_error_hint(
 
 
 async def _fix_markdown_lint_impl(
-    project_root: str | None,
+    root_path: Path,
     include_untracked_markdown: bool,
     dry_run: bool,
     check_all_files: bool,
     ctx: MCPContext | None = None,
 ) -> str:
     """Core implementation for fix_markdown_lint MCP tool."""
-    root_path = await resolve_project_root_async(project_root, ctx)
     validation_error, markdownlint_cmd, config_path = (
         await _validate_markdown_prerequisites(root_path)
     )
     if validation_error:
-        return _apply_validation_error_hint(validation_error, project_root)
+        return _apply_validation_error_hint(validation_error)
     assert markdownlint_cmd is not None
     files = await _get_markdown_files_to_process(
         root_path, check_all_files, include_untracked_markdown
@@ -830,6 +801,30 @@ async def _fix_markdown_lint_impl(
     )
 
 
+async def _update_markdown_lint_cache_safe(
+    index: MarkdownLintIndex,
+    root_path: Path,
+    results: list[FileResult],
+    file_hashes: dict[str, str],
+    ctx: MCPContext | None = None,
+) -> None:
+    """Update markdown lint cache with error handling.
+
+    Cache update failures are non-fatal - lint results are still valid.
+    """
+    try:
+        await _update_markdown_lint_cache_from_results(
+            index, root_path, results, file_hashes
+        )
+    except Exception as e:
+        await log_client(
+            ctx,
+            "warning",
+            f"Failed to update markdown lint cache: {e}",
+            logger_name=__name__,
+        )
+
+
 async def _run_markdownlint_with_cache(
     root_path: Path,
     files: list[Path],
@@ -838,13 +833,14 @@ async def _run_markdownlint_with_cache(
     dry_run: bool,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Run markdownlint with cache handling and build response JSON."""
-    index = await _load_markdown_lint_index(root_path)
+    """Run markdownlint with cache handling and build response JSON.
+
+    Cache operations are wrapped in try/except to prevent server crashes.
+    Cache failures are non-fatal - lint results are still returned.
+    """
+    index = await load_markdown_lint_index_safe(root_path, ctx)
     files_to_lint, initial_results, file_hashes = await _filter_files_for_linting(
-        root_path,
-        files,
-        index,
-        dry_run,
+        root_path, files, index, dry_run
     )
     results = await _run_markdownlint_for_files(
         files_to_lint,
@@ -854,19 +850,23 @@ async def _run_markdownlint_with_cache(
         config_path,
         dry_run,
         ctx=ctx,
+        index=index,
+        file_hashes=file_hashes,
     )
-    await _update_markdown_lint_cache_from_results(
+    # Final cache update in case any results were missed by incremental updates.
+    await _update_markdown_lint_cache_safe(
         index,
         root_path,
         results,
         file_hashes,
+        ctx,
     )
     return _build_fix_response(results)
 
 
 async def _fix_markdown_lint_run_or_error(
     ctx: MCPContext | None,
-    project_root: str | None,
+    root_path: Path,
     include_untracked_markdown: bool,
     dry_run: bool,
     check_all_files: bool,
@@ -874,7 +874,7 @@ async def _fix_markdown_lint_run_or_error(
     """Run fix_markdown_lint impl; return (result_json, success)."""
     try:
         result = await _fix_markdown_lint_impl(
-            project_root,
+            root_path,
             include_untracked_markdown,
             dry_run,
             check_all_files,
@@ -902,7 +902,6 @@ async def _fix_markdown_lint_run_or_error(
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
 async def fix_markdown_lint(
-    project_root: str | None = None,
     include_untracked_markdown: bool = False,
     dry_run: bool = False,
     check_all_files: bool = False,
@@ -922,17 +921,14 @@ async def fix_markdown_lint(
     and optionally applies `--fix` to resolve reported issues.
 
     The return value is a JSON string encoded from `FixMarkdownLintResult`
-    with aggregate counts and per-file `FileResult` entries.
-
-    When project_root is not provided, the server resolves it via MCP roots
-    (roots/list) when the client supports them, so the agent does not need to
-    pass it. If resolution fails, the error message suggests passing
-    project_root explicitly.
+    with aggregate counts and per-file `FileResult` entries. Project root
+    is resolved by the server (MCP roots or cwd/script detection).
     """
     await log_client(ctx, "info", "fix_markdown_lint: starting", logger_name=__name__)
+    root_path = await resolve_project_root_async(None, ctx)
     result, ok = await _fix_markdown_lint_run_or_error(
         ctx,
-        project_root,
+        root_path,
         include_untracked_markdown,
         dry_run,
         check_all_files,

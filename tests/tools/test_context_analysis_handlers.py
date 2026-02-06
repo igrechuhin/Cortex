@@ -23,7 +23,8 @@ class TestContextAnalysisHandlers:
         )
         with (
             patch(
-                "cortex.tools.context_analysis_handlers.phase4_opt.get_project_root",
+                "cortex.tools.context_analysis_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
@@ -32,9 +33,7 @@ class TestContextAnalysisHandlers:
             ),
         ):
             # Act
-            result_str = await analyze_context_effectiveness(
-                project_root=str(tmp_path), analyze_all_sessions=False
-            )
+            result_str = await analyze_context_effectiveness(analyze_all_sessions=False)
             result = json.loads(result_str)
 
         # Assert
@@ -49,7 +48,8 @@ class TestContextAnalysisHandlers:
         )
         with (
             patch(
-                "cortex.tools.context_analysis_handlers.phase4_opt.get_project_root",
+                "cortex.tools.context_analysis_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
@@ -58,9 +58,7 @@ class TestContextAnalysisHandlers:
             ),
         ):
             # Act
-            result_str = await analyze_context_effectiveness(
-                project_root=str(tmp_path), analyze_all_sessions=True
-            )
+            result_str = await analyze_context_effectiveness(analyze_all_sessions=True)
             result = json.loads(result_str)
 
         # Assert
@@ -75,7 +73,8 @@ class TestContextAnalysisHandlers:
         )
         with (
             patch(
-                "cortex.tools.context_analysis_handlers.phase4_opt.get_project_root",
+                "cortex.tools.context_analysis_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
@@ -84,7 +83,7 @@ class TestContextAnalysisHandlers:
             ),
         ):
             # Act
-            result_str = await get_context_usage_statistics(project_root=str(tmp_path))
+            result_str = await get_context_usage_statistics()
             result = json.loads(result_str)
 
         # Assert
@@ -95,13 +94,12 @@ class TestContextAnalysisHandlers:
     ) -> None:
         # Arrange
         with patch(
-            "cortex.tools.context_analysis_handlers.phase4_opt.get_project_root",
+            "cortex.tools.context_analysis_handlers.resolve_project_root_async",
+            new_callable=AsyncMock,
             side_effect=RuntimeError("boom"),
         ):
             # Act
-            result_str = await analyze_context_effectiveness(
-                project_root=str(tmp_path), analyze_all_sessions=False
-            )
+            result_str = await analyze_context_effectiveness(analyze_all_sessions=False)
             result = json.loads(result_str)
 
         # Assert
@@ -114,11 +112,12 @@ class TestContextAnalysisHandlers:
     ) -> None:
         # Arrange
         with patch(
-            "cortex.tools.context_analysis_handlers.phase4_opt.get_project_root",
+            "cortex.tools.context_analysis_handlers.resolve_project_root_async",
+            new_callable=AsyncMock,
             side_effect=RuntimeError("boom"),
         ):
             # Act
-            result_str = await get_context_usage_statistics(project_root=str(tmp_path))
+            result_str = await get_context_usage_statistics()
             result = json.loads(result_str)
 
         # Assert
@@ -145,7 +144,8 @@ class TestContextAnalysisContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.context_analysis_handlers.phase4_opt.get_project_root",
+                "cortex.tools.context_analysis_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
@@ -154,7 +154,6 @@ class TestContextAnalysisContextLogging:
             ),
         ):
             result_str = await analyze_context_effectiveness(
-                project_root=str(tmp_path),
                 analyze_all_sessions=False,
                 ctx=mock_ctx,
             )

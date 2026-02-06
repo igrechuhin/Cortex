@@ -6,6 +6,7 @@ version history of Memory Bank files.
 """
 
 import json
+from pathlib import Path
 from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
@@ -18,6 +19,7 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ModelDict
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers import initialization
 from cortex.managers.manager_utils import get_manager
 from cortex.server import mcp
@@ -32,7 +34,6 @@ from cortex.server import mcp
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_version_history(
     file_name: str,
-    project_root: str | None = None,
     limit: int = 10,
     ctx: MCPContext | None = None,
 ) -> str:
@@ -53,7 +54,6 @@ async def get_version_history(
 
     Args:
         file_name: Name of the file (e.g., "projectBrief.md")
-        project_root: Optional path to project root directory
         limit: Maximum number of versions to return (default: 10, max: 100)
 
     Returns:
@@ -93,7 +93,8 @@ async def get_version_history(
     """
     await log_client(ctx, "info", "get_version_history: starting", logger_name=__name__)
     try:
-        out = await _get_version_history_impl(file_name, project_root, limit, ctx)
+        root = await resolve_project_root_async(None, ctx)
+        out = await _get_version_history_impl(file_name, root, limit, ctx)
         await log_client(
             ctx, "info", "get_version_history: completed", logger_name=__name__
         )
@@ -113,17 +114,17 @@ async def get_version_history(
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_version_history_resource(file_name: str) -> str:
     """Resource: Version history for a file. Read via cortex://memory-bank/version-history/{file_name}."""
-    return await get_version_history(file_name=file_name, project_root=None, limit=10)
+    return await get_version_history(file_name=file_name, limit=10)
 
 
 async def _get_version_history_impl(
     file_name: str,
-    project_root: str | None,
+    root: Path,
     limit: int,
     ctx: MCPContext | None,
 ) -> str:
     """Load version history and return JSON string."""
-    file_meta = await _get_file_metadata_for_history(file_name, project_root)
+    file_meta = await _get_file_metadata_for_history(file_name, root)
     if not file_meta:
         await log_client(
             ctx, "warning", f"get_version_history: file '{file_name}' not found"
@@ -147,18 +148,17 @@ async def _get_version_history_impl(
 
 
 async def _get_file_metadata_for_history(
-    file_name: str, project_root: str | None
+    file_name: str, root: Path
 ) -> ModelDict | None:
     """Get file metadata for version history.
 
     Args:
         file_name: Name of the file
-        project_root: Optional path to project root
+        root: Project root path
 
     Returns:
         File metadata dict or None if not found
     """
-    root = initialization.get_project_root(project_root)
     mgrs = await initialization.get_managers(root)
     metadata_index = await get_manager(mgrs, "index", MetadataIndex)
     file_meta = await metadata_index.get_file_metadata(file_name)

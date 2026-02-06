@@ -11,6 +11,7 @@ from typing import cast
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
+from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
@@ -18,6 +19,7 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.linking.link_parser import LinkParser
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
@@ -25,12 +27,11 @@ from cortex.managers.types import ManagersDict
 from cortex.server import mcp
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Parse File Links"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def parse_file_links(
     file_name: str,
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Parse and extract all markdown links and transclusion directives
@@ -58,8 +59,6 @@ async def parse_file_links(
     Args:
         file_name: Name of the file to parse, relative to memory-bank
             directory (e.g., "activeContext.md", "systemPatterns.md")
-        project_root: Optional absolute path to project root directory;
-            if None, uses current working directory
 
     Returns:
         JSON string containing parsed links and summary statistics:
@@ -144,7 +143,17 @@ async def parse_file_links(
         - Relative paths in links are resolved relative to the memory-bank directory
     """
     await log_client(ctx, "info", "parse_file_links: starting", logger_name=__name__)
-    return await _parse_file_links_run_or_error(ctx, file_name, project_root)
+    try:
+        root = await resolve_project_root_async(None, ctx)
+        return await _parse_file_links_run_or_error(ctx, file_name, str(root))
+    except Exception as e:
+        await log_client(
+            ctx, "error", f"parse_file_links: failed: {e}", logger_name=__name__
+        )
+        return json.dumps(
+            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            indent=2,
+        )
 
 
 @mcp.resource(uri="cortex://links/parse/{file_name}")
@@ -152,7 +161,7 @@ async def parse_file_links(
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def parse_file_links_resource(file_name: str) -> str:
     """Resource: Parse links for a file. Read via cortex://links/parse/{file_name}."""
-    return await parse_file_links(file_name=file_name, project_root=None)
+    return await parse_file_links(file_name=file_name)
 
 
 async def _parse_file_links_run_or_error(

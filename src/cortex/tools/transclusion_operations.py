@@ -11,6 +11,7 @@ from typing import cast
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
+from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     execute_tool_with_stability,
@@ -19,13 +20,14 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.linking.link_parser import LinkParser
 from cortex.linking.transclusion_engine import (
     CircularDependencyError,
     MaxDepthExceededError,
     TransclusionEngine,
 )
-from cortex.managers.initialization import get_managers, get_project_root
+from cortex.managers.initialization import get_managers
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
@@ -36,12 +38,11 @@ from cortex.tools.models import (
 )
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Resolve Transclusions"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def resolve_transclusions(
     file_name: str,
-    project_root: str | None = None,
     max_depth: int = 5,
     ctx: MCPContext | None = None,
 ) -> str:
@@ -73,8 +74,6 @@ async def resolve_transclusions(
     Args:
         file_name: Name of the file to resolve, relative to memory-bank
             directory (e.g., "activeContext.md", "projectBrief.md")
-        project_root: Optional absolute path to project root directory;
-            if None, uses current working directory
         max_depth: Maximum nesting level for transclusions to prevent
             infinite recursion (default: 5, range: 1-10)
 
@@ -174,9 +173,8 @@ async def resolve_transclusions(
     await log_client(
         ctx, "info", "resolve_transclusions: starting", logger_name=__name__
     )
-    return await _resolve_transclusions_run_or_error(
-        ctx, file_name, project_root, max_depth
-    )
+    root = await resolve_project_root_async(None, ctx)
+    return await _resolve_transclusions_run_or_error(ctx, file_name, root, max_depth)
 
 
 @mcp.resource(uri="cortex://links/transclusions/{file_name}")
@@ -184,21 +182,19 @@ async def resolve_transclusions(
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def resolve_transclusions_resource(file_name: str) -> str:
     """Resource: Resolve transclusions for a file. Read via cortex://links/transclusions/{file_name}."""
-    return await resolve_transclusions(
-        file_name=file_name, project_root=None, max_depth=5
-    )
+    return await resolve_transclusions(file_name=file_name, max_depth=5)
 
 
 async def _resolve_transclusions_run_or_error(
     ctx: MCPContext | None,
     file_name: str,
-    project_root: str | None,
+    root: Path,
     max_depth: int,
 ) -> str:
     """Run resolve_transclusions and handle errors with logging."""
     try:
         result = await execute_tool_with_stability(
-            _execute_transclusion_resolution, file_name, project_root, max_depth
+            _execute_transclusion_resolution, file_name, str(root), max_depth
         )
         await log_client(
             ctx,
@@ -218,22 +214,22 @@ async def _resolve_transclusions_run_or_error(
 
 
 async def _execute_transclusion_resolution(
-    file_name: str, project_root: str | None, max_depth: int
+    file_name: str, root: str, max_depth: int
 ) -> ResolveTransclusionsResult | ResolveTransclusionsErrorResult:
     """Execute transclusion resolution workflow.
 
     Args:
         file_name: Name of file to resolve
-        project_root: Optional project root path
+        root: Project root path
         max_depth: Maximum transclusion depth
 
     Returns:
         Result dictionary (success or error)
     """
-    root = get_project_root(project_root)
-    mgrs = await get_managers(root)
+    root_path = Path(root)
+    mgrs = await get_managers(root_path)
 
-    file_path = await _validate_transclusion_file(mgrs, root, file_name)
+    file_path = await _validate_transclusion_file(mgrs, root_path, file_name)
     if isinstance(file_path, ResolveTransclusionsErrorResult):
         return file_path
 

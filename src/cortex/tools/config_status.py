@@ -12,7 +12,9 @@ from pydantic import ConfigDict, Field
 from cortex.core.models import DictLikeModel
 from cortex.core.path_resolver import (
     CortexResourceType,
+    CursorResourceType,
     get_cortex_path,
+    get_cursor_path,
     is_memory_bank_fully_initialized,
 )
 from cortex.core.tiktoken_cache import ensure_bundled_cache_available
@@ -76,7 +78,7 @@ def _check_migration_needed(project_root: Path, memory_bank_initialized: bool) -
     if memory_bank_initialized:
         return False
     legacy_locations = [
-        project_root / ".cursor" / "memory-bank",
+        get_cursor_path(project_root, CursorResourceType.MEMORY_BANK),
         project_root / "memory-bank",
         project_root / ".memory-bank",
     ]
@@ -107,7 +109,7 @@ def get_project_config_status() -> ProjectConfigStatus:
     try:
         project_root = get_project_root()
         cortex_dir = get_cortex_path(project_root, CortexResourceType.CORTEX_DIR)
-        cursor_dir = project_root / ".cursor"
+        cursor_dir = get_cursor_path(project_root, CursorResourceType.CURSOR_DIR)
 
         memory_bank_initialized = _check_memory_bank_initialized(project_root)
         structure_configured = _check_structure_configured(cortex_dir)

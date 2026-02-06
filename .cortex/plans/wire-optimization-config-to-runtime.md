@@ -9,6 +9,8 @@
 
 Connect all properties in `.cortex/config/optimization.json` to actual runtime behavior, or explicitly remove unused ones, so config and behavior stay in sync. The investigation found roughly half of the properties are never read; this plan addresses each unused section.
 
+**User-facing outcome**: Once wired, optimization will be driven by usage statistics where applicable: context loading can prefer frequently used and co-accessed files (when usage tracking is enabled), token budgets and strategies will respect config, and tool-usage data (already powering `get_optimization_recommendations` / `get_unused_tools`) will align with self_evolution and analysis settings.
+
 ## Context
 
 - **Investigation**: End-of-session analysis traced every key in optimization.json to OptimizationConfig getters and manager constructors. Many properties (top-level `enabled`, token_budget.max_budget/reserve_for_response, loading_strategy.default, entire summarization/performance blocks, rules.rule_priority/context_detection, synapse.synapse_repo/auto_sync/sync_interval_minutes, entire self_evolution block) have no readers.
@@ -107,9 +109,10 @@ Implementation order: start with low-risk, high-clarity wiring (token_budget, lo
 1. **Analysis settings**: Where PatternAnalyzer (or equivalent) is created or invoked, pass `pattern_window_days=optimization_config.get_pattern_window_days()`, `min_access_count=optimization_config.get_min_access_count()`, and honor `is_usage_tracking_enabled()` and `is_task_tracking_enabled()` (e.g. skip tracking when disabled). Ensure manager_initialization/container_factory pass optimization_config into the component that uses these.
 2. **Insights settings**: Where InsightEngine (or get_insights-style logic) is invoked, pass `min_impact_score=optimization_config.get_min_impact_score()`, `categories=optimization_config.get_insight_categories()`, and honor `is_auto_insights_enabled()`.
 3. **Top-level self_evolution.enabled**: Gate creation or invocation of analysis/insights components on `optimization_config.is_self_evolution_enabled()` where appropriate.
-4. **Tests**: Unit tests that config values are read and passed; tests that disabling self_evolution or analysis/insights reduces or skips the corresponding behavior.
+4. **Usage-driven context loading**: When `is_usage_tracking_enabled()` is true, feed usage data into context loading so that frequently used and co-accessed files are favored. Options: (a) Add an optional usage/access component to RelevanceScorer (e.g. usage_weight and scores from PatternAnalyzer access_frequency / co_access_patterns), or (b) pass usage-based boosts into load_context (e.g. merge access_frequency into recency or priority). Ensure config (pattern_window_days, min_access_count) is used when querying usage so behavior is consistent with self_evolution.analysis.
+5. **Tests**: Unit tests that config values are read and passed; tests that disabling self_evolution or analysis/insights reduces or skips the corresponding behavior; optional integration test that load_context or get_relevance_scores reflect usage when usage tracking is enabled.
 
-**Acceptance**: self_evolution.enabled, analysis.*, and insights.* are read and affect PatternAnalyzer, InsightEngine, and/or usage-tracking behavior.
+**Acceptance**: self_evolution.enabled, analysis.*, and insights.* are read and affect PatternAnalyzer, InsightEngine, and/or usage-tracking behavior; when usage tracking is enabled, context loading/relevance can use usage statistics to optimize selection.
 
 ### Step 8: Top-level enabled — gate optimization features
 

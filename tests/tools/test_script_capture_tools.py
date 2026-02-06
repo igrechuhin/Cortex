@@ -27,13 +27,17 @@ class TestCaptureSessionScript:
         """capture_session_script returns JSON with status, script_id, timestamp."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            result = await capture_session_script(
-                script_path="scripts/foo.py",
-                script_content="print(1)",
-                task_description="Test",
-                project_root=str(root),
-            )
-            data = json.loads(result)
+            with patch(
+                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=root,
+            ):
+                result = await capture_session_script(
+                    script_path="scripts/foo.py",
+                    script_content="print(1)",
+                    task_description="Test",
+                )
+                data = json.loads(result)
             assert data["status"] == "success"
             assert "script_id" in data
             assert "timestamp" in data
@@ -45,17 +49,21 @@ class TestCaptureSessionScript:
         """Captured script appears in list_session_scripts."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            capture_result = await capture_session_script(
-                script_path="bar.py",
-                script_content="x = 1",
-                task_description="Bar task",
-                script_type="python",
-                project_root=str(root),
-            )
-            capture_data = json.loads(capture_result)
-            script_id = capture_data["script_id"]
-            list_result = await list_session_scripts(project_root=str(root))
-            list_data = json.loads(list_result)
+            with patch(
+                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=root,
+            ):
+                capture_result = await capture_session_script(
+                    script_path="bar.py",
+                    script_content="x = 1",
+                    task_description="Bar task",
+                    script_type="python",
+                )
+                capture_data = json.loads(capture_result)
+                script_id = capture_data["script_id"]
+                list_result = await list_session_scripts()
+                list_data = json.loads(list_result)
             assert list_data["status"] == "success"
             assert list_data["count"] == 1
             assert len(list_data["scripts"]) == 1
@@ -71,8 +79,13 @@ class TestListSessionScripts:
         """list_session_scripts returns JSON with status, count, scripts."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            result = await list_session_scripts(project_root=str(root))
-            data = json.loads(result)
+            with patch(
+                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=root,
+            ):
+                result = await list_session_scripts()
+                data = json.loads(result)
             assert data["status"] == "success"
             assert data["count"] == 0
             assert data["scripts"] == []
@@ -82,21 +95,24 @@ class TestListSessionScripts:
         """list_session_scripts returns summaries of previously captured scripts."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            await capture_session_script(
-                script_path="a.py",
-                script_content="a",
-                task_description="A",
-                project_root=str(root),
-            )
-            await capture_session_script(
-                script_path="b.sh",
-                script_content="b",
-                task_description="B",
-                script_type="shell",
-                project_root=str(root),
-            )
-            result = await list_session_scripts(project_root=str(root))
-            data = json.loads(result)
+            with patch(
+                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=root,
+            ):
+                await capture_session_script(
+                    script_path="a.py",
+                    script_content="a",
+                    task_description="A",
+                )
+                await capture_session_script(
+                    script_path="b.sh",
+                    script_content="b",
+                    task_description="B",
+                    script_type="shell",
+                )
+                result = await list_session_scripts()
+                data = json.loads(result)
             assert data["status"] == "success"
             assert data["count"] == 2
             paths = {s["script_path"] for s in data["scripts"]}
@@ -115,8 +131,13 @@ class TestAnalyzeSessionScripts:
         """analyze_session_scripts returns JSON with status, count, analyses."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            result = await analyze_session_scripts(project_root=str(root))
-            data = json.loads(result)
+            with patch(
+                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=root,
+            ):
+                result = await analyze_session_scripts()
+                data = json.loads(result)
             assert data["status"] == "success"
             assert "count" in data
             assert "analyses" in data
@@ -127,14 +148,18 @@ class TestAnalyzeSessionScripts:
         """analyze_session_scripts returns analysis for each captured script."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            await capture_session_script(
-                script_path="foo.py",
-                script_content="def main(): pass",
-                task_description="Format code",
-                project_root=str(root),
-            )
-            result = await analyze_session_scripts(project_root=str(root))
-            data = json.loads(result)
+            with patch(
+                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=root,
+            ):
+                await capture_session_script(
+                    script_path="foo.py",
+                    script_content="def main(): pass",
+                    task_description="Format code",
+                )
+                result = await analyze_session_scripts()
+                data = json.loads(result)
             assert data["status"] == "success"
             assert data["count"] == 1
             analysis = data["analyses"][0]
@@ -150,11 +175,9 @@ class TestSuggestToolImprovements:
     @pytest.mark.asyncio
     async def test_returns_success_with_recommendations(self) -> None:
         """suggest_tool_improvements returns JSON with status and recommendations."""
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+        with tempfile.TemporaryDirectory():
             result = await suggest_tool_improvements(
                 task_description="format Python files",
-                project_root=str(root),
                 max_results=5,
             )
             data = json.loads(result)
@@ -175,10 +198,14 @@ class TestPromoteSessionScript:
         """promote_session_script returns error when script_id not found."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            result = await promote_session_script(
-                script_id="nonexistent-id",
-                project_root=str(root),
-            )
+            with patch(
+                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=root,
+            ):
+                result = await promote_session_script(
+                    script_id="nonexistent-id",
+                )
             data = json.loads(result)
             assert data["status"] == "error"
             assert "not found" in data.get("error", "").lower()
@@ -188,19 +215,22 @@ class TestPromoteSessionScript:
         """promote_session_script returns validation and template for existing script."""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            cap = await capture_session_script(
-                script_path="format.py",
-                script_content="def main(): pass",
-                task_description="Format code",
-                project_root=str(root),
-            )
-            cap_data = json.loads(cap)
-            script_id = cap_data["script_id"]
-            result = await promote_session_script(
-                script_id=script_id,
-                project_root=str(root),
-                output_type="tool",
-            )
+            with patch(
+                "cortex.tools.script_capture_tools.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=root,
+            ):
+                cap = await capture_session_script(
+                    script_path="format.py",
+                    script_content="def main(): pass",
+                    task_description="Format code",
+                )
+                cap_data = json.loads(cap)
+                script_id = cap_data["script_id"]
+                result = await promote_session_script(
+                    script_id=script_id,
+                    output_type="tool",
+                )
             data = json.loads(result)
             assert data["status"] == "success"
             assert data["script_id"] == script_id
@@ -236,8 +266,10 @@ class TestScriptCaptureResources:
             "cortex.tools.script_capture_tools.analyze_session_scripts",
             new_callable=AsyncMock,
             return_value=payload,
-        ):
+        ) as mocked_analyze:
             result_str = await analyze_session_scripts_resource()
+        _, kwargs = mocked_analyze.call_args
+        assert "project_root" not in kwargs
         result = json.loads(result_str)
         assert result["status"] == "success"
         assert result["count"] == 0

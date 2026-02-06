@@ -720,7 +720,7 @@ class TestLoadProgressiveContextSkipsStaleIndexEntries:
         result_json = await load_progressive_context_impl(
             mgrs,
             task_description="test",
-            token_budget=5000,
+            token_budget=50000,  # Enough budget after subtracting 10000 reserve
             loading_strategy="by_relevance",
         )
 

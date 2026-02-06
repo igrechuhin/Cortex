@@ -7,13 +7,17 @@ Total: 1 tool
 - validate: Schema/duplications/quality checks
 """
 
+from typing import Literal
+
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.validation_dispatch import (
     call_dispatch_validation,
@@ -26,6 +30,16 @@ from cortex.tools.validation_helpers import (
     parse_validation_check_type,
 )
 
+# Valid check_type values for validate() (must match ValidationCheckType enum).
+ValidateCheckTypeName = Literal[
+    "schema",
+    "duplications",
+    "quality",
+    "infrastructure",
+    "timestamps",
+    "roadmap_sync",
+]
+
 VALIDATE_INPUT_EXAMPLES: list[dict[str, object]] = [
     {"check_type": "schema", "file_name": "projectBrief.md"},
     {"check_type": "duplications", "similarity_threshold": 0.8},
@@ -33,13 +47,15 @@ VALIDATE_INPUT_EXAMPLES: list[dict[str, object]] = [
 ]
 
 
-@mcp.tool(meta={"input_examples": VALIDATE_INPUT_EXAMPLES})
+@mcp.tool(
+    annotations=read_only_annotations("Validate Memory Bank"),
+    meta={"input_examples": VALIDATE_INPUT_EXAMPLES},
+)
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def validate(
-    check_type: str,
+    check_type: ValidateCheckTypeName,
     file_name: str | None = None,
-    project_root: str | None = None,
     strict_mode: bool = False,
     similarity_threshold: float | None = None,
     suggest_fixes: bool = True,
@@ -97,10 +113,6 @@ async def validate(
             - For infrastructure: parameter ignored (always validates entire project)
             - For timestamps: validates single file or all files if None
             Examples: "projectBrief.md", "activeContext.md", None
-        project_root: Path to project root directory
-            - Defaults to current working directory if None
-            - Memory Bank expected at {project_root}/memory-bank/
-            Example: "/Users/dev/my-project"
         strict_mode: Enable strict validation for schema checks (default: False)
             - When True, treats warnings as errors
             - Only applicable for check_type="schema"
@@ -463,7 +475,6 @@ async def validate(
         return create_invalid_check_type_error(check_type or "null")
     return await _execute_validation_with_error_handling(
         parsed,
-        project_root,
         file_name,
         similarity_threshold,
         suggest_fixes,
@@ -477,7 +488,6 @@ async def validate(
 
 async def _execute_validation_with_error_handling(
     check_type: ValidationCheckType,
-    project_root: str | None,
     file_name: str | None,
     similarity_threshold: float | None,
     suggest_fixes: bool,
@@ -489,7 +499,8 @@ async def _execute_validation_with_error_handling(
 ) -> str:
     """Execute validation with error handling."""
     try:
-        root, managers = await prepare_validation_managers(project_root)
+        resolved_root = await resolve_project_root_async(None, ctx)
+        root, managers = await prepare_validation_managers(str(resolved_root))
         result = await call_dispatch_validation(
             check_type,
             managers,
@@ -516,8 +527,8 @@ async def validate_resource(check_type: str) -> str:
     """Resource: Run validation by check type. Read via cortex://validation/validate/{check_type}.
 
     Runs the same validation as the validate tool with default parameters
-    (file_name=None, project_root=None, suggest_fixes=True, infrastructure
-    checks enabled). check_type must be one of: schema, duplications,
+    (file_name=None, suggest_fixes=True, infrastructure checks enabled).
+    Project root is resolved by the server. check_type must be one of: schema, duplications,
     quality, infrastructure, timestamps, roadmap_sync.
     """
     parsed = parse_validation_check_type(check_type)
@@ -525,7 +536,6 @@ async def validate_resource(check_type: str) -> str:
         return create_invalid_check_type_error(check_type or "null")
     return await _execute_validation_with_error_handling(
         parsed,
-        None,
         None,
         None,
         True,

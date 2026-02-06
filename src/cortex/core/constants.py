@@ -77,6 +77,9 @@ MCP_TOOL_TIMEOUT_SECONDS = 300  # Maximum time for MCP tool execution (5 minutes
 MCP_CONNECTION_TIMEOUT_SECONDS = 30  # Timeout for stdio connection operations
 MCP_ROOTS_LIST_TIMEOUT_SECONDS = 5  # Timeout for roots/list request (fallback if slow)
 MCP_MAX_CONCURRENT_TOOLS = 5  # Maximum concurrent MCP tool executions
+MCP_MAX_CONCURRENT_RESOURCES = (
+    10  # Max concurrent resource reads (Phase 69: avoid queueing behind tools)
+)
 MCP_CONNECTION_RETRY_ATTEMPTS = 3  # Maximum retry attempts for transient failures
 MCP_CONNECTION_RETRY_DELAY_SECONDS = 1.0  # Delay between retry attempts
 MCP_HEALTH_CHECK_INTERVAL_SECONDS = 60  # Interval for connection health checks

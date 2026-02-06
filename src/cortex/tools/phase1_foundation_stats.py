@@ -11,6 +11,7 @@ from typing import Literal, cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
@@ -18,6 +19,7 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonValue, ModelDict
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.version_manager import VersionManager
 from cortex.managers import initialization
 from cortex.managers.lazy_manager import LazyManager
@@ -26,11 +28,10 @@ from cortex.managers.types import ManagersDict
 from cortex.server import mcp
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Get Memory Bank Stats"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_memory_bank_stats(
-    project_root: str | None = None,
     include_token_budget: bool = True,
     include_refactoring_history: bool = False,
     refactoring_days: int = 90,
@@ -54,7 +55,6 @@ async def get_memory_bank_stats(
     Bank health and usage.
 
     Args:
-        project_root: Optional path to project root directory
         include_token_budget: Include token budget analysis (default: True)
             Shows usage percentage, remaining tokens, and status
         include_refactoring_history: Include refactoring history (default: False)
@@ -131,9 +131,10 @@ async def get_memory_bank_stats(
         ctx, "info", "get_memory_bank_stats: starting", logger_name=__name__
     )
     try:
+        root = await resolve_project_root_async(None, ctx)
         result_dict = await _get_memory_bank_stats_impl(
             ctx,
-            project_root,
+            root,
             include_token_budget,
             include_refactoring_history,
             refactoring_days,
@@ -162,19 +163,19 @@ async def get_memory_bank_stats_resource() -> str:
 
 async def _get_memory_bank_stats_impl(
     ctx: MCPContext | None,
-    project_root: str | None,
+    root: Path,
     include_token_budget: bool,
     include_refactoring_history: bool,
     refactoring_days: int,
 ) -> ModelDict:
     """Run get_memory_bank_stats logic and return result dict."""
-    base_result, total_tokens = await _collect_base_stats(project_root)
+    base_result, total_tokens = await _collect_base_stats(root)
     result_dict: ModelDict = base_result
     updated = await _add_optional_stats(
         result_dict,
         include_token_budget,
         include_refactoring_history,
-        project_root,
+        root,
         total_tokens,
         refactoring_days,
     )
@@ -184,18 +185,15 @@ async def _get_memory_bank_stats_impl(
     return updated if updated is not None else result_dict
 
 
-async def _collect_base_stats(
-    project_root: str | None,
-) -> tuple[ModelDict, int]:
+async def _collect_base_stats(root: Path) -> tuple[ModelDict, int]:
     """Collect base statistics for Memory Bank.
 
     Args:
-        project_root: Optional path to project root directory
+        root: Project root path
 
     Returns:
         Tuple of (result dict, total_tokens)
     """
-    root = initialization.get_project_root(project_root)
     mgrs = await initialization.get_managers(root)
     metadata_index = await get_manager(mgrs, "index", MetadataIndex)
     version_manager = await get_manager(mgrs, "versions", VersionManager)
@@ -389,7 +387,7 @@ async def _add_optional_stats(
     result: ModelDict,
     include_token_budget: bool,
     include_refactoring_history: bool,
-    project_root: str | None,
+    root: Path,
     total_tokens: int,
     refactoring_days: int,
 ) -> ModelDict | None:
@@ -399,14 +397,13 @@ async def _add_optional_stats(
         result: Result model to update
         include_token_budget: Whether to include token budget
         include_refactoring_history: Whether to include refactoring history
-        project_root: Optional project root path
+        root: Project root path
         total_tokens: Total token count
         refactoring_days: Days of refactoring history to include
 
     Returns:
         Updated GetMemoryBankStatsResult with optional stats
     """
-    root = initialization.get_project_root(project_root)
     if include_token_budget:
         token_budget = await _build_token_budget_dict(root, total_tokens)
         result["token_budget"] = token_budget

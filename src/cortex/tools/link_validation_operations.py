@@ -10,24 +10,25 @@ from pathlib import Path
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
+from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.linking.link_validator import LinkValidator
-from cortex.managers.initialization import get_managers, get_project_root
+from cortex.managers.initialization import get_managers
 from cortex.managers.manager_utils import get_manager
 from cortex.server import mcp
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Validate Links"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def validate_links(
     file_name: str | None = None,
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Validate all markdown links and transclusion directives to ensure
@@ -56,8 +57,6 @@ async def validate_links(
         file_name: Optional specific file to validate relative to
             memory-bank directory (e.g., "activeContext.md"); if None,
             validates all files in memory-bank
-        project_root: Optional absolute path to project root directory;
-            if None, uses current working directory
 
     Returns:
         JSON string containing validation results and detailed error reports:
@@ -185,7 +184,7 @@ async def validate_links(
     """
     await log_client(ctx, "info", "validate_links: starting", logger_name=__name__)
     try:
-        root = get_project_root(project_root)
+        root = await resolve_project_root_async(None, ctx)
         mgrs = await get_managers(root)
         link_validator = await get_manager(mgrs, "link_validator", LinkValidator)
         fs_manager = await get_manager(mgrs, "fs", FileSystemManager)
@@ -215,7 +214,7 @@ async def validate_links(
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def validate_links_resource() -> str:
     """Resource: Validate all links. Read via cortex://links/validate."""
-    return await validate_links(file_name=None, project_root=None)
+    return await validate_links(file_name=None)
 
 
 async def _validate_single_file(

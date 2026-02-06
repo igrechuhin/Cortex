@@ -2,6 +2,12 @@
 
 This directory contains detailed implementation plans for all phases of the Cortex enhancement project.
 
+## How this directory relates to the roadmap
+
+- `roadmap.md` (in the Memory Bank) tracks **future and upcoming work only** and is the source of truth for the implementation queue.
+- Entries in `roadmap.md` that reference a plan file (like this directory) are implemented step-by-step using the `cortex/implement` command.
+- This `README.md` provides a **high-level map of all phases and their plans** so both humans and agents can quickly understand what each plan covers.
+
 ## Phase Overview
 
 ### Phase 1: Foundation ✅ COMPLETE

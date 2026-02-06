@@ -22,11 +22,13 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.phase4_context_operations import load_context_impl
 from cortex.tools.phase4_progressive_operations import (
@@ -36,14 +38,13 @@ from cortex.tools.phase4_relevance_operations import get_relevance_scores_impl
 from cortex.tools.phase4_summarization_operations import summarize_content_impl
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Load Context"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def load_context(
     task_description: str,
     token_budget: int | None = None,
     strategy: str = "dependency_aware",
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Load relevant context for a task within token budget.
@@ -68,14 +69,13 @@ async def load_context(
         task_description: Description of the task to perform
         token_budget: Maximum tokens to include (default from config)
         strategy: Loading strategy (dependency_aware, priority, hybrid)
-        project_root: Project root path (default: current directory)
 
     Returns:
         JSON with selected files, their content, and relevance scores
     """
     await log_client(ctx, "info", "load_context: starting", logger_name=__name__)
     try:
-        root = phase4_opt.get_project_root(project_root)
+        root = await resolve_project_root_async(None, ctx)
         mgrs = await phase4_opt.get_managers(root)
         out = await load_context_impl(
             mgrs, task_description, token_budget, strategy, project_root=root
@@ -90,14 +90,13 @@ async def load_context(
         )
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Load Progressive Context"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def load_progressive_context(
     task_description: str,
     token_budget: int | None = None,
     loading_strategy: str = "by_relevance",
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Load context progressively based on relevance, loading files
@@ -117,7 +116,7 @@ async def load_progressive_context(
         ctx, "info", "load_progressive_context: starting", logger_name=__name__
     )
     try:
-        root = phase4_opt.get_project_root(project_root)
+        root = await resolve_project_root_async(None, ctx)
         mgrs = await phase4_opt.get_managers(root)
         out = await load_progressive_context_impl(
             mgrs, task_description, token_budget, loading_strategy
@@ -136,14 +135,13 @@ async def load_progressive_context(
         )
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Summarize Content"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def summarize_content(
     file_name: str | None = None,
     target_reduction: float = 0.5,
     strategy: str = "extract_key_sections",
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Summarize Memory Bank content to reduce token usage while preserving
@@ -159,7 +157,7 @@ async def summarize_content(
     """
     await log_client(ctx, "info", "summarize_content: starting", logger_name=__name__)
     try:
-        root = phase4_opt.get_project_root(project_root)
+        root = await resolve_project_root_async(None, ctx)
         mgrs = await phase4_opt.get_managers(root)
         out = await summarize_content_impl(mgrs, file_name, target_reduction, strategy)
         await log_client(
@@ -176,12 +174,11 @@ async def summarize_content(
         )
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Get Relevance Scores"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_relevance_scores(
     task_description: str,
-    project_root: str | None = None,
     include_sections: bool = False,
     ctx: MCPContext | None = None,
 ) -> str:
@@ -201,7 +198,7 @@ async def get_relevance_scores(
         ctx, "info", "get_relevance_scores: starting", logger_name=__name__
     )
     try:
-        root = phase4_opt.get_project_root(project_root)
+        root = await resolve_project_root_async(None, ctx)
         mgrs = await phase4_opt.get_managers(root)
         out = await get_relevance_scores_impl(mgrs, task_description, include_sections)
         await log_client(
@@ -231,7 +228,6 @@ async def load_context_resource(task_description: str) -> str:
         task_description=decoded,
         token_budget=None,
         strategy="dependency_aware",
-        project_root=None,
     )
 
 
@@ -245,7 +241,6 @@ async def load_progressive_context_resource(task_description: str) -> str:
         task_description=decoded,
         token_budget=None,
         loading_strategy="by_relevance",
-        project_root=None,
     )
 
 
@@ -257,7 +252,6 @@ async def get_relevance_scores_resource(task_description: str) -> str:
     decoded = unquote(task_description)
     return await get_relevance_scores(
         task_description=decoded,
-        project_root=None,
         include_sections=False,
     )
 
@@ -273,5 +267,4 @@ async def summarize_content_resource(file_name: str) -> str:
         file_name=name_arg,
         target_reduction=0.5,
         strategy="extract_key_sections",
-        project_root=None,
     )

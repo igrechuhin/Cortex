@@ -25,6 +25,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.mcp_annotations import read_only_annotations, safe_write_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
@@ -89,7 +90,7 @@ async def _sync_synapse_impl(pull: bool, push: bool, ctx: MCPContext | None) -> 
     return out
 
 
-@mcp.tool()
+@mcp.tool(annotations=safe_write_annotations("Sync Synapse"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_EXTERNAL)
 async def sync_synapse(
@@ -215,7 +216,7 @@ async def _update_synapse_rule_impl(
     return out
 
 
-@mcp.tool()
+@mcp.tool(annotations=safe_write_annotations("Update Synapse Rule"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_EXTERNAL)
 async def update_synapse_rule(
@@ -308,7 +309,7 @@ async def update_synapse_rule(
         )
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Get Synapse Rules"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_synapse_rules(
@@ -554,7 +555,7 @@ async def _get_synapse_prompts_impl(
     return out
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Get Synapse Prompts"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_synapse_prompts(
@@ -681,7 +682,7 @@ async def _update_synapse_prompt_impl(
     return out
 
 
-@mcp.tool()
+@mcp.tool(annotations=safe_write_annotations("Update Synapse Prompt"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_EXTERNAL)
 async def update_synapse_prompt(

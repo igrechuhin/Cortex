@@ -661,9 +661,7 @@ async def test_rules_invalid_operation_returns_error(
 ) -> None:
     """Test rules() with invalid operation returns friendly error."""
     # Act: invalid operation is rejected at parse before dispatch_operation
-    result = await rules(
-        operation="invalid_operation", project_root=str(mock_project_root)
-    )
+    result = await rules(operation="invalid_operation")
 
     # Assert
     result_dict = json.loads(result)
@@ -685,7 +683,8 @@ async def test_rules_index_operation_success(
     # Arrange
     with (
         patch(
-            "cortex.tools.rules_operations.get_project_root",
+            "cortex.tools.rules_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
             return_value=mock_project_root,
         ),
         patch(
@@ -694,9 +693,7 @@ async def test_rules_index_operation_success(
         ),
     ):
         # Act
-        result = await rules(
-            operation="index", project_root=str(mock_project_root), force=False
-        )
+        result = await rules(operation="index", force=False)
 
         # Assert
         result_dict = json.loads(result)
@@ -713,7 +710,8 @@ async def test_rules_index_operation_force(
     # Arrange
     with (
         patch(
-            "cortex.tools.rules_operations.get_project_root",
+            "cortex.tools.rules_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
             return_value=mock_project_root,
         ),
         patch(
@@ -722,9 +720,7 @@ async def test_rules_index_operation_force(
         ),
     ):
         # Act
-        result = await rules(
-            operation="index", project_root=str(mock_project_root), force=True
-        )
+        result = await rules(operation="index", force=True)
 
         # Assert
         result_dict = json.loads(result)
@@ -743,7 +739,8 @@ async def test_rules_get_relevant_operation_success(
     # Arrange
     with (
         patch(
-            "cortex.tools.rules_operations.get_project_root",
+            "cortex.tools.rules_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
             return_value=mock_project_root,
         ),
         patch(
@@ -754,7 +751,6 @@ async def test_rules_get_relevant_operation_success(
         # Act
         result = await rules(
             operation="get_relevant",
-            project_root=str(mock_project_root),
             task_description="Implementing async file operations",
             max_tokens=5000,
             min_relevance_score=0.7,
@@ -775,7 +771,8 @@ async def test_rules_get_relevant_defaults(
     # Arrange
     with (
         patch(
-            "cortex.tools.rules_operations.get_project_root",
+            "cortex.tools.rules_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
             return_value=mock_project_root,
         ),
         patch(
@@ -786,7 +783,6 @@ async def test_rules_get_relevant_defaults(
         # Act
         result = await rules(
             operation="get_relevant",
-            project_root=str(mock_project_root),
             task_description="Test task",
         )
 
@@ -803,7 +799,8 @@ async def test_rules_get_relevant_resource_returns_json(
     """rules_get_relevant_resource returns JSON (Phase 43 cortex://rules/relevant)."""
     with (
         patch(
-            "cortex.tools.rules_operations.get_project_root",
+            "cortex.tools.rules_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
             return_value=mock_project_root,
         ),
         patch(
@@ -830,7 +827,8 @@ async def test_rules_disabled(
     # Arrange
     with (
         patch(
-            "cortex.tools.rules_operations.get_project_root",
+            "cortex.tools.rules_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
             return_value=mock_project_root,
         ),
         patch(
@@ -839,7 +837,7 @@ async def test_rules_disabled(
         ),
     ):
         # Act
-        result = await rules(operation="index", project_root=str(mock_project_root))
+        result = await rules(operation="index")
 
         # Assert
         result_dict = json.loads(result)
@@ -855,7 +853,8 @@ async def test_rules_get_relevant_missing_task(
     # Arrange
     with (
         patch(
-            "cortex.tools.rules_operations.get_project_root",
+            "cortex.tools.rules_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
             return_value=mock_project_root,
         ),
         patch(
@@ -864,9 +863,7 @@ async def test_rules_get_relevant_missing_task(
         ),
     ):
         # Act
-        result = await rules(
-            operation="get_relevant", project_root=str(mock_project_root)
-        )
+        result = await rules(operation="get_relevant")
 
         # Assert
         result_dict = json.loads(result)
@@ -880,7 +877,8 @@ async def test_rules_exception_handling(mock_project_root: Path) -> None:
     # Arrange
     with (
         patch(
-            "cortex.tools.rules_operations.get_project_root",
+            "cortex.tools.rules_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
             return_value=mock_project_root,
         ),
         patch(
@@ -889,7 +887,7 @@ async def test_rules_exception_handling(mock_project_root: Path) -> None:
         ),
     ):
         # Act
-        result = await rules(operation="index", project_root=str(mock_project_root))
+        result = await rules(operation="index")
 
         # Assert
         result_dict = json.loads(result)
@@ -902,13 +900,14 @@ async def test_rules_exception_handling(mock_project_root: Path) -> None:
 async def test_rules_default_project_root(
     mock_managers_enabled: dict[str, Any],
 ) -> None:
-    """Test rules() with default project_root (None)."""
+    """Test rules() resolves project root via resolve_project_root_async."""
     # Arrange
     with (
         patch(
-            "cortex.tools.rules_operations.get_project_root",
+            "cortex.tools.rules_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
             return_value=Path.cwd(),
-        ) as mock_get_root,
+        ) as mock_resolve_root,
         patch(
             "cortex.tools.rules_operations.get_managers",
             AsyncMock(return_value=mock_managers_enabled),
@@ -920,7 +919,8 @@ async def test_rules_default_project_root(
         # Assert
         result_dict = json.loads(result)
         assert result_dict["status"] == "success"
-        mock_get_root.assert_called_once_with(None)
+        mock_resolve_root.assert_called_once()
+        assert mock_resolve_root.call_args[0][0] is None
 
 
 @pytest.mark.asyncio
@@ -931,7 +931,8 @@ async def test_rules_missing_operation_returns_friendly_error(
     # Arrange
     with (
         patch(
-            "cortex.tools.rules_operations.get_project_root",
+            "cortex.tools.rules_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
             return_value=Path("/tmp/test"),
         ),
         patch(
@@ -972,7 +973,8 @@ class TestRulesContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.rules_operations.get_project_root",
+                "cortex.tools.rules_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
             patch(
@@ -1027,7 +1029,8 @@ class TestRulesContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.rules_operations.get_project_root",
+                "cortex.tools.rules_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
             ),
             patch(

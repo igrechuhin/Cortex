@@ -18,6 +18,7 @@ perform_cleanup=True parameter.
 """
 
 import json
+from pathlib import Path
 
 from cortex.core.cache import TTLCache
 from cortex.core.constants import (
@@ -33,7 +34,7 @@ from cortex.core.mcp_stability import (
     mcp_tool_wrapper,
 )
 from cortex.core.models import ModelDict
-from cortex.managers.initialization import get_project_root
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.structure.structure_manager import StructureManager
 from cortex.tools.phase8_structure_docs import (
@@ -78,7 +79,7 @@ __all__ = [
 
 
 async def _check_structure_health_impl(
-    project_root: str | None,
+    root: Path,
     perform_cleanup: bool,
     cleanup_actions: list[str] | None,
     stale_days: int,
@@ -86,7 +87,6 @@ async def _check_structure_health_impl(
     ctx: MCPContext | None,
 ) -> str:
     """Run check_structure_health logic. Returns JSON string."""
-    root = get_project_root(project_root)
     structure_mgr = StructureManager(root)
     not_initialized_response = check_structure_initialized(structure_mgr)
     if not_initialized_response:
@@ -109,7 +109,7 @@ async def _check_structure_health_impl(
 
 
 async def _check_structure_health_with_logging(
-    project_root: str | None,
+    root: Path,
     perform_cleanup: bool,
     cleanup_actions: list[str] | None,
     stale_days: int,
@@ -119,7 +119,7 @@ async def _check_structure_health_with_logging(
     """Run check_structure_health with try/except and error logging."""
     try:
         out = await _check_structure_health_impl(
-            project_root,
+            root,
             perform_cleanup,
             cleanup_actions,
             stale_days,
@@ -148,7 +148,6 @@ async def _check_structure_health_with_logging(
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def check_structure_health(
-    project_root: str | None = None,
     perform_cleanup: bool = False,
     cleanup_actions: list[str] | None = None,
     stale_days: int = 90,
@@ -159,8 +158,9 @@ async def check_structure_health(
     await log_client(
         ctx, "info", "check_structure_health: starting", logger_name=__name__
     )
+    root = await resolve_project_root_async(None, ctx)
     return await _check_structure_health_with_logging(
-        project_root,
+        root,
         perform_cleanup,
         cleanup_actions,
         stale_days,
@@ -180,13 +180,12 @@ check_structure_health.__doc__ = CHECK_STRUCTURE_HEALTH_DOC
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_structure_info(
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Get current project structure configuration, paths, and status."""
     await log_client(ctx, "info", "get_structure_info: starting", logger_name=__name__)
     try:
-        root = get_project_root(project_root)
+        root = await resolve_project_root_async(None, ctx)
         structure_mgr = StructureManager(root)
 
         info = structure_mgr.get_structure_info()
@@ -237,7 +236,6 @@ async def check_structure_health_resource() -> str:
     if cached is not None:
         return cached
     result = await check_structure_health(
-        project_root=None,
         perform_cleanup=False,
         cleanup_actions=None,
         stale_days=90,

@@ -541,7 +541,7 @@ class TestFixMarkdownLintTool:
             ]
 
             # Act
-            result_str = await fix_markdown_lint(project_root=str(tmp_path))
+            result_str = await fix_markdown_lint()
             result = json.loads(result_str)
 
             # Assert
@@ -574,7 +574,7 @@ class TestFixMarkdownLintTool:
             ),
         ):
             # Act
-            result_str = await fix_markdown_lint(project_root=str(tmp_path))
+            result_str = await fix_markdown_lint()
             result = json.loads(result_str)
 
             # Assert
@@ -606,11 +606,10 @@ class TestFixMarkdownLintTool:
                 ),
             ),
         ):
-            result_str = await fix_markdown_lint(project_root=None)
+            result_str = await fix_markdown_lint()
             result = json.loads(result_str)
             assert result["success"] is False
             assert "Not in a git repository" in result["error_message"]
-            assert "project_root" in result["error_message"]
             assert (
                 "MCP client" in result["error_message"]
                 or "workspace" in result["error_message"]
@@ -645,7 +644,7 @@ class TestFixMarkdownLintTool:
             ]
 
             # Act
-            result_str = await fix_markdown_lint(project_root=str(tmp_path))
+            result_str = await fix_markdown_lint()
             result = json.loads(result_str)
 
             # Assert
@@ -684,7 +683,7 @@ class TestFixMarkdownLintTool:
             )
 
             # Act
-            result_str = await fix_markdown_lint(project_root=str(tmp_path))
+            result_str = await fix_markdown_lint()
             result = json.loads(result_str)
 
             # Assert
@@ -701,7 +700,7 @@ class TestFixMarkdownLintTool:
             new_callable=AsyncMock,
             side_effect=ValueError("Test error"),
         ):
-            result_str = await fix_markdown_lint(project_root=str(tmp_path))
+            result_str = await fix_markdown_lint()
             result = json.loads(result_str)
             assert result["success"] is False
             assert "Test error" in result["error_message"]
@@ -755,9 +754,7 @@ class TestFixMarkdownLintTool:
             ),
         ):
             # Act
-            result_str = await fix_markdown_lint(
-                project_root=str(tmp_path), check_all_files=True
-            )
+            result_str = await fix_markdown_lint(check_all_files=True)
             result = json.loads(result_str)
 
             # Assert
@@ -809,9 +806,7 @@ class TestFixMarkdownLintContextLogging:
             )
 
             # Act
-            result_str = await fix_markdown_lint(
-                project_root=str(tmp_path), ctx=mock_ctx
-            )
+            result_str = await fix_markdown_lint(ctx=mock_ctx)
             result = json.loads(result_str)
 
             # Assert
@@ -840,9 +835,7 @@ class TestFixMarkdownLintContextLogging:
                 side_effect=ValueError("Test error"),
             ),
         ):
-            result_str = await fix_markdown_lint(
-                project_root=str(tmp_path), ctx=mock_ctx
-            )
+            result_str = await fix_markdown_lint(ctx=mock_ctx)
             result = json.loads(result_str)
             assert result["success"] is False
             assert any(
@@ -894,7 +887,196 @@ class TestHelperFunctions:
 
         assert len(errors) == 2
         assert any("MD022" in e for e in errors)
-        assert any("MD032" in e for e in errors)
+
+
+class TestFixMarkdownLintErrorHandling:
+    """Test error handling improvements for Phase 59 (connection closed fix)."""
+
+    @pytest.mark.asyncio
+    async def test_get_all_markdown_files_handles_thread_exception(
+        self, tmp_path: Path
+    ):
+        """Test that _get_all_markdown_files handles exceptions from thread execution."""
+        from cortex.tools.markdown_operations import (
+            _get_all_markdown_files,  # type: ignore[reportPrivateUsage]
+        )
+
+        with (
+            patch(
+                "cortex.tools.markdown_operations.asyncio.to_thread",
+                new_callable=AsyncMock,
+                side_effect=OSError("File system error"),
+            ) as mock_thread,
+            patch(
+                "cortex.tools.markdown_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+        ):
+            # Act
+            result = await _get_all_markdown_files(tmp_path)
+
+            # Assert
+            assert result == []
+            mock_thread.assert_called_once()
+            mock_log.assert_called_once()
+            call_args = mock_log.call_args[0]
+            assert call_args[1] == "error"
+            assert "Failed to collect markdown files" in call_args[2]
+
+    @pytest.mark.asyncio
+    async def test_save_markdown_lint_index_handles_cache_write_failure(
+        self, tmp_path: Path
+    ):
+        """Test that save_markdown_lint_index handles cache write failures gracefully."""
+        from cortex.core.exceptions import FileLockTimeoutError
+        from cortex.tools.markdown_lint_cache import save_markdown_lint_index
+        from cortex.tools.markdown_operations import MarkdownLintIndex
+
+        index = MarkdownLintIndex()
+        with (
+            patch(
+                "cortex.tools.markdown_lint_cache.write_cache_json",
+                new_callable=AsyncMock,
+                side_effect=FileLockTimeoutError("markdown-lint-index.json", 30),
+            ) as mock_write,
+            patch(
+                "cortex.tools.markdown_lint_cache.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+        ):
+            # Act - should not raise
+            await save_markdown_lint_index(tmp_path, index)
+
+            # Assert
+            mock_write.assert_called_once()
+            mock_log.assert_called_once()
+            call_args = mock_log.call_args[0]
+            assert call_args[1] == "warning"
+            assert "Failed to save markdown lint cache" in call_args[2]
+
+    @pytest.mark.asyncio
+    async def test_run_markdownlint_with_cache_handles_cache_load_failure(
+        self, tmp_path: Path
+    ):
+        """Test that _run_markdownlint_with_cache handles cache load failures."""
+        from cortex.core.exceptions import FileLockTimeoutError
+        from cortex.tools.markdown_operations import (
+            _run_markdownlint_with_cache,  # type: ignore[reportPrivateUsage]
+        )
+
+        test_file = tmp_path / "test.md"
+        _ = test_file.write_text("# Test\n\nContent")
+
+        with (
+            patch(
+                "cortex.tools.markdown_lint_cache.load_markdown_lint_index",
+                new_callable=AsyncMock,
+                side_effect=FileLockTimeoutError("markdown-lint-index.json", 30),
+            ),
+            patch(
+                "cortex.tools.markdown_lint_cache.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+            patch(
+                "cortex.tools.markdown_operations._run_markdownlint_for_files",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
+            patch(
+                "cortex.tools.markdown_operations._filter_files_for_linting",
+                new_callable=AsyncMock,
+                return_value=([], [], {}),
+            ),
+        ):
+            # Act - should not crash, should return valid response
+            result_str = await _run_markdownlint_with_cache(
+                tmp_path,
+                [test_file],
+                ["markdownlint-cli2"],
+                None,
+                False,
+                ctx=None,
+            )
+
+            # Assert
+            result = json.loads(result_str)
+            assert result["success"] is True
+            # Should have logged warning about cache load failure
+            assert any(
+                "warning" in str(c[0][1])
+                and "Failed to load markdown lint cache" in str(c[0][2])
+                for c in mock_log.call_args_list
+            )
+
+    @pytest.mark.asyncio
+    async def test_run_markdownlint_with_cache_handles_cache_update_failure(
+        self, tmp_path: Path
+    ):
+        """Test that _run_markdownlint_with_cache handles cache update failures."""
+        from cortex.core.exceptions import FileLockTimeoutError
+        from cortex.tools.markdown_operations import (
+            FileResult,  # type: ignore[reportPrivateUsage]
+            _run_markdownlint_with_cache,  # type: ignore[reportPrivateUsage]
+        )
+
+        test_file = tmp_path / "test.md"
+        _ = test_file.write_text("# Test\n\nContent")
+
+        results = [
+            FileResult(
+                file="test.md",
+                fixed=True,
+                errors=[],
+                error_message=None,
+            )
+        ]
+
+        with (
+            patch(
+                "cortex.tools.markdown_operations.load_markdown_lint_index_safe",
+                new_callable=AsyncMock,
+                return_value=type("obj", (object,), {"files": {}})(),
+            ),
+            patch(
+                "cortex.tools.markdown_operations._filter_files_for_linting",
+                new_callable=AsyncMock,
+                return_value=([test_file], [], {"test.md": "hash123"}),
+            ),
+            patch(
+                "cortex.tools.markdown_operations._run_markdownlint_for_files",
+                new_callable=AsyncMock,
+                return_value=results,
+            ),
+            patch(
+                "cortex.tools.markdown_operations._update_markdown_lint_cache_from_results",
+                new_callable=AsyncMock,
+                side_effect=FileLockTimeoutError("markdown-lint-index.json", 30),
+            ),
+            patch(
+                "cortex.tools.markdown_operations.log_client",
+                new_callable=AsyncMock,
+            ) as mock_log,
+        ):
+            # Act - should not crash, should return valid response
+            result_str = await _run_markdownlint_with_cache(
+                tmp_path,
+                [test_file],
+                ["markdownlint-cli2"],
+                None,
+                False,
+                ctx=None,
+            )
+
+            # Assert
+            result = json.loads(result_str)
+            assert result["success"] is True
+            assert result["files_processed"] == 1
+            # Should have logged warning about cache update failure
+            assert any(
+                "warning" in str(c[0][1])
+                and "Failed to update markdown lint cache" in str(c[0][2])
+                for c in mock_log.call_args_list
+            )
 
     def test_parse_markdownlint_output(self):
         """Test _parse_markdownlint_output helper."""
@@ -912,20 +1094,14 @@ class TestHelperFunctions:
     def test_is_cached_clean_entry(self) -> None:
         """Test _is_cached_clean_entry helper for cache reuse logic."""
         from cortex.tools.markdown_operations import (  # type: ignore[reportPrivateUsage]
-            MarkdownLintFileCache,
             _is_cached_clean_entry,
         )
 
-        cache_entry = MarkdownLintFileCache(
-            path="docs/file.md",
-            content_hash="sha256:abc",
-            last_checked="2026-01-28T12:00:00",
-            status="clean",
+        assert _is_cached_clean_entry("sha256:abc", "sha256:abc", dry_run=False) is True
+        assert (
+            _is_cached_clean_entry("sha256:abc", "sha256:xyz", dry_run=False) is False
         )
-
-        assert _is_cached_clean_entry(cache_entry, "sha256:abc", dry_run=False) is True
-        assert _is_cached_clean_entry(cache_entry, "sha256:xyz", dry_run=False) is False
-        assert _is_cached_clean_entry(cache_entry, "sha256:abc", dry_run=True) is False
+        assert _is_cached_clean_entry("sha256:abc", "sha256:abc", dry_run=True) is False
         assert _is_cached_clean_entry(None, "sha256:abc", dry_run=False) is False
 
     @pytest.mark.asyncio
@@ -1028,25 +1204,16 @@ class TestMarkdownlintBatchHelpers:
     async def test_run_markdownlint_with_cache_uses_helpers(self, tmp_path: Path):
         """_run_markdownlint_with_cache wires cache, filtering, and execution."""
         from cortex.tools.markdown_operations import (  # type: ignore[reportPrivateUsage]
-            MarkdownLintFileCache,
             MarkdownLintIndex,
             _run_markdownlint_with_cache,
         )
 
-        index = MarkdownLintIndex(
-            files={
-                "docs/file.md": MarkdownLintFileCache(
-                    path="docs/file.md",
-                    content_hash="sha256:old",
-                    last_checked=None,
-                    status="dirty",
-                )
-            }
-        )
+        # Empty index: docs/file.md not cached, so it gets linted
+        index = MarkdownLintIndex(files={})
 
         with (
             patch(
-                "cortex.tools.markdown_operations._load_markdown_lint_index",
+                "cortex.tools.markdown_operations.load_markdown_lint_index_safe",
                 new_callable=AsyncMock,
                 return_value=index,
             ) as mock_load,

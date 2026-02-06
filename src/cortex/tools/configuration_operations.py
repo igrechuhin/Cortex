@@ -2,6 +2,8 @@
 Configuration Operations Tools
 
 This module contains the consolidated configuration tool for Memory Bank.
+Phase 43 hybrid split (get_config_resource, update_config) lives in
+configuration_hybrid.py.
 
 Total: 1 tool
 - configure: Configuration for validation/optimization/learning
@@ -10,12 +12,14 @@ Total: 1 tool
 import json
 from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import Protocol, cast
+from typing import Literal, Protocol, cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import JsonValue, ModelDict
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.responses import error_response
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
@@ -70,14 +74,7 @@ async def get_managers(root: Path) -> ManagersDict:
     return await file_operations.get_managers(root)
 
 
-def get_project_root(project_root: str | None) -> Path:
-    """Runtime indirection for test patching (see `get_managers`)."""
-    from cortex.tools import file_operations
-
-    return file_operations.get_project_root(project_root)
-
-
-def _get_component_handler(component: str) -> ComponentHandler | None:
+def get_component_handler(component: str) -> ComponentHandler | None:
     """Get component handler function.
 
     Args:
@@ -94,16 +91,20 @@ def _get_component_handler(component: str) -> ComponentHandler | None:
     return component_handlers.get(component)
 
 
-@mcp.tool()
+# Valid component/action values for configure() (component handlers; ConfigAction).
+ConfigureComponentName = Literal["validation", "optimization", "learning"]
+ConfigureActionName = Literal["view", "update", "reset"]
+
+
+@mcp.tool(annotations=safe_write_annotations("Configure Memory Bank"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def configure(
-    component: str,
-    action: str = "view",
+    component: ConfigureComponentName,
+    action: ConfigureActionName = "view",
     settings: dict[str, JsonValue] | None = None,
     key: str | None = None,
     value: JsonValue | None = None,
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Configure Memory Bank validation, optimization, and learning settings.
@@ -159,13 +160,6 @@ async def configure(
         value: Value to set for the specified key. Type depends on the setting.
             Required when key is provided.
             Examples: true, 100000, 0.85, "conservative"
-
-        project_root: Path to project root directory. Defaults to current directory.
-            Configuration files are stored in .cortex/ as:
-            - .cortex/config/validation.json
-            - .cortex/config/optimization.json
-            - .cortex/config/learning.json
-            Example: "/Users/name/project"
 
     Returns:
         JSON string with operation result. Structure varies by action:
@@ -261,23 +255,23 @@ async def configure(
     parsed_action = parse_config_action(action)
     if parsed_action is None:
         await log_client(ctx, "warning", "configure: invalid action")
-        return _create_invalid_action_error(action or "null")
+        return create_invalid_action_error(action or "null")
     try:
-        root = get_project_root(project_root)
+        root = await resolve_project_root_async(None, ctx)
         mgrs = await get_managers(root)
-        handler = _get_component_handler(component)
+        handler = get_component_handler(component)
         if not handler:
             await log_client(ctx, "warning", "configure: invalid component")
-            return _create_invalid_component_error(component)
+            return create_invalid_component_error(component)
         result = await handler(mgrs, parsed_action, settings, key, value)
         await log_client(ctx, "info", "configure: completed", logger_name=__name__)
         return result
     except Exception as e:
         await log_client(ctx, "error", f"configure: failed: {e}", logger_name=__name__)
-        return _create_configuration_exception_error(e, component, action)
+        return create_configuration_exception_error(e, component, action)
 
 
-def _create_invalid_component_error(component: str) -> str:
+def create_invalid_component_error(component: str) -> str:
     """Create error response for invalid component."""
     return create_error_response(
         f"Unknown component: {component}",
@@ -294,7 +288,7 @@ def _create_invalid_component_error(component: str) -> str:
     )
 
 
-def _create_configuration_exception_error(
+def create_configuration_exception_error(
     e: Exception, component: str, action: str
 ) -> str:
     """Create error response for configuration exception."""
@@ -329,7 +323,7 @@ async def configure_validation(
     elif action == ConfigAction.RESET:
         return await handle_validation_reset(validation_config)
     else:
-        return _create_invalid_action_error(action.value)
+        return create_invalid_action_error(action.value)
 
 
 async def handle_validation_update(
@@ -359,7 +353,7 @@ async def handle_validation_reset(validation_config: ValidationConfig) -> str:
     )
 
 
-def _create_invalid_action_error(action: str) -> str:
+def create_invalid_action_error(action: str) -> str:
     """Create error response for invalid action."""
     valid_actions = [a.value for a in ConfigAction]
     return create_error_response(
@@ -400,7 +394,7 @@ async def configure_optimization(
     elif action == ConfigAction.RESET:
         return await handle_optimization_reset(optimization_config)
     else:
-        return _create_invalid_action_error(action.value)
+        return create_invalid_action_error(action.value)
 
 
 async def handle_optimization_update(
@@ -473,7 +467,7 @@ async def configure_learning(
             learning_engine, optimization_config, adaptation_config
         )
     else:
-        return _create_invalid_action_error(action.value)
+        return create_invalid_action_error(action.value)
 
 
 def handle_learning_view(

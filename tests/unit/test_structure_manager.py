@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 import pytest
 
+from cortex.core.path_resolver import CursorResourceType, get_cursor_path
 from cortex.structure.structure_manager import StructureManager
 
 # ============================================================================
@@ -313,8 +314,8 @@ class TestLegacyStructureDetection:
 
         # Create TradeWing-style files
         (tmp_path / "projectBrief.md").touch()
-        (tmp_path / ".cursor").mkdir()
-        (tmp_path / ".cursor" / "plans").mkdir()
+        get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR).mkdir()
+        get_cursor_path(tmp_path, CursorResourceType.PLANS).mkdir()
 
         # Act
         detected = manager.detect_legacy_structure()
@@ -329,7 +330,9 @@ class TestLegacyStructureDetection:
 
         # Create doc-mcp-style structure (requires both .cursor/plans and
         # docs/memory-bank)
-        (tmp_path / ".cursor" / "plans").mkdir(parents=True)
+        get_cursor_path(tmp_path, CursorResourceType.PLANS).mkdir(
+            parents=True, exist_ok=True
+        )
         (tmp_path / "docs" / "memory-bank").mkdir(parents=True)
         (tmp_path / "docs" / "memory-bank" / "projectBrief.md").touch()
 
@@ -403,7 +406,7 @@ class TestCursorIntegration:
         _ = manager.setup_cursor_integration()
 
         # Assert
-        cursor_dir = tmp_path / ".cursor"
+        cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
         assert cursor_dir.exists()
         assert (cursor_dir / "memory-bank").exists()
         assert (cursor_dir / "rules").exists()
@@ -420,7 +423,7 @@ class TestCursorIntegration:
         _ = manager.setup_cursor_integration()
 
         # Assert
-        cursor_dir = tmp_path / ".cursor"
+        cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
         assert (cursor_dir / "memory-bank").is_symlink()
         assert (cursor_dir / "rules").is_symlink()
         assert (cursor_dir / "plans").is_symlink()
@@ -447,7 +450,7 @@ class TestCursorIntegration:
         _ = await manager.create_structure()
 
         # Make .cursor unwritable
-        cursor_dir = tmp_path / ".cursor"
+        cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
         cursor_dir.mkdir(exist_ok=True)
 
         with patch("os.symlink", side_effect=OSError("Cannot create symlink")):
@@ -687,9 +690,10 @@ class TestMigrationWorkflows:
 
         # Create TradeWing-style files
         _ = (tmp_path / "projectBrief.md").write_text("# Project Brief")
-        (tmp_path / ".cursor").mkdir()
-        (tmp_path / ".cursor" / "plans").mkdir()
-        _ = (tmp_path / ".cursor" / "plans" / "plan1.md").write_text("# Plan 1")
+        get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR).mkdir()
+        plans_dir = get_cursor_path(tmp_path, CursorResourceType.PLANS)
+        plans_dir.mkdir(parents=True, exist_ok=True)
+        _ = (plans_dir / "plan1.md").write_text("# Plan 1")
 
         # Act
         report = await manager.migrate_legacy_structure()

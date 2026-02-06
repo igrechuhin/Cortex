@@ -1,0 +1,13 @@
+{
+  "script_id": "e621a58a-ccdd-45b5-9a73-6cadaf37ddcf",
+  "timestamp": "2026-02-04T05:05:52Z",
+  "task_description": "Format code",
+  "script_path": "foo.py",
+  "script_content": "def main(): pass",
+  "script_type": "python",
+  "purpose": "utility",
+  "usage_context": null,
+  "promotion_status": "pending",
+  "agent_session": null,
+  "dependencies": []
+}

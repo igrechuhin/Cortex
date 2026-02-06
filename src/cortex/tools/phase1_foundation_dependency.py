@@ -6,27 +6,29 @@ Memory Bank file dependencies.
 """
 
 import json
+from pathlib import Path
 from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.dependency_graph import DependencyGraph, FileDependencyInfo
+from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
 from cortex.core.models import JsonValue, ModelDict
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers import initialization
 from cortex.managers.manager_utils import get_manager
 from cortex.server import mcp
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Get Dependency Graph"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_dependency_graph(
-    project_root: str | None = None,
     format: str = "json",
     ctx: MCPContext | None = None,
 ) -> str:
@@ -47,7 +49,6 @@ async def get_dependency_graph(
     dynamic dependencies (markdown links and transclusions).
 
     Args:
-        project_root: Optional path to project root directory
         format: Output format - "json" or "mermaid" (default: "json")
             - "json": Structured data with files, dependencies, and loading order
             - "mermaid": Mermaid diagram syntax for visualization
@@ -93,7 +94,8 @@ async def get_dependency_graph(
         ctx, "info", "get_dependency_graph: starting", logger_name=__name__
     )
     try:
-        out = await _get_dependency_graph_impl(project_root, format)
+        root = await resolve_project_root_async(None, ctx)
+        out = await _get_dependency_graph_impl(root, format)
         await log_client(
             ctx, "info", "get_dependency_graph: completed", logger_name=__name__
         )
@@ -116,12 +118,11 @@ async def get_dependency_graph(
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_dependency_graph_resource() -> str:
     """Resource: Dependency graph (default params). Read via cortex://memory-bank/dependency-graph."""
-    return await get_dependency_graph(project_root=None, format="json")
+    return await get_dependency_graph(format="json")
 
 
-async def _get_dependency_graph_impl(project_root: str | None, format: str) -> str:
+async def _get_dependency_graph_impl(root: Path, format: str) -> str:
     """Build dependency graph and return JSON string."""
-    root = initialization.get_project_root(project_root)
     try:
         mgrs = await initialization.get_managers(root)
         dep_graph = await get_manager(mgrs, "graph", DependencyGraph)

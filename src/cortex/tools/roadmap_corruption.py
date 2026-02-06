@@ -13,8 +13,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.mcp_annotations import destructive_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
-from cortex.managers.initialization import get_project_root
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 
 
@@ -447,11 +448,8 @@ def _create_roadmap_success_response(matches: list[CorruptionMatch]) -> str:
     return json.dumps(result.model_dump(), indent=2)
 
 
-def _fix_roadmap_corruption_run(
-    project_root: str | None, dry_run: bool
-) -> tuple[str, bool]:
+def _fix_roadmap_corruption_run(root_path: Path, dry_run: bool) -> tuple[str, bool]:
     """Run roadmap fix: path check, read, detect, apply. Return (response, ok)."""
-    root_path = Path(get_project_root(project_root))
     roadmap_path = root_path / ".cortex" / "memory-bank" / "roadmap.md"
     if not roadmap_path.exists():
         return (
@@ -466,11 +464,10 @@ def _fix_roadmap_corruption_run(
     return (_create_roadmap_success_response(matches), True)
 
 
-@mcp.tool()
+@mcp.tool(annotations=destructive_annotations("Fix Roadmap Corruption"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def fix_roadmap_corruption(
-    project_root: str | None = None,
     dry_run: bool = False,
     ctx: MCPContext | None = None,
 ) -> str:
@@ -491,7 +488,8 @@ async def fix_roadmap_corruption(
         ctx, "info", "fix_roadmap_corruption: starting", logger_name=__name__
     )
     try:
-        result, ok = _fix_roadmap_corruption_run(project_root, dry_run)
+        root = await resolve_project_root_async(None, ctx)
+        result, ok = _fix_roadmap_corruption_run(root, dry_run)
         if ok:
             await log_client(
                 ctx, "info", "fix_roadmap_corruption: completed", logger_name=__name__

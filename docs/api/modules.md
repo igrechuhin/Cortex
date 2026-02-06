@@ -1768,10 +1768,11 @@ async def analyze_structure_quality(self) -> dict[str, object]
 - `memorybankinstructions.md` - System instructions
 - `projectBrief.md` - Project foundation
 - `productContext.md` - Product context
-- `activeContext.md` - Current work
+- `activeContext.md` - Completed work only
 - `systemPatterns.md` - Architecture
 - `techContext.md` - Technical details
 - `progress.md` - Progress tracking
+- `roadmap.md` - Future/upcoming work only (when done, move to activeContext)
 
 ---
 

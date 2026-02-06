@@ -287,6 +287,11 @@ class OptimizationConfig:
         value = self.get("token_budget.max_budget", 100000)
         return int(value) if isinstance(value, int) else 100000
 
+    def get_reserve_for_response(self) -> int:
+        """Get reserved tokens for system prompts and response."""
+        value = self.get("token_budget.reserve_for_response", 10000)
+        return int(value) if isinstance(value, int) else 10000
+
     def get_loading_strategy(self) -> str:
         """Get default loading strategy."""
         value = self.get("loading_strategy.default", "dependency_aware")
@@ -323,6 +328,21 @@ class OptimizationConfig:
         value = self.get("summarization.target_reduction", 0.5)
         return float(value) if isinstance(value, (int, float)) else 0.5
 
+    def is_summarization_cache_enabled(self) -> bool:
+        """Check if summarization caching is enabled."""
+        value = self.get("summarization.cache_summaries", True)
+        return bool(value) if isinstance(value, bool) else True
+
+    def get_summarization_age_threshold_days(self) -> int:
+        """Get age threshold for summarization in days."""
+        value = self.get("summarization.age_threshold_days", 90)
+        return int(value) if isinstance(value, int) else 90
+
+    def is_summarization_auto_summarize_old_files(self) -> bool:
+        """Check if auto-summarization of old files is enabled."""
+        value = self.get("summarization.auto_summarize_old_files", False)
+        return bool(value) if isinstance(value, bool) else False
+
     def get_relevance_weights(self) -> dict[str, float]:
         """
         Get relevance scoring weights.
@@ -353,6 +373,11 @@ class OptimizationConfig:
         value = self.get("performance.cache_ttl_seconds", 3600)
         return int(value) if isinstance(value, int) else 3600
 
+    def get_max_cache_size_mb(self) -> int:
+        """Get maximum cache size in megabytes."""
+        value = self.get("performance.max_cache_size_mb", 50)
+        return int(value) if isinstance(value, int) else 50
+
     def is_rules_enabled(self) -> bool:
         """Check if rules indexing is enabled."""
         value = self.get("rules.enabled", False)
@@ -382,6 +407,21 @@ class OptimizationConfig:
         """Get minimum relevance score for rules."""
         value = self.get("rules.min_relevance_score", 0.3)
         return float(value) if isinstance(value, (int, float)) else 0.3
+
+    def get_rule_priority(self) -> str:
+        """Get rule priority strategy."""
+        value = self.get("rules.rule_priority", "local_overrides_shared")
+        return str(value) if isinstance(value, str) else "local_overrides_shared"
+
+    def is_context_aware_loading(self) -> bool:
+        """Check if context-aware rule loading is enabled."""
+        value = self.get("rules.context_aware_loading", True)
+        return bool(value) if isinstance(value, bool) else True
+
+    def is_always_include_generic(self) -> bool:
+        """Check if generic rules should always be included."""
+        value = self.get("rules.always_include_generic", True)
+        return bool(value) if isinstance(value, bool) else True
 
     def is_synapse_enabled(self) -> bool:
         """Check if Synapse is enabled."""
@@ -460,6 +500,11 @@ class OptimizationConfig:
             return []
         items = cast(list[JsonValue], value)
         return [str(item) for item in items if isinstance(item, str)]
+
+    def is_optimization_enabled(self) -> bool:
+        """Check if optimization features are enabled."""
+        value = self.get("enabled", True)
+        return bool(value) if isinstance(value, bool) else True
 
     def validate(self) -> tuple[bool, str | None]:
         """

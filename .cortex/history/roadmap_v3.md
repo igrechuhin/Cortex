@@ -161,7 +161,7 @@
 
 ### Future Enhancements
 
-- **Multi-Language Pre-Commit Support** - PLANNED - Add support for additional language adapters beyond Python in `pre_commit_tools.py`
+- **Multi-Language Pre-Commit Support** - PLANNED - Add support for additional language adapters beyond Python in the pre-commit tooling; currently only the Python adapter (`PythonAdapter`) is implemented. This would enable pre-commit checks for multi-language projects.
 
 ### Planned Phases
 

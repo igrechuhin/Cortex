@@ -2,9 +2,10 @@
 
 ### Status
 
-- **Status**: In progress (server mitigations applied 2026-02-03)
+- **Status**: IN PROGRESS (2026-02-04) - Root cause identified: timeout mismatch
 - **Priority**: Blocker (ASAP when reproduces)
 - **Created**: 2026-02-03
+- **Updated**: 2026-02-04 - Root cause: `fix_quality_issues` timeout (60s) too short for operations that can take 600s
 
 ### Problem Statement
 
@@ -89,21 +90,74 @@ During the same session you may see `MCP error -32001: Request timed out` on res
 
 ### Next Steps
 
-1. **Confirm client timeout configuration**
-   - Document the typical timeout behavior for tools in the host environment.
-   - Validate whether `fix_quality_issues` realistically approaches those limits on this repo under normal conditions.
-2. **Improve orchestrator failure handling**
-   - Ensure commit and implementation prompts treat `Connection closed` / `BrokenResourceError` during `fix_quality_issues` as a **retry-then-fallback** condition, not as a silent failure.
-   - Mirror the existing markdown-lint connection closed handling (Phase 59) for `fix_quality_issues`:
-     - Retry the tool once if the connection is healthy.
-     - If it still fails due to connection closure, surface a clear message and stop the commit.
-3. **Optional: refine `fix_quality_issues` behavior**
-   - Audit which sub-steps are most expensive (fix_errors, format, type_check, markdown fixes).
-   - Consider exposing narrower checks to the orchestrator so that long-running steps (e.g. full type_check over src + tests) can be scheduled explicitly with clearer progress expectations.
+1. **Client timeout behavior (tracked separately)**
+   - Confirming host IDE tool timeout policies and UX is now tracked in
+     `session-optimization-connection-closed-follow-ups.md` and related
+     session-optimization plans, rather than this phase.
+2. **Improve orchestrator failure handling (COMPLETED)**
+   - Commit and implementation prompts now include an explicit
+     "Connection Closed During Long Tool (Retry Then Fallback)" section that
+     instructs agents to:
+     - Retry long-running tools like `fix_quality_issues` once when a
+       `Connection closed` / `ClosedResourceError` is reported.
+     - Use the documented fallback or stop the commit when the second attempt
+       fails, instead of silently proceeding.
+3. **Refine `fix_quality_issues` behavior for long-running scenarios (PARTIAL)**
+   - `mcp_stability.py` provides time-based progress reporting and connection
+     health checks; `fix_quality_issues` is wrapped with `mcp_tool_wrapper` and
+     has progress enabled so the client sees regular activity during long runs.
+   - Additional granularity (e.g. narrower helpers or per-check tools) is now
+     tracked in future optimization phases and is out of scope for this
+     connection-closed investigation.
+4. **Optional: expose narrower quality helpers (DEFERRED)**
+   - Considered but not required to treat `Connection closed` as a
+     non-server-bug condition; future work remains in roadmap items focused on
+     quality tooling ergonomics rather than connection stability.
+
+### 2026-02-04 Update (Initial)
+
+- Reproduced `MCP error -32000: Connection closed` for `fix_quality_issues` from
+  this workspace using the `user-cortex` MCP server while
+  `check_mcp_connection_health` reported a healthy connection.
+- Confirmed that:
+  - Connection-closure errors are classified correctly by `_is_connection_error`
+    and handled via `_handle_connection_error` and `_raise_final_error` in
+    `mcp_stability.py`.
+  - The main entry point treats `anyio.BrokenResourceError` / `ClosedResourceError`
+    as graceful client disconnects with exit code `0`, matching the design in
+    prior phases.
+  - Commit/implementation prompts document the retry-then-fallback strategy so
+    that `fix_quality_issues` behaves as a non-blocking helper when the client
+    closes the connection.
+
+### 2026-02-04 Update (Root Cause Identified)
+
+**Root Cause**: `fix_quality_issues` uses `MCP_TOOL_TIMEOUT_QUALITY_FIXES` (60 seconds) but internally calls `execute_pre_commit_checks` which can take up to `MCP_TOOL_TIMEOUT_VERY_COMPLEX` (600 seconds). Additionally, progress reporting is enabled but **does not activate** because the 60s timeout is below `PROGRESS_THRESHOLD_TIMEOUT_SECONDS` (120s), causing the client to see no activity and timeout.
+
+**Fix**: Change `fix_quality_issues` timeout from `MCP_TOOL_TIMEOUT_QUALITY_FIXES` (60s) to `MCP_TOOL_TIMEOUT_VERY_COMPLEX` (600s) to match the actual operation duration and enable progress reporting.
+
+### Testing Strategy
+
+- **Coverage target**: Achieve ≥95% coverage for any new or modified logic in `pre_commit_tools.py` (`fix_quality_issues`), `mcp_stability.py` timeout / retry handling, and any updated commit / implementation prompts.
+- **Unit tests**:
+  - Simulate `fix_quality_issues` runs under:
+    - normal completion,
+    - connection-closed (`BrokenResourceError` / `ClosedResourceError`),
+    - repeated timeout scenarios with retries.
+  - Verify progress reporting cadence and that scoped runs (e.g., changed files only) behave correctly and complete within configured timeouts.
+  - Assert that timeout / connection errors are classified and surfaced as structured results, not generic failures.
+- **Integration tests**:
+  - Run `/cortex/commit` and focused quality flows on this repo, validating:
+    - retry-then-fallback behavior for `fix_quality_issues` and `fix_markdown_lint`,
+    - no “partial proceed” when `fix_quality_issues` times out or the client disconnects.
+  - Include tests that exercise large-file / many-file scenarios to ensure the pipeline completes within configured time budgets and that CI remains green.
+- **Testing standards**:
+  - All tests follow AAA pattern; no blanket skips. Any skip must have explicit justification and a linked ticket.
+  - New tests must integrate with existing quality gates (file size, function length, type_check, tests) and keep overall coverage ≥90% while meeting ≥95% for the new work.
 
 ### Definition of Done
 
-1. Reproduced or reasonably simulated connection-closed scenarios for `fix_quality_issues` and confirmed they are handled with clear, user-facing guidance.
-2. Commit and implementation prompts explicitly document how to respond when `fix_quality_issues` fails due to connection closure (retry, then stop the workflow rather than partially proceeding).
-3. No open MCP-tool failure alerts or roadmap blockers remain specifically for `fix_quality_issues` connection-closed errors.
-4. All tests (including any new tests for this behavior) pass, and quality gates remain green.
+1. Reproduced or reasonably simulated connection-closed and timeout scenarios for `fix_quality_issues` and confirmed they are handled with clear, user-facing guidance.
+2. Commit and implementation prompts explicitly document how to respond when `fix_quality_issues` fails due to connection closure or repeated timeouts (retry, then stop the workflow rather than partially proceeding).
+3. No open MCP-tool failure alerts or roadmap blockers remain specifically for `fix_quality_issues` connection-closed or timeout errors.
+4. All tests (including any new tests for this behavior) pass, quality gates remain green, and `fix_quality_issues` runs reliably on this repo without hitting client or server timeouts in normal usage.

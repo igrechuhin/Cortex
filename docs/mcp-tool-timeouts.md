@@ -245,6 +245,27 @@ When the client (e.g. Cursor) fetches many MCP **resources** in parallel (e.g. w
 - **Short-TTL cache for expensive resources**: Cortex caches responses for `cortex://structure/info` and `cortex://structure/health` with a 30-second TTL (`MCP_RESOURCE_CACHE_TTL_SECONDS`). When many ReadResource requests are queued behind a long tool, the first read after the tool completes populates the cache; subsequent reads for the same resource return immediately. This speeds up queue draining and makes later resource panel loads fast. Other heavy resources may get the same treatment in future updates.
 - **Stdio is sequential**: The MCP Python SDK over stdio processes one request at a time. The server cannot process ReadResource requests while a tool is running. Concurrency would require a different transport (e.g. HTTP/SSE); for stdio, caching and the recommendations above are the available mitigations.
 
+### Resource read timeouts (-32001)
+
+Error code **-32001** is the standard MCP "Request timed out" response. For **resource** reads it usually means the client gave up before the server responded.
+
+**Root causes**:
+
+1. **Client timeout shorter than server duration**: The client (e.g. IDE) applies a per-request timeout (often 5–30 seconds). If the server handler or queueing delay exceeds that, the client cancels the request and reports -32001.
+2. **Queueing behind tools**: Resource reads and tool calls share the same request stream. If five long tools are running (server limit `MCP_MAX_CONCURRENT_TOOLS`), additional resource reads wait in line. By the time the server serves them, the client may have already timed them out.
+3. **Slow or heavy handler**: A resource handler that does a lot of work (e.g. scanning many files) can exceed the client timeout even without queueing.
+
+**Server timeout strategy (Phase 69)**:
+
+- **Separate concurrency for resources**: Resource reads use a dedicated semaphore (`MCP_MAX_CONCURRENT_RESOURCES`, default 10) so they do **not** consume tool slots and do **not** queue behind long-running tools. Up to 10 resource reads can run concurrently. This reduces -32001 when the client opens many resources at once (e.g. memory-bank/stats, links/graph, usage/*, scripts/*, synapse/prompts).
+- **Per-handler timeouts**: Every resource handler is wrapped with `@mcp_resource_wrapper(timeout=...)` using the same constants as tools (`MCP_TOOL_TIMEOUT_FAST`, `MCP_TOOL_TIMEOUT_MEDIUM`, `MCP_TOOL_TIMEOUT_COMPLEX`). Handlers should complete within that timeout; if a handler routinely exceeds it, optimize the handler or use a higher category.
+- **Client timeout unknown**: If the client timeout cannot be determined, the server uses timeouts (60–300s depending on handler) and relies on the separate resource semaphore so resource reads are not delayed by tool execution.
+
+**Guidance**:
+
+- Prefer **tools** over **resources** when you need bulk or structured data during commit or long operations (e.g. `get_memory_bank_stats()`, `get_structure_info()` instead of reading `cortex://memory-bank/stats`, `cortex://structure/info`).
+- Avoid opening many resource-backed views in parallel while a long tool is running; or use the corresponding tools instead.
+
 ## Troubleshooting
 
 ### Tool Times Out Prematurely

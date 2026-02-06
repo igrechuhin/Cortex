@@ -167,7 +167,8 @@ class TestParseFileLinks:
 
         with (
             patch(
-                "cortex.tools.link_parser_operations.get_project_root",
+                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -201,7 +202,8 @@ class TestParseFileLinks:
 
         with (
             patch(
-                "cortex.tools.link_parser_operations.get_project_root",
+                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -227,7 +229,8 @@ class TestParseFileLinks:
 
         with (
             patch(
-                "cortex.tools.link_parser_operations.get_project_root",
+                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -247,8 +250,9 @@ class TestParseFileLinks:
         """Test exception handling in parse_file_links."""
         # Arrange
         with patch(
-            "cortex.tools.link_parser_operations.get_project_root",
-            side_effect=RuntimeError("Test error"),
+            "cortex.tools.link_parser_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
+            side_effect=ValueError("Test error"),
         ):
             # Act
             result_str = await parse_file_links(file_name="test.md")
@@ -257,7 +261,7 @@ class TestParseFileLinks:
             # Assert
             assert result["status"] == "error"
             assert "Test error" in result["error"]
-            assert result["error_type"] == "RuntimeError"
+            assert result["error_type"] == "ValueError"
 
 
 # ============================================================================
@@ -279,7 +283,8 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.transclusion_operations.get_project_root",
+                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -315,7 +320,8 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.transclusion_operations.get_project_root",
+                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -352,7 +358,8 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.transclusion_operations.get_project_root",
+                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -387,7 +394,8 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.transclusion_operations.get_project_root",
+                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -419,7 +427,8 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.transclusion_operations.get_project_root",
+                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -449,7 +458,8 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.transclusion_operations.get_project_root",
+                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -475,7 +485,8 @@ class TestResolveTransclusions:
 
         with (
             patch(
-                "cortex.tools.transclusion_operations.get_project_root",
+                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -511,7 +522,8 @@ class TestValidateLinks:
 
         with (
             patch(
-                "cortex.tools.link_validation_operations.get_project_root",
+                "cortex.tools.link_validation_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -540,7 +552,8 @@ class TestValidateLinks:
         # Arrange
         with (
             patch(
-                "cortex.tools.link_validation_operations.get_project_root",
+                "cortex.tools.link_validation_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -572,7 +585,8 @@ class TestValidateLinks:
 
         with (
             patch(
-                "cortex.tools.link_validation_operations.get_project_root",
+                "cortex.tools.link_validation_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -598,7 +612,8 @@ class TestValidateLinks:
 
         with (
             patch(
-                "cortex.tools.link_validation_operations.get_project_root",
+                "cortex.tools.link_validation_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -618,7 +633,8 @@ class TestValidateLinks:
         """Test exception handling in validate_links."""
         # Arrange
         with patch(
-            "cortex.tools.link_validation_operations.get_project_root",
+            "cortex.tools.link_validation_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
             side_effect=RuntimeError("Validation failed"),
         ):
             # Act
@@ -645,7 +661,8 @@ class TestGetLinkGraph:
         # Arrange
         with (
             patch(
-                "cortex.tools.link_graph_operations.get_project_root",
+                "cortex.tools.link_graph_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -677,7 +694,8 @@ class TestGetLinkGraph:
         # Arrange
         with (
             patch(
-                "cortex.tools.link_graph_operations.get_project_root",
+                "cortex.tools.link_graph_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -707,7 +725,8 @@ class TestGetLinkGraph:
         # Arrange
         with (
             patch(
-                "cortex.tools.link_graph_operations.get_project_root",
+                "cortex.tools.link_graph_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -739,7 +758,8 @@ class TestGetLinkGraph:
 
         with (
             patch(
-                "cortex.tools.link_graph_operations.get_project_root",
+                "cortex.tools.link_graph_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -768,7 +788,8 @@ class TestGetLinkGraph:
         # Arrange
         with (
             patch(
-                "cortex.tools.link_graph_operations.get_project_root",
+                "cortex.tools.link_graph_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -798,8 +819,9 @@ class TestGetLinkGraph:
         """Test exception handling in get_link_graph."""
         # Arrange
         with patch(
-            "cortex.tools.link_graph_operations.get_project_root",
-            side_effect=RuntimeError("Graph build failed"),
+            "cortex.tools.link_graph_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
+            side_effect=ValueError("Graph build failed"),
         ):
             # Act
             result_str = await get_link_graph()
@@ -833,7 +855,8 @@ class TestPhase2LinkingContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.link_parser_operations.get_project_root",
+                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -847,7 +870,6 @@ class TestPhase2LinkingContextLogging:
         ):
             result = await parse_file_links(
                 file_name="test.md",
-                project_root=str(mock_project_root),
                 ctx=mock_ctx,
             )
             assert json.loads(result)["status"] == "success"
@@ -869,7 +891,8 @@ class TestPhase2LinkingContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.link_parser_operations.get_project_root",
+                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -879,7 +902,6 @@ class TestPhase2LinkingContextLogging:
         ):
             result = await parse_file_links(
                 file_name="nonexistent.md",
-                project_root=str(mock_project_root),
                 ctx=mock_ctx,
             )
             _ = json.loads(result)
@@ -900,13 +922,13 @@ class TestPhase2LinkingContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.link_parser_operations.get_project_root",
+                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 side_effect=RuntimeError("index error"),
             ),
         ):
             result = await parse_file_links(
                 file_name="test.md",
-                project_root=str(mock_project_root),
                 ctx=mock_ctx,
             )
             _ = json.loads(result)
@@ -925,7 +947,8 @@ class TestPhase2LinkingContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.link_validation_operations.get_project_root",
+                "cortex.tools.link_validation_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -938,7 +961,6 @@ class TestPhase2LinkingContextLogging:
             ),
         ):
             result = await validate_links(
-                project_root=str(mock_project_root),
                 ctx=mock_ctx,
             )
             assert json.loads(result)["status"] == "success"
@@ -958,12 +980,12 @@ class TestPhase2LinkingContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.link_validation_operations.get_project_root",
+                "cortex.tools.link_validation_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 side_effect=RuntimeError("validation failed"),
             ),
         ):
             result = await validate_links(
-                project_root=str(mock_project_root),
                 ctx=mock_ctx,
             )
             _ = json.loads(result)
@@ -985,7 +1007,8 @@ class TestPhase2LinkingContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.transclusion_operations.get_project_root",
+                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -999,7 +1022,6 @@ class TestPhase2LinkingContextLogging:
         ):
             result = await resolve_transclusions(
                 file_name="test.md",
-                project_root=str(mock_project_root),
                 ctx=mock_ctx,
             )
             assert json.loads(result)["status"] == "success"
@@ -1026,7 +1048,6 @@ class TestPhase2LinkingContextLogging:
         ):
             result = await resolve_transclusions(
                 file_name="test.md",
-                project_root=str(mock_project_root),
                 ctx=mock_ctx,
             )
             _ = json.loads(result)
@@ -1045,7 +1066,8 @@ class TestPhase2LinkingContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.link_graph_operations.get_project_root",
+                "cortex.tools.link_graph_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -1058,7 +1080,6 @@ class TestPhase2LinkingContextLogging:
             ),
         ):
             result = await get_link_graph(
-                project_root=str(mock_project_root),
                 ctx=mock_ctx,
             )
             assert json.loads(result)["status"] == "success"
@@ -1078,12 +1099,12 @@ class TestPhase2LinkingContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.link_graph_operations.get_project_root",
+                "cortex.tools.link_graph_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 side_effect=RuntimeError("graph build failed"),
             ),
         ):
             result = await get_link_graph(
-                project_root=str(mock_project_root),
                 ctx=mock_ctx,
             )
             _ = json.loads(result)
@@ -1110,7 +1131,8 @@ class TestIntegration:
 
         with (
             patch(
-                "cortex.tools.link_parser_operations.get_project_root",
+                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -1122,7 +1144,8 @@ class TestIntegration:
                 side_effect=_get_manager_helper,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_project_root",
+                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -1134,7 +1157,8 @@ class TestIntegration:
                 side_effect=_get_manager_helper,
             ),
             patch(
-                "cortex.tools.link_validation_operations.get_project_root",
+                "cortex.tools.link_validation_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -1146,7 +1170,8 @@ class TestIntegration:
                 side_effect=_get_manager_helper,
             ),
             patch(
-                "cortex.tools.link_graph_operations.get_project_root",
+                "cortex.tools.link_graph_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -1199,7 +1224,8 @@ class TestIntegration:
 
         with (
             patch(
-                "cortex.tools.link_parser_operations.get_project_root",
+                "cortex.tools.link_parser_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -1207,7 +1233,8 @@ class TestIntegration:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.transclusion_operations.get_project_root",
+                "cortex.tools.transclusion_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -1215,7 +1242,8 @@ class TestIntegration:
                 return_value=mock_managers,
             ),
             patch(
-                "cortex.tools.link_validation_operations.get_project_root",
+                "cortex.tools.link_validation_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -1249,8 +1277,11 @@ async def test_parse_file_links_resource_returns_json(
     mock_project_root: Path, mock_managers: ManagersDict
 ):
     """Test parse_file_links_resource returns valid JSON (Phase 43 resource)."""
-    with patch("cortex.managers.initialization.get_project_root") as mock_get_root:
-        mock_get_root.return_value = mock_project_root
+    with patch(
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=mock_project_root,
+    ):
         with patch(
             "cortex.managers.initialization.get_managers",
             new=AsyncMock(return_value=mock_managers),
@@ -1266,8 +1297,11 @@ async def test_resolve_transclusions_resource_returns_json(
     mock_project_root: Path, mock_managers: ManagersDict
 ):
     """Test resolve_transclusions_resource returns valid JSON (Phase 43 resource)."""
-    with patch("cortex.managers.initialization.get_project_root") as mock_get_root:
-        mock_get_root.return_value = mock_project_root
+    with patch(
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=mock_project_root,
+    ):
         with patch(
             "cortex.managers.initialization.get_managers",
             new=AsyncMock(return_value=mock_managers),
@@ -1283,8 +1317,11 @@ async def test_validate_links_resource_returns_json(
     mock_project_root: Path, mock_managers: ManagersDict
 ):
     """Test validate_links_resource returns valid JSON (Phase 43 resource)."""
-    with patch("cortex.managers.initialization.get_project_root") as mock_get_root:
-        mock_get_root.return_value = mock_project_root
+    with patch(
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=mock_project_root,
+    ):
         with patch(
             "cortex.managers.initialization.get_managers",
             new=AsyncMock(return_value=mock_managers),
@@ -1300,8 +1337,11 @@ async def test_get_link_graph_resource_returns_json(
     mock_project_root: Path, mock_managers: ManagersDict
 ):
     """Test get_link_graph_resource returns valid JSON (Phase 43 resource)."""
-    with patch("cortex.managers.initialization.get_project_root") as mock_get_root:
-        mock_get_root.return_value = mock_project_root
+    with patch(
+        "cortex.core.project_root_resolver.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=mock_project_root,
+    ):
         with patch(
             "cortex.managers.initialization.get_managers",
             new=AsyncMock(return_value=mock_managers),

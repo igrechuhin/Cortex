@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.models import JsonValue, ModelDict
+from cortex.core.path_resolver import CursorResourceType, get_cursor_path
 from cortex.structure.models import MigrationReport
 from cortex.structure.structure_config import (
     STANDARD_MEMORY_BANK_FILES,
@@ -54,15 +55,17 @@ class StructureMigrationManager:
             Structure type or None if no legacy structure detected
         """
         # Check for TradeWing-style
-        if (self.project_root / ".cursor" / "plans").exists() and any(
+        cursor_plans_dir = get_cursor_path(self.project_root, CursorResourceType.PLANS)
+        if cursor_plans_dir.exists() and any(
             (self.project_root / f).exists() for f in STANDARD_MEMORY_BANK_FILES
         ):
             return "tradewing-style"
 
         # Check for doc-mcp-style
-        if (self.project_root / ".cursor" / "plans").exists() and (
-            self.project_root / "docs" / "memory-bank"
-        ).exists():
+        if (
+            cursor_plans_dir.exists()
+            and (self.project_root / "docs" / "memory-bank").exists()
+        ):
             return "doc-mcp-style"
 
         # Check for scattered files
@@ -71,8 +74,8 @@ class StructureMigrationManager:
             return "scattered-files"
 
         # Check for default Cursor
-        if (self.project_root / ".cursorrules").exists() or (
-            self.project_root / ".cursor"
+        if (self.project_root / ".cursorrules").exists() or get_cursor_path(
+            self.project_root, CursorResourceType.CURSOR_DIR
         ).exists():
             return "cursor-default"
 
@@ -479,7 +482,7 @@ class StructureMigrationManager:
                 if isinstance(err, str):
                     errors_list.append(err)
 
-        cursor_plans = self.project_root / ".cursor" / "plans"
+        cursor_plans = get_cursor_path(self.project_root, CursorResourceType.PLANS)
         if cursor_plans.exists():
             for plan_file in cursor_plans.glob("*.md"):
                 dest = plans_dir / plan_file.name

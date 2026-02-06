@@ -222,7 +222,7 @@
 
 ### Future Enhancements
 
-- **Multi-Language Pre-Commit Support** - PLANNED - Add support for additional language adapters beyond Python in `pre_commit_tools.py` - Currently only Python adapter is implemented (`PythonAdapter`) - Location: `src/cortex/tools/pre_commit_tools.py:100` - TODO: Add other language adapters as needed (e.g., JavaScript/TypeScript, Rust, Go, Java, etc.) - This would enable pre-commit checks for multi-language projects
+- **Multi-Language Pre-Commit Support** - PLANNED - Add support for additional language adapters beyond Python in the pre-commit tooling; currently only the Python adapter (`PythonAdapter`) is implemented. This would enable pre-commit checks for multi-language projects.
 
 ### Planned Phases
 

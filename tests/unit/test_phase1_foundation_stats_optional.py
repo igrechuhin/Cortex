@@ -83,7 +83,7 @@ class TestPhase1FoundationStatsOptional:
                 cast(ModelDict, base),
                 include_token_budget=False,
                 include_refactoring_history=True,
-                project_root=str(tmp_path),
+                root=tmp_path,
                 total_tokens=0,
                 refactoring_days=7,
             )

@@ -66,7 +66,7 @@ class TestManageFile:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=temp_memory_bank.parent.parent,
             ):
                 # Execute
@@ -111,7 +111,7 @@ class TestManageFile:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=temp_memory_bank.parent.parent,
             ):
                 # Execute
@@ -151,7 +151,7 @@ class TestManageFile:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -214,7 +214,7 @@ class TestManageFile:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=temp_memory_bank.parent.parent,
             ):
                 # Execute
@@ -252,7 +252,7 @@ class TestManageFile:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -301,7 +301,7 @@ class TestManageFile:
                 return_value=make_test_managers(**mock_managers_dict),
             ):
                 with patch(
-                    "cortex.tools.file_operations.get_project_root",
+                    "cortex.core.project_root_resolver.get_project_root",
                     return_value=Path("/tmp/test"),
                 ):
                     # Execute
@@ -342,7 +342,7 @@ class TestManageFile:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -652,7 +652,7 @@ class TestAnalyze:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -716,7 +716,7 @@ class TestAnalyze:
             return_value=make_test_managers(**mock_managers_dict_with_lazy),  # type: ignore[arg-type] - LazyManager is valid for ManagersDict
         ):
             with patch(
-                "cortex.tools.analysis_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -779,7 +779,7 @@ class TestAnalyze:
             return_value=make_test_managers(**mock_managers_dict_with_lazy),  # type: ignore[arg-type] - LazyManager is valid for ManagersDict
         ):
             with patch(
-                "cortex.tools.analysis_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -814,7 +814,7 @@ class TestAnalyze:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -1091,7 +1091,7 @@ class TestSuggestRefactoring:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -1128,7 +1128,7 @@ class TestConfigure:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -1164,7 +1164,7 @@ class TestConfigure:
             side_effect=mock_get_managers,
         ):
             with patch(
-                "cortex.tools.configuration_operations.get_project_root",
+                "cortex.tools.configuration_operations.resolve_project_root_async",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -1196,7 +1196,7 @@ class TestConfigure:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 with patch(
@@ -1229,7 +1229,7 @@ class TestConfigure:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -1261,7 +1261,7 @@ class TestConfigure:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -1304,7 +1304,7 @@ class TestConfigure:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -1339,7 +1339,7 @@ class TestConfigure:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -1382,7 +1382,7 @@ class TestConfigure:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
 
@@ -1425,7 +1425,7 @@ class TestConfigure:
             return_value=make_test_managers(**mock_managers_dict),  # type: ignore[arg-type] - empty dict is valid
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -1448,7 +1448,7 @@ class TestConfigure:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute
@@ -1473,7 +1473,7 @@ class TestConfigure:
             return_value=make_test_managers(**mock_managers_dict),
         ):
             with patch(
-                "cortex.tools.file_operations.get_project_root",
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
             ):
                 # Execute

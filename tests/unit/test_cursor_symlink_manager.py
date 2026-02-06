@@ -1,6 +1,7 @@
 from pathlib import Path
 from unittest.mock import patch
 
+from cortex.core.path_resolver import CursorResourceType, get_cursor_path
 from cortex.structure.lifecycle.symlinks import CursorSymlinkManager
 from cortex.structure.models import SymlinkEntry
 from cortex.structure.structure_config import StructureConfig
@@ -63,7 +64,7 @@ def test_setup_cursor_integration_creates_memory_bank_symlink(tmp_path: Path) ->
 
     # Assert
     assert report.success is True
-    link = tmp_path / ".cursor" / "memory-bank"
+    link = get_cursor_path(tmp_path, CursorResourceType.MEMORY_BANK)
     assert link.is_symlink()
     assert report.symlinks_created
 
@@ -241,6 +242,6 @@ def test_setup_cursor_integration_creates_rules_symlink(tmp_path: Path) -> None:
 
     # Assert
     assert report.success is True
-    link = tmp_path / ".cursor" / "rules"
+    link = get_cursor_path(tmp_path, CursorResourceType.RULES)
     assert link.is_symlink()
     assert report.symlinks_created

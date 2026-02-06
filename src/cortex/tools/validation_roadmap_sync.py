@@ -1,6 +1,7 @@
 """Roadmap sync validation operations for Memory Bank files."""
 
 import json
+import logging
 from pathlib import Path
 
 from cortex.core.file_system import FileSystemManager
@@ -9,6 +10,8 @@ from cortex.validation.roadmap_sync import (
     SyncValidationResult,
     validate_roadmap_sync,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _build_roadmap_sync_error_response() -> str:
@@ -47,6 +50,11 @@ def _build_roadmap_sync_success_response(
             "valid": result.valid,
             "missing_roadmap_entries": missing_entries,
             "invalid_references": invalid_refs,
+            # Expose unlinked_plans so callers can see which non-archived plans
+            # are not referenced in roadmap.md (helps prevent partial updates
+            # where plans are completed or removed from roadmap without proper
+            # archiving or memory bank updates).
+            "unlinked_plans": list(result.unlinked_plans),
             "warnings": warnings,
             "summary": {
                 "total_todos_found": result.total_todos_found,
@@ -57,6 +65,37 @@ def _build_roadmap_sync_success_response(
         },
         indent=2,
     )
+
+
+def _log_roadmap_ghost_sections(roadmap_content: str, roadmap_path: Path) -> None:
+    """Log if roadmap content contains ghost sections (debugging)."""
+    logger.info(
+        "Roadmap sync validation: reading from %s (absolute: %s, size: %d chars, exists: %s)",
+        roadmap_path,
+        roadmap_path.resolve(),
+        len(roadmap_content),
+        roadmap_path.exists(),
+    )
+    ghost_sections = [
+        "## Recent Findings",
+        "## Completed Milestones",
+        "### Planned Phases",
+    ]
+    found_ghost_sections = [s for s in ghost_sections if s in roadmap_content]
+    if found_ghost_sections:
+        logger.error(
+            (
+                "CRITICAL: Roadmap content contains ghost sections that should not exist: %s. "
+                + "This indicates the validator is reading from the wrong file or stale content."
+            ),
+            found_ghost_sections,
+        )
+        logger.error(
+            "Roadmap content preview (first 1000 chars): %s", roadmap_content[:1000]
+        )
+        logger.error(
+            "Roadmap content preview (last 500 chars): %s", roadmap_content[-500:]
+        )
 
 
 async def handle_roadmap_sync_validation(
@@ -81,5 +120,6 @@ async def handle_roadmap_sync_validation(
         return _build_roadmap_sync_error_response()
 
     roadmap_content, _ = await fs_manager.read_file(roadmap_path)
+    _log_roadmap_ghost_sections(roadmap_content, roadmap_path)
     result = validate_roadmap_sync(root, roadmap_content)
     return _build_roadmap_sync_success_response(result)

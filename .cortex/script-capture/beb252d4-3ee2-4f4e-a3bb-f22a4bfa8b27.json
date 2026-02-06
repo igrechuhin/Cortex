@@ -1,0 +1,13 @@
+{
+  "script_id": "beb252d4-3ee2-4f4e-a3bb-f22a4bfa8b27",
+  "timestamp": "2026-02-04T05:05:51Z",
+  "task_description": "Test",
+  "script_path": "scripts/foo.py",
+  "script_content": "print(1)",
+  "script_type": "python",
+  "purpose": "utility",
+  "usage_context": null,
+  "promotion_status": "pending",
+  "agent_session": null,
+  "dependencies": []
+}

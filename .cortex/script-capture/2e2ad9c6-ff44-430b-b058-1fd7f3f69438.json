@@ -1,0 +1,13 @@
+{
+  "script_id": "2e2ad9c6-ff44-430b-b058-1fd7f3f69438",
+  "timestamp": "2026-02-05T08:39:58Z",
+  "task_description": "Verify capture_session_script MCP tool works without project_root parameter",
+  "script_path": "tmp/test_script.py",
+  "script_content": "print('hello world')\n",
+  "script_type": "python",
+  "purpose": "utility",
+  "usage_context": "roadmap-implementer-manual-test",
+  "promotion_status": "pending",
+  "agent_session": null,
+  "dependencies": []
+}

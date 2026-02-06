@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from cortex.core.constants import (
+    MCP_MAX_CONCURRENT_RESOURCES,
     MCP_TOOL_TIMEOUT_COMPLEX,
     MCP_TOOL_TIMEOUT_EXTERNAL,
     MCP_TOOL_TIMEOUT_FAST,
@@ -365,6 +366,135 @@ class TestAllToolsHaveTimeoutWrapper:
             "MCP tools missing required decorator stack (@mcp.tool() -> @ensure_usage_context -> @mcp_tool_wrapper): "
             + ", ".join(f"{f}: lines {lns}" for f, lns in violations)
         )
+
+
+class TestProjectRootStrippedFromToolKwargs:
+    """project_root is stripped before calling tools; tools resolve root internally."""
+
+    @pytest.mark.asyncio
+    async def test_with_mcp_stability_strips_project_root_from_kwargs(self) -> None:
+        """When project_root is passed to with_mcp_stability, it is stripped.
+
+        Tools resolve root internally and must not accept project_root
+        as a parameter.
+        """
+        from unittest.mock import AsyncMock, patch
+
+        from cortex.core.models import ConnectionHealth
+
+        received_kwargs: list[dict[str, object]] = []
+
+        async def tool_with_kwargs(**kwargs: object) -> str:
+            received_kwargs.append(dict(kwargs))
+            return "ok"
+
+        with patch(
+            "cortex.core.mcp_stability.check_connection_health",
+            new_callable=AsyncMock,
+            return_value=ConnectionHealth(
+                healthy=True,
+                concurrent_operations=0,
+                max_concurrent=5,
+                semaphore_available=5,
+                utilization_percent=0.0,
+            ),
+        ):
+            result = await with_mcp_stability(
+                tool_with_kwargs,
+                timeout=MCP_TOOL_TIMEOUT_FAST,
+                project_root="/some/path",
+            )
+
+        assert result == "ok"
+        assert len(received_kwargs) == 1
+        # project_root must be stripped; tools resolve root internally
+        first_kw: dict[str, object] = received_kwargs[0]
+        assert "project_root" not in first_kw
+
+
+class TestResourceReadsUseSeparateSemaphore:
+    """Phase 69: Resource reads use a dedicated semaphore so they do not queue behind tools."""
+
+    @pytest.mark.asyncio
+    async def test_resource_reads_use_resource_semaphore_not_tool_semaphore(
+        self,
+    ) -> None:
+        """When kind='resource', tool semaphore is not used (resource semaphore is used)."""
+        from unittest.mock import AsyncMock, patch
+
+        from cortex.core.models import ConnectionHealth
+
+        async def dummy_resource() -> str:
+            return "ok"
+
+        health = ConnectionHealth(
+            healthy=True,
+            concurrent_operations=0,
+            max_concurrent=5,
+            semaphore_available=5,
+            utilization_percent=0.0,
+        )
+
+        with patch(
+            "cortex.core.mcp_stability.check_connection_health",
+            new_callable=AsyncMock,
+            return_value=health,
+        ):
+            # If resource path used tool semaphore, patching _get_semaphore to raise would fail.
+            with patch(
+                "cortex.core.mcp_stability._get_semaphore",
+                side_effect=RuntimeError(
+                    "tool semaphore must not be used for resources"
+                ),
+            ):
+                result = await with_mcp_stability(
+                    dummy_resource,
+                    stability_timeout=10.0,
+                    kind="resource",
+                )
+        assert result == "ok"
+
+    @pytest.mark.asyncio
+    async def test_parallel_resource_reads_all_succeed(self) -> None:
+        """Multiple resource reads in parallel all complete successfully."""
+        from unittest.mock import AsyncMock, patch
+
+        from cortex.core.models import ConnectionHealth
+
+        num_calls = 8
+        health = ConnectionHealth(
+            healthy=True,
+            concurrent_operations=0,
+            max_concurrent=5,
+            semaphore_available=5,
+            utilization_percent=0.0,
+        )
+
+        async def fast_resource() -> str:
+            await asyncio.sleep(0.05)
+            return "ok"
+
+        with patch(
+            "cortex.core.mcp_stability.check_connection_health",
+            new_callable=AsyncMock,
+            return_value=health,
+        ):
+            results = await asyncio.gather(
+                *[
+                    with_mcp_stability(
+                        fast_resource,
+                        stability_timeout=5.0,
+                        kind="resource",
+                    )
+                    for _ in range(num_calls)
+                ]
+            )
+
+        assert list(results) == ["ok"] * num_calls
+
+    def test_resource_concurrency_constant_at_least_six(self) -> None:
+        """MCP_MAX_CONCURRENT_RESOURCES allows at least 6 parallel resource reads."""
+        assert MCP_MAX_CONCURRENT_RESOURCES >= 6
 
 
 class TestAllResourcesHaveRequiredWrappers:

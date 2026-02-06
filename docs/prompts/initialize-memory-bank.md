@@ -17,11 +17,11 @@ I need you to:
 2. Generate all 7 core files from templates:
    - projectBrief.md - Foundation document
    - productContext.md - Product context and requirements
-   - activeContext.md - Current active development context
+   - activeContext.md - Completed work only (for current/upcoming work see roadmap.md)
    - systemPatterns.md - System architecture patterns
    - techContext.md - Technical context and decisions
    - progress.md - Development progress tracking
-   - roadmap.md - Development roadmap and milestones
+   - roadmap.md - Future/upcoming work only (when work is done, move to activeContext)
 3. Initialize the metadata index
 4. Create initial snapshots for version control
 

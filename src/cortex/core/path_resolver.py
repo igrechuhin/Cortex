@@ -26,6 +26,15 @@ class CortexResourceType(Enum):
     INDEX = "index.json"
 
 
+class CursorResourceType(Enum):
+    """Enumeration of Cursor integration resource types for path resolution."""
+
+    CURSOR_DIR = ".cursor"
+    MEMORY_BANK = "memory-bank"
+    RULES = "rules"
+    PLANS = "plans"
+
+
 def get_cortex_path(project_root: Path, resource_type: CortexResourceType) -> Path:
     """Get the absolute path for a Cortex resource type.
 
@@ -45,14 +54,39 @@ def get_cortex_path(project_root: Path, resource_type: CortexResourceType) -> Pa
         >>> get_cortex_path(root, CortexResourceType.CACHE)
         Path("/project/.cortex/.cache")
     """
-    cortex_dir = project_root / ".cortex"
+    cortex_dir = project_root / CortexResourceType.CORTEX_DIR.value
 
     if resource_type == CortexResourceType.CORTEX_DIR:
         return cortex_dir
-    elif resource_type == CortexResourceType.INDEX:
-        return cortex_dir / "index.json"
-    else:
-        return cortex_dir / resource_type.value
+    if resource_type == CortexResourceType.INDEX:
+        return cortex_dir / CortexResourceType.INDEX.value
+    return cortex_dir / resource_type.value
+
+
+def get_cursor_path(project_root: Path, resource_type: CursorResourceType) -> Path:
+    """Get the absolute path for a Cursor integration resource type.
+
+    Args:
+        project_root: Root directory of the project
+        resource_type: Type of Cursor resource
+
+    Returns:
+        Absolute path to the resource
+
+    Examples:
+        >>> root = Path("/project")
+        >>> get_cursor_path(root, CursorResourceType.CURSOR_DIR)
+        Path("/project/.cursor")
+        >>> get_cursor_path(root, CursorResourceType.MEMORY_BANK)
+        Path("/project/.cursor/memory-bank")
+        >>> get_cursor_path(root, CursorResourceType.PLANS)
+        Path("/project/.cursor/plans")
+    """
+    cursor_dir = project_root / CursorResourceType.CURSOR_DIR.value
+
+    if resource_type == CursorResourceType.CURSOR_DIR:
+        return cursor_dir
+    return cursor_dir / resource_type.value
 
 
 def get_cache_path(project_root: Path, cache_type: str | None = None) -> Path:

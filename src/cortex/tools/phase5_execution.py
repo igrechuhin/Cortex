@@ -17,7 +17,9 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.phase5_execution_helpers import parse_refactoring_action
 from cortex.tools.phase5_execution_monitoring import log_invalid_action_and_return
@@ -29,7 +31,7 @@ from cortex.tools.phase5_execution_planning import (
 
 async def _apply_refactoring_validate_and_run(
     action: str,
-    project_root: str | None,
+    root: str,
     suggestion_id: str | None,
     approval_id: str | None,
     execution_id: str | None,
@@ -47,7 +49,7 @@ async def _apply_refactoring_validate_and_run(
         return await log_invalid_action_and_return(ctx, action)
     return await execute_with_error_handling(
         parsed_action,
-        project_root,
+        root,
         suggestion_id,
         approval_id,
         execution_id,
@@ -61,7 +63,7 @@ async def _apply_refactoring_validate_and_run(
     )
 
 
-@mcp.tool()
+@mcp.tool(annotations=safe_write_annotations("Apply Refactoring"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def apply_refactoring(
@@ -75,7 +77,6 @@ async def apply_refactoring(
     validate_first: bool = True,
     restore_snapshot: bool = True,
     preserve_manual_changes: bool = True,
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Apply refactoring operations: approve suggestions, execute changes, or rollback.
@@ -123,8 +124,6 @@ async def apply_refactoring(
             Default: True
         preserve_manual_changes: If True, attempt to preserve manual edits
             during rollback (rollback action only). Default: True
-        project_root: Optional absolute path to project root.
-            Default: current working directory
 
     Returns:
         JSON string with operation results. Structure varies by action:
@@ -246,11 +245,13 @@ async def apply_refactoring(
         - Rollback can detect conflicts with manual edits and preserve them
           when requested
         - Use dry_run=True to safely preview any operation before actual execution
+        - Project root is resolved by the server (MCP roots or cwd).
     """
     await log_client(ctx, "info", "apply_refactoring: starting", logger_name=__name__)
+    root = await resolve_project_root_async(None, ctx)
     return await _apply_refactoring_validate_and_run(
         action,
-        project_root,
+        str(root),
         suggestion_id,
         approval_id,
         execution_id,
@@ -264,7 +265,7 @@ async def apply_refactoring(
     )
 
 
-@mcp.tool()
+@mcp.tool(annotations=safe_write_annotations("Provide Refactoring Feedback"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def provide_feedback(
@@ -272,7 +273,6 @@ async def provide_feedback(
     feedback_type: str,
     comment: str | None = None,
     adjust_preferences: bool = True,
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Provide feedback on refactoring suggestions to improve future recommendations.
@@ -311,8 +311,6 @@ async def provide_feedback(
             confidence thresholds based on this feedback. If False, record
             feedback without adjusting learning parameters.
             Default: True
-        project_root: Optional absolute path to project root.
-            Default: current working directory
 
     Returns:
         JSON string with feedback confirmation and learning statistics:
@@ -403,9 +401,10 @@ async def provide_feedback(
           approval/application
     """
     await log_client(ctx, "info", "provide_feedback: starting", logger_name=__name__)
+    root = await resolve_project_root_async(None, ctx)
     try:
         return await provide_feedback_impl(
-            suggestion_id, feedback_type, comment, adjust_preferences, project_root, ctx
+            suggestion_id, feedback_type, comment, adjust_preferences, str(root), ctx
         )
     except Exception as e:
         await log_client(ctx, "error", f"provide_feedback: {e!s}", logger_name=__name__)

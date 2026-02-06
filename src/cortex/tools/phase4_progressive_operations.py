@@ -16,6 +16,26 @@ from cortex.optimization.progressive_loader import (
 from cortex.tools.models import LoadedFileInfo, LoadProgressiveContextResult
 
 
+def _calculate_progressive_budget(
+    token_budget: int | None, optimization_config: OptimizationConfig
+) -> int:
+    """Calculate effective budget for progressive loading.
+
+    Args:
+        token_budget: Requested budget or None for default
+        optimization_config: Optimization configuration
+
+    Returns:
+        Effective budget after applying max_budget and reserve_for_response
+    """
+    if token_budget is None:
+        token_budget = optimization_config.get_token_budget()
+    max_budget = optimization_config.get_max_token_budget()
+    reserve = optimization_config.get_reserve_for_response()
+    token_budget = min(token_budget, max_budget)
+    return max(token_budget - reserve, 0)
+
+
 async def load_progressive_context_impl(
     mgrs: ManagersDict,
     task_description: str,
@@ -34,23 +54,21 @@ async def load_progressive_context_impl(
         JSON string with progressive loading results
     """
     optimization_config, progressive_loader = await _get_progressive_managers(mgrs)
-
-    if token_budget is None:
-        token_budget = optimization_config.get_token_budget()
+    effective_budget = _calculate_progressive_budget(token_budget, optimization_config)
 
     loaded = await _load_by_strategy(
         progressive_loader,
         optimization_config,
         loading_strategy,
         task_description,
-        token_budget,
+        effective_budget,
     )
     if isinstance(loaded, str):
         return loaded
 
     loaded_files = _convert_loaded_items_to_file_info(loaded)
     return _build_progressive_context_response(
-        task_description, loading_strategy, token_budget, loaded_files
+        task_description, loading_strategy, effective_budget, loaded_files
     )
 
 

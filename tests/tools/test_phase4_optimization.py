@@ -96,6 +96,8 @@ def mock_managers(
     """Create typed mock managers container."""
     optimization_config = MagicMock()
     optimization_config.get_token_budget.return_value = 10000
+    optimization_config.get_max_token_budget.return_value = 100000
+    optimization_config.get_reserve_for_response.return_value = 10000
     optimization_config.get_priority_order.return_value = ["file1.md", "file2.md"]
     optimization_config.get_mandatory_files.return_value = ["file1.md"]
 
@@ -174,7 +176,8 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -188,14 +191,15 @@ class TestLoadContext:
         ):
             # Act
             result_str = await load_context(
-                task_description="Test task", token_budget=10000, strategy="priority"
+                task_description="Test task", token_budget=50000, strategy="priority"
             )
             result = json.loads(result_str)
 
             # Assert
             assert result["status"] == "success"
             assert result["task_description"] == "Test task"
-            assert result["token_budget"] == 10000
+            # Effective budget = min(50000, 100000) - 10000 = 40000
+            assert result["token_budget"] == 40000
             assert result["strategy"] == "priority"
             assert "selected_files" in result
             assert "total_tokens" in result
@@ -207,7 +211,8 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -225,7 +230,8 @@ class TestLoadContext:
 
             # Assert
             assert result["status"] == "success"
-            assert result["token_budget"] == 10000  # From mock config
+            # Effective budget = min(10000, 100000) - 10000 = 0
+            assert result["token_budget"] == 0
 
     async def test_load_context_dependency_aware_strategy(
         self, mock_project_root: Path, mock_managers: dict[str, object]
@@ -234,7 +240,8 @@ class TestLoadContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -262,7 +269,8 @@ class TestLoadContext:
         """Test exception handling in load_context."""
         # Arrange
         with patch(
-            "cortex.tools.phase4_optimization.get_project_root",
+            "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+            new_callable=AsyncMock,
             side_effect=RuntimeError("Test error"),
         ):
             # Act
@@ -290,7 +298,8 @@ class TestLoadProgressiveContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -321,7 +330,8 @@ class TestLoadProgressiveContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -350,7 +360,8 @@ class TestLoadProgressiveContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -379,7 +390,8 @@ class TestLoadProgressiveContext:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -397,7 +409,8 @@ class TestLoadProgressiveContext:
 
             # Assert
             assert result["status"] == "success"
-            assert result["token_budget"] == 10000  # From mock config
+            # Effective budget = min(10000, 100000) - 10000 = 0
+            assert result["token_budget"] == 0
 
     async def test_load_progressive_exception_handling(
         self, mock_project_root: Path
@@ -405,7 +418,8 @@ class TestLoadProgressiveContext:
         """Test exception handling in load_progressive_context."""
         # Arrange
         with patch(
-            "cortex.tools.phase4_optimization.get_project_root",
+            "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+            new_callable=AsyncMock,
             side_effect=ValueError("Invalid project root"),
         ):
             # Act
@@ -432,7 +446,8 @@ class TestSummarizeContent:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -462,7 +477,8 @@ class TestSummarizeContent:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -489,7 +505,8 @@ class TestSummarizeContent:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -540,7 +557,8 @@ class TestSummarizeContent:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -576,7 +594,8 @@ class TestGetRelevanceScores:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -607,7 +626,8 @@ class TestGetRelevanceScores:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -638,7 +658,8 @@ class TestGetRelevanceScores:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -666,7 +687,8 @@ class TestGetRelevanceScores:
         """Test exception handling in get_relevance_scores."""
         # Arrange
         with patch(
-            "cortex.tools.phase4_optimization.get_project_root",
+            "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+            new_callable=AsyncMock,
             side_effect=RuntimeError("Scoring failed"),
         ):
             # Act
@@ -693,7 +715,8 @@ class TestIntegration:
         """Test complete workflow: load context -> score -> summarize."""
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -740,7 +763,8 @@ class TestIntegration:
         """Test progressive loading with all strategies."""
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -786,7 +810,8 @@ class TestPhase4OptimizationContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -801,7 +826,6 @@ class TestPhase4OptimizationContextLogging:
             result_str = await load_context(
                 task_description="Test task",
                 token_budget=5000,
-                project_root=str(mock_project_root),
                 ctx=mock_ctx,
             )
             result = json.loads(result_str)
@@ -827,7 +851,8 @@ class TestPhase4OptimizationResources:
         """load_context_resource returns JSON success for task_description."""
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -851,7 +876,8 @@ class TestPhase4OptimizationResources:
         """load_progressive_context_resource returns JSON success."""
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -876,7 +902,8 @@ class TestPhase4OptimizationResources:
         """get_relevance_scores_resource returns JSON success."""
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -901,7 +928,8 @@ class TestPhase4OptimizationResources:
         """summarize_content_resource with file_name returns JSON success."""
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(
@@ -925,7 +953,8 @@ class TestPhase4OptimizationResources:
         """summarize_content_resource with file_name '_' summarizes all files."""
         with (
             patch(
-                "cortex.tools.phase4_optimization.get_project_root",
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=mock_project_root,
             ),
             patch(

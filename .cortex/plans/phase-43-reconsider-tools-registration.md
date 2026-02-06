@@ -210,13 +210,13 @@ Current tool registration doesn't align with MCP protocol semantics:
   - `get_optimization_recommendations` → Resource `get_optimization_recommendations_resource` (cortex://usage/optimization-recommendations)
 - Next: Step 3.3 (hybrid operations) or Step 3.4 (update tool registrations); configure get_config resource if desired.
 
-#### Task 3.3: Handle Hybrid Operations
+#### Task 3.3: Handle Hybrid Operations — COMPLETE (2026-02-03)
 
 - Implement split operations for hybrid tools:
-  - `get_file` (Resource) and `write_file` (Tool) for `manage_file`
-  - `get_config` (Resource) and `update_config` (Tool) for `configure`
-- Or implement parameter-based registration
-- Update function signatures and implementations
+  - `get_file` (Resource) and `write_file` (Tool) for `manage_file` — DONE: get_file_resource existed; added write_file tool in file_operations.py (safe_write_annotations, delegates to manage_file flow). Tool registry: write_file.
+  - `get_config` (Resource) and `update_config` (Tool) for `configure` — DONE: get_config_resource (cortex://config/{component}) and update_config in configuration_hybrid.py; public aliases in configuration_operations for cross-module use. Tool registry: update_config.
+- configuration_operations kept under 400 lines by moving hybrid handlers to configuration_hybrid.py.
+- Tests: TestWriteFile, TestGetConfigResourceAndUpdateConfig. Quality gate and type_check pass.
 
 #### Task 3.4: Update Tool Registrations
 

@@ -18,7 +18,8 @@ class TestCleanupMetadataIndex:
 
         with (
             patch(
-                "cortex.tools.phase1_foundation_cleanup.get_project_root",
+                "cortex.tools.phase1_foundation_cleanup.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
@@ -27,7 +28,7 @@ class TestCleanupMetadataIndex:
             ),
         ):
             # Act
-            result = await cleanup_metadata_index(project_root=None, dry_run=False)
+            result = await cleanup_metadata_index(dry_run=False)
 
         # Assert
         assert result.status == "success"
@@ -46,7 +47,8 @@ class TestCleanupMetadataIndex:
 
         with (
             patch(
-                "cortex.tools.phase1_foundation_cleanup.get_project_root",
+                "cortex.tools.phase1_foundation_cleanup.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
@@ -55,7 +57,7 @@ class TestCleanupMetadataIndex:
             ),
         ):
             # Act
-            result = await cleanup_metadata_index(project_root=None, dry_run=True)
+            result = await cleanup_metadata_index(dry_run=True)
 
         # Assert
         assert result.status == "success"
@@ -70,7 +72,8 @@ class TestCleanupMetadataIndex:
         # Arrange
         with (
             patch(
-                "cortex.tools.phase1_foundation_cleanup.get_project_root",
+                "cortex.tools.phase1_foundation_cleanup.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
@@ -79,7 +82,7 @@ class TestCleanupMetadataIndex:
             ),
         ):
             # Act
-            result = await cleanup_metadata_index(project_root=None, dry_run=False)
+            result = await cleanup_metadata_index(dry_run=False)
 
         # Assert
         assert result.status == "error"
@@ -105,7 +108,8 @@ class TestCleanupMetadataIndexContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.phase1_foundation_cleanup.get_project_root",
+                "cortex.tools.phase1_foundation_cleanup.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
@@ -113,9 +117,7 @@ class TestCleanupMetadataIndexContextLogging:
                 return_value=make_test_managers(index=mock_index),
             ),
         ):
-            result = await cleanup_metadata_index(
-                project_root=None, dry_run=False, ctx=mock_ctx
-            )
+            result = await cleanup_metadata_index(dry_run=False, ctx=mock_ctx)
 
         assert result.status == "success"
         args_list = [c[0] for c in mock_log.call_args_list]
@@ -134,7 +136,8 @@ class TestCleanupMetadataIndexContextLogging:
                 new_callable=AsyncMock,
             ) as mock_log,
             patch(
-                "cortex.tools.phase1_foundation_cleanup.get_project_root",
+                "cortex.tools.phase1_foundation_cleanup.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=tmp_path,
             ),
             patch(
@@ -142,9 +145,7 @@ class TestCleanupMetadataIndexContextLogging:
                 side_effect=RuntimeError("init failed"),
             ),
         ):
-            result = await cleanup_metadata_index(
-                project_root=None, dry_run=False, ctx=mock_ctx
-            )
+            result = await cleanup_metadata_index(dry_run=False, ctx=mock_ctx)
 
         assert result.status == "error"
         assert any(

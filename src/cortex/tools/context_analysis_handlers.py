@@ -5,18 +5,20 @@ MCP tools for analyzing load_context effectiveness and managing statistics.
 """
 
 import json
+from pathlib import Path
 
-import cortex.tools.phase4_optimization as phase4_opt
 from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_FAST,
     MCP_TOOL_TIMEOUT_MEDIUM,
 )
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.context_analysis_operations import (
     analyze_current_session,
@@ -25,11 +27,8 @@ from cortex.tools.context_analysis_operations import (
 )
 
 
-async def _analyze_context_effectiveness_impl(
-    project_root: str | None, analyze_all_sessions: bool
-) -> str:
+def _analyze_context_effectiveness_impl(root: Path, analyze_all_sessions: bool) -> str:
     """Run analyze_context_effectiveness logic. Raises on error."""
-    root = phase4_opt.get_project_root(project_root)
     if analyze_all_sessions:
         result = analyze_session_logs(root)
     else:
@@ -37,11 +36,10 @@ async def _analyze_context_effectiveness_impl(
     return json.dumps(result.model_dump(mode="json"), indent=2)
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Analyze Context Effectiveness"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def analyze_context_effectiveness(
-    project_root: str | None = None,
     analyze_all_sessions: bool = False,
     ctx: MCPContext | None = None,
 ) -> str:
@@ -63,7 +61,6 @@ async def analyze_context_effectiveness(
     Call this at the end of sessions to build a feedback dataset.
 
     Args:
-        project_root: Project root path (default: current directory)
         analyze_all_sessions: If True, analyze all sessions; if False (default),
             analyze only the current session
 
@@ -74,9 +71,8 @@ async def analyze_context_effectiveness(
         ctx, "info", "analyze_context_effectiveness: starting", logger_name=__name__
     )
     try:
-        out = await _analyze_context_effectiveness_impl(
-            project_root, analyze_all_sessions
-        )
+        root = await resolve_project_root_async(None, ctx)
+        out = _analyze_context_effectiveness_impl(root, analyze_all_sessions)
         await log_client(
             ctx,
             "info",
@@ -97,11 +93,10 @@ async def analyze_context_effectiveness(
         )
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Get Context Usage Statistics"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_context_usage_statistics(
-    project_root: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Get current context usage statistics.
@@ -118,9 +113,6 @@ async def get_context_usage_statistics(
     including average token utilization, file selection patterns,
     and common task types.
 
-    Args:
-        project_root: Project root path (default: current directory)
-
     Returns:
         JSON with current statistics and recent entries
     """
@@ -128,7 +120,7 @@ async def get_context_usage_statistics(
         ctx, "info", "get_context_usage_statistics: starting", logger_name=__name__
     )
     try:
-        root = phase4_opt.get_project_root(project_root)
+        root = await resolve_project_root_async(None, ctx)
         result = get_context_statistics(root)
         out = json.dumps(result.model_dump(mode="json"), indent=2)
         await log_client(
@@ -159,9 +151,7 @@ async def get_context_usage_statistics(
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def analyze_context_effectiveness_resource() -> str:
     """Resource: Analyze context effectiveness (current session, default project). Read via cortex://optimization/context-effectiveness."""
-    return await analyze_context_effectiveness(
-        project_root=None, analyze_all_sessions=False
-    )
+    return await analyze_context_effectiveness(analyze_all_sessions=False)
 
 
 @mcp.resource(uri="cortex://optimization/context-usage-statistics")
@@ -169,4 +159,4 @@ async def analyze_context_effectiveness_resource() -> str:
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_context_usage_statistics_resource() -> str:
     """Resource: Context usage statistics (default project). Read via cortex://optimization/context-usage-statistics."""
-    return await get_context_usage_statistics(project_root=None)
+    return await get_context_usage_statistics()

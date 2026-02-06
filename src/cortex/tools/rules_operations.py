@@ -8,17 +8,21 @@ Total: 1 tool
 """
 
 import json
+from pathlib import Path
+from typing import Literal
 from urllib.parse import unquote
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
 from cortex.core.models import ModelDict
-from cortex.managers.initialization import get_managers, get_project_root
+from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.managers.initialization import get_managers
 from cortex.managers.manager_utils import get_manager
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.rules_manager import RulesManager
@@ -33,6 +37,9 @@ from cortex.tools.rules_operation_helpers import (
     parse_rules_operation,
     resolve_config_defaults,
 )
+
+# Valid operation values for rules() (must match RulesOperation enum).
+RulesOperationName = Literal["index", "get_relevant"]
 
 
 async def check_rules_enabled(
@@ -182,12 +189,11 @@ async def dispatch_operation(
     return build_invalid_operation_error(operation.value)
 
 
-@mcp.tool()
+@mcp.tool(annotations=safe_write_annotations("Rules"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def rules(
-    operation: str | None = None,
-    project_root: str | None = None,
+    operation: RulesOperationName | None = None,
     force: bool = False,
     task_description: str | None = None,
     max_tokens: int | None = None,
@@ -195,6 +201,10 @@ async def rules(
     ctx: MCPContext | None = None,
 ) -> str:
     """Manage custom rules for Memory Bank with indexing and intelligent retrieval.
+
+    Valid values for operation: "index", "get_relevant" (get_relevant requires
+    task_description). Invalid or missing operation returns structured error
+    with details.missing or valid_operations.
 
     USE WHEN: User wants to index rules, user needs relevant rules,
     user requests rule retrieval, user wants rule indexing.
@@ -225,10 +235,6 @@ async def rules(
             - "index": Index/reindex custom rules from rules folder
             - "get_relevant": Retrieve rules relevant to task description
             Example: "index", "get_relevant"
-
-        project_root: Absolute path to project root directory containing Memory Bank.
-            Defaults to current working directory if not specified.
-            Example: "/Users/username/projects/my-app"
 
         force: Force complete reindexing even if index is recent (index operation only).
             When False, uses cached index if available and recent. When True, clears
@@ -464,9 +470,10 @@ async def rules(
         if operation is None:
             return build_missing_rules_parameters_error()
         return build_invalid_operation_error(operation)
+    root = await resolve_project_root_async(None, ctx)
     return await _execute_rules_operation(
         parsed,
-        project_root,
+        root,
         force,
         task_description,
         max_tokens,
@@ -477,14 +484,13 @@ async def rules(
 
 async def _run_rules_operation_impl(
     operation: RulesOperation,
-    project_root: str | None,
+    root: Path,
     force: bool,
     task_description: str | None,
     max_tokens: int | None,
     min_relevance_score: float | None,
 ) -> str:
     """Run rules operation: resolve managers, check enabled, dispatch."""
-    root = get_project_root(project_root)
     mgrs = await get_managers(root)
     rules_manager = await get_manager(mgrs, "rules_manager", RulesManager)
     optimization_config = await get_manager(
@@ -505,7 +511,7 @@ async def _run_rules_operation_impl(
 
 async def _execute_rules_operation(
     operation: RulesOperation,
-    project_root: str | None,
+    root: Path,
     force: bool,
     task_description: str | None,
     max_tokens: int | None,
@@ -516,7 +522,7 @@ async def _execute_rules_operation(
     try:
         result = await _run_rules_operation_impl(
             operation,
-            project_root,
+            root,
             force,
             task_description,
             max_tokens,
@@ -540,7 +546,6 @@ async def rules_get_relevant_resource(task_description: str) -> str:
     decoded = unquote(task_description)
     return await rules(
         operation="get_relevant",
-        project_root=None,
         force=False,
         task_description=decoded,
         max_tokens=None,

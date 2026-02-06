@@ -10,6 +10,7 @@ from typing import cast
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.dependency_graph import DependencyGraph
+from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
@@ -17,17 +18,17 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.linking.link_parser import LinkParser
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
 from cortex.server import mcp
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Get Link Graph"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_link_graph(
-    project_root: str | None = None,
     include_transclusions: bool = True,
     format: str = "json",
     ctx: MCPContext | None = None,
@@ -58,8 +59,6 @@ async def get_link_graph(
     visualization.
 
     Args:
-        project_root: Optional absolute path to project root directory;
-            if None, uses current working directory
         include_transclusions: Whether to include transclusion links in
             the graph (default: True); if False, only markdown reference
             links are included
@@ -224,7 +223,8 @@ async def get_link_graph(
     """
     await log_client(ctx, "info", "get_link_graph: starting", logger_name=__name__)
     try:
-        link_graph, cycles = await _build_link_graph_data(project_root)
+        root = await resolve_project_root_async(None, ctx)
+        link_graph, cycles = await _build_link_graph_data(str(root))
         await log_client(ctx, "info", "get_link_graph: completed", logger_name=__name__)
         if format == "mermaid":
             return _generate_mermaid_response(link_graph, cycles)
@@ -245,9 +245,7 @@ async def get_link_graph(
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_link_graph_resource() -> str:
     """Resource: Link graph (default params). Read via cortex://links/graph."""
-    return await get_link_graph(
-        project_root=None, include_transclusions=True, format="json"
-    )
+    return await get_link_graph(include_transclusions=True, format="json")
 
 
 async def _build_link_graph_data(

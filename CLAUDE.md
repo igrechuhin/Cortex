@@ -126,7 +126,8 @@ The server initializes services in this order:
 
 **Memory Bank Structure**:
 
-- Core files: `projectBrief.md`, `productContext.md`, `activeContext.md`, `systemPatterns.md`, `techContext.md`, `progress.md`
+- Core files: `projectBrief.md`, `productContext.md`, `activeContext.md`, `systemPatterns.md`, `techContext.md`, `progress.md`, `roadmap.md`
+- **activeContext.md** = completed work only; **roadmap.md** = future/upcoming work only; when work is done, move from roadmap to activeContext (no overlap)
 - Location: `.cortex/memory-bank/` (primary), `.cursor/memory-bank/` (symlink for IDE compatibility)
 - DRY linking via transclusion: `{{include:path/to/file.md}}`
 - Validation via schema and duplication detection
@@ -238,11 +239,11 @@ All Cortex data is stored in `.cortex/` directory. For IDE compatibility, `.curs
 
 - `projectBrief.md` - Foundation document
 - `productContext.md` - Product context and requirements
-- `activeContext.md` - Current active development context
+- `activeContext.md` - **Completed work only** (summaries of done work; for current/upcoming work see roadmap.md)
 - `systemPatterns.md` - System architecture patterns
 - `techContext.md` - Technical context and decisions
 - `progress.md` - Development progress tracking
-- `roadmap.md` - Development roadmap and milestones
+- `roadmap.md` - **Future/upcoming work only** (when work is done, move it from roadmap to activeContext; no overlap)
 
 ## Testing Requirements
 
@@ -312,9 +313,11 @@ All Cortex data is stored in `.cortex/` directory. For IDE compatibility, `.curs
 - `productContext.md` - Product context and requirements
 - `systemPatterns.md` - System architecture patterns
 - `techContext.md` - Technical context and decisions
-- `activeContext.md` - Current active development context
+- `activeContext.md` - **Completed work only** (do not list in-progress or future work here)
 - `progress.md` - Development progress tracking
-- `roadmap.md` - Development roadmap and milestones
+- `roadmap.md` - **Future/upcoming work only** (in-progress and pending items; when work completes, move it to activeContext)
+
+**Responsibilities (no overlap)**: activeContext = completed work; roadmap = future/upcoming work. When work is completed, add a summary to activeContext and remove or mark complete in roadmap; do not duplicate the same work in both files.
 
 **When to update** (MANDATORY):
 
@@ -329,7 +332,7 @@ All Cortex data is stored in `.cortex/` directory. For IDE compatibility, `.curs
 1. Review all memory bank files
 2. Update relevant files based on changes made
 3. Ensure consistency across all files
-4. Focus on `activeContext.md` and `progress.md` for current state
+4. **Completed work** → add to `activeContext.md`; **future/upcoming work** → add or update in `roadmap.md`; when something is done, move it from roadmap to activeContext
 5. All TODO comments in code MUST be tracked in `roadmap.md` with corresponding milestones
 
 **Plan archival** (MANDATORY):
@@ -427,11 +430,11 @@ The Memory Bank consists of core files and optional context files, all in Markdo
 
 1. `projectBrief.md` - Foundation document that shapes all other files
 2. `productContext.md` - Explains why the project exists, problems being solved
-3. `activeContext.md` - Current work focus, recent changes, next steps
+3. `activeContext.md` - **Completed work only** (summaries of done work; for in-progress/upcoming see roadmap.md)
 4. `systemPatterns.md` - System architecture, technical decisions, design patterns
 5. `techContext.md` - Technologies used, development setup, constraints
 6. `progress.md` - What works, what's left to build
-7. `roadmap.md` - Development roadmap and milestones
+7. `roadmap.md` - **Future/upcoming work only** (when work is completed, move it from roadmap to activeContext; no overlap)
 
 ### DRY Linking
 

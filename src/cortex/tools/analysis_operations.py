@@ -16,11 +16,14 @@ from cortex.analysis.pattern_analyzer import PatternAnalyzer
 from cortex.analysis.structure_analyzer import StructureAnalyzer
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.managers import initialization
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
@@ -30,19 +33,9 @@ from cortex.tools.analysis_helpers import AnalysisTarget, parse_analysis_target
 async def get_managers(root: Path) -> ManagersDict:
     """Runtime indirection for test patching.
 
-    Some tests patch `cortex.tools.file_operations.get_managers`, others patch
-    `cortex.tools.analysis_operations.get_managers`. This wrapper lets both work.
+    Some tests patch `cortex.tools.analysis_operations.get_managers`.
     """
-    from cortex.tools import file_operations
-
-    return await file_operations.get_managers(root)
-
-
-def get_project_root(project_root: str | None) -> Path:
-    """Runtime indirection for test patching (see `get_managers`)."""
-    from cortex.tools import file_operations
-
-    return file_operations.get_project_root(project_root)
+    return await initialization.get_managers(root)
 
 
 async def analyze_usage_patterns(
@@ -135,12 +128,11 @@ async def get_analysis_managers(
     return pattern_analyzer, structure_analyzer, insight_engine
 
 
-@mcp.tool()
+@mcp.tool(annotations=read_only_annotations("Analyze Memory Bank"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def analyze(
     target: str,
-    project_root: str | None = None,
     time_window_days: int | None = None,
     export_format: str = "json",
     categories: list[str] | None = None,
@@ -181,10 +173,6 @@ async def analyze(
             - "usage_patterns": Analyze file access and usage patterns
             - "structure": Analyze file organization and detect issues
             - "insights": Generate actionable optimization recommendations
-
-        project_root: Absolute path to project root directory.
-            Example: "/Users/username/projects/my-project"
-            If None, uses current working directory.
 
         time_window_days: Number of days to analyze for usage_patterns.
             Example: 30 (analyzes last 30 days)
@@ -460,10 +448,11 @@ async def analyze(
             },
             indent=2,
         )
+    root = await resolve_project_root_async(None, ctx)
     return await _analyze_run_or_error(
         ctx,
         parsed_target,
-        project_root,
+        root,
         time_window_days,
         export_format,
         categories,
@@ -473,14 +462,13 @@ async def analyze(
 async def _analyze_run_or_error(
     ctx: MCPContext | None,
     parsed_target: AnalysisTarget,
-    project_root: str | None,
+    root: Path,
     time_window_days: int | None,
     export_format: str,
     categories: list[str] | None,
 ) -> str:
     """Run analysis and handle exceptions with context logging."""
     try:
-        root = get_project_root(project_root)
         mgrs = await get_managers(root)
         analyzers = await get_analysis_managers(mgrs)
         result = await dispatch_analysis_target(
@@ -553,13 +541,12 @@ async def analyze_resource(target: str) -> str:
     """Resource: Run analysis by target. Read via cortex://analysis/analyze/{target}.
 
     target may be URL-encoded. Must be one of: usage_patterns, structure,
-    insights. Uses default parameters (project_root=None, time_window_days=None,
-    export_format=json, categories=None).
+    insights. Uses default parameters (time_window_days=None, export_format=json,
+    categories=None). Project root is resolved by the server.
     """
     decoded = unquote(target)
     return await analyze(
         target=decoded,
-        project_root=None,
         time_window_days=None,
         export_format="json",
         categories=None,

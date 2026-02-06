@@ -1,14 +1,16 @@
 {
-  "last_updated": "2026-02-03T19:37",
-  "total_sessions_analyzed": 4,
-  "total_load_context_calls": 5,
-  "avg_token_utilization": 0.281,
-  "avg_files_selected": 9.2,
-  "avg_relevance_score": 0.58,
+  "last_updated": "2026-02-05T10:54",
+  "total_sessions_analyzed": 7,
+  "total_load_context_calls": 8,
+  "avg_token_utilization": 0.285,
+  "avg_files_selected": 8.75,
+  "avg_relevance_score": 0.574,
   "common_task_patterns": {
     "fix/debug": 1,
     "other": 2,
-    "implement/add": 2
+    "implement/add": 3,
+    "update/modify": 1,
+    "testing": 1
   },
   "insights": {
     "task_type_recommendations": {
@@ -39,67 +41,100 @@
         "notes": "Low utilization - consider smaller token budgets; Limited data - insights will improve with more samples"
       },
       "implement/add": {
-        "calls_count": 2,
+        "calls_count": 3,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
           "roadmap.md",
-          "progress.md",
-          "file.md"
+          "progress.md"
         ],
-        "avg_utilization": 0.369,
-        "avg_relevance": 0.645,
+        "avg_utilization": 0.366,
+        "avg_relevance": 0.605,
+        "notes": "Moderate utilization - some budget optimization possible"
+      },
+      "update/modify": {
+        "calls_count": 1,
+        "recommended_budget": 10000,
+        "essential_files": [
+          "roadmap.md",
+          "progress.md",
+          "activeContext.md"
+        ],
+        "avg_utilization": 0.206,
+        "avg_relevance": 0.595,
+        "notes": "Low utilization - consider smaller token budgets; Limited data - insights will improve with more samples"
+      },
+      "testing": {
+        "calls_count": 1,
+        "recommended_budget": 10000,
+        "essential_files": [
+          "roadmap.md",
+          "progress.md",
+          "activeContext.md"
+        ],
+        "avg_utilization": 0.307,
+        "avg_relevance": 0.572,
         "notes": "Moderate utilization - some budget optimization possible; Limited data - insights will improve with more samples"
       }
     },
     "file_effectiveness": {
       "activeContext.md": {
-        "times_selected": 5,
-        "avg_relevance": 0.798,
+        "times_selected": 8,
+        "avg_relevance": 0.82,
         "task_types_used": [
+          "implement/add",
           "other",
+          "update/modify",
           "fix/debug",
-          "implement/add"
+          "testing"
         ],
         "recommendation": "High value - prioritize for loading"
       },
       "techContext.md": {
-        "times_selected": 5,
+        "times_selected": 8,
         "avg_relevance": 0.5,
         "task_types_used": [
+          "implement/add",
           "other",
+          "update/modify",
           "fix/debug",
-          "implement/add"
+          "testing"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "roadmap.md": {
-        "times_selected": 5,
-        "avg_relevance": 0.643,
+        "times_selected": 8,
+        "avg_relevance": 0.645,
         "task_types_used": [
+          "implement/add",
           "other",
+          "update/modify",
           "fix/debug",
-          "implement/add"
+          "testing"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "file.md": {
-        "times_selected": 5,
-        "avg_relevance": 0.413,
+        "times_selected": 8,
+        "avg_relevance": 0.371,
         "task_types_used": [
+          "implement/add",
           "other",
+          "update/modify",
           "fix/debug",
-          "implement/add"
+          "testing"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "projectBrief.md": {
-        "times_selected": 5,
-        "avg_relevance": 0.5,
+        "times_selected": 8,
+        "avg_relevance": 0.437,
         "task_types_used": [
+          "implement/add",
           "other",
+          "update/modify",
           "fix/debug",
-          "implement/add"
+          "testing"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -107,8 +142,8 @@
         "times_selected": 3,
         "avg_relevance": 0.621,
         "task_types_used": [
-          "other",
-          "fix/debug"
+          "fix/debug",
+          "other"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -116,51 +151,59 @@
         "times_selected": 3,
         "avg_relevance": 0.24,
         "task_types_used": [
-          "other",
-          "fix/debug"
+          "fix/debug",
+          "other"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "progress.md": {
-        "times_selected": 5,
-        "avg_relevance": 0.592,
+        "times_selected": 8,
+        "avg_relevance": 0.613,
         "task_types_used": [
+          "implement/add",
           "other",
+          "update/modify",
           "fix/debug",
-          "implement/add"
+          "testing"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "systemPatterns.md": {
-        "times_selected": 5,
+        "times_selected": 8,
         "avg_relevance": 0.5,
         "task_types_used": [
+          "implement/add",
           "other",
+          "update/modify",
           "fix/debug",
-          "implement/add"
+          "testing"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "productContext.md": {
-        "times_selected": 5,
+        "times_selected": 8,
         "avg_relevance": 0.5,
         "task_types_used": [
+          "implement/add",
           "other",
+          "update/modify",
           "fix/debug",
-          "implement/add"
+          "testing"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       }
     },
     "learned_patterns": [
-      "Average 28% budget utilization - ~29k tokens unused per call",
-      "'activeContext.md' is most frequently loaded (5/5 calls)",
-      "Most common task type: 'other' (2 calls)"
+      "Average 28% budget utilization - ~25k tokens unused per call",
+      "'activeContext.md' is most frequently loaded (8/8 calls)",
+      "Most common task type: 'implement/add' (3 calls)"
     ],
     "budget_recommendations": {
       "fix/debug": 15000,
       "other": 15000,
-      "implement/add": 10000
+      "implement/add": 10000,
+      "update/modify": 10000,
+      "testing": 10000
     }
   },
   "entries": [
@@ -319,6 +362,95 @@
         "progress.md": 0.649,
         "activeContext.md": 0.859,
         "file.md": 0.509
+      }
+    },
+    {
+      "session_id": "6e6c1eb87a35",
+      "timestamp": "2026-02-03T20:36",
+      "task_description": "Phase 43 Step 3.3 Handle hybrid operations: get_file Resource and write_file Tool for manage_file, get_config Resource and update_config Tool for configure",
+      "token_budget": 25000,
+      "total_tokens": 5145,
+      "utilization": 0.2058,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.595,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "productContext.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "file.md",
+        "progress.md",
+        "activeContext.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.22
+      }
+    },
+    {
+      "session_id": "1ae93d8a289d",
+      "timestamp": "2026-02-04T17:12",
+      "task_description": "Phase 53: Investigate Cursor MCP user-cortex server error; implement investigation plan",
+      "token_budget": 20000,
+      "total_tokens": 7200,
+      "utilization": 0.36,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.523,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 2,
+      "selected_file_names": [
+        "file.md",
+        "productContext.md",
+        "activeContext.md",
+        "systemPatterns.md",
+        "progress.md",
+        "projectBrief.md",
+        "techContext.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.645,
+        "activeContext.md": 0.855,
+        "file.md": 0.217,
+        "projectBrief.md": 0.249
+      }
+    },
+    {
+      "session_id": "7936fdf19c55",
+      "timestamp": "2026-02-05T10:40",
+      "task_description": "Implement QUICK_START roadmap step: complete the QUICK_START plan and any associated code/docs/tests so users can quickly set up and use Cortex MCP.",
+      "token_budget": 30000,
+      "total_tokens": 9222,
+      "utilization": 0.3074,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.572,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "productContext.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "roadmap.md",
+        "progress.md",
+        "file.md",
+        "projectBrief.md",
+        "activeContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.647,
+        "progress.md": 0.646,
+        "activeContext.md": 0.855,
+        "file.md": 0.464,
+        "projectBrief.md": 0.247
       }
     }
   ]

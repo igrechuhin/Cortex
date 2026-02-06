@@ -266,7 +266,6 @@ class TestAnalyzeHandler:
             # Act
             result = await analyze(
                 target="usage_patterns",
-                project_root=str(tmp_path),
                 time_window_days=60,
             )
 
@@ -298,7 +297,7 @@ class TestAnalyzeHandler:
             )
 
             # Act
-            result = await analyze(target="structure", project_root=str(tmp_path))
+            result = await analyze(target="structure")
 
             # Assert
             result_data = json.loads(result)
@@ -334,7 +333,6 @@ class TestAnalyzeHandler:
             # Act
             result = await analyze(
                 target="insights",
-                project_root=str(tmp_path),
                 export_format="json",
                 categories=["duplication"],
             )
@@ -354,7 +352,7 @@ class TestAnalyzeHandler:
             mock_get_managers.side_effect = RuntimeError("Test error")
 
             # Act
-            result = await analyze(target="structure", project_root=str(tmp_path))
+            result = await analyze(target="structure")
 
             # Assert
             result_data = json.loads(result)
@@ -400,7 +398,6 @@ class TestAnalyzeContextLogging:
             # Act
             result = await analyze(
                 target="structure",
-                project_root=str(tmp_path),
                 ctx=mock_ctx,
             )
 
@@ -425,7 +422,6 @@ class TestAnalyzeContextLogging:
             # Act
             result = await analyze(
                 target="invalid",  # type: ignore[arg-type]
-                project_root=str(tmp_path),
                 ctx=mock_ctx,
             )
 
@@ -459,7 +455,6 @@ class TestAnalyzeContextLogging:
             # Act
             result = await analyze(
                 target="structure",
-                project_root=str(tmp_path),
                 ctx=mock_ctx,
             )
 
@@ -1262,7 +1257,7 @@ class TestSuggestRefactoringHandler:
 
             # Act
             result = await suggest_refactoring(
-                type="consolidation", project_root=str(tmp_path), min_similarity=0.85
+                type="consolidation", min_similarity=0.85
             )
 
             # Assert
@@ -1276,7 +1271,6 @@ class TestSuggestRefactoringHandler:
         # Act
         result = await suggest_refactoring(
             type="invalid",  # type: ignore
-            project_root=str(tmp_path),
         )
 
         # Assert
@@ -1294,9 +1288,7 @@ class TestSuggestRefactoringHandler:
             mock_get_managers.side_effect = RuntimeError("Test error")
 
             # Act
-            result = await suggest_refactoring(
-                type="consolidation", project_root=str(tmp_path)
-            )
+            result = await suggest_refactoring(type="consolidation")
 
             # Assert
             result_data = json.loads(result)
@@ -1331,7 +1323,6 @@ class TestRefactoringOperationsContextLogging:
         ):
             result = await suggest_refactoring(
                 type="consolidation",
-                project_root=str(tmp_path),
                 min_similarity=0.85,
                 ctx=mock_ctx,
             )

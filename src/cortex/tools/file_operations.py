@@ -1,17 +1,18 @@
 """
 File Operations Tools
 
-This module contains the consolidated file management tool and read resource
-for Memory Bank.
+This module contains the consolidated file management tool, write-only tool,
+and read resource for Memory Bank.
 
-Total: 1 tool, 1 resource
-- manage_file: Read/write/metadata operations
+Total: 2 tools, 1 resource
+- manage_file: Read/write/metadata operations (unified)
+- write_file: Write-only tool (Phase 43 hybrid split)
 - get_file_resource: Read file via cortex://memory-bank/file/{file_name}
 """
 
 import json
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
@@ -21,6 +22,7 @@ from cortex.core.exceptions import (
     GitConflictError,
 )
 from cortex.core.file_system import FileSystemManager
+from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
@@ -29,9 +31,10 @@ from cortex.core.mcp_stability import (
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonValue, ModelDict, SectionMetadata, VersionMetadata
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
-from cortex.managers.initialization import get_managers, get_project_root
+from cortex.managers.initialization import get_managers
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
 from cortex.tools.file_operation_helpers import (
@@ -43,6 +46,9 @@ from cortex.tools.file_operation_helpers import (
     validate_manage_file_operation,
 )
 from cortex.tools.roadmap_corruption import fix_roadmap_content_if_needed
+
+# Valid operation values for manage_file() (must match FileOperation enum).
+ManageFileOperationName = Literal["read", "write", "metadata"]
 
 MANAGE_FILE_INPUT_EXAMPLES: list[dict[str, object]] = [
     {"file_name": "projectBrief.md", "operation": "read", "include_metadata": True},
@@ -56,14 +62,16 @@ MANAGE_FILE_INPUT_EXAMPLES: list[dict[str, object]] = [
 ]
 
 
-@mcp.tool(meta={"input_examples": MANAGE_FILE_INPUT_EXAMPLES})
+@mcp.tool(
+    annotations=safe_write_annotations("Manage Memory Bank Files"),
+    meta={"input_examples": MANAGE_FILE_INPUT_EXAMPLES},
+)
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def manage_file(
     file_name: str | None = None,
-    operation: str | None = None,
+    operation: ManageFileOperationName | None = None,
     content: str | None = None,
-    project_root: str | None = None,
     include_metadata: bool = False,
     change_description: str | None = None,
     ctx: MCPContext | None = None,
@@ -104,10 +112,6 @@ async def manage_file(
             Must be valid UTF-8 text. For Markdown files, the content should
             include proper headings and formatting.
             Example: "# Project Brief\n\n## Overview\n\nThis project..."
-
-        project_root: Optional absolute path to project root directory.
-            If not provided, uses current working directory.
-            Example: "/Users/username/projects/my-app"
 
         include_metadata: For read operation, include metadata in response.
             When true, response includes size_bytes, token_count, content_hash,
@@ -292,7 +296,6 @@ async def manage_file(
         file_name,
         operation,
         content,
-        project_root,
         include_metadata,
         change_description,
     )
@@ -303,13 +306,51 @@ async def manage_file(
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_file_resource(file_name: str) -> str:
     """Resource: Read a Memory Bank file. Read via cortex://memory-bank/file/{file_name}."""
+    root = await resolve_project_root_async(None, None)
     return await _execute_file_operation(
+        root,
         file_name,
         FileOperation.READ,
         None,
-        None,
         False,
         None,
+    )
+
+
+@mcp.tool(annotations=safe_write_annotations("Write Memory Bank File"))
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def write_file(
+    file_name: str,
+    content: str,
+    change_description: str | None = None,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Write a Memory Bank file (write-only tool; read via get_file_resource or manage_file).
+
+    USE WHEN: User wants to update a memory bank file, write content to
+    activeContext.md, roadmap.md, or other .cortex/memory-bank/ files.
+
+    RETURNS: JSON with status, file_name, message, snapshot_id, version, tokens.
+
+    Args:
+        file_name: Name of the file within memory-bank/ (e.g. activeContext.md).
+        content: Full file content to write (required).
+        change_description: Optional description for version history.
+    """
+    await log_client(
+        ctx,
+        "info",
+        f"write_file: starting file_name={file_name!r}",
+        logger_name=__name__,
+    )
+    return await _manage_file_validate_and_run(
+        ctx,
+        file_name,
+        FileOperation.WRITE.value,
+        content,
+        False,
+        change_description,
     )
 
 
@@ -318,7 +359,6 @@ async def _manage_file_validate_and_run(
     file_name: str | None,
     operation: str | None,
     content: str | None,
-    project_root: str | None,
     include_metadata: bool,
     change_description: str | None,
 ) -> str:
@@ -333,12 +373,13 @@ async def _manage_file_validate_and_run(
         )
         return err
     assert parsed_op is not None and file_name is not None
+    root = await resolve_project_root_async(None, ctx)
     return await _manage_file_run_or_error(
         ctx,
         file_name,
         parsed_op,
         content,
-        project_root,
+        root,
         include_metadata,
         change_description,
     )
@@ -380,17 +421,17 @@ async def _manage_file_run_or_error(
     file_name: str,
     parsed_op: FileOperation,
     content: str | None,
-    project_root: str | None,
+    root: Path,
     include_metadata: bool,
     change_description: str | None,
 ) -> str:
     """Run _execute_file_operation and handle exceptions with logging."""
     try:
         result = await _execute_file_operation(
+            root,
             file_name,
             parsed_op,
             content,
-            project_root,
             include_metadata,
             change_description,
         )
@@ -402,15 +443,15 @@ async def _manage_file_run_or_error(
 
 
 async def _execute_file_operation(
+    root: Path,
     file_name: str,
     operation: FileOperation,
     content: str | None,
-    project_root: str | None,
     include_metadata: bool,
     change_description: str | None,
 ) -> str:
     """Execute file operation after validation."""
-    root, managers = await _initialize_managers(project_root)
+    managers = await get_managers(root)
     fs_manager = managers.fs
     file_path_result = _validate_and_get_path(
         fs_manager,
@@ -731,15 +772,6 @@ async def _execute_write_flow(
     )
 
     return build_write_response(file_name, version_info, token_counter, content)
-
-
-async def _initialize_managers(
-    project_root: str | None,
-) -> tuple[Path, ManagersDict]:
-    """Initialize all required managers."""
-    root = get_project_root(project_root)
-    mgrs = await get_managers(root)
-    return root, mgrs
 
 
 def _validate_and_get_path(

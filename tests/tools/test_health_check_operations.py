@@ -15,7 +15,6 @@ from cortex.tools.health_check_operations import (
     empty_prompt_result,
     empty_rule_result,
     empty_tool_result,
-    get_project_root,
     run_health_check_analysis,
 )
 
@@ -29,20 +28,6 @@ def _temp_project() -> Generator[Path]:
         (path / ".cortex" / "synapse" / "rules" / "general").mkdir(parents=True)
         (path / "src" / "cortex" / "tools").mkdir(parents=True)
         yield path
-
-
-class TestGetProjectRoot:
-    """Tests for get_project_root."""
-
-    def test_returns_cwd_when_none(self) -> None:
-        """When project_root is None, returns Path.cwd()."""
-        result = get_project_root(None)
-        assert result == Path.cwd()
-
-    def test_returns_resolved_path_when_given(self) -> None:
-        """When project_root is given, returns resolved Path."""
-        result = get_project_root("/some/project")
-        assert result == Path("/some/project").resolve()
 
 
 class TestEmptyResults:
@@ -159,7 +144,6 @@ class TestAnalyzeHealthCheck:
                 similarity_threshold=0.75,
                 include_dependencies=False,
                 validate_quality=False,
-                project_root=None,
             )
         result = json.loads(result_str)
         assert result["status"] == "success"
@@ -169,16 +153,20 @@ class TestAnalyzeHealthCheck:
         assert "tools" in result
 
     @pytest.mark.asyncio
-    async def test_analyze_health_check_with_project_root(self) -> None:
-        """analyze_health_check accepts project_root and uses it."""
+    async def test_analyze_health_check_resolves_root_via_resolver(self) -> None:
+        """analyze_health_check uses resolve_project_root_async for root."""
         with _temp_project() as root:
-            result_str = await analyze_health_check(
-                analysis_type="tools",
-                similarity_threshold=0.75,
-                include_dependencies=False,
-                validate_quality=False,
-                project_root=str(root),
-            )
+            with patch(
+                "cortex.tools.health_check_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=root,
+            ):
+                result_str = await analyze_health_check(
+                    analysis_type="tools",
+                    similarity_threshold=0.75,
+                    include_dependencies=False,
+                    validate_quality=False,
+                )
             result = json.loads(result_str)
             assert result["status"] == "success"
             assert result["analysis_type"] == "tools"

@@ -409,8 +409,9 @@ def detect_or_use_language(
 
     Returns (LanguageInfo, root_to_use) so the adapter runs in the correct
     project (e.g. when project was found in a subdir). Returns error JSON str on failure.
+    Empty string is treated as auto-detect (same as None).
     """
-    if language is None:
+    if language is None or language == "":
         return _resolve_language_at_root(Path(root_str).resolve())
     detected_language = language.lower()
     info = LanguageInfo(

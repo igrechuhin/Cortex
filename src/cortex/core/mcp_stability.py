@@ -12,7 +12,6 @@ import logging
 import time
 from collections.abc import Awaitable, Callable
 from inspect import Signature
-from pathlib import Path
 from types import TracebackType
 from typing import Literal, Protocol, cast
 
@@ -21,6 +20,7 @@ import anyio
 from cortex.core.constants import (
     MCP_CONNECTION_RETRY_ATTEMPTS,
     MCP_CONNECTION_RETRY_DELAY_SECONDS,
+    MCP_MAX_CONCURRENT_RESOURCES,
     MCP_MAX_CONCURRENT_TOOLS,
     MCP_TOOL_TIMEOUT_SECONDS,
     PROGRESS_REPORT_INTERVAL_LONG_RUNNING_SECONDS,
@@ -37,20 +37,6 @@ logger = logging.getLogger(__name__)
 _TOOLS_WITH_OWN_PROGRESS = frozenset({"execute_pre_commit_checks", "fix_markdown_lint"})
 
 
-def _project_root_from_tool_args(
-    args: tuple[JsonValue, ...], kwargs: dict[str, JsonValue]
-) -> Path:
-    """Resolve project root from tool (args, kwargs) for usage context."""
-    from cortex.managers.initialization import get_project_root
-
-    raw = kwargs.get("project_root") if kwargs else None
-    if raw is None and args:
-        raw = args[0]
-    if isinstance(raw, str):
-        return get_project_root(raw)
-    return get_project_root(None)
-
-
 def ensure_usage_context[T](
     func: Callable[..., Awaitable[T]],
 ) -> Callable[..., Awaitable[T]]:
@@ -59,9 +45,14 @@ def ensure_usage_context[T](
     Wraps an async MCP tool handler so that get_current_managers() is set
     before the handler runs, enabling usage recording for tools that do not
     call get_managers() themselves.
+
+    Resolves project root internally (via resolve_project_root_async) using
+    MCP context when available, consistent with how tools resolve root.
     """
     import functools
     import inspect
+
+    from cortex.core.project_root_resolver import resolve_project_root_async
 
     @functools.wraps(func)
     async def wrapper(
@@ -71,10 +62,25 @@ def ensure_usage_context[T](
         if get_current_managers() is None:
             from cortex.managers.initialization import get_managers
 
-            root = _project_root_from_tool_args(args, kwargs)
-            mgrs = await get_managers(root)
-            mgrs_dict = mgrs if isinstance(mgrs, dict) else mgrs.model_dump()
-            set_current_managers(mgrs_dict)
+            # Usage context failures are treated as MCP tool failures so they
+            # participate in the investigation protocol instead of being silent.
+            try:
+                # Resolve root internally (same as tools do), using MCP context
+                # when available. Tools resolve root internally and do not accept
+                # project_root as a parameter.
+                from cortex.core.context_logging import MCPContext
+
+                ctx_raw = kwargs.get("ctx")
+                # Cast ctx from JsonValue to MCPContext | None (ctx is injected by
+                # FastMCP and is an MCPContext object, not JSON-serializable)
+                mcp_ctx = cast(MCPContext | None, ctx_raw)
+                root = await resolve_project_root_async(None, mcp_ctx)
+                mgrs = await get_managers(root)
+                mgrs_dict = mgrs if isinstance(mgrs, dict) else mgrs.model_dump()
+                set_current_managers(mgrs_dict)
+            except Exception as e:  # pragma: no cover - exercised via tool tests
+                _handle_tool_exception_if_failure(e, func.__name__)
+                raise
         return await func(*args, **kwargs)
 
     original_sig = inspect.signature(func)
@@ -137,6 +143,8 @@ class TrackedSemaphore:
 
 # Global semaphore for limiting concurrent tool executions
 _concurrent_tools_semaphore: TrackedSemaphore | None = None
+# Semaphore for resource reads (Phase 69: separate from tools to avoid -32001 queueing)
+_concurrent_resources_semaphore: TrackedSemaphore | None = None
 
 # Connection state for diagnostics (Phase 32)
 _connection_closure_count: int = 0
@@ -149,6 +157,14 @@ def _get_semaphore() -> TrackedSemaphore:
     if _concurrent_tools_semaphore is None:
         _concurrent_tools_semaphore = TrackedSemaphore(MCP_MAX_CONCURRENT_TOOLS)
     return _concurrent_tools_semaphore
+
+
+def _get_resource_semaphore() -> TrackedSemaphore:
+    """Get or create the semaphore for concurrent resource read limits (Phase 69)."""
+    global _concurrent_resources_semaphore
+    if _concurrent_resources_semaphore is None:
+        _concurrent_resources_semaphore = TrackedSemaphore(MCP_MAX_CONCURRENT_RESOURCES)
+    return _concurrent_resources_semaphore
 
 
 async def _handle_timeout_error(
@@ -253,9 +269,9 @@ def _is_connection_error(e: Exception) -> bool:
         ConnectionError,
         BrokenPipeError,
         OSError,
-        RuntimeError,  # FastMCP may raise RuntimeError for connection issues
         anyio.BrokenResourceError,  # anyio resource errors (e.g., stdio closed)
         anyio.ClosedResourceError,  # send on closed stream after client disconnect
+        RuntimeError,  # Main wraps connection closure in RuntimeError for MCP
     )
 
     if isinstance(e, connection_error_types):
@@ -460,10 +476,11 @@ def _stability_params(
     effective = st or tv or float(MCP_TOOL_TIMEOUT_SECONDS)
     # Extract ctx separately - it's an MCPContext object, not JSON-serializable
     ctx = kwargs.get("ctx")
+    # project_root is never passed to tools; they resolve it internally
     func_kwargs = {
         k: v
         for k, v in kwargs.items()
-        if k not in {"timeout", "stability_timeout", "kind", "ctx"}
+        if k not in {"timeout", "stability_timeout", "kind", "ctx", "project_root"}
     }
     return effective, MCPToolArguments.model_validate(func_kwargs), ctx
 
@@ -533,7 +550,7 @@ async def _run_with_retry_and_record[T](
     enable_progress: bool = False,
 ) -> T:
     """Run func with retry and record usage (used by with_mcp_stability)."""
-    semaphore = _get_semaphore()
+    semaphore = _get_resource_semaphore() if kind == "resource" else _get_semaphore()
     effective_timeout, kwargs_model, ctx = _stability_params(
         timeout, stability_timeout, kwargs
     )

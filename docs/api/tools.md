@@ -4,7 +4,9 @@ Complete reference for all 54 MCP tools provided by Cortex.
 
 ## Overview
 
-Cortex provides 54 tools organized by functionality phases. All tools accept optional `project_root` parameter and return JSON responses with consistent error handling.
+Cortex provides 54 tools organized by functionality phases. Tools return JSON responses with consistent error handling.
+
+**Project root:** Tools do **not** accept a `project_root` parameter. Each tool resolves the project root internally (via MCP roots when available, or current working directory). Do not pass `project_root` when calling tools.
 
 **Total Tools by Phase:**
 
@@ -34,7 +36,7 @@ Initialize Memory Bank in a project directory.
 
 **Parameters:**
 
-- `project_root` (str | None) - Optional path to project root (defaults to current directory)
+None (project root is resolved internally by the tool).
 
 **Description:**
 
@@ -70,7 +72,6 @@ Read a Memory Bank file with optional metadata.
 **Parameters:**
 
 - `file_name` (str) - Name of the file to read (e.g., "projectBrief.md")
-- `project_root` (str | None) - Optional path to project root
 - `include_metadata` (bool) - If True, include metadata (tokens, versions, usage stats)
 
 **Description:**
@@ -102,7 +103,6 @@ Write or update a Memory Bank file with automatic versioning.
 
 - `file_name` (str) - Name of the file to write (e.g., "projectBrief.md")
 - `content` (str) - New content for the file
-- `project_root` (str | None) - Optional path to project root
 - `change_description` (str | None) - Optional description of changes made
 
 **Description:**
@@ -138,7 +138,6 @@ Get detailed metadata for a Memory Bank file.
 **Parameters:**
 
 - `file_name` (str) - Name of the file (e.g., "projectBrief.md")
-- `project_root` (str | None) - Optional path to project root
 
 **Description:**
 
@@ -188,7 +187,6 @@ Unified Memory Bank file management tool for read/write/metadata operations.
 **Optional Parameters:**
 
 - `content` (str | None) - Content to write (required when `operation="write"`).
-- `project_root` (str | None) - Absolute project root; defaults to current working directory.
 - `include_metadata` (bool) - When `operation="read"`, include metadata block.
 - `change_description` (str | None) - Human-friendly description stored in version history.
 
@@ -366,7 +364,6 @@ Get the Memory Bank dependency graph.
 
 **Parameters:**
 
-- `project_root` (str | None) - Optional path to project root
 - `format` (str) - Output format: `"json"` or `"mermaid"`
 
 **Description:**
@@ -416,7 +413,6 @@ Get version history for a Memory Bank file.
 **Parameters:**
 
 - `file_name` (str) - Name of the file (e.g., "projectBrief.md")
-- `project_root` (str | None) - Optional path to project root
 - `limit` (int) - Maximum number of versions to return (default: 10)
 
 **Description:**
@@ -453,8 +449,6 @@ Rollback a Memory Bank file to a previous version.
 
 - `file_name` (str) - Name of the file (e.g., "projectBrief.md")
 - `version` (int) - Version number to rollback to
-- `project_root` (str | None) - Optional path to project root
-
 **Description:**
 
 Restores content from a snapshot and creates a new version entry. Does not delete history - the rollback itself becomes a new version.
@@ -478,8 +472,6 @@ Restores content from a snapshot and creates a new version entry. Does not delet
 Check if Memory Bank needs migration from old format.
 
 **Parameters:**
-
-- `project_root` (str | None) - Optional path to project root
 
 **Description:**
 
@@ -513,7 +505,6 @@ Migrate Memory Bank from old format to Phase 1 format.
 
 **Parameters:**
 
-- `project_root` (str | None) - Optional path to project root
 - `auto_backup` (bool) - If True, creates timestamped backup (default: True)
 
 **Description:**
@@ -540,8 +531,6 @@ Creates backup, initializes metadata index, generates version history, and verif
 Get overall Memory Bank statistics and analytics.
 
 **Parameters:**
-
-- `project_root` (str | None) - Optional path to project root
 
 **Description:**
 
@@ -585,8 +574,6 @@ Parse and return all links in a Memory Bank file.
 **Parameters:**
 
 - `file_name` (str) - Name of the file to parse (e.g., "activeContext.md")
-- `project_root` (str | None) - Optional path to project root
-
 **Description:**
 
 Extracts markdown links `[text](target)` and transclusion directives `{{include: file}}` from the specified file.
@@ -629,7 +616,6 @@ Read file with all transclusions resolved.
 **Parameters:**
 
 - `file_name` (str) - Name of the file to read (e.g., "activeContext.md")
-- `project_root` (str | None) - Optional path to project root
 - `max_depth` (int) - Maximum transclusion depth (default: 5)
 
 **Description:**
@@ -667,8 +653,6 @@ Validate links in a file or all files.
 **Parameters:**
 
 - `file_name` (str | None) - Optional specific file to validate (if None, validates all files)
-- `project_root` (str | None) - Optional path to project root
-
 **Description:**
 
 Checks that all markdown links and transclusion directives point to existing files and sections. Generates validation report with broken links and suggestions.
@@ -704,7 +688,6 @@ Get dynamic dependency graph based on actual links.
 
 **Parameters:**
 
-- `project_root` (str | None) - Optional path to project root
 - `include_transclusions` (bool) - Include transclusion links (default: True)
 - `format` (str) - Output format: `"json"` or `"mermaid"`
 
@@ -750,7 +733,6 @@ Run comprehensive validation on Memory Bank files.
 **Parameters:**
 
 - `file_name` (str | None) - Optional specific file to validate (if None, validates all files)
-- `project_root` (str | None) - Optional project root path
 - `strict` (bool) - Enable strict validation (warnings treated as errors)
 
 **Description:**
@@ -791,7 +773,6 @@ Find duplicate or highly similar content across files.
 
 **Parameters:**
 
-- `project_root` (str | None) - Optional project root path
 - `threshold` (float) - Similarity threshold (0.0-1.0) to flag as duplicate (default: 0.85)
 - `suggest_fixes` (bool) - Include refactoring suggestions in output (default: True)
 
@@ -838,7 +819,6 @@ Calculate Memory Bank quality score and health metrics.
 
 **Parameters:**
 
-- `project_root` (str | None) - Optional project root path
 - `detailed` (bool) - Include detailed breakdown and recommendations (default: True)
 
 **Description:**
@@ -890,7 +870,6 @@ Check token usage against budget and get projections.
 
 **Parameters:**
 
-- `project_root` (str | None) - Optional project root path
 - `include_projections` (bool) - Include growth projections (default: True)
 
 **Description:**
@@ -945,7 +924,6 @@ View or update validation configuration.
 
 **Parameters:**
 
-- `project_root` (str | None) - Optional project root path
 - `config_key` (str | None) - Configuration key to set (dot notation: "token_budget.max_total_tokens")
 - `config_value` (str | None) - Value to set (will be parsed as JSON)
 - `show_current` (bool) - Show current configuration (default: False)
@@ -1012,8 +990,6 @@ This tool should be called at the START of any task to:
   - `"dependency_aware"` - Includes dependency trees
   - `"section_level"` - Partial file inclusion
   - `"hybrid"` - Combines multiple strategies
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Uses relevance scoring and loading strategies to select the best subset of Memory Bank files that fit within a token budget.
@@ -1066,8 +1042,6 @@ Load context progressively based on strategy.
   - `"by_priority"` - Load by predefined priority order
   - `"by_dependencies"` - Load by dependency chain traversal
   - `"by_relevance"` - Load by task-specific relevance
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Loads Memory Bank files incrementally, ordered by priority, relevance, or dependencies. Useful for streaming contexts or early stopping.
@@ -1115,8 +1089,6 @@ Summarize Memory Bank content to reduce token usage.
   - `"extract_key_sections"` - Keep most important sections
   - `"compress_verbose"` - Remove examples, compress code
   - `"headers_only"` - Outline view with headers
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Generates summaries of files to fit within token budgets while preserving key information.
@@ -1153,7 +1125,6 @@ Get relevance scores for all Memory Bank files.
 **Parameters:**
 
 - `task_description` (str) - Description of the task
-- `project_root` (str | None) - Optional project root path
 - `include_sections` (bool) - Whether to include section-level scores (default: False)
 
 **Description:**
@@ -1193,8 +1164,6 @@ View or update optimization configuration.
 - `config_key` (str | None) - Configuration key in dot notation (e.g., "token_budget.default_budget")
 - `config_value` (str | None) - New value to set (as JSON string)
 - `show_current` (bool) - Show current configuration (default: False)
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Allows viewing and modifying optimization settings like token budgets, loading strategies, and relevance weights stored in `.cortex/config/optimization.json`.
@@ -1234,8 +1203,6 @@ Index custom rules from configured rules folder.
 **Parameters:**
 
 - `force` (bool) - Force reindexing even if recently indexed (default: False)
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Scans the rules folder (e.g., `.cursorrules`) and indexes all rule files for use in context optimization.
@@ -1268,8 +1235,6 @@ Get custom rules relevant to a task description.
 - `task_description` (str) - Description of the task
 - `max_tokens` (int | None) - Maximum tokens for rules (defaults to config)
 - `min_relevance_score` (float | None) - Minimum relevance score (defaults to config)
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Retrieves indexed rules that are relevant to the given task, useful for providing context-specific guidelines.
@@ -1319,8 +1284,6 @@ Analyze Memory Bank usage patterns.
 - `include_unused` (bool) - Include analysis of unused/stale files (default: True)
 - `include_task_patterns` (bool) - Include task-based access patterns (default: True)
 - `include_temporal` (bool) - Include temporal patterns (default: True)
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Tracks file access frequency, identifies frequently co-accessed files, detects unused/stale content, and analyzes task-based and temporal access patterns.
@@ -1377,8 +1340,6 @@ Analyze Memory Bank structure and organization.
 - `include_complexity` (bool) - Calculate complexity metrics (default: True)
 - `include_dependency_chains` (bool) - Find long dependency chains (default: True)
 - `max_chain_length` (int) - Maximum chain length to search for (default: 10)
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Analyzes file organization, detects anti-patterns, measures complexity metrics, and identifies problematic dependency chains.
@@ -1442,8 +1403,6 @@ Generate AI-driven insights and recommendations.
   - Categories: `usage`, `organization`, `redundancy`, `dependencies`, `quality`
 - `include_reasoning` (bool) - Include detailed reasoning for insights (default: True)
 - `export_format` (str) - Export format: `json`, `markdown`, or `text` (default: "json")
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Combines pattern and structure analysis to generate actionable insights with specific recommendations for improvement.
@@ -1511,8 +1470,6 @@ Suggest content consolidation opportunities.
 - `target_reduction` (float) - Target token reduction ratio (0-1, default: 0.30)
 - `suggest_transclusion` (bool) - Include transclusion syntax suggestions (default: True)
 - `files` (str | None) - Comma-separated list of files to analyze, or None for all
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Detects duplicate and similar content across files and suggests consolidation strategies using transclusion and shared sections.
@@ -1574,8 +1531,6 @@ Suggest files that should be split.
 - `max_file_size` (int) - Maximum recommended file size in tokens (default: 5000)
 - `max_sections` (int) - Maximum recommended number of sections per file (default: 10)
 - `files` (str | None) - Comma-separated list of files to analyze, or None for all
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Identifies large or complex files and recommends splitting strategies to improve context loading efficiency and maintainability.
@@ -1638,8 +1593,6 @@ Suggest structural reorganization.
   - `"complexity"` - Reduce overall complexity
 - `suggest_new_structure` (bool) - Include detailed new structure proposal (default: True)
 - `preserve_history` (bool) - Preserve version history when reorganizing (default: True)
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Analyzes current structure and proposes improvements to reduce complexity, optimize dependencies, and improve file organization.
@@ -1716,8 +1669,6 @@ Preview the impact of a refactoring suggestion.
 - `suggestion_id` (str) - ID of the refactoring suggestion to preview
 - `show_diff` (bool) - Include diff preview of changes (default: True)
 - `estimate_impact` (bool) - Include estimated impact analysis (default: True)
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Shows detailed information about what changes would be made, which files would be affected, and what the estimated impact would be.
@@ -1778,8 +1729,6 @@ Approve a refactoring suggestion.
 - `suggestion_id` (str) - ID of the suggestion to approve
 - `auto_apply` (bool) - If True, automatically apply after approval (default: False)
 - `user_comment` (str | None) - Optional comment explaining the approval
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Marks a suggestion as approved and optionally applies it immediately. Approved suggestions can be executed using `apply_refactoring`.
@@ -1825,8 +1774,6 @@ Apply an approved refactoring suggestion.
 - `approval_id` (str | None) - Optional approval ID (auto-finds if not provided)
 - `dry_run` (bool) - If True, simulate without making actual changes (default: False)
 - `validate_first` (bool) - If True, validate before executing (default: True)
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Executes the refactoring operations defined in a suggestion. Creates a snapshot before making changes and validates the operations.
@@ -1888,8 +1835,6 @@ Rollback a previously applied refactoring.
 - `restore_snapshot` (bool) - If True, restore from pre-refactoring snapshot (default: True)
 - `preserve_manual_changes` (bool) - If True, try to preserve manual edits (default: True)
 - `dry_run` (bool) - If True, simulate without making changes (default: False)
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Restores files to their state before the refactoring was applied. Can detect and preserve manual changes made after the refactoring.
@@ -1933,8 +1878,6 @@ Get history of applied refactorings.
 
 - `time_range_days` (int) - Number of days to include in history (default: 90)
 - `include_rollbacks` (bool) - Include rolled back executions (default: True)
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Shows all refactorings that have been executed, including their status, impact, and whether they were rolled back.
@@ -1989,8 +1932,6 @@ Provide feedback on a refactoring suggestion.
 - `feedback_type` (str) - Type of feedback: `"helpful"`, `"not_helpful"`, or `"incorrect"`
 - `comment` (str | None) - Optional comment explaining the feedback
 - `adjust_preferences` (bool) - If True, update learning preferences (default: True)
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Allows giving feedback that helps the system learn and improve future suggestions. Feedback can be "helpful", "not_helpful", or "incorrect".
@@ -2033,8 +1974,6 @@ Configure learning and adaptation behavior.
 - `config_value` (str | None) - New value for the configuration key
 - `reset_learning` (bool) - If True, reset all learning data (default: False)
 - `export_patterns` (bool) - If True, export learned patterns (default: False)
-- `project_root` (str | None) - Optional project root path
-
 **Description:**
 
 Allows viewing/updating learning settings, resetting learning data, or exporting learned patterns for analysis.
@@ -2288,7 +2227,6 @@ Initialize comprehensive project structure with optional interactive setup.
 
 **Parameters:**
 
-- `project_root` (str | None) - Project root directory (defaults to current directory)
 - `project_name` (str | None) - Name of the project
 - `project_type` (str | None) - Type of project (web, mobile, backend, library, etc.)
 - `primary_language` (str | None) - Primary programming language
@@ -2347,7 +2285,6 @@ Migrate from legacy structure to standardized `.memory-bank/` structure.
 
 **Parameters:**
 
-- `project_root` (str | None) - Project root directory (defaults to current directory)
 - `legacy_type` (str | None) - Type of legacy structure (auto-detected if not provided)
   - `"tradewing-style"` - Files in root + .cursor/plans
   - `"doc-mcp-style"` - docs/memory-bank structure
@@ -2399,7 +2336,6 @@ Setup Cursor IDE integration via symlinks.
 
 **Parameters:**
 
-- `project_root` (str | None) - Project root directory (defaults to current directory)
 - `force` (bool) - Force recreation of symlinks even if they exist (default: False)
 
 **Description:**
@@ -2433,8 +2369,6 @@ Creates symlinks in `.cursor/` directory pointing to `.memory-bank/` structure. 
 Analyze project structure health and provide recommendations.
 
 **Parameters:**
-
-- `project_root` (str | None) - Project root directory (defaults to current directory)
 
 **Description:**
 
@@ -2518,7 +2452,6 @@ Perform automated housekeeping on project structure.
 
 **Parameters:**
 
-- `project_root` (str | None) - Project root directory (defaults to current directory)
 - `actions` (list[str] | None) - List of actions to perform (all if not specified)
   - `"archive_stale"` - Archive stale plans
   - `"organize_plans"` - Organize plans by status
@@ -2578,8 +2511,6 @@ Performs automated maintenance tasks to keep the structure clean and organized.
 Get current structure configuration and status.
 
 **Parameters:**
-
-- `project_root` (str | None) - Project root directory (defaults to current directory)
 
 **Description:**
 
@@ -2653,8 +2584,6 @@ Analyze prompts, rules, and/or MCP tools for merge and optimization opportunitie
 - `similarity_threshold` (float) - Similarity threshold 0.0–1.0 (default: 0.75)
 - `include_dependencies` (bool) - Include prompt/rule dependency maps (default: true)
 - `validate_quality` (bool) - Run quality validation on merge opportunities (default: true)
-- `project_root` (str | None) - Optional project root path
-
 **Returns:** JSON string with `status`, `analysis_type`, `prompts`, `rules`, `tools`, `recommendations`, and optionally `prompt_dependencies` and `rule_dependencies`.
 
 **See:** [Health-Check API](health-check.md) and [Health-Check Guide](../guides/health-check.md).
@@ -2685,12 +2614,13 @@ Memory Bank Structure:
 memory-bank/
 ├── projectBrief.md - Foundation document
 ├── productContext.md - Product context
-├── activeContext.md - Current work
+├── activeContext.md - Completed work only (summaries of done work)
 ├── systemPatterns.md - Architecture
 ├── techContext.md - Technical details
 ├── progress.md - Development progress
-└── roadmap.md - Future plans
+└── roadmap.md - Future/upcoming work only (when work is done, move to activeContext)
 
+Responsibilities: activeContext = completed work; roadmap = future work; no overlap.
 Each file serves a specific purpose in maintaining context for AI assistants...
 ```
 

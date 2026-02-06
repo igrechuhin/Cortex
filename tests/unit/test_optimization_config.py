@@ -712,3 +712,171 @@ class TestEdgeCases:
         assert isinstance(new_config.get("test.bool"), bool)
         assert isinstance(new_config.get("test.list"), list)
         assert isinstance(new_config.get("test.dict"), dict)
+
+
+class TestNewConfigGetters:
+    """Tests for newly added configuration getter methods."""
+
+    def test_get_reserve_for_response_returns_int(
+        self, temp_project_root: Path
+    ) -> None:
+        """Test get_reserve_for_response returns integer."""
+        # Arrange
+        config = OptimizationConfig(temp_project_root)
+
+        # Act
+        reserve = config.get_reserve_for_response()
+
+        # Assert
+        assert reserve == 10000
+        assert isinstance(reserve, int)
+
+    def test_is_summarization_cache_enabled_returns_bool(
+        self, temp_project_root: Path
+    ) -> None:
+        """Test is_summarization_cache_enabled returns boolean."""
+        # Arrange
+        config = OptimizationConfig(temp_project_root)
+
+        # Act
+        enabled = config.is_summarization_cache_enabled()
+
+        # Assert
+        assert enabled is True
+        assert isinstance(enabled, bool)
+
+    def test_get_summarization_age_threshold_days_returns_int(
+        self, temp_project_root: Path
+    ) -> None:
+        """Test get_summarization_age_threshold_days returns integer."""
+        # Arrange
+        config = OptimizationConfig(temp_project_root)
+
+        # Act
+        threshold = config.get_summarization_age_threshold_days()
+
+        # Assert
+        assert threshold == 90
+        assert isinstance(threshold, int)
+
+    def test_is_summarization_auto_summarize_old_files_returns_bool(
+        self, temp_project_root: Path
+    ) -> None:
+        """Test is_summarization_auto_summarize_old_files returns boolean."""
+        # Arrange
+        config = OptimizationConfig(temp_project_root)
+
+        # Act
+        auto_summarize = config.is_summarization_auto_summarize_old_files()
+
+        # Assert
+        assert auto_summarize is False
+        assert isinstance(auto_summarize, bool)
+
+    def test_get_max_cache_size_mb_returns_int(self, temp_project_root: Path) -> None:
+        """Test get_max_cache_size_mb returns integer."""
+        # Arrange
+        config = OptimizationConfig(temp_project_root)
+
+        # Act
+        max_size = config.get_max_cache_size_mb()
+
+        # Assert
+        assert max_size == 50
+        assert isinstance(max_size, int)
+
+    def test_get_rule_priority_returns_str(self, temp_project_root: Path) -> None:
+        """Test get_rule_priority returns string."""
+        # Arrange
+        config = OptimizationConfig(temp_project_root)
+
+        # Act
+        priority = config.get_rule_priority()
+
+        # Assert
+        assert priority == "local_overrides_shared"
+        assert isinstance(priority, str)
+
+    def test_is_context_aware_loading_returns_bool(
+        self, temp_project_root: Path
+    ) -> None:
+        """Test is_context_aware_loading returns boolean."""
+        # Arrange
+        config = OptimizationConfig(temp_project_root)
+
+        # Act
+        context_aware = config.is_context_aware_loading()
+
+        # Assert
+        assert context_aware is True
+        assert isinstance(context_aware, bool)
+
+    def test_is_always_include_generic_returns_bool(
+        self, temp_project_root: Path
+    ) -> None:
+        """Test is_always_include_generic returns boolean."""
+        # Arrange
+        config = OptimizationConfig(temp_project_root)
+
+        # Act
+        always_include = config.is_always_include_generic()
+
+        # Assert
+        assert always_include is True
+        assert isinstance(always_include, bool)
+
+    def test_is_optimization_enabled_returns_bool(
+        self, temp_project_root: Path
+    ) -> None:
+        """Test is_optimization_enabled returns boolean."""
+        # Arrange
+        config = OptimizationConfig(temp_project_root)
+
+        # Act
+        enabled = config.is_optimization_enabled()
+
+        # Assert
+        assert enabled is True
+        assert isinstance(enabled, bool)
+
+    def test_new_getters_use_config_values(self, temp_project_root: Path) -> None:
+        """Test new getters use values from configuration."""
+        # Arrange
+        config = OptimizationConfig(temp_project_root)
+        _ = config.set("token_budget.reserve_for_response", 15000)
+        _ = config.set("summarization.cache_summaries", False)
+        _ = config.set("rules.rule_priority", "shared_overrides_local")
+        _ = config.set("enabled", False)
+
+        # Act & Assert
+        assert config.get_reserve_for_response() == 15000
+        assert config.is_summarization_cache_enabled() is False
+        assert config.get_rule_priority() == "shared_overrides_local"
+        assert config.is_optimization_enabled() is False
+
+    def test_new_getters_use_defaults_when_missing(
+        self, temp_project_root: Path
+    ) -> None:
+        """Test new getters fall back to defaults when config keys missing."""
+        # Arrange
+        config = OptimizationConfig(temp_project_root)
+        # Reset to empty config to test defaults
+        config.config = cast(
+            ModelDict,
+            {
+                "token_budget": {},
+                "summarization": {},
+                "performance": {},
+                "rules": {},
+            },
+        )
+
+        # Act & Assert - all should return defaults
+        assert config.get_reserve_for_response() == 10000
+        assert config.is_summarization_cache_enabled() is True
+        assert config.get_summarization_age_threshold_days() == 90
+        assert config.get_max_cache_size_mb() == 50
+        assert config.get_rule_priority() == "local_overrides_shared"
+        assert config.is_context_aware_loading() is True
+        assert config.is_always_include_generic() is True
+        assert config.is_optimization_enabled() is True
