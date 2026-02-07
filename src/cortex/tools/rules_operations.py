@@ -128,10 +128,16 @@ async def handle_get_relevant_operation(
         optimization_config, max_tokens, min_relevance_score
     )
 
+    # Use config defaults for rule_priority and context_aware
+    rule_priority = optimization_config.get_rule_priority()
+    context_aware = optimization_config.is_context_aware_loading()
+
     relevant_rules = await rules_manager.get_relevant_rules(
         task_description=task_description,
         max_tokens=resolved_max_tokens,
         min_relevance_score=resolved_min_score,
+        rule_priority=rule_priority,
+        context_aware=context_aware,
     )
     relevant_rules_dict: ModelDict = relevant_rules
 

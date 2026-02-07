@@ -100,6 +100,10 @@ def mock_managers(
     optimization_config.get_reserve_for_response.return_value = 10000
     optimization_config.get_priority_order.return_value = ["file1.md", "file2.md"]
     optimization_config.get_mandatory_files.return_value = ["file1.md"]
+    optimization_config.is_summarization_enabled.return_value = True
+    optimization_config.is_optimization_enabled.return_value = True
+    optimization_config.get_summarization_target_reduction.return_value = 0.5
+    optimization_config.get_summarization_strategy.return_value = "extract_key_sections"
 
     context_optimizer = MagicMock()
     context_optimizer.optimize_context = AsyncMock(
@@ -497,6 +501,125 @@ class TestSummarizeContent:
             # Assert
             assert result["status"] == "success"
             assert result["files_summarized"] == 2  # Mock returns 2 files
+
+    async def test_summarize_uses_config_defaults_when_args_none(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """Test summarize_content uses config defaults when target_reduction and strategy are None."""
+        # Arrange
+        mock_optimization_config = MagicMock()
+        mock_optimization_config.is_summarization_enabled.return_value = True
+        mock_optimization_config.get_summarization_target_reduction.return_value = 0.6
+        mock_optimization_config.get_summarization_strategy.return_value = (
+            "compress_verbose"
+        )
+        mock_optimization_config.is_optimization_enabled.return_value = True
+
+        def get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object:
+            if key == "optimization_config":
+                return mock_optimization_config
+            return _get_manager_helper(mgrs, key, _)
+
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_summarization_operations.get_manager",
+                side_effect=get_manager_helper,
+            ),
+        ):
+            # Act - pass None for target_reduction and strategy
+            result_str = await summarize_content(
+                file_name="file1.md", target_reduction=None, strategy=None
+            )
+            result = json.loads(result_str)
+
+            # Assert
+            assert result["status"] == "success"
+            assert result["target_reduction"] == 0.6  # From config
+            assert result["strategy"] == "compress_verbose"  # From config
+            mock_optimization_config.get_summarization_target_reduction.assert_called_once()
+            mock_optimization_config.get_summarization_strategy.assert_called_once()
+
+    async def test_summarize_gated_on_summarization_enabled(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """Test summarize_content is gated on summarization.enabled."""
+        # Arrange
+        mock_optimization_config = MagicMock()
+        mock_optimization_config.is_summarization_enabled.return_value = False
+        mock_optimization_config.is_optimization_enabled.return_value = True
+
+        def get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object:
+            if key == "optimization_config":
+                return mock_optimization_config
+            return _get_manager_helper(mgrs, key, _)
+
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_summarization_operations.get_manager",
+                side_effect=get_manager_helper,
+            ),
+        ):
+            # Act
+            result_str = await summarize_content(file_name="file1.md")
+            result = json.loads(result_str)
+
+            # Assert
+            assert result["status"] == "error"
+            assert "disabled" in result["error"].lower()
+
+    async def test_optimization_tools_gated_on_top_level_enabled(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """Test optimization tools are gated on top-level enabled flag."""
+        # Arrange
+        mock_optimization_config = MagicMock()
+        mock_optimization_config.is_optimization_enabled.return_value = False
+
+        def get_manager_helper(mgrs: ManagersDict, key: str, _: object) -> object:
+            if key == "optimization_config":
+                return mock_optimization_config
+            return _get_manager_helper(mgrs, key, _)
+
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization_handlers.get_manager",
+                side_effect=get_manager_helper,
+            ),
+        ):
+            # Act - test load_context
+            result_str = await load_context(task_description="test task")
+            result = json.loads(result_str)
+
+            # Assert
+            assert result["status"] == "error"
+            assert "disabled" in result["error"].lower()
 
     async def test_summarize_with_strategy(
         self, mock_project_root: Path, mock_managers: dict[str, Any]

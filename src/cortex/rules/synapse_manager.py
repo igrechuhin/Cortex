@@ -52,6 +52,10 @@ class SynapseManager:
         project_root: Path,
         synapse_folder: str = ".cortex/synapse",
         local_rules_folder: str = ".cursorrules",
+        language_keywords: dict[str, list[str]] | None = None,
+        synapse_repo: str | None = None,
+        auto_sync: bool = True,
+        sync_interval_minutes: int = 60,
     ):
         """
         Initialize Synapse manager.
@@ -60,6 +64,10 @@ class SynapseManager:
             project_root: Root directory of the project
             synapse_folder: Path to Synapse folder (submodule)
             local_rules_folder: Path to local project rules
+            language_keywords: Optional language keywords from config
+            synapse_repo: Synapse repository URL (for future auto-sync)
+            auto_sync: Enable automatic synchronization (for future scheduler)
+            sync_interval_minutes: Sync interval in minutes (for future scheduler)
         """
         self.project_root: Path = Path(project_root)
         self.synapse_path: Path = self.project_root / synapse_folder
@@ -74,7 +82,14 @@ class SynapseManager:
         self.loader: RulesLoader = RulesLoader(self.rules_path)
         self.prompts_loader: PromptsLoader = PromptsLoader(self.prompts_path)
         self.merger: RulesMerger = RulesMerger()
-        self.context_detector: ContextDetector = ContextDetector()
+        self.context_detector: ContextDetector = ContextDetector(
+            language_keywords=language_keywords
+        )
+
+        # Store config values for future use (auto-sync scheduler)
+        self.synapse_repo: str | None = synapse_repo
+        self.auto_sync: bool = auto_sync
+        self.sync_interval_minutes: int = sync_interval_minutes
 
     @property
     def repository(self) -> SynapseRepository:

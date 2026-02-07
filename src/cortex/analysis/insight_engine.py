@@ -32,6 +32,9 @@ class InsightEngine:
         self,
         pattern_analyzer: PatternAnalyzer,
         structure_analyzer: StructureAnalyzer,
+        min_impact_score: float = 0.5,
+        categories: list[str] | None = None,
+        auto_generate: bool = False,
     ) -> None:
         """
         Initialize insight engine.
@@ -39,6 +42,9 @@ class InsightEngine:
         Args:
             pattern_analyzer: Pattern analyzer instance
             structure_analyzer: Structure analyzer instance
+            min_impact_score: Minimum impact score for insights (from config)
+            categories: Insight categories to analyze (from config)
+            auto_generate: Enable auto-generation of insights (from config)
         """
         self.pattern_analyzer: PatternAnalyzer = pattern_analyzer
         self.structure_analyzer: StructureAnalyzer = structure_analyzer
@@ -50,6 +56,11 @@ class InsightEngine:
             structure_analyzer
         )
         self.summary_generator: InsightSummaryGenerator = InsightSummaryGenerator()
+
+        # Store config values for use in generate_insights method
+        self.min_impact_score: float = min_impact_score
+        self.categories: list[str] | None = categories
+        self.auto_generate: bool = auto_generate
 
     async def generate_insights(
         self,

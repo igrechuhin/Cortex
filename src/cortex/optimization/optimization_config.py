@@ -423,6 +423,17 @@ class OptimizationConfig:
         value = self.get("rules.always_include_generic", True)
         return bool(value) if isinstance(value, bool) else True
 
+    def get_language_keywords(self) -> dict[str, list[str]]:
+        """Get language keywords for context detection."""
+        value = self.get("rules.context_detection.language_keywords", {})
+        if not isinstance(value, dict):
+            return {}
+        result: dict[str, list[str]] = {}
+        for lang, keywords in value.items():
+            if isinstance(keywords, list):
+                result[str(lang)] = [str(kw) for kw in keywords if isinstance(kw, str)]
+        return result
+
     def is_synapse_enabled(self) -> bool:
         """Check if Synapse is enabled."""
         value = self.get("synapse.enabled", False)

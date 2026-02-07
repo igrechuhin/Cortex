@@ -23,9 +23,17 @@ class ContextDetector:
     - Category recommendations
     """
 
-    def __init__(self):
-        """Initialize context detector."""
-        self.language_keywords = _get_language_keywords()
+    def __init__(self, language_keywords: dict[str, list[str]] | None = None) -> None:
+        """Initialize context detector.
+
+        Args:
+            language_keywords: Optional language keywords mapping from config.
+                If None, uses hardcoded defaults.
+        """
+        if language_keywords is not None:
+            self.language_keywords = language_keywords
+        else:
+            self.language_keywords = _get_language_keywords()
         self.framework_keywords = _get_framework_keywords()
         self.extension_map = _get_extension_map()
 

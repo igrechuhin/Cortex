@@ -880,3 +880,33 @@ class TestNewConfigGetters:
         assert config.is_context_aware_loading() is True
         assert config.is_always_include_generic() is True
         assert config.is_optimization_enabled() is True
+
+    def test_get_language_keywords_returns_dict(self, temp_project_root: Path) -> None:
+        """Test get_language_keywords returns dictionary."""
+        # Arrange
+        config = OptimizationConfig(temp_project_root)
+
+        # Act
+        keywords = config.get_language_keywords()
+
+        # Assert
+        assert isinstance(keywords, dict)
+        assert "python" in keywords
+        assert isinstance(keywords["python"], list)
+        assert "python" in keywords["python"]
+
+    def test_get_language_keywords_uses_config_values(
+        self, temp_project_root: Path
+    ) -> None:
+        """Test get_language_keywords uses values from configuration."""
+        # Arrange
+        config = OptimizationConfig(temp_project_root)
+
+        # Act - test with default config (should have python, javascript, etc.)
+        keywords = config.get_language_keywords()
+
+        # Assert - verify default keywords are present
+        assert isinstance(keywords, dict)
+        assert "python" in keywords
+        assert isinstance(keywords["python"], list)
+        assert "python" in keywords["python"]

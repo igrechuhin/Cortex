@@ -74,16 +74,33 @@ class PatternAnalyzer:
     - Track temporal access patterns (daily/weekly trends)
     """
 
-    def __init__(self, project_root: Path):
+    def __init__(
+        self,
+        project_root: Path,
+        pattern_window_days: int = 30,
+        min_access_count: int = 5,
+        track_usage_patterns: bool = True,
+        track_task_patterns: bool = True,
+    ):
         """
         Initialize pattern analyzer.
 
         Args:
             project_root: Root directory of the project
+            pattern_window_days: Analysis window in days (from config)
+            min_access_count: Minimum access count for pattern analysis (from config)
+            track_usage_patterns: Enable usage pattern tracking (from config)
+            track_task_patterns: Enable task pattern tracking (from config)
         """
         self.project_root: Path = Path(project_root)
         self.access_log_path: Path = self.project_root / ".cortex" / "access-log.json"
         self.access_data: AccessLog = self._load_access_log()
+
+        # Store config values for use in analysis methods
+        self.pattern_window_days: int = pattern_window_days
+        self.min_access_count: int = min_access_count
+        self.track_usage_patterns: bool = track_usage_patterns
+        self.track_task_patterns: bool = track_task_patterns
 
     def _load_access_log(self) -> AccessLog:
         """

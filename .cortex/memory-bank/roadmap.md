@@ -18,7 +18,6 @@ None - MCP annotations blocker resolved 2026-02-05
 
 ### Critical Infrastructure (HIGH PRIORITY - Next)
 
-- **Wire optimization config to runtime behavior** - PENDING - Connect optimization configuration to runtime so behavior (token budgets, loading strategy, cache, rules, self_evolution) is config-driven and **optimization is based on usage statistics** where applicable (e.g. context loading prefers frequently used/co-accessed files when usage tracking is enabled). Plan: .cortex/plans/wire-optimization-config-to-runtime.md.
 - **Ensure proper logging for FastMCP** - PENDING - Comprehensive logging for MCP server and tool execution. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
 
 ### Investigation Plans (Archive / Reference)

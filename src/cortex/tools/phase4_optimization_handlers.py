@@ -29,6 +29,9 @@ from cortex.core.mcp_stability import (
     mcp_tool_wrapper,
 )
 from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.managers.manager_utils import get_manager
+from cortex.managers.types import ManagersDict
+from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.server import mcp
 from cortex.tools.phase4_context_operations import load_context_impl
 from cortex.tools.phase4_progressive_operations import (
@@ -36,6 +39,24 @@ from cortex.tools.phase4_progressive_operations import (
 )
 from cortex.tools.phase4_relevance_operations import get_relevance_scores_impl
 from cortex.tools.phase4_summarization_operations import summarize_content_impl
+
+
+async def _check_optimization_enabled(
+    mgrs: ManagersDict,
+) -> str | None:
+    """Check if optimization is enabled. Returns error JSON or None."""
+    optimization_config = await get_manager(
+        mgrs, "optimization_config", OptimizationConfig
+    )
+    if not optimization_config.is_optimization_enabled():
+        return json.dumps(
+            {
+                "status": "error",
+                "error": "Optimization features are disabled in configuration",
+            },
+            indent=2,
+        )
+    return None
 
 
 @mcp.tool(annotations=read_only_annotations("Load Context"))
@@ -77,6 +98,11 @@ async def load_context(
     try:
         root = await resolve_project_root_async(None, ctx)
         mgrs = await phase4_opt.get_managers(root)
+
+        enabled_error = await _check_optimization_enabled(mgrs)
+        if enabled_error:
+            return enabled_error
+
         out = await load_context_impl(
             mgrs, task_description, token_budget, strategy, project_root=root
         )
@@ -118,6 +144,11 @@ async def load_progressive_context(
     try:
         root = await resolve_project_root_async(None, ctx)
         mgrs = await phase4_opt.get_managers(root)
+
+        enabled_error = await _check_optimization_enabled(mgrs)
+        if enabled_error:
+            return enabled_error
+
         out = await load_progressive_context_impl(
             mgrs, task_description, token_budget, loading_strategy
         )
@@ -140,8 +171,8 @@ async def load_progressive_context(
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def summarize_content(
     file_name: str | None = None,
-    target_reduction: float = 0.5,
-    strategy: str = "extract_key_sections",
+    target_reduction: float | None = None,
+    strategy: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Summarize Memory Bank content to reduce token usage while preserving
@@ -159,6 +190,11 @@ async def summarize_content(
     try:
         root = await resolve_project_root_async(None, ctx)
         mgrs = await phase4_opt.get_managers(root)
+
+        enabled_error = await _check_optimization_enabled(mgrs)
+        if enabled_error:
+            return enabled_error
+
         out = await summarize_content_impl(mgrs, file_name, target_reduction, strategy)
         await log_client(
             ctx, "info", "summarize_content: completed", logger_name=__name__
@@ -200,6 +236,11 @@ async def get_relevance_scores(
     try:
         root = await resolve_project_root_async(None, ctx)
         mgrs = await phase4_opt.get_managers(root)
+
+        enabled_error = await _check_optimization_enabled(mgrs)
+        if enabled_error:
+            return enabled_error
+
         out = await get_relevance_scores_impl(mgrs, task_description, include_sections)
         await log_client(
             ctx, "info", "get_relevance_scores: completed", logger_name=__name__
@@ -260,11 +301,11 @@ async def get_relevance_scores_resource(task_description: str) -> str:
 @ensure_usage_context
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def summarize_content_resource(file_name: str) -> str:
-    """Resource: Summarize file (default reduction/strategy). Read via cortex://optimization/summarize/{file_name}. Use file_name '_' for all files."""
+    """Resource: Summarize file (default reduction/strategy from config). Read via cortex://optimization/summarize/{file_name}. Use file_name '_' for all files."""
     decoded = unquote(file_name)
     name_arg: str | None = None if decoded in ("_", "all", "") else decoded
     return await summarize_content(
         file_name=name_arg,
-        target_reduction=0.5,
-        strategy="extract_key_sections",
+        target_reduction=None,  # Use config default
+        strategy=None,  # Use config default
     )

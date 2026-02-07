@@ -72,7 +72,8 @@ def add_linking_managers(
         lambda: _create_link_parser(), name="link_parser"
     )
     managers["transclusion"] = LazyManager(
-        lambda: _create_transclusion_engine(core_managers), name="transclusion"
+        lambda: _create_transclusion_engine(core_managers, managers),
+        name="transclusion",
     )
     managers["link_validator"] = LazyManager(
         lambda: _create_link_validator(core_managers), name="link_validator"
@@ -153,7 +154,8 @@ def add_analysis_managers(
         core_managers: Core managers dictionary
     """
     managers["pattern_analyzer"] = LazyManager(
-        lambda: _create_pattern_analyzer(project_root), name="pattern_analyzer"
+        lambda: _create_pattern_analyzer(project_root, managers),
+        name="pattern_analyzer",
     )
     managers["structure_analyzer"] = LazyManager(
         lambda: _create_structure_analyzer(project_root, core_managers),
@@ -242,15 +244,22 @@ async def _create_link_parser() -> LinkParser:
 
 async def _create_transclusion_engine(
     core_managers: CoreManagersDict,
+    managers: ManagersBuilder,
 ) -> TransclusionEngine:
     """Create TransclusionEngine instance."""
+    from cortex.managers.manager_utils import get_manager
+
     fs_manager = core_managers.fs
     link_parser = LinkParser()
+    optimization_config = await get_manager(
+        managers, "optimization_config", OptimizationConfig
+    )
+
     return TransclusionEngine(
         file_system=fs_manager,
         link_parser=link_parser,
         max_depth=5,
-        cache_enabled=True,
+        cache_enabled=optimization_config.is_cache_enabled(),
     )
 
 
@@ -375,16 +384,49 @@ async def _create_synapse_manager(
     )
 
     synapse_folder = optimization_config.get_synapse_folder()
+    language_keywords = optimization_config.get_language_keywords()
+    synapse_repo = optimization_config.get_synapse_repo()
+    auto_sync = optimization_config.is_synapse_auto_sync()
+    sync_interval = optimization_config.get_synapse_sync_interval()
 
     return SynapseManager(
         project_root=project_root,
         synapse_folder=synapse_folder,
+        language_keywords=language_keywords if language_keywords else None,
+        synapse_repo=synapse_repo if synapse_repo else None,
+        auto_sync=auto_sync,
+        sync_interval_minutes=sync_interval,
     )
 
 
-async def _create_pattern_analyzer(project_root: Path) -> PatternAnalyzer:
+async def _create_pattern_analyzer(
+    project_root: Path, managers: ManagersBuilder
+) -> PatternAnalyzer:
     """Create PatternAnalyzer instance."""
-    return PatternAnalyzer(project_root)
+    from cortex.managers.manager_utils import get_manager
+
+    optimization_config = await get_manager(
+        managers, "optimization_config", OptimizationConfig
+    )
+
+    # Gate on self_evolution.enabled
+    if not optimization_config.is_self_evolution_enabled():
+        # Return analyzer with tracking disabled
+        return PatternAnalyzer(
+            project_root=project_root,
+            pattern_window_days=optimization_config.get_pattern_window_days(),
+            min_access_count=optimization_config.get_min_access_count(),
+            track_usage_patterns=False,
+            track_task_patterns=False,
+        )
+
+    return PatternAnalyzer(
+        project_root=project_root,
+        pattern_window_days=optimization_config.get_pattern_window_days(),
+        min_access_count=optimization_config.get_min_access_count(),
+        track_usage_patterns=optimization_config.is_usage_tracking_enabled(),
+        track_task_patterns=optimization_config.is_task_tracking_enabled(),
+    )
 
 
 async def _create_structure_analyzer(
@@ -411,9 +453,27 @@ async def _create_insight_engine(managers: ManagersBuilder) -> InsightEngine:
     structure_analyzer = await get_manager(
         managers, "structure_analyzer", StructureAnalyzer
     )
+    optimization_config = await get_manager(
+        managers, "optimization_config", OptimizationConfig
+    )
+
+    # Gate on self_evolution.enabled
+    if not optimization_config.is_self_evolution_enabled():
+        # Return engine with auto_generate disabled
+        return InsightEngine(
+            pattern_analyzer=pattern_analyzer,
+            structure_analyzer=structure_analyzer,
+            min_impact_score=optimization_config.get_min_impact_score(),
+            categories=optimization_config.get_insight_categories(),
+            auto_generate=False,
+        )
 
     return InsightEngine(
-        pattern_analyzer=pattern_analyzer, structure_analyzer=structure_analyzer
+        pattern_analyzer=pattern_analyzer,
+        structure_analyzer=structure_analyzer,
+        min_impact_score=optimization_config.get_min_impact_score(),
+        categories=optimization_config.get_insight_categories(),
+        auto_generate=optimization_config.is_auto_insights_enabled(),
     )
 
 

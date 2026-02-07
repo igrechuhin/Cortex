@@ -11,35 +11,66 @@ from cortex.core.metadata_index import MetadataIndex
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.optimization.models import SummarizationResultModel
+from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.summarization_engine import SummarizationEngine
 
 
-async def summarize_content_impl(
+async def _check_summarization_enabled(
+    optimization_config: OptimizationConfig,
+) -> str | None:
+    """Check if summarization is enabled. Returns error JSON or None."""
+    if not optimization_config.is_summarization_enabled():
+        return json.dumps(
+            {
+                "status": "error",
+                "error": "Summarization is disabled in optimization configuration",
+            },
+            indent=2,
+        )
+    return None
+
+
+def _resolve_summarization_defaults(
+    optimization_config: OptimizationConfig,
+    target_reduction: float | None,
+    strategy: str | None,
+) -> tuple[float, str]:
+    """Resolve summarization defaults from config when args are None."""
+    effective_target_reduction = (
+        target_reduction
+        if target_reduction is not None
+        else optimization_config.get_summarization_target_reduction()
+    )
+    effective_strategy = (
+        strategy
+        if strategy is not None
+        else optimization_config.get_summarization_strategy()
+    )
+    return effective_target_reduction, effective_strategy
+
+
+async def _get_summarization_managers(
     mgrs: ManagersDict,
-    file_name: str | None,
-    target_reduction: float,
-    strategy: str,
-) -> str:
-    """Implementation logic for summarize_content tool.
-
-    Args:
-        mgrs: Dictionary of managers
-        file_name: File name to summarize (None for all)
-        target_reduction: Target reduction percentage
-        strategy: Summarization strategy
-
-    Returns:
-        JSON string with summarization results
-    """
-    validation_error = _validate_summarize_inputs(target_reduction, strategy)
-    if validation_error:
-        return validation_error
-
+) -> tuple[SummarizationEngine, MetadataIndex, FileSystemManager]:
+    """Get summarization-related managers."""
     summarization_engine = await get_manager(
         mgrs, "summarization_engine", SummarizationEngine
     )
     metadata_index: MetadataIndex = mgrs.index
     fs_manager: FileSystemManager = mgrs.fs
+    return summarization_engine, metadata_index, fs_manager
+
+
+async def _execute_summarization(
+    mgrs: ManagersDict,
+    file_name: str | None,
+    effective_target_reduction: float,
+    effective_strategy: str,
+) -> str:
+    """Execute summarization with resolved parameters."""
+    summarization_engine, metadata_index, fs_manager = (
+        await _get_summarization_managers(mgrs)
+    )
 
     files_to_summarize = await _get_files_to_summarize(file_name, metadata_index)
     results = await _summarize_files(
@@ -47,11 +78,53 @@ async def summarize_content_impl(
         summarization_engine,
         metadata_index,
         fs_manager,
-        target_reduction,
-        strategy,
+        effective_target_reduction,
+        effective_strategy,
     )
 
-    return _build_summarize_response(results, strategy, target_reduction)
+    return _build_summarize_response(
+        results, effective_strategy, effective_target_reduction
+    )
+
+
+async def summarize_content_impl(
+    mgrs: ManagersDict,
+    file_name: str | None,
+    target_reduction: float | None,
+    strategy: str | None,
+) -> str:
+    """Implementation logic for summarize_content tool.
+
+    Args:
+        mgrs: Dictionary of managers
+        file_name: File name to summarize (None for all)
+        target_reduction: Target reduction percentage (None to use config default)
+        strategy: Summarization strategy (None to use config default)
+
+    Returns:
+        JSON string with summarization results
+    """
+    optimization_config = await get_manager(
+        mgrs, "optimization_config", OptimizationConfig
+    )
+
+    enabled_error = await _check_summarization_enabled(optimization_config)
+    if enabled_error:
+        return enabled_error
+
+    effective_target_reduction, effective_strategy = _resolve_summarization_defaults(
+        optimization_config, target_reduction, strategy
+    )
+
+    validation_error = _validate_summarize_inputs(
+        effective_target_reduction, effective_strategy
+    )
+    if validation_error:
+        return validation_error
+
+    return await _execute_summarization(
+        mgrs, file_name, effective_target_reduction, effective_strategy
+    )
 
 
 def _validate_summarize_inputs(target_reduction: float, strategy: str) -> str | None:
