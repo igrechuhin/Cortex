@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from cortex.core.path_resolver import get_venv_bin_path
 from cortex.services.framework_adapters.base import TestResult
 from cortex.services.framework_adapters.python_adapter import PythonAdapter
 
@@ -32,8 +33,9 @@ class TestPythonAdapter:
         """Test successful test execution."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / ".venv" / "bin").mkdir(parents=True)
-            (project_root / ".venv" / "bin" / "pytest").touch()
+            venv_bin = get_venv_bin_path(project_root)
+            venv_bin.mkdir(parents=True)
+            (venv_bin / "pytest").touch()
 
             mock_result = MagicMock()
             mock_result.returncode = 0
@@ -56,7 +58,7 @@ class TestPythonAdapter:
         """Test test execution timeout."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / ".venv" / "bin").mkdir(parents=True)
+            get_venv_bin_path(project_root).mkdir(parents=True)
 
             mock_run.side_effect = subprocess.TimeoutExpired("pytest", 30)
 
@@ -74,9 +76,10 @@ class TestPythonAdapter:
         """Test code formatting."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / ".venv" / "bin").mkdir(parents=True)
-            (project_root / ".venv" / "bin" / "black").touch()
-            (project_root / ".venv" / "bin" / "ruff").touch()
+            venv_bin = get_venv_bin_path(project_root)
+            venv_bin.mkdir(parents=True)
+            (venv_bin / "black").touch()
+            (venv_bin / "ruff").touch()
 
             mock_result = MagicMock()
             mock_result.returncode = 0
@@ -97,8 +100,9 @@ class TestPythonAdapter:
         """Test type checking."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / ".venv" / "bin").mkdir(parents=True)
-            (project_root / ".venv" / "bin" / "pyright").touch()
+            venv_bin = get_venv_bin_path(project_root)
+            venv_bin.mkdir(parents=True)
+            (venv_bin / "pyright").touch()
 
             mock_result = MagicMock()
             mock_result.returncode = 0
@@ -119,10 +123,11 @@ class TestPythonAdapter:
         """Test error fixing."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / ".venv" / "bin").mkdir(parents=True)
-            (project_root / ".venv" / "bin" / "ruff").touch()
-            (project_root / ".venv" / "bin" / "black").touch()
-            (project_root / ".venv" / "bin" / "pyright").touch()
+            venv_bin = get_venv_bin_path(project_root)
+            venv_bin.mkdir(parents=True)
+            (venv_bin / "ruff").touch()
+            (venv_bin / "black").touch()
+            (venv_bin / "pyright").touch()
 
             mock_result = MagicMock()
             mock_result.returncode = 0
@@ -148,7 +153,7 @@ class TestPythonAdapter:
 
     def test_get_command_uses_cwd_venv_when_project_venv_missing(self) -> None:
         """_get_command uses cwd/.venv/bin when project_root has no .venv (MCP fallback)."""
-        cwd_venv_bin = Path.cwd() / ".venv" / "bin"
+        cwd_venv_bin = get_venv_bin_path(Path.cwd())
         if not (cwd_venv_bin / "ruff").exists():
             pytest.skip(reason="repo .venv/bin/ruff not present (e.g. minimal CI)")
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -225,8 +230,9 @@ class TestPythonAdapter:
         """_collect_test_count parses 'N tests collected' from collect-only output."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / ".venv" / "bin").mkdir(parents=True)
-            (project_root / ".venv" / "bin" / "pytest").touch()
+            venv_bin = get_venv_bin_path(project_root)
+            venv_bin.mkdir(parents=True)
+            (venv_bin / "pytest").touch()
             (project_root / "tests").mkdir()
             adapter = PythonAdapter(str(project_root))
             with patch(
@@ -254,8 +260,9 @@ class TestPythonAdapter:
         """When progress_callback is set, use streaming and report (completed, total)."""
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            (project_root / ".venv" / "bin").mkdir(parents=True)
-            (project_root / ".venv" / "bin" / "pytest").touch()
+            venv_bin = get_venv_bin_path(project_root)
+            venv_bin.mkdir(parents=True)
+            (venv_bin / "pytest").touch()
             mock_collect.return_value = 100
             mock_streaming.return_value = TestResult(
                 success=True,

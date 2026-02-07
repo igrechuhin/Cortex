@@ -392,6 +392,23 @@ class TestManageFileEdgeCases:
                 assert "Unexpected error" in result["error"]
                 assert result["error_type"] == "RuntimeError"
 
+    async def test_manage_file_log_result_handles_invalid_json_response(self):
+        """_log_result_by_status handles non-JSON result without raising."""
+        with patch(
+            "cortex.tools.file_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=Path("/tmp/test"),
+        ):
+            with patch(
+                "cortex.tools.file_operations._execute_file_operation",
+                new_callable=AsyncMock,
+                return_value="not valid json",
+            ):
+                result_str = await manage_file(
+                    file_name="test.md", operation="read"
+                )
+                assert result_str == "not valid json"
+
     async def test_manage_file_write_without_content_in_dispatch(self):
         """Test write operation dispatch without content (line 577-585)."""
         # Arrange

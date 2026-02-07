@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from cortex.core.path_resolver import ProjectResourceType
 from cortex.validation.commit_workflow_model import (
     get_commit_steps_metadata,
     get_parallel_block_step_ids,
@@ -86,7 +87,9 @@ class TestCommitPromptAlignment:
         Phase 65: All pre-commit and Step 12 operations must be via Cortex MCP tools
         (execute_pre_commit_checks, fix_markdown_lint); no .venv/bin/python script paths.
         """
-        forbidden = ".venv/bin/python .cortex/synapse/scripts"
+        forbidden = (
+            f"{ProjectResourceType.VENV.value}/bin/python .cortex/synapse/scripts"
+        )
         assert forbidden not in commit_prompt_content, (
             "Commit prompt must not contain direct script invocations; "
             "use execute_pre_commit_checks() and fix_markdown_lint() only."

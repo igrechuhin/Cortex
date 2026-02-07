@@ -28,6 +28,7 @@ from cortex.core.context_logging import MCPContext, log_client, report_progress_
 from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import GitCommandResult
+from cortex.core.path_resolver import ProjectResourceType
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.markdown_lint_cache import (
@@ -160,10 +161,11 @@ def _collect_markdown_files_sync(project_root: Path) -> list[Path]:
         List of all markdown file paths
     """
     files: list[Path] = []
+    venv_part = f"/{ProjectResourceType.VENV.value}/"
     exclude_parts = [
         "/.git/",
         "/node_modules/",
-        "/.venv/",
+        venv_part,
         "/venv/",
         "/__pycache__/",
         "/.pytest_cache/",

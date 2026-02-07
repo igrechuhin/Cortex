@@ -929,8 +929,10 @@ class TestFixMarkdownLintErrorHandling:
     ):
         """Test that save_markdown_lint_index handles cache write failures gracefully."""
         from cortex.core.exceptions import FileLockTimeoutError
-        from cortex.tools.markdown_lint_cache import save_markdown_lint_index
-        from cortex.tools.markdown_operations import MarkdownLintIndex
+        from cortex.tools.markdown_lint_cache import (
+            MarkdownLintIndex,
+            save_markdown_lint_index,
+        )
 
         index = MarkdownLintIndex()
         with (
@@ -1203,8 +1205,8 @@ class TestMarkdownlintBatchHelpers:
     @pytest.mark.asyncio
     async def test_run_markdownlint_with_cache_uses_helpers(self, tmp_path: Path):
         """_run_markdownlint_with_cache wires cache, filtering, and execution."""
-        from cortex.tools.markdown_operations import (  # type: ignore[reportPrivateUsage]
-            MarkdownLintIndex,
+        from cortex.tools.markdown_lint_cache import MarkdownLintIndex
+        from cortex.tools.markdown_operations import (  # pyright: ignore[reportPrivateUsage]
             _run_markdownlint_with_cache,
         )
 

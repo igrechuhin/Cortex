@@ -416,6 +416,30 @@ async def _log_manage_file_result(
         )
 
 
+async def _log_result_by_status(
+    ctx: MCPContext | None,
+    file_name: str,
+    parsed_op: FileOperation,
+    result: str,
+) -> None:
+    """Log manage_file result from JSON response status (error vs success)."""
+    try:
+        parsed = json.loads(result)
+        if isinstance(parsed, dict):
+            p = cast(dict[str, object], parsed)
+            if p.get("status") == "error":
+                err_msg = str(p.get("error") or "Operation failed")
+                await _log_manage_file_result(
+                    ctx, file_name, parsed_op, ValueError(err_msg)
+                )
+            else:
+                await _log_manage_file_result(ctx, file_name, parsed_op, None)
+        else:
+            await _log_manage_file_result(ctx, file_name, parsed_op, None)
+    except (json.JSONDecodeError, TypeError):
+        await _log_manage_file_result(ctx, file_name, parsed_op, None)
+
+
 async def _manage_file_run_or_error(
     ctx: MCPContext | None,
     file_name: str,
@@ -435,7 +459,7 @@ async def _manage_file_run_or_error(
             include_metadata,
             change_description,
         )
-        await _log_manage_file_result(ctx, file_name, parsed_op, None)
+        await _log_result_by_status(ctx, file_name, parsed_op, result)
         return result
     except Exception as e:
         await _log_manage_file_result(ctx, file_name, parsed_op, e)

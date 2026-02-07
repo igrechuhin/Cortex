@@ -8,6 +8,11 @@ import subprocess
 from collections.abc import Sequence
 from pathlib import Path
 
+from cortex.core.path_resolver import (
+    CortexResourceType,
+    get_cortex_path,
+    get_venv_bin_path,
+)
 from cortex.services.language_detector import LanguageDetector, LanguageInfo
 
 from .base import CheckResult, FrameworkAdapter, ProgressCallback, TestResult
@@ -38,7 +43,7 @@ class PythonAdapter(FrameworkAdapter):
             project_root: Path to project root directory.
         """
         super().__init__(project_root)
-        self.venv_bin = self.project_root / ".venv" / "bin"
+        self.venv_bin = get_venv_bin_path(self.project_root)
 
     def _get_command(self, tool: str) -> str:
         """Get full path to tool command. Never relies on PATH (MCP-safe).
@@ -49,7 +54,7 @@ class PythonAdapter(FrameworkAdapter):
         venv_tool = self.venv_bin / tool
         if venv_tool.exists():
             return str(venv_tool)
-        cwd_venv = Path.cwd() / ".venv" / "bin" / tool
+        cwd_venv = get_venv_bin_path(Path.cwd()) / tool
         if cwd_venv.exists():
             return str(cwd_venv)
         expected = str(venv_tool)
@@ -359,7 +364,69 @@ class PythonAdapter(FrameworkAdapter):
             errors.append(f"Ruff import sorting error: {e}")
 
     def type_check(self) -> CheckResult:
-        """Run pyright type checker on src/ and tests/ (matches CI scope)."""
+        """Run type checker matching CI scope (src, tests, synapse scripts).
+
+        Uses .cortex/synapse/scripts/python/check_types.py when present so scope
+        matches CI step 'Type check (tests and scripts)'; otherwise falls back
+        to pyright src/ tests/.
+        """
+        script_path = (
+            get_cortex_path(self.project_root, CortexResourceType.SYNAPSE)
+            / "scripts"
+            / "python"
+            / "check_types.py"
+        )
+        if script_path.exists():
+            return self._type_check_via_script(script_path)
+        return self._type_check_pyright_only()
+
+    def _type_check_result(
+        self, success: bool, output: str, errors: list[str]
+    ) -> CheckResult:
+        """Build a type_check CheckResult."""
+        return CheckResult(
+            check_type="type_check",
+            success=success,
+            output=output,
+            errors=errors,
+            warnings=[],
+            files_modified=[],
+        )
+
+    def _type_check_via_script(self, script_path: Path) -> CheckResult:
+        """Run check_types.py so scope matches CI (src + tests + synapse scripts)."""
+        try:
+            python_bin = (
+                str(self.venv_bin / "python")
+                if (self.venv_bin / "python").exists()
+                else "python3"
+            )
+            result = subprocess.run(
+                [python_bin, str(script_path)],
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+            output = result.stdout + result.stderr
+            errors = self._parse_type_errors(output) if result.returncode != 0 else []
+            err_list = (
+                errors
+                if errors
+                else ([output.strip()] if result.returncode != 0 else [])
+            )
+            return self._type_check_result(result.returncode == 0, output, err_list)
+        except subprocess.TimeoutExpired:
+            return self._type_check_result(
+                False,
+                "check_types.py timed out (300s)",
+                ["Type check script timed out"],
+            )
+        except Exception as e:
+            return self._type_check_result(False, str(e), [str(e)])
+
+    def _type_check_pyright_only(self) -> CheckResult:
+        """Fallback: pyright on src/ and tests/ when check_types.py is missing."""
         try:
             result = subprocess.run(
                 [self._get_command("pyright"), "src/", "tests/"],

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import cast
 from unittest.mock import patch
 
+from cortex.core.path_resolver import get_venv_bin_path
 from cortex.services.language_detector import LanguageDetector
 
 
@@ -267,8 +268,9 @@ class TestLanguageDetector:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             _ = (root / "pyproject.toml").write_text("[project]\nname = 'x'")
-            (root / ".venv" / "bin").mkdir(parents=True)
-            _ = (root / ".venv" / "bin" / "black").write_text("")
+            venv_bin = get_venv_bin_path(root)
+            venv_bin.mkdir(parents=True)
+            _ = (venv_bin / "black").write_text("")
             detector = LanguageDetector(str(root))
             result = detector.detect_language()
             assert result is not None

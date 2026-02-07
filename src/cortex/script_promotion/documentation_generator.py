@@ -1,5 +1,7 @@
 """Generate documentation for promoted tools and scripts."""
 
+from cortex.core.path_resolver import ProjectResourceType
+
 
 def generate_tool_doc(
     tool_name: str,
@@ -45,6 +47,8 @@ def generate_script_doc(
     parts = [f"## {script_path}\n", f"{description}\n"]
     if use_case_label:
         parts.append(f"**Use case**: {use_case_label}\n")
-    run_cmd = f".venv/bin/python .cortex/synapse/{script_path}"
+    run_cmd = (
+        f"{ProjectResourceType.VENV.value}/bin/python .cortex/synapse/{script_path}"
+    )
     parts.append(f"**Run**: `{run_cmd}`\n")
     return "\n".join(parts)

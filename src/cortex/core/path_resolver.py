@@ -35,6 +35,12 @@ class CursorResourceType(Enum):
     PLANS = "plans"
 
 
+class ProjectResourceType(Enum):
+    """Enumeration of project root resource types for path resolution."""
+
+    VENV = ".venv"
+
+
 def get_cortex_path(project_root: Path, resource_type: CortexResourceType) -> Path:
     """Get the absolute path for a Cortex resource type.
 
@@ -61,6 +67,41 @@ def get_cortex_path(project_root: Path, resource_type: CortexResourceType) -> Pa
     if resource_type == CortexResourceType.INDEX:
         return cortex_dir / CortexResourceType.INDEX.value
     return cortex_dir / resource_type.value
+
+
+def get_project_path(project_root: Path, resource_type: ProjectResourceType) -> Path:
+    """Get the absolute path for a project root resource type.
+
+    Args:
+        project_root: Root directory of the project
+        resource_type: Type of project resource
+
+    Returns:
+        Absolute path to the resource
+
+    Examples:
+        >>> root = Path("/project")
+        >>> get_project_path(root, ProjectResourceType.VENV)
+        Path("/project/.venv")
+    """
+    return project_root / resource_type.value
+
+
+def get_venv_bin_path(project_root: Path) -> Path:
+    """Get the virtualenv bin directory path (project_root/.venv/bin).
+
+    Args:
+        project_root: Root directory of the project
+
+    Returns:
+        Path to .venv/bin
+
+    Examples:
+        >>> root = Path("/project")
+        >>> get_venv_bin_path(root)
+        Path("/project/.venv/bin")
+    """
+    return get_project_path(project_root, ProjectResourceType.VENV) / "bin"
 
 
 def get_cursor_path(project_root: Path, resource_type: CursorResourceType) -> Path:

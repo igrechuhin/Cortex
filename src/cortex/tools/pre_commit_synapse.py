@@ -6,6 +6,7 @@ Extracted from pre_commit_tools to keep that file under 400 lines.
 import subprocess
 from pathlib import Path
 
+from cortex.core.path_resolver import get_venv_bin_path
 from cortex.services.framework_adapters.base import CheckResult
 
 
@@ -23,7 +24,7 @@ def _synapse_script_skipped_result(check_type: str, language: str) -> CheckResul
 
 def _resolve_synapse_python_bin(project_root: Path) -> Path:
     """Resolve Python binary for running synapse scripts."""
-    venv_python = project_root / ".venv" / "bin" / "python"
+    venv_python = get_venv_bin_path(project_root) / "python"
     return venv_python if venv_python.exists() else Path("python3")
 
 

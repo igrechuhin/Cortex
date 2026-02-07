@@ -1,5 +1,6 @@
 """Integrate session scripts into Synapse script library templates."""
 
+from cortex.core.path_resolver import ProjectResourceType
 from cortex.script_detection.models import ScriptCaptureRecord
 
 
@@ -33,7 +34,7 @@ def script_integration_template(
     content = f'''"""
 Synapse script template from session script: {record.script_id}
 Original task: {doc[:200]}
-Run via: .venv/bin/python .cortex/synapse/scripts/{language}/{stem}.py
+Run via: {ProjectResourceType.VENV.value}/bin/python .cortex/synapse/scripts/{language}/{stem}.py
 """
 
 import sys

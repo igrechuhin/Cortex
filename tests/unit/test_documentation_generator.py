@@ -1,5 +1,6 @@
 """Tests for script_promotion.documentation_generator."""
 
+from cortex.core.path_resolver import ProjectResourceType
 from cortex.script_promotion.documentation_generator import (
     generate_script_doc,
     generate_tool_doc,
@@ -39,4 +40,4 @@ class TestGenerateScriptDoc:
         )
         assert "scripts/python/check_format.py" in doc
         assert "Check Python formatting" in doc
-        assert ".venv/bin/python" in doc
+        assert f"{ProjectResourceType.VENV.value}/bin/python" in doc

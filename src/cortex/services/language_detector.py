@@ -8,6 +8,7 @@ from pathlib import Path
 from pydantic import ConfigDict, Field
 
 from cortex.core.models import DictLikeModel
+from cortex.core.path_resolver import get_venv_bin_path
 
 
 class LanguageInfo(DictLikeModel):
@@ -273,7 +274,7 @@ class LanguageDetector:
 
     def _has_python_tool(self, tool: str) -> bool:
         """Check if Python tool is available."""
-        venv_bin = self.project_root / ".venv" / "bin" / tool
+        venv_bin = get_venv_bin_path(self.project_root) / tool
         if venv_bin.exists():
             return True
         # Check if tool is in PATH

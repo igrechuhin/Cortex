@@ -902,3 +902,24 @@ def mock_fs_manager():
     mock.read_file = MagicMock()
     mock.write_file = MagicMock()
     return mock
+
+
+# ============================================================================
+# Context Logging Fixtures (FastMCP)
+# ============================================================================
+
+
+@pytest.fixture
+def mock_ctx():
+    """
+    Create a mock MCP Context for testing Context logging.
+
+    Returns:
+        AsyncMock: Mock Context object with log() and report_progress() methods
+    """
+    from unittest.mock import AsyncMock
+
+    ctx = AsyncMock()
+    ctx.log = AsyncMock()
+    ctx.report_progress = AsyncMock()
+    return ctx

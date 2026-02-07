@@ -12,6 +12,11 @@ import pytest
 
 from cortex.core.constants import MAX_FILE_LINES, MAX_FUNCTION_LINES
 from cortex.core.models import ModelDict
+from cortex.core.path_resolver import (
+    ProjectResourceType,
+    get_project_path,
+    get_venv_bin_path,
+)
 from cortex.services.framework_adapters.base import (
     CheckResult,
     FrameworkAdapter,
@@ -71,7 +76,7 @@ class TestExecutePreCommitChecks:
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            (project_root / ".venv").mkdir()
+            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
             with (
                 patch(
@@ -217,7 +222,7 @@ class TestExecutePreCommitChecks:
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            (project_root / ".venv").mkdir()
+            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
             with (
                 patch(
@@ -275,7 +280,7 @@ class TestExecutePreCommitChecks:
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            (project_root / ".venv").mkdir()
+            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
             with patch(
                 "cortex.tools.pre_commit_tools.PythonAdapter"
@@ -349,7 +354,7 @@ class TestExecutePreCommitChecks:
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            (project_root / ".venv").mkdir()
+            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
             # No .cortex/synapse/scripts/python/check_formatting_ci_parity.py
 
             with patch(
@@ -382,7 +387,7 @@ class TestExecutePreCommitChecks:
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            (project_root / ".venv").mkdir()
+            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
             with patch(
                 "cortex.tools.pre_commit_tools.PythonAdapter"
@@ -458,9 +463,9 @@ class TestRunSynapseScript:
             scripts_dir.mkdir(parents=True)
             script_path = scripts_dir / "check_formatting_ci_parity.py"
             _ = script_path.write_text("#!/usr/bin/env python3\n")
-            (root / ".venv").mkdir()
-            (root / ".venv" / "bin").mkdir()
-            python_bin = root / ".venv" / "bin" / "python"
+            get_project_path(root, ProjectResourceType.VENV).mkdir()
+            get_venv_bin_path(root).mkdir(parents=True)
+            python_bin = get_venv_bin_path(root) / "python"
             _ = python_bin.write_text("")
             python_bin.chmod(0o755)
 
@@ -491,9 +496,9 @@ class TestRunSynapseScript:
             scripts_dir.mkdir(parents=True)
             script_path = scripts_dir / "check_formatting_ci_parity.py"
             _ = script_path.write_text("#!/usr/bin/env python3\n")
-            (root / ".venv").mkdir()
-            (root / ".venv" / "bin").mkdir()
-            python_bin = root / ".venv" / "bin" / "python"
+            get_project_path(root, ProjectResourceType.VENV).mkdir()
+            get_venv_bin_path(root).mkdir(parents=True)
+            python_bin = get_venv_bin_path(root) / "python"
             _ = python_bin.write_text("")
             python_bin.chmod(0o755)
 
@@ -727,7 +732,7 @@ class TestFixQualityIssues:
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            (project_root / ".venv").mkdir()
+            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
             with patch(
                 "cortex.tools.pre_commit_tools.execute_pre_commit_checks"
@@ -754,7 +759,7 @@ class TestFixQualityIssues:
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            (project_root / ".venv").mkdir()
+            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
             with (
                 patch(
@@ -825,7 +830,7 @@ class TestFixQualityIssues:
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            (project_root / ".venv").mkdir()
+            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
             with (
                 patch(
@@ -874,7 +879,7 @@ class TestFixQualityIssues:
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            (project_root / ".venv").mkdir()
+            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
 
             with (
                 patch(
@@ -1273,7 +1278,7 @@ class TestQualityCheckIntegration:
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            (project_root / ".venv").mkdir()
+            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
             src_dir = project_root / "src"
             src_dir.mkdir()
 
@@ -1334,7 +1339,7 @@ class TestLogTruncationBehavior:
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            (project_root / ".venv").mkdir()
+            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
             src_dir = project_root / "src"
             src_dir.mkdir()
             _ = (src_dir / "module.py").write_text("x = 1\n")
@@ -1396,7 +1401,7 @@ class TestPreCommitToolsContextLogging:
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
-            (project_root / ".venv").mkdir()
+            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
             with (
                 patch(
                     "cortex.tools.pre_commit_tools.log_client",
