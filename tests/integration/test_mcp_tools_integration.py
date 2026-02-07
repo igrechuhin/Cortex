@@ -94,8 +94,14 @@ class TestMCPToolWorkflows:
             assert data["status"] == "success"
             assert "content" in data
 
-            # Act 3: Write file
-            new_content = "# Updated Project Brief\n\nUpdated content."
+            # Act 3: Write file (schema: Project Overview, Goals, Core Requirements, Success Criteria)
+            new_content = (
+                "# Updated Project Brief\n\nUpdated content.\n\n"
+                "## Project Overview\n\nOverview.\n\n"
+                "## Goals\n\n- Goal.\n\n"
+                "## Core Requirements\n\n- Requirement.\n\n"
+                "## Success Criteria\n\nCriteria.\n"
+            )
             result = await manage_file(
                 operation="write",
                 file_name="projectBrief.md",

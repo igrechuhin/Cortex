@@ -109,7 +109,10 @@ async def test_full_workflow():
             print("🧪 Test 3: Update projectBrief.md")
             new_content = (
                 "# Project Brief\n\nThis is an updated project brief.\n\n"
-                "## Goals\n- Test versioning\n- Test metadata tracking\n"
+                "## Project Overview\n\nTest overview.\n\n"
+                "## Goals\n\n- Test versioning\n- Test metadata tracking\n\n"
+                "## Core Requirements\n\n- Requirement.\n\n"
+                "## Success Criteria\n\nSchema-compliant write for integration test.\n"
             )
             result = await manage_file(
                 operation="write",

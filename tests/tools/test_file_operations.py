@@ -19,6 +19,7 @@ from cortex.core.exceptions import (
 )
 from cortex.tools.file_operation_helpers import (
     build_invalid_operation_error,
+    build_schema_validation_error_response,
     build_write_error_response,
 )
 from cortex.tools.file_operations import (
@@ -32,6 +33,8 @@ from cortex.tools.file_operations import (
     validate_write_content,
     write_file,
 )
+from cortex.validation.models import ValidationError as ValidationErrorModel
+from cortex.validation.models import ValidationResult as ValidationResultModel
 from tests.helpers.managers import make_test_managers
 
 
@@ -693,6 +696,17 @@ Final section
         # Assert
         assert result is None
 
+    def test_validate_write_content_rejects_null_bytes(self):
+        """Test content validation rejects null bytes to avoid corrupted records."""
+        # Act
+        result = validate_write_content("Valid\x00content")
+
+        # Assert
+        assert result is not None
+        error = json.loads(result)
+        assert error["status"] == "error"
+        assert "null" in error["error"].lower()
+
     def test_build_write_error_response_file_conflict(self):
         """Test write error response for file conflict."""
         # Arrange
@@ -734,6 +748,37 @@ Final section
         assert response["status"] == "error"
         assert response["error_type"] == "GitConflictError"
         assert "suggestion" in response
+
+    def test_build_schema_validation_error_response(self):
+        """Test schema validation error response for pre-write validation failures."""
+        # Arrange
+        err = ValidationErrorModel(
+            type="missing_section",
+            severity="error",
+            message="Missing required section: Goals",
+            suggestion="Add ## Goals",
+        )
+        result = ValidationResultModel(
+            valid=False,
+            errors=[err],
+            warnings=[],
+            score=40,
+        )
+
+        # Act
+        response_str = build_schema_validation_error_response("projectBrief.md", result)
+
+        # Assert
+        response = json.loads(response_str)
+        assert response["status"] == "error"
+        assert response["file_name"] == "projectBrief.md"
+        assert "schema" in response["error"].lower()
+        assert response["validation"]["valid"] is False
+        assert response["validation"]["score"] == 40
+        assert len(response["validation"]["errors"]) == 1
+        assert response["validation"]["errors"][0]["message"] == (
+            "Missing required section: Goals"
+        )
 
     def test_build_invalid_operation_error(self):
         """Test invalid operation error builder."""
@@ -961,6 +1006,72 @@ class TestEdgeCasesForCoverage:
                 assert result["status"] == "success"
                 assert "metadata" in result
                 assert result["metadata"]["size_bytes"] == 200
+
+    async def test_manage_file_write_rejected_by_schema_validation(self):
+        """Test write rejected when content fails pre-write schema validation."""
+        # Arrange: content missing required sections for projectBrief.md
+        file_name = "projectBrief.md"
+        content = "# Project Brief\n\nNo required sections here."
+
+        mock_path = MagicMock(spec=Path)
+        mock_path.exists.return_value = True
+        mock_path.name = file_name
+
+        mock_fs = AsyncMock()
+        mock_fs.construct_safe_path = MagicMock(return_value=mock_path)
+
+        schema_result = ValidationResultModel(
+            valid=False,
+            errors=[
+                ValidationErrorModel(
+                    type="missing_section",
+                    severity="error",
+                    message="Missing required section: Goals",
+                    suggestion="Add ## Goals",
+                ),
+            ],
+            warnings=[],
+            score=30,
+        )
+        mock_schema_validator = MagicMock()
+        mock_schema_validator.get_schema.return_value = MagicMock()
+        mock_schema_validator.validate_file = AsyncMock(return_value=schema_result)
+
+        mock_managers_dict = {
+            "fs": mock_fs,
+            "index": AsyncMock(),
+            "tokens": MagicMock(),
+            "versions": AsyncMock(),
+        }
+
+        with patch(
+            "cortex.tools.file_operations.get_managers",
+            return_value=make_test_managers(**mock_managers_dict),
+        ):
+            with patch(
+                "cortex.tools.file_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ):
+                with patch(
+                    "cortex.tools.file_operations.get_manager",
+                    new_callable=AsyncMock,
+                    return_value=mock_schema_validator,
+                ):
+                    # Act
+                    result_str = await manage_file(
+                        file_name=file_name,
+                        operation="write",
+                        content=content,
+                    )
+
+        # Assert: write rejected, no disk write
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert "schema" in result["error"].lower()
+        assert result["file_name"] == file_name
+        assert result["validation"]["valid"] is False
+        mock_fs.write_file.assert_not_called()
 
     async def test_manage_file_write_success_full_flow(self):
         """Test successful write operation covering lines 486-504."""

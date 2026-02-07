@@ -6,7 +6,9 @@
 
 ## Blockers (ASAP Priority)
 
-- [Phase: Investigate execute_pre_commit_checks MCP Tool Failure](.cortex/plans/phase-investigate-execute_pre_commit_checks-failure-2260255 - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `execute_pre_commit_checks`, Error: TypeError - Impact: Commit procedure blocked - Target completion: 2026-2null - MCP annotations blocker resolved 2026025 Active Work (in progress)
+- **Gradual migration to Option C: HTTP/SSE default where client supports it; stdio fallback** - PENDING (FIX-ASAP) - Two-phase: (1) optional HTTP/SSE alongside stdio, (2) default to HTTP/SSE when port configured, stdio fallback. Plan: .cortex/plans/mcp-transport-http-sse-implementation.md.
+
+## Active Work (in progress)
 
 ## Future Enhancements
 
@@ -53,7 +55,7 @@ The following 22 investigation plans document MCP tool registration issues resol
 
 - **Markdown corruption in progress and plans** - PENDING - Plan: .cortex/plans/session-optimization-markdown-corruption-progress-plans.md.
 - **Public API, memory bank, rules** - PENDING - Plan: .cortex/plans/session-optimization-public-api-memory-bank-rules.md.
-- **Sequential plan steps** - PENDING - Plan: .cortex/plans/session-optimization-sequential-plan-steps.md.
+- **Sequential thinking in Cortex MCP** - PENDING - Sequential thinking tool with thought history, revisions, branches. Plan: .cortex/plans/sequential-thinking-cortex-mcp.md.
 
 ### Features & Enhancements
 
@@ -61,13 +63,10 @@ The following 22 investigation plans document MCP tool registration issues resol
 - **Claude-mem inspired improvements (usage search, observations, progressive disclosure)** - PENDING - Plan: .cortex/plans/claude-mem-inspired-improvements.md.
 - **Conditional prompt registration** - PENDING - Only show setup prompts when project not fully configured. Plan: .cortex/plans/conditional-prompt-registration.md.
 - **Make fix_markdown_lint report progress like tests tool** - PENDING - Progress reporting for markdown linting. Plan: .cortex/plans/fix-markdown-lint-progress-like-tests.md.
-- **MCP transport HTTP/SSE analysis** - PENDING - Analyze HTTP/SSE transport options. Plan: .cortex/plans/mcp-transport-http-sse-analysis.md.
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
 - **Phase9Excellence98** - PENDING - Plan: .cortex/plans/phase-9cellence-98.md.
 - **Quality gate: commit pipeline spelling gap** - PENDING - Plan: .cortex/plans/quality-gate-commit-pipeline-spelling-gap.md.
 - **Refactor setup prompts (simplify to3)** - PENDING - Simplify from4 to 3ompts. Plan: .cortex/plans/refactor-setup-prompts.md.
-- **Sequential thinking in Cortex MCP** - PENDING - Sequential thinking tool with thought history, revisions, branches. Plan: .cortex/plans/sequential-thinking-cortex-mcp.md.
 - **Type cleanup inventory (Phase53 - PENDING - Inventory of dict[str, object], list[object], TypedDict, Any. Plan: .cortex/plans/type-cleanup-inventory.md.
-- **Phase 18: Markdown Lint Fix Tool** - COMPLETED (archived) - Historical reference for the markdown lint fix tooling work. Plan: .cortex/plans/phase-18-lint-fix-tool.md.
 - **Test Fixture Validation and Maintenance** - PENDING - Implement test fixture validation and maintenance mechanisms to prevent test failures caused by incomplete mock configurations. Addresses session optimization recommendations: fixture validation, documentation, and maintenance protocol.
 - **Session Optimization: Commit Pipeline Improvements** - PENDING - Implement improvements to commit pipeline based on end-of-session analysis: async test validation, early markdown lint validation, markdown formatting guidelines, git SSL documentation, test maintenance checklist, and push strategy improvements.

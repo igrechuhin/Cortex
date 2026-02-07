@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-07T19:59:07.193580",
+  "last_updated": "2026-02-07T20:50:47.460187",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 6603,
-      "token_count": 1625,
+      "size_bytes": 6079,
+      "token_count": 1499,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-07T14:01:47.169805",
-      "content_hash": "sha256:ecdd03b8779f5d79f684f2212a6a506e5e34c20dc081198c616f38502a916ca8",
+      "last_modified": "2026-02-07T20:36:03.618581",
+      "content_hash": "sha256:e91aefbcb9a0512f87cddd1b4bca86ef813618aea4c0844dbabc24d5c9bdcd91",
       "sections": [
         {
           "title": "## Blockers (ASAP Priority)",
@@ -22,58 +22,65 @@
           "content_hash": null
         },
         {
-          "title": "## Future Enhancements",
+          "title": "## Active Work (in progress)",
           "level": 2,
           "line_start": 11,
           "line_end": 11,
           "content_hash": null
         },
         {
-          "title": "## Pending plans (from .cortex/plans)",
+          "title": "## Future Enhancements",
           "level": 2,
           "line_start": 13,
           "line_end": 13,
           "content_hash": null
         },
         {
-          "title": "### Investigation Plans (Archive / Reference)",
+          "title": "## Pending plans (from .cortex/plans)",
           "level": 2,
           "line_start": 15,
           "line_end": 15,
           "content_hash": null
         },
         {
+          "title": "### Investigation Plans (Archive / Reference)",
+          "level": 2,
+          "line_start": 17,
+          "line_end": 17,
+          "content_hash": null
+        },
+        {
           "title": "#### Tool Failure Investigations (Archive Recommended)",
           "level": 2,
-          "line_start": 19,
-          "line_end": 19,
+          "line_start": 21,
+          "line_end": 21,
           "content_hash": null
         },
         {
           "title": "### Session Optimization Plans (2026-2",
           "level": 2,
-          "line_start": 46,
-          "line_end": 46,
+          "line_start": 48,
+          "line_end": 48,
           "content_hash": null
         },
         {
           "title": "### Session Optimization Plans (20261)",
           "level": 2,
-          "line_start": 51,
-          "line_end": 51,
+          "line_start": 53,
+          "line_end": 53,
           "content_hash": null
         },
         {
           "title": "### Features & Enhancements",
           "level": 2,
-          "line_start": 57,
-          "line_end": 57,
+          "line_start": 59,
+          "line_end": 59,
           "content_hash": null
         }
       ],
       "read_count": 4,
-      "write_count": 83,
-      "last_read": "2026-02-07T14:01:47.169805",
+      "write_count": 86,
+      "last_read": "2026-02-07T20:36:03.618581",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -1022,20 +1029,53 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Removed completed step Ensure proper logging for FastMCP (moved to activeContext)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T20:28:28.212626",
+          "content_hash": "sha256:5bda2ad4d725da137ec5cef5d790472d41036906bd64f3b28d184330230237e6",
+          "size_bytes": 5999,
+          "token_count": 1468,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Removed completed MCP transport HTTP/SSE analysis; added follow-up implementation plan to Future Enhancements."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T20:35:30.218053",
+          "content_hash": "sha256:e91aefbcb9a0512f87cddd1b4bca86ef813618aea4c0844dbabc24d5c9bdcd91",
+          "size_bytes": 6079,
+          "token_count": 1499,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Add Option C gradual migration (HTTP/SSE default where client supports it; stdio fallback) as Blocker ASAP; remove duplicate from Future Enhancements."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T20:36:03.618091",
+          "content_hash": "sha256:e91aefbcb9a0512f87cddd1b4bca86ef813618aea4c0844dbabc24d5c9bdcd91",
+          "size_bytes": 6079,
+          "token_count": 1499,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Restore roadmap content; keep Option C gradual migration as only Blocker and remove duplicate from Future Enhancements."
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 2994,
-      "token_count": 696,
+      "size_bytes": 4463,
+      "token_count": 1021,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-07T15:50:54.643398",
-      "content_hash": "sha256:67b71baac49332daa7dfe653743572a0c58e3bc4bef453ccd066603075a0ae07",
+      "last_modified": "2026-02-07T20:48:35.856372",
+      "content_hash": "sha256:1a82d935cce9abc5a1e2a2a96fa85acbaa877dc130aa5c926099d01177236774",
       "sections": [
         {
-          "title": "## 202627",
+          "title": "## 202627**Commit (integration tests projectBrief schema, markdown lint)** - COMPLETE. Fixed two failing integration tests (test_full_workflow, test_initialize_read_write_workflow) by using projectBrief content with required schema sections (Project Overview, Goals, Core Requirements, Success Criteria). Fixed MD026 .cortex/history/progress_v11.md. Markdown lint: 0 errors. All pre-commit checks pass; 3635tests, 901% coverage.",
           "level": 2,
           "line_start": 3,
           "line_end": 3,
@@ -1044,14 +1084,28 @@
         {
           "title": "## 2026-5",
           "level": 2,
-          "line_start": 16,
-          "line_end": 16,
+          "line_start": 21,
+          "line_end": 21,
+          "content_hash": null
+        },
+        {
+          "title": "## What Works",
+          "level": 2,
+          "line_start": 33,
+          "line_end": 33,
+          "content_hash": null
+        },
+        {
+          "title": "## What's Left",
+          "level": 2,
+          "line_start": 37,
+          "line_end": 37,
           "content_hash": null
         }
       ],
       "read_count": 1,
-      "write_count": 144,
-      "last_read": "2026-02-07T15:50:54.643398",
+      "write_count": 148,
+      "last_read": "2026-02-07T20:48:35.856372",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -2638,17 +2692,61 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Fix typos in progress log"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T20:15:09.482241",
+          "content_hash": "sha256:4856d122c616e7ef141d01f39ede77a57473fa6b957a914b1360db909e7ece53",
+          "size_bytes": 3281,
+          "token_count": 767,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Progress entry for commit run (projectBrief markdown lint, all checks pass)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T20:15:30.900259",
+          "content_hash": "sha256:4856d122c616e7ef141d01f39ede77a57473fa6b957a914b1360db909e7ece53",
+          "size_bytes": 3281,
+          "token_count": 767,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Fix typos and add commit run entry for projectBrief markdown lint"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T20:32:04.710756",
+          "content_hash": "sha256:63e8c72d62f3615565082b238f9bd027693e3a8be1afaf7c2750c36efc31b050",
+          "size_bytes": 3859,
+          "token_count": 890,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for MCP transport HTTP/SSE analysis completion."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T20:48:35.855930",
+          "content_hash": "sha256:1a82d935cce9abc5a1e2a2a96fa85acbaa877dc130aa5c926099d01177236774",
+          "size_bytes": 4463,
+          "token_count": 1021,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Add progress entry for commit (integration tests projectBrief schema, markdown lint); add required sections"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 2698,
-      "token_count": 637,
+      "size_bytes": 4145,
+      "token_count": 957,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-07T15:43:45.758885",
-      "content_hash": "sha256:e0da8627d3c7287b767077a7b6d27b58422497a692bece7730f867e3ec640af9",
+      "last_modified": "2026-02-07T20:48:05.838596",
+      "content_hash": "sha256:386c43ba6552d890b88571101071d857675b6cd783c387b744d729b156e93464",
       "sections": [
         {
           "title": "## Completed Work (20267",
@@ -2656,11 +2754,32 @@
           "line_start": 5,
           "line_end": 5,
           "content_hash": null
+        },
+        {
+          "title": "## Current Focus",
+          "level": 2,
+          "line_start": 24,
+          "line_end": 24,
+          "content_hash": null
+        },
+        {
+          "title": "## Recent Changes",
+          "level": 2,
+          "line_start": 28,
+          "line_end": 28,
+          "content_hash": null
+        },
+        {
+          "title": "## Next Steps",
+          "level": 2,
+          "line_start": 32,
+          "line_end": 32,
+          "content_hash": null
         }
       ],
       "read_count": 1,
-      "write_count": 118,
-      "last_read": "2026-02-07T15:43:45.758885",
+      "write_count": 121,
+      "last_read": "2026-02-07T20:48:05.838596",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -3961,6 +4080,39 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Add Phase 18 (markdown lint fix tool) as completed work with link to archived plan; roadmap contains future work only"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T20:32:37.944576",
+          "content_hash": "sha256:2d21de0cc67630f751ea1df4702afaef1397e7d67e0c74252880fe479425f84a",
+          "size_bytes": 3365,
+          "token_count": 787,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Added completed MCP transport HTTP/SSE analysis to active context."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T20:47:43.660760",
+          "content_hash": "sha256:386c43ba6552d890b88571101071d857675b6cd783c387b744d729b156e93464",
+          "size_bytes": 4145,
+          "token_count": 957,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Add completed work and required sections for commit (integration tests, markdown lint)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T20:48:05.831680",
+          "content_hash": "sha256:386c43ba6552d890b88571101071d857675b6cd783c387b744d729b156e93464",
+          "size_bytes": 4145,
+          "token_count": 957,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Fix typos in activeContext (dates, percentages, phase labels)"
         }
       ]
     },
@@ -4193,7 +4345,7 @@
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/projectBrief.md",
       "exists": true,
       "read_count": 5,
-      "write_count": 65,
+      "write_count": 69,
       "current_version": 11,
       "version_history": [
         {
@@ -4954,23 +5106,88 @@
           "snapshot_path": ".cortex/history/projectBrief_v11.md",
           "changed_sections": [],
           "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T20:13:29.211821",
+          "content_hash": "sha256:a0b2d45490f1430a8aa590e79d0de3d4bfc973ae89de6fd0ff0c24a9d18622a2",
+          "size_bytes": 104,
+          "token_count": 23,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T20:45:05.582247",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T20:45:26.654264",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T20:50:47.457681",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
         }
       ],
-      "size_bytes": 104,
-      "token_count": 23,
+      "size_bytes": 247,
+      "token_count": 46,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-07T19:59:07.192060",
-      "content_hash": "sha256:a0b2d45490f1430a8aa590e79d0de3d4bfc973ae89de6fd0ff0c24a9d18622a2",
+      "last_modified": "2026-02-07T20:50:47.458397",
+      "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
       "sections": [
         {
-          "title": "## Goals",
+          "title": "## Project Overview",
           "level": 2,
           "line_start": 5,
           "line_end": 5,
           "content_hash": null
+        },
+        {
+          "title": "## Goals",
+          "level": 2,
+          "line_start": 9,
+          "line_end": 9,
+          "content_hash": null
+        },
+        {
+          "title": "## Core Requirements",
+          "level": 2,
+          "line_start": 14,
+          "line_end": 14,
+          "content_hash": null
+        },
+        {
+          "title": "## Success Criteria",
+          "level": 2,
+          "line_start": 18,
+          "line_end": 18,
+          "content_hash": null
         }
       ],
-      "last_read": "2026-02-07T19:59:07.192060"
+      "last_read": "2026-02-07T20:50:47.458397"
     },
     "techContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/techContext.md",
@@ -5376,8 +5593,8 @@
   },
   "totals": {
     "total_files": 10,
-    "total_size_bytes": 43651,
-    "total_tokens": 9879,
-    "last_full_scan": "2026-02-07T19:59:07.192091"
+    "total_size_bytes": 46186,
+    "total_tokens": 10421,
+    "last_full_scan": "2026-02-07T20:50:47.458434"
   }
 }

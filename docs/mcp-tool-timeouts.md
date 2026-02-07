@@ -243,7 +243,7 @@ When the client (e.g. Cursor) fetches many MCP **resources** in parallel (e.g. w
 **Server-side mitigations (Cortex)**:
 
 - **Short-TTL cache for expensive resources**: Cortex caches responses for `cortex://structure/info` and `cortex://structure/health` with a 30-second TTL (`MCP_RESOURCE_CACHE_TTL_SECONDS`). When many ReadResource requests are queued behind a long tool, the first read after the tool completes populates the cache; subsequent reads for the same resource return immediately. This speeds up queue draining and makes later resource panel loads fast. Other heavy resources may get the same treatment in future updates.
-- **Stdio is sequential**: The MCP Python SDK over stdio processes one request at a time. The server cannot process ReadResource requests while a tool is running. Concurrency would require a different transport (e.g. HTTP/SSE); for stdio, caching and the recommendations above are the available mitigations.
+- **Stdio is sequential**: The MCP Python SDK over stdio processes one request at a time. The server cannot process ReadResource requests while a tool is running. Concurrency would require a different transport (e.g. HTTP/SSE); for stdio, caching and the recommendations above are the available mitigations. An analysis of optional HTTP/SSE (and Streamable HTTP) transport is in [docs/mcp-transport-http-sse-analysis.md](mcp-transport-http-sse-analysis.md); a follow-up implementation plan is in the roadmap.
 
 ### Resource read timeouts (-32001)
 

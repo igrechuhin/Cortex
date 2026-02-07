@@ -2,7 +2,7 @@
 
 ## Status
 
-- **Status**: PENDING — **Promoted** (recommended for active consideration)
+- **Status**: COMPLETED — 2026-02-07 (analysis done; recommendation: go; follow-up plan added to roadmap)
 - **Priority**: **High** — Stdio is a poor channel for Cortex MCP; analysis should be prioritized so we can decide on HTTP/SSE or other transport and roadmap implementation.
 - **Created**: 2026-02-03
 - **Promoted**: 2026-02-07 (post connection-closed investigation)

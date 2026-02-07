@@ -35,6 +35,7 @@ from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.managers.initialization import get_managers
+from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
 from cortex.tools.file_operation_helpers import (
@@ -42,10 +43,12 @@ from cortex.tools.file_operation_helpers import (
     build_invalid_operation_error,
     build_new_file_creation_error,
     build_read_error_response,
+    build_schema_validation_error_response,
     build_write_error_response,
     validate_manage_file_operation,
 )
 from cortex.tools.roadmap_corruption import fix_roadmap_content_if_needed
+from cortex.validation.schema_validator import SchemaValidator
 
 # Valid operation values for manage_file() (must match FileOperation enum).
 ManageFileOperationName = Literal["read", "write", "metadata"]
@@ -563,13 +566,18 @@ async def _handle_write_operation(
     metadata_index: MetadataIndex,
     token_counter: TokenCounter,
     version_manager: VersionManager,
+    schema_validator: SchemaValidator | None,
 ) -> str:
-    """Handle write operation."""
+    """Handle write operation with pre-write schema and content validation."""
     if validation_error := _validate_write_request(file_path, file_name, content):
         return validation_error
     assert content is not None
     if file_name == "roadmap.md":
         content = fix_roadmap_content_if_needed(content)
+    if schema_validator is not None and schema_validator.get_schema(file_name):
+        result = await schema_validator.validate_file(file_name, content)
+        if not result.valid:
+            return build_schema_validation_error_response(file_name, result)
     return await _execute_write_with_error_handling(
         file_path,
         file_name,
@@ -746,10 +754,19 @@ def build_write_response(
 
 
 def validate_write_content(content: str | None) -> str | None:
-    """Validate content for write operation."""
+    """Validate content for write operation (required, no null bytes)."""
     if content is None:
         return json.dumps(
             {"status": "error", "error": "Content is required for write operation"},
+            indent=2,
+        )
+    if "\x00" in content:
+        return json.dumps(
+            {
+                "status": "error",
+                "error": "Content must not contain null bytes (invalid for text files)",
+                "hint": "Remove binary or control characters and retry.",
+            },
             indent=2,
         )
     return None
@@ -848,6 +865,16 @@ async def _dispatch_read_operation(
     )
 
 
+async def _resolve_schema_validator(
+    managers: ManagersDict,
+) -> SchemaValidator | None:
+    """Resolve schema validator from managers if available."""
+    try:
+        return await get_manager(managers, "schema_validator", SchemaValidator)
+    except (KeyError, TypeError, AttributeError):
+        return None
+
+
 async def _dispatch_write_operation(
     file_path: Path,
     file_name: str,
@@ -864,6 +891,7 @@ async def _dispatch_write_operation(
             },
             indent=2,
         )
+    schema_validator = await _resolve_schema_validator(managers)
     return await _handle_write_operation(
         file_path,
         file_name,
@@ -873,6 +901,7 @@ async def _dispatch_write_operation(
         managers.index,
         managers.tokens,
         managers.versions,
+        schema_validator,
     )
 
 

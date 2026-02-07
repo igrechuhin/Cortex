@@ -10,6 +10,7 @@ from cortex.core.exceptions import (
     GitConflictError,
 )
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.validation.models import ValidationResult
 
 
 class FileOperation(str, Enum):
@@ -199,3 +200,68 @@ def validate_manage_file_operation(
     if not file_name:
         return (None, build_missing_parameters_error(["file_name"]))
     return (parsed_op, None)
+
+
+def _validation_errors_warnings_payloads(
+    validation_result: ValidationResult,
+) -> tuple[list[dict[str, str | None]], list[dict[str, str | None]]]:
+    """Build errors and warnings payload lists for schema validation JSON."""
+    errors_payload = [
+        {
+            "type": e.type,
+            "severity": e.severity,
+            "message": e.message,
+            "suggestion": e.suggestion,
+        }
+        for e in validation_result.errors
+    ]
+    warnings_payload = [
+        {
+            "type": w.type,
+            "severity": w.severity,
+            "message": w.message,
+            "suggestion": w.suggestion,
+        }
+        for w in validation_result.warnings
+    ]
+    return (errors_payload, warnings_payload)
+
+
+def _schema_validation_error_body(
+    file_name: str, validation_result: ValidationResult
+) -> dict[str, object]:
+    """Build the dict body for schema validation error JSON."""
+    errors_payload, warnings_payload = _validation_errors_warnings_payloads(
+        validation_result
+    )
+    return {
+        "status": "error",
+        "error": (
+            f"Content for {file_name} does not meet Memory Bank schema. "
+            "Fix the errors below and retry."
+        ),
+        "file_name": file_name,
+        "validation": {
+            "valid": validation_result.valid,
+            "errors": errors_payload,
+            "warnings": warnings_payload,
+            "score": validation_result.score,
+        },
+        "hint": (
+            'Add or fix required sections, then call manage_file(operation="write") again.'
+        ),
+    }
+
+
+def build_schema_validation_error_response(
+    file_name: str, validation_result: ValidationResult
+) -> str:
+    """Build JSON error response when pre-write schema validation fails.
+
+    Use when content does not meet Memory Bank schema (e.g. missing required
+    sections) to prevent writing broken or corrupted records.
+    """
+    return json.dumps(
+        _schema_validation_error_body(file_name, validation_result),
+        indent=2,
+    )
