@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-07T13:13:42.092840",
+  "last_updated": "2026-02-07T19:59:07.193580",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 6272,
-      "token_count": 1607,
+      "size_bytes": 6603,
+      "token_count": 1625,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-05T21:33:31.266555",
-      "content_hash": "sha256:a247ae2ce358847bfe01bdb6acde00128cefc77438a16607199b2a4de349054f",
+      "last_modified": "2026-02-07T14:01:47.169805",
+      "content_hash": "sha256:ecdd03b8779f5d79f684f2212a6a506e5e34c20dc081198c616f38502a916ca8",
       "sections": [
         {
           "title": "## Blockers (ASAP Priority)",
@@ -22,79 +22,58 @@
           "content_hash": null
         },
         {
-          "title": "## Active Work (in progress)",
+          "title": "## Future Enhancements",
           "level": 2,
           "line_start": 11,
           "line_end": 11,
           "content_hash": null
         },
         {
-          "title": "## Future Enhancements",
+          "title": "## Pending plans (from .cortex/plans)",
           "level": 2,
           "line_start": 13,
           "line_end": 13,
           "content_hash": null
         },
         {
-          "title": "## Pending plans (from .cortex/plans)",
+          "title": "### Investigation Plans (Archive / Reference)",
           "level": 2,
           "line_start": 15,
           "line_end": 15,
           "content_hash": null
         },
         {
-          "title": "### Critical Infrastructure (HIGH PRIORITY - Next)",
-          "level": 2,
-          "line_start": 17,
-          "line_end": 17,
-          "content_hash": null
-        },
-        {
-          "title": "### Investigation Plans (Archive / Reference)",
-          "level": 2,
-          "line_start": 22,
-          "line_end": 22,
-          "content_hash": null
-        },
-        {
           "title": "#### Tool Failure Investigations (Archive Recommended)",
           "level": 2,
-          "line_start": 26,
-          "line_end": 26,
+          "line_start": 19,
+          "line_end": 19,
           "content_hash": null
         },
         {
-          "title": "### Session Optimization Plans (2026-02-03)",
+          "title": "### Session Optimization Plans (2026-2",
           "level": 2,
-          "line_start": 53,
-          "line_end": 53,
+          "line_start": 46,
+          "line_end": 46,
           "content_hash": null
         },
         {
-          "title": "### Session Optimization Plans (2026-02-02)",
+          "title": "### Session Optimization Plans (20261)",
           "level": 2,
-          "line_start": 59,
-          "line_end": 59,
-          "content_hash": null
-        },
-        {
-          "title": "### Session Optimization Plans (2026-02-01)",
-          "level": 2,
-          "line_start": 65,
-          "line_end": 65,
+          "line_start": 51,
+          "line_end": 51,
           "content_hash": null
         },
         {
           "title": "### Features & Enhancements",
           "level": 2,
-          "line_start": 71,
-          "line_end": 71,
+          "line_start": 57,
+          "line_end": 57,
           "content_hash": null
         }
       ],
-      "read_count": 3,
-      "write_count": 80,
-      "last_read": "2026-02-05T21:33:31.266555",
+      "read_count": 4,
+      "write_count": 83,
+      "last_read": "2026-02-07T14:01:47.169805",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -999,50 +978,80 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Clarify wire-optimization roadmap entry: optimization based on usage statistics"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T14:00:24.536396",
+          "content_hash": "sha256:ecdd03b8779f5d79f684f2212a6a506e5e34c20dc081198c616f38502a916ca8",
+          "size_bytes": 6603,
+          "token_count": 1625,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Removed completed roadmap step Ensure proper logging for FastMCP (moved to activeContext)"
+        },
+        {
+          "version": 12,
+          "timestamp": "2026-02-07T14:00:30.868001",
+          "content_hash": "sha256:dbf1ddf929ed975605839e4e8104ddf7d351db896912b3413a79f15b0ea71c14",
+          "size_bytes": 33021,
+          "token_count": 8118,
+          "change_type": "rollback",
+          "snapshot_path": ".cortex/history/roadmap_v12.md",
+          "changed_sections": [],
+          "change_description": "Rolled back to version 10"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T14:01:27.189207",
+          "content_hash": "sha256:ecdd03b8779f5d79f684f2212a6a506e5e34c20dc081198c616f38502a916ca8",
+          "size_bytes": 6603,
+          "token_count": 1625,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Removed completed step Ensure proper logging for FastMCP (moved to activeContext)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T14:01:47.169515",
+          "content_hash": "sha256:ecdd03b8779f5d79f684f2212a6a506e5e34c20dc081198c616f38502a916ca8",
+          "size_bytes": 6603,
+          "token_count": 1625,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Removed completed step Ensure proper logging for FastMCP (moved to activeContext)"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 4640,
-      "token_count": 1086,
+      "size_bytes": 2994,
+      "token_count": 696,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-07T12:16:39.674873",
-      "content_hash": "sha256:09ef9e42cfaf5ccea513f56ce21eca56256f558f4b6e1a78f409a4141a3ebf24",
+      "last_modified": "2026-02-07T15:50:54.643398",
+      "content_hash": "sha256:67b71baac49332daa7dfe653743572a0c58e3bc4bef453ccd066603075a0ae07",
       "sections": [
         {
-          "title": "## 2026-5",
+          "title": "## 202627",
           "level": 2,
           "line_start": 3,
           "line_end": 3,
           "content_hash": null
         },
         {
-          "title": "## 2262*Commit (test fixes and markdown lint)** - Fixed test failures and markdown lint errors",
+          "title": "## 2026-5",
           "level": 2,
-          "line_start": 21,
-          "line_end": 21,
-          "content_hash": null
-        },
-        {
-          "title": "## 20265",
-          "level": 2,
-          "line_start": 31,
-          "line_end": 31,
-          "content_hash": null
-        },
-        {
-          "title": "## 2262",
-          "level": 2,
-          "line_start": 41,
-          "line_end": 41,
+          "line_start": 16,
+          "line_end": 16,
           "content_hash": null
         }
       ],
       "read_count": 1,
-      "write_count": 137,
-      "last_read": "2026-02-07T12:16:39.674873",
+      "write_count": 144,
+      "last_read": "2026-02-07T15:50:54.643398",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -2552,20 +2561,97 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Added Phase 4 completion entry for FastMCP logging plan"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T13:46:36.932265",
+          "content_hash": "sha256:e879f9d7b30d423bc5fc8f8e8c9da9638a03a296000c381e02bc7640f28188d1",
+          "size_bytes": 5231,
+          "token_count": 1217,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for MCP connection closed investigation (2026-02-07); fixed date typos"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T13:46:58.682613",
+          "content_hash": "sha256:5467fb43d531ea9cee1083e7535f6d46f350bd8bf92ad3a2597961a9de606abc",
+          "size_bytes": 5224,
+          "token_count": 1218,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Fixed date headers and typos in progress (2026-02-07, 2026-02-05, investigation entry)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T14:02:43.246745",
+          "content_hash": "sha256:5d2fdb7f2a4478b451c1199bfd394230f5cca9ebdfc21a6da2ac07fe3b484d01",
+          "size_bytes": 2070,
+          "token_count": 484,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for Phase 5 Ensure proper logging for FastMCP completion"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T14:45:13.318320",
+          "content_hash": "sha256:3b796b7a30124c33e76e389f13a916ab1b4719ae1016723d223ce862a37b5f8a",
+          "size_bytes": 2371,
+          "token_count": 541,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Add progress entry for commit roadmap_sync type fix"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T15:37:30.802533",
+          "content_hash": "sha256:ea7ad289dd978001a720758d22f00c23c6c85a4477f05932dd52531ca9644015",
+          "size_bytes": 2567,
+          "token_count": 599,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Progress entry for commit (markdown lint, pre-commit checks)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T15:50:38.054355",
+          "content_hash": "sha256:67b71baac49332daa7dfe653743572a0c58e3bc4bef453ccd066603075a0ae07",
+          "size_bytes": 2994,
+          "token_count": 696,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Progress entry for commit (coverage 90%, markdown lint, validation_roadmap_sync test)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T15:50:54.642614",
+          "content_hash": "sha256:67b71baac49332daa7dfe653743572a0c58e3bc4bef453ccd066603075a0ae07",
+          "size_bytes": 2994,
+          "token_count": 696,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Fix typos in progress log"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 1623,
-      "token_count": 373,
+      "size_bytes": 2698,
+      "token_count": 637,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-07T12:20:53.419273",
-      "content_hash": "sha256:84cc4510a7685dfd475ae297745727b4d00a1f10eaa92860fcb310d9f87ff6a3",
+      "last_modified": "2026-02-07T15:43:45.758885",
+      "content_hash": "sha256:e0da8627d3c7287b767077a7b6d27b58422497a692bece7730f867e3ec640af9",
       "sections": [
         {
-          "title": "## Completed Work (20266- \u2705 **Phase4: Testing and Validation (FastMCP logging plan)** - COMPLETE (2026-2- Completed Phase 4 testing and validation for FastMCP Context logging:",
+          "title": "## Completed Work (20267",
           "level": 2,
           "line_start": 5,
           "line_end": 5,
@@ -2573,8 +2659,8 @@
         }
       ],
       "read_count": 1,
-      "write_count": 112,
-      "last_read": "2026-02-07T12:20:53.419273",
+      "write_count": 118,
+      "last_read": "2026-02-07T15:43:45.758885",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -3809,6 +3895,72 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Added Phase 4 completion entry for FastMCP logging plan"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T13:46:04.122996",
+          "content_hash": "sha256:011471b38c9c41f935a612a86e967f03d7b5007c3dbea1c37fe11aa99e7d2bd6",
+          "size_bytes": 3191,
+          "token_count": 736,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Added completed investigation MCP connection closed during fix_markdown_lint (2026-02-07)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T13:46:22.854795",
+          "content_hash": "sha256:8e59796c1b620d3c43fe5ef74fdd3ab42a0f6dbae362576c7577abe488341a47",
+          "size_bytes": 3193,
+          "token_count": 735,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Corrected typos in activeContext (investigation and existing entries)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T14:02:48.603261",
+          "content_hash": "sha256:4727711624f591a3a2798b4d4117459bc2bbf3065aaa05fb7dbe0ec254201229",
+          "size_bytes": 1909,
+          "token_count": 438,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated active context after Ensure proper logging for FastMCP Phase 5 completion"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T14:44:53.030787",
+          "content_hash": "sha256:6961dcf43d3fffc29c022e7256e02336fb47b93e785369e1555c7b0748d87d93",
+          "size_bytes": 2467,
+          "token_count": 570,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Add completed work entry for commit (roadmap_sync type fix, tests, markdown lint)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T14:45:08.129970",
+          "content_hash": "sha256:d9f4ff3e600511b88ed11351cd189b7ba1796855c1bfa9103af15c854e5e2fc7",
+          "size_bytes": 2461,
+          "token_count": 568,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Fix typos in completed work entry"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T15:43:45.758326",
+          "content_hash": "sha256:e0da8627d3c7287b767077a7b6d27b58422497a692bece7730f867e3ec640af9",
+          "size_bytes": 2698,
+          "token_count": 637,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Add Phase 18 (markdown lint fix tool) as completed work with link to archived plan; roadmap contains future work only"
         }
       ]
     },
@@ -4041,7 +4193,7 @@
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/projectBrief.md",
       "exists": true,
       "read_count": 5,
-      "write_count": 54,
+      "write_count": 65,
       "current_version": 11,
       "version_history": [
         {
@@ -4681,12 +4833,133 @@
           "snapshot_path": ".cortex/history/projectBrief_v11.md",
           "changed_sections": [],
           "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T13:58:11.901666",
+          "content_hash": "sha256:a0b2d45490f1430a8aa590e79d0de3d4bfc973ae89de6fd0ff0c24a9d18622a2",
+          "size_bytes": 104,
+          "token_count": 23,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T14:40:20.560639",
+          "content_hash": "sha256:a0b2d45490f1430a8aa590e79d0de3d4bfc973ae89de6fd0ff0c24a9d18622a2",
+          "size_bytes": 104,
+          "token_count": 23,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T14:41:49.737563",
+          "content_hash": "sha256:a0b2d45490f1430a8aa590e79d0de3d4bfc973ae89de6fd0ff0c24a9d18622a2",
+          "size_bytes": 104,
+          "token_count": 23,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T14:43:32.867788",
+          "content_hash": "sha256:a0b2d45490f1430a8aa590e79d0de3d4bfc973ae89de6fd0ff0c24a9d18622a2",
+          "size_bytes": 104,
+          "token_count": 23,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T15:10:57.340698",
+          "content_hash": "sha256:a0b2d45490f1430a8aa590e79d0de3d4bfc973ae89de6fd0ff0c24a9d18622a2",
+          "size_bytes": 104,
+          "token_count": 23,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T15:35:06.875129",
+          "content_hash": "sha256:a0b2d45490f1430a8aa590e79d0de3d4bfc973ae89de6fd0ff0c24a9d18622a2",
+          "size_bytes": 104,
+          "token_count": 23,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T15:46:01.109640",
+          "content_hash": "sha256:a0b2d45490f1430a8aa590e79d0de3d4bfc973ae89de6fd0ff0c24a9d18622a2",
+          "size_bytes": 104,
+          "token_count": 23,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T15:47:25.196333",
+          "content_hash": "sha256:a0b2d45490f1430a8aa590e79d0de3d4bfc973ae89de6fd0ff0c24a9d18622a2",
+          "size_bytes": 104,
+          "token_count": 23,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T15:49:04.935109",
+          "content_hash": "sha256:a0b2d45490f1430a8aa590e79d0de3d4bfc973ae89de6fd0ff0c24a9d18622a2",
+          "size_bytes": 104,
+          "token_count": 23,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T19:53:51.920451",
+          "content_hash": "sha256:a0b2d45490f1430a8aa590e79d0de3d4bfc973ae89de6fd0ff0c24a9d18622a2",
+          "size_bytes": 104,
+          "token_count": 23,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T19:59:07.191736",
+          "content_hash": "sha256:a0b2d45490f1430a8aa590e79d0de3d4bfc973ae89de6fd0ff0c24a9d18622a2",
+          "size_bytes": 104,
+          "token_count": 23,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
         }
       ],
       "size_bytes": 104,
       "token_count": 23,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-07T13:13:42.090842",
+      "last_modified": "2026-02-07T19:59:07.192060",
       "content_hash": "sha256:a0b2d45490f1430a8aa590e79d0de3d4bfc973ae89de6fd0ff0c24a9d18622a2",
       "sections": [
         {
@@ -4697,7 +4970,7 @@
           "content_hash": null
         }
       ],
-      "last_read": "2026-02-07T13:13:42.090842"
+      "last_read": "2026-02-07T19:59:07.192060"
     },
     "techContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/techContext.md",
@@ -5103,8 +5376,8 @@
   },
   "totals": {
     "total_files": 10,
-    "total_size_bytes": 43891,
-    "total_tokens": 9987,
-    "last_full_scan": "2026-02-07T13:13:42.090875"
+    "total_size_bytes": 43651,
+    "total_tokens": 9879,
+    "last_full_scan": "2026-02-07T19:59:07.192091"
   }
 }

@@ -16,10 +16,6 @@ None - MCP annotations blocker resolved 2026-02-05
 
 ## Pending plans (from .cortex/plans)
 
-### Critical Infrastructure (HIGH PRIORITY - Next)
-
-- **Ensure proper logging for FastMCP** - PENDING - Comprehensive logging for MCP server and tool execution. Plan: .cortex/plans/ensure-proper-logging-fastmcp.md.
-
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
@@ -82,6 +78,5 @@ The following 22 investigation plans document MCP tool registration issues resol
 - **Refactor setup prompts (simplify to 3)** - PENDING - Simplify from 4 to 3 prompts. Plan: .cortex/plans/refactor-setup-prompts.md.
 - **Sequential thinking in Cortex MCP** - PENDING - Sequential thinking tool with thought history, revisions, branches. Plan: .cortex/plans/sequential-thinking-cortex-mcp.md.
 - **Type cleanup inventory (Phase 53)** - PENDING - Inventory of dict[str, object], list[object], TypedDict, Any. Plan: .cortex/plans/type-cleanup-inventory.md.
-- **Phase 18: Markdown Lint Fix Tool** - COMPLETED (archived) - Historical reference for the markdown lint fix tooling work. Plan: .cortex/plans/phase-18-markdown-lint-fix-tool.md.
 - **Test Fixture Validation and Maintenance** - PENDING - Implement test fixture validation and maintenance mechanisms to prevent test failures caused by incomplete mock configurations. Addresses session optimization recommendations: fixture validation, documentation, and maintenance protocol.
 - **Session Optimization: Commit Pipeline Improvements** - PENDING - Implement improvements to commit pipeline based on end-of-session analysis: async test validation, early markdown lint validation, markdown formatting guidelines, git SSL documentation, test maintenance checklist, and push strategy improvements.

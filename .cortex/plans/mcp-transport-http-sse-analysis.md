@@ -2,9 +2,10 @@
 
 ## Status
 
-- **Status**: PENDING
-- **Priority**: Future enhancement (analysis first, implementation optional)
+- **Status**: PENDING — **Promoted** (recommended for active consideration)
+- **Priority**: **High** — Stdio is a poor channel for Cortex MCP; analysis should be prioritized so we can decide on HTTP/SSE or other transport and roadmap implementation.
 - **Created**: 2026-02-03
+- **Promoted**: 2026-02-07 (post connection-closed investigation)
 
 ## Goal
 
@@ -12,7 +13,8 @@ Analyze whether moving the Cortex MCP server from **stdio** to an alternative tr
 
 ## Context
 
-- **Current limitation** (documented in `docs/mcp-tool-timeouts.md`): Over stdio, the MCP Python SDK processes one request at a time. When a long tool (e.g. `rules`, `fix_quality_issues`) runs, all ReadResource requests are queued. The client times them out (~5–10 s), cancels them, and later reports "unknown message ID" when the server responds. Mitigations in place: short-TTL cache for structure resources, and recommendations to prefer tools over resources during commit.
+- **Stdio is a poor channel for Cortex MCP**: A single stdio connection is inherently limiting: (1) **Single request at a time** — long tools block all other traffic; (2) **Client-side timeouts** — the client (e.g. Cursor) can close the connection after ~60 s even when the server is sending progress (see investigation `.cortex/plans/archive/Investigations/2026-02-07/investigate-mcp-connection-closed-2026-02-07.md`); (3) **No real concurrency** — ReadResource and other calls queue behind long-running tools, leading to "unknown message ID" and resource read timeouts. Retries and fallbacks mitigate symptoms but do not fix the channel.
+- **Current limitation** (documented in `docs/mcp-tool-timeouts.md`): Over stdio, the MCP Python SDK processes one request at a time. When a long tool (e.g. `rules`, `fix_quality_issues`, `fix_markdown_lint`) runs, all ReadResource requests are queued. The client times them out (~5–10 s), cancels them, and later reports "unknown message ID" when the server responds. Mitigations in place: short-TTL cache for structure resources, progress/heartbeat for long tools, and recommendations to retry then fallback on "Connection closed"—but the underlying channel remains fragile.
 - **Quote from docs**: "Real concurrency would require a different transport (e.g. HTTP/SSE); for stdio, caching and the recommendations above are the available mitigations."
 - **MCP Python SDK**: Supports multiple transports—stdio (current), SSE, and Streamable HTTP. Stdio is single-connection, single-request-at-a-time; HTTP-based transports can support concurrent request handling and connection pooling.
 - **Stakeholders**: Users running commit workflows and IDE integrations (e.g. Cursor) that prefetch many resources in parallel; agents that rely on resources for instructions or context.
@@ -101,4 +103,5 @@ No code changes are required in this plan beyond optional spike/prototype in a l
 ## Notes
 
 - This plan was created in response to the note in `docs/mcp-tool-timeouts.md`: "Real concurrency would require a different transport (e.g. HTTP/SSE); for stdio, caching and the recommendations above are the available mitigations."
-- Related: Phase 68 (connection closed / fix_quality_issues), Phase 19 (stdio BrokenResourceError), and resource read timeouts / "unknown message ID" behavior are all constrained by sequential stdio processing; alternative transport is the only way to achieve true request concurrency at the server.
+- **Promotion rationale (2026-02-07)**: Stdio is a poor fit for Cortex MCP. The connection-closed investigation showed the client closing the connection after ~56 s during `fix_markdown_lint` despite server progress/heartbeat—a client-side timeout over a single stdio channel. Promoting this analysis plan ensures we explicitly evaluate HTTP/SSE (or Streamable HTTP) and either roadmap implementation or document a no-go with clear rationale.
+- Related: Phase 68 (connection closed / fix_quality_issues), investigation `investigate-mcp-connection-closed-2026-02-07` (archived), Phase 19 (stdio BrokenResourceError), and resource read timeouts / "unknown message ID" behavior are all constrained by sequential stdio processing; alternative transport is the only way to achieve true request concurrency and more robust long-running tools at the server.

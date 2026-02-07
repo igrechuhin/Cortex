@@ -1827,6 +1827,28 @@ class TestHandleRoadmapSyncValidation:
         assert "summary" in result_data
         assert result_data["summary"]["total_todos_found"] == 0
 
+    @pytest.mark.asyncio
+    async def test_handle_roadmap_sync_validation_with_ghost_sections_logged(
+        self, tmp_path: Path, mock_fs_manager: MagicMock
+    ) -> None:
+        """Test handle_roadmap_sync_validation logs when roadmap contains ghost sections."""
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True)
+        roadmap_path = memory_bank_dir / "roadmap.md"
+        roadmap_content = (
+            "# Roadmap\n\n## Recent Findings\n\n## Phase 1\nSee `src/module.py`.\n"
+        )
+        _ = roadmap_path.write_text(roadmap_content)
+        (tmp_path / "src").mkdir()
+        _ = (tmp_path / "src" / "module.py").write_text("# Module\n")
+        mock_fs_manager.read_file = AsyncMock(return_value=(roadmap_content, None))
+
+        result = await handle_roadmap_sync_validation(mock_fs_manager, tmp_path, None)
+
+        result_data = json.loads(result)
+        assert result_data["status"] == "success"
+        assert result_data["check_type"] == "roadmap_sync"
+
 
 class TestValidateResource:
     """Test validate_resource (Phase 43 Phase 3 Validation resource)."""

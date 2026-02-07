@@ -21,19 +21,21 @@ This document describes how to use logging in Cortex so that client-visible mess
 
 ### Accessing Context in Tools
 
-Add a parameter with the `Context` type annotation; the MCP server injects it:
+Tools accept an optional `ctx: MCPContext | None` parameter (injected by the server when available). Use `log_client()` so messages go to the client when `ctx` is present and to the server logger otherwise:
 
 ```python
-from mcp.server.fastmcp import Context
+from cortex.core.context_logging import MCPContext, log_client
 
 @mcp.tool()
 @mcp_tool_wrapper(timeout=...)
-async def my_tool(param: str, ctx: Context) -> str:
-    await ctx.info("Starting my_tool")
+async def my_tool(param: str, ctx: MCPContext | None = None) -> str:
+    await log_client(ctx, "info", "Starting my_tool")
     # ... tool logic ...
-    await ctx.info("my_tool completed")
+    await log_client(ctx, "info", "my_tool completed")
     return result
 ```
+
+For long-running work, use `report_progress_safe()` from `cortex.core.context_logging` so progress is sent to the client when context is available.
 
 ### Log Levels
 
@@ -44,10 +46,12 @@ async def my_tool(param: str, ctx: Context) -> str:
 
 ### Progress Reporting
 
-For long-running operations, use progress instead of many log lines:
+For long-running operations, use `report_progress_safe()` so progress is only sent when context is available (no-op in tests or when client disconnected):
 
 ```python
-await ctx.report_progress(progress=50, total=100)
+from cortex.core.context_logging import report_progress_safe
+
+await report_progress_safe(ctx, progress=50, total=100)
 ```
 
 ### Fatal Errors
@@ -56,7 +60,7 @@ Use `ToolError` (from MCP/FastMCP) for errors that should stop execution and be 
 
 ### Context Availability
 
-Context is only available during MCP request handling. In helper functions, accept an optional `ctx: Context | None` and only call `ctx.*` when `ctx` is not None.
+Context is only available during MCP request handling. Tools and helpers accept `ctx: MCPContext | None = None` and use `log_client(ctx, level, message)` and `report_progress_safe(ctx, progress, total)` so logging is a no-op when `ctx` is None (e.g. in tests or after client disconnect).
 
 ## Standard Logging (Server-Side)
 

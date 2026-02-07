@@ -773,6 +773,19 @@ Returns:
 
 ## Logging and Debugging
 
+### Context Logging (Client-Visible Messages)
+
+Cortex uses **Context logging** so the MCP client can show operation progress and errors:
+
+- **Client-visible**: Messages sent via MCP (e.g. "Starting operation", "Completed", warnings, errors) use `log_client(ctx, level, message)` from `cortex.core.context_logging`. These appear in the client UI or logs.
+- **Server-only**: Detailed diagnostics use standard Python `logger.debug()` / `logger.info()` and go to stderr only.
+
+If you do not see tool progress in the client:
+
+1. Ensure the client supports MCP log messages (Cursor/Claude Desktop do).
+2. Check that tools receive `ctx` (injected by the server); when `ctx` is `None`, messages fall back to stderr.
+3. See [Logging Guidelines](../development/logging-guidelines.md) for patterns and levels.
+
 ### Enable Debug Logging
 
 Set environment variable:

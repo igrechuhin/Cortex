@@ -404,9 +404,7 @@ class TestManageFileEdgeCases:
                 new_callable=AsyncMock,
                 return_value="not valid json",
             ):
-                result_str = await manage_file(
-                    file_name="test.md", operation="read"
-                )
+                result_str = await manage_file(file_name="test.md", operation="read")
                 assert result_str == "not valid json"
 
     async def test_manage_file_write_without_content_in_dispatch(self):

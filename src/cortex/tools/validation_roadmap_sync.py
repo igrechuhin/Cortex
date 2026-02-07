@@ -42,6 +42,7 @@ def _build_roadmap_sync_success_response(
     """
     missing_entries = [item.model_dump() for item in result.missing_roadmap_entries]
     invalid_refs = [ref.model_dump() for ref in result.invalid_references]
+    completed_entries = [e.model_dump() for e in result.completed_entries_in_roadmap]
     warnings = list(result.warnings)
     return json.dumps(
         {
@@ -55,11 +56,13 @@ def _build_roadmap_sync_success_response(
             # where plans are completed or removed from roadmap without proper
             # archiving or memory bank updates).
             "unlinked_plans": list(result.unlinked_plans),
+            "completed_entries_in_roadmap": completed_entries,
             "warnings": warnings,
             "summary": {
                 "total_todos_found": result.total_todos_found,
                 "missing_entries_count": len(missing_entries),
                 "invalid_references_count": len(invalid_refs),
+                "completed_entries_count": len(completed_entries),
                 "warnings_count": len(warnings),
             },
         },

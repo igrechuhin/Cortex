@@ -7,11 +7,22 @@ Tests roadmap synchronization validation functionality.
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.validation.roadmap_sync import (
+    SyncValidationResult,
     parse_roadmap_references,
     scan_codebase_todos,
     validate_roadmap_sync,
 )
+
+
+class TestSyncValidationResult:
+    """Tests for SyncValidationResult model defaults."""
+
+    def test_completed_entries_in_roadmap_default_is_empty_list(self) -> None:
+        """Default completed_entries_in_roadmap is empty list (typed factory)."""
+        result = SyncValidationResult(valid=True, total_todos_found=0)
+        assert result.completed_entries_in_roadmap == []
 
 
 class TestValidateRoadmapSyncEnhancements:
@@ -129,6 +140,103 @@ class TestValidateRoadmapSyncEnhancements:
             # Assert
             assert result.valid is True
             assert len(result.invalid_references) == 0
+
+    def test_validate_sync_fails_when_roadmap_contains_completed_entry(self) -> None:
+        """Validation fails when roadmap contains a bullet that looks like completed work."""
+        # Arrange: no TODOs; referenced plan exists so no invalid_refs; one completed bullet
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            (project_root / "src").mkdir()
+            plans_dir = get_cortex_path(project_root, CortexResourceType.PLANS)
+            archive_plan = (
+                plans_dir / "archive" / "Phase18" / "phase-18-markdown-lint-fix-tool.md"
+            )
+            archive_plan.parent.mkdir(parents=True)
+            _ = archive_plan.write_text("# Phase 18\n")
+            roadmap_content = (
+                "## Pending plans\n\n"
+                "- **Phase 18: Markdown Lint Fix Tool** - COMPLETED (archived) - Plan: .cortex/plans/archive/Phase18/phase-18-markdown-lint-fix-tool.md.\n"
+            )
+
+            # Act
+            result = validate_roadmap_sync(project_root, roadmap_content)
+
+            # Assert
+            assert result.valid is False
+            assert len(result.completed_entries_in_roadmap) == 1
+            assert result.completed_entries_in_roadmap[0].line == 3
+            assert "COMPLETED" in result.completed_entries_in_roadmap[0].snippet
+
+    def test_validate_sync_passes_when_no_completed_entries(self) -> None:
+        """Validation passes when roadmap has only pending-style bullets."""
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            (project_root / "src").mkdir()
+            plans_dir = project_root / ".cortex" / "plans"
+            plans_dir.mkdir(parents=True)
+            _ = (plans_dir / "feature-x.md").write_text("# Feature X\n")
+            _ = (plans_dir / "phase-49.md").write_text("# Phase 49\n")
+            roadmap_content = (
+                "## Pending plans\n\n"
+                "- **Feature X** - PENDING - Plan: .cortex/plans/feature-x.md.\n"
+                "- **Phase 49** - IN PROGRESS - Plan: .cortex/plans/phase-49.md.\n"
+            )
+
+            # Act
+            result = validate_roadmap_sync(project_root, roadmap_content)
+
+            # Assert
+            assert result.completed_entries_in_roadmap == []
+
+
+class TestFindCompletedEntriesInRoadmap:
+    """Tests for completed-entries detection via validate_roadmap_sync."""
+
+    def test_detects_completed_bullet(self) -> None:
+        """Completed-style bullet is reported in completed_entries_in_roadmap."""
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            (project_root / "src").mkdir()
+            content = (
+                "## Section\n\n"
+                "- **Phase 18** - COMPLETED (archived) - Plan: foo.md.\n"
+            )
+            result = validate_roadmap_sync(project_root, content)
+            assert len(result.completed_entries_in_roadmap) == 1
+            assert result.completed_entries_in_roadmap[0].line == 3
+            assert "COMPLETED" in result.completed_entries_in_roadmap[0].snippet
+
+    def test_detects_complete_bullet(self) -> None:
+        """COMPLETE-style bullet is reported in completed_entries_in_roadmap."""
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            (project_root / "src").mkdir()
+            content = "## Section\n\n- **Item** - COMPLETE - Done.\n"
+            result = validate_roadmap_sync(project_root, content)
+            assert len(result.completed_entries_in_roadmap) == 1
+            assert result.completed_entries_in_roadmap[0].line == 3
+
+    def test_ignores_pending_and_in_progress(self) -> None:
+        """PENDING and IN PROGRESS bullets are not reported as completed."""
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            (project_root / "src").mkdir()
+            content = (
+                "## Section\n\n"
+                "- **A** - PENDING - Plan: a.md.\n"
+                "- **B** - IN PROGRESS - Plan: b.md.\n"
+            )
+            result = validate_roadmap_sync(project_root, content)
+            assert result.completed_entries_in_roadmap == []
+
+    def test_ignores_non_bullet_lines(self) -> None:
+        """COMPLETED in non-bullet text is not reported."""
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            (project_root / "src").mkdir()
+            content = "Text with COMPLETED word in a paragraph.\n"
+            result = validate_roadmap_sync(project_root, content)
+            assert result.completed_entries_in_roadmap == []
 
 
 class TestScanCodebaseTodos:

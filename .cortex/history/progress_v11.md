@@ -1,43 +1,27 @@
 # Progress Log
 
+## 202627
+
+- **Commit (coverage 90own lint, validation_roadmap_sync test)** - COMPLETE. Coverage was89.99added `test_handle_roadmap_sync_validation_with_ghost_sections_logged` in test_validation_operations.py to cover ghost-sections logging in validation_roadmap_sync; coverage 90.01Markdown lint: 3 files fixed (activeContext, progress, projectBrief). fix_errors, format, type_check, quality, tests (3632 passed, 90%+ coverage) all passed.
+
+- **Commit (markdown lint, pre-commit)** - COMPLETE. Markdown lint: 2 files fixed (projectBrief.md, commit.md); fix_errors, format, type_check, quality, tests (3631ssed,90overage) all passed.
+
+- **Commit (roadmap_sync type fix, tests, markdown lint)** - COMPLETE. Fixed Pyright reportUnknownVariableType for SyncValidationResult.completed_entries_in_roadmap (typed default factory); added unit test for default; markdown lint 16 files fixed; 3631 tests, 90% coverage.
+
+- **Ensure proper logging for FastMCP (Phase5 Documentation and Cleanup)** - COMPLETE. Completed Phase 5 of the FastMCP logging plan: updated `docs/development/logging-guidelines.md` (MCPContext, log_client, report_progress_safe); updated `docs/guides/troubleshooting.md` with Context logging subsection; verified code review (no unused logging imports; server-side logger use appropriate); ran format, quality gate, and full test suite (3624 tests passed). Plan marked COMPLETE; roadmap step removed.
+
+- **Investigation: MCP connection closed during fix_markdown_lint** - COMPLETE. Root cause: client closed connection (~56 s), not server bug. No server logic change. Added note in commit prompt (Connection Closed section) re fix_markdown_lint progress/heartbeat and -320lan archived to archive/Investigations/22602
+
+- **Commit (type fixes, integration tests, quality)** - Type fixes (MarkdownLintIndex import, python_adapter function length), markdown MD036ntegration tests (project root patch + error logging when tool returns error JSON), all tests pass, 90% coverage.
+
 ## 2026-5
 
-- **Phase4: Testing and Validation (FastMCP logging plan)** - COMPLETE (2026-2- Completed Phase 4 testing and validation for FastMCP Context logging:
-  - **Test fixtures** - Added `mock_ctx` fixture to `conftest.py` for shared Context mocking across tests
-  - **Integration tests** - Created `test_context_logging_integration.py` with comprehensive integration tests:
-    - Test tools with Context objects (`manage_file`, `validate`)
-    - Verify logs appear in client responses
-    - Test error scenarios and logging behavior
-    - Test progress reporting for long-running operations
-    - Test all log levels (debug, info, warning, error)
-    - Test connection error handling (graceful degradation)
-    - Test fallback to standard logger when ctx is None
-  - **Helper functions** - Verified no helper functions use `get_context()` (N/A - code uses `log_client` with optional `ctx`)
-  - **Error logging** - Integration tests verify comprehensive error logging behavior
-  - **Quality** - All tests pass (36216230.94pass rate); coverage 90.02≥90% threshold); type checks pass (0 errors/warnings); quality gate passes
-  - **Status** - Phase 4 complete. Integration tests verify Context logging works correctly with real tools. Phase 5 (Documentation) remains pending.
-  - Plan: `.cortex/plans/ensure-proper-logging-fastmcp.md`
+- **Phase 4 and Validation (FastMCP logging plan)** - COMPLETE. Completed Phase 4 testing and validation for FastMCP Context logging: Test fixtures (mock_ctx in conftest.py), integration tests (test_context_logging_integration.py), all tests pass, quality gate passes. Phase 5cumentation) remained pending until 2026-2-7 Plan: `.cortex/plans/archive/Infrastructure/ensure-proper-logging-fastmcp.md`
 
-## 2262*Commit (test fixes and markdown lint)** - Fixed test failures and markdown lint errors
+- **Commit (test fixes and markdown lint)** - Fixed test failures and markdown lint errors.
 
-- **Markdown lint** - Fixed MD036sis-as-heading error in `.cortex/plans/test-fixture-validation-maintenance.md` (line 185 converting bold emphasis to proper heading.
+- **Commit (test fixes)** - Fixed failing tests in test_phase4_optimization.py; all 3615sts pass.
 
-- **Test fixes** - Fixed 3iling tests in `tests/unit/test_core_utilities.py`: made `test_detect_failure_json_decode_error`, `test_detect_failure_connection_reset`, and `test_detect_failure_normal_value_error` async and added `await` for `handler.detect_failure()` calls. Root cause: `MCPToolFailureHandler.detect_failure()` was made async in Phase 30.2 tests were not updated.
+- **Phase 3.2 Error Handling (FastMCP logging plan)** - COMPLETE. Updated mcp_failure_handler.py and related code to use Context logging for client-visible messages. Plan: `.cortex/plans/archive/Infrastructure/ensure-proper-logging-fastmcp.md`.
 
-- **Results** - All 3615ts pass (100 rate); coverage90.02% (≥90% threshold); all pre-commit checks passing.
-
-- **Commit (test fixes)** - Fixed 6ling tests in `test_phase4imization.py` by adding missing mock methods to `mock_managers` fixture. Added `is_summarization_enabled.return_value = True`, `is_optimization_enabled.return_value = true`, `get_summarization_target_reduction.return_value =0.5, and`get_summarization_strategy.return_value = \"extract_key_sections\"` to the `optimization_config` mock. All 3615 tests now pass (10ass rate); coverage 900.3% (≥90% threshold). Tests fixed: `test_summarize_single_file`,`test_summarize_all_files`,`test_summarize_with_strategy`,`test_full_context_loading_workflow`,`test_summarize_content_resource_single_file`,`test_summarize_content_resource_all_files_with_underscore`.
-
-## 20265
-
-- **Phase32Update Error Handling (FastMCP logging plan)** - COMPLETE (2026-2 - Updated `mcp_failure_handler.py` to use Context logging for client-visible messages. Changes:
-  - **mcp_failure_handler.py**: Made all error detection and handling methods async; added optional `ctx: MCPContext | None` parameter; replaced `logger.error()`/`logger.info()` with `await log_client(ctx, \"error\"/\"info\", ...)` for client-visible messages; kept `logger.debug()` for server-side diagnostics; refactored `_check_json_error()` to extract helper methods (`_is_json_value_error()`, `_log_json_error()`) to meet function length limits (35 → 15 lines).
-  - **mcp_tool_validator.py**: Made all validator functions async; added optional `ctx` parameter; updated to pass `ctx` to failure handler methods; updated `validate_mcp_tool_response()`, `check_mcp_tool_failure()`, `handle_mcp_tool_failure()` to be async.
-  - **mcp_stability.py**: Updated `_handle_tool_exception_if_failure()` to be async and extract `ctx` from kwargs; updated call sites to pass `ctx` and use `await`.
-  - **Tests**: Updated all test methods in `test_mcp_failure_handler.py` and `test_core_utilities.py` to be async and use `await` for async handler methods (18 methods updated).
-  - **Quality**: Type checks pass (0rrors/warnings); format passes; function length compliant (all functions <30 lines); quality gate passes.
-  - **Status**: Phase 3.2 complete. Error handling now uses Context logging for client-visible messages while maintaining server-side debugging via standard logging. Plan: `.cortex/plans/ensure-proper-logging-fastmcp.md`.
-
-## 2262
-
-- **Phase 51 Wire optimization config to runtime (Steps32COMPLETE. Completed wiring optimization configuration settings to runtime behavior for all remaining components. Work completed:
+- **Phase 5: Optimization config to runtime (Steps 3–5) COMPLETE.** Completed wiring optimization configuration settings to runtime behavior.

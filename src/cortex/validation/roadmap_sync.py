@@ -35,6 +35,20 @@ class RoadmapReference(BaseModel):
     phase: str | None = Field(default=None, description="Phase if specified")
 
 
+class CompletedEntryInRoadmap(BaseModel):
+    """A roadmap bullet that looks like completed work (violates future-only rule)."""
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+    line: int = Field(ge=1, description="1-based line number in roadmap.md")
+    snippet: str = Field(description="Bullet line content (trimmed)")
+
+
+def _default_completed_entries_in_roadmap() -> list[CompletedEntryInRoadmap]:
+    """Return empty list for SyncValidationResult.default_factory (typed)."""
+    return []
+
+
 class SyncValidationResult(BaseModel):
     """Result of roadmap synchronization validation."""
 
@@ -57,6 +71,13 @@ class SyncValidationResult(BaseModel):
         default_factory=list,
         description=(
             "Plan files under .cortex/plans that are not referenced in roadmap.md"
+        ),
+    )
+    completed_entries_in_roadmap: list[CompletedEntryInRoadmap] = Field(
+        default_factory=_default_completed_entries_in_roadmap,
+        description=(
+            "Roadmap bullet lines that look like completed work; "
+            "roadmap must record future/upcoming work only."
         ),
     )
     warnings: list[str] = Field(default_factory=list, description="Validation warnings")
@@ -390,6 +411,8 @@ def _find_unlinked_plans(
 
     orphan_paths: list[str] = []
     for plan_path in all_plans:
+        if not plan_path.is_file():
+            continue
         if plan_path in referenced_plan_paths:
             continue
         try:
@@ -400,6 +423,35 @@ def _find_unlinked_plans(
 
     orphan_paths.sort()
     return orphan_paths
+
+
+def _find_completed_entries_in_roadmap(
+    roadmap_content: str,
+) -> list[CompletedEntryInRoadmap]:
+    """Find roadmap bullet lines that look like completed work.
+
+    Roadmap must record future/upcoming work only; completed work belongs
+    in activeContext.md. Detects bullets containing " - COMPLETED",
+    " - COMPLETE", or " - DONE" (case-insensitive).
+
+    Args:
+        roadmap_content: Full content of roadmap.md.
+
+    Returns:
+        List of (line number, snippet) for violating lines.
+    """
+    out: list[CompletedEntryInRoadmap] = []
+    upper_markers = (" - COMPLETED", " - COMPLETE", " - DONE")
+    for one_indexed, line in enumerate(roadmap_content.splitlines(), start=1):
+        stripped = line.strip()
+        if not stripped.startswith("- "):
+            continue
+        upper = stripped.upper()
+        if any(m in upper for m in upper_markers):
+            out.append(
+                CompletedEntryInRoadmap(line=one_indexed, snippet=stripped[:200])
+            )
+    return out
 
 
 def validate_roadmap_sync(
@@ -421,11 +473,13 @@ def validate_roadmap_sync(
     missing_entries = _check_todos_in_roadmap(todos, roadmap_content)
     invalid_refs, warnings = _validate_roadmap_references(references, project_root)
     unlinked_plans = _find_unlinked_plans(project_root, references)
+    completed_entries = _find_completed_entries_in_roadmap(roadmap_content)
 
     valid = (
         len(missing_entries) == 0
         and len(invalid_refs) == 0
         and len(unlinked_plans) == 0
+        and len(completed_entries) == 0
     )
 
     return SyncValidationResult(
@@ -434,5 +488,6 @@ def validate_roadmap_sync(
         missing_roadmap_entries=missing_entries,
         invalid_references=invalid_refs,
         unlinked_plans=unlinked_plans,
+        completed_entries_in_roadmap=completed_entries,
         warnings=warnings,
     )
