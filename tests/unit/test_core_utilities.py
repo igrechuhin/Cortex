@@ -247,7 +247,7 @@ class TestManagerRegistry:
 class TestMCPToolValidator:
     """Tests for mcp_tool_validator module."""
 
-    def test_validate_mcp_tool_response_success(self, tmp_path: Path) -> None:
+    async def test_validate_mcp_tool_response_success(self, tmp_path: Path) -> None:
         """Test validating successful MCP tool response."""
         from cortex.core.mcp_tool_validator import validate_mcp_tool_response
 
@@ -257,11 +257,13 @@ class TestMCPToolValidator:
         (tmp_path / ".cortex").mkdir()
 
         # Act - no exception means success
-        validate_mcp_tool_response(response, "test_tool", "test_step", str(tmp_path))
+        await validate_mcp_tool_response(
+            response, "test_tool", "test_step", str(tmp_path)
+        )
 
         # Assert - no exception raised
 
-    def test_validate_mcp_tool_response_error_status_valid(
+    async def test_validate_mcp_tool_response_error_status_valid(
         self, tmp_path: Path
     ) -> None:
         """Test that error status is valid (tool worked, found errors)."""
@@ -273,9 +275,11 @@ class TestMCPToolValidator:
 
         # Act - error status is valid, not a tool failure
         # The function should not raise because status=error means the tool worked
-        validate_mcp_tool_response(response, "test_tool", "test_step", str(tmp_path))
+        await validate_mcp_tool_response(
+            response, "test_tool", "test_step", str(tmp_path)
+        )
 
-    def test_validate_mcp_tool_response_dict_missing_status(
+    async def test_validate_mcp_tool_response_dict_missing_status(
         self, tmp_path: Path
     ) -> None:
         """Test dict response without 'status' triggers validation path."""
@@ -292,14 +296,14 @@ class TestMCPToolValidator:
             return_value=False,
         ):
             # Act - should not raise; _validate_dict_response logs warning
-            validate_mcp_tool_response(
+            await validate_mcp_tool_response(
                 response_dict, "test_tool", "test_step", str(tmp_path)
             )
 
         # Restore so other tests see pytest context
         assert _is_test_context() is True
 
-    def test_validate_mcp_tool_response_json_string_raises(
+    async def test_validate_mcp_tool_response_json_string_raises(
         self, tmp_path: Path
     ) -> None:
         """Test JSON string response (double-encoded) is treated as tool failure."""
@@ -314,11 +318,11 @@ class TestMCPToolValidator:
             return_value=False,
         ):
             with pytest.raises(MCPToolFailure):
-                validate_mcp_tool_response(
+                await validate_mcp_tool_response(
                     response_str, "test_tool", "test_step", str(tmp_path)
                 )
 
-    def test_check_mcp_tool_failure_json_error(self, tmp_path: Path) -> None:
+    async def test_check_mcp_tool_failure_json_error(self, tmp_path: Path) -> None:
         """Test checking if JSON decode error is MCP tool failure."""
         import json
 
@@ -329,14 +333,16 @@ class TestMCPToolValidator:
         error = json.JSONDecodeError("Expecting value", "test", 0)
 
         # Act
-        is_failure = check_mcp_tool_failure(
+        is_failure = await check_mcp_tool_failure(
             error, "test_tool", "test_step", str(tmp_path)
         )
 
         # Assert - JSON decode error is always a tool failure
         assert is_failure is True
 
-    def test_check_mcp_tool_failure_connection_reset(self, tmp_path: Path) -> None:
+    async def test_check_mcp_tool_failure_connection_reset(
+        self, tmp_path: Path
+    ) -> None:
         """Test checking if connection reset is MCP tool failure."""
         from cortex.core.mcp_tool_validator import check_mcp_tool_failure
 
@@ -345,7 +351,7 @@ class TestMCPToolValidator:
         error = ConnectionError("Connection reset by peer")
 
         # Act
-        is_failure = check_mcp_tool_failure(
+        is_failure = await check_mcp_tool_failure(
             error, "test_tool", "test_step", str(tmp_path)
         )
 
@@ -356,7 +362,7 @@ class TestMCPToolValidator:
 class TestMCPFailureHandler:
     """Tests for mcp_failure_handler module."""
 
-    def test_detect_failure_json_decode_error(self, tmp_path: Path) -> None:
+    async def test_detect_failure_json_decode_error(self, tmp_path: Path) -> None:
         """Test detecting JSON decode error as failure."""
         import json
 
@@ -368,12 +374,12 @@ class TestMCPFailureHandler:
         error = json.JSONDecodeError("Expecting value", "test", 0)
 
         # Act
-        is_failure = handler.detect_failure(error, "test_tool", "test_step")
+        is_failure = await handler.detect_failure(error, "test_tool", "test_step")
 
         # Assert
         assert is_failure is True
 
-    def test_detect_failure_connection_reset(self, tmp_path: Path) -> None:
+    async def test_detect_failure_connection_reset(self, tmp_path: Path) -> None:
         """Test detecting connection reset as failure."""
         from cortex.core.mcp_failure_handler import MCPToolFailureHandler
 
@@ -383,12 +389,12 @@ class TestMCPFailureHandler:
         error = ConnectionError("Connection reset by peer")
 
         # Act
-        is_failure = handler.detect_failure(error, "test_tool", "test_step")
+        is_failure = await handler.detect_failure(error, "test_tool", "test_step")
 
         # Assert
         assert is_failure is True
 
-    def test_detect_failure_normal_value_error(self, tmp_path: Path) -> None:
+    async def test_detect_failure_normal_value_error(self, tmp_path: Path) -> None:
         """Test that normal ValueError is not detected as failure."""
         from cortex.core.mcp_failure_handler import MCPToolFailureHandler
 
@@ -399,7 +405,7 @@ class TestMCPFailureHandler:
         error = ValueError("Budget must be positive")
 
         # Act
-        is_failure = handler.detect_failure(error, "test_tool", "test_step")
+        is_failure = await handler.detect_failure(error, "test_tool", "test_step")
 
         # Assert
         assert is_failure is False

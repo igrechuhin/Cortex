@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 from typing import cast
 
+from cortex.core.context_logging import MCPContext
 from cortex.core.mcp_failure_handler import (
     MCPToolFailureHandler,
 )
@@ -23,11 +24,12 @@ def _is_test_context() -> bool:
     return "pytest" in sys.modules or "_pytest" in sys.modules
 
 
-def validate_mcp_tool_response(
+async def validate_mcp_tool_response(
     response: JsonValue,
     tool_name: str,
     step_name: str,
     project_root: str | None = None,
+    ctx: MCPContext | None = None,
 ) -> None:
     """Validate MCP tool response and enforce failure protocol.
 
@@ -39,6 +41,7 @@ def validate_mcp_tool_response(
         tool_name: Name of the tool that was called
         step_name: Commit procedure step name
         project_root: Project root directory (auto-detected if None)
+        ctx: Optional MCP context for client-visible logging
 
     Raises:
         MCPToolFailure: If tool response indicates a tool failure
@@ -46,8 +49,8 @@ def validate_mcp_tool_response(
     project_root_path = Path(project_root) if project_root else None
     handler = MCPToolFailureHandler(project_root_path)
 
-    _validate_none_response(response, tool_name, step_name, handler)
-    _validate_string_response(response, tool_name, step_name, handler)
+    await _validate_none_response(response, tool_name, step_name, handler, ctx)
+    await _validate_string_response(response, tool_name, step_name, handler, ctx)
 
     if _is_test_context():
         return
@@ -55,17 +58,25 @@ def validate_mcp_tool_response(
     _validate_dict_response(response, tool_name)
 
 
-def _validate_none_response(
-    response: JsonValue, tool_name: str, step_name: str, handler: MCPToolFailureHandler
+async def _validate_none_response(
+    response: JsonValue,
+    tool_name: str,
+    step_name: str,
+    handler: MCPToolFailureHandler,
+    ctx: MCPContext | None = None,
 ) -> None:
     """Validate response is not None."""
     if response is None:
         error = ValueError(f"MCP tool {tool_name} returned None response")
-        handler.handle_failure(tool_name, error, step_name)
+        await handler.handle_failure(tool_name, error, step_name, ctx)
 
 
-def _validate_string_response(
-    response: JsonValue, tool_name: str, step_name: str, handler: MCPToolFailureHandler
+async def _validate_string_response(
+    response: JsonValue,
+    tool_name: str,
+    step_name: str,
+    handler: MCPToolFailureHandler,
+    ctx: MCPContext | None = None,
 ) -> None:
     """Validate response is not a JSON string (double-encoding)."""
     if not isinstance(response, str):
@@ -77,8 +88,8 @@ def _validate_string_response(
             f"{response[:100]}"
         )
         error = ValueError(error_msg)
-        if handler.detect_failure(error, tool_name, step_name):
-            handler.handle_failure(tool_name, error, step_name)
+        if await handler.detect_failure(error, tool_name, step_name, ctx):
+            await handler.handle_failure(tool_name, error, step_name, ctx)
     except json.JSONDecodeError:
         pass  # Not JSON, might be valid string response
 
@@ -95,11 +106,12 @@ def _validate_dict_response(response: JsonValue, tool_name: str) -> None:
         )
 
 
-def check_mcp_tool_failure(
+async def check_mcp_tool_failure(
     error: Exception,
     tool_name: str,
     step_name: str,
     project_root: str | None = None,
+    ctx: MCPContext | None = None,
 ) -> bool:
     """Check if exception is an MCP tool failure.
 
@@ -110,20 +122,22 @@ def check_mcp_tool_failure(
         tool_name: Name of the tool that failed
         step_name: Commit procedure step name
         project_root: Project root directory (auto-detected if None)
+        ctx: Optional MCP context for client-visible logging
 
     Returns:
         True if error is an MCP tool failure (should stop commit procedure)
     """
     project_root_path = Path(project_root) if project_root else None
     failure_handler = MCPToolFailureHandler(project_root_path)
-    return failure_handler.detect_failure(error, tool_name, step_name)
+    return await failure_handler.detect_failure(error, tool_name, step_name, ctx)
 
 
-def handle_mcp_tool_failure(
+async def handle_mcp_tool_failure(
     error: Exception,
     tool_name: str,
     step_name: str,
     project_root: str | None = None,
+    ctx: MCPContext | None = None,
 ) -> None:
     """Handle MCP tool failure according to protocol.
 
@@ -135,6 +149,7 @@ def handle_mcp_tool_failure(
         tool_name: Name of the tool that failed
         step_name: Commit procedure step name
         project_root: Project root directory (auto-detected if None)
+        ctx: Optional MCP context for client-visible logging
 
     Raises:
         MCPToolFailure: Always raises to stop commit procedure
@@ -142,4 +157,4 @@ def handle_mcp_tool_failure(
     project_root_path = Path(project_root) if project_root else None
     failure_handler = MCPToolFailureHandler(project_root_path)
     # handle_failure always raises MCPToolFailure, so this never returns
-    failure_handler.handle_failure(tool_name, error, step_name)
+    await failure_handler.handle_failure(tool_name, error, step_name, ctx)

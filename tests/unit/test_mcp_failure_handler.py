@@ -29,52 +29,54 @@ from tests.helpers.types import RawJSONDict
 class TestFailureDetection:
     """Test that failure detection correctly identifies tool failures."""
 
-    def test_detect_json_parsing_error(self, tmp_path: Path) -> None:
+    async def test_detect_json_parsing_error(self, tmp_path: Path) -> None:
         """Test that JSON parsing errors are detected."""
         handler = MCPToolFailureHandler(tmp_path)
         error = json.JSONDecodeError("Expecting value", "", 0)
-        assert handler.detect_failure(error, "test_tool", "test_step") is True
+        assert await handler.detect_failure(error, "test_tool", "test_step") is True
 
-    def test_detect_json_value_error(self, tmp_path: Path) -> None:
+    async def test_detect_json_value_error(self, tmp_path: Path) -> None:
         """Test that JSON-related ValueError is detected."""
         handler = MCPToolFailureHandler(tmp_path)
         error = ValueError("Invalid JSON encoding")
-        assert handler.detect_failure(error, "test_tool", "test_step") is True
+        assert await handler.detect_failure(error, "test_tool", "test_step") is True
 
-    def test_detect_connection_error(self, tmp_path: Path) -> None:
+    async def test_detect_connection_error(self, tmp_path: Path) -> None:
         """Test that connection errors are detected."""
         handler = MCPToolFailureHandler(tmp_path)
         error = ConnectionError("Connection closed")
-        assert handler.detect_failure(error, "test_tool", "test_step") is True
+        assert await handler.detect_failure(error, "test_tool", "test_step") is True
 
-    def test_detect_unexpected_behavior(self, tmp_path: Path) -> None:
+    async def test_detect_unexpected_behavior(self, tmp_path: Path) -> None:
         """Test that unexpected behavior errors are detected."""
         handler = MCPToolFailureHandler(tmp_path)
         error = TypeError("Unexpected type")
-        assert handler.detect_failure(error, "test_tool", "test_step") is True
+        assert await handler.detect_failure(error, "test_tool", "test_step") is True
 
-    def test_detect_fastmcp_error(self, tmp_path: Path) -> None:
+    async def test_detect_fastmcp_error(self, tmp_path: Path) -> None:
         """Test that FastMCP errors are detected."""
         handler = MCPToolFailureHandler(tmp_path)
         error = RuntimeError("MCP error -32000: Connection closed")
-        assert handler.detect_failure(error, "test_tool", "test_step") is True
+        assert await handler.detect_failure(error, "test_tool", "test_step") is True
 
-    def test_ignore_expected_errors(self, tmp_path: Path) -> None:
+    async def test_ignore_expected_errors(self, tmp_path: Path) -> None:
         """Test that expected errors (validation failures) are not detected."""
         handler = MCPToolFailureHandler(tmp_path)
         # Validation failure - not a tool failure
         error = ValueError("Validation failed: file not found")
-        assert handler.detect_failure(error, "test_tool", "test_step") is False
+        assert await handler.detect_failure(error, "test_tool", "test_step") is False
 
 
 class TestInvestigationPlanCreation:
     """Test that investigation plans are created automatically."""
 
-    def test_create_investigation_plan(self, tmp_path: Path) -> None:
+    async def test_create_investigation_plan(self, tmp_path: Path) -> None:
         """Test that investigation plan is created with correct content."""
         handler = MCPToolFailureHandler(tmp_path)
         error = json.JSONDecodeError("Expecting value", "", 0)
-        plan_path = handler.create_investigation_plan("test_tool", error, "test_step")
+        plan_path = await handler.create_investigation_plan(
+            "test_tool", error, "test_step"
+        )
 
         assert plan_path.exists()
         assert plan_path.name.startswith("phase-investigate-test_tool-failure-")
@@ -86,11 +88,13 @@ class TestInvestigationPlanCreation:
         assert "JSONDecodeError" in content
         assert "ASAP (Blocker)" in content
 
-    def test_investigation_plan_structure(self, tmp_path: Path) -> None:
+    async def test_investigation_plan_structure(self, tmp_path: Path) -> None:
         """Test that investigation plan has correct structure."""
         handler = MCPToolFailureHandler(tmp_path)
         error = ConnectionError("Connection closed")
-        plan_path = handler.create_investigation_plan("test_tool", error, "test_step")
+        plan_path = await handler.create_investigation_plan(
+            "test_tool", error, "test_step"
+        )
 
         content = plan_path.read_text(encoding="utf-8")
         assert "## Goal" in content
@@ -104,7 +108,7 @@ class TestInvestigationPlanCreation:
 class TestRoadmapIntegration:
     """Test that roadmap is updated with blockers."""
 
-    def test_add_to_roadmap(self, tmp_path: Path) -> None:
+    async def test_add_to_roadmap(self, tmp_path: Path) -> None:
         """Test that investigation plan is added to roadmap."""
         # Create memory bank directory and roadmap
         memory_bank = tmp_path / ".cortex" / "memory-bank"
@@ -116,15 +120,17 @@ class TestRoadmapIntegration:
 
         handler = MCPToolFailureHandler(tmp_path)
         error = json.JSONDecodeError("Expecting value", "", 0)
-        plan_path = handler.create_investigation_plan("test_tool", error, "test_step")
-        handler.add_to_roadmap(plan_path, "test_tool", error)
+        plan_path = await handler.create_investigation_plan(
+            "test_tool", error, "test_step"
+        )
+        await handler.add_to_roadmap(plan_path, "test_tool", error)
 
         content = roadmap.read_text(encoding="utf-8")
         assert "test_tool" in content
         assert "ASAP (PLANNING)" in content
         assert "Investigate and fix MCP tool failure" in content
 
-    def test_add_to_roadmap_creates_section(self, tmp_path: Path) -> None:
+    async def test_add_to_roadmap_creates_section(self, tmp_path: Path) -> None:
         """Test that roadmap section is created if it doesn't exist."""
         # Create memory bank directory and roadmap without blockers section
         memory_bank = tmp_path / ".cortex" / "memory-bank"
@@ -134,8 +140,10 @@ class TestRoadmapIntegration:
 
         handler = MCPToolFailureHandler(tmp_path)
         error = json.JSONDecodeError("Expecting value", "", 0)
-        plan_path = handler.create_investigation_plan("test_tool", error, "test_step")
-        handler.add_to_roadmap(plan_path, "test_tool", error)
+        plan_path = await handler.create_investigation_plan(
+            "test_tool", error, "test_step"
+        )
+        await handler.add_to_roadmap(plan_path, "test_tool", error)
 
         content = roadmap.read_text(encoding="utf-8")
         assert "## Blockers (ASAP Priority)" in content
@@ -144,19 +152,19 @@ class TestRoadmapIntegration:
 class TestProtocolEnforcement:
     """Test that protocol violations are prevented."""
 
-    def test_handle_failure_raises_exception(self, tmp_path: Path) -> None:
+    async def test_handle_failure_raises_exception(self, tmp_path: Path) -> None:
         """Test that handle_failure always raises MCPToolFailure."""
         handler = MCPToolFailureHandler(tmp_path)
         error = json.JSONDecodeError("Expecting value", "", 0)
 
         with pytest.raises(MCPToolFailure) as exc_info:
-            handler.handle_failure("test_tool", error, "test_step")
+            await handler.handle_failure("test_tool", error, "test_step")
 
         assert exc_info.value.tool_name == "test_tool"
         assert exc_info.value.step_name == "test_step"
         assert exc_info.value.error == error
 
-    def test_handle_failure_creates_plan(self, tmp_path: Path) -> None:
+    async def test_handle_failure_creates_plan(self, tmp_path: Path) -> None:
         """Test that handle_failure creates investigation plan."""
         # Create memory bank directory and roadmap
         memory_bank = tmp_path / ".cortex" / "memory-bank"
@@ -170,7 +178,7 @@ class TestProtocolEnforcement:
         error = json.JSONDecodeError("Expecting value", "", 0)
 
         with pytest.raises(MCPToolFailure):
-            handler.handle_failure("test_tool", error, "test_step")
+            await handler.handle_failure("test_tool", error, "test_step")
 
         # Check that plan was created
         plans_dir = tmp_path / ".cortex" / "plans"
@@ -185,12 +193,16 @@ class TestProtocolEnforcement:
 class TestResponseValidation:
     """Test that response validation works correctly."""
 
-    def test_validate_none_response(self, tmp_path: Path) -> None:
+    async def test_validate_none_response(self, tmp_path: Path) -> None:
         """Test that None response is detected as failure."""
         with pytest.raises(MCPToolFailure):
-            validate_mcp_tool_response(None, "test_tool", "test_step", str(tmp_path))
+            await validate_mcp_tool_response(
+                None, "test_tool", "test_step", str(tmp_path)
+            )
 
-    def test_validate_error_status_is_valid_response(self, tmp_path: Path) -> None:
+    async def test_validate_error_status_is_valid_response(
+        self, tmp_path: Path
+    ) -> None:
         """Test that error status in response is NOT a tool failure.
 
         A response with status="error" means the tool worked correctly and found
@@ -203,47 +215,53 @@ class TestResponseValidation:
             "total_errors": 5,
         }
         # Should NOT raise - error status is a valid response
-        validate_mcp_tool_response(response, "test_tool", "test_step", str(tmp_path))
+        await validate_mcp_tool_response(
+            response, "test_tool", "test_step", str(tmp_path)
+        )
 
-    def test_validate_json_string_response(self, tmp_path: Path) -> None:
+    async def test_validate_json_string_response(self, tmp_path: Path) -> None:
         """Test that JSON string response is detected as failure."""
         response = json.dumps({"status": "success"})
         with pytest.raises(MCPToolFailure):
-            validate_mcp_tool_response(
+            await validate_mcp_tool_response(
                 response, "test_tool", "test_step", str(tmp_path)
             )
 
-    def test_validate_valid_response(self, tmp_path: Path) -> None:
+    async def test_validate_valid_response(self, tmp_path: Path) -> None:
         """Test that valid response passes validation."""
         response: JsonValue = {"status": "success", "data": "test"}
         # Should not raise
-        validate_mcp_tool_response(response, "test_tool", "test_step", str(tmp_path))
+        await validate_mcp_tool_response(
+            response, "test_tool", "test_step", str(tmp_path)
+        )
 
-    def test_validate_response_without_status(self, tmp_path: Path) -> None:
+    async def test_validate_response_without_status(self, tmp_path: Path) -> None:
         """Test that response without status field logs warning but doesn't fail."""
         response: JsonValue = {"data": "test"}  # Missing status field
         # Should not raise (just logs warning)
-        validate_mcp_tool_response(response, "test_tool", "test_step", str(tmp_path))
+        await validate_mcp_tool_response(
+            response, "test_tool", "test_step", str(tmp_path)
+        )
 
 
 class TestValidatorHelpers:
     """Test validator helper functions."""
 
-    def test_check_mcp_tool_failure(self, tmp_path: Path) -> None:
+    async def test_check_mcp_tool_failure(self, tmp_path: Path) -> None:
         """Test that check_mcp_tool_failure correctly identifies failures."""
         error = json.JSONDecodeError("Expecting value", "", 0)
         assert (
-            check_mcp_tool_failure(error, "test_tool", "test_step", str(tmp_path))
+            await check_mcp_tool_failure(error, "test_tool", "test_step", str(tmp_path))
             is True
         )
 
         error = ValueError("Validation failed")
         assert (
-            check_mcp_tool_failure(error, "test_tool", "test_step", str(tmp_path))
+            await check_mcp_tool_failure(error, "test_tool", "test_step", str(tmp_path))
             is False
         )
 
-    def test_handle_mcp_tool_failure_raises(self, tmp_path: Path) -> None:
+    async def test_handle_mcp_tool_failure_raises(self, tmp_path: Path) -> None:
         """Test that handle_mcp_tool_failure always raises."""
         # Create memory bank directory and roadmap
         memory_bank = tmp_path / ".cortex" / "memory-bank"
@@ -255,7 +273,9 @@ class TestValidatorHelpers:
 
         error = json.JSONDecodeError("Expecting value", "", 0)
         with pytest.raises(MCPToolFailure):
-            handle_mcp_tool_failure(error, "test_tool", "test_step", str(tmp_path))
+            await handle_mcp_tool_failure(
+                error, "test_tool", "test_step", str(tmp_path)
+            )
 
 
 class TestMCPToolWrapperIntegration:

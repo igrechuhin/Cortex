@@ -10,6 +10,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
+from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.exceptions import MemoryBankError
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
@@ -137,37 +138,52 @@ class MCPToolFailureHandler:
             self.project_root, CortexResourceType.PLANS
         )
 
-    def _check_json_error(
-        self, error: Exception, error_str: str, tool_name: str, step_name: str
+    async def _check_json_error(
+        self,
+        error: Exception,
+        error_str: str,
+        tool_name: str,
+        step_name: str,
+        ctx: MCPContext | None = None,
     ) -> bool:
         """Check for JSON parsing errors."""
         if isinstance(error, json.JSONDecodeError):
-            msg = (
-                f"Detected JSON parsing error in {tool_name} during "
-                + f"{step_name}: {error}"
+            await self._log_json_error(
+                ctx, tool_name, step_name, error, "JSON parsing error"
             )
-            logger.error(msg)
             return True
-        if isinstance(error, ValueError):
-            json_keywords = [
-                "json",
-                "decode",
-                "parse",
-                "malformed",
-                "invalid",
-                "encoding",
-            ]
-            if any(kw in error_str for kw in json_keywords):
-                msg = (
-                    f"Detected JSON-related ValueError in {tool_name} "
-                    + f"during {step_name}: {error}"
-                )
-                logger.error(msg)
-                return True
+        if isinstance(error, ValueError) and self._is_json_value_error(error_str):
+            await self._log_json_error(
+                ctx, tool_name, step_name, error, "JSON-related ValueError"
+            )
+            return True
         return False
 
-    def _check_connection_error(
-        self, error: Exception, error_str: str, tool_name: str, step_name: str
+    def _is_json_value_error(self, error_str: str) -> bool:
+        """Check if ValueError is JSON-related."""
+        json_keywords = ["json", "decode", "parse", "malformed", "invalid", "encoding"]
+        return any(kw in error_str for kw in json_keywords)
+
+    async def _log_json_error(
+        self,
+        ctx: MCPContext | None,
+        tool_name: str,
+        step_name: str,
+        error: Exception,
+        error_type: str,
+    ) -> None:
+        """Log JSON error to client and server."""
+        msg = f"Detected {error_type} in {tool_name} during {step_name}: {error}"
+        await log_client(ctx, "error", msg)
+        logger.debug(f"{error_type} details: {error}")  # Server-side detail
+
+    async def _check_connection_error(
+        self,
+        error: Exception,
+        error_str: str,
+        tool_name: str,
+        step_name: str,
+        ctx: MCPContext | None = None,
     ) -> bool:
         """Check for connection-related errors."""
         if isinstance(error, (ConnectionError, BrokenPipeError, OSError)):
@@ -185,12 +201,18 @@ class MCPToolFailureHandler:
                     f"Detected connection error in {tool_name} during "
                     + f"{step_name}: {error}"
                 )
-                logger.error(msg)
+                await log_client(ctx, "error", msg)
+                logger.debug(f"Connection error details: {error}")  # Server-side detail
                 return True
         return False
 
-    def _check_type_attribute_key_error(
-        self, error: Exception, error_str: str, tool_name: str, step_name: str
+    async def _check_type_attribute_key_error(
+        self,
+        error: Exception,
+        error_str: str,
+        tool_name: str,
+        step_name: str,
+        ctx: MCPContext | None = None,
     ) -> bool:
         """Check for TypeError, AttributeError, or KeyError with unexpected behavior."""
         if not isinstance(error, (TypeError, AttributeError, KeyError)):
@@ -210,12 +232,18 @@ class MCPToolFailureHandler:
                 f"Detected unexpected behavior in {tool_name} during "
                 + f"{step_name}: {error}"
             )
-            logger.error(msg)
+            await log_client(ctx, "error", msg)
+            logger.debug(f"Unexpected behavior details: {error}")  # Server-side detail
             return True
         return False
 
-    def _check_runtime_error(
-        self, error: Exception, error_str: str, tool_name: str, step_name: str
+    async def _check_runtime_error(
+        self,
+        error: Exception,
+        error_str: str,
+        tool_name: str,
+        step_name: str,
+        ctx: MCPContext | None = None,
     ) -> bool:
         """Check for RuntimeError with tool-related keywords."""
         if not isinstance(error, RuntimeError):
@@ -230,38 +258,58 @@ class MCPToolFailureHandler:
             "json string instead of dict",
         ]
         if any(kw in error_str for kw in tool_keywords):
-            logger.error(
-                f"Detected runtime error in {tool_name} during {step_name}: {error}"
-            )
+            msg = f"Detected runtime error in {tool_name} during {step_name}: {error}"
+            await log_client(ctx, "error", msg)
+            logger.debug(f"Runtime error details: {error}")  # Server-side detail
             return True
         return False
 
-    def _check_unexpected_behavior(
-        self, error: Exception, error_str: str, tool_name: str, step_name: str
+    async def _check_unexpected_behavior(
+        self,
+        error: Exception,
+        error_str: str,
+        tool_name: str,
+        step_name: str,
+        ctx: MCPContext | None = None,
     ) -> bool:
         """Check for unexpected behavior errors."""
-        if self._check_type_attribute_key_error(error, error_str, tool_name, step_name):
+        if await self._check_type_attribute_key_error(
+            error, error_str, tool_name, step_name, ctx
+        ):
             return True
-        return self._check_runtime_error(error, error_str, tool_name, step_name)
+        return await self._check_runtime_error(
+            error, error_str, tool_name, step_name, ctx
+        )
 
-    def detect_failure(self, error: Exception, tool_name: str, step_name: str) -> bool:
+    async def detect_failure(
+        self,
+        error: Exception,
+        tool_name: str,
+        step_name: str,
+        ctx: MCPContext | None = None,
+    ) -> bool:
         """Detect if error is an MCP tool failure.
 
         Distinguishes between actual tool failures and expected errors.
         """
         error_str = str(error).lower()
-        if self._check_json_error(error, error_str, tool_name, step_name):
+        if await self._check_json_error(error, error_str, tool_name, step_name, ctx):
             return True
-        if self._check_connection_error(error, error_str, tool_name, step_name):
+        if await self._check_connection_error(
+            error, error_str, tool_name, step_name, ctx
+        ):
             return True
-        if self._check_unexpected_behavior(error, error_str, tool_name, step_name):
+        if await self._check_unexpected_behavior(
+            error, error_str, tool_name, step_name, ctx
+        ):
             return True
         if "fastmcp" in error_str or "mcp error" in error_str:
             msg = (
                 f"Detected MCP protocol error in {tool_name} during "
                 + f"{step_name}: {error}"
             )
-            logger.error(msg)
+            await log_client(ctx, "error", msg)
+            logger.debug(f"MCP protocol error details: {error}")  # Server-side detail
             return True
         return False
 
@@ -282,8 +330,12 @@ class MCPToolFailureHandler:
             cause=cause,
         )
 
-    def create_investigation_plan(
-        self, tool_name: str, error: Exception, step_name: str
+    async def create_investigation_plan(
+        self,
+        tool_name: str,
+        error: Exception,
+        step_name: str,
+        ctx: MCPContext | None = None,
     ) -> Path:
         """Create investigation plan for tool failure."""
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -292,19 +344,36 @@ class MCPToolFailureHandler:
         plan_content = self._generate_plan_content(tool_name, error, step_name)
         plan_path.parent.mkdir(parents=True, exist_ok=True)
         _ = plan_path.write_text(plan_content, encoding="utf-8")
-        logger.info(f"Created investigation plan: {plan_path}")
+        await log_client(
+            ctx,
+            "info",
+            f"Created investigation plan: {plan_path.relative_to(self.project_root) if plan_path.is_relative_to(self.project_root) else plan_path}",
+        )
+        logger.debug(f"Investigation plan details: {plan_path}")  # Server-side detail
         return plan_path
 
-    def add_to_roadmap(self, plan_path: Path, tool_name: str, error: Exception) -> None:
+    async def add_to_roadmap(
+        self,
+        plan_path: Path,
+        tool_name: str,
+        error: Exception,
+        ctx: MCPContext | None = None,
+    ) -> None:
         """Add investigation plan to roadmap as blocker.
 
         Args:
             plan_path: Path to investigation plan file
             tool_name: Name of the tool that failed
             error: Exception that occurred
+            ctx: Optional MCP context for client-visible logging
         """
         roadmap_path = self._get_roadmap_path()
         if not roadmap_path:
+            await log_client(
+                ctx,
+                "warning",
+                f"Roadmap file not found; investigation plan created at: {plan_path.relative_to(self.project_root) if plan_path.is_relative_to(self.project_root) else plan_path}",
+            )
             return
 
         roadmap_content = roadmap_path.read_text(encoding="utf-8")
@@ -314,7 +383,12 @@ class MCPToolFailureHandler:
         roadmap_content = self._insert_plan_entry(roadmap_content, plan_entry)
 
         _ = roadmap_path.write_text(roadmap_content, encoding="utf-8")
-        logger.info(f"Added investigation plan to roadmap: {plan_path}")
+        await log_client(
+            ctx,
+            "info",
+            f"Added investigation plan to roadmap: {relative_plan_path}",
+        )
+        logger.debug(f"Roadmap update details: {plan_path}")  # Server-side detail
 
     def _get_roadmap_path(self) -> Path | None:
         """Get roadmap file path.
@@ -327,6 +401,7 @@ class MCPToolFailureHandler:
             / "roadmap.md"
         )
         if not roadmap_path.exists():
+            # Server-side logging only (file system issue)
             logger.warning(f"Roadmap file not found: {roadmap_path}")
             return None
         return roadmap_path
@@ -395,7 +470,13 @@ class MCPToolFailureHandler:
         insert_pos = content.find(blockers_section) + len(blockers_section)
         return content[:insert_pos] + "\n" + plan_entry + content[insert_pos:]
 
-    def handle_failure(self, tool_name: str, error: Exception, step_name: str) -> None:
+    async def handle_failure(
+        self,
+        tool_name: str,
+        error: Exception,
+        step_name: str,
+        ctx: MCPContext | None = None,
+    ) -> None:
         """Handle MCP tool failure according to protocol.
 
         This method:
@@ -408,28 +489,37 @@ class MCPToolFailureHandler:
             tool_name: Name of the tool that failed
             error: Exception that occurred
             step_name: Commit procedure step where failure occurred
+            ctx: Optional MCP context for client-visible logging
 
         Raises:
             MCPToolFailure: Always raises to stop commit procedure
         """
         # Create investigation plan
-        plan_path = self.create_investigation_plan(tool_name, error, step_name)
+        plan_path = await self.create_investigation_plan(
+            tool_name, error, step_name, ctx
+        )
 
         # Add to roadmap
         try:
-            self.add_to_roadmap(plan_path, tool_name, error)
+            await self.add_to_roadmap(plan_path, tool_name, error, ctx)
         except Exception as roadmap_error:
             msg = (
                 f"Failed to add plan to roadmap: {roadmap_error}. "
                 + f"Plan created at: {plan_path}"
             )
-            logger.error(msg)
+            await log_client(ctx, "error", msg)
+            logger.debug(
+                f"Roadmap error details: {roadmap_error}"
+            )  # Server-side detail
 
         # Generate user notification (for logging, not returned since we raise)
         user_notification = self._generate_user_notification(
             tool_name, error, step_name, plan_path
         )
-        logger.error(f"MCP tool failure notification: {user_notification}")
+        await log_client(
+            ctx, "error", f"MCP tool failure: {tool_name} failed during {step_name}"
+        )
+        logger.debug(f"User notification: {user_notification}")  # Server-side detail
 
         # Raise exception to stop commit procedure
         raise MCPToolFailure(tool_name, error, step_name)

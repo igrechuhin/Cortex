@@ -83,3 +83,4 @@ The following 22 investigation plans document MCP tool registration issues resol
 - **Sequential thinking in Cortex MCP** - PENDING - Sequential thinking tool with thought history, revisions, branches. Plan: .cortex/plans/sequential-thinking-cortex-mcp.md.
 - **Type cleanup inventory (Phase 53)** - PENDING - Inventory of dict[str, object], list[object], TypedDict, Any. Plan: .cortex/plans/type-cleanup-inventory.md.
 - **Phase 18: Markdown Lint Fix Tool** - COMPLETED (archived) - Historical reference for the markdown lint fix tooling work. Plan: .cortex/plans/phase-18-markdown-lint-fix-tool.md.
+- **Test Fixture Validation and Maintenance** - PENDING - Implement test fixture validation and maintenance mechanisms to prevent test failures caused by incomplete mock configurations. Addresses session optimization recommendations: fixture validation, documentation, and maintenance protocol.

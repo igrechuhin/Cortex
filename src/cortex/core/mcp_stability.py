@@ -27,6 +27,7 @@ from cortex.core.constants import (
     PROGRESS_REPORT_INTERVAL_SECONDS,
     PROGRESS_THRESHOLD_TIMEOUT_SECONDS,
 )
+from cortex.core.context_logging import MCPContext
 from cortex.core.mcp_failure_handler import MCPToolFailureHandler
 from cortex.core.models import ConnectionHealth, JsonValue, MCPToolArguments
 from cortex.core.usage_context import get_current_managers, set_current_managers
@@ -60,26 +61,25 @@ def ensure_usage_context[T](
         **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
     ) -> T:
         if get_current_managers() is None:
-            from cortex.managers.initialization import get_managers
-
             # Usage context failures are treated as MCP tool failures so they
             # participate in the investigation protocol instead of being silent.
+            from cortex.core.context_logging import MCPContext
+            from cortex.managers.initialization import get_managers
+
+            ctx_raw = kwargs.get("ctx")
+            # Cast ctx from JsonValue to MCPContext | None (ctx is injected by
+            # FastMCP and is an MCPContext object, not JSON-serializable)
+            mcp_ctx = cast(MCPContext | None, ctx_raw)
             try:
                 # Resolve root internally (same as tools do), using MCP context
                 # when available. Tools resolve root internally and do not accept
                 # project_root as a parameter.
-                from cortex.core.context_logging import MCPContext
-
-                ctx_raw = kwargs.get("ctx")
-                # Cast ctx from JsonValue to MCPContext | None (ctx is injected by
-                # FastMCP and is an MCPContext object, not JSON-serializable)
-                mcp_ctx = cast(MCPContext | None, ctx_raw)
                 root = await resolve_project_root_async(None, mcp_ctx)
                 mgrs = await get_managers(root)
                 mgrs_dict = mgrs if isinstance(mgrs, dict) else mgrs.model_dump()
                 set_current_managers(mgrs_dict)
             except Exception as e:  # pragma: no cover - exercised via tool tests
-                _handle_tool_exception_if_failure(e, func.__name__)
+                await _handle_tool_exception_if_failure(e, func.__name__, mcp_ctx)
                 raise
         return await func(*args, **kwargs)
 
@@ -622,11 +622,13 @@ async def with_mcp_stability[T](
     )
 
 
-def _handle_tool_exception_if_failure(error: Exception, tool_name: str) -> None:
+async def _handle_tool_exception_if_failure(
+    error: Exception, tool_name: str, ctx: MCPContext | None = None
+) -> None:
     """If error is an MCP tool failure, run protocol and raise; otherwise no-op."""
     handler = MCPToolFailureHandler(project_root=None)
-    if handler.detect_failure(error, tool_name, "MCP tool execution"):
-        handler.handle_failure(tool_name, error, "MCP tool execution")
+    if await handler.detect_failure(error, tool_name, "MCP tool execution", ctx):
+        await handler.handle_failure(tool_name, error, "MCP tool execution", ctx)
 
 
 def _make_tool_wrapper_func[T](
@@ -653,7 +655,11 @@ def _make_tool_wrapper_func[T](
                 **kwargs_no_progress,
             )
         except Exception as e:
-            _handle_tool_exception_if_failure(e, func.__name__)
+            from cortex.core.context_logging import MCPContext
+
+            ctx_raw = kwargs.get("ctx")
+            mcp_ctx = cast(MCPContext | None, ctx_raw)
+            await _handle_tool_exception_if_failure(e, func.__name__, mcp_ctx)
             raise
 
     return wrapper
