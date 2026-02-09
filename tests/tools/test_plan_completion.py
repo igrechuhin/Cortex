@@ -10,10 +10,13 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.plan_completion import (
     CompletePlanResult,
     _append_completed_entry,  # type: ignore[private-usage]
     _append_progress_entry_content,  # type: ignore[private-usage]
+    _archive_plan_file,  # type: ignore[private-usage]
+    _archive_subdir_for_plan,  # type: ignore[private-usage]
     _create_section_and_append,  # type: ignore[private-usage]
     _execute_append_active_context,  # type: ignore[private-usage]
     _execute_append_progress,  # type: ignore[private-usage]
@@ -200,6 +203,8 @@ class TestCompletePlanResult:
             message="Moved",
             roadmap_line_removed=5,
             active_context_line_inserted=10,
+            progress_line_inserted=None,
+            archive_path=None,
             error=None,
         )
         data = json.loads(result.model_dump_json())
@@ -213,11 +218,67 @@ class TestCompletePlanResult:
             message="Not found",
             roadmap_line_removed=None,
             active_context_line_inserted=None,
+            progress_line_inserted=None,
+            archive_path=None,
             error="No bullet",
         )
         data = json.loads(result.model_dump_json())
         assert data["status"] == "error"
         assert "No bullet" in data.get("error", "")
+
+
+class TestArchiveSubdirForPlan:
+    """Tests for _archive_subdir_for_plan."""
+
+    def test_session_optimization_returns_session_optimization(self) -> None:
+        assert (
+            _archive_subdir_for_plan("session-optimization-foo.md")
+            == "SessionOptimization"
+        )
+
+    def test_phase_number_returns_phase_n(self) -> None:
+        assert _archive_subdir_for_plan("phase-9-excellence-98.md") == "Phase9"
+        assert _archive_subdir_for_plan("phase-53-type-cleanup.md") == "Phase53"
+
+    def test_investigate_with_date_returns_investigations_date(self) -> None:
+        assert (
+            _archive_subdir_for_plan("phase-investigate-foo-20260204-123456.md")
+            == "Investigations/2026-02-04"
+        )
+
+    def test_path_traversal_returns_none(self) -> None:
+        assert _archive_subdir_for_plan("foo/bar.md") is None
+        assert _archive_subdir_for_plan("") is None
+
+
+class TestArchivePlanFile:
+    """Tests for _archive_plan_file."""
+
+    def test_rejects_path_traversal(self, tmp_path: Path) -> None:
+        _, err = _archive_plan_file(tmp_path, "session-optimization/../evil.md")
+        assert err is not None
+        assert "single filename" in (err or "").lower()
+
+    def test_returns_error_when_file_not_found(self, tmp_path: Path) -> None:
+        (tmp_path / ".cortex" / "plans").mkdir(parents=True)
+        _, err = _archive_plan_file(tmp_path, "session-optimization-missing.md")
+        assert err is not None
+        assert "not found" in (err or "").lower()
+
+    def test_moves_session_optimization_to_archive_and_removes_from_root(
+        self, tmp_path: Path
+    ) -> None:
+        plans = tmp_path / ".cortex" / "plans"
+        plans.mkdir(parents=True)
+        plan_name = "session-optimization-foo.md"
+        _ = (plans / plan_name).write_text("# Plan\n")
+        path, err = _archive_plan_file(tmp_path, plan_name)
+        assert err is None
+        assert path is not None
+        assert "SessionOptimization" in path
+        assert not (plans / plan_name).exists()
+        plans_archive = get_cortex_path(tmp_path, CortexResourceType.PLANS_ARCHIVE)
+        assert (plans_archive / "SessionOptimization" / plan_name).exists()
 
 
 class TestCompletePlanIntegration:
@@ -282,3 +343,52 @@ class TestCompletePlanIntegration:
             or "No roadmap" in (result.get("error") or "")
             or "bullet" in (result.get("error") or "").lower()
         )
+
+    @pytest.mark.asyncio
+    async def test_complete_plan_with_plan_file_name_archives_file(
+        self, tmp_path: Path
+    ) -> None:
+        """complete_plan with plan_file_name moves plan file to archive and removes from plans root."""
+        mem = tmp_path / ".cortex" / "memory-bank"
+        mem.mkdir(parents=True)
+        plans_dir = tmp_path / ".cortex" / "plans"
+        plans_dir.mkdir(parents=True)
+        plan_basename = "session-optimization-roadmap-full-content-enforcement.md"
+        plan_in_root = plans_dir / plan_basename
+        _ = plan_in_root.write_text("# Plan\n\n**Status**: COMPLETE\n")
+        _ = (mem / "roadmap.md").write_text(
+            "# Roadmap\n\n## Pending\n\n"
+            + "- **Roadmap full-content enforcement** - PENDING - Plan: .cortex/plans/"
+            + plan_basename
+            + "\n"
+        )
+        _ = (mem / "activeContext.md").write_text(
+            "# Active\n\n## Completed Work (2026-02-09)\n\n"
+        )
+        _ = (mem / "progress.md").write_text("# Progress\n\n## 2026-02-09\n\n")
+        with patch(
+            "cortex.tools.plan_completion.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
+        ):
+            result_str = await complete_plan(
+                plan_title="Roadmap full-content enforcement",
+                summary="Strengthened create-plan and memory-bank-updater.",
+                completion_date="2026-02-09",
+                progress_entry="**Roadmap full-content enforcement** - COMPLETE. Summary.",
+                plan_file_name=plan_basename,
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["archive_path"]
+        assert "SessionOptimization" in result["archive_path"]
+        assert result["archive_path"].endswith(plan_basename)
+        assert not plan_in_root.exists()
+        archive_path = (
+            get_cortex_path(tmp_path, CortexResourceType.PLANS_ARCHIVE)
+            / "SessionOptimization"
+            / plan_basename
+        )
+        assert archive_path.exists()
+        assert "COMPLETE" in archive_path.read_text()
+        assert result.get("progress_line_inserted") is not None

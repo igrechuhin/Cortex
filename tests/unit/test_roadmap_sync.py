@@ -102,7 +102,10 @@ class TestValidateRoadmapSyncEnhancements:
         # Arrange: layout is project_root/.cortex/plans/archive/Phase62/phase-62-foo.md
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            archive_dir = project_root / ".cortex" / "plans" / "archive" / "Phase62"
+            archive_dir = (
+                get_cortex_path(project_root, CortexResourceType.PLANS_ARCHIVE)
+                / "Phase62"
+            )
             archive_dir.mkdir(parents=True)
             plan_file = archive_dir / "phase-62-synapse-session-optimization.md"
             _ = plan_file.write_text("# Plan content\n")
@@ -147,9 +150,11 @@ class TestValidateRoadmapSyncEnhancements:
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             (project_root / "src").mkdir()
-            plans_dir = get_cortex_path(project_root, CortexResourceType.PLANS)
+            plans_archive = get_cortex_path(
+                project_root, CortexResourceType.PLANS_ARCHIVE
+            )
             archive_plan = (
-                plans_dir / "archive" / "Phase18" / "phase-18-markdown-lint-fix-tool.md"
+                plans_archive / "Phase18" / "phase-18-markdown-lint-fix-tool.md"
             )
             archive_plan.parent.mkdir(parents=True)
             _ = archive_plan.write_text("# Phase 18\n")

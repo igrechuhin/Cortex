@@ -10,6 +10,8 @@ from pathlib import Path
 
 import pytest
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
 
 def _repo_root() -> Path:
     """Return repository root (directory containing src/ and tests/)."""
@@ -18,7 +20,11 @@ def _repo_root() -> Path:
 
 def _create_plan_prompt_path() -> Path:
     """Return path to create-plan prompt under .cortex/synapse/prompts/."""
-    return _repo_root() / ".cortex" / "synapse" / "prompts" / "create-plan.md"
+    return (
+        get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE)
+        / "prompts"
+        / "create-plan.md"
+    )
 
 
 class TestCreatePlanPathResolution:
@@ -135,4 +141,89 @@ class TestCreatePlanRoadmapUpdate:
         assert (
             "unabridged" in create_plan_prompt_content
             or "complete" in create_plan_prompt_content.lower()
+        )
+
+
+def _memory_bank_updater_agent_path() -> Path:
+    """Return path to memory-bank-updater agent under .cortex/synapse/agents/."""
+    return (
+        get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE)
+        / "agents"
+        / "memory-bank-updater.md"
+    )
+
+
+class TestCreatePlanAntiTruncation:
+    """Assert create-plan Step 6 contains anti-truncation and pre-write length check (roadmap full-content enforcement)."""
+
+    @pytest.fixture
+    def create_plan_prompt_content(self) -> str:
+        """Read create-plan prompt; skip if missing."""
+        path = _create_plan_prompt_path()
+        if not path.exists():
+            pytest.skip(
+                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present)"
+            )
+        return path.read_text()
+
+    def test_prompt_prohibits_shortened_or_summarized_roadmap(
+        self, create_plan_prompt_content: str
+    ) -> None:
+        """Create-plan Step 6 must prohibit passing shortened or summarized roadmap content."""
+        assert (
+            "never truncate" in create_plan_prompt_content.lower()
+            or "never pass" in create_plan_prompt_content.lower()
+        )
+        assert (
+            "shortened" in create_plan_prompt_content
+            or "summarized" in create_plan_prompt_content
+        )
+
+    def test_prompt_requires_pre_write_content_length_check(
+        self, create_plan_prompt_content: str
+    ) -> None:
+        """Create-plan Step 6 must require pre-write check that content length >= roadmap as read."""
+        assert (
+            "pre-write" in create_plan_prompt_content.lower()
+            or "content length" in create_plan_prompt_content.lower()
+            or "string length" in create_plan_prompt_content.lower()
+            or "len(content)" in create_plan_prompt_content
+        )
+        assert (
+            "at least as long" in create_plan_prompt_content
+            or "as long as" in create_plan_prompt_content
+        )
+
+
+class TestMemoryBankUpdaterAntiTruncation:
+    """Assert memory-bank-updater agent contains no-truncation rule and recovery instruction."""
+
+    @pytest.fixture
+    def memory_bank_updater_content(self) -> str:
+        """Read memory-bank-updater agent; skip if missing."""
+        path = _memory_bank_updater_agent_path()
+        if not path.exists():
+            pytest.skip(
+                f"Memory-bank-updater agent not found at {path} (e.g. synapse submodule not present)"
+            )
+        return path.read_text()
+
+    def test_agent_prohibits_truncated_roadmap_content(
+        self, memory_bank_updater_content: str
+    ) -> None:
+        """Memory-bank-updater must state never pass truncated or summarized roadmap content."""
+        assert (
+            "never pass truncated" in memory_bank_updater_content.lower()
+            or "never truncate" in memory_bank_updater_content.lower()
+        )
+        assert "full" in memory_bank_updater_content.lower()
+
+    def test_agent_includes_recovery_instruction(
+        self, memory_bank_updater_content: str
+    ) -> None:
+        """Memory-bank-updater must include recovery instruction for accidental truncated write."""
+        assert "restore" in memory_bank_updater_content.lower()
+        assert (
+            "version control" in memory_bank_updater_content
+            or "git show" in memory_bank_updater_content
         )

@@ -3,9 +3,12 @@ Plan Completion Tool
 
 Moves a completed plan from roadmap.md to activeContext.md so that
 roadmap stays future/upcoming only and completed work is recorded in activeContext.
+When plan_file_name is provided, also moves (archives) the plan file to the
+appropriate archive directory and removes any duplicate from the plans root.
 """
 
 import re
+import shutil
 from datetime import date
 from pathlib import Path
 
@@ -16,6 +19,7 @@ from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.exceptions import FileConflictError, FileLockTimeoutError
 from cortex.core.mcp_annotations import destructive_annotations, safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.models import (
@@ -26,7 +30,7 @@ from cortex.tools.roadmap_corruption import fix_roadmap_content_if_needed
 
 
 class CompletePlanResult(BaseModel):
-    """Result of completing a plan (move from roadmap to activeContext)."""
+    """Result of completing a plan (move from roadmap to activeContext, optional progress and archive)."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
@@ -37,6 +41,15 @@ class CompletePlanResult(BaseModel):
     )
     active_context_line_inserted: int | None = Field(
         None, ge=1, description="Line number inserted in activeContext (on success)"
+    )
+    progress_line_inserted: int | None = Field(
+        None,
+        ge=1,
+        description="Line number inserted in progress.md (if progress_entry provided)",
+    )
+    archive_path: str | None = Field(
+        None,
+        description="Path where plan file was archived (if plan_file_name provided)",
     )
     error: str | None = Field(None, description="Error message if status is error")
 
@@ -242,6 +255,8 @@ def _complete_plan_error(
         message=message,
         roadmap_line_removed=roadmap_line,
         active_context_line_inserted=active_line,
+        progress_line_inserted=None,
+        archive_path=None,
         error=error,
     )
 
@@ -253,6 +268,8 @@ def _complete_plan_success(roadmap_line: int, active_line: int) -> CompletePlanR
         message=f"Plan moved from roadmap (line {roadmap_line}) to activeContext (line {active_line})",
         roadmap_line_removed=roadmap_line,
         active_context_line_inserted=active_line,
+        progress_line_inserted=None,
+        archive_path=None,
         error=None,
     )
 
@@ -357,6 +374,54 @@ def _do_complete_plan(
     )
 
 
+def _archive_subdir_for_plan(filename: str) -> str | None:
+    """Return archive subdir relative to plans/archive/ from plan filename, or None if unknown."""
+    name = filename.strip()
+    if not name or "/" in name or "\\" in name:
+        return None
+    if name.startswith("session-optimization-") and name.endswith(".md"):
+        return "SessionOptimization"
+    if "investigate" in name.lower() and name.endswith(".md"):
+        match = re.search(r"(\d{8})", name)
+        if match:
+            d = match.group(1)
+            return f"Investigations/{d[:4]}-{d[4:6]}-{d[6:8]}"
+        return "Investigations"
+    phase_match = re.match(r"phase-(\d+)-", name, re.IGNORECASE)
+    if phase_match and name.endswith(".md"):
+        return f"Phase{phase_match.group(1)}"
+    return "Other"
+
+
+def _archive_plan_file(
+    root: Path, plan_file_name: str
+) -> tuple[str | None, str | None]:
+    """Move plan file to archive and remove duplicate from plans root. Returns (archive_path, error)."""
+    if Path(plan_file_name).name != plan_file_name:
+        return (None, "plan_file_name must be a single filename (no path components)")
+    plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+    source = plans_dir / plan_file_name
+    if not source.exists():
+        return (None, f"Plan file not found: {plan_file_name}")
+    subdir = _archive_subdir_for_plan(plan_file_name)
+    if subdir is None:
+        return (None, f"Cannot determine archive location for: {plan_file_name}")
+    plans_archive_root = get_cortex_path(root, CortexResourceType.PLANS_ARCHIVE)
+    archive_dir = plans_archive_root / subdir
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    dest = archive_dir / plan_file_name
+    try:
+        _ = shutil.move(str(source), str(dest))
+    except OSError as e:
+        return (None, f"Failed to move plan file: {e}")
+    if source.exists():
+        try:
+            _ = source.unlink()
+        except OSError:
+            pass
+    return (str(dest), None)
+
+
 def _progress_error(message: str, error: str) -> AppendProgressEntryResult:
     """Build error result for progress operations."""
     return AppendProgressEntryResult(
@@ -436,22 +501,51 @@ def _execute_append_active_context(
     )
 
 
+def _apply_progress_and_archive(
+    root: Path,
+    date_str: str,
+    progress_entry: str | None,
+    plan_file_name: str | None,
+    result: CompletePlanResult,
+) -> None:
+    """Apply optional progress append and plan file archive; mutate result."""
+    if progress_entry:
+        progress_result = _execute_append_progress(root, date_str, progress_entry)
+        if progress_result.status == "success" and progress_result.line_inserted:
+            result.progress_line_inserted = progress_result.line_inserted
+    if plan_file_name:
+        archive_path, archive_err = _archive_plan_file(root, plan_file_name)
+        if archive_err:
+            result.status = "error"
+            result.error = archive_err
+            result.message = (
+                f"Plan moved to activeContext but archive failed: {archive_err}"
+            )
+        elif archive_path:
+            result.archive_path = archive_path
+
+
 async def _complete_plan_impl(
     plan_title: str,
     summary: str,
     completion_date: str | None,
+    progress_entry: str | None,
+    plan_file_name: str | None,
     ctx: MCPContext | None,
 ) -> str:
-    """Implementation of complete_plan."""
+    """Implementation of complete_plan: roadmap + activeContext, optional progress, optional archive."""
     await log_client(ctx, "info", "complete_plan: starting", logger_name=__name__)
     date_str = (completion_date or _today_iso()).strip()
     root = await resolve_project_root_async(None, ctx)
     result = _do_complete_plan(root, plan_title, summary, date_str)
+    if result.status != "success":
+        await log_client(
+            ctx, "warning", f"complete_plan: {result.status}", logger_name=__name__
+        )
+        return result.model_dump_json()
+    _apply_progress_and_archive(root, date_str, progress_entry, plan_file_name, result)
     await log_client(
-        ctx,
-        "info" if result.status == "success" else "warning",
-        f"complete_plan: {result.status}",
-        logger_name=__name__,
+        ctx, "info", f"complete_plan: {result.status}", logger_name=__name__
     )
     return result.model_dump_json()
 
@@ -463,21 +557,36 @@ async def complete_plan(
     plan_title: str,
     summary: str,
     completion_date: str | None = None,
+    progress_entry: str | None = None,
+    plan_file_name: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Move a completed plan from roadmap to activeContext.
+    """Move a completed plan from roadmap to activeContext; optionally append progress and archive plan file.
 
     USE WHEN: A plan has been finished and should be recorded as completed
     in activeContext.md and removed from roadmap.md (roadmap = future only).
+    When the step references a plan file, pass plan_file_name so the tool
+    also moves (archives) the plan file to the correct archive directory.
 
-    RETURNS: JSON with status, roadmap_line_removed, active_context_line_inserted.
+    RETURNS: JSON with status, roadmap_line_removed, active_context_line_inserted,
+    optional progress_line_inserted, optional archive_path.
 
     - Removes the first roadmap bullet that contains plan_title.
     - Appends a completed entry to activeContext under ## Completed Work (date).
+    - If progress_entry is provided, appends that line to progress.md under the date.
+    - If plan_file_name is provided, moves the plan file to archive (SessionOptimization/,
+      PhaseN/, Investigations/YYYY-MM-DD/, or Other/) and removes any duplicate from plans root.
     - completion_date: YYYY-MM-DD (default: today UTC).
     """
     try:
-        return await _complete_plan_impl(plan_title, summary, completion_date, ctx)
+        return await _complete_plan_impl(
+            plan_title,
+            summary,
+            completion_date,
+            progress_entry,
+            plan_file_name,
+            ctx,
+        )
     except Exception as e:
         await log_client(ctx, "error", f"complete_plan: {e}", logger_name=__name__)
         return CompletePlanResult(
@@ -485,6 +594,8 @@ async def complete_plan(
             message="Unexpected error",
             roadmap_line_removed=None,
             active_context_line_inserted=None,
+            progress_line_inserted=None,
+            archive_path=None,
             error=str(e),
         ).model_dump_json()
 

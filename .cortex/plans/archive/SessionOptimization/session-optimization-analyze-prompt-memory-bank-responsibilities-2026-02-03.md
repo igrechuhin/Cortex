@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: COMPLETE
+Status: COMPLETED
 
 ## Source
 

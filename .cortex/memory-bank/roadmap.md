@@ -10,8 +10,6 @@
 
 ## Future Enhancements
 
-- **Structured JSON roadmap (future)** - PENDING - Evaluate moving roadmap to a structured format (e.g. JSON) with dedicated read/write APIs so all edits are programmatic; documented as future work after plan-registration blocker fix.
-
 ## Pending plans (from .cortex/plans)
 
 ### Investigation Plans (Archive / Reference)
@@ -46,10 +44,6 @@ The following 22 investigation plans document MCP tool registration issues resol
 - phase-investigate-write_cache_json-failure-20260204-082031.md
 
 ### Session Optimization Plans (2026-02-03)
-
-- **Analyze prompt and memory bank responsibilities** - PENDING - Plan: .cortex/plans/session-optimization-analyze-prompt-memory-bank-responsibilities-2026-02-03.md.
-- **Connection closed follow-ups** - PENDING - Plan: .cortex/plans/session-optimization-connection-closed-follow-ups-2026-02-03.md.
-- **Roadmap full-content enforcement** - PENDING - Plan: .cortex/plans/session-optimization-roadmap-full-content-enforcement.md.
 
 ### Session Optimization Plans (2026-02-02)
 

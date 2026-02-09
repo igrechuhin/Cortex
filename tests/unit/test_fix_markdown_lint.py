@@ -12,6 +12,7 @@ import pytest
 
 # pyright: reportPrivateUsage=false
 from cortex.core.models import GitCommandResult
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.markdown_operations import (
     _create_empty_success_response,  # type: ignore[reportPrivateUsage]
     _find_markdownlint_command,
@@ -1140,7 +1141,9 @@ class TestGetAllMarkdownFiles:
         # Arrange
         project_root = tmp_path
         docs_dir = project_root / "docs"
-        plans_archive_dir = project_root / ".cortex" / "plans" / "archive"
+        plans_archive_dir = get_cortex_path(
+            project_root, CortexResourceType.PLANS_ARCHIVE
+        )
         docs_dir.mkdir(parents=True)
         plans_archive_dir.mkdir(parents=True)
 

@@ -28,7 +28,7 @@ from cortex.core.context_logging import MCPContext, log_client, report_progress_
 from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import GitCommandResult
-from cortex.core.path_resolver import ProjectResourceType
+from cortex.core.path_resolver import CortexResourceType, ProjectResourceType
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.markdown_lint_cache import (
@@ -162,6 +162,7 @@ def _collect_markdown_files_sync(project_root: Path) -> list[Path]:
     """
     files: list[Path] = []
     venv_part = f"/{ProjectResourceType.VENV.value}/"
+    cortex = CortexResourceType.CORTEX_DIR.value
     exclude_parts = [
         "/.git/",
         "/node_modules/",
@@ -171,10 +172,10 @@ def _collect_markdown_files_sync(project_root: Path) -> list[Path]:
         "/.pytest_cache/",
         "/htmlcov/",
         "/.coverage",
-        "/.cortex/history/",  # Version history files
-        "/.cortex/snapshots/",  # Snapshot files
-        "/.cortex/plans/archive/",  # Archived plans (matches CI)
-        ".cortex/plans/archive/",  # Also match relative paths
+        f"/{cortex}/{CortexResourceType.HISTORY.value}/",  # Version history files
+        f"/{cortex}/snapshots/",  # Snapshot files (no enum)
+        f"/{cortex}/{CortexResourceType.PLANS_ARCHIVE.value}/",  # Archived plans (matches CI)
+        f"{cortex}/{CortexResourceType.PLANS_ARCHIVE.value}/",  # Also match relative paths
         "/.memory-bank-history/",  # Memory bank version history
         ".memory-bank-history/",  # Also match relative paths
         "/benchmark_results/",  # Benchmark output files

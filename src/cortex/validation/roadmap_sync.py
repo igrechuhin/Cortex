@@ -377,7 +377,7 @@ def _list_non_archived_plan_paths(plans_root: Path) -> list[Path]:
             relative_to_plans = plan_path.relative_to(plans_root)
         except ValueError:
             continue
-        if "archive" in relative_to_plans.parts:
+        if Path(CortexResourceType.PLANS_ARCHIVE.value).name in relative_to_plans.parts:
             continue
         out.append(plan_path)
     return out
