@@ -4,7 +4,11 @@
 
 ## Completed Work (2026-02-09)
 
+- ✅ **Investigate roadmap corruption on plan registration (blocker)** - COMPLETE (2026-02-09). Mandated `register_plan_in_roadmap` and `add_roadmap_entry` for plan registration: updated create-plan Step 6 and memory-bank-updater to require register_plan_in_roadmap for adding a new plan entry; manage_file(full content) only as fallback. Updated integration tests to assert prompt requires register_plan_in_roadmap. Documented structured JSON roadmap as future work. Blocker removed from roadmap.
+
 - ✅ **Commit (rules and manage_file test fixes)** - COMPLETE (2026-02-09). Fixed test failures: (1) Added `manager.initialize = AsyncMock(return_value=None)` to `mock_rules_manager` in `tests/tools/test_rules_operations.py` so `await rules_manager.initialize()` in rules tool does not raise. (2) Fixed `test_manage_file_metadata_success` in `tests/tools/test_consolidated.py`: prevent usage-context from persisting real managers by patching `set_current_managers` and `set_current_project_root` (no-op); use existing path for `construct_safe_path` return value. All 3702 tests pass; coverage 90.36%.
+
+- ✅ **Commit (type, quality, markdown)** - COMPLETE (2026-02-09) - Fixed reportUnusedCallResult in plan_completion._write_progress; refactored_execute_append_progress, _execute_append_active_context (plan_completion),_execute_roadmap_removal (roadmap_operations) under 30 lines via error helpers; fix_markdown_lint fixed 3 Synapse files.
 
 ## Completed Work (2026-02-07)
 
@@ -34,7 +38,7 @@ Commit pipeline; no active feature focus.
 
 ## Recent Changes
 
-Commit (2026-02-09): rules manager initialize mock, manage_file metadata test with usage-context patches; 3702 tests, 90.36% coverage.
+Blocker (2026-02-09): create-plan and memory-bank-updater now mandate register_plan_in_roadmap for new plan entry to prevent roadmap corruption. Commit (2026-02-09): rules manager initialize mock, manage_file metadata test with usage-context patches; 3702 tests, 90.36% coverage.
 
 ## Next Steps
 

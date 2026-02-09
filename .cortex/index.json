@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-09T08:08:32.199158",
+  "last_updated": "2026-02-09T08:25:57.316226",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 6600,
-      "token_count": 1603,
+      "size_bytes": 7097,
+      "token_count": 1712,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-09T08:00:51.459255",
-      "content_hash": "sha256:541972046da93585515ea5e48e6ccd059c80530d8ab279544e7a326e99ea4efc",
+      "last_modified": "2026-02-09T08:23:32.425957",
+      "content_hash": "sha256:597bdcf9a4552f3c1d6abdd3bbbdd6ce18980d036100c08d6df8df90066631a4",
       "sections": [
         {
           "title": "## Blockers (ASAP Priority)",
@@ -38,49 +38,49 @@
         {
           "title": "## Pending plans (from .cortex/plans)",
           "level": 2,
-          "line_start": 13,
-          "line_end": 13,
-          "content_hash": null
-        },
-        {
-          "title": "### Investigation Plans (Archive / Reference)",
-          "level": 2,
           "line_start": 15,
           "line_end": 15,
           "content_hash": null
         },
         {
+          "title": "### Investigation Plans (Archive / Reference)",
+          "level": 2,
+          "line_start": 17,
+          "line_end": 17,
+          "content_hash": null
+        },
+        {
           "title": "#### Tool Failure Investigations (Archive Recommended)",
           "level": 2,
-          "line_start": 19,
-          "line_end": 19,
+          "line_start": 21,
+          "line_end": 21,
           "content_hash": null
         },
         {
           "title": "### Session Optimization Plans (2026-2",
           "level": 2,
-          "line_start": 46,
-          "line_end": 46,
+          "line_start": 48,
+          "line_end": 48,
           "content_hash": null
         },
         {
           "title": "### Session Optimization Plans (20261)",
           "level": 2,
-          "line_start": 51,
-          "line_end": 51,
+          "line_start": 53,
+          "line_end": 53,
           "content_hash": null
         },
         {
           "title": "### Features & Enhancements",
           "level": 2,
-          "line_start": 57,
-          "line_end": 57,
+          "line_start": 59,
+          "line_end": 59,
           "content_hash": null
         }
       ],
       "read_count": 4,
-      "write_count": 90,
-      "last_read": "2026-02-09T08:00:51.459255",
+      "write_count": 93,
+      "last_read": "2026-02-09T08:23:32.425957",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -1106,34 +1106,67 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Added new plan: MCP idempotent resource for project root path"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-09T08:16:39.107689",
+          "content_hash": "sha256:e76584721ec7f5b128b0c524121aabaaea0dd33f20f75df50be2818116c51ce1",
+          "size_bytes": 7182,
+          "token_count": 1726,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Added new plan: Load context when agent encounters problem / fix path (session-optimization-load-context-on-problem-fix-path-2026-02-09)."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-09T08:18:00.639421",
+          "content_hash": "sha256:e76584721ec7f5b128b0c524121aabaaea0dd33f20f75df50be2818116c51ce1",
+          "size_bytes": 7182,
+          "token_count": 1726,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Restored roadmap from corruption and kept new plan entry: Load context when agent encounters problem / fix path."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-09T08:23:32.425376",
+          "content_hash": "sha256:597bdcf9a4552f3c1d6abdd3bbbdd6ce18980d036100c08d6df8df90066631a4",
+          "size_bytes": 7097,
+          "token_count": 1712,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Removed completed blocker (roadmap corruption on plan registration); added structured JSON roadmap as future enhancement"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 5698,
-      "token_count": 1336,
+      "size_bytes": 6366,
+      "token_count": 1457,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-09T08:08:32.196823",
-      "content_hash": "sha256:a4e31c264b9200b85a451233dc462f681da7a6e75c1c4163b33124be6c11bb15",
+      "last_modified": "2026-02-09T08:25:57.310664",
+      "content_hash": "sha256:ac39395a7a35593156e91d2739a770307598f9102d52049ec625b514089ad940",
       "sections": [
         {
-          "title": "## 2026-02-09",
+          "title": "## 2026-2-9- **Investigate roadmap corruption on plan registration (blocker)** - COMPLETE. Mandated `register_plan_in_roadmap` and `add_roadmap_entry` for plan registration: updated create-plan Step6nd memory-bank-updater to require register_plan_in_roadmap for adding a new plan entry; manage_file(full content) only as fallback. Updated integration tests (test_plan_creation_workflow_compliance.py) to assert prompt requires register_plan_in_roadmap. Documented structured JSON roadmap as future work in investigation plan. Blocker removed from roadmap; roadmap restored after accidental corruption during memory-bank write (recovery via git + minimal edits).",
           "level": 2,
           "line_start": 3,
           "line_end": 3,
           "content_hash": null
         },
         {
-          "title": "## 2026-02-07",
+          "title": "## 20262",
           "level": 2,
           "line_start": 7,
           "line_end": 7,
           "content_hash": null
         },
         {
-          "title": "## 2026-02-05",
+          "title": "## 22605- **Phase 4 and Validation (FastMCP logging plan)** - COMPLETE. Completed Phase 4 testing and validation for FastMCP Context logging: Test fixtures (mock_ctx in conftest.py), integration tests (test_context_logging_integration.py), all tests pass, quality gate passes. Phase 5cumentation) remained pending until 2026-2-7 Plan: `.cortex/plans/archive/Infrastructure/ensure-proper-logging-fastmcp.md`",
           "level": 2,
           "line_start": 29,
           "line_end": 29,
@@ -1142,21 +1175,21 @@
         {
           "title": "## What Works",
           "level": 2,
-          "line_start": 41,
-          "line_end": 41,
+          "line_start": 39,
+          "line_end": 39,
           "content_hash": null
         },
         {
           "title": "## What's Left",
           "level": 2,
-          "line_start": 45,
-          "line_end": 45,
+          "line_start": 43,
+          "line_end": 43,
           "content_hash": null
         }
       ],
       "read_count": 1,
-      "write_count": 150,
-      "last_read": "2026-02-09T08:08:32.196823",
+      "write_count": 151,
+      "last_read": "2026-02-09T08:25:57.310664",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -2809,6 +2842,17 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Add 2026-02-09 progress; update What Works counts"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-09T08:25:57.309882",
+          "content_hash": "sha256:ac39395a7a35593156e91d2739a770307598f9102d52049ec625b514089ad940",
+          "size_bytes": 6366,
+          "token_count": 1457,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for roadmap corruption blocker completion"
         }
       ]
     },
@@ -2821,41 +2865,11 @@
       "last_modified": "2026-02-09T08:08:16.427142",
       "content_hash": "sha256:f9b0f425f59eebaabf8be2a6c56da6413a6bcd50d6b9f6534cffabd542cc39c7",
       "sections": [
-        {
-          "title": "## Completed Work (2026-02-09)",
-          "level": 2,
-          "line_start": 5,
-          "line_end": 5,
-          "content_hash": null
-        },
-        {
-          "title": "## Completed Work (2026-02-07)",
-          "level": 2,
-          "line_start": 9,
-          "line_end": 9,
-          "content_hash": null
-        },
-        {
-          "title": "## Current Focus",
-          "level": 2,
-          "line_start": 31,
-          "line_end": 31,
-          "content_hash": null
-        },
-        {
-          "title": "## Recent Changes",
-          "level": 2,
-          "line_start": 35,
-          "line_end": 35,
-          "content_hash": null
-        },
-        {
-          "title": "## Next Steps",
-          "level": 2,
-          "line_start": 39,
-          "line_end": 39,
-          "content_hash": null
-        }
+        "## Completed Work (2026-02-09)",
+        "## Completed Work (2026-02-07)",
+        "## Current Focus",
+        "## Recent Changes",
+        "## Next Steps"
       ],
       "read_count": 1,
       "write_count": 123,
@@ -4279,20 +4293,8 @@
       "last_modified": "2026-02-05T15:16:04.638875",
       "content_hash": "sha256:4e25a7f51c3df28fd5927c265d0d842fd5772d1458c104f849d6db6a4dd71a48",
       "sections": [
-        {
-          "title": "# file",
-          "level": 1,
-          "line_start": 1,
-          "line_end": 2,
-          "content_hash": "sha256:b0c27d8940f70bd3f0436d676cbf7598a5d814ca2c2bbe8e8f85fac06e6e9289"
-        },
-        {
-          "title": "## section",
-          "level": 2,
-          "line_start": 3,
-          "line_end": 8,
-          "content_hash": "sha256:f8e486e4b1864c975ea6b1e6d12c3e797ab3037aef899013ec685583b2334e10"
-        }
+        "# file",
+        "## section"
       ],
       "last_read": "2026-01-27T12:18:46.245981"
     },
@@ -6349,34 +6351,10 @@
       "last_modified": "2026-02-08T19:30:00.474062",
       "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
       "sections": [
-        {
-          "title": "## Project Overview",
-          "level": 2,
-          "line_start": 5,
-          "line_end": 5,
-          "content_hash": null
-        },
-        {
-          "title": "## Goals",
-          "level": 2,
-          "line_start": 9,
-          "line_end": 9,
-          "content_hash": null
-        },
-        {
-          "title": "## Core Requirements",
-          "level": 2,
-          "line_start": 14,
-          "line_end": 14,
-          "content_hash": null
-        },
-        {
-          "title": "## Success Criteria",
-          "level": 2,
-          "line_start": 18,
-          "line_end": 18,
-          "content_hash": null
-        }
+        "## Project Overview",
+        "## Goals",
+        "## Core Requirements",
+        "## Success Criteria"
       ],
       "last_read": "2026-02-08T19:30:00.474062"
     },
@@ -6393,195 +6371,33 @@
       "last_modified": "2026-02-05T15:16:04.631088",
       "content_hash": "sha256:cf5739213980f63126dd436b9cf786c8918e21f45ffe41a795614ae4e9581536",
       "sections": [
-        {
-          "title": "# Tech Context: Cortex",
-          "level": 1,
-          "line_start": 1,
-          "line_end": 2,
-          "content_hash": "sha256:5566cf11a81286af9f5842a3b5b6d6cf6c8a63ca86ee134a13974359034d1f99"
-        },
-        {
-          "title": "## Technologies Used",
-          "level": 2,
-          "line_start": 3,
-          "line_end": 16,
-          "content_hash": "sha256:bc8640b576b81a1774f286ab8f37a79be7e357d2d7b8552ae89fe3765c9f2b29"
-        },
-        {
-          "title": "## Development Setup",
-          "level": 2,
-          "line_start": 17,
-          "line_end": 18,
-          "content_hash": "sha256:d18add11ff4a0d572003d8e5a9969e149e9316bc3e508fda038b195d50b90fb1"
-        },
-        {
-          "title": "### Prerequisites",
-          "level": 3,
-          "line_start": 19,
-          "line_end": 24,
-          "content_hash": "sha256:1053186816931e6080c094e8571a1422fe3faa16a1fcd75826e534381386da46"
-        },
-        {
-          "title": "### Installation",
-          "level": 3,
-          "line_start": 25,
-          "line_end": 27,
-          "content_hash": "sha256:483681ca74b0c14ca124b23befb3444d01ef88b9cd28042f238241e3b4ebdbd2"
-        },
-        {
-          "title": "# With UV (recommended)",
-          "level": 1,
-          "line_start": 28,
-          "line_end": 30,
-          "content_hash": "sha256:cf5bb43447c049508fa76686f5a5d1e4025f406df17abecb5fc1af1f8e523e93"
-        },
-        {
-          "title": "# Or with pip",
-          "level": 1,
-          "line_start": 31,
-          "line_end": 34,
-          "content_hash": "sha256:ca7e7b2b7c8300d2c1e54576b090006fd9dc46d7d49a1c18d31e777b7b1d6ffe"
-        },
-        {
-          "title": "### Virtual Environment",
-          "level": 3,
-          "line_start": 35,
-          "line_end": 40,
-          "content_hash": "sha256:04de9ffc6dfa45b42b378190d3f39087811f98e04acef6d46ba4f48b4cbf2e48"
-        },
-        {
-          "title": "## Technical Constraints",
-          "level": 2,
-          "line_start": 41,
-          "line_end": 50,
-          "content_hash": "sha256:bed7b667bfc1e8a55a401da28d0f2b406e00d03e75621ca2db6b010ffab46284"
-        },
-        {
-          "title": "## Dependencies",
-          "level": 2,
-          "line_start": 51,
-          "line_end": 52,
-          "content_hash": "sha256:21d1931a332d9b7f509d0637a459922427a666e44b8a7f19d1a912664edf66f7"
-        },
-        {
-          "title": "### Core Dependencies",
-          "level": 3,
-          "line_start": 53,
-          "line_end": 59,
-          "content_hash": "sha256:da0a324ff1c806c4f57758f25fb09fab8dd2f868099d2a45376510a481947799"
-        },
-        {
-          "title": "### Development Dependencies",
-          "level": 3,
-          "line_start": 60,
-          "line_end": 68,
-          "content_hash": "sha256:d3df5d29008679320c75c25f69c6678c83b28caeda9da9f6c33190a6e457855b"
-        },
-        {
-          "title": "## Tool Usage Patterns",
-          "level": 2,
-          "line_start": 69,
-          "line_end": 72,
-          "content_hash": "sha256:6ace6b5518a2d207fd763f1782504e9429570218fc9529d50132777585bb5834"
-        },
-        {
-          "title": "### Code Formatting (This Project - Python)",
-          "level": 3,
-          "line_start": 73,
-          "line_end": 79,
-          "content_hash": "sha256:46a740aabdd8272831c31bb816600a921ea7e16ad7a4d0560a1b529c0ddde157"
-        },
-        {
-          "title": "### Type Checking (This Project - Python)",
-          "level": 3,
-          "line_start": 80,
-          "line_end": 85,
-          "content_hash": "sha256:be090c587c08e7ce5f4add4c4ac7819c2c8503a792d93a3c638a5e69ffa0b8c8"
-        },
-        {
-          "title": "### Testing (This Project - Python)",
-          "level": 3,
-          "line_start": 86,
-          "line_end": 88,
-          "content_hash": "sha256:968b9b4e31555fce9ff14e0f862910a34b494a0ee12117ebde4376025bac03af"
-        },
-        {
-          "title": "# Run all tests",
-          "level": 1,
-          "line_start": 89,
-          "line_end": 92,
-          "content_hash": "sha256:a214ef59642611d9e2c15f6f54111c28ad4aac05b313d2f2fa9695fd7e102055"
-        },
-        {
-          "title": "# With coverage",
-          "level": 1,
-          "line_start": 93,
-          "line_end": 96,
-          "content_hash": "sha256:0d8d3bbad8b743f3765201619a16d882e5f74829a9628e0f698060c32fd0c8fd"
-        },
-        {
-          "title": "### Language-Agnostic Pattern (For Procedures)",
-          "level": 3,
-          "line_start": 97,
-          "line_end": 111,
-          "content_hash": "sha256:1e940eb71bcddba66304b81bd5255d980ec818579fd96c617207278800a195f4"
-        },
-        {
-          "title": "### MCP Server Execution",
-          "level": 3,
-          "line_start": 112,
-          "line_end": 114,
-          "content_hash": "sha256:56a942bf13c2224b1f6bb1982bf9142aee3811fd2bcee2b84a77ffe16dc720cf"
-        },
-        {
-          "title": "# Development mode",
-          "level": 1,
-          "line_start": 115,
-          "line_end": 117,
-          "content_hash": "sha256:6ac143b80c135d05706c05e6913cf81a88532e5826bad4b4184d3d37f68f6be2"
-        },
-        {
-          "title": "# Or via UV",
-          "level": 1,
-          "line_start": 118,
-          "line_end": 121,
-          "content_hash": "sha256:bc27f82405c8e6c24081003049b615ce47a5f199d4d26cdb2d65fec4f676e22a"
-        },
-        {
-          "title": "## Project Structure",
-          "level": 2,
-          "line_start": 122,
-          "line_end": 145,
-          "content_hash": "sha256:f43c4da2ba09712dc18edf1df4c5bcf17ea761cc166571ea19d6079cf07a0486"
-        },
-        {
-          "title": "## Path Resolution and Cortex Tools (MANDATORY)",
-          "level": 2,
-          "line_start": 146,
-          "line_end": 154,
-          "content_hash": "sha256:4cfd01ddfde0838f85ec8b15dd81f51ed2626a6144e86fc894a9225ee1fe3067"
-        },
-        {
-          "title": "## Memory Bank Location",
-          "level": 2,
-          "line_start": 155,
-          "line_end": 160,
-          "content_hash": "sha256:938ecf753281a69f050c5296317de2905da7415d62b891daacefde547618fff3"
-        },
-        {
-          "title": "## Code Quality Standards",
-          "level": 2,
-          "line_start": 161,
-          "line_end": 170,
-          "content_hash": "sha256:b4e6bbf375f56a425235fd883c2d643b81eb6a723346fc99a21d0864323d4016"
-        },
-        {
-          "title": "## Performance Targets",
-          "level": 2,
-          "line_start": 171,
-          "line_end": 177,
-          "content_hash": "sha256:518d63658dbbb192578c114943a96e85b78847d72ee22cc2da6c844b0e42e083"
-        }
+        "# Tech Context: Cortex",
+        "## Technologies Used",
+        "## Development Setup",
+        "### Prerequisites",
+        "### Installation",
+        "# With UV (recommended)",
+        "# Or with pip",
+        "### Virtual Environment",
+        "## Technical Constraints",
+        "## Dependencies",
+        "### Core Dependencies",
+        "### Development Dependencies",
+        "## Tool Usage Patterns",
+        "### Code Formatting (This Project - Python)",
+        "### Type Checking (This Project - Python)",
+        "### Testing (This Project - Python)",
+        "# Run all tests",
+        "# With coverage",
+        "### Language-Agnostic Pattern (For Procedures)",
+        "### MCP Server Execution",
+        "# Development mode",
+        "# Or via UV",
+        "## Project Structure",
+        "## Path Resolution and Cortex Tools (MANDATORY)",
+        "## Memory Bank Location",
+        "## Code Quality Standards",
+        "## Performance Targets"
       ]
     },
     "productContext.md": {
@@ -6597,48 +6413,12 @@
       "last_modified": "2026-02-05T15:16:04.647866",
       "content_hash": "sha256:c833a2542fc74781a005e536dff75686620d44ac27100a622f9fc4d26695a410",
       "sections": [
-        {
-          "title": "# Product Context: MCP Memory Bank",
-          "level": 1,
-          "line_start": 1,
-          "line_end": 2,
-          "content_hash": "sha256:8104f8d4e0ebfac13166c1a0470875a6c68e93426f89986251749d8e42732cdc"
-        },
-        {
-          "title": "## Architecture: Cross-Project Helper MCP",
-          "level": 2,
-          "line_start": 3,
-          "line_end": 15,
-          "content_hash": "sha256:bcaebb8005ce1627a1aefdeeac2c3dcb2e5ecb2ed6493a33db99e7c1d0c74d83"
-        },
-        {
-          "title": "### Language-Agnostic Implementation Requirements",
-          "level": 3,
-          "line_start": 16,
-          "line_end": 47,
-          "content_hash": "sha256:cf711c4849c01f63a671b2120c1332dbe69073e5810b01ce0242581bb63b7e00"
-        },
-        {
-          "title": "## Problem Statement",
-          "level": 2,
-          "line_start": 48,
-          "line_end": 66,
-          "content_hash": "sha256:7cfa4bc8e7bd33c4a29c8f68b62e87d6639494f339f57ad413d1c895ee322e78"
-        },
-        {
-          "title": "## User Experience Goals",
-          "level": 2,
-          "line_start": 67,
-          "line_end": 92,
-          "content_hash": "sha256:4958fab310ea6ca858bc064b5cdefd09a24193c0db649cf612c9eeebb1a0802c"
-        },
-        {
-          "title": "## Success Metrics",
-          "level": 2,
-          "line_start": 93,
-          "line_end": 101,
-          "content_hash": "sha256:485632bac893ac8c8abbaf8045b1742f3be81607b5a4100fe6c2c73974419c9c"
-        }
+        "# Product Context: MCP Memory Bank",
+        "## Architecture: Cross-Project Helper MCP",
+        "### Language-Agnostic Implementation Requirements",
+        "## Problem Statement",
+        "## User Experience Goals",
+        "## Success Metrics"
       ]
     },
     "systemPatterns.md": {
@@ -6654,118 +6434,22 @@
       "last_modified": "2026-02-05T15:16:04.658566",
       "content_hash": "sha256:f964db88cf84b557f3950be6cc760524fd86db8add38a11132141a74f383d597",
       "sections": [
-        {
-          "title": "# System Patterns: Cortex",
-          "level": 1,
-          "line_start": 1,
-          "line_end": 2,
-          "content_hash": "sha256:897f419aaa9c25666d8088be95427c79a0f2d6868ee9f9191246ed839735b884"
-        },
-        {
-          "title": "## System Architecture",
-          "level": 2,
-          "line_start": 3,
-          "line_end": 12,
-          "content_hash": "sha256:df274280145dde64ab69b2e1bc0b07302e3e6cc837f852b98164e5d92f512cb9"
-        },
-        {
-          "title": "## Key Technical Decisions",
-          "level": 2,
-          "line_start": 13,
-          "line_end": 21,
-          "content_hash": "sha256:68a1db345edd3effa2b11805758b0c9e3c3efe524a4f5948f98cbbfa6a8a15c7"
-        },
-        {
-          "title": "## Design Patterns in Use",
-          "level": 2,
-          "line_start": 22,
-          "line_end": 32,
-          "content_hash": "sha256:c7fa60d195bc65f1fda1346229bfdac36977dd7001bae6e17be61f0bec04f3fd"
-        },
-        {
-          "title": "## Synapse Architecture (CRITICAL)",
-          "level": 2,
-          "line_start": 33,
-          "line_end": 36,
-          "content_hash": "sha256:615963c8b3574130373c8ca1703f76c4e2b2e9de984fdcf567302e23dcba1d3d"
-        },
-        {
-          "title": "### Directory Structure (Semantic Names)",
-          "level": 3,
-          "line_start": 37,
-          "line_end": 44,
-          "content_hash": "sha256:95b1e58630ced1e1264c9e03990bdeb28fda6d0ca01a7a2000d672297ce64ff5"
-        },
-        {
-          "title": "### Prompts: Language-AGNOSTIC (MANDATORY)",
-          "level": 3,
-          "line_start": 45,
-          "line_end": 60,
-          "content_hash": "sha256:9c5231f0dbe063537dd33b09d618f6c12b279167ab7967a0ea91149c1ba1e7d1"
-        },
-        {
-          "title": "### Scripts: Language-SPECIFIC",
-          "level": 3,
-          "line_start": 61,
-          "line_end": 69,
-          "content_hash": "sha256:dd6f4de04039764e40835d4a2e687decc92be7f7946932a8d15d9e274c5f3f49"
-        },
-        {
-          "title": "### Available Python Scripts",
-          "level": 3,
-          "line_start": 70,
-          "line_end": 81,
-          "content_hash": "sha256:e02549452058311f634da709c3a97997b658db61e0d63506feb511e101651a54"
-        },
-        {
-          "title": "### Violation Examples to Avoid",
-          "level": 3,
-          "line_start": 82,
-          "line_end": 88,
-          "content_hash": "sha256:997a98663e7be26eb026b6d006166f1bb8e03004ab0d9b4127ba22ab985734e0"
-        },
-        {
-          "title": "## Component Relationships",
-          "level": 2,
-          "line_start": 89,
-          "line_end": 90,
-          "content_hash": "sha256:f1fba91482aa51a76cd90c3afa374a66de26fda94376ed599960fd9bd7550ab2"
-        },
-        {
-          "title": "### Core Services Stack (Initialization Order)",
-          "level": 3,
-          "line_start": 91,
-          "line_end": 100,
-          "content_hash": "sha256:51ccd51a19bec82e0d3b9543b0e507045617f39ce9327e9e440d9abef62c805b"
-        },
-        {
-          "title": "### Module Dependencies",
-          "level": 3,
-          "line_start": 101,
-          "line_end": 108,
-          "content_hash": "sha256:0d0cf92a6b8cb8d298143eb0c0948e21a5df1979301659e335764e0e23466fea"
-        },
-        {
-          "title": "## Critical Implementation Paths1*File Operations** - All file operations go through FileSystemManager with locking",
-          "level": 2,
-          "line_start": 109,
-          "line_end": 115,
-          "content_hash": "sha256:4376a1641f2cd3e251c4631f26c1f8de24eb966afb14878102f11a0f00ac322d"
-        },
-        {
-          "title": "## Error Handling Patterns",
-          "level": 2,
-          "line_start": 116,
-          "line_end": 123,
-          "content_hash": "sha256:31531ee30c931eb254da728ac4f53c96980d906dbb33f13a368488e3bed6b63c"
-        },
-        {
-          "title": "## Performance Optimizations",
-          "level": 2,
-          "line_start": 124,
-          "line_end": 131,
-          "content_hash": "sha256:313de797c11e3077a40d723f75f627d6c7251b00832918b890fc88f5b262808d"
-        }
+        "# System Patterns: Cortex",
+        "## System Architecture",
+        "## Key Technical Decisions",
+        "## Design Patterns in Use",
+        "## Synapse Architecture (CRITICAL)",
+        "### Directory Structure (Semantic Names)",
+        "### Prompts: Language-AGNOSTIC (MANDATORY)",
+        "### Scripts: Language-SPECIFIC",
+        "### Available Python Scripts",
+        "### Violation Examples to Avoid",
+        "## Component Relationships",
+        "### Core Services Stack (Initialization Order)",
+        "### Module Dependencies",
+        "## Critical Implementation Paths1*File Operations** - All file operations go through FileSystemManager with locking",
+        "## Error Handling Patterns",
+        "## Performance Optimizations"
       ]
     }
   },
@@ -6784,8 +6468,8 @@
   },
   "totals": {
     "total_files": 10,
-    "total_size_bytes": 49414,
-    "total_tokens": 11231,
-    "last_full_scan": "2026-02-09T08:08:32.196846"
+    "total_size_bytes": 50579,
+    "total_tokens": 11461,
+    "last_full_scan": "2026-02-09T08:25:57.310718"
   }
 }

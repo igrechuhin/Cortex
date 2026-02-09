@@ -14,10 +14,14 @@ from pydantic import BaseModel, ConfigDict, Field
 from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.exceptions import FileConflictError, FileLockTimeoutError
-from cortex.core.mcp_annotations import destructive_annotations
+from cortex.core.mcp_annotations import destructive_annotations, safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
+from cortex.tools.models import (
+    AppendActiveContextEntryResult,
+    AppendProgressEntryResult,
+)
 from cortex.tools.roadmap_corruption import fix_roadmap_content_if_needed
 
 
@@ -139,6 +143,49 @@ def _create_section_and_append(
     return (content, None)
 
 
+def _find_progress_date_section(content: str, date_str: str) -> tuple[int, int] | None:
+    """Return (start_0, end_0) 0-based line range for ## date_str in progress.md, or None."""
+    lines = content.split("\n")
+    target = f"## {date_str.strip()}"
+    start = None
+    for i, line in enumerate(lines):
+        if line.strip() == target:
+            start = i
+            break
+    if start is None:
+        return None
+    end = start + 1
+    for i in range(start + 1, len(lines)):
+        if lines[i].strip().startswith("## "):
+            end = i
+            break
+        end = i + 1
+    return (start, end)
+
+
+def _append_progress_entry_content(
+    content: str, date_str: str, entry_text: str
+) -> tuple[str, int | None]:
+    """Append one bullet to progress.md under ## date_str. Returns (new_content, 1-based line)."""
+    section = _find_progress_date_section(content, date_str)
+    lines = content.split("\n")
+    bullet = f"- {entry_text.strip()}"
+    if section:
+        start_0, end_0 = section
+        last_bullet = _last_bullet_line_in_range(lines, start_0 + 1, end_0)
+        insert_at = (last_bullet + 1) if last_bullet is not None else start_0 + 2
+        new_lines = lines[:insert_at] + [bullet] + lines[insert_at:]
+        return ("\n".join(new_lines), insert_at + 1)
+    header = f"## {date_str.strip()}"
+    for i, line in enumerate(lines):
+        if line.strip().startswith("# ") and "Progress" in line:
+            insert_at = i + 2
+            new_lines = lines[:insert_at] + [header, "", bullet, ""] + lines[insert_at:]
+            return ("\n".join(new_lines), insert_at + 3)
+    new_lines = [header, "", bullet, ""] + lines
+    return ("\n".join(new_lines), 3)
+
+
 def _read_file(path: Path) -> tuple[str | None, str | None]:
     """Read file. Returns (content, error_message)."""
     if not path.exists():
@@ -147,6 +194,17 @@ def _read_file(path: Path) -> tuple[str | None, str | None]:
         return (path.read_text(encoding="utf-8"), None)
     except Exception as e:
         return (None, str(e))
+
+
+def _write_progress(path: Path, content: str) -> str | None:
+    """Write progress.md. Returns error_message if failed."""
+    try:
+        _ = path.write_text(content, encoding="utf-8")
+        return None
+    except (FileConflictError, FileLockTimeoutError) as e:
+        return str(e)
+    except Exception as e:
+        return str(e)
 
 
 def _write_roadmap(path: Path, content: str) -> str | None:
@@ -299,6 +357,85 @@ def _do_complete_plan(
     )
 
 
+def _progress_error(message: str, error: str) -> AppendProgressEntryResult:
+    """Build error result for progress operations."""
+    return AppendProgressEntryResult(
+        status="error",
+        file_name="progress.md",
+        message=message,
+        line_inserted=None,
+        error=error,
+    )
+
+
+def _execute_append_progress(
+    root: Path, date_str: str, entry_text: str
+) -> AppendProgressEntryResult:
+    """Append one entry to progress.md under ## date_str. Returns result."""
+    progress_path = root / ".cortex" / "memory-bank" / "progress.md"
+    content, read_err = _read_file(progress_path)
+    if read_err or not content:
+        return _progress_error("Failed to read progress", read_err or "Empty file")
+    new_content, line_inserted = _append_progress_entry_content(
+        content, date_str.strip(), entry_text
+    )
+    if line_inserted is None:
+        return _progress_error(
+            "Failed to append entry", "Could not find or create date section"
+        )
+    write_err = _write_progress(progress_path, new_content)
+    if write_err:
+        return _progress_error("Failed to write progress", write_err)
+    return AppendProgressEntryResult(
+        status="success",
+        file_name="progress.md",
+        message=f"Appended entry at line {line_inserted}",
+        line_inserted=line_inserted,
+        error=None,
+    )
+
+
+def _active_context_error(message: str, error: str) -> AppendActiveContextEntryResult:
+    """Build error result for activeContext operations."""
+    return AppendActiveContextEntryResult(
+        status="error",
+        file_name="activeContext.md",
+        message=message,
+        line_inserted=None,
+        error=error,
+    )
+
+
+def _execute_append_active_context(
+    root: Path, date_str: str, title: str, summary: str
+) -> AppendActiveContextEntryResult:
+    """Append one completed entry to activeContext.md. Returns result."""
+    active_path = root / ".cortex" / "memory-bank" / "activeContext.md"
+    content, read_err = _read_file(active_path)
+    if read_err or not content:
+        return _active_context_error(
+            "Failed to read activeContext", read_err or "Empty file"
+        )
+    new_content, line_inserted = _create_section_and_append(
+        content, date_str.strip(), title, summary
+    )
+    if line_inserted is None:
+        return _active_context_error(
+            "Failed to append entry",
+            "Could not find or create Completed Work section",
+        )
+    write_err = _write_active_context(active_path, new_content)
+    if write_err:
+        return _active_context_error("Failed to write activeContext", write_err)
+    return AppendActiveContextEntryResult(
+        status="success",
+        file_name="activeContext.md",
+        message=f"Appended entry at line {line_inserted}",
+        line_inserted=line_inserted,
+        error=None,
+    )
+
+
 async def _complete_plan_impl(
     plan_title: str,
     summary: str,
@@ -348,5 +485,112 @@ async def complete_plan(
             message="Unexpected error",
             roadmap_line_removed=None,
             active_context_line_inserted=None,
+            error=str(e),
+        ).model_dump_json()
+
+
+async def _append_progress_entry_impl(
+    date_str: str,
+    entry_text: str,
+    ctx: MCPContext | None,
+) -> str:
+    """Implementation of append_progress_entry."""
+    await log_client(
+        ctx, "info", "append_progress_entry: starting", logger_name=__name__
+    )
+    root = await resolve_project_root_async(None, ctx)
+    result = _execute_append_progress(root, date_str, entry_text)
+    await log_client(
+        ctx,
+        "info" if result.status == "success" else "warning",
+        f"append_progress_entry: {result.status}",
+        logger_name=__name__,
+    )
+    return result.model_dump_json()
+
+
+@mcp.tool(annotations=safe_write_annotations("Append Progress Entry"))
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def append_progress_entry(
+    date_str: str,
+    entry_text: str,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Append a single entry to progress.md under the given date section.
+
+    USE WHEN: Implement Step 5 needs to add one progress entry without
+    building or writing full progress content (safe update).
+
+    date_str: YYYY-MM-DD. entry_text: one bullet line (e.g. "**Title** - COMPLETE. ...").
+    RETURNS: JSON with status, line_inserted, or error.
+    """
+    try:
+        return await _append_progress_entry_impl(date_str, entry_text, ctx)
+    except Exception as e:
+        await log_client(
+            ctx, "error", f"append_progress_entry: {e}", logger_name=__name__
+        )
+        return AppendProgressEntryResult(
+            status="error",
+            file_name="progress.md",
+            message="Unexpected error",
+            line_inserted=None,
+            error=str(e),
+        ).model_dump_json()
+
+
+async def _append_active_context_entry_impl(
+    date_str: str,
+    title: str,
+    summary: str,
+    ctx: MCPContext | None,
+) -> str:
+    """Implementation of append_active_context_entry."""
+    await log_client(
+        ctx, "info", "append_active_context_entry: starting", logger_name=__name__
+    )
+    root = await resolve_project_root_async(None, ctx)
+    result = _execute_append_active_context(root, date_str, title, summary)
+    await log_client(
+        ctx,
+        "info" if result.status == "success" else "warning",
+        f"append_active_context_entry: {result.status}",
+        logger_name=__name__,
+    )
+    return result.model_dump_json()
+
+
+@mcp.tool(annotations=safe_write_annotations("Append Active Context Entry"))
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def append_active_context_entry(
+    date_str: str,
+    title: str,
+    summary: str,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Append a single completed entry to activeContext.md.
+
+    USE WHEN: Implement Step 5 needs to add completed work without
+    building or writing full activeContext content (safe update).
+
+    date_str: YYYY-MM-DD. title/summary: entry content.
+    RETURNS: JSON with status, line_inserted, or error.
+    """
+    try:
+        return await _append_active_context_entry_impl(date_str, title, summary, ctx)
+    except Exception as e:
+        await log_client(
+            ctx,
+            "error",
+            f"append_active_context_entry: {e}",
+            logger_name=__name__,
+        )
+        return AppendActiveContextEntryResult(
+            status="error",
+            file_name="activeContext.md",
+            message="Unexpected error",
+            line_inserted=None,
             error=str(e),
         ).model_dump_json()

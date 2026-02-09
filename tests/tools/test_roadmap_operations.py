@@ -13,9 +13,12 @@ from cortex.tools.roadmap_operations import (  # type: ignore[import-not-found]
     RoadmapSection,
     _entry_text_looks_completed,  # type: ignore[name-defined]
     _execute_roadmap_insertion,  # type: ignore[name-defined]
+    _execute_roadmap_removal,  # type: ignore[name-defined]
+    _find_bullet_line_containing,  # type: ignore[name-defined]
     _get_section_bullet_lines,  # type: ignore[name-defined]
     _insert_roadmap_entry,  # type: ignore[name-defined]
     _parse_roadmap_sections,  # type: ignore[name-defined]
+    _remove_line_at,  # type: ignore[name-defined]
 )
 
 
@@ -89,6 +92,71 @@ class TestExecuteRoadmapInsertionRejectsCompleted:
         )
         assert result.status == "success"
         assert result.line_inserted is not None
+
+
+class TestFindBulletLineContaining:
+    """Tests for _find_bullet_line_containing (remove_roadmap_entry)."""
+
+    def test_finds_bullet_containing_substring(self) -> None:
+        content = "## Pending\n\n- **Phase 50** - PENDING - Plan: x.\n"
+        assert _find_bullet_line_containing(content, "Phase 50") == 3
+
+    def test_returns_none_when_not_found(self) -> None:
+        content = "## Pending\n\n- **Other** - PENDING\n"
+        assert _find_bullet_line_containing(content, "Phase 50") is None
+
+    def test_ignores_non_bullet_lines(self) -> None:
+        content = "## Phase 50\n\n- **Plan** - PENDING\n"
+        assert _find_bullet_line_containing(content, "Phase 50") is None
+
+    def test_first_bullet_match_wins(self) -> None:
+        content = "- **A** - PENDING\n- **B** - PENDING\n"
+        assert _find_bullet_line_containing(content, "PENDING") == 1
+
+
+class TestRemoveLineAtRoadmap:
+    """Tests for _remove_line_at in roadmap_operations."""
+
+    def test_removes_line(self) -> None:
+        content = "line1\nline2\nline3"
+        out = _remove_line_at(content, 2)
+        assert out == "line1\nline3"
+
+    def test_removes_first_line(self) -> None:
+        content = "a\nb\nc"
+        assert _remove_line_at(content, 1) == "b\nc"
+
+
+class TestExecuteRoadmapRemoval:
+    """Tests for _execute_roadmap_removal."""
+
+    def test_removal_success(self, tmp_path: Path) -> None:
+        (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
+        content = "# Roadmap\n\n## Pending\n\n- **Phase 50** - PENDING - Plan: x.\n"
+        _ = (tmp_path / ".cortex" / "memory-bank" / "roadmap.md").write_text(content)
+        result = _execute_roadmap_removal(tmp_path, "Phase 50")
+        assert result.status == "success"
+        assert result.line_removed is not None
+        assert result.line_removed >= 1
+        assert (
+            "Phase 50"
+            not in (tmp_path / ".cortex" / "memory-bank" / "roadmap.md").read_text()
+        )
+
+    def test_removal_not_found_returns_error(self, tmp_path: Path) -> None:
+        (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
+        _ = (tmp_path / ".cortex" / "memory-bank" / "roadmap.md").write_text(
+            "# Roadmap\n\n## Pending\n\n- **Other** - PENDING\n"
+        )
+        result = _execute_roadmap_removal(tmp_path, "Phase 50")
+        assert result.status == "error"
+        assert result.line_removed is None
+
+    def test_removal_file_not_found_returns_error(self, tmp_path: Path) -> None:
+        (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
+        result = _execute_roadmap_removal(tmp_path, "Phase 50")
+        assert result.status == "error"
+        assert "not found" in (result.error or "").lower()
 
 
 class TestParseRoadmapSections:

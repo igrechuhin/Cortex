@@ -13,8 +13,12 @@ import pytest
 from cortex.tools.plan_completion import (
     CompletePlanResult,
     _append_completed_entry,  # type: ignore[private-usage]
+    _append_progress_entry_content,  # type: ignore[private-usage]
     _create_section_and_append,  # type: ignore[private-usage]
+    _execute_append_active_context,  # type: ignore[private-usage]
+    _execute_append_progress,  # type: ignore[private-usage]
     _find_completed_work_section,  # type: ignore[private-usage]
+    _find_progress_date_section,  # type: ignore[private-usage]
     _find_roadmap_bullet_line,  # type: ignore[private-usage]
     _last_bullet_line_in_range,  # type: ignore[private-usage]
     _remove_line_at,  # type: ignore[private-usage]
@@ -108,6 +112,83 @@ class TestCreateSectionAndAppend:
         assert line is not None
         assert "**B**" in new_content
         assert "b summary" in new_content
+
+
+class TestFindProgressDateSection:
+    """Tests for _find_progress_date_section."""
+
+    def test_finds_section(self) -> None:
+        content = "# Progress Log\n\n## 2026-02-09\n\n- **X** - COMPLETE.\n"
+        section = _find_progress_date_section(content, "2026-02-09")
+        assert section is not None
+        start, end = section
+        assert start == 2
+        assert end >= 2
+
+    def test_returns_none_when_date_missing(self) -> None:
+        content = "# Progress\n\n## 2026-02-08\n\n"
+        assert _find_progress_date_section(content, "2026-02-09") is None
+
+
+class TestAppendProgressEntryContent:
+    """Tests for _append_progress_entry_content."""
+
+    def test_appends_to_existing_date_section(self) -> None:
+        content = "# Progress Log\n\n## 2026-02-09\n\n" + "- **Old** - COMPLETE.\n"
+        new_content, line = _append_progress_entry_content(
+            content, "2026-02-09", "**New** - COMPLETE. Summary."
+        )
+        assert line is not None
+        assert "**New**" in new_content
+        assert "Summary" in new_content
+
+
+class TestExecuteAppendProgress:
+    """Tests for _execute_append_progress."""
+
+    def test_append_success(self, tmp_path: Path) -> None:
+        mem = tmp_path / ".cortex" / "memory-bank"
+        mem.mkdir(parents=True)
+        _ = (mem / "progress.md").write_text(
+            "# Progress Log\n\n## 2026-02-09\n\n- **Old** - COMPLETE.\n"
+        )
+        result = _execute_append_progress(
+            tmp_path, "2026-02-09", "**New step** - COMPLETE. Done."
+        )
+        assert result.status == "success"
+        assert result.line_inserted is not None
+        assert "**New step**" in (mem / "progress.md").read_text()
+
+    def test_append_when_file_missing_returns_error(self, tmp_path: Path) -> None:
+        (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
+        result = _execute_append_progress(tmp_path, "2026-02-09", "**New** - COMPLETE.")
+        assert result.status == "error"
+
+
+class TestExecuteAppendActiveContext:
+    """Tests for _execute_append_active_context."""
+
+    def test_append_success(self, tmp_path: Path) -> None:
+        mem = tmp_path / ".cortex" / "memory-bank"
+        mem.mkdir(parents=True)
+        _ = (mem / "activeContext.md").write_text(
+            "# Active\n\n## Completed Work (2026-02-09)\n\n"
+        )
+        result = _execute_append_active_context(
+            tmp_path, "2026-02-09", "New step", "Summary of work."
+        )
+        assert result.status == "success"
+        assert result.line_inserted is not None
+        text = (mem / "activeContext.md").read_text()
+        assert "New step" in text
+        assert "Summary of work" in text
+
+    def test_append_when_file_missing_returns_error(self, tmp_path: Path) -> None:
+        (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
+        result = _execute_append_active_context(
+            tmp_path, "2026-02-09", "Title", "Summary"
+        )
+        assert result.status == "error"
 
 
 class TestCompletePlanResult:

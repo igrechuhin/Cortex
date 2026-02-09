@@ -3,7 +3,7 @@ Integration tests for Phase 66: Plan creation workflow compliance.
 
 Verifies that the create-plan prompt enforces:
 - Path resolution via structure_info.paths.plans (absolute path; no hardcoding).
-- Roadmap updates only via manage_file(roadmap.md, write, full content); no StrReplace/direct Write.
+- Roadmap updates for new plan entry via register_plan_in_roadmap (or add_roadmap_entry); manage_file(write) only as fallback; no StrReplace/direct Write.
 """
 
 from pathlib import Path
@@ -72,7 +72,7 @@ class TestCreatePlanPathResolution:
 
 
 class TestCreatePlanRoadmapUpdate:
-    """Assert create-plan prompt requires roadmap updates only via manage_file."""
+    """Assert create-plan prompt requires register_plan_in_roadmap for new plan; no StrReplace/direct Write."""
 
     @pytest.fixture
     def create_plan_prompt_content(self) -> str:
@@ -84,23 +84,34 @@ class TestCreatePlanRoadmapUpdate:
             )
         return path.read_text()
 
+    def test_prompt_requires_register_plan_in_roadmap_for_new_plan(
+        self, create_plan_prompt_content: str
+    ) -> None:
+        """Create-plan Step 6 must require register_plan_in_roadmap for adding a new plan entry."""
+        assert "register_plan_in_roadmap" in create_plan_prompt_content
+        assert "REQUIRED" in create_plan_prompt_content
+        assert "roadmap" in create_plan_prompt_content.lower()
+
     def test_prompt_contains_prohibited_for_roadmap(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan Step 6 must explicitly PROHIBIT non-manage_file roadmap updates."""
+        """Create-plan Step 6 must explicitly PROHIBIT StrReplace/direct Write for roadmap."""
         assert "PROHIBITED" in create_plan_prompt_content
         assert "roadmap" in create_plan_prompt_content.lower()
-        assert "manage_file" in create_plan_prompt_content
+        assert (
+            "StrReplace" in create_plan_prompt_content
+            or "direct Write" in create_plan_prompt_content
+        )
 
-    def test_prompt_contains_required_manage_file_for_roadmap(
+    def test_prompt_mentions_fallback_manage_file_for_roadmap(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan Step 6 must REQUIRE manage_file(roadmap.md, write, full content)."""
-        assert "REQUIRED" in create_plan_prompt_content
+        """Create-plan Step 6 must mention manage_file only as fallback for roadmap writes."""
         assert "roadmap.md" in create_plan_prompt_content
+        assert "manage_file" in create_plan_prompt_content
         assert (
-            'operation="write"' in create_plan_prompt_content
-            or 'operation="write"' in create_plan_prompt_content
+            "Fallback" in create_plan_prompt_content
+            or "fallback" in create_plan_prompt_content
         )
 
     def test_prompt_contains_violation_for_str_replace_or_direct_write(
@@ -113,10 +124,10 @@ class TestCreatePlanRoadmapUpdate:
             or "direct Write" in create_plan_prompt_content
         )
 
-    def test_prompt_requires_full_content_for_roadmap_write(
+    def test_prompt_requires_full_content_when_using_fallback_write(
         self, create_plan_prompt_content: str
     ) -> None:
-        """Create-plan must require full, unabridged roadmap content when writing."""
+        """Create-plan must require full, unabridged roadmap content when using fallback manage_file write."""
         assert (
             "full" in create_plan_prompt_content.lower()
             and "content" in create_plan_prompt_content.lower()

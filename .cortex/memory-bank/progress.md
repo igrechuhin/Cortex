@@ -2,7 +2,10 @@
 
 ## 2026-02-09
 
+- **Investigate roadmap corruption on plan registration (blocker)** - COMPLETE. Mandated register_plan_in_roadmap and add_roadmap_entry for plan registration: updated create-plan Step 6 and memory-bank-updater to require register_plan_in_roadmap for adding a new plan entry; manage_file(full content) only as fallback. Updated integration tests (test_plan_creation_workflow_compliance.py) to assert prompt requires register_plan_in_roadmap. Documented structured JSON roadmap as future work. Blocker removed from roadmap.
+
 - **Commit (rules and manage_file test fixes)** - COMPLETE. Fixed test failures: (1) Added `manager.initialize = AsyncMock(return_value=None)` to `mock_rules_manager` in `tests/tools/test_rules_operations.py` so `await rules_manager.initialize()` in rules tool does not raise. (2) Fixed `test_manage_file_metadata_success` in `tests/tools/test_consolidated.py`: patch `set_current_managers` and `set_current_project_root` (no-op) so usage-context does not persist real managers; use existing path for `construct_safe_path` return value. All 3702 tests pass; coverage 90.36%.
+- **Commit (type, quality, markdown)** - COMPLETE. Fixed reportUnusedCallResult in plan_completion._write_progress; refactored_execute_append_progress, _execute_append_active_context (plan_completion),_execute_roadmap_removal (roadmap_operations) under 30 lines via error helpers; fix_markdown_lint fixed 3 Synapse files.
 
 ## 2026-02-07
 
@@ -40,7 +43,7 @@
 
 ## What Works
 
-Pre-commit pipeline (fix_errors, format, type_check, quality, tests); 3702 tests, 90.36% coverage; integration tests for projectBrief schema; Option C HTTP/SSE transport (Phase 1 and 2).
+Pre-commit pipeline (fix_errors, format, type_check, quality, tests); 3702 tests, 90.36% coverage; integration tests for projectBrief schema; Option C HTTP/SSE transport (Phase 1 and 2). Create-plan and memory-bank-updater mandate register_plan_in_roadmap for new plan entry to prevent roadmap corruption.
 
 ## What's Left
 

@@ -10,6 +10,8 @@
 
 ## Future Enhancements
 
+- **Structured JSON roadmap (future)** - PENDING - Evaluate moving roadmap to a structured format (e.g. JSON) with dedicated read/write APIs so all edits are programmatic; documented as future work after plan-registration blocker fix.
+
 ## Pending plans (from .cortex/plans)
 
 ### Investigation Plans (Archive / Reference)
@@ -70,3 +72,4 @@ The following 22 investigation plans document MCP tool registration issues resol
 - **Session Optimization: Commit Pipeline Improvements** - PENDING - Implement improvements to commit pipeline based on end-of-session analysis: async test validation, early markdown lint validation, markdown formatting guidelines, git SSL documentation, test maintenance checklist, push strategy improvements; plus (2026-2ation test schema alignment, markdown lint scope clarification, memory-bank write quality. Plan: .cortex/plans/session-optimization-commit-pipeline-improvements-202602d.
 - **Compound engineering alignment (Cortex MCP)** - PENDING - Align Cortex with compound-engineering goal (each unit of work makes the next easier); adopt ideas from EveryInc compound-engineering-plugin; document Plan→Work→Review→Compound loop; add compound checklist to prompts; reduce recurring friction. Plan: .cortex/plans/compound-engineering-alignment-cortex.md.
 - **MCP idempotent resource: project root path** - PENDING - Add an idempotent MCP resource that resolves and provides the project root path as a centralized entry point (e.g. cortex://project/root). Plan: .cortex/plans/mcp-idempotent-project-root-resource.md.
+- **Load context when agent encounters problem / fix path** - PENDING - Require agents to load context (and rules) when fixing so they follow project rules and guidelines. Plan: .cortex/plans/session-optimization-load-context-on-problem-fix-path-2026-02-09.md.

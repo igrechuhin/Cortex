@@ -1,14 +1,14 @@
 {
-  "last_updated": "2026-02-07T21:08",
-  "total_sessions_analyzed": 11,
-  "total_load_context_calls": 12,
-  "avg_token_utilization": 0.35,
-  "avg_files_selected": 8.33,
-  "avg_relevance_score": 0.579,
+  "last_updated": "2026-02-09T08:26",
+  "total_sessions_analyzed": 12,
+  "total_load_context_calls": 13,
+  "avg_token_utilization": 0.367,
+  "avg_files_selected": 8.31,
+  "avg_relevance_score": 0.581,
   "common_task_patterns": {
     "fix/debug": 2,
     "other": 5,
-    "implement/add": 3,
+    "implement/add": 4,
     "update/modify": 1,
     "testing": 1
   },
@@ -43,14 +43,16 @@
         "notes": "Low utilization - consider smaller token budgets"
       },
       "implement/add": {
-        "calls_count": 3,
+        "calls_count": 4,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
           "roadmap.md",
-          "progress.md"
+          "techContext.md",
+          "productContext.md",
+          "systemPatterns.md"
         ],
-        "avg_utilization": 0.366,
+        "avg_utilization": 0.418,
         "avg_relevance": 0.605,
         "notes": "Moderate utilization - some budget optimization possible"
       },
@@ -81,60 +83,60 @@
     },
     "file_effectiveness": {
       "activeContext.md": {
-        "times_selected": 12,
-        "avg_relevance": 0.826,
+        "times_selected": 13,
+        "avg_relevance": 0.825,
         "task_types_used": [
           "fix/debug",
-          "update/modify",
           "testing",
+          "update/modify",
           "implement/add",
           "other"
         ],
         "recommendation": "High value - prioritize for loading"
       },
       "techContext.md": {
-        "times_selected": 12,
-        "avg_relevance": 0.563,
+        "times_selected": 13,
+        "avg_relevance": 0.569,
         "task_types_used": [
           "fix/debug",
-          "update/modify",
           "testing",
+          "update/modify",
           "implement/add",
           "other"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "roadmap.md": {
-        "times_selected": 11,
-        "avg_relevance": 0.637,
+        "times_selected": 12,
+        "avg_relevance": 0.638,
         "task_types_used": [
           "fix/debug",
-          "update/modify",
           "testing",
+          "update/modify",
           "implement/add",
           "other"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "file.md": {
-        "times_selected": 12,
-        "avg_relevance": 0.327,
+        "times_selected": 13,
+        "avg_relevance": 0.341,
         "task_types_used": [
           "fix/debug",
-          "update/modify",
           "testing",
+          "update/modify",
           "implement/add",
           "other"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "projectBrief.md": {
-        "times_selected": 12,
-        "avg_relevance": 0.422,
+        "times_selected": 13,
+        "avg_relevance": 0.435,
         "task_types_used": [
           "fix/debug",
-          "update/modify",
           "testing",
+          "update/modify",
           "implement/add",
           "other"
         ],
@@ -144,8 +146,8 @@
         "times_selected": 3,
         "avg_relevance": 0.621,
         "task_types_used": [
-          "fix/debug",
-          "other"
+          "other",
+          "fix/debug"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -153,42 +155,42 @@
         "times_selected": 3,
         "avg_relevance": 0.24,
         "task_types_used": [
-          "fix/debug",
-          "other"
+          "other",
+          "fix/debug"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "progress.md": {
-        "times_selected": 11,
-        "avg_relevance": 0.619,
+        "times_selected": 12,
+        "avg_relevance": 0.617,
         "task_types_used": [
           "fix/debug",
-          "update/modify",
           "testing",
+          "update/modify",
           "implement/add",
           "other"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "systemPatterns.md": {
-        "times_selected": 12,
-        "avg_relevance": 0.541,
+        "times_selected": 13,
+        "avg_relevance": 0.542,
         "task_types_used": [
           "fix/debug",
-          "update/modify",
           "testing",
+          "update/modify",
           "implement/add",
           "other"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "productContext.md": {
-        "times_selected": 12,
-        "avg_relevance": 0.557,
+        "times_selected": 13,
+        "avg_relevance": 0.553,
         "task_types_used": [
           "fix/debug",
-          "update/modify",
           "testing",
+          "update/modify",
           "implement/add",
           "other"
         ],
@@ -196,8 +198,8 @@
       }
     },
     "learned_patterns": [
-      "Average 34% budget utilization - ~21k tokens unused per call",
-      "'activeContext.md' is most frequently loaded (12/12 calls)",
+      "Average 36% budget utilization - ~20k tokens unused per call",
+      "'activeContext.md' is most frequently loaded (13/13 calls)",
       "Most common task type: 'other' (5 calls)"
     ],
     "budget_recommendations": {
@@ -583,6 +585,39 @@
         "techContext.md": 0.518,
         "productContext.md": 0.61,
         "systemPatterns.md": 0.445
+      }
+    },
+    {
+      "session_id": "812b1a792915",
+      "timestamp": "2026-02-09T08:19",
+      "task_description": "Investigate roadmap corruption on plan registration; mandate register_plan_in_roadmap and add_roadmap_entry so full-content write is not used for plan registration",
+      "token_budget": 15000,
+      "total_tokens": 8607,
+      "utilization": 0.5738,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.605,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file.md",
+        "activeContext.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "roadmap.md",
+        "progress.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.599,
+        "activeContext.md": 0.812,
+        "file.md": 0.499,
+        "projectBrief.md": 0.59,
+        "techContext.md": 0.634,
+        "productContext.md": 0.507,
+        "systemPatterns.md": 0.552
       }
     }
   ]

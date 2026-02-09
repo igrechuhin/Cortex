@@ -17,7 +17,7 @@ from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
-from cortex.tools.models import AddRoadmapEntryResult
+from cortex.tools.models import AddRoadmapEntryResult, RemoveRoadmapEntryResult
 from cortex.tools.roadmap_corruption import fix_roadmap_content_if_needed
 
 
@@ -198,6 +198,67 @@ def _write_roadmap_file(roadmap_path: Path, content: str) -> str | None:
         return str(e)
 
 
+def _find_bullet_line_containing(content: str, substring: str) -> int | None:
+    """Return 1-based line number of first bullet line containing substring, or None."""
+    needle = substring.strip()
+    if not needle:
+        return None
+    for i, line in enumerate(content.split("\n"), start=1):
+        stripped = line.strip()
+        if stripped.startswith("- ") and needle in line:
+            return i
+    return None
+
+
+def _remove_line_at(content: str, one_based_line: int) -> str:
+    """Remove the line at the given 1-based index; return new content."""
+    lines = content.split("\n")
+    idx = one_based_line - 1
+    if idx < 0 or idx >= len(lines):
+        return content
+    new_lines = lines[:idx] + lines[idx + 1 :]
+    return "\n".join(new_lines)
+
+
+def _removal_error(message: str, error: str) -> RemoveRoadmapEntryResult:
+    """Build error result for roadmap removal."""
+    return RemoveRoadmapEntryResult(
+        status="error",
+        file_name="roadmap.md",
+        message=message,
+        line_removed=None,
+        error=error,
+    )
+
+
+def _execute_roadmap_removal(
+    root_path: Path, entry_contains: str
+) -> RemoveRoadmapEntryResult:
+    """Remove first roadmap bullet line containing entry_contains. Returns result."""
+    roadmap_path = root_path / ".cortex" / "memory-bank" / "roadmap.md"
+    current_content, read_error = _read_roadmap_file(roadmap_path)
+    if read_error:
+        return _removal_error("Failed to read roadmap", read_error)
+    assert current_content is not None
+    line_num = _find_bullet_line_containing(current_content, entry_contains)
+    if line_num is None:
+        return _removal_error(
+            "No matching bullet found",
+            "No bullet line containing given text found in roadmap",
+        )
+    updated = _remove_line_at(current_content, line_num)
+    write_error = _write_roadmap_file(roadmap_path, updated)
+    if write_error:
+        return _removal_error("Failed to write roadmap", write_error)
+    return RemoveRoadmapEntryResult(
+        status="success",
+        file_name="roadmap.md",
+        message=f"Removed roadmap entry at line {line_num}",
+        line_removed=line_num,
+        error=None,
+    )
+
+
 def _handle_read_error(
     section_id: str | None, read_error: str
 ) -> AddRoadmapEntryResult:
@@ -369,6 +430,58 @@ async def add_roadmap_entry(
             message="Unexpected error",
             line_inserted=None,
             section=None,
+            error=str(e),
+        )
+        return error_result.model_dump_json()
+
+
+async def _remove_roadmap_entry_impl(
+    entry_contains: str,
+    ctx: MCPContext | None,
+) -> str:
+    """Implementation of remove_roadmap_entry logic."""
+    await log_client(
+        ctx, "info", "remove_roadmap_entry: starting", logger_name=__name__
+    )
+    root = await resolve_project_root_async(None, ctx)
+    result = _execute_roadmap_removal(root, entry_contains)
+    await log_client(
+        ctx,
+        "info" if result.status == "success" else "warning",
+        f"remove_roadmap_entry: {result.status}",
+        logger_name=__name__,
+    )
+    return result.model_dump_json()
+
+
+@mcp.tool(annotations=safe_write_annotations("Remove Roadmap Entry"))
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def remove_roadmap_entry(
+    entry_contains: str,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Remove a single roadmap entry (bullet) that contains the given text.
+
+    USE WHEN: Implement Step 5 needs to remove the completed step from the
+    roadmap without building or writing full roadmap content (safe update).
+
+    RETURNS: JSON with status, line_removed (1-based), or error.
+    """
+    try:
+        return await _remove_roadmap_entry_impl(entry_contains, ctx)
+    except Exception as e:
+        await log_client(
+            ctx,
+            "error",
+            f"remove_roadmap_entry: {e}",
+            logger_name=__name__,
+        )
+        error_result = RemoveRoadmapEntryResult(
+            status="error",
+            file_name="roadmap.md",
+            message="Unexpected error",
+            line_removed=None,
             error=str(e),
         )
         return error_result.model_dump_json()

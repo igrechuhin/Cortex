@@ -1,6 +1,6 @@
 # Blocker: Investigate Roadmap Corruption on Plan Registration
 
-**Status**: PENDING  
+**Status**: COMPLETE  
 **Priority**: BLOCKER (ASAP)  
 **Created**: 2026-02-09
 
@@ -86,6 +86,8 @@ Until plan registration no longer requires the agent to build and pass the full 
 - Add a short "Future work" note or roadmap entry: evaluate moving roadmap to a structured format (e.g. JSON) with dedicated read/write APIs so all edits are programmatic and corruption from string assembly is impossible. Do not implement in this blocker; only document and optionally add a follow-up plan.
 
 **Acceptance**: Decision and rationale (defer vs. implement) recorded; follow-up plan or note if deferred.
+
+**Status**: Deferred. Structured JSON roadmap is documented as future enhancement; implementing `register_plan_in_roadmap`/`add_roadmap_entry` for plan registration removes the primary corruption path without requiring a format migration.
 
 ### Step 7: Testing and Verification
 

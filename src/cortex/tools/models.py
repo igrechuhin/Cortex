@@ -2638,3 +2638,45 @@ class AddRoadmapEntryResult(StrictBaseModel):
     error: str | None = Field(None, description="Error message if status is error")
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+
+class RemoveRoadmapEntryResult(StrictBaseModel):
+    """Result of removing a single roadmap entry (bullet line)."""
+
+    status: Literal["success", "error"] = Field(description="Operation status")
+    file_name: str = Field(description="File that was modified")
+    message: str = Field(description="Success or error message")
+    line_removed: int | None = Field(
+        None, ge=1, description="1-based line number that was removed"
+    )
+    error: str | None = Field(None, description="Error message if status is error")
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+
+class AppendProgressEntryResult(StrictBaseModel):
+    """Result of appending a single entry to progress.md."""
+
+    status: Literal["success", "error"] = Field(description="Operation status")
+    file_name: str = Field(description="File that was modified (progress.md)")
+    message: str = Field(description="Success or error message")
+    line_inserted: int | None = Field(
+        None, ge=1, description="1-based line number where entry was inserted"
+    )
+    error: str | None = Field(None, description="Error message if status is error")
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+
+class AppendActiveContextEntryResult(StrictBaseModel):
+    """Result of appending a single completed entry to activeContext.md."""
+
+    status: Literal["success", "error"] = Field(description="Operation status")
+    file_name: str = Field(description="File that was modified (activeContext.md)")
+    message: str = Field(description="Success or error message")
+    line_inserted: int | None = Field(
+        None, ge=1, description="1-based line number where entry was inserted"
+    )
+    error: str | None = Field(None, description="Error message if status is error")
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
