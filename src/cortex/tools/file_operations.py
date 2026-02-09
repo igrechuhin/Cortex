@@ -11,6 +11,8 @@ Total: 2 tools, 1 resource
 """
 
 import json
+import logging
+import time
 from pathlib import Path
 from typing import Literal, cast
 
@@ -31,8 +33,12 @@ from cortex.core.mcp_stability import (
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonValue, ModelDict, SectionMetadata, VersionMetadata
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.token_counter import TokenCounter
+from cortex.core.usage_context import (
+    get_current_managers,
+    get_current_project_root,
+    get_or_resolve_project_root,
+)
 from cortex.core.version_manager import VersionManager
 from cortex.managers.initialization import get_managers
 from cortex.managers.manager_utils import get_manager
@@ -49,6 +55,8 @@ from cortex.tools.file_operation_helpers import (
 )
 from cortex.tools.roadmap_corruption import fix_roadmap_content_if_needed
 from cortex.validation.schema_validator import SchemaValidator
+
+logger = logging.getLogger(__name__)
 
 # Valid operation values for manage_file() (must match FileOperation enum).
 ManageFileOperationName = Literal["read", "write", "metadata"]
@@ -309,7 +317,7 @@ async def manage_file(
 @mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
 async def get_file_resource(file_name: str) -> str:
     """Resource: Read a Memory Bank file. Read via cortex://memory-bank/file/{file_name}."""
-    root = await resolve_project_root_async(None, None)
+    root = await get_or_resolve_project_root(None)
     return await _execute_file_operation(
         root,
         file_name,
@@ -357,6 +365,11 @@ async def write_file(
     )
 
 
+async def _manage_file_get_root(ctx: MCPContext | None) -> Path:
+    """Return current project root or resolve via ctx."""
+    return await get_or_resolve_project_root(ctx)
+
+
 async def _manage_file_validate_and_run(
     ctx: MCPContext | None,
     file_name: str | None,
@@ -376,7 +389,7 @@ async def _manage_file_validate_and_run(
         )
         return err
     assert parsed_op is not None and file_name is not None
-    root = await resolve_project_root_async(None, ctx)
+    root = await _manage_file_get_root(ctx)
     return await _manage_file_run_or_error(
         ctx,
         file_name,
@@ -469,6 +482,31 @@ async def _manage_file_run_or_error(
         return _manage_file_error_response(e)
 
 
+async def _get_managers_for_root(root: Path) -> tuple[ManagersDict, FileSystemManager]:
+    """Resolve managers for root; reuse current when root matches."""
+    current_mgrs = get_current_managers()
+    current_root = get_current_project_root()
+    if (
+        current_mgrs is not None
+        and current_root is not None
+        and current_root.resolve() == root.resolve()
+    ):
+        logger.debug(
+            "file_operations: reusing current managers for root %s",
+            root,
+        )
+        managers = ManagersDict.model_validate(current_mgrs)
+    else:
+        t0 = time.monotonic()
+        managers = await get_managers(root)
+        logger.debug(
+            "file_operations: get_managers(%s) took %.3fs",
+            root,
+            time.monotonic() - t0,
+        )
+    return managers, managers.fs
+
+
 async def _execute_file_operation(
     root: Path,
     file_name: str,
@@ -477,14 +515,9 @@ async def _execute_file_operation(
     include_metadata: bool,
     change_description: str | None,
 ) -> str:
-    """Execute file operation after validation."""
-    managers = await get_managers(root)
-    fs_manager = managers.fs
-    file_path_result = _validate_and_get_path(
-        fs_manager,
-        root,
-        file_name,
-    )
+    """Execute file operation after validation. Reuses current managers when root matches."""
+    managers, fs_manager = await _get_managers_for_root(root)
+    file_path_result = _validate_and_get_path(fs_manager, root, file_name)
     if file_path_result[0] is None:
         return file_path_result[1]
     return await _dispatch_operation(

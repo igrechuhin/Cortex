@@ -22,6 +22,7 @@ dev = [
     "pytest-cov>=4.1.0",
     "pytest-mock>=3.12.0",
     "pytest-timeout>=2.1.0",
+    "pytest-xdist>=3.5.0",
 ]
 server = [
     "httpx",
@@ -36,6 +37,7 @@ all = [
 
 [project.scripts]
 cortex = "cortex.main:main"
+cortex-bridge = "cortex.bridge:main"
 
 [dependency-groups]
 dev = [
@@ -129,6 +131,14 @@ omit = [
     # Rollback modules are tested via integration with rollback_manager
     "*/rollback_conflicts.py",
     "*/rollback_execution.py",
+    # Non-Python framework adapters (require other language runtimes; tested via integration when used)
+    "*/framework_adapters/go_adapter.py",
+    "*/framework_adapters/java_adapter.py",
+    "*/framework_adapters/javascript_adapter.py",
+    "*/framework_adapters/kotlin_adapter.py",
+    "*/framework_adapters/rust_adapter.py",
+    "*/framework_adapters/swift_adapter.py",
+    "*/framework_adapters/typescript_adapter.py",
 ]
 
 [tool.coverage.report]

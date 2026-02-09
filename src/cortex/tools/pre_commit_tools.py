@@ -22,7 +22,7 @@ from cortex.core.context_logging import MCPContext, log_client, report_progress_
 from cortex.core.mcp_annotations import external_annotations, safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import JsonValue, ModelDict
-from cortex.core.project_root_resolver import resolve_project_root_async
+from cortex.core.usage_context import get_or_resolve_project_root
 from cortex.server import mcp
 from cortex.services.framework_adapters.base import (
     CheckResult,
@@ -215,6 +215,68 @@ async def _execute_pre_commit_checks_impl(
     return out
 
 
+async def _log_pre_commit_start(
+    ctx: MCPContext | None,
+    checks: Sequence[PreCommitCheckName],
+    test_timeout: int,
+    coverage_threshold: float,
+    strict_mode: bool,
+) -> None:
+    """Log start and parameters for execute_pre_commit_checks."""
+    await log_client(
+        ctx, "info", "execute_pre_commit_checks: starting", logger_name=__name__
+    )
+    await log_client(
+        ctx,
+        "info",
+        (
+            f"execute_pre_commit_checks: checks={list(checks)}, "
+            f"test_timeout={test_timeout}, coverage_threshold={coverage_threshold}, "
+            f"strict_mode={strict_mode}"
+        ),
+        logger_name=__name__,
+    )
+
+
+async def _resolve_and_run_pre_commit_impl(
+    ctx: MCPContext | None,
+    checks: Sequence[PreCommitCheckName],
+    strict_mode: bool,
+    test_timeout: int,
+    coverage_threshold: float,
+) -> ModelDict:
+    """Resolve project root and run pre-commit checks implementation."""
+    root = await get_or_resolve_project_root(ctx)
+    return await _execute_pre_commit_checks_impl(
+        root, None, checks, strict_mode, test_timeout, coverage_threshold, ctx
+    )
+
+
+async def _run_execute_pre_commit_checks(
+    checks: Sequence[PreCommitCheckName],
+    test_timeout: int,
+    coverage_threshold: float,
+    strict_mode: bool,
+    ctx: MCPContext | None,
+) -> ModelDict:
+    """Resolve root, run impl, log and handle errors."""
+    await _log_pre_commit_start(
+        ctx, checks, test_timeout, coverage_threshold, strict_mode
+    )
+    try:
+        return await _resolve_and_run_pre_commit_impl(
+            ctx, checks, strict_mode, test_timeout, coverage_threshold
+        )
+    except Exception as e:
+        await log_client(
+            ctx,
+            "error",
+            f"execute_pre_commit_checks: {e!s}",
+            logger_name=__name__,
+        )
+        return create_error_result_dict(str(e), type(e).__name__)
+
+
 @mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
     annotations=external_annotations(
         "Execute Pre-Commit Checks",
@@ -267,28 +329,9 @@ async def execute_pre_commit_checks(
     Examples:
         See MCP tool descriptor for full JSON examples.
     """
-    await log_client(
-        ctx, "info", "execute_pre_commit_checks: starting", logger_name=__name__
+    return await _run_execute_pre_commit_checks(
+        checks, test_timeout, coverage_threshold, strict_mode, ctx
     )
-    try:
-        root = await resolve_project_root_async(None, ctx)
-        return await _execute_pre_commit_checks_impl(
-            root,
-            None,
-            checks,
-            strict_mode,
-            test_timeout,
-            coverage_threshold,
-            ctx,
-        )
-    except Exception as e:
-        await log_client(
-            ctx,
-            "error",
-            f"execute_pre_commit_checks: {e!s}",
-            logger_name=__name__,
-        )
-        return create_error_result_dict(str(e), type(e).__name__)
 
 
 def _execute_all_checks(
@@ -693,7 +736,7 @@ async def fix_quality_issues(
     """
     await log_client(ctx, "info", "fix_quality_issues: starting", logger_name=__name__)
     try:
-        root = await resolve_project_root_async(None, ctx)
+        root = await get_or_resolve_project_root(ctx)
         return await _fix_quality_issues_impl(root, include_untracked_markdown, ctx)
     except Exception as e:
         await log_client(

@@ -332,6 +332,40 @@ class TestScanCodebaseTodos:
             # Assert
             assert len(todos) == 2
 
+    def test_scan_todos_skips_file_with_unicode_decode_error(self) -> None:
+        """Files that raise UnicodeDecodeError on read are skipped; others scanned."""
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            src_dir = project_root / "src"
+            _ = src_dir.mkdir()
+            invalid_utf8 = src_dir / "binary_data.py"
+            _ = invalid_utf8.write_bytes(b"\xff\xfe")  # invalid UTF-8
+            valid_file = src_dir / "module.py"
+            _ = valid_file.write_text("# TODO: Implement\n")
+
+            todos = scan_codebase_todos(project_root)
+
+            assert len(todos) == 1
+            assert todos[0].file_path == "src/module.py"
+
+    def test_scan_todos_skips_file_with_permission_error(self) -> None:
+        """Files that raise PermissionError on read are skipped; others scanned."""
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            src_dir = project_root / "src"
+            _ = src_dir.mkdir()
+            no_read = src_dir / "no_read.py"
+            _ = no_read.write_text("# TODO: hidden\n")
+            try:
+                _ = no_read.chmod(0o000)
+                valid_file = src_dir / "module.py"
+                _ = valid_file.write_text("# TODO: visible\n")
+                todos = scan_codebase_todos(project_root)
+                assert len(todos) == 1
+                assert todos[0].file_path == "src/module.py"
+            finally:
+                _ = no_read.chmod(0o600)
+
     def test_scan_todos_scans_scripts_directory(self):
         """Test scanning includes scripts directory."""
         # Arrange

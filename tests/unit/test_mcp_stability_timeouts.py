@@ -179,12 +179,12 @@ class TestTimeoutCategories:
 
     @pytest.mark.asyncio
     async def test_very_complex_timeout_category(self) -> None:
-        """Test very complex timeout category (600s)."""
+        """Test very complex timeout category (960s for full test run)."""
         result = await with_mcp_stability(
             fast_operation, timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX
         )
         assert result == "success"
-        assert MCP_TOOL_TIMEOUT_VERY_COMPLEX == 600
+        assert MCP_TOOL_TIMEOUT_VERY_COMPLEX == 960.0
 
     @pytest.mark.asyncio
     async def test_external_timeout_category(self) -> None:

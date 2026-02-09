@@ -3,8 +3,10 @@
 Adapter for Python projects using pytest, ruff, pyright, and black.
 """
 
+import os
 import re
 import subprocess
+import threading
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -23,6 +25,14 @@ _PYTEST_RESULT_LINE_RE = re.compile(
     r"\s+(PASSED|FAILED|SKIPPED|ERROR)\s+\[", re.IGNORECASE
 )
 _PROGRESS_REPORT_EVERY_N_TESTS = 50
+_PROGRESS_HEARTBEAT_SECONDS = (
+    20  # Report progress when pytest is silent (e.g. long test)
+)
+
+
+def _should_report_progress(completed: int, total: int) -> bool:
+    """True if we should report progress (every N tests or at completion)."""
+    return completed % _PROGRESS_REPORT_EVERY_N_TESTS == 0 or completed >= total
 
 
 class PythonAdapter(FrameworkAdapter):
@@ -44,6 +54,7 @@ class PythonAdapter(FrameworkAdapter):
         """
         super().__init__(project_root)
         self.venv_bin = get_venv_bin_path(self.project_root)
+        self._xdist_available: bool = False
 
     def _get_command(self, tool: str) -> str:
         """Get full path to tool command. Never relies on PATH (MCP-safe).
@@ -71,31 +82,78 @@ class PythonAdapter(FrameworkAdapter):
         coverage_threshold: float = 0.90,
         max_failures: int | None = None,
         progress_callback: ProgressCallback | None = None,
+        include_slow_tests: bool = False,
     ) -> TestResult:
         """Run pytest test suite.
+
+        Uses pytest-xdist -n auto when available for parallel runs (commit pipeline
+        and CI). Set CORTEX_PYTEST_PARALLEL=0 to disable parallel (e.g. for debugging).
 
         Args:
             timeout: Maximum time in seconds for test execution.
             coverage_threshold: Minimum coverage percentage required.
             max_failures: Maximum number of failures before stopping.
             progress_callback: Optional (completed, total) for real test progress.
+            include_slow_tests: If False (default), run with -m "not slow" so
+                slow integration tests are excluded and the run finishes quickly.
 
         Returns:
             TestResult with test execution details.
         """
-        cmd = self._build_test_command(coverage_threshold, max_failures)
+        cmd = self._build_test_command(
+            coverage_threshold, max_failures, include_slow_tests
+        )
         if progress_callback is not None:
-            total = self._collect_test_count()
+            total = self._collect_test_count(include_slow_tests)
             if total is not None and total > 0:
                 return self._execute_test_command_streaming(
                     cmd, timeout, coverage_threshold, total, progress_callback
                 )
         return self._execute_test_command(cmd, timeout, coverage_threshold)
 
+    def _pytest_parallel_requested(self) -> bool:
+        """Return True if parallel test runs are allowed (default True when xdist used).
+
+        Parallel (-n auto) is used when this returns True and xdist is available.
+        Set CORTEX_PYTEST_PARALLEL=0 or false or no to disable (e.g. for debugging).
+        """
+        val = os.environ.get("CORTEX_PYTEST_PARALLEL", "").strip().lower()
+        if val in ("0", "false", "no"):
+            return False
+        return True
+
+    def _has_pytest_xdist(self) -> bool:
+        """Return True if pytest-xdist is installed so we can use -n auto."""
+        try:
+            result = subprocess.run(
+                [
+                    self._get_command("pytest"),
+                    "tests/",
+                    "-n",
+                    "auto",
+                    "--collect-only",
+                    "-q",
+                ],
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            out = (result.stdout or "") + (result.stderr or "")
+            self._xdist_available = (
+                result.returncode == 0 and "unrecognized arguments" not in out
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            self._xdist_available = False
+        return self._xdist_available
+
     def _build_test_command(
-        self, coverage_threshold: float, max_failures: int | None
+        self,
+        coverage_threshold: float,
+        max_failures: int | None,
+        include_slow_tests: bool = False,
     ) -> list[str]:
-        """Build pytest command with options (matches CI workflow exactly)."""
+        """Build pytest command with options (matches CI when include_slow_tests)."""
         cmd = [
             self._get_command("pytest"),
             "tests/",  # Match CI: tests/
@@ -106,11 +164,15 @@ class PythonAdapter(FrameworkAdapter):
             f"--cov-fail-under={int(coverage_threshold * 100)}",  # Match CI:
             # --cov-fail-under=90
         ]
+        if self._pytest_parallel_requested() and self._has_pytest_xdist():
+            cmd.extend(["-n", "auto"])  # Parallel workers for faster runs
+        if not include_slow_tests:
+            cmd.extend(["-m", "not slow"])
         if max_failures:
             cmd.extend(["--maxfail", str(max_failures)])
         return cmd
 
-    def _collect_test_count(self) -> int | None:
+    def _collect_test_count(self, include_slow_tests: bool = False) -> int | None:
         """Run pytest --collect-only -q and return total test count."""
         collect_cmd = [
             self._get_command("pytest"),
@@ -118,6 +180,8 @@ class PythonAdapter(FrameworkAdapter):
             "--collect-only",
             "-q",
         ]
+        if not include_slow_tests:
+            collect_cmd.extend(["-m", "not slow"])
         try:
             result = subprocess.run(
                 collect_cmd,
@@ -141,20 +205,37 @@ class PythonAdapter(FrameworkAdapter):
         total: int,
         progress_callback: ProgressCallback,
     ) -> list[str]:
-        """Read proc stdout line by line and report test progress; return lines."""
+        """Read proc stdout line by line and report test progress; return lines.
+
+        When pytest is silent (e.g. one long test), a heartbeat thread still
+        reports progress every _PROGRESS_HEARTBEAT_SECONDS so the UI does not
+        appear stuck (e.g. around 300/3704 when a slow test runs).
+        """
         lines: list[str] = []
         completed = 0
+        completed_ref: list[int] = [0]
+        stop_heartbeat = threading.Event()
+
+        def heartbeat() -> None:
+            while not stop_heartbeat.wait(timeout=_PROGRESS_HEARTBEAT_SECONDS):
+                progress_callback(completed_ref[0], total)
+            progress_callback(completed_ref[0], total)
+
         assert proc.stdout is not None
-        for line in proc.stdout:
-            lines.append(line)
-            if _PYTEST_RESULT_LINE_RE.search(line):
-                completed += 1
-                if (
-                    completed % _PROGRESS_REPORT_EVERY_N_TESTS == 0
-                    or completed >= total
-                ):
-                    progress_callback(completed, total)
-        return lines
+        heart = threading.Thread(target=heartbeat, daemon=True)
+        heart.start()
+        try:
+            for line in proc.stdout:
+                lines.append(line)
+                if _PYTEST_RESULT_LINE_RE.search(line):
+                    completed += 1
+                    completed_ref[0] = completed
+                    if _should_report_progress(completed, total):
+                        progress_callback(completed, total)
+            return lines
+        finally:
+            stop_heartbeat.set()
+            heart.join(timeout=2.0)
 
     def _execute_test_command_streaming(
         self,
@@ -601,27 +682,25 @@ class PythonAdapter(FrameworkAdapter):
         tests_failed = 0
 
         lines = output.split("\n")
-        # Search from the end (summary is usually at the end)
+        # Search from the end for pytest's actual summary line (has timing " in X.XXs ")
         for line in reversed(lines):
             line_lower = line.lower()
-            # Check for test summary line - contains "passed" or "failed" with numbers
-            if ("passed" in line_lower or "failed" in line_lower) and any(
-                char.isdigit() for char in line
-            ):
-                parts = line.split()
-                # Try to extract counts
-                passed_count = self._extract_count_from_line(parts, "passed")
-                failed_count = self._extract_count_from_line(parts, "failed")
-                # If we found passed count, use it (failed_count will be
-                # None if no failures)
-                if passed_count is not None:
-                    tests_passed = passed_count
-                if failed_count is not None:
-                    tests_failed = failed_count
-                # If we found at least passed count, we're done (failed
-                # defaults to 0 if not found)
-                if passed_count is not None:
-                    break
+            # Pytest summary always includes timing (e.g. " in 57.17s " or " in 0:01:00 ")
+            if " in " not in line_lower:
+                continue
+            if not ("passed" in line_lower or "failed" in line_lower):
+                continue
+            if not any(c.isdigit() for c in line):
+                continue
+            parts = line.split()
+            passed_count = self._extract_count_from_line(parts, "passed")
+            failed_count = self._extract_count_from_line(parts, "failed")
+            if passed_count is not None:
+                tests_passed = passed_count
+            if failed_count is not None:
+                tests_failed = failed_count
+            if passed_count is not None:
+                break
 
         return tests_passed, tests_failed
 

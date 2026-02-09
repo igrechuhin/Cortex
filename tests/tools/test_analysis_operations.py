@@ -50,6 +50,13 @@ from cortex.tools.refactoring_operations import (
 from tests.helpers.managers import make_test_managers
 
 
+@pytest.fixture(autouse=True)
+def _skip_usage_context_init():  # pyright: ignore[reportUnusedFunction]
+    """Avoid slow resolve_project_root + get_managers in ensure_usage_context."""
+    with patch("cortex.core.mcp_stability.get_current_managers", return_value={}):
+        yield
+
+
 class TestAnalyzeUsagePatterns:
     """Test _analyze_usage_patterns helper."""
 
@@ -239,6 +246,7 @@ class TestGetAnalysisManagers:
         assert insight == mock_insight
 
 
+@pytest.mark.timeout(10)
 class TestAnalyzeHandler:
     """Test main analyze handler."""
 
@@ -361,6 +369,7 @@ class TestAnalyzeHandler:
             assert result_data["error_type"] == "RuntimeError"
 
 
+@pytest.mark.timeout(10)
 class TestAnalyzeContextLogging:
     """Test analyze tool Context logging (FastMCP)."""
 
@@ -1225,6 +1234,7 @@ class TestProcessRefactoringRequest:
             assert result_data["suggestion_id"] == "consolidation_001"
 
 
+@pytest.mark.timeout(10)
 class TestSuggestRefactoringHandler:
     """Test main suggest_refactoring handler."""
 
@@ -1298,6 +1308,7 @@ class TestSuggestRefactoringHandler:
 
 
 @pytest.mark.asyncio
+@pytest.mark.timeout(10)
 class TestRefactoringOperationsContextLogging:
     """Test suggest_refactoring uses log_client when ctx is passed."""
 
@@ -1334,6 +1345,7 @@ class TestRefactoringOperationsContextLogging:
         assert ("info", "suggest_refactoring: completed") in levels_and_messages
 
 
+@pytest.mark.timeout(10)
 class TestAnalyzeResource:
     """Test analyze_resource (Phase 43 Phase 5 Analysis resource)."""
 
@@ -1358,12 +1370,32 @@ class TestAnalyzeResource:
     @pytest.mark.asyncio
     async def test_analyze_resource_invalid_target_returns_error(self) -> None:
         """analyze_resource returns error JSON for invalid target (Phase 43)."""
-        result = await analyze_resource("invalid")
+        error_json = json.dumps(
+            {
+                "status": "error",
+                "error": "Invalid target: invalid",
+                "valid_targets": [],
+            },
+            indent=2,
+        )
+        with (
+            patch(
+                "cortex.core.mcp_stability.get_current_managers",
+                return_value={},
+            ),
+            patch(
+                "cortex.tools.analysis_operations.analyze",
+                new_callable=AsyncMock,
+                return_value=error_json,
+            ),
+        ):
+            result = await analyze_resource("invalid")
         result_data = json.loads(result)
         assert result_data["status"] == "error"
         assert "valid_targets" in result_data
 
 
+@pytest.mark.timeout(10)
 class TestSuggestRefactoringResource:
     """Test suggest_refactoring_resource (Phase 43 Phase 5 Analysis resource)."""
 
@@ -1391,7 +1423,25 @@ class TestSuggestRefactoringResource:
         self,
     ) -> None:
         """suggest_refactoring_resource returns error JSON for invalid type (Phase 43)."""
-        result = await suggest_refactoring_resource("invalid")
+        error_json = json.dumps(
+            {
+                "status": "error",
+                "error": "Invalid type: invalid. Valid types: consolidation, splits, reorganization",
+            },
+            indent=2,
+        )
+        with (
+            patch(
+                "cortex.core.mcp_stability.get_current_managers",
+                return_value={},
+            ),
+            patch(
+                "cortex.tools.refactoring_operations.suggest_refactoring",
+                new_callable=AsyncMock,
+                return_value=error_json,
+            ),
+        ):
+            result = await suggest_refactoring_resource("invalid")
         result_data = json.loads(result)
         assert result_data["status"] == "error"
         assert (

@@ -504,6 +504,8 @@ async def _run_rules_operation_impl(
     )
     if error_msg := await check_rules_enabled(optimization_config):
         return error_msg
+    # Deferred init: first rules use does indexing (avoids blocking first manage_file).
+    _ = await rules_manager.initialize()
     return await dispatch_operation(
         operation,
         rules_manager,

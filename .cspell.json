@@ -4,10 +4,12 @@
   "words": [
     "Привет",
     "activecontext",
+    "addinivalue",
     "aiofiles",
     "aiter",
     "anonymization",
     "anyio",
+    "ASGI",
     "asyncmock",
     "autouse",
     "basedpyright",
@@ -32,6 +34,7 @@
     "cwith",
     "dataclass",
     "Dataclasses",
+    "delenv",
     "dependencies",
     "dependency",
     "dependencygraph",
@@ -208,6 +211,7 @@
     "transclusion",
     "transclusionengine",
     "typeddict",
+    "unawaited",
     "underspecified",
     "unwritable",
     "upstreaming",
@@ -216,7 +220,8 @@
     "validator",
     "venv",
     "versionmanager",
-    "vitest"
+    "vitest",
+    "xdist"
   ],
   "ignoreWords": [],
   "ignorePaths": [

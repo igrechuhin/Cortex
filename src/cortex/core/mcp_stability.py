@@ -12,8 +12,9 @@ import logging
 import time
 from collections.abc import Awaitable, Callable
 from inspect import Signature
+from pathlib import Path
 from types import TracebackType
-from typing import Literal, Protocol, cast
+from typing import Any, Literal, Protocol, cast
 
 import anyio
 
@@ -37,6 +38,67 @@ logger = logging.getLogger(__name__)
 # Tools that report their own progress (file/step-based); skip wrapper time-based progress.
 _TOOLS_WITH_OWN_PROGRESS = frozenset({"execute_pre_commit_checks", "fix_markdown_lint"})
 
+# Serialize first-tool context setup so concurrent tool calls do not each run full init.
+_usage_context_init_lock: asyncio.Lock | None = None
+
+
+def _get_usage_context_init_lock() -> asyncio.Lock:
+    """Return the shared lock for usage context init (lazy-create for tests)."""
+    global _usage_context_init_lock
+    if _usage_context_init_lock is None:
+        _usage_context_init_lock = asyncio.Lock()
+    return _usage_context_init_lock
+
+
+async def _resolve_root_and_managers(
+    mcp_ctx: MCPContext | None,
+) -> tuple[Path, dict[str, Any]]:
+    """Resolve project root and get managers; log timings. Returns (root, mgrs_dict)."""
+    from cortex.core.project_root_resolver import resolve_project_root_async
+    from cortex.managers.initialization import get_managers
+
+    t0 = time.monotonic()
+    root = await resolve_project_root_async(None, mcp_ctx)
+    resolve_elapsed = time.monotonic() - t0
+    logger.debug(
+        "ensure_usage_context: resolve_project_root_async took %.3fs -> %s",
+        resolve_elapsed,
+        root,
+    )
+    t1 = time.monotonic()
+    mgrs = await get_managers(root)
+    managers_elapsed = time.monotonic() - t1
+    logger.debug(
+        "ensure_usage_context: get_managers(%s) took %.3fs",
+        root,
+        managers_elapsed,
+    )
+    total = resolve_elapsed + managers_elapsed
+    if total > 2.0:
+        logger.info(
+            "ensure_usage_context: first-tool init took %.2fs (resolve=%.2fs, get_managers=%.2fs)",
+            total,
+            resolve_elapsed,
+            managers_elapsed,
+        )
+    mgrs_dict = mgrs if isinstance(mgrs, dict) else mgrs.model_dump()
+    return (root, mgrs_dict)
+
+
+async def _init_usage_context_under_lock(
+    mcp_ctx: MCPContext | None, func_name: str
+) -> None:
+    """Resolve root, get managers, set usage context; raise after reporting."""
+    from cortex.core.usage_context import set_current_project_root
+
+    try:
+        root, mgrs_dict = await _resolve_root_and_managers(mcp_ctx)
+        set_current_managers(mgrs_dict)
+        set_current_project_root(root)
+    except Exception as e:  # pragma: no cover - exercised via tool tests
+        await _handle_tool_exception_if_failure(e, func_name, mcp_ctx)
+        raise
+
 
 def ensure_usage_context[T](
     func: Callable[..., Awaitable[T]],
@@ -53,34 +115,20 @@ def ensure_usage_context[T](
     import functools
     import inspect
 
-    from cortex.core.project_root_resolver import resolve_project_root_async
-
     @functools.wraps(func)
     async def wrapper(
         *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
         **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
     ) -> T:
-        if get_current_managers() is None:
-            # Usage context failures are treated as MCP tool failures so they
-            # participate in the investigation protocol instead of being silent.
-            from cortex.core.context_logging import MCPContext
-            from cortex.managers.initialization import get_managers
-
+        if get_current_managers() is not None:
+            return await func(*args, **kwargs)
+        lock = _get_usage_context_init_lock()
+        async with lock:
+            if get_current_managers() is not None:
+                return await func(*args, **kwargs)
             ctx_raw = kwargs.get("ctx")
-            # Cast ctx from JsonValue to MCPContext | None (ctx is injected by
-            # FastMCP and is an MCPContext object, not JSON-serializable)
             mcp_ctx = cast(MCPContext | None, ctx_raw)
-            try:
-                # Resolve root internally (same as tools do), using MCP context
-                # when available. Tools resolve root internally and do not accept
-                # project_root as a parameter.
-                root = await resolve_project_root_async(None, mcp_ctx)
-                mgrs = await get_managers(root)
-                mgrs_dict = mgrs if isinstance(mgrs, dict) else mgrs.model_dump()
-                set_current_managers(mgrs_dict)
-            except Exception as e:  # pragma: no cover - exercised via tool tests
-                await _handle_tool_exception_if_failure(e, func.__name__, mcp_ctx)
-                raise
+            await _init_usage_context_under_lock(mcp_ctx, func.__name__)
         return await func(*args, **kwargs)
 
     original_sig = inspect.signature(func)

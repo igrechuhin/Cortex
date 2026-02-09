@@ -78,6 +78,7 @@ class FrameworkAdapter(ABC):
         coverage_threshold: float = 0.90,
         max_failures: int | None = None,
         progress_callback: ProgressCallback | None = None,
+        include_slow_tests: bool = False,
     ) -> TestResult:
         """Run test suite.
 
@@ -86,6 +87,8 @@ class FrameworkAdapter(ABC):
             coverage_threshold: Minimum coverage percentage required.
             max_failures: Maximum number of failures before stopping.
             progress_callback: Optional (completed, total) callback for progress.
+            include_slow_tests: If False (default), exclude tests marked slow
+                so the run finishes in a few minutes; use True for full suite.
 
         Returns:
             TestResult with test execution details.

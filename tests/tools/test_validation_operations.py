@@ -1560,6 +1560,39 @@ class TestValidateTimestamps:
         assert len(result_data["violations"]) > 0
 
     @pytest.mark.asyncio
+    async def test_validate_timestamps_single_file_invalid_datetime_and_non_standard_date(
+        self, tmp_path: Path, mock_fs_manager: MagicMock
+    ) -> None:
+        """Test timestamp validation: invalid datetime (ValueError) and non-standard date format."""
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True)
+        test_file = memory_bank_dir / "progress.md"
+        content = (
+            "# Progress\n\n"
+            "2026-01-20\n"
+            "- Invalid day: 2026-02-30T12:00\n"
+            "- Non-standard: 01/15/2026\n"
+            "- Date part of datetime: 2026-01-15 2026-01-15T10:00\n"
+        )
+        _ = test_file.write_text(content)
+
+        mock_fs_manager.construct_safe_path.return_value = test_file
+        mock_fs_manager.read_file = AsyncMock(return_value=(content, None))
+
+        result = await validate_timestamps_single_file(
+            mock_fs_manager, tmp_path, "progress.md"
+        )
+
+        result_data = json.loads(result)
+        assert result_data["status"] == "success"
+        assert result_data["check_type"] == "timestamps"
+        assert result_data["valid"] is False
+        assert (
+            result_data["invalid_format_count"] > 0
+            or len(result_data["violations"]) > 0
+        )
+
+    @pytest.mark.asyncio
     async def test_validate_timestamps_single_file_with_timezone(
         self, tmp_path: Path, mock_fs_manager: MagicMock
     ) -> None:

@@ -1,6 +1,7 @@
 """Unit tests for cache JSON MCP tools (read_cache_json, write_cache_json)."""
 
 import json
+import os
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -25,53 +26,56 @@ class TestReadCacheJsonTool:
     """Tests for read_cache_json MCP tool."""
 
     @pytest.mark.asyncio
+    @pytest.mark.timeout(25)
     async def test_returns_missing_when_file_absent(self, tmp_path: Path) -> None:
         """Tool returns status missing when file does not exist."""
         root = _project_root(tmp_path)
-        with patch(
-            "cortex.tools.cache_json_tools.resolve_project_root_async",
-            new_callable=AsyncMock,
-            return_value=root,
-        ):
-            result_str = await read_cache_json(
-                relative_path="usage/events/2026-01-01.json",
-            )
+        with patch.dict(os.environ, {"CORTEX_USE_FALLBACK_ROOT": "1"}):
+            with patch(
+                "cortex.core.project_root_resolver.get_project_root",
+                return_value=root,
+            ):
+                result_str = await read_cache_json(
+                    relative_path="usage/events/2026-01-01.json",
+                )
         result = json.loads(result_str)
         assert result.get("status") == "missing"
         assert result.get("relative_path") == "usage/events/2026-01-01.json"
 
     @pytest.mark.asyncio
+    @pytest.mark.timeout(25)
     async def test_returns_json_content_when_file_exists(self, tmp_path: Path) -> None:
         """Tool returns file content as JSON when file exists."""
         root = _project_root(tmp_path)
         path = root / ".cortex" / ".cache" / "data.json"
         _ = path.parent.mkdir(parents=True, exist_ok=True)
         _ = path.write_text('{"key": "value"}')
-        with patch(
-            "cortex.tools.cache_json_tools.resolve_project_root_async",
-            new_callable=AsyncMock,
-            return_value=root,
-        ):
-            result_str = await read_cache_json(
-                relative_path="data.json",
-            )
+        with patch.dict(os.environ, {"CORTEX_USE_FALLBACK_ROOT": "1"}):
+            with patch(
+                "cortex.core.project_root_resolver.get_project_root",
+                return_value=root,
+            ):
+                result_str = await read_cache_json(
+                    relative_path="data.json",
+                )
         result = json.loads(result_str)
         assert result == {"key": "value"}
 
     @pytest.mark.asyncio
+    @pytest.mark.timeout(25)
     async def test_returns_error_for_invalid_relative_path(
         self, tmp_path: Path
     ) -> None:
         """Tool returns error for path traversal."""
         root = _project_root(tmp_path)
-        with patch(
-            "cortex.tools.cache_json_tools.resolve_project_root_async",
-            new_callable=AsyncMock,
-            return_value=root,
-        ):
-            result_str = await read_cache_json(
-                relative_path="../../etc/passwd",
-            )
+        with patch.dict(os.environ, {"CORTEX_USE_FALLBACK_ROOT": "1"}):
+            with patch(
+                "cortex.core.project_root_resolver.get_project_root",
+                return_value=root,
+            ):
+                result_str = await read_cache_json(
+                    relative_path="../../etc/passwd",
+                )
         result = json.loads(result_str)
         assert result.get("status") == "error"
         assert "relative_path" in result
@@ -81,40 +85,42 @@ class TestWriteCacheJsonTool:
     """Tests for write_cache_json MCP tool."""
 
     @pytest.mark.asyncio
+    @pytest.mark.timeout(25)
     async def test_write_then_read_roundtrip(self, tmp_path: Path) -> None:
         """Write then read returns same data."""
         root = _project_root(tmp_path)
         content = '{"a": 1, "b": "x"}'
-        with patch(
-            "cortex.tools.cache_json_tools.resolve_project_root_async",
-            new_callable=AsyncMock,
-            return_value=root,
-        ):
-            out_str = await write_cache_json(
-                relative_path="roundtrip.json",
-                content=content,
-            )
-            out = json.loads(out_str)
-            assert out.get("status") == "success"
-            result_str = await read_cache_json(
-                relative_path="roundtrip.json",
-            )
+        with patch.dict(os.environ, {"CORTEX_USE_FALLBACK_ROOT": "1"}):
+            with patch(
+                "cortex.core.project_root_resolver.get_project_root",
+                return_value=root,
+            ):
+                out_str = await write_cache_json(
+                    relative_path="roundtrip.json",
+                    content=content,
+                )
+                out = json.loads(out_str)
+                assert out.get("status") == "success"
+                result_str = await read_cache_json(
+                    relative_path="roundtrip.json",
+                )
         result = json.loads(result_str)
         assert result == {"a": 1, "b": "x"}
 
     @pytest.mark.asyncio
+    @pytest.mark.timeout(25)
     async def test_returns_error_for_invalid_json(self, tmp_path: Path) -> None:
         """Tool returns error for invalid JSON content."""
         root = _project_root(tmp_path)
-        with patch(
-            "cortex.tools.cache_json_tools.resolve_project_root_async",
-            new_callable=AsyncMock,
-            return_value=root,
-        ):
-            result_str = await write_cache_json(
-                relative_path="bad.json",
-                content="not json {",
-            )
+        with patch.dict(os.environ, {"CORTEX_USE_FALLBACK_ROOT": "1"}):
+            with patch(
+                "cortex.core.project_root_resolver.get_project_root",
+                return_value=root,
+            ):
+                result_str = await write_cache_json(
+                    relative_path="bad.json",
+                    content="not json {",
+                )
         result = json.loads(result_str)
         assert result.get("status") == "error"
         assert "Invalid JSON" in str(result.get("message", ""))
@@ -228,47 +234,45 @@ class TestReadCacheJsonErrorPaths:
     """Tests for read_cache_json exception handling."""
 
     @pytest.mark.asyncio
+    @pytest.mark.timeout(25)
     async def test_returns_error_when_read_raises_value_error(
         self, tmp_path: Path
     ) -> None:
         """Tool returns error JSON when _read_cache_json raises ValueError."""
         root = _project_root(tmp_path)
-        with (
-            patch(
-                "cortex.tools.cache_json_tools.resolve_project_root_async",
-                new_callable=AsyncMock,
+        with patch.dict(os.environ, {"CORTEX_USE_FALLBACK_ROOT": "1"}):
+            with patch(
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=root,
-            ),
-            patch(
-                "cortex.tools.cache_json_tools._read_cache_json",
-                new_callable=AsyncMock,
-                side_effect=ValueError("invalid path"),
-            ),
-        ):
-            result_str = await read_cache_json(relative_path="bad.json")
+            ):
+                with patch(
+                    "cortex.tools.cache_json_tools._read_cache_json",
+                    new_callable=AsyncMock,
+                    side_effect=ValueError("invalid path"),
+                ):
+                    result_str = await read_cache_json(relative_path="bad.json")
         result = json.loads(result_str)
         assert result["status"] == "error"
         assert "invalid path" in str(result.get("message", ""))
 
     @pytest.mark.asyncio
+    @pytest.mark.timeout(25)
     async def test_returns_error_with_error_type_when_read_raises_generic(
         self, tmp_path: Path
     ) -> None:
         """Tool returns error JSON with error_type when read raises generic Exception."""
         root = _project_root(tmp_path)
-        with (
-            patch(
-                "cortex.tools.cache_json_tools.resolve_project_root_async",
-                new_callable=AsyncMock,
+        with patch.dict(os.environ, {"CORTEX_USE_FALLBACK_ROOT": "1"}):
+            with patch(
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=root,
-            ),
-            patch(
-                "cortex.tools.cache_json_tools._read_cache_json",
-                new_callable=AsyncMock,
-                side_effect=RuntimeError("lock timeout"),
-            ),
-        ):
-            result_str = await read_cache_json(relative_path="x.json")
+            ):
+                with patch(
+                    "cortex.tools.cache_json_tools._read_cache_json",
+                    new_callable=AsyncMock,
+                    side_effect=RuntimeError("lock timeout"),
+                ):
+                    result_str = await read_cache_json(relative_path="x.json")
         result = json.loads(result_str)
         assert result["status"] == "error"
         assert result.get("error_type") == "RuntimeError"
@@ -278,18 +282,19 @@ class TestWriteCacheJsonContentValidation:
     """Tests for write_cache_json content validation."""
 
     @pytest.mark.asyncio
+    @pytest.mark.timeout(25)
     async def test_returns_error_for_json_number_content(self, tmp_path: Path) -> None:
         """Tool returns error when content is a JSON number (not object/array)."""
         root = _project_root(tmp_path)
-        with patch(
-            "cortex.tools.cache_json_tools.resolve_project_root_async",
-            new_callable=AsyncMock,
-            return_value=root,
-        ):
-            result_str = await write_cache_json(
-                relative_path="n.json",
-                content="123",
-            )
+        with patch.dict(os.environ, {"CORTEX_USE_FALLBACK_ROOT": "1"}):
+            with patch(
+                "cortex.core.project_root_resolver.get_project_root",
+                return_value=root,
+            ):
+                result_str = await write_cache_json(
+                    relative_path="n.json",
+                    content="123",
+                )
         result = json.loads(result_str)
         assert result["status"] == "error"
         assert "object or array" in str(result.get("message", ""))
@@ -299,79 +304,76 @@ class TestCacheJsonToolsEdgeCases:
     """Edge cases for read_cache_json and write_cache_json."""
 
     @pytest.mark.asyncio
+    @pytest.mark.timeout(25)
     async def test_write_empty_object_succeeds_and_invokes_write(
         self, tmp_path: Path
     ) -> None:
         """Writing empty object {} returns success and calls _write_cache_json with {}."""
         root = _project_root(tmp_path)
-        with (
-            patch(
-                "cortex.tools.cache_json_tools.resolve_project_root_async",
-                new_callable=AsyncMock,
+        with patch.dict(os.environ, {"CORTEX_USE_FALLBACK_ROOT": "1"}):
+            with patch(
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=root,
-            ),
-            patch(
-                "cortex.tools.cache_json_tools._write_cache_json",
-                new_callable=AsyncMock,
-            ) as mock_write,
-        ):
-            result_str = await write_cache_json(
-                relative_path="empty.json",
-                content="{}",
-            )
+            ):
+                with patch(
+                    "cortex.tools.cache_json_tools._write_cache_json",
+                    new_callable=AsyncMock,
+                ) as mock_write:
+                    result_str = await write_cache_json(
+                        relative_path="empty.json",
+                        content="{}",
+                    )
         result = json.loads(result_str)
         assert result["status"] == "success"
         mock_write.assert_called_once()
         assert mock_write.call_args[0][2] == {}
 
     @pytest.mark.asyncio
+    @pytest.mark.timeout(25)
     async def test_write_empty_array_succeeds_and_invokes_write(
         self, tmp_path: Path
     ) -> None:
         """Writing empty array [] returns success and calls _write_cache_json with []."""
         root = _project_root(tmp_path)
-        with (
-            patch(
-                "cortex.tools.cache_json_tools.resolve_project_root_async",
-                new_callable=AsyncMock,
+        with patch.dict(os.environ, {"CORTEX_USE_FALLBACK_ROOT": "1"}):
+            with patch(
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=root,
-            ),
-            patch(
-                "cortex.tools.cache_json_tools._write_cache_json",
-                new_callable=AsyncMock,
-            ) as mock_write,
-        ):
-            result_str = await write_cache_json(
-                relative_path="empty_arr.json",
-                content="[]",
-            )
+            ):
+                with patch(
+                    "cortex.tools.cache_json_tools._write_cache_json",
+                    new_callable=AsyncMock,
+                ) as mock_write:
+                    result_str = await write_cache_json(
+                        relative_path="empty_arr.json",
+                        content="[]",
+                    )
         result = json.loads(result_str)
         assert result["status"] == "success"
         mock_write.assert_called_once()
         assert mock_write.call_args[0][2] == []
 
     @pytest.mark.asyncio
+    @pytest.mark.timeout(25)
     async def test_write_returns_error_when_write_raises_value_error(
         self, tmp_path: Path
     ) -> None:
         """When _write_cache_json raises ValueError, tool returns error JSON."""
         root = _project_root(tmp_path)
-        with (
-            patch(
-                "cortex.tools.cache_json_tools.resolve_project_root_async",
-                new_callable=AsyncMock,
+        with patch.dict(os.environ, {"CORTEX_USE_FALLBACK_ROOT": "1"}):
+            with patch(
+                "cortex.core.project_root_resolver.get_project_root",
                 return_value=root,
-            ),
-            patch(
-                "cortex.tools.cache_json_tools._write_cache_json",
-                new_callable=AsyncMock,
-                side_effect=ValueError("Invalid cache key"),
-            ),
-        ):
-            result_str = await write_cache_json(
-                relative_path="x.json",
-                content='{"a": 1}',
-            )
+            ):
+                with patch(
+                    "cortex.tools.cache_json_tools._write_cache_json",
+                    new_callable=AsyncMock,
+                    side_effect=ValueError("Invalid cache key"),
+                ):
+                    result_str = await write_cache_json(
+                        relative_path="x.json",
+                        content='{"a": 1}',
+                    )
         result = json.loads(result_str)
         assert result["status"] == "error"
         assert "Invalid cache key" in str(result.get("message", ""))

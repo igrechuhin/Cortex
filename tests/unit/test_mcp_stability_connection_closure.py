@@ -42,7 +42,7 @@ class TestConnectionClosureHandling:
         async def test_func() -> str:
             nonlocal attempt_count
             attempt_count += 1
-            if attempt_count < 3:
+            if attempt_count < 2:
                 raise ConnectionError("Connection closed")
             return "success"
 
@@ -51,7 +51,7 @@ class TestConnectionClosureHandling:
 
         # Assert
         assert result == "success"
-        assert attempt_count == 3  # Two failures, then success
+        assert attempt_count == 2  # One failure, then success (1 retry)
 
     @pytest.mark.asyncio
     async def test_connection_recovery_on_retry(self) -> None:
@@ -250,5 +250,5 @@ class TestConnectionClosureHandling:
         ):
             _ = await with_mcp_stability(test_func, timeout=10.0)
 
-        # Should have attempted 3 times (default retry count)
-        assert attempt_count == 3
+        # Should have attempted 2 times (initial + 1 retry)
+        assert attempt_count == 2

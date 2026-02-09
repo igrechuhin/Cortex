@@ -22,6 +22,16 @@ During commit pipeline execution (2026-02-07), several issues were identified th
 
 **Impact**: These issues block commit pipeline, requiring manual investigation and fixes. The patterns are likely to recur without preventive measures.
 
+### New Input (2026-02-07 end-of-session, post-commit)
+
+From session-optimization-2026-02-07T20-53:
+
+1. **Integration test content vs schema**: Two tests (`test_full_workflow`, `test_initialize_read_write_workflow`) wrote projectBrief content missing required schema sections (Project Overview, Goals, Core Requirements, Success Criteria), causing schema validation failures. Test fixtures were not aligned with `schema_validator` required sections.
+
+2. **Markdown lint scope**: One MD026 in `.cortex/history/progress_v11.md`. Commit prompt should explicitly state that markdown lint runs on all markdown files (including `.cortex/history/` and `.cortex/reviews/`) so agents don’t assume history is out of scope.
+
+3. **Memory bank write quality**: After Step 5 (memory-bank-updater), typos appeared in activeContext/progress (e.g. "900.01%", "Phase 18Markdown"). Review memory-bank-updater agent to reduce numeric and phase-name typos; consider templating or validation of key fields before writing.
+
 ## Approach
 
 Implement improvements in three categories:
@@ -275,6 +285,83 @@ Implement improvements in three categories:
 
 **Estimated Effort**: 2-3 hours
 
+### Step 7: Integration Test Schema Alignment
+
+**Goal**: Ensure integration tests that write projectBrief use content satisfying schema_validator required sections (Project Overview, Goals, Core Requirements, Success Criteria).
+
+**Tasks**:
+
+1. Add shared fixture or constant for minimal valid projectBrief content:
+   - Define in test helpers or conftest (e.g. `tests/conftest.py` or `tests/helpers/schema_fixtures.py`)
+   - Include all four required sections with minimal valid content
+   - Document that schema_validator required sections must be kept in sync
+
+2. Update integration tests that write projectBrief:
+   - Use the shared fixture in `test_full_workflow` (tests/test_integration.py) and `test_initialize_read_write_workflow` (tests/integration/test_mcp_tools_integration.py)
+   - Optionally add a schema validation check in test setup to fail fast if fixture drifts from schema
+
+3. Add unit test for fixture:
+   - Assert fixture content passes schema validation for projectBrief
+   - Ensures fixture stays aligned when schema changes
+
+**Success Criteria**:
+
+- Single source of truth for minimal valid projectBrief content in tests
+- Both affected integration tests use it; no schema validation failures from test content
+- Fixture validated against schema in tests
+
+**Dependencies**: None
+
+**Estimated Effort**: 1-2 hours
+
+### Step 8: Markdown Lint Scope in Commit Prompt
+
+**Goal**: Clarify in the commit prompt that markdown lint runs on all markdown files, including `.cortex/history/` and `.cortex/reviews/`, so agents and tools don’t assume history/reviews are out of scope.
+
+**Tasks**:
+
+1. Update commit prompt (Step 1.5 and/or Step 12.5):
+   - State explicitly that markdown lint uses `check_all_files=True` and includes all `.md`/`.mdc` under the project (including `.cortex/history/`, `.cortex/reviews/`)
+   - Note that files modified by MCP tools (e.g. history, session reviews) are included and must pass lint
+
+2. Verify tool behavior:
+   - Confirm `fix_markdown_lint(check_all_files=True)` already covers history and reviews; document in prompt if needed
+
+**Success Criteria**:
+
+- Commit prompt clearly states scope of markdown lint (all files, including history and reviews)
+- No code change required if tool already covers scope; documentation only
+
+**Dependencies**: None
+
+**Estimated Effort**: ~0.5 hours
+
+### Step 9: Memory Bank Write Quality
+
+**Goal**: Reduce typos in memory-bank-updater (or equivalent) outputs when writing activeContext/progress (e.g. coverage percentage, phase names).
+
+**Tasks**:
+
+1. Review memory-bank-updater agent and related prompts:
+   - Identify where numeric values (e.g. coverage %, year) and phase/label names are inserted
+   - Add templating or validation for key fields (e.g. coverage as "90.01%" not "900.01%", phase labels without concatenation artifacts)
+
+2. Add validation or sanitization before write:
+   - Validate numeric ranges (e.g. coverage 0–100) and date format (e.g. YYYY-MM-DD)
+   - Sanitize phase/label strings to avoid concatenation typos ("Phase 18" + "Markdown" → "Phase 18 Markdown" not "Phase 18Markdown")
+
+3. Test with commit pipeline:
+   - Run Step 5 (memory bank update) and verify no typos in written content; add regression check if feasible
+
+**Success Criteria**:
+
+- Fewer or no typos in automated activeContext/progress entries for coverage, dates, phase names
+- Process documented; validation/sanitization in place where practical
+
+**Dependencies**: None
+
+**Estimated Effort**: 2-3 hours
+
 ## Dependencies
 
 - **Step 1** (Async Test Validation): No dependencies
@@ -283,18 +370,24 @@ Implement improvements in three categories:
 - **Step 4** (Git SSL Certificate Documentation): No dependencies
 - **Step 5** (Test Maintenance Checklist): Depends on Step 1 for validation tool reference
 - **Step 6** (Commit Pipeline Push Strategy): Depends on Step 4 for troubleshooting reference
+- **Step 7** (Integration Test Schema Alignment): No dependencies
+- **Step 8** (Markdown Lint Scope in Commit Prompt): No dependencies
+- **Step 9** (Memory Bank Write Quality): No dependencies
 
-**Execution Order**: Steps 1-4 can be executed in parallel. Step 5 should follow Step 1. Step 6 should follow Step 4.
+**Execution Order**: Steps 1-4 and 7-9 can be executed in parallel. Step 5 should follow Step 1. Step 6 should follow Step 4.
 
 ## Success Criteria
 
-- All 6 steps implemented and tested
+- All 9 steps implemented and tested
 - Async test validation prevents unawaited coroutine issues
 - Early markdown lint validation catches errors before commit
 - Markdown formatting guidelines prevent MD036 violations
 - Git SSL certificate issues documented and handled gracefully
 - Test maintenance checklist prevents async test gaps
 - Commit pipeline push strategy handles SSL errors gracefully
+- Integration tests use schema-aligned projectBrief fixture (Step 7)
+- Markdown lint scope (history, reviews) documented in commit prompt (Step 8)
+- Memory bank write quality improved; typos reduced (Step 9)
 - All new functionality has 95%+ test coverage
 - Documentation updated and accurate
 
@@ -340,6 +433,15 @@ Implement improvements in three categories:
    - Test error message accuracy
    - Test non-blocking behavior
    - Test troubleshooting link validity
+
+7. **Integration Test Schema Alignment (Step 7)**:
+   - Test shared projectBrief fixture passes schema validation
+   - Test integration tests using fixture pass
+   - Test fixture drift detection if implemented
+
+8. **Memory Bank Write Quality (Step 9)**:
+   - Test validation/sanitization of numeric and label fields
+   - Regression test for commit pipeline Step 5 output quality
 
 ### Integration Tests
 

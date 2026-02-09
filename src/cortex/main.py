@@ -15,16 +15,27 @@ from typing import cast
 
 import anyio
 
+# Apply Cortex transport env to FastMCP settings before server is imported
+from cortex.transport_config import apply_cortex_env_to_fastmcp
+
+apply_cortex_env_to_fastmcp()
+
 # Configure logging before FastMCP is created so root has our formatter first.
 # FastMCP.__init__ calls configure_logging() → basicConfig(); basicConfig() is a
 # no-op when root already has handlers, so we avoid RichHandler column format.
-import cortex.core.logging_config  # noqa: F401
+import cortex.core.logging_config  # noqa: F401, E402
 
 # Import tools package to register all @mcp.tool() decorators
-import cortex.setup.prompts_always  # noqa: F401
-import cortex.tools  # noqa: F401
-from cortex.server import mcp
-from cortex.setup import should_mount_setup
+import cortex.setup.prompts_always  # noqa: F401, E402
+import cortex.tools  # noqa: F401, E402
+from cortex.server import mcp  # noqa: E402
+from cortex.setup import should_mount_setup  # noqa: E402
+from cortex.transport_config import (  # noqa: E402
+    TRANSPORT_SSE,
+    TRANSPORT_STREAMABLE_HTTP,
+    get_effective_transport,
+    get_mount_path,
+)
 
 cortex.core.logging_config.apply_cortex_format_to_third_party_loggers()
 
@@ -166,15 +177,43 @@ def _log_and_exit_on_task_group_error(eg: BaseExceptionGroup) -> None:
     sys.exit(1)
 
 
+def _require_http_deps() -> None:
+    """Ensure uvicorn/starlette available for HTTP transport; exit with message if not."""
+    try:
+        import starlette as _starlette
+        import uvicorn as _uvicorn
+
+        _ = (_starlette, _uvicorn)
+    except ImportError as e:
+        msg = (
+            "HTTP/SSE transport requires optional dependencies. "
+            "Install with: uv sync --extra server (or pip install cortex[server]). %s"
+        )
+        logger.error(msg, e)
+        sys.exit(1)
+
+
 def main() -> None:
     """Entry point for the application when run with uvx.
 
-    Handles MCP stdio connection with improved error handling and stability.
-    Provides comprehensive error handling for connection issues and ensures
-    graceful shutdown on errors.
+    Handles MCP stdio or HTTP/SSE connection. Transport is selected via
+    CORTEX_MCP_TRANSPORT (stdio|sse|streamable-http); default stdio.
+    When using sse or streamable-http, set CORTEX_MCP_PORT and optionally
+    CORTEX_MCP_HOST. Ensures graceful shutdown on connection errors.
+
+    The server does not invoke any tools on startup; tools (including
+    execute_pre_commit_checks) run only when the client sends CallTool.
     """
+    transport = get_effective_transport()
+    if transport in (TRANSPORT_SSE, TRANSPORT_STREAMABLE_HTTP):
+        _require_http_deps()
     try:
-        mcp.run(transport="stdio")
+        if transport == "stdio":
+            mcp.run(transport="stdio")
+        elif transport == TRANSPORT_SSE:
+            mcp.run(transport="sse", mount_path=get_mount_path(transport))
+        else:
+            mcp.run(transport="streamable-http")
     except KeyboardInterrupt:
         logger.info("MCP server interrupted by user")
         sys.exit(0)

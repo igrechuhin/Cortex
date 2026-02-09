@@ -70,14 +70,17 @@ class RulesManager:
             token_counter=token_counter,
             reindex_interval_minutes=reindex_interval_minutes,
         )
+        self._initialized: bool = False
 
     async def initialize(self) -> ModelDict:
         """
         Initialize rules manager and perform initial indexing.
 
-        Returns:
-            RulesIndexingResultModel with initialization status
+        Idempotent: safe to call multiple times; later calls no-op and return
+        quickly so startup is not blocked. Call from rules tool on first use.
         """
+        if self._initialized:
+            return {"status": "ok", "message": "Already initialized"}
         if not self.rules_folder:
             message = "No rules folder configured"
             return {"status": "disabled", "message": message}
@@ -92,7 +95,7 @@ class RulesManager:
 
         # Start auto-reindexing
         await self.indexer.start_auto_reindex(self.rules_folder)
-
+        self._initialized = True
         return result
 
     async def index_rules(self, force: bool = False) -> ModelDict:

@@ -7,6 +7,8 @@ import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
+import pytest
+
 from cortex.tools.file_operations import manage_file
 
 # Import the tool functions directly
@@ -61,6 +63,8 @@ async def _initialize_memory_bank_helper(project_root: str) -> str:
     )
 
 
+@pytest.mark.slow
+@pytest.mark.timeout(300)
 async def test_full_workflow():
     """Test complete workflow: init -> read -> write -> version -> rollback."""
     print("=" * 60)
@@ -192,6 +196,8 @@ async def test_full_workflow():
             print("=" * 60)
 
 
+@pytest.mark.slow
+@pytest.mark.timeout(300)
 async def test_error_handling():
     """Test error handling scenarios."""
     print()

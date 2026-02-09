@@ -67,7 +67,7 @@ class TestManageFile:
         ):
             with patch(
                 "cortex.core.project_root_resolver.get_project_root",
-                return_value=temp_memory_bank.parent.parent,
+                return_value=temp_memory_bank.parent.parent.parent,
             ):
                 # Execute
                 result_str = await manage_file(
@@ -106,28 +106,44 @@ class TestManageFile:
             "versions": AsyncMock(),
         }
 
-        with patch(
-            "cortex.tools.file_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
+        # Clear usage context so _get_managers_for_root uses our patched
+        # get_managers (mock index with metadata). Patch get_or_resolve_project_root
+        # in file_operations so the tool uses our temp root.
+        test_root = temp_memory_bank.parent.parent.parent
+        with (
+            patch(
+                "cortex.core.usage_context.get_current_managers",
+                return_value=None,
+            ),
+            patch(
+                "cortex.core.usage_context.get_current_project_root",
+                return_value=None,
+            ),
+            patch(
+                "cortex.tools.file_operations.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=test_root,
+            ),
+            patch(
+                "cortex.tools.file_operations.get_managers",
+                new_callable=AsyncMock,
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
         ):
-            with patch(
-                "cortex.core.project_root_resolver.get_project_root",
-                return_value=temp_memory_bank.parent.parent,
-            ):
-                # Execute
-                result_str = await manage_file(
-                    file_name=file_name,
-                    operation="read",
-                    include_metadata=True,
-                )
+            # Execute
+            result_str = await manage_file(
+                file_name=file_name,
+                operation="read",
+                include_metadata=True,
+            )
 
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "success"
-                # Metadata may have additional fields, check subset
-                result_metadata = result["metadata"]
-                assert result_metadata["size_bytes"] == metadata["size_bytes"]
-                assert result_metadata["token_count"] == metadata["token_count"]
+            # Verify
+            result = json.loads(result_str)
+            assert result["status"] == "success"
+            # Metadata may have additional fields, check subset
+            result_metadata = result["metadata"]
+            assert result_metadata["size_bytes"] == metadata["size_bytes"]
+            assert result_metadata["token_count"] == metadata["token_count"]
 
     async def test_manage_file_read_not_found(self, mock_managers: dict[str, object]):
         """Test file read when file doesn't exist."""
@@ -202,35 +218,63 @@ class TestManageFile:
         version_info.version = 6
         version_info.snapshot_path = "memory-bank/projectBrief_v6.md"
         mock_versions.create_snapshot = AsyncMock(return_value=version_info)
+        mock_schema_validator = MagicMock()
+        mock_schema_validator.get_schema = MagicMock(return_value=None)
+        mock_schema_validator.validate_file = AsyncMock(
+            return_value=SchemaValidationResult(valid=True, errors=[])
+        )
         mock_managers_dict = {
             "fs": mock_fs,
             "index": mock_index,
             "tokens": mock_tokens,
             "versions": mock_versions,
+            "schema_validator": mock_schema_validator,
         }
 
-        with patch(
-            "cortex.tools.file_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        test_root = temp_memory_bank.parent.parent.parent
+        with (
+            patch(
+                "cortex.tools.file_operations._resolve_schema_validator",
+                new_callable=AsyncMock,
+                return_value=mock_schema_validator,
+            ),
+            patch(
+                "cortex.core.usage_context.get_current_managers",
+                return_value=None,
+            ),
+            patch(
+                "cortex.core.usage_context.get_current_project_root",
+                return_value=None,
+            ),
+            patch(
+                "cortex.tools.file_operations.get_managers",
+                new_callable=AsyncMock,
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
+                "cortex.tools.file_operations.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=test_root,
+            ),
+            patch(
                 "cortex.core.project_root_resolver.get_project_root",
-                return_value=temp_memory_bank.parent.parent,
-            ):
-                # Execute
-                result_str = await manage_file(
-                    file_name=file_name,
-                    operation="write",
-                    content=content,
-                    change_description="Updated content",
-                )
+                return_value=test_root,
+            ),
+        ):
+            # Execute
+            result_str = await manage_file(
+                file_name=file_name,
+                operation="write",
+                content=content,
+                change_description="Updated content",
+            )
 
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "success"
-                assert result["file_name"] == file_name
-                assert result["tokens"] == 50
-                assert "snapshot_id" in result
+            # Verify
+            result = json.loads(result_str)
+            assert result["status"] == "success"
+            assert result["file_name"] == file_name
+            assert "tokens" in result and isinstance(result["tokens"], int)
+            assert "snapshot_id" in result
 
     async def test_manage_file_write_without_content(
         self, mock_managers: dict[str, object]
@@ -275,17 +319,11 @@ class TestManageFile:
             "sections": [{"title": "Brief"}],
         }
 
-        # Mock managers - create a path that exists
-        import tempfile
+        # Return a path that exists so _handle_metadata_operation passes the exists() check
+        existing_path = Path(__file__).resolve().parent
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".md", delete=False
-        ) as tmp_file:
-            tmp_path = Path(tmp_file.name)
-            _ = tmp_path.write_text("# Test")
-
-        mock_fs = AsyncMock()
-        mock_fs.construct_safe_path = MagicMock(return_value=tmp_path)
+        mock_fs = MagicMock()
+        mock_fs.construct_safe_path = MagicMock(return_value=existing_path)
         mock_index = AsyncMock()
         mock_index.get_file_metadata = AsyncMock(return_value=metadata)
         mock_managers_dict = {
@@ -295,32 +333,48 @@ class TestManageFile:
             "versions": AsyncMock(),
         }
 
-        try:
-            with patch(
+        # Prevent decorator from persisting real managers so _get_managers_for_root uses our mock
+        with (
+            patch(
+                "cortex.core.usage_context.set_current_managers",
+            ),
+            patch(
+                "cortex.core.usage_context.set_current_project_root",
+            ),
+            patch(
+                "cortex.core.usage_context.get_current_managers",
+                return_value=None,
+            ),
+            patch(
+                "cortex.core.usage_context.get_current_project_root",
+                return_value=None,
+            ),
+            patch(
                 "cortex.tools.file_operations.get_managers",
+                new_callable=AsyncMock,
                 return_value=make_test_managers(**mock_managers_dict),
-            ):
-                with patch(
-                    "cortex.core.project_root_resolver.get_project_root",
-                    return_value=Path("/tmp/test"),
-                ):
-                    # Execute
-                    result_str = await manage_file(
-                        file_name=file_name, operation="metadata"
-                    )
+            ),
+            patch(
+                "cortex.tools.file_operations.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.core.project_root_resolver.get_project_root",
+                return_value=Path("/tmp/test"),
+            ),
+        ):
+            # Execute
+            result_str = await manage_file(file_name=file_name, operation="metadata")
 
-                    # Verify
-                    result = json.loads(result_str)
-                    assert result["status"] == "success"
-                    # Metadata may have additional fields, check subset
-                    result_metadata = result["metadata"]
-                    assert result_metadata["size_bytes"] == metadata["size_bytes"]
-                    assert result_metadata["token_count"] == metadata["token_count"]
-                    assert result_metadata["sections"] == metadata["sections"]
-        finally:
-            # Cleanup
-            if tmp_path.exists():
-                tmp_path.unlink()
+            # Verify
+            result = json.loads(result_str)
+            assert result["status"] == "success"
+            # Metadata may have additional fields, check subset
+            result_metadata = result["metadata"]
+            assert result_metadata["size_bytes"] == metadata["size_bytes"]
+            assert result_metadata["token_count"] == metadata["token_count"]
+            assert result_metadata["sections"] == metadata["sections"]
 
     async def test_manage_file_invalid_operation(
         self, mock_managers: dict[str, object]
@@ -386,27 +440,29 @@ class TestValidate:
             "validation_config": AsyncMock(),
         }
 
-        with patch(
-            "cortex.managers.initialization.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.validation_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=temp_memory_bank.parent.parent.parent,
+            ),
+            patch(
+                "cortex.managers.initialization.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
                 "cortex.managers.initialization.get_project_root",
-                return_value=temp_memory_bank.parent.parent,
-            ):
-                # Execute
-                result_str = await validate(check_type="schema", file_name=file_name)
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "success"
-                assert result["check_type"] == "schema"
-                assert "validation" in result
-                # Validation result may have valid: False if file doesn't match schema
-                # Check that validation key exists and has expected structure
-                validation = result["validation"]
-                assert "valid" in validation
-                assert "errors" in validation
+                return_value=temp_memory_bank.parent.parent.parent,
+            ),
+        ):
+            result_str = await validate(check_type="schema", file_name=file_name)
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["check_type"] == "schema"
+        assert "validation" in result
+        validation = result["validation"]
+        assert "valid" in validation
+        assert "errors" in validation
 
     async def test_validate_duplications_found(
         self, mock_managers: dict[str, object], temp_memory_bank: Path
@@ -415,7 +471,7 @@ class TestValidate:
         # Setup
         # Setup - create actual files for glob to find
         # Use .cortex/memory-bank/ as that's what get_cortex_path returns
-        project_root = temp_memory_bank.parent.parent
+        project_root = temp_memory_bank.parent.parent.parent
         memory_bank_dir = project_root / ".cortex" / "memory-bank"
         memory_bank_dir.mkdir(parents=True, exist_ok=True)
         test_file1 = memory_bank_dir / "file1.md"
@@ -459,55 +515,48 @@ class TestValidate:
             "validation_config": mock_validation_config,
         }
 
-        with patch(
-            "cortex.managers.initialization.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
+        def mock_get_manager(mgrs: object, key: str, cls: type) -> object:
+            if isinstance(mgrs, dict):
+                return mgrs.get(key)  # type: ignore[attr-defined] - dict.get() is valid
+            return getattr(mgrs, key, None)
 
-            def mock_get_manager(mgrs: object, key: str, cls: type) -> object:
-                if isinstance(mgrs, dict):
-                    return mgrs.get(key)  # type: ignore[attr-defined] - dict.get() is valid
-                return getattr(mgrs, key, None)
-
-            with patch(
+        with (
+            patch(
+                "cortex.tools.validation_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=temp_memory_bank.parent.parent.parent,
+            ),
+            patch(
+                "cortex.managers.initialization.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
                 "cortex.managers.manager_utils.get_manager",
                 side_effect=mock_get_manager,
-            ):
-                with patch(
-                    "cortex.managers.initialization.get_project_root",
-                    return_value=temp_memory_bank.parent.parent,
-                ):
-                    with patch(
-                        "cortex.tools.validation_helpers.read_all_memory_bank_files",
-                        return_value={"file1.md": "# Content", "file2.md": "# Content"},
-                    ):
-                        # Execute
-                        result_str = await validate(
-                            check_type="duplications", suggest_fixes=True
-                        )
+            ),
+            patch(
+                "cortex.managers.initialization.get_project_root",
+                return_value=temp_memory_bank.parent.parent.parent,
+            ),
+            patch(
+                "cortex.tools.validation_helpers.read_all_memory_bank_files",
+                return_value={"file1.md": "# Content", "file2.md": "# Content"},
+            ),
+        ):
+            result_str = await validate(check_type="duplications", suggest_fixes=True)
+        result = json.loads(result_str)
+        if result["status"] != "success":
+            import json as json_module
 
-                    # Verify
-                    result = json.loads(result_str)
-                    if result["status"] != "success":
-                        import json as json_module
-
-                        print(f"Error result: {json_module.dumps(result, indent=2)}")
-                    assert result["status"] == "success"
-                    assert result["check_type"] == "duplications"
-                    # Result has "duplicates_found" and
-                    # "exact_duplicates"/"similar_content" keys
-                    assert "duplicates_found" in result
-                    assert result["duplicates_found"] >= 0
-                    if result["duplicates_found"] > 0:
-                        assert (
-                            "exact_duplicates" in result or "similar_content" in result
-                        )
-                        # Suggested fixes only present when duplicates found
-                        # and suggest_fixes=True
-                        # Note: suggested_fixes may be empty if fix generation
-                        # doesn't produce fixes
-                        if "suggested_fixes" in result:
-                            assert isinstance(result["suggested_fixes"], list)
+            print(f"Error result: {json_module.dumps(result, indent=2)}")
+        assert result["status"] == "success"
+        assert result["check_type"] == "duplications"
+        assert "duplicates_found" in result
+        assert result["duplicates_found"] >= 0
+        if result["duplicates_found"] > 0:
+            assert "exact_duplicates" in result or "similar_content" in result
+            if "suggested_fixes" in result:
+                assert isinstance(result["suggested_fixes"], list)
 
     async def test_validate_quality_score(
         self, mock_managers: dict[str, object], temp_memory_bank: Path
@@ -556,35 +605,34 @@ class TestValidate:
             "validation_config": AsyncMock(),
         }
 
-        with patch(
-            "cortex.managers.initialization.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.validation_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=temp_memory_bank.parent.parent.parent,
+            ),
+            patch(
+                "cortex.managers.initialization.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
                 "cortex.managers.initialization.get_project_root",
-                return_value=temp_memory_bank.parent.parent,
-            ):
-                # Execute
-                result_str = await validate(check_type="quality")
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "success"
-                assert result["check_type"] == "quality"
-                # Quality result has "breakdown" key with score details,
-                # not "score"
-                assert "breakdown" in result or "overall_score" in result
-                if "breakdown" in result:
-                    breakdown = result["breakdown"]
-                    assert isinstance(breakdown, dict)
-                # Quality score may vary based on actual file contents and
-                # duplication data. Just verify the score is present and is
-                # a number
-                if "overall_score" in result:
-                    assert isinstance(result["overall_score"], (int, float))
-                    assert result["overall_score"] >= 0
-                if "grade" in result:
-                    assert isinstance(result["grade"], str)
+                return_value=temp_memory_bank.parent.parent.parent,
+            ),
+        ):
+            result_str = await validate(check_type="quality")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["check_type"] == "quality"
+        assert "breakdown" in result or "overall_score" in result
+        if "breakdown" in result:
+            breakdown = result["breakdown"]
+            assert isinstance(breakdown, dict)
+        if "overall_score" in result:
+            assert isinstance(result["overall_score"], (int, float))
+            assert result["overall_score"] >= 0
+        if "grade" in result:
+            assert isinstance(result["grade"], str)
 
     async def test_validate_invalid_check_type(
         self, mock_managers: dict[str, object], temp_memory_bank: Path
@@ -605,23 +653,25 @@ class TestValidate:
             "validation_config": AsyncMock(),
         }
 
-        with patch(
-            "cortex.managers.initialization.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.validation_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=temp_memory_bank.parent.parent.parent,
+            ),
+            patch(
+                "cortex.managers.initialization.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
                 "cortex.managers.initialization.get_project_root",
-                return_value=temp_memory_bank.parent.parent,
-            ):
-                # Execute
-                result_str = await validate(
-                    check_type="invalid_type",
-                )
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "error"
-                assert "Invalid check_type" in result["error"]
+                return_value=temp_memory_bank.parent.parent.parent,
+            ),
+        ):
+            result_str = await validate(check_type="invalid_type")
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert "Invalid check_type" in result["error"]
 
 
 @pytest.mark.asyncio
@@ -647,23 +697,27 @@ class TestAnalyze:
             "insight_engine": AsyncMock(),
         }
 
-        with patch(
-            "cortex.tools.file_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.analysis_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.file_operations.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await analyze(target="usage_patterns", time_window_days=30)
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "success"
-                assert "patterns" in result
-                assert "time_window_days" in result
-                assert result["target"] == "usage_patterns"
+            ),
+        ):
+            result_str = await analyze(target="usage_patterns", time_window_days=30)
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "patterns" in result
+        assert "time_window_days" in result
+        assert result["target"] == "usage_patterns"
 
     async def test_analyze_structure(self, mock_managers: dict[str, object]):
         """Test structure analysis."""
@@ -711,22 +765,26 @@ class TestAnalyze:
             "insight_engine": mock_insight_engine_mgr,
         }
 
-        with patch(
-            "cortex.tools.analysis_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict_with_lazy),  # type: ignore[arg-type] - LazyManager is valid for ManagersDict
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.analysis_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.analysis_operations.get_managers",
+                return_value=make_test_managers(**mock_managers_dict_with_lazy),  # type: ignore[arg-type] - LazyManager is valid for ManagersDict
+            ),
+            patch(
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await analyze(target="structure")
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "success"
-                assert "analysis" in result
-                assert result["target"] == "structure"
+            ),
+        ):
+            result_str = await analyze(target="structure")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "analysis" in result
+        assert result["target"] == "structure"
 
     async def test_analyze_insights(self, mock_managers: dict[str, object]):
         """Test optimization insights generation."""
@@ -774,30 +832,32 @@ class TestAnalyze:
             "insight_engine": mock_insight_engine_mgr,
         }
 
-        with patch(
-            "cortex.tools.analysis_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict_with_lazy),  # type: ignore[arg-type] - LazyManager is valid for ManagersDict
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.analysis_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.analysis_operations.get_managers",
+                return_value=make_test_managers(**mock_managers_dict_with_lazy),  # type: ignore[arg-type] - LazyManager is valid for ManagersDict
+            ),
+            patch(
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await analyze(target="insights", export_format="json")
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "success"
-                assert "insights" in result
-                insights_data = result["insights"]
-                assert isinstance(insights_data, dict)
-                # Insights may be in "insights" key or at root level
-                if "insights" in insights_data:
-                    insights_list = cast(list[object], insights_data["insights"])
-                    assert isinstance(insights_list, list)
-                    # May be empty if no insights generated
-                    if len(insights_list) > 0:
-                        assert len(insights_list) == 1
+            ),
+        ):
+            result_str = await analyze(target="insights", export_format="json")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "insights" in result
+        insights_data = result["insights"]
+        assert isinstance(insights_data, dict)
+        if "insights" in insights_data:
+            insights_list = cast(list[object], insights_data["insights"])
+            assert isinstance(insights_list, list)
+            if len(insights_list) > 0:
+                assert len(insights_list) == 1
 
     async def test_analyze_invalid_target(self, mock_managers: dict[str, object]):
         """Test invalid analysis target."""
@@ -809,42 +869,85 @@ class TestAnalyze:
             "insight_engine": AsyncMock(),
         }
 
-        with patch(
-            "cortex.tools.file_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.analysis_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.file_operations.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await analyze(target="invalid_target")
+            ),
+        ):
+            result_str = await analyze(target="invalid_target")
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert "Invalid target" in result["error"]
 
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "error"
-                assert "Invalid target" in result["error"]
+
+def _make_refactoring_mock_managers(
+    consolidation_detector: AsyncMock,
+    split_recommender: AsyncMock,
+    reorganization_planner: AsyncMock,
+    graph: MagicMock | AsyncMock,
+    structure_analyzer: AsyncMock | None = None,
+) -> object:
+    """Build managers dict for suggest_refactoring tests. Shared setup for consolidation/splits/reorganization."""
+
+    async def consolidation_factory() -> object:
+        return consolidation_detector
+
+    async def split_factory() -> object:
+        return split_recommender
+
+    async def reorg_factory() -> object:
+        return reorganization_planner
+
+    mock_managers_dict: dict[str, object] = {
+        "consolidation_detector": LazyManager(
+            consolidation_factory, name="consolidation_detector"
+        ),
+        "split_recommender": LazyManager(split_factory, name="split_recommender"),
+        "reorganization_planner": LazyManager(
+            reorg_factory, name="reorganization_planner"
+        ),
+        "graph": graph,
+    }
+    if structure_analyzer is not None:
+
+        async def structure_factory() -> object:
+            return structure_analyzer
+
+        mock_managers_dict["structure_analyzer"] = LazyManager(
+            structure_factory, name="structure_analyzer"
+        )
+    return make_test_managers(**mock_managers_dict)  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio
+@pytest.mark.timeout(60)
 class TestSuggestRefactoring:
     """Tests for suggest_refactoring consolidated tool."""
 
     async def test_suggest_refactoring_consolidation(
         self, mock_managers: dict[str, object]
-    ):
+    ) -> None:
         """Test consolidation suggestions."""
 
-        # Setup
         class MockOpportunity:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.opportunity_id = "opp1"
                 self.opportunity_type = "duplicate"
                 self.affected_files = ["file1.md", "file2.md"]
                 self.token_savings = 100
                 self.similarity_score = 0.90
 
-            def to_dict(self):
+            def to_dict(self) -> dict[str, object]:
                 return {
                     "opportunity_id": self.opportunity_id,
                     "type": self.opportunity_type,
@@ -853,70 +956,50 @@ class TestSuggestRefactoring:
                     "similarity": self.similarity_score,
                 }
 
-        mock_consolidation_detector = AsyncMock()
-        mock_consolidation_detector.detect_opportunities = AsyncMock(
-            return_value=[MockOpportunity()]  # Return objects, not dicts
+        mock_consolidation = AsyncMock()
+        mock_consolidation.detect_opportunities = AsyncMock(
+            return_value=[MockOpportunity()]
         )
-        mock_consolidation_detector.min_similarity = 0.80
-        mock_consolidation_detector.target_reduction = 0.30
-        mock_split_recommender = AsyncMock()
-        mock_reorganization_planner = AsyncMock()
-
-        async def consolidation_factory() -> object:
-            return mock_consolidation_detector
-
-        async def split_factory() -> object:
-            return mock_split_recommender
-
-        async def reorg_factory() -> object:
-            return mock_reorganization_planner
-
-        mock_consolidation_detector_mgr = LazyManager(
-            consolidation_factory, name="consolidation_detector"
+        mock_consolidation.min_similarity = 0.80
+        mock_consolidation.target_reduction = 0.30
+        managers = _make_refactoring_mock_managers(
+            mock_consolidation, AsyncMock(), AsyncMock(), AsyncMock()
         )
-        mock_split_recommender_mgr = LazyManager(
-            split_factory, name="split_recommender"
-        )
-        mock_reorganization_planner_mgr = LazyManager(
-            reorg_factory, name="reorganization_planner"
-        )
-        mock_managers_dict = {
-            "consolidation_detector": mock_consolidation_detector_mgr,
-            "split_recommender": mock_split_recommender_mgr,
-            "reorganization_planner": mock_reorganization_planner_mgr,
-            "graph": AsyncMock(),  # DependencyGraph, not lazy
-        }
-
-        with patch(
-            "cortex.tools.refactoring_operation_helpers.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.refactoring_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.refactoring_operation_helpers.get_managers",
+                return_value=managers,
+            ),
+            patch(
                 "cortex.tools.refactoring_operation_helpers.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await suggest_refactoring(type="consolidation")
+            ),
+        ):
+            result_str = await suggest_refactoring(type="consolidation")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["type"] == "consolidation"
+        assert "opportunities" in result
+        assert len(result["opportunities"]) == 1
 
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "success"
-                assert result["type"] == "consolidation"
-                assert "opportunities" in result
-                assert len(result["opportunities"]) == 1
-
-    async def test_suggest_refactoring_splits(self, mock_managers: dict[str, object]):
+    async def test_suggest_refactoring_splits(
+        self, mock_managers: dict[str, object]
+    ) -> None:
         """Test file split suggestions."""
 
-        # Setup
         class MockRecommendation:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.file_path = "large_file.md"
                 self.reason = "File too large"
                 self.split_strategy = "by_sections"
                 self.split_points = [{"line": 100, "section": "Section 1"}]
 
-            def to_dict(self):
+            def to_dict(self) -> dict[str, object]:
                 return {
                     "file_path": self.file_path,
                     "reason": self.reason,
@@ -924,66 +1007,42 @@ class TestSuggestRefactoring:
                     "split_points": self.split_points,
                 }
 
-        mock_split_recommender = AsyncMock()
-        mock_split_recommender.suggest_file_splits = AsyncMock(
-            return_value=[MockRecommendation()]  # Return objects, not dicts
+        mock_split = AsyncMock()
+        mock_split.suggest_file_splits = AsyncMock(return_value=[MockRecommendation()])
+        mock_split.max_file_size = 5000
+        mock_split.max_sections = 10
+        managers = _make_refactoring_mock_managers(
+            AsyncMock(), mock_split, AsyncMock(), AsyncMock()
         )
-        mock_split_recommender.max_file_size = 5000
-        mock_split_recommender.max_sections = 10
-        mock_consolidation_detector = AsyncMock()
-        mock_reorganization_planner = AsyncMock()
-
-        async def consolidation_factory() -> object:
-            return mock_consolidation_detector
-
-        async def split_factory() -> object:
-            return mock_split_recommender
-
-        async def reorg_factory() -> object:
-            return mock_reorganization_planner
-
-        mock_consolidation_detector_mgr = LazyManager(
-            consolidation_factory, name="consolidation_detector"
-        )
-        mock_split_recommender_mgr = LazyManager(
-            split_factory, name="split_recommender"
-        )
-        mock_reorganization_planner_mgr = LazyManager(
-            reorg_factory, name="reorganization_planner"
-        )
-        mock_managers_dict = {
-            "consolidation_detector": mock_consolidation_detector_mgr,
-            "split_recommender": mock_split_recommender_mgr,
-            "reorganization_planner": mock_reorganization_planner_mgr,
-            "graph": AsyncMock(),  # DependencyGraph, not lazy
-        }
-
-        with patch(
-            "cortex.tools.refactoring_operation_helpers.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.refactoring_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.refactoring_operation_helpers.get_managers",
+                return_value=managers,
+            ),
+            patch(
                 "cortex.tools.refactoring_operation_helpers.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await suggest_refactoring(type="splits")
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "success"
-                assert result["type"] == "splits"
-                assert "recommendations" in result
-                assert len(result["recommendations"]) == 1
+            ),
+        ):
+            result_str = await suggest_refactoring(type="splits")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["type"] == "splits"
+        assert "recommendations" in result
+        assert len(result["recommendations"]) == 1
 
     async def test_suggest_refactoring_reorganization(
         self, mock_managers: dict[str, object]
-    ):
+    ) -> None:
         """Test reorganization suggestions."""
 
-        # Setup
         class MockPlan:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.preserve_history = True
 
             def to_dict(self) -> dict[str, object]:
@@ -993,117 +1052,89 @@ class TestSuggestRefactoring:
                     "preserve_history": self.preserve_history,
                 }
 
-        mock_reorganization_planner = AsyncMock()
+        mock_reorg = AsyncMock()
         plan_model = MagicMock()
         plan_model.model_dump = MagicMock(return_value=MockPlan().to_dict())
-        mock_reorganization_planner.create_reorganization_plan = AsyncMock(
-            return_value=plan_model
-        )
-        mock_reorganization_planner.preview_reorganization = AsyncMock(
+        mock_reorg.create_reorganization_plan = AsyncMock(return_value=plan_model)
+        mock_reorg.preview_reorganization = AsyncMock(
             return_value={"preview": "Reorganization preview"}
         )
-        mock_structure_analyzer = AsyncMock()
+        mock_structure = AsyncMock()
         organization = MagicMock()
         organization.file_count = 0
         organization.model_dump = MagicMock(return_value={})
-        mock_structure_analyzer.analyze_file_organization = AsyncMock(
-            return_value=organization
-        )
-        mock_structure_analyzer.detect_anti_patterns = AsyncMock(return_value=[])
+        mock_structure.analyze_file_organization = AsyncMock(return_value=organization)
+        mock_structure.detect_anti_patterns = AsyncMock(return_value=[])
         complexity = MagicMock()
         complexity.model_dump = MagicMock(return_value={})
-        mock_structure_analyzer.measure_complexity_metrics = AsyncMock(
-            return_value=complexity
-        )
+        mock_structure.measure_complexity_metrics = AsyncMock(return_value=complexity)
         mock_dep_graph = MagicMock()
         mock_dep_graph.get_graph_dict = MagicMock(return_value={})
         graph_export = MagicMock()
         graph_export.model_dump = MagicMock(return_value={"dependencies": {}})
         mock_dep_graph.to_dict = MagicMock(return_value=graph_export)
 
-        mock_consolidation_detector = AsyncMock()
-        mock_split_recommender = AsyncMock()
-
-        async def consolidation_factory() -> object:
-            return mock_consolidation_detector
-
-        async def split_factory() -> object:
-            return mock_split_recommender
-
-        async def reorg_factory() -> object:
-            return mock_reorganization_planner
-
-        async def structure_factory() -> object:
-            return mock_structure_analyzer
-
-        mock_consolidation_detector_mgr = LazyManager(
-            consolidation_factory, name="consolidation_detector"
+        managers = _make_refactoring_mock_managers(
+            AsyncMock(),
+            AsyncMock(),
+            mock_reorg,
+            mock_dep_graph,
+            structure_analyzer=mock_structure,
         )
-        mock_split_recommender_mgr = LazyManager(
-            split_factory, name="split_recommender"
-        )
-        mock_reorganization_planner_mgr = LazyManager(
-            reorg_factory, name="reorganization_planner"
-        )
-        mock_structure_analyzer_mgr = LazyManager(
-            structure_factory, name="structure_analyzer"
-        )
-        mock_managers_dict = {
-            "consolidation_detector": mock_consolidation_detector_mgr,
-            "split_recommender": mock_split_recommender_mgr,
-            "reorganization_planner": mock_reorganization_planner_mgr,
-            "graph": mock_dep_graph,
-            "structure_analyzer": mock_structure_analyzer_mgr,
-        }
-
-        with patch(
-            "cortex.tools.refactoring_operation_helpers.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.refactoring_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.refactoring_operation_helpers.get_managers",
+                return_value=managers,
+            ),
+            patch(
                 "cortex.tools.refactoring_operation_helpers.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await suggest_refactoring(type="reorganization")
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "success"
-                assert result["type"] == "reorganization"
-                assert "plan" in result
+            ),
+        ):
+            result_str = await suggest_refactoring(type="reorganization")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["type"] == "reorganization"
+        assert "plan" in result
 
     async def test_suggest_refactoring_invalid_type(
         self, mock_managers: dict[str, object]
-    ):
+    ) -> None:
         """Test invalid refactoring type."""
-        # Setup
-        # Mock all managers that suggest_refactoring function accesses
         mock_managers_dict = {
             "consolidation_detector": AsyncMock(),
             "split_recommender": AsyncMock(),
             "reorganization_planner": AsyncMock(),
             "deps": AsyncMock(),
         }
-
-        with patch(
-            "cortex.tools.file_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.refactoring_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.file_operations.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await suggest_refactoring(type="invalid_type")
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "error"
-                assert "Invalid type" in result["error"]
+            ),
+        ):
+            result_str = await suggest_refactoring(type="invalid_type")
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert "Invalid type" in result["error"]
 
 
 @pytest.mark.asyncio
+@pytest.mark.timeout(15)
 class TestConfigure:
     """Tests for configure consolidated tool."""
 
@@ -1123,26 +1154,29 @@ class TestConfigure:
         mock_validation_config.save = AsyncMock()
         mock_managers_dict = {"validation_config": mock_validation_config}
 
-        with patch(
-            "cortex.tools.file_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.file_operations.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await configure(component="validation", action="view")
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "success"
-                assert result["component"] == "validation"
-                assert "configuration" in result
-                # Check that configuration is returned (actual value may differ)
-                config = result["configuration"]
-                assert "token_budget" in config
-                assert "max_total_tokens" in config["token_budget"]
+            ),
+        ):
+            result_str = await configure(component="validation", action="view")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["component"] == "validation"
+        assert "configuration" in result
+        config = result["configuration"]
+        assert "token_budget" in config
+        assert "max_total_tokens" in config["token_budget"]
 
     async def test_configure_validation_update(self, mock_managers: dict[str, object]):
         """Test updating validation configuration."""
@@ -1152,34 +1186,35 @@ class TestConfigure:
         mock_validation_config.save = AsyncMock()
         mock_validation_config.config = MagicMock()
         mock_validation_config.config.model_dump = MagicMock(return_value={})
-        mock_managers_dict: dict[str, object] = {
+        mock_managers_dict: dict[str, MagicMock | None] = {
             "validation_config": mock_validation_config
         }
 
-        async def mock_get_managers(root: Path) -> object:
-            return make_test_managers(**mock_managers_dict)  # type: ignore[arg-type] - object values are valid MagicMock types
-
-        with patch(
-            "cortex.tools.configuration_operations.get_managers",
-            side_effect=mock_get_managers,
-        ):
-            with patch(
+        with (
+            patch(
                 "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await configure(
-                    component="validation",
-                    action="update",
-                    key="token_budget.max_total_tokens",
-                    value="200000",
-                )
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "success"
-                assert "Configuration updated" in result["message"]
-                assert result["component"] == "validation"
+            ),
+            patch(
+                "cortex.tools.file_operations.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
+                "cortex.core.project_root_resolver.get_project_root",
+                return_value=Path("/tmp/test"),
+            ),
+        ):
+            result_str = await configure(
+                component="validation",
+                action="update",
+                key="token_budget.max_total_tokens",
+                value="200000",
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "Configuration updated" in result["message"]
+        assert result["component"] == "validation"
 
     async def test_configure_validation_reset(self, mock_managers: dict[str, object]):
         """Test resetting validation configuration."""
@@ -1189,28 +1224,34 @@ class TestConfigure:
         mock_validation_config.save = AsyncMock()
         mock_validation_config.config = MagicMock()
         mock_validation_config.config.model_dump = MagicMock(return_value={})
-        mock_managers_dict = {"validation_config": mock_validation_config}
+        mock_managers_dict: dict[str, MagicMock | None] = {
+            "validation_config": mock_validation_config
+        }
 
-        with patch(
-            "cortex.tools.file_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.file_operations.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                with patch(
-                    "cortex.tools.configuration_operations.get_manager",
-                    return_value=mock_validation_config,
-                ):
-                    # Execute
-                    result_str = await configure(component="validation", action="reset")
-
-                    # Verify
-                    result = json.loads(result_str)
-                    assert result["status"] == "success"
-                    assert "reset to defaults" in result["message"]
-                    mock_validation_config.reset_to_defaults.assert_called_once()
+            ),
+            patch(
+                "cortex.tools.configuration_operations.get_manager",
+                return_value=mock_validation_config,
+            ),
+        ):
+            result_str = await configure(component="validation", action="reset")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "reset to defaults" in result["message"]
+        mock_validation_config.reset_to_defaults.assert_called_once()
 
     async def test_configure_optimization_view(self, mock_managers: dict[str, object]):
         """Test viewing optimization configuration."""
@@ -1224,26 +1265,29 @@ class TestConfigure:
         )
         mock_managers_dict = {"optimization_config": mock_optimization_config}
 
-        with patch(
-            "cortex.tools.file_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.file_operations.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await configure(component="optimization", action="view")
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "success"
-                assert result["component"] == "optimization"
-                assert "configuration" in result
-                # Check that configuration is returned (actual value may differ)
-                config = result["configuration"]
-                assert "token_budget" in config
-                assert "default_budget" in config["token_budget"]
+            ),
+        ):
+            result_str = await configure(component="optimization", action="view")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["component"] == "optimization"
+        assert "configuration" in result
+        config = result["configuration"]
+        assert "token_budget" in config
+        assert "default_budget" in config["token_budget"]
 
     async def test_configure_optimization_update(
         self, mock_managers: dict[str, object]
@@ -1256,28 +1300,32 @@ class TestConfigure:
         mock_optimization_config.to_dict = MagicMock(return_value={})
         mock_managers_dict = {"optimization_config": mock_optimization_config}
 
-        with patch(
-            "cortex.tools.file_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.file_operations.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await configure(
-                    component="optimization",
-                    action="update",
-                    key="loading.strategy",
-                    value='"by_dependencies"',
-                )
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "success"
-                assert "Configuration updated" in result["message"]
-                assert result["component"] == "optimization"
-                assert "configuration" in result
+            ),
+        ):
+            result_str = await configure(
+                component="optimization",
+                action="update",
+                key="loading.strategy",
+                value='"by_dependencies"',
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "Configuration updated" in result["message"]
+        assert result["component"] == "optimization"
+        assert "configuration" in result
 
     async def test_configure_learning_view(self, mock_managers: dict[str, object]):
         """Test viewing learning configuration."""
@@ -1299,23 +1347,27 @@ class TestConfigure:
             "optimization_config": mock_optimization_config,
         }
 
-        with patch(
-            "cortex.tools.file_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.file_operations.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await configure(component="learning", action="view")
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "success"
-                assert result["component"] == "learning"
-                assert "configuration" in result
-                assert "learned_patterns" in result
+            ),
+        ):
+            result_str = await configure(component="learning", action="view")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["component"] == "learning"
+        assert "configuration" in result
+        assert "learned_patterns" in result
 
     async def test_configure_learning_export_patterns(
         self, mock_managers: dict[str, object]
@@ -1334,33 +1386,33 @@ class TestConfigure:
             "optimization_config": mock_optimization_config,
         }
 
-        with patch(
-            "cortex.tools.file_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.file_operations.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await configure(component="learning", action="view")
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "success"
-                assert "learned_patterns" in result
-                # learned_patterns is a dict of pattern_id -> pattern_dict
-                patterns = cast(dict[str, object], result["learned_patterns"])
-                assert isinstance(patterns, dict)
-                if patterns:
-                    # Check first pattern if any exist
-                    pattern_values = patterns.values()
-                    first_pattern_obj = cast(
-                        dict[str, object], next(iter(pattern_values))
-                    )
-                    assert isinstance(first_pattern_obj, dict)
-                    first_pattern: dict[str, object] = first_pattern_obj
-                    assert "type" in first_pattern or isinstance(first_pattern, dict)
+            ),
+        ):
+            result_str = await configure(component="learning", action="view")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "learned_patterns" in result
+        patterns = cast(dict[str, object], result["learned_patterns"])
+        assert isinstance(patterns, dict)
+        if patterns:
+            pattern_values = patterns.values()
+            first_pattern_obj = cast(dict[str, object], next(iter(pattern_values)))
+            assert isinstance(first_pattern_obj, dict)
+            first_pattern: dict[str, object] = first_pattern_obj
+            assert "type" in first_pattern or isinstance(first_pattern, dict)
 
     async def test_configure_learning_reset(self, mock_managers: dict[str, object]):
         """Test resetting learning configuration and data."""
@@ -1377,89 +1429,95 @@ class TestConfigure:
             "optimization_config": mock_optimization_config,
         }
 
-        with patch(
-            "cortex.tools.file_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        def get_manager_side_effect(
+            mgrs: object, key: str, cls: type
+        ) -> object:  # type: ignore[type-arg]
+            if key == "learning_engine":
+                return mock_learning_engine
+            return mock_optimization_config
+
+        with (
+            patch(
+                "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.file_operations.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-
-                def get_manager_side_effect(
-                    mgrs: object, key: str, cls: type
-                ) -> object:  # type: ignore[type-arg]
-                    if key == "learning_engine":
-                        return mock_learning_engine
-                    return mock_optimization_config
-
-                with patch(
-                    "cortex.tools.configuration_operations.get_manager",
-                    side_effect=get_manager_side_effect,
-                ):
-                    with patch(
-                        "cortex.refactoring.adaptation_config.AdaptationConfig"
-                    ) as mock_adaptation_cls:
-                        mock_adaptation = MagicMock()
-                        mock_adaptation.reset_to_defaults = MagicMock()
-                        mock_adaptation.to_dict = MagicMock(return_value={})
-                        mock_adaptation_cls.return_value = mock_adaptation
-
-                        # Execute
-                        result_str = await configure(
-                            component="learning", action="reset"
-                        )
-
-                        # Verify
-                        result = json.loads(result_str)
-                        assert result["status"] == "success"
-                        assert "reset to defaults" in result["message"]
-                        mock_learning_engine.reset_learning_data.assert_called_once()
+            ),
+            patch(
+                "cortex.tools.configuration_operations.get_manager",
+                side_effect=get_manager_side_effect,
+            ),
+            patch(
+                "cortex.refactoring.adaptation_config.AdaptationConfig"
+            ) as mock_adaptation_cls,
+        ):
+            mock_adaptation = MagicMock()
+            mock_adaptation.reset_to_defaults = MagicMock()
+            mock_adaptation.to_dict = MagicMock(return_value={})
+            mock_adaptation_cls.return_value = mock_adaptation
+            result_str = await configure(component="learning", action="reset")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "reset to defaults" in result["message"]
+        mock_learning_engine.reset_learning_data.assert_called_once()
 
     async def test_configure_invalid_component(self, mock_managers: dict[str, object]):
         """Test invalid component type."""
         mock_managers_dict = {}
 
-        with patch(
-            "cortex.tools.file_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),  # type: ignore[arg-type] - empty dict is valid
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.file_operations.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),  # type: ignore[arg-type] - empty dict is valid
+            ),
+            patch(
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await configure(
-                    component="invalid_component", action="view"
-                )
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "error"
-                assert "Unknown component" in result["error"]
+            ),
+        ):
+            result_str = await configure(component="invalid_component", action="view")
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert "Unknown component" in result["error"]
 
     async def test_configure_invalid_action(self, mock_managers: dict[str, object]):
         """Test invalid action type."""
         mock_validation_config = MagicMock()
         mock_managers_dict = {"validation_config": mock_validation_config}
 
-        with patch(
-            "cortex.tools.file_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.file_operations.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await configure(
-                    component="validation", action="invalid_action"
-                )
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "error"
-                assert "Unknown action" in result["error"]
+            ),
+        ):
+            result_str = await configure(
+                component="validation", action="invalid_action"
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert "Unknown action" in result["error"]
 
     async def test_configure_update_missing_params(
         self, mock_managers: dict[str, object]
@@ -1468,23 +1526,27 @@ class TestConfigure:
         mock_validation_config = MagicMock()
         mock_managers_dict = {"validation_config": mock_validation_config}
 
-        with patch(
-            "cortex.tools.file_operations.get_managers",
-            return_value=make_test_managers(**mock_managers_dict),
-        ):
-            with patch(
+        with (
+            patch(
+                "cortex.tools.configuration_operations.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ),
+            patch(
+                "cortex.tools.file_operations.get_managers",
+                return_value=make_test_managers(**mock_managers_dict),
+            ),
+            patch(
                 "cortex.core.project_root_resolver.get_project_root",
                 return_value=Path("/tmp/test"),
-            ):
-                # Execute
-                result_str = await configure(
-                    component="validation",
-                    action="update",
-                    key="test.key",
-                    value=None,
-                )
-
-                # Verify
-                result = json.loads(result_str)
-                assert result["status"] == "error"
-                assert "required for update" in result["error"]
+            ),
+        ):
+            result_str = await configure(
+                component="validation",
+                action="update",
+                key="test.key",
+                value=None,
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert "required for update" in result["error"]

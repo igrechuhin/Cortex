@@ -34,6 +34,7 @@ def run_checks_pipeline(
     progress_callback: Callable[[int, int], None] | None,
     results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
+    include_slow_tests: bool = False,
 ) -> None:
     """Run all check processors in order (mutates results and stats)."""
     _process_fix_errors_check(adapter, checks_to_perform, strict_mode, results, stats)
@@ -52,6 +53,7 @@ def run_checks_pipeline(
         results,
         stats,
         progress_callback,
+        include_slow_tests,
     )
 
 
@@ -168,11 +170,16 @@ def _process_tests_check(
     results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
     progress_callback: Callable[[int, int], None] | None = None,
+    include_slow_tests: bool = False,
 ) -> None:
     """Process tests check if requested."""
     if PreCommitCheck.TESTS in checks_to_perform:
         test_result = _execute_tests(
-            adapter, timeout, coverage_threshold, progress_callback
+            adapter,
+            timeout,
+            coverage_threshold,
+            progress_callback,
+            include_slow_tests,
         )
         results[PreCommitCheck.TESTS.value] = test_result
         stats.checks_performed.append(PreCommitCheck.TESTS.value)
@@ -295,11 +302,13 @@ def _execute_tests(
     timeout: int | None,
     coverage_threshold: float,
     progress_callback: Callable[[int, int], None] | None = None,
+    include_slow_tests: bool = False,
 ) -> TestResult:
-    """Execute tests check."""
+    """Execute tests check. By default excludes slow tests for fast commit runs."""
     return adapter.run_tests(
         timeout=timeout,
         coverage_threshold=coverage_threshold,
         max_failures=None,
         progress_callback=progress_callback,
+        include_slow_tests=include_slow_tests,
     )

@@ -141,6 +141,7 @@ def mock_rules_manager() -> MagicMock:
         last_indexed="2026-01-04T10:30:00Z",
         total_tokens=15234,
     )
+    manager.initialize = AsyncMock(return_value=None)
     return manager
 
 

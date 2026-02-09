@@ -34,7 +34,7 @@ class TestContextLoggingIntegration:
         resolve_mock = AsyncMock(return_value=temp_project_root)
         with (
             patch(
-                "cortex.tools.file_operations.resolve_project_root_async",
+                "cortex.tools.file_operations.get_or_resolve_project_root",
                 resolve_mock,
             ),
             patch(
@@ -121,7 +121,7 @@ class TestContextLoggingIntegration:
         resolve_mock = AsyncMock(return_value=temp_project_root)
         with (
             patch(
-                "cortex.tools.file_operations.resolve_project_root_async",
+                "cortex.tools.file_operations.get_or_resolve_project_root",
                 resolve_mock,
             ),
             patch(

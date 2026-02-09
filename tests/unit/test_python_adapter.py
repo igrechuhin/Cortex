@@ -39,7 +39,9 @@ class TestPythonAdapter:
 
             mock_result = MagicMock()
             mock_result.returncode = 0
-            mock_result.stdout = "10 passed, 0 failed\nTOTAL 95%"
+            # Parser finds the summary line by " in " (timing) + passed/failed + digits;
+            # the time value is not parsed, so any " in ..." (e.g. " in 1.23s") is enough.
+            mock_result.stdout = "10 passed, 0 failed in 1.23s\nTOTAL 95%"
             mock_result.stderr = ""
             mock_run.return_value = mock_result
 
@@ -226,6 +228,55 @@ class TestPythonAdapter:
             )
             assert errors == ["Test execution failed"]
 
+    def test_parse_coverage_total_coverage_format(self) -> None:
+        """_parse_coverage parses 'Total coverage: XX.XX%' format."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            output = "Required test coverage of 95% reached. Total coverage: 91.23%"
+            coverage = adapter._parse_coverage(output)  # type: ignore[attr-defined]
+            assert coverage is not None
+            assert abs(coverage - 0.9123) < 0.0001
+
+    def test_parse_coverage_returns_none_when_no_match(self) -> None:
+        """_parse_coverage returns None when no percentage found."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            assert adapter._parse_coverage("no coverage here") is None  # type: ignore[attr-defined]
+
+    def test_parse_test_output_zero_tests_run(self) -> None:
+        """_parse_test_output sets pass_rate 0 when tests_run is 0."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            result = adapter._parse_test_output(  # type: ignore[attr-defined]
+                "no summary line", success=False, coverage_threshold=0.90
+            )
+            assert result["tests_run"] == 0
+            assert result["pass_rate"] == 0.0
+
+    def test_parse_test_counts_uses_only_pytest_summary_line_with_timing(self) -> None:
+        """_parse_test_counts uses only lines with ' in ' (pytest timing); skipped is not failed."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            # Summary with "3698 passed, 2 skipped" must yield (3698, 0), not (3696, 2)
+            summary = (
+                "=========== 3698 passed, 2 skipped, 20 warnings in 57.17s ============"
+            )
+            passed, failed = adapter._parse_test_counts(summary)  # type: ignore[attr-defined]
+            assert passed == 3698
+            assert failed == 0
+
+    def test_parse_test_counts_ignores_stray_failed_line_without_timing(self) -> None:
+        """_parse_test_counts ignores lines with '2 failed' that lack pytest timing."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            output = (
+                "Some assertion message: 2 failed\n"
+                "=========== 3698 passed, 2 skipped, 20 warnings in 57.17s ============"
+            )
+            passed, failed = adapter._parse_test_counts(output)  # type: ignore[attr-defined]
+            assert passed == 3698
+            assert failed == 0
+
     def test_collect_test_count_parses_tests_collected_line(self) -> None:
         """_collect_test_count parses 'N tests collected' from collect-only output."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -246,6 +297,48 @@ class TestPythonAdapter:
                 total = adapter._collect_test_count()  # type: ignore[attr-defined]
                 assert total == 42
 
+    def test_build_test_command_excludes_slow_tests_by_default(self) -> None:
+        """_build_test_command adds -m 'not slow' when include_slow_tests is False."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            venv_bin = get_venv_bin_path(Path(tmpdir))
+            venv_bin.mkdir(parents=True)
+            (venv_bin / "pytest").touch()
+            adapter = PythonAdapter(str(tmpdir))
+            with patch.object(
+                adapter,
+                "_has_pytest_xdist",
+                return_value=False,
+            ):
+                cmd_default = adapter._build_test_command(  # type: ignore[attr-defined]
+                    0.90, None, include_slow_tests=False
+                )
+                cmd_include_slow = adapter._build_test_command(  # type: ignore[attr-defined]
+                    0.90, None, include_slow_tests=True
+                )
+            assert "-m" in cmd_default and "not slow" in cmd_default
+            assert "-m" not in cmd_include_slow or "not slow" not in cmd_include_slow
+
+    def test_build_test_command_uses_parallel_when_xdist_available(self) -> None:
+        """_build_test_command adds -n auto when pytest-xdist is available (default)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            venv_bin = get_venv_bin_path(Path(tmpdir))
+            venv_bin.mkdir(parents=True)
+            (venv_bin / "pytest").touch()
+            adapter = PythonAdapter(str(tmpdir))
+            with patch.object(
+                adapter,
+                "_has_pytest_xdist",
+                return_value=True,
+            ):
+                cmd = adapter._build_test_command(  # type: ignore[attr-defined]
+                    0.90, None, include_slow_tests=False
+                )
+            assert "-n" in cmd and "auto" in cmd
+
+    @patch(
+        "cortex.services.framework_adapters.python_adapter.PythonAdapter._has_pytest_xdist",
+        return_value=False,
+    )
     @patch(
         "cortex.services.framework_adapters.python_adapter.PythonAdapter._execute_test_command_streaming"
     )
@@ -256,6 +349,7 @@ class TestPythonAdapter:
         self,
         mock_collect: MagicMock,
         mock_streaming: MagicMock,
+        _mock_xdist: MagicMock,
     ) -> None:
         """When progress_callback is set, use streaming and report (completed, total)."""
         with tempfile.TemporaryDirectory() as tmpdir:

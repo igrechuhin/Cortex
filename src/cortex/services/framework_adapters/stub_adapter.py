@@ -62,6 +62,7 @@ class StubAdapter(FrameworkAdapter):
         coverage_threshold: float = 0.90,
         max_failures: int | None = None,
         progress_callback: ProgressCallback | None = None,
+        include_slow_tests: bool = False,
     ) -> TestResult:
         """Return stub result; tests not implemented for this language."""
         msg = f"{self._language.value}: {_NOT_IMPLEMENTED_MSG}"

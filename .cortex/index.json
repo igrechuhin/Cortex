@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-07T20:50:47.460187",
+  "last_updated": "2026-02-09T08:08:32.199158",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 6079,
-      "token_count": 1499,
+      "size_bytes": 6600,
+      "token_count": 1603,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-07T20:36:03.618581",
-      "content_hash": "sha256:e91aefbcb9a0512f87cddd1b4bca86ef813618aea4c0844dbabc24d5c9bdcd91",
+      "last_modified": "2026-02-09T08:00:51.459255",
+      "content_hash": "sha256:541972046da93585515ea5e48e6ccd059c80530d8ab279544e7a326e99ea4efc",
       "sections": [
         {
           "title": "## Blockers (ASAP Priority)",
@@ -24,63 +24,63 @@
         {
           "title": "## Active Work (in progress)",
           "level": 2,
+          "line_start": 9,
+          "line_end": 9,
+          "content_hash": null
+        },
+        {
+          "title": "## Future Enhancements",
+          "level": 2,
           "line_start": 11,
           "line_end": 11,
           "content_hash": null
         },
         {
-          "title": "## Future Enhancements",
+          "title": "## Pending plans (from .cortex/plans)",
           "level": 2,
           "line_start": 13,
           "line_end": 13,
           "content_hash": null
         },
         {
-          "title": "## Pending plans (from .cortex/plans)",
+          "title": "### Investigation Plans (Archive / Reference)",
           "level": 2,
           "line_start": 15,
           "line_end": 15,
           "content_hash": null
         },
         {
-          "title": "### Investigation Plans (Archive / Reference)",
-          "level": 2,
-          "line_start": 17,
-          "line_end": 17,
-          "content_hash": null
-        },
-        {
           "title": "#### Tool Failure Investigations (Archive Recommended)",
           "level": 2,
-          "line_start": 21,
-          "line_end": 21,
+          "line_start": 19,
+          "line_end": 19,
           "content_hash": null
         },
         {
           "title": "### Session Optimization Plans (2026-2",
           "level": 2,
-          "line_start": 48,
-          "line_end": 48,
+          "line_start": 46,
+          "line_end": 46,
           "content_hash": null
         },
         {
           "title": "### Session Optimization Plans (20261)",
           "level": 2,
-          "line_start": 53,
-          "line_end": 53,
+          "line_start": 51,
+          "line_end": 51,
           "content_hash": null
         },
         {
           "title": "### Features & Enhancements",
           "level": 2,
-          "line_start": 59,
-          "line_end": 59,
+          "line_start": 57,
+          "line_end": 57,
           "content_hash": null
         }
       ],
       "read_count": 4,
-      "write_count": 86,
-      "last_read": "2026-02-07T20:36:03.618581",
+      "write_count": 90,
+      "last_read": "2026-02-09T08:00:51.459255",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -1062,50 +1062,101 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Restore roadmap content; keep Option C gradual migration as only Blocker and remove duplicate from Future Enhancements."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T20:55:01.688961",
+          "content_hash": "sha256:df18edfdb0a8af4e7c0a8ea5751083a0dcc02f5596787d327583695f657f0092",
+          "size_bytes": 6263,
+          "token_count": 1546,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Enriched Session Optimization Commit Pipeline Improvements roadmap entry with 2026027ysis (schema alignment, markdown lint scope, memory-bank write quality)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T21:05:32.541181",
+          "content_hash": "sha256:3555fdd82ca7ba482da26de495a548a4912d9058f6ea7aea9892ff4396158137",
+          "size_bytes": 5970,
+          "token_count": 1466,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Removed completed blocker (Option C HTTP/SSE transport); moved to activeContext."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T21:35:36.921722",
+          "content_hash": "sha256:208501b52dcc19ff7e373198c53074537dd28336785410700d476b3ba4fe8dba",
+          "size_bytes": 6740,
+          "token_count": 1627,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Added new plan: Compound engineering alignment (Cortex MCP)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-09T08:00:51.458885",
+          "content_hash": "sha256:541972046da93585515ea5e48e6ccd059c80530d8ab279544e7a326e99ea4efc",
+          "size_bytes": 6600,
+          "token_count": 1603,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Added new plan: MCP idempotent resource for project root path"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 4463,
-      "token_count": 1021,
+      "size_bytes": 5698,
+      "token_count": 1336,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-07T20:48:35.856372",
-      "content_hash": "sha256:1a82d935cce9abc5a1e2a2a96fa85acbaa877dc130aa5c926099d01177236774",
+      "last_modified": "2026-02-09T08:08:32.196823",
+      "content_hash": "sha256:a4e31c264b9200b85a451233dc462f681da7a6e75c1c4163b33124be6c11bb15",
       "sections": [
         {
-          "title": "## 202627**Commit (integration tests projectBrief schema, markdown lint)** - COMPLETE. Fixed two failing integration tests (test_full_workflow, test_initialize_read_write_workflow) by using projectBrief content with required schema sections (Project Overview, Goals, Core Requirements, Success Criteria). Fixed MD026 .cortex/history/progress_v11.md. Markdown lint: 0 errors. All pre-commit checks pass; 3635tests, 901% coverage.",
+          "title": "## 2026-02-09",
           "level": 2,
           "line_start": 3,
           "line_end": 3,
           "content_hash": null
         },
         {
-          "title": "## 2026-5",
+          "title": "## 2026-02-07",
           "level": 2,
-          "line_start": 21,
-          "line_end": 21,
+          "line_start": 7,
+          "line_end": 7,
+          "content_hash": null
+        },
+        {
+          "title": "## 2026-02-05",
+          "level": 2,
+          "line_start": 29,
+          "line_end": 29,
           "content_hash": null
         },
         {
           "title": "## What Works",
           "level": 2,
-          "line_start": 33,
-          "line_end": 33,
+          "line_start": 41,
+          "line_end": 41,
           "content_hash": null
         },
         {
           "title": "## What's Left",
           "level": 2,
-          "line_start": 37,
-          "line_end": 37,
+          "line_start": 45,
+          "line_end": 45,
           "content_hash": null
         }
       ],
       "read_count": 1,
-      "write_count": 148,
-      "last_read": "2026-02-07T20:48:35.856372",
+      "write_count": 150,
+      "last_read": "2026-02-09T08:08:32.196823",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -2736,50 +2787,79 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Add progress entry for commit (integration tests projectBrief schema, markdown lint); add required sections"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T21:07:32.527541",
+          "content_hash": "sha256:1a5795d13794ef7610fa3c8a77c4f8f6e68f8fe9fb62aefbeb5ef76337a71501",
+          "size_bytes": 5026,
+          "token_count": 1160,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Added progress entry for Option C HTTP/SSE transport completion."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-09T08:08:32.196351",
+          "content_hash": "sha256:a4e31c264b9200b85a451233dc462f681da7a6e75c1c4163b33124be6c11bb15",
+          "size_bytes": 5698,
+          "token_count": 1336,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Add 2026-02-09 progress; update What Works counts"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 4145,
-      "token_count": 957,
+      "size_bytes": 5617,
+      "token_count": 1348,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-07T20:48:05.838596",
-      "content_hash": "sha256:386c43ba6552d890b88571101071d857675b6cd783c387b744d729b156e93464",
+      "last_modified": "2026-02-09T08:08:16.427142",
+      "content_hash": "sha256:f9b0f425f59eebaabf8be2a6c56da6413a6bcd50d6b9f6534cffabd542cc39c7",
       "sections": [
         {
-          "title": "## Completed Work (20267",
+          "title": "## Completed Work (2026-02-09)",
           "level": 2,
           "line_start": 5,
           "line_end": 5,
           "content_hash": null
         },
         {
+          "title": "## Completed Work (2026-02-07)",
+          "level": 2,
+          "line_start": 9,
+          "line_end": 9,
+          "content_hash": null
+        },
+        {
           "title": "## Current Focus",
           "level": 2,
-          "line_start": 24,
-          "line_end": 24,
+          "line_start": 31,
+          "line_end": 31,
           "content_hash": null
         },
         {
           "title": "## Recent Changes",
           "level": 2,
-          "line_start": 28,
-          "line_end": 28,
+          "line_start": 35,
+          "line_end": 35,
           "content_hash": null
         },
         {
           "title": "## Next Steps",
           "level": 2,
-          "line_start": 32,
-          "line_end": 32,
+          "line_start": 39,
+          "line_end": 39,
           "content_hash": null
         }
       ],
       "read_count": 1,
-      "write_count": 121,
-      "last_read": "2026-02-07T20:48:05.838596",
+      "write_count": 123,
+      "last_read": "2026-02-09T08:08:16.427142",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -4113,6 +4193,28 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Fix typos in activeContext (dates, percentages, phase labels)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T21:06:48.460083",
+          "content_hash": "sha256:3b9b3a36cb21a51c389e7cff66ae2ca6d7d25c3f4d37cce095fb76a9e43d589f",
+          "size_bytes": 4857,
+          "token_count": 1148,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Added completed Option C HTTP/SSE transport implementation; updated recent changes."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-09T08:08:16.426684",
+          "content_hash": "sha256:f9b0f425f59eebaabf8be2a6c56da6413a6bcd50d6b9f6534cffabd542cc39c7",
+          "size_bytes": 5617,
+          "token_count": 1348,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Add completed work 2026-02-09 (commit test fixes)"
         }
       ]
     },
@@ -4345,7 +4447,7 @@
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/projectBrief.md",
       "exists": true,
       "read_count": 5,
-      "write_count": 69,
+      "write_count": 168,
       "current_version": 11,
       "version_history": [
         {
@@ -5150,12 +5252,1101 @@
           "snapshot_path": ".cortex/history/projectBrief_v11.md",
           "changed_sections": [],
           "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:12:36.107265",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:14:02.828581",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:15:26.841846",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:16:50.631950",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:19:45.798688",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:21:44.568854",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:23:12.895545",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:24:33.820904",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:26:05.707233",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:38:42.434342",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:40:10.169852",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:40:46.385804",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:42:36.290202",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:44:02.286417",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:46:55.954403",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:48:32.521152",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:51:01.066178",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:53:17.812860",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:55:59.402457",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T22:59:14.945862",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T23:01:43.631026",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T23:03:48.811561",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T23:08:17.213496",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T23:12:00.667894",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T23:13:41.236561",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T23:50:35.902980",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-07T23:56:03.876975",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T00:06:23.401260",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T00:39:25.143947",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T00:42:19.636321",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T00:49:24.573960",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T00:52:19.434962",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T00:59:24.990121",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T01:02:19.410460",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T01:44:26.668722",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T01:54:26.659836",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T02:04:26.536334",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T09:28:32.582454",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:19:10.268945",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:20:12.515703",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:21:40.807035",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:23:12.519400",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:25:37.264063",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:27:58.258955",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:29:31.407853",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:30:52.973579",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:32:59.498792",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:34:30.335305",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:38:43.976542",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:41:29.956345",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:44:06.009851",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:46:39.878868",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:49:03.308894",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:51:28.332768",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T10:54:36.265448",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:01:32.711790",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:02:47.147650",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:03:23.356781",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:04:27.798700",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:05:32.307680",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:07:17.296755",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:08:39.548831",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:09:48.957555",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:11:05.801484",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:12:38.830145",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:13:39.872870",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:14:40.702884",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:19:17.476201",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:22:51.187458",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:24:14.300972",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:25:18.297830",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:27:28.940603",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:35:27.917127",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:41:36.579531",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T11:57:59.355458",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T12:00:02.763529",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T12:02:06.885220",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T12:17:59.418012",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T12:25:20.577944",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T12:27:35.538881",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T12:32:57.335712",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T12:49:37.927004",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T13:11:52.016404",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T13:29:03.717972",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T13:45:02.115443",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T13:52:34.327049",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T14:17:59.351681",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T14:33:49.003087",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T14:40:35.548387",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T15:06:33.642064",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T15:22:42.976819",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T17:01:50.793327",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T17:04:02.377254",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T18:05:46.987741",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T18:47:50.048496",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T18:53:05.363070",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T19:03:56.749710",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T19:14:42.316381",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-08T19:30:00.473353",
+          "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
+          "size_bytes": 247,
+          "token_count": 46,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/projectBrief_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated with test content"
         }
       ],
       "size_bytes": 247,
       "token_count": 46,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-07T20:50:47.458397",
+      "last_modified": "2026-02-08T19:30:00.474062",
       "content_hash": "sha256:1b30472443e07dd60de2f95a778911e231bfda89ada5bd9714f74aa0a19d3c10",
       "sections": [
         {
@@ -5187,7 +6378,7 @@
           "content_hash": null
         }
       ],
-      "last_read": "2026-02-07T20:50:47.458397"
+      "last_read": "2026-02-08T19:30:00.474062"
     },
     "techContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/techContext.md",
@@ -5593,8 +6784,8 @@
   },
   "totals": {
     "total_files": 10,
-    "total_size_bytes": 46186,
-    "total_tokens": 10421,
-    "last_full_scan": "2026-02-07T20:50:47.458434"
+    "total_size_bytes": 49414,
+    "total_tokens": 11231,
+    "last_full_scan": "2026-02-09T08:08:32.196846"
   }
 }

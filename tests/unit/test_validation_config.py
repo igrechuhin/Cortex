@@ -13,6 +13,7 @@ Tests configuration management including:
 import json
 from pathlib import Path
 from typing import cast
+from unittest.mock import patch
 
 import pytest
 
@@ -209,6 +210,39 @@ class TestSaveConfig:
 
         assert config2.get("enabled") is False
         assert config2.get("token_budget.max_total_tokens") == 200000
+
+    @pytest.mark.asyncio
+    async def test_save_raises_os_error_on_write_failure(self, tmp_path: Path) -> None:
+        """Test save raises OSError when file write fails."""
+        get_cortex_path(tmp_path, CortexResourceType.CONFIG).mkdir(
+            parents=True, exist_ok=True
+        )
+        config = ValidationConfig(project_root=tmp_path)
+
+        with patch(
+            "cortex.validation.validation_config.open_async_text_file",
+            side_effect=OSError("Permission denied"),
+        ):
+            with pytest.raises(OSError, match="Failed to save validation config"):
+                await config.save()
+
+
+class TestLoadConfigInvalidStructure:
+    """Tests for loading config with invalid structure."""
+
+    @pytest.mark.asyncio
+    async def test_invalid_structure_returns_defaults(self, tmp_path: Path) -> None:
+        """Test loading config with invalid structure returns defaults."""
+        config_path = (
+            get_cortex_path(tmp_path, CortexResourceType.CONFIG) / "validation.json"
+        )
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(config_path, "w") as f:
+            json.dump({"token_budget": 123}, f)
+
+        config = ValidationConfig(project_root=tmp_path)
+
+        assert config.config.model_dump() == ValidationConfigModel().model_dump()
 
 
 class TestResetToDefaults:

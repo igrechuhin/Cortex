@@ -17,6 +17,15 @@ from cortex.tools.connection_health import (
 )
 
 
+def _patch_usage_context():
+    """Patch so ensure_usage_context skips slow resolve_project_root + get_managers."""
+    return patch(
+        "cortex.core.mcp_stability.get_current_managers",
+        return_value={},
+    )
+
+
+@pytest.mark.timeout(10)
 class TestCheckMCPConnectionHealth:
     """Tests for check_mcp_connection_health tool."""
 
@@ -32,10 +41,13 @@ class TestCheckMCPConnectionHealth:
             utilization_percent=40.0,
         )
 
-        with patch(
-            "cortex.tools.connection_health.check_connection_health",
-            new_callable=AsyncMock,
-            return_value=expected_health,
+        with (
+            _patch_usage_context(),
+            patch(
+                "cortex.tools.connection_health.check_connection_health",
+                new_callable=AsyncMock,
+                return_value=expected_health,
+            ),
         ):
             # Act
             result_str = await check_mcp_connection_health()
@@ -58,10 +70,13 @@ class TestCheckMCPConnectionHealth:
         error_message = "Connection failed"
         test_exception = RuntimeError(error_message)
 
-        with patch(
-            "cortex.tools.connection_health.check_connection_health",
-            new_callable=AsyncMock,
-            side_effect=test_exception,
+        with (
+            _patch_usage_context(),
+            patch(
+                "cortex.tools.connection_health.check_connection_health",
+                new_callable=AsyncMock,
+                side_effect=test_exception,
+            ),
         ):
             # Act
             result_str = await check_mcp_connection_health()
@@ -80,10 +95,13 @@ class TestCheckMCPConnectionHealth:
         error_message = "Invalid value"
         test_exception = ValueError(error_message)
 
-        with patch(
-            "cortex.tools.connection_health.check_connection_health",
-            new_callable=AsyncMock,
-            side_effect=test_exception,
+        with (
+            _patch_usage_context(),
+            patch(
+                "cortex.tools.connection_health.check_connection_health",
+                new_callable=AsyncMock,
+                side_effect=test_exception,
+            ),
         ):
             # Act
             result_str = await check_mcp_connection_health()
@@ -96,6 +114,7 @@ class TestCheckMCPConnectionHealth:
 
 
 @pytest.mark.asyncio
+@pytest.mark.timeout(10)
 class TestCheckMCPConnectionHealthResource:
     """Tests for check_mcp_connection_health_resource (Phase 43 cortex://health/connection)."""
 
@@ -110,12 +129,15 @@ class TestCheckMCPConnectionHealthResource:
             semaphore_available=4,
             utilization_percent=20.0,
         )
-        with patch(
-            "cortex.tools.connection_health.check_mcp_connection_health",
-            new_callable=AsyncMock,
-            return_value=json.dumps(
-                {"status": "success", "health": expected_health.model_dump()},
-                indent=2,
+        with (
+            _patch_usage_context(),
+            patch(
+                "cortex.tools.connection_health.check_mcp_connection_health",
+                new_callable=AsyncMock,
+                return_value=json.dumps(
+                    {"status": "success", "health": expected_health.model_dump()},
+                    indent=2,
+                ),
             ),
         ):
             result_str = await check_mcp_connection_health_resource()

@@ -4,6 +4,64 @@
 
 All Cortex MCP tools are protected with timeout mechanisms to prevent hanging operations and improve system reliability. This document describes the timeout strategy, categories, and how to select appropriate timeouts for new tools.
 
+## Why the first tool call can feel slow
+
+Cortex MCP tools can take noticeable time on the **first** call (or first call after context is cleared) because of one-time setup:
+
+1. **Project root resolution**  
+   When `project_root` is not provided, the server asks the client for workspace roots via **roots/list** (see `resolve_project_root_async` in `project_root_resolver.py`). That round-trip is visible in the client log as "ListRootsRequest received" and is bounded by `MCP_ROOTS_LIST_TIMEOUT_SECONDS` (5s).
+
+2. **Manager initialization**  
+   The first tool run in a context triggers `get_managers(project_root)`, which:
+   - Builds core managers (filesystem, index, token counter, dependency graph, version manager, migration, file watcher)
+   - Registers linking, validation, optimization, analysis, refactoring, and execution managers (many as lazy)
+   - Runs post-init (e.g. loading the metadata index, cleanup_locks, optional rules init)
+
+   That work is cached in the **usage context** (contextvar). Subsequent tool calls for the **same project root** reuse the same managers and do **not** re-run initialization.
+
+3. **Client-side behavior**  
+   The client (e.g. Cursor) may run ListOfferings, GetInstructions, ListToolsRaw (and similar) when opening or refreshing the MCP connection. That is client-side and not controlled by Cortex.
+
+**Optimizations in place:**
+
+- **Reuse current managers**: Tools such as `manage_file` use `get_current_managers()` and `get_current_project_root()` when the requested root matches the context root, avoiding a second `get_managers()` and duplicate initialization.
+- **Reuse resolved root**: When the usage context already has a project root (set by the first tool), tools like `manage_file` skip a second **roots/list** round-trip by using `get_current_project_root()`.
+- **Deferred rules init**: Rules indexing (which can take tens of seconds) is no longer run during manager startup. It runs on **first use** of the `rules` tool instead, so the first tool call (e.g. `manage_file` read) is no longer blocked by rules indexing.
+- **Single init under concurrency**: When several tools are invoked at once (e.g. three `manage_file` reads plus `rules` and `get_structure_info`), only one context setup runs: an init lock in `ensure_usage_context` serializes setup, and a process-scoped manager registry ensures all callers share the same cached managers for that project root. Without this, each concurrent tool would run a full init and total time could be 30+ seconds.
+
+So the "long setup" is effectively **first-call-only** per process and no longer includes rules; later and concurrent calls for the same workspace reuse the same init.
+
+**Why the first tool call can be ~30s even though files are local and small:**  
+The server does **not** spend that time reading your files. It first has to resolve the project root. When you don’t pass a root, it asks the **client** (e.g. Cursor) for workspace roots via **roots/list**. The server then **waits for the client to respond**. If the client is slow to handle that request (e.g. due to UI/event loop or other work), the server can sit there for tens of seconds even though everything is local. So the delay is often **client response time** to roots/list, not file I/O or manager init.
+
+**Workaround to confirm:** Set `CORTEX_USE_FALLBACK_ROOT=1` in the environment where the Cortex MCP server runs (e.g. in Cursor’s MCP server config or the shell that starts the server). The server will then **skip** the roots/list request and resolve the project root from the current working directory / script location. If the ~30s delay **disappears**, the bottleneck was the client’s response to roots/list; you can keep the env var set for faster first-tool response or report the slowness to the client (Cursor) team.
+
+**Where the time goes (when not using the workaround):** On first-tool init, the server logs at **INFO** when a step is slow (so you see it without DEBUG):
+
+- `project_root_resolver: list_roots() took X.XXs (client round-trip)` — time waiting for the client to respond to roots/list. If this is ~28s, the bottleneck is the client (Cursor) responding to the roots request.
+- `ensure_usage_context: first-tool init took X.XXs (resolve=X.XXs, get_managers=X.XXs)` — total and split: resolve (includes list_roots) vs get_managers (server-side init).
+- `get_managers: initialize_managers(...) took X.XXs` — server-side manager init.
+- `initialize_managers: _post_init_setup took X.XXs` — index.load() + cleanup_locks().
+
+Check the MCP server’s stderr (or Cursor’s “Output” / MCP logs) for these lines after the first tool call.
+
+**Debug logging (finer detail):** To see where time is spent during the first tool call, set the log level to DEBUG. For example:
+
+- Environment: `LOGLEVEL=DEBUG` or `CORTEX_LOG_LEVEL=DEBUG` (if your runner reads it).
+- Or in code: `logging.getLogger("cortex").setLevel(logging.DEBUG)`.
+
+Then look for log lines such as:
+
+- `project_root_resolver: list_roots() took X.XXXs`
+- `ensure_usage_context: resolve_project_root_async took X.XXXs`
+- `ensure_usage_context: get_managers(...) took X.XXXs`
+- `get_managers: registry.get_managers(...) took X.XXXs`
+- `initialize_managers: _init_core_managers took X.XXXs`
+- `initialize_managers: _post_init_setup took X.XXXs`
+- `_post_init_setup: index.load() took X.XXXs`
+- `_post_init_setup: cleanup_locks() took X.XXXs`
+- `file_operations: reusing current managers` / `file_operations: get_managers(...) took X.XXXs`
+
 ## Timeout Infrastructure
 
 ### Centralized Timeout Mechanism
@@ -23,7 +81,7 @@ Timeout values are defined in `cortex.core.constants`:
 MCP_TOOL_TIMEOUT_FAST = 60          # Fast operations (30-60s)
 MCP_TOOL_TIMEOUT_MEDIUM = 120        # Medium operations (60-120s)
 MCP_TOOL_TIMEOUT_COMPLEX = 300      # Complex operations (120-300s)
-MCP_TOOL_TIMEOUT_VERY_COMPLEX = 600  # Very complex operations (300-600s)
+MCP_TOOL_TIMEOUT_VERY_COMPLEX = 960  # Very complex operations (e.g. full test suite)
 MCP_TOOL_TIMEOUT_EXTERNAL = 120     # External operations (30-120s)
 MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60  # Quality auto-fix tools (e.g. fix_quality_issues)
 ```
@@ -95,9 +153,9 @@ MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60  # Quality auto-fix tools (e.g. fix_quality_
 - `summarize_content`
 - `get_relevance_scores`
 
-### Very Complex Operations (600 seconds / 10 minutes)
+### Very Complex Operations (960 seconds / 16 minutes)
 
-**Use for**: Operations that perform comprehensive analysis, refactoring, or large-scale processing.
+**Use for**: Operations that perform comprehensive analysis, refactoring, or large-scale processing (e.g. full test suite in commit pipeline).
 
 **Examples**:
 
@@ -171,7 +229,7 @@ Choose the timeout category based on operation complexity:
 - **Fast (60s)**: Simple queries, health checks, config operations
 - **Medium (120s)**: File operations, parsing, validation
 - **Complex (300s)**: Multi-file processing, optimization, analysis
-- **Very Complex (600s)**: Comprehensive analysis, refactoring
+- **Very Complex (960s)**: Comprehensive analysis, refactoring, full test run
 - **External (120s)**: Git, commands, network requests
 
 ## Internal Operations
@@ -243,7 +301,38 @@ When the client (e.g. Cursor) fetches many MCP **resources** in parallel (e.g. w
 **Server-side mitigations (Cortex)**:
 
 - **Short-TTL cache for expensive resources**: Cortex caches responses for `cortex://structure/info` and `cortex://structure/health` with a 30-second TTL (`MCP_RESOURCE_CACHE_TTL_SECONDS`). When many ReadResource requests are queued behind a long tool, the first read after the tool completes populates the cache; subsequent reads for the same resource return immediately. This speeds up queue draining and makes later resource panel loads fast. Other heavy resources may get the same treatment in future updates.
-- **Stdio is sequential**: The MCP Python SDK over stdio processes one request at a time. The server cannot process ReadResource requests while a tool is running. Concurrency would require a different transport (e.g. HTTP/SSE); for stdio, caching and the recommendations above are the available mitigations. An analysis of optional HTTP/SSE (and Streamable HTTP) transport is in [docs/mcp-transport-http-sse-analysis.md](mcp-transport-http-sse-analysis.md); a follow-up implementation plan is in the roadmap.
+- **Stdio is sequential**: The MCP Python SDK over stdio processes one request at a time. The server cannot process ReadResource requests while a tool is running. Concurrency would require a different transport (e.g. HTTP/SSE); for stdio, caching and the recommendations above are the available mitigations. **Optional HTTP/SSE and Streamable HTTP** are supported (see [HTTP/SSE and Streamable HTTP transport](#http-sse-and-streamable-http-transport) and [Deployment and configuration](#deployment-and-configuration)).
+
+## HTTP-SSE and Streamable HTTP transport
+
+Cortex can run with **SSE** or **Streamable HTTP** transport in addition to the default **stdio**. HTTP-based transports allow the server to handle multiple requests concurrently (e.g. ReadResource while a long CallTool runs), which avoids resource read timeouts and "unknown message ID" when clients use a URL to connect.
+
+- **When it helps**: Use HTTP/SSE or Streamable HTTP when you run Cortex as a long-lived server and connect from Cursor (or another client) via URL instead of a shell command. Same tools and resources; only the transport and concurrency behavior change.
+- **Analysis and plan**: See [docs/mcp-transport-http-sse-analysis.md](mcp-transport-http-sse-analysis.md) for the design and [.cortex/plans/mcp-transport-http-sse-implementation.md](../.cortex/plans/mcp-transport-http-sse-implementation.md) for the implementation plan.
+
+### Stdio–Streamable HTTP bridge (one switch, concurrent requests)
+
+To get **concurrent MCP request handling** (e.g. ReadResource while a long tool runs) without running a separate server or changing the Cursor “on/off” flow, use the **bridge**:
+
+- **Command**: Run `python -m cortex.bridge` (or the `cortex-bridge` script) as the Cursor MCP server command instead of `cortex.main`. The bridge starts Cortex with Streamable HTTP on a fixed port and proxies between Cursor (stdio) and Cortex (HTTP).
+- **Requirements**: `uv sync --extra server` (or `pip install cortex[server]`). Optional env: `CORTEX_BRIDGE_URL` (default `http://127.0.0.1:8000/mcp`), `CORTEX_MCP_PORT` (default `8000`).
+- **Result**: One switch in Cursor; Cortex runs with Streamable HTTP and can handle multiple requests concurrently, reducing resource read timeouts and "unknown message ID" issues.
+
+## Deployment and configuration
+
+### Transport selection (Option C)
+
+- **Environment variables** (optional):
+  - `CORTEX_MCP_TRANSPORT`: `stdio`, `sse`, or `streamable-http`. Overrides the default when set.
+  - `CORTEX_MCP_PORT`: Port for HTTP transport (e.g. `8000`). When set, values are passed through to the MCP server (e.g. `FASTMCP_PORT`).
+  - `CORTEX_MCP_HOST`: Bind address (default `127.0.0.1`). Use `127.0.0.1` or `localhost` for localhost-only; document any use of `0.0.0.0` for your environment.
+- **Default (Option C)**: When **port is set**, default transport is **sse** (HTTP/SSE). When **port is unset**, default is **stdio**. Set `CORTEX_MCP_TRANSPORT=stdio` to force stdio even when port is set (e.g. for clients that do not support URL).
+- **HTTP transport**: With port set, the server uses SSE by default. To use Streamable HTTP instead, set `CORTEX_MCP_TRANSPORT=streamable-http`. Requires optional dependencies: `uv sync --extra server` or `pip install cortex[server]`.
+
+### Security (Phase 1)
+
+- **Binding**: Server binds to **localhost** (`127.0.0.1`) by default. Do not bind to `0.0.0.0` unless you have appropriate network and auth controls.
+- **Optional auth**: The MCP SDK supports optional auth (e.g. query token for SSE URL). See SDK and Cursor docs for URL-based auth if you expose the server beyond localhost.
 
 ### Resource read timeouts (-32001)
 

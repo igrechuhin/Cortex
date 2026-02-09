@@ -13,6 +13,7 @@ from cortex.tools.context_analysis_handlers import (
 
 
 @pytest.mark.asyncio
+@pytest.mark.timeout(60)
 class TestContextAnalysisHandlers:
     async def test_analyze_context_effectiveness_when_current_session_returns_success(
         self, tmp_path: Path
@@ -127,6 +128,7 @@ class TestContextAnalysisHandlers:
 
 
 @pytest.mark.asyncio
+@pytest.mark.timeout(60)
 class TestContextAnalysisContextLogging:
     """Test context analysis handlers use log_client when ctx is passed."""
 
@@ -172,6 +174,7 @@ class TestContextAnalysisContextLogging:
 
 
 @pytest.mark.asyncio
+@pytest.mark.timeout(60)
 class TestContextAnalysisResources:
     """Test Phase 43 context analysis resources (cortex://optimization/...)."""
 

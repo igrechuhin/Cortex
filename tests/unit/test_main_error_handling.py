@@ -16,11 +16,14 @@ import pytest
 from cortex.main import main
 
 
+@patch("cortex.main.get_effective_transport", return_value="stdio")
 class TestMainErrorHandling:
     """Tests for main() error handling paths."""
 
     @patch("cortex.main.mcp")
-    def test_keyboard_interrupt_handling(self, mock_mcp: MagicMock) -> None:
+    def test_keyboard_interrupt_handling(
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
+    ) -> None:
         """Test that KeyboardInterrupt is handled gracefully."""
         # Arrange
         mock_mcp.run.side_effect = KeyboardInterrupt()
@@ -34,7 +37,9 @@ class TestMainErrorHandling:
         mock_mcp.run.assert_called_once_with(transport="stdio")
 
     @patch("cortex.main.mcp")
-    def test_broken_pipe_error_handling(self, mock_mcp: MagicMock) -> None:
+    def test_broken_pipe_error_handling(
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
+    ) -> None:
         """Test that BrokenPipeError is handled gracefully."""
         # Arrange
         mock_mcp.run.side_effect = BrokenPipeError("Broken pipe")
@@ -48,7 +53,9 @@ class TestMainErrorHandling:
         mock_mcp.run.assert_called_once_with(transport="stdio")
 
     @patch("cortex.main.mcp")
-    def test_anyio_broken_resource_error_handling(self, mock_mcp: MagicMock) -> None:
+    def test_anyio_broken_resource_error_handling(
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
+    ) -> None:
         """Test that anyio.BrokenResourceError is handled gracefully."""
         # Arrange
         mock_mcp.run.side_effect = anyio.BrokenResourceError("Resource broken")
@@ -62,7 +69,9 @@ class TestMainErrorHandling:
         mock_mcp.run.assert_called_once_with(transport="stdio")
 
     @patch("cortex.main.mcp")
-    def test_anyio_closed_resource_error_handling(self, mock_mcp: MagicMock) -> None:
+    def test_anyio_closed_resource_error_handling(
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
+    ) -> None:
         """Test that anyio.ClosedResourceError (send on closed stream) is handled gracefully."""
         # Arrange
         mock_mcp.run.side_effect = anyio.ClosedResourceError()
@@ -77,7 +86,7 @@ class TestMainErrorHandling:
 
     @patch("cortex.main.mcp")
     def test_base_exception_group_with_broken_resource_error(
-        self, mock_mcp: MagicMock
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
     ) -> None:
         """Test that BaseExceptionGroup containing BrokenResourceError is
         handled gracefully."""
@@ -98,7 +107,7 @@ class TestMainErrorHandling:
 
     @patch("cortex.main.mcp")
     def test_base_exception_group_with_closed_resource_error(
-        self, mock_mcp: MagicMock
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
     ) -> None:
         """Test that BaseExceptionGroup containing ClosedResourceError exits gracefully."""
         # Arrange
@@ -118,7 +127,7 @@ class TestMainErrorHandling:
 
     @patch("cortex.main.mcp")
     def test_base_exception_group_with_cancelled_error(
-        self, mock_mcp: MagicMock
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
     ) -> None:
         """Test that BaseExceptionGroup containing CancelledError exits gracefully."""
         # Arrange - task cancellation often means client disconnect or timeout
@@ -138,7 +147,7 @@ class TestMainErrorHandling:
 
     @patch("cortex.main.mcp")
     def test_base_exception_group_with_other_exceptions(
-        self, mock_mcp: MagicMock
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
     ) -> None:
         """Test that BaseExceptionGroup with non-connection errors exits with code 1."""
         # Arrange
@@ -158,7 +167,7 @@ class TestMainErrorHandling:
 
     @patch("cortex.main.mcp")
     def test_base_exception_group_with_mixed_exceptions(
-        self, mock_mcp: MagicMock
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
     ) -> None:
         """Test that BaseExceptionGroup with BrokenResourceError exits
         gracefully even with other exceptions."""
@@ -182,7 +191,7 @@ class TestMainErrorHandling:
 
     @patch("cortex.main.mcp")
     def test_base_exception_group_with_connection_reset_error(
-        self, mock_mcp: MagicMock
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
     ) -> None:
         """Test that BaseExceptionGroup containing ConnectionResetError is
         handled gracefully."""
@@ -203,7 +212,7 @@ class TestMainErrorHandling:
 
     @patch("cortex.main.mcp")
     def test_base_exception_group_with_mcp_connection_closed(
-        self, mock_mcp: MagicMock
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
     ) -> None:
         """Test that TaskGroup error with MCP -32000 Connection closed is
         treated as a failure (exit 1), not ignored."""
@@ -224,7 +233,9 @@ class TestMainErrorHandling:
         mock_mcp.run.assert_called_once_with(transport="stdio")
 
     @patch("cortex.main.mcp")
-    def test_base_exception_group_with_nested_group(self, mock_mcp: MagicMock) -> None:
+    def test_base_exception_group_with_nested_group(
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
+    ) -> None:
         """Test that nested BaseExceptionGroup with connection error is
         handled gracefully."""
         # Arrange
@@ -242,7 +253,9 @@ class TestMainErrorHandling:
         mock_mcp.run.assert_called_once_with(transport="stdio")
 
     @patch("cortex.main.mcp")
-    def test_connection_error_handling(self, mock_mcp: MagicMock) -> None:
+    def test_connection_error_handling(
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
+    ) -> None:
         """Test that ConnectionError exits with code 1."""
         # Arrange
         mock_mcp.run.side_effect = ConnectionError("Connection failed")
@@ -256,7 +269,9 @@ class TestMainErrorHandling:
         mock_mcp.run.assert_called_once_with(transport="stdio")
 
     @patch("cortex.main.mcp")
-    def test_oserror_broken_pipe_handling(self, mock_mcp: MagicMock) -> None:
+    def test_oserror_broken_pipe_handling(
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
+    ) -> None:
         """Test that OSError with 'Broken pipe' message exits gracefully."""
         # Arrange
         mock_mcp.run.side_effect = OSError("Broken pipe")
@@ -270,7 +285,9 @@ class TestMainErrorHandling:
         mock_mcp.run.assert_called_once_with(transport="stdio")
 
     @patch("cortex.main.mcp")
-    def test_oserror_connection_reset_handling(self, mock_mcp: MagicMock) -> None:
+    def test_oserror_connection_reset_handling(
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
+    ) -> None:
         """Test that OSError with 'Connection reset' message exits gracefully."""
         # Arrange
         mock_mcp.run.side_effect = OSError("Connection reset by peer")
@@ -284,7 +301,9 @@ class TestMainErrorHandling:
         mock_mcp.run.assert_called_once_with(transport="stdio")
 
     @patch("cortex.main.mcp")
-    def test_oserror_other_handling(self, mock_mcp: MagicMock) -> None:
+    def test_oserror_other_handling(
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
+    ) -> None:
         """Test that other OSError exits with code 1."""
         # Arrange
         mock_mcp.run.side_effect = OSError("Permission denied")
@@ -298,7 +317,9 @@ class TestMainErrorHandling:
         mock_mcp.run.assert_called_once_with(transport="stdio")
 
     @patch("cortex.main.mcp")
-    def test_unexpected_exception_handling(self, mock_mcp: MagicMock) -> None:
+    def test_unexpected_exception_handling(
+        self, mock_mcp: MagicMock, mock_get_transport: MagicMock
+    ) -> None:
         """Test that unexpected exceptions exit with code 1."""
         # Arrange
         mock_mcp.run.side_effect = ValueError("Unexpected error")
@@ -310,6 +331,64 @@ class TestMainErrorHandling:
         # Assert
         assert exc_info.value.code == 1
         mock_mcp.run.assert_called_once_with(transport="stdio")
+
+
+class TestMainTransportSelection:
+    """Tests for main() transport selection (stdio vs sse vs streamable-http)."""
+
+    @patch("cortex.main.get_effective_transport", return_value="sse")
+    @patch("cortex.main.mcp")
+    def test_main_exits_when_http_deps_missing_for_sse(
+        self, mock_mcp: MagicMock, _mock_get_transport: MagicMock
+    ) -> None:
+        """Test that main() exits with code 1 when SSE is requested but deps missing."""
+        import builtins
+        from collections.abc import Mapping, Sequence
+
+        real_import = builtins.__import__
+
+        def fake_import(
+            name: str,
+            globals: Mapping[str, object] | None = None,
+            locals: Mapping[str, object] | None = None,
+            fromlist: Sequence[str] | None = None,
+            level: int = 0,
+        ) -> object:
+            if name in ("starlette", "uvicorn"):
+                raise ImportError(f"No module named '{name}'")
+            return real_import(
+                name, globals, locals, fromlist if fromlist is not None else (), level
+            )
+
+        with patch.object(builtins, "__import__", side_effect=fake_import):
+            with pytest.raises(SystemExit) as exc_info:
+                main()
+        assert exc_info.value.code == 1
+        mock_mcp.run.assert_not_called()
+
+    @patch("cortex.main.get_effective_transport", return_value="sse")
+    @patch("cortex.main.mcp")
+    def test_main_uses_sse_transport_when_configured(
+        self, mock_mcp: MagicMock, _mock_get_transport: MagicMock
+    ) -> None:
+        """Test that main() calls mcp.run(transport='sse', mount_path='/sse') when transport is sse."""
+        mock_mcp.run.side_effect = KeyboardInterrupt()
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+        assert exc_info.value.code == 0
+        mock_mcp.run.assert_called_once_with(transport="sse", mount_path="/sse")
+
+    @patch("cortex.main.get_effective_transport", return_value="streamable-http")
+    @patch("cortex.main.mcp")
+    def test_main_uses_streamable_http_transport_when_configured(
+        self, mock_mcp: MagicMock, _mock_get_transport: MagicMock
+    ) -> None:
+        """Test that main() calls mcp.run(transport='streamable-http') when so configured."""
+        mock_mcp.run.side_effect = KeyboardInterrupt()
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+        assert exc_info.value.code == 0
+        mock_mcp.run.assert_called_once_with(transport="streamable-http")
 
 
 class TestMCPStabilityConnectionErrorDetection:

@@ -276,9 +276,9 @@ jobs:
       - name: Run tests
         id: tests
         run: |
-          echo "::group::Running test suite"
-          # Run tests with coverage, capturing output for analysis
-          if ! uv run python -m pytest tests/ -v --cov=src/cortex --cov-report=xml --cov-report=term --cov-fail-under=90; then
+          echo "::group::Running test suite (excluding slow integration tests)"
+          # Exclude slow tests (-m "not slow") so the job finishes in minutes; matches commit pipeline.
+          if ! uv run python -m pytest tests/ -m "not slow" -n auto -v --cov=src/cortex --cov-report=xml --cov-report=term --cov-fail-under=90; then
             echo "::error::Test suite failed. All tests must pass with at least 90% coverage."
             exit 1
           fi

@@ -54,6 +54,7 @@ class TypeScriptAdapter(FrameworkAdapter):
         coverage_threshold: float = 0.90,
         max_failures: int | None = None,
         progress_callback: ProgressCallback | None = None,
+        include_slow_tests: bool = False,
     ) -> TestResult:
         """Run test suite via npm test.
 

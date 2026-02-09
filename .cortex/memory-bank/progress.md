@@ -1,8 +1,14 @@
 # Progress Log
 
+## 2026-02-09
+
+- **Commit (rules and manage_file test fixes)** - COMPLETE. Fixed test failures: (1) Added `manager.initialize = AsyncMock(return_value=None)` to `mock_rules_manager` in `tests/tools/test_rules_operations.py` so `await rules_manager.initialize()` in rules tool does not raise. (2) Fixed `test_manage_file_metadata_success` in `tests/tools/test_consolidated.py`: patch `set_current_managers` and `set_current_project_root` (no-op) so usage-context does not persist real managers; use existing path for `construct_safe_path` return value. All 3702 tests pass; coverage 90.36%.
+
 ## 2026-02-07
 
-- **Commit (integration tests projectBrief schema, markdown lint)** - COMPLETE. Fixed two failing integration tests (test_full_workflow, test_initialize_read_write_workflow) by using projectBrief content with required schema sections (Project Overview, Goals, Core Requirements, Success Criteria). Fixed MD026 in .cortex/history/progress_v11.md. Markdown lint: 0 errors. All pre-commit checks pass; 3635 tests, 90.01% coverage.
+- **Gradual migration to Option C: HTTP/SSE transport (blocker)** - COMPLETE. Implemented Phase 1 (optional HTTP/SSE alongside stdio) and Phase 2 (Option C default: when port set, default transport sse). Added `cortex.transport_config`, env CORTEX_MCP_TRANSPORT/PORT/HOST, main() transport selection and HTTP deps check; unit tests (test_transport_config.py, TestMainTransportSelection); docs (mcp-tool-timeouts.md: HTTP/SSE section, Deployment, Option C). Blocker removed from roadmap; plan to be archived.
+
+- **Commit (integration tests projectBrief schema, markdown lint)** - COMPLETE. Fixed two failing integration tests (test_full_workflow, test_initialize_read_write_workflow) by using projectBrief content with required schema sections (Project Overview, Goals, Core Requirements, Success Criteria). Fixed MD026 in .cortex/history/progress_v11.md. Markdown lint (check_all_files): 0 errors. All pre-commit checks pass; 3635 tests, 90.01% coverage.
 
 - **MCP transport HTTP/SSE analysis (blocker)** - COMPLETE. Delivered analysis doc `docs/mcp-transport-http-sse-analysis.md`: SDK transport survey (stdio, SSE, streamable-http), client compatibility matrix (Cursor supports SSE URL), concurrency/behavior, design options (A/B/C), recommendation **Go**. Follow-up implementation plan added to roadmap (`.cortex/plans/mcp-transport-http-sse-implementation.md`). Plan status set to COMPLETED; roadmap blocker removed. Pre-existing function-length violations fixed (file_operation_helpers, file_operations); quality gate passed.
 
@@ -12,11 +18,11 @@
 
 - **Commit (markdown lint, pre-commit)** - COMPLETE. Markdown lint: 2 files fixed (projectBrief.md, commit.md); fix_errors, format, type_check, quality, tests (3631 passed, 90% coverage) all passed.
 
-- **Commit (roadmap_sync type fix, tests, markdown lint)** - COMPLETE. Fixed Pyright reportUnknownVariableType for SyncValidationResult.completed_entries_in_roadmap (typed default factory); added unit test for default; markdown lint 16 files fixed; 3631 tests, 90% coverage.
+- **Commit (roadmap_sync type fix, tests, markdown lint)** - COMPLETE. Fixed Pyright reportUnknownVariableType for SyncValidationResult.completed_entries_in_roadmap (typed default factory); added unit test for default; markdown lint 16 files fixed; 3631 tests, 90%.
 
-- **Ensure proper logging for FastMCP (Phase5 Documentation and Cleanup)** - COMPLETE. Completed Phase 5 of the FastMCP logging plan: updated `docs/development/logging-guidelines.md` (MCPContext, log_client, report_progress_safe); updated `docs/guides/troubleshooting.md` with Context logging subsection; verified code review (no unused logging imports; server-side logger use appropriate); ran format, quality gate, and full test suite (3624 tests passed). Plan marked COMPLETE; roadmap step removed.
+- **Ensure proper logging for FastMCP (Phase 5 Documentation and Cleanup)** - COMPLETE. Completed Phase 5 of the FastMCP logging plan: updated `docs/development/logging-guidelines.md` (MCPContext, log_client, report_progress_safe); updated `docs/guides/troubleshooting.md` with Context logging subsection; verified code review (no unused logging imports; server-side logger use appropriate); ran format, quality gate, and full test suite (3624 tests passed). Plan marked COMPLETE; roadmap step removed.
 
-- **Investigation: MCP connection closed during fix_markdown_lint** - COMPLETE. Root cause: client closed connection (~56 s), not server bug. No server logic change. Added note in commit prompt (Connection Closed section) re fix_markdown_lint progress/heartbeat and -32000); plan archived to archive/Investigations/2026-02-07.
+- **Investigation: MCP connection closed during fix_markdown_lint** - COMPLETE. Root cause: client closed connection (~56 s), not server bug. No server logic change. Added note in commit prompt (Connection Closed section) re fix_markdown_lint progress/heartbeat and -32000). Plan archived to archive/Investigations/2026-02-07.
 
 - **Commit (type fixes, integration tests, quality)** - Type fixes (MarkdownLintIndex import, python_adapter function length), markdown MD036; integration tests (project root patch + error logging when tool returns error JSON), all tests pass, 90% coverage.
 
@@ -34,7 +40,7 @@
 
 ## What Works
 
-Pre-commit pipeline (fix_errors, format, type_check, quality, tests); 3635 tests, 90.01% coverage; integration tests for projectBrief schema.
+Pre-commit pipeline (fix_errors, format, type_check, quality, tests); 3702 tests, 90.36% coverage; integration tests for projectBrief schema; Option C HTTP/SSE transport (Phase 1 and 2).
 
 ## What's Left
 

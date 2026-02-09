@@ -80,8 +80,12 @@ MCP_MAX_CONCURRENT_TOOLS = 5  # Maximum concurrent MCP tool executions
 MCP_MAX_CONCURRENT_RESOURCES = (
     10  # Max concurrent resource reads (Phase 69: avoid queueing behind tools)
 )
-MCP_CONNECTION_RETRY_ATTEMPTS = 3  # Maximum retry attempts for transient failures
-MCP_CONNECTION_RETRY_DELAY_SECONDS = 1.0  # Delay between retry attempts
+MCP_CONNECTION_RETRY_ATTEMPTS = (
+    2  # Initial try + 1 retry for transient connection failures
+)
+MCP_CONNECTION_RETRY_DELAY_SECONDS = (
+    0.5  # Delay before retry (keeps tests fast, still backs off)
+)
 MCP_HEALTH_CHECK_INTERVAL_SECONDS = 60  # Interval for connection health checks
 MCP_RESOURCE_CACHE_TTL_SECONDS = (
     30  # TTL for cached MCP resource responses (drain queue faster)
@@ -91,7 +95,9 @@ MCP_RESOURCE_CACHE_TTL_SECONDS = (
 MCP_TOOL_TIMEOUT_FAST = 60.0  # Fast operations: health checks, simple queries
 MCP_TOOL_TIMEOUT_MEDIUM = 120.0  # Medium operations: file reads, single validations
 MCP_TOOL_TIMEOUT_COMPLEX = 300.0  # Complex operations: analysis, multi-file ops
-MCP_TOOL_TIMEOUT_VERY_COMPLEX = 600.0  # Very complex: full tests, large refactors
+MCP_TOOL_TIMEOUT_VERY_COMPLEX = (
+    960.0  # Very complex: full tests (~15min), large refactors
+)
 MCP_TOOL_TIMEOUT_EXTERNAL = 120.0  # External operations: network, git sync
 MCP_TOOL_TIMEOUT_QUALITY_FIXES = (
     60.0  # Quality auto-fix tools (e.g. fix_quality_issues)

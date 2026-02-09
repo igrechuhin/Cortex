@@ -4,6 +4,10 @@
 This module provides a centralized registry for manager instances, replacing
 the previous module-level global cache. This improves testability and follows
 proper dependency injection patterns.
+
+Process-scoped registry: get_process_registry() returns a single registry
+instance per process so that concurrent MCP tool calls share the same cache
+and only one initialization runs (see ensure_usage_context lock).
 """
 
 from pathlib import Path
@@ -76,3 +80,15 @@ class ManagerRegistry:
             True if managers are cached for this project
         """
         return str(project_root) in self._managers
+
+
+# Process-scoped registry (defined after class to avoid forward declarations).
+_process_registry: ManagerRegistry | None = None
+
+
+def get_process_registry() -> ManagerRegistry:
+    """Return the process-scoped registry (one init per project root)."""
+    global _process_registry
+    if _process_registry is None:
+        _process_registry = ManagerRegistry()
+    return _process_registry

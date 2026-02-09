@@ -6,7 +6,7 @@
 
 ## Blockers (ASAP Priority)
 
-- **Gradual migration to Option C: HTTP/SSE default where client supports it; stdio fallback** - PENDING (FIX-ASAP) - Two-phase: (1) optional HTTP/SSE alongside stdio, (2) default to HTTP/SSE when port configured, stdio fallback. Plan: .cortex/plans/mcp-transport-http-sse-implementation.md.
+- **Investigate roadmap corruption on plan registration (blocker)** - PENDING - Investigate why every plan registration corrupts roadmap and triggers restoration; mandate register_plan_in_roadmap/add_roadmap_entry for plan registration so full-content write is not used; consider structured JSON roadmap as future work.
 
 ## Active Work (in progress)
 
@@ -75,4 +75,6 @@ The following 22 investigation plans document MCP tool registration issues resol
 - **Refactor setup prompts (simplify to 3)** - PENDING - Simplify from 4 to 3 prompts. Plan: .cortex/plans/refactor-setup-prompts.md.
 - **Type cleanup inventory (Phase 53)** - PENDING - Inventory of dict[str, object], list[object], TypedDict, Any. Plan: .cortex/plans/type-cleanup-inventory.md.
 - **Test Fixture Validation and Maintenance** - PENDING - Implement test fixture validation and maintenance mechanisms to prevent test failures caused by incomplete mock configurations. Addresses session optimization recommendations: fixture validation, documentation, and maintenance protocol.
-- **Session Optimization: Commit Pipeline Improvements** - PENDING - Implement improvements to commit pipeline based on end-of-session analysis: async test validation, early markdown lint validation, markdown formatting guidelines, git SSL documentation, test maintenance checklist, and push strategy improvements.
+- **Session Optimization: Commit Pipeline Improvements** - PENDING - Implement improvements to commit pipeline based on end-of-session analysis: async test validation, early markdown lint validation, markdown formatting guidelines, git SSL documentation, test maintenance checklist, push strategy improvements; plus (2026-02-07) integration test schema alignment, markdown lint scope clarification, memory-bank write quality. Plan: .cortex/plans/session-optimization-commit-pipeline-improvements-2026-02-07.md.
+- **Compound engineering alignment (Cortex MCP)** - PENDING - Align Cortex with compound-engineering goal (each unit of work makes the next easier); adopt ideas from EveryInc compound-engineering-plugin; document Plan→Work→Review→Compound loop; add compound checklist to prompts; reduce recurring friction. Plan: .cortex/plans/compound-engineering-alignment-cortex.md.
+- **MCP idempotent resource: project root path** - PENDING - Add an idempotent MCP resource that resolves and provides the project root path as a centralized entry point (e.g. cortex://project/root). Plan: .cortex/plans/mcp-idempotent-project-root-resource.md.

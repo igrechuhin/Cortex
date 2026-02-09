@@ -15,6 +15,7 @@ from cortex.tools.health_check_operations import (
     empty_prompt_result,
     empty_rule_result,
     empty_tool_result,
+    get_project_root,
     run_health_check_analysis,
 )
 
@@ -28,6 +29,30 @@ def _temp_project() -> Generator[Path]:
         (path / ".cortex" / "synapse" / "rules" / "general").mkdir(parents=True)
         (path / "src" / "cortex" / "tools").mkdir(parents=True)
         yield path
+
+
+class TestGetProjectRoot:
+    """Tests for get_project_root."""
+
+    def test_get_project_root_returns_path(self) -> None:
+        """get_project_root with None uses resolver default."""
+        with _temp_project() as root:
+            with patch(
+                "cortex.tools.health_check_operations._get_project_root",
+                return_value=root,
+            ):
+                result = get_project_root(None)
+            assert result == root
+
+    def test_get_project_root_with_string_passes_through(self) -> None:
+        """get_project_root with string passes to resolver."""
+        with _temp_project() as root:
+            with patch(
+                "cortex.tools.health_check_operations._get_project_root",
+                return_value=root,
+            ):
+                result = get_project_root(str(root))
+            assert result == root
 
 
 class TestEmptyResults:
@@ -115,6 +140,21 @@ class TestRunHealthCheckAnalysis:
             data = json.loads(result)
             assert "prompt_dependencies" in data
             assert isinstance(data["prompt_dependencies"], dict)
+
+    @pytest.mark.asyncio
+    async def test_validate_quality_true_runs_quality_validator(self) -> None:
+        """When validate_quality=True, quality validator is applied to opportunities."""
+        with _temp_project() as root:
+            result = await run_health_check_analysis(
+                analysis_type="all",
+                similarity_threshold=0.75,
+                include_dependencies=False,
+                validate_quality=True,
+                project_root=root,
+            )
+            data = json.loads(result)
+            assert data["status"] == "success"
+            assert "recommendations" in data
 
 
 class TestAnalyzeHealthCheck:

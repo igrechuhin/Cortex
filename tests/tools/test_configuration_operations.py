@@ -30,6 +30,14 @@ from cortex.tools.configuration_operations import (
 from tests.helpers.managers import make_test_managers
 
 
+@pytest.fixture(autouse=True)
+def _skip_usage_context_init():  # pyright: ignore[reportUnusedFunction]
+    """Avoid slow resolve_project_root + get_managers in ensure_usage_context."""
+    with patch("cortex.core.mcp_stability.get_current_managers", return_value={}):
+        yield
+
+
+@pytest.mark.timeout(10)
 class TestConfigureMainHandler:
     """Test main configure handler."""
 
@@ -190,6 +198,7 @@ class TestConfigureMainHandler:
             assert result_data["error_type"] == "RuntimeError"
 
 
+@pytest.mark.timeout(10)
 class TestGetConfigResourceAndUpdateConfig:
     """Test get_config_resource (Phase 43 Resource) and update_config (Phase 43 Tool)."""
 
@@ -296,6 +305,7 @@ class TestGetConfigResourceAndUpdateConfig:
                 assert "Configuration updated" in result_data.get("message", "")
 
 
+@pytest.mark.timeout(10)
 class TestValidationConfiguration:
     """Test validation configuration helpers."""
 
@@ -445,6 +455,7 @@ class TestValidationConfiguration:
         assert "reset to defaults" in result_data["message"]
 
 
+@pytest.mark.timeout(10)
 class TestOptimizationConfiguration:
     """Test optimization configuration helpers."""
 
@@ -559,6 +570,7 @@ class TestOptimizationConfiguration:
         assert "reset to defaults" in result_data["message"]
 
 
+@pytest.mark.timeout(10)
 class TestLearningConfiguration:
     """Test learning configuration helpers."""
 
@@ -968,6 +980,7 @@ class TestEdgeCases:
         assert "Either settings or key+value required" in result_data["error"]
 
 
+@pytest.mark.timeout(10)
 class TestConfigureContextLogging:
     """Test configure tool Context logging (FastMCP)."""
 

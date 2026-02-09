@@ -1,13 +1,13 @@
 {
-  "last_updated": "2026-02-07T20:33",
-  "total_sessions_analyzed": 10,
-  "total_load_context_calls": 11,
-  "avg_token_utilization": 0.361,
-  "avg_files_selected": 8.36,
-  "avg_relevance_score": 0.583,
+  "last_updated": "2026-02-07T21:08",
+  "total_sessions_analyzed": 11,
+  "total_load_context_calls": 12,
+  "avg_token_utilization": 0.35,
+  "avg_files_selected": 8.33,
+  "avg_relevance_score": 0.579,
   "common_task_patterns": {
     "fix/debug": 2,
-    "other": 4,
+    "other": 5,
     "implement/add": 3,
     "update/modify": 1,
     "testing": 1
@@ -29,18 +29,18 @@
         "notes": "Limited data - insights will improve with more samples"
       },
       "other": {
-        "calls_count": 4,
+        "calls_count": 5,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
           "techContext.md",
           "roadmap.md",
-          "phase-60-improve-manage-file-discoverability.plan.md",
-          "progress.md"
+          "progress.md",
+          "systemPatterns.md"
         ],
-        "avg_utilization": 0.3,
-        "avg_relevance": 0.572,
-        "notes": "Moderate utilization - some budget optimization possible"
+        "avg_utilization": 0.285,
+        "avg_relevance": 0.563,
+        "notes": "Low utilization - consider smaller token budgets"
       },
       "implement/add": {
         "calls_count": 3,
@@ -81,62 +81,62 @@
     },
     "file_effectiveness": {
       "activeContext.md": {
-        "times_selected": 11,
-        "avg_relevance": 0.825,
+        "times_selected": 12,
+        "avg_relevance": 0.826,
         "task_types_used": [
-          "implement/add",
-          "other",
           "fix/debug",
+          "update/modify",
           "testing",
-          "update/modify"
+          "implement/add",
+          "other"
         ],
         "recommendation": "High value - prioritize for loading"
       },
       "techContext.md": {
-        "times_selected": 11,
-        "avg_relevance": 0.568,
+        "times_selected": 12,
+        "avg_relevance": 0.563,
         "task_types_used": [
-          "implement/add",
-          "other",
           "fix/debug",
+          "update/modify",
           "testing",
-          "update/modify"
+          "implement/add",
+          "other"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "roadmap.md": {
-        "times_selected": 10,
-        "avg_relevance": 0.64,
+        "times_selected": 11,
+        "avg_relevance": 0.637,
         "task_types_used": [
-          "implement/add",
-          "other",
           "fix/debug",
+          "update/modify",
           "testing",
-          "update/modify"
+          "implement/add",
+          "other"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "file.md": {
-        "times_selected": 11,
-        "avg_relevance": 0.335,
+        "times_selected": 12,
+        "avg_relevance": 0.327,
         "task_types_used": [
-          "implement/add",
-          "other",
           "fix/debug",
+          "update/modify",
           "testing",
-          "update/modify"
+          "implement/add",
+          "other"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "projectBrief.md": {
-        "times_selected": 11,
-        "avg_relevance": 0.429,
+        "times_selected": 12,
+        "avg_relevance": 0.422,
         "task_types_used": [
-          "implement/add",
-          "other",
           "fix/debug",
+          "update/modify",
           "testing",
-          "update/modify"
+          "implement/add",
+          "other"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -159,46 +159,46 @@
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "progress.md": {
-        "times_selected": 10,
-        "avg_relevance": 0.618,
+        "times_selected": 11,
+        "avg_relevance": 0.619,
         "task_types_used": [
-          "implement/add",
-          "other",
           "fix/debug",
+          "update/modify",
           "testing",
-          "update/modify"
+          "implement/add",
+          "other"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "systemPatterns.md": {
-        "times_selected": 11,
-        "avg_relevance": 0.55,
+        "times_selected": 12,
+        "avg_relevance": 0.541,
         "task_types_used": [
-          "implement/add",
-          "other",
           "fix/debug",
+          "update/modify",
           "testing",
-          "update/modify"
+          "implement/add",
+          "other"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "productContext.md": {
-        "times_selected": 11,
-        "avg_relevance": 0.552,
+        "times_selected": 12,
+        "avg_relevance": 0.557,
         "task_types_used": [
-          "implement/add",
-          "other",
           "fix/debug",
+          "update/modify",
           "testing",
-          "update/modify"
+          "implement/add",
+          "other"
         ],
         "recommendation": "Moderate value - include when relevant"
       }
     },
     "learned_patterns": [
-      "Average 36% budget utilization - ~21k tokens unused per call",
-      "'activeContext.md' is most frequently loaded (11/11 calls)",
-      "Most common task type: 'other' (4 calls)"
+      "Average 34% budget utilization - ~21k tokens unused per call",
+      "'activeContext.md' is most frequently loaded (12/12 calls)",
+      "Most common task type: 'other' (5 calls)"
     ],
     "budget_recommendations": {
       "fix/debug": 10000,
@@ -550,6 +550,39 @@
         "techContext.md": 0.748,
         "productContext.md": 0.68,
         "systemPatterns.md": 0.662
+      }
+    },
+    {
+      "session_id": "48c87eaaa3d7",
+      "timestamp": "2026-02-07T20:56",
+      "task_description": "Gradual migration to Option C: HTTP/SSE transport default where client supports it; stdio fallback. Two-phase: (1) optional HTTP/SSE alongside stdio, (2) default to HTTP/SSE when port configured, stdio fallback.",
+      "token_budget": 35000,
+      "total_tokens": 7780,
+      "utilization": 0.22228571428571428,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.527,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "productContext.md",
+        "progress.md",
+        "activeContext.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "file.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.61,
+        "progress.md": 0.624,
+        "activeContext.md": 0.836,
+        "file.md": 0.24,
+        "projectBrief.md": 0.336,
+        "techContext.md": 0.518,
+        "productContext.md": 0.61,
+        "systemPatterns.md": 0.445
       }
     }
   ]

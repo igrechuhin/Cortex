@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Manager initialization and lifecycle management for MCP Memory Bank."""
 
+import logging
+import time
 from pathlib import Path
 from typing import cast
 
@@ -23,6 +25,8 @@ from cortex.managers.manager_initialization import (
     add_validation_managers,
 )
 from cortex.managers.types import CoreManagersDict, ManagersDict
+
+logger = logging.getLogger(__name__)
 
 
 def _detect_root_from(path: Path) -> Path | None:
@@ -221,13 +225,27 @@ async def get_managers(project_root: Path) -> ManagersDict:
     Returns:
         ManagersDict model with manager instances (or LazyManager wrappers)
     """
-    from cortex.core.manager_registry import ManagerRegistry
-    from cortex.core.usage_context import set_current_managers
+    from cortex.core.manager_registry import get_process_registry
+    from cortex.core.usage_context import set_current_managers, set_current_project_root
 
-    registry = ManagerRegistry()
+    registry = get_process_registry()
+    t0 = time.monotonic()
     managers_dict = await registry.get_managers(project_root)
+    elapsed = time.monotonic() - t0
+    logger.debug(
+        "get_managers: registry.get_managers(%s) took %.3fs",
+        project_root,
+        elapsed,
+    )
+    if elapsed > 2.0:
+        logger.info(
+            "get_managers: initialize_managers(%s) took %.2fs",
+            project_root,
+            elapsed,
+        )
     result = ManagersDict.model_validate(managers_dict)
     set_current_managers(managers_dict.model_dump())
+    set_current_project_root(project_root)
     return result
 
 
@@ -240,7 +258,12 @@ async def initialize_managers(project_root: Path) -> ManagersDict:
     Returns:
         ManagersDict model with manager instances and LazyManager wrappers
     """
+    t0 = time.monotonic()
     core_managers = await _init_core_managers(project_root)
+    logger.debug(
+        "initialize_managers: _init_core_managers took %.3fs",
+        time.monotonic() - t0,
+    )
     builders_dict = core_managers.model_dump()
 
     add_linking_managers(builders_dict, core_managers)
@@ -251,7 +274,18 @@ async def initialize_managers(project_root: Path) -> ManagersDict:
     add_execution_managers(builders_dict, project_root, core_managers)
     add_usage_tracker(builders_dict, project_root)
 
+    t1 = time.monotonic()
     await _post_init_setup(project_root, builders_dict)
+    post_elapsed = time.monotonic() - t1
+    logger.debug(
+        "initialize_managers: _post_init_setup took %.3fs",
+        post_elapsed,
+    )
+    if post_elapsed > 2.0:
+        logger.info(
+            "initialize_managers: _post_init_setup took %.2fs (index.load + cleanup_locks)",
+            post_elapsed,
+        )
     return ManagersDict.model_validate(builders_dict)
 
 
@@ -298,31 +332,30 @@ async def _post_init_setup(project_root: Path, managers: ManagersBuilder) -> Non
         project_root: Project root directory
         managers: Manager builder dict with core and lazy managers
     """
-    from cortex.managers.manager_utils import get_manager
-    from cortex.optimization.optimization_config import OptimizationConfig
-    from cortex.optimization.rules_manager import RulesManager
-
     index = cast(MetadataIndex, managers["index"])
     fs_manager = cast(FileSystemManager, managers["fs"])
 
     index_path = get_cortex_path(project_root, CortexResourceType.INDEX)
     if index_path.exists():
         try:
+            t0 = time.monotonic()
             _ = await index.load()
+            logger.debug(
+                "_post_init_setup: index.load() took %.3fs",
+                time.monotonic() - t0,
+            )
         except Exception:
             pass
 
+    t0 = time.monotonic()
     await fs_manager.cleanup_locks()
+    logger.debug(
+        "_post_init_setup: cleanup_locks() took %.3fs",
+        time.monotonic() - t0,
+    )
 
-    try:
-        optimization_config = await get_manager(
-            managers, "optimization_config", OptimizationConfig
-        )
-        if optimization_config.is_rules_enabled():
-            rules_manager = await get_manager(managers, "rules_manager", RulesManager)
-            _ = await rules_manager.initialize()
-    except Exception:
-        pass
+    # Rules manager init is deferred to first use (rules tool) so the first
+    # tool call (e.g. manage_file) is not blocked by ~30s rules indexing.
 
 
 async def handle_file_change(file_path: Path, event_type: str) -> None:
