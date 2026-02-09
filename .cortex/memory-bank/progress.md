@@ -6,6 +6,7 @@
 
 - **Commit (rules and manage_file test fixes)** - COMPLETE. Fixed test failures: (1) Added `manager.initialize = AsyncMock(return_value=None)` to `mock_rules_manager` in `tests/tools/test_rules_operations.py` so `await rules_manager.initialize()` in rules tool does not raise. (2) Fixed `test_manage_file_metadata_success` in `tests/tools/test_consolidated.py`: patch `set_current_managers` and `set_current_project_root` (no-op) so usage-context does not persist real managers; use existing path for `construct_safe_path` return value. All 3702 tests pass; coverage 90.36%.
 - **Commit (type, quality, markdown)** - COMPLETE. Fixed reportUnusedCallResult in plan_completion._write_progress; refactored_execute_append_progress, _execute_append_active_context (plan_completion),_execute_roadmap_removal (roadmap_operations) under 30 lines via error helpers; fix_markdown_lint fixed 3 Synapse files.
+- - **Commit (markdown lint MD033, plan archive check)** - COMPLETE. Fixed MD033 no-inline-html in `.cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260209-203054.md` by wrapping error message in backticks. Markdown lint (check_all_files): 0 errors. Plan archiving: 0 completed plans in plans root. Tests 3717 passed; coverage 90.16%.
 
 ## 2026-02-07
 

@@ -10,6 +10,8 @@
 
 - ✅ **Commit (type, quality, markdown)** - COMPLETE (2026-02-09) - Fixed reportUnusedCallResult in plan_completion._write_progress; refactored_execute_append_progress, _execute_append_active_context (plan_completion),_execute_roadmap_removal (roadmap_operations) under 30 lines via error helpers; fix_markdown_lint fixed 3 Synapse files.
 
+- ✅ **Commit (markdown lint MD033, plan archive check)** - COMPLETE (2026-02-09) - Fixed MD033 no-inline-html in phase-investigate-execute_pre_commit_checks-failure plan by wrapping error message in backticks. Markdown lint check_all_files: 0 errors. Plan archiving: 0 completed plans in plans root. 3717 tests, 90.16% coverage.
+
 ## Completed Work (2026-02-07)
 
 - ✅ **Gradual migration to Option C: HTTP/SSE transport (blocker)** - COMPLETE (2026-02-07). Implemented Phase 1 and Phase 2: (1) Optional HTTP/SSE and Streamable HTTP alongside stdio via `CORTEX_MCP_TRANSPORT`, `CORTEX_MCP_PORT`, `CORTEX_MCP_HOST`; entry point applies env to FastMCP and selects transport; uvicorn/starlette when sse or streamable-http. (2) Option C default: when port set, default transport is sse unless `CORTEX_MCP_TRANSPORT=stdio`. Added `cortex.transport_config`, unit tests (`test_transport_config.py`), main transport selection tests; updated `docs/mcp-tool-timeouts.md` (HTTP/SSE section, Deployment and configuration, Option C). Plan archived: .cortex/plans/archive/Transport/mcp-transport-http-sse-implementation.md.
