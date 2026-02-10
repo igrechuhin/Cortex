@@ -3,9 +3,11 @@
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import cast
+from uuid import NAMESPACE_URL, uuid5
 
 from cortex.core.cache_json_access import read_cache_json, read_modify_write_cache_json
 from cortex.core.cache_utils import CacheType, get_cache_dir
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.managers.usage_models import ToolUsageEvent, ToolUsageStats
 
 
@@ -25,7 +27,8 @@ def _load_config(project_root: Path) -> dict[str, bool | int | float | list[str]
     """Load usage tracking config from .cortex/config/usage_tracking.json."""
     import json
 
-    config_path = project_root / ".cortex" / "config" / "usage_tracking.json"
+    config_dir = get_cortex_path(project_root, CortexResourceType.CONFIG)
+    config_path = config_dir / "usage_tracking.json"
     if not config_path.is_file():
         return _default_config()
     try:
@@ -264,11 +267,42 @@ def _parse_events_from_content(
         item_d = cast(dict[str, object], item)
         if tool_name and item_d.get("tool_name") != tool_name:
             continue
+        _ensure_event_id(item_d)
         try:
             out.append(ToolUsageEvent.model_validate(item_d))
         except Exception:
             continue
     return out
+
+
+def generate_usage_event_id(data: dict[str, object]) -> str:
+    """Generate a stable UUIDv5-based ID for a usage event."""
+    base = "|".join(
+        str(data.get(key, ""))
+        for key in (
+            "timestamp",
+            "tool_name",
+            "duration_ms",
+            "success",
+            "error_type",
+            "params_hash",
+            "handler_kind",
+        )
+    )
+    return str(uuid5(NAMESPACE_URL, base))
+
+
+def _ensure_event_id(item: dict[str, object]) -> None:
+    """Ensure usage event dict has a stable ID for backfilled data.
+
+    For persisted events written before the id field existed, derive a
+    deterministic UUIDv5 from core fields so the same event gets the same
+    ID on every read.
+    """
+    existing = item.get("id")
+    if isinstance(existing, str) and existing:
+        return
+    item["id"] = generate_usage_event_id(item)
 
 
 async def _load_events_in_range(

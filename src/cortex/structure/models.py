@@ -10,6 +10,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.models import JsonDict
+from cortex.core.path_resolver import CortexResourceType, CursorResourceType
 
 # ============================================================================
 # Base Model
@@ -34,13 +35,28 @@ class StructureBaseModel(BaseModel):
 class LayoutConfig(StructureBaseModel):
     """Layout configuration for directory structure."""
 
-    root: str = Field(default=".cortex", description="Root directory name")
-    memory_bank: str = Field(default="memory-bank", description="Memory bank directory")
-    rules: str = Field(default="rules", description="Rules directory")
-    plans: str = Field(default="plans", description="Plans directory")
-    config: str = Field(default="config", description="Config directory")
-    archived: str = Field(default="archived", description="Archived directory")
-    reviews: str = Field(default="reviews", description="Reviews directory")
+    root: str = Field(
+        default=CortexResourceType.CORTEX_DIR.value, description="Root directory name"
+    )
+    memory_bank: str = Field(
+        default=CortexResourceType.MEMORY_BANK.value,
+        description="Memory bank directory",
+    )
+    rules: str = Field(
+        default=CortexResourceType.RULES.value, description="Rules directory"
+    )
+    plans: str = Field(
+        default=CortexResourceType.PLANS.value, description="Plans directory"
+    )
+    config: str = Field(
+        default=CortexResourceType.CONFIG.value, description="Config directory"
+    )
+    archived: str = Field(
+        default=CortexResourceType.ARCHIVED.value, description="Archived directory"
+    )
+    reviews: str = Field(
+        default=CortexResourceType.REVIEWS.value, description="Reviews directory"
+    )
 
 
 class SymlinksConfig(StructureBaseModel):
@@ -56,7 +72,8 @@ class CursorIntegrationConfigModel(StructureBaseModel):
 
     enabled: bool = Field(default=True, description="Whether integration is enabled")
     symlink_location: str = Field(
-        default=".cursor", description="Symlink location directory"
+        default=CursorResourceType.CURSOR_DIR.value,
+        description="Symlink location directory",
     )
     symlinks: SymlinksConfig = Field(
         default_factory=SymlinksConfig, description="Symlink settings"

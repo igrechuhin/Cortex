@@ -10,6 +10,7 @@ from cortex.core.models import (
     ModelDict,
     VersionMetadata,
 )
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 from .async_file_utils import open_async_text_file
 
@@ -43,7 +44,9 @@ class VersionManager:
             keep_versions: Number of versions to keep per file (default: 10)
         """
         self.project_root: Path = Path(project_root)
-        self.history_dir: Path = self.project_root / ".cortex" / "history"
+        self.history_dir: Path = get_cortex_path(
+            self.project_root, CortexResourceType.HISTORY
+        )
         self.keep_versions: int = keep_versions
 
     async def create_snapshot(

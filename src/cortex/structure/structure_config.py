@@ -12,22 +12,27 @@ from typing import cast
 
 from cortex.core.async_file_utils import open_async_text_file
 from cortex.core.models import ModelDict
+from cortex.core.path_resolver import (
+    CortexResourceType,
+    CursorResourceType,
+    get_cortex_path,
+)
 
 # Default structure definition
 DEFAULT_STRUCTURE: ModelDict = {
     "version": "2.0",
     "layout": {
-        "root": ".cortex",
-        "memory_bank": "memory-bank",
-        "rules": "rules",
-        "plans": "plans",
-        "config": "config",
-        "archived": "archived",
-        "reviews": "reviews",
+        "root": CortexResourceType.CORTEX_DIR.value,
+        "memory_bank": CortexResourceType.MEMORY_BANK.value,
+        "rules": CortexResourceType.RULES.value,
+        "plans": CortexResourceType.PLANS.value,
+        "config": CortexResourceType.CONFIG.value,
+        "archived": CortexResourceType.ARCHIVED.value,
+        "reviews": CortexResourceType.REVIEWS.value,
     },
     "cursor_integration": {
         "enabled": True,
-        "symlink_location": ".cursor",
+        "symlink_location": CursorResourceType.CURSOR_DIR.value,
         "symlinks": {
             "memory_bank": True,
             "rules": True,
@@ -78,9 +83,8 @@ class StructureConfig:
             project_root: Root directory of the project
         """
         self.project_root: Path = project_root
-        self.structure_config_path: Path = (
-            project_root / ".cortex" / "config" / "structure.json"
-        )
+        config_dir = get_cortex_path(project_root, CortexResourceType.CONFIG)
+        self.structure_config_path: Path = config_dir / "structure.json"
         self.structure_config: ModelDict = self._load_structure_config()
 
     def _load_structure_config(self) -> ModelDict:

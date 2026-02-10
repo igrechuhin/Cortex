@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
 # Canonical MCP tool names for discovery (keep in sync with docs/api/tools.md).
 _KNOWN_TOOL_NAMES: list[str] = [
     "analyze",
@@ -78,7 +80,8 @@ def get_known_tool_names() -> list[str]:
 
 def get_known_script_names(project_root: Path) -> list[str]:
     """List Synapse script names (file stems) from .cortex/synapse/scripts/python."""
-    scripts_dir = project_root / ".cortex" / "synapse" / "scripts" / "python"
+    synapse_root = get_cortex_path(project_root, CortexResourceType.SYNAPSE)
+    scripts_dir = synapse_root / "scripts" / "python"
     if not scripts_dir.exists():
         return []
     stems: list[str] = []

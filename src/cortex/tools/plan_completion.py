@@ -353,7 +353,7 @@ def _do_complete_plan(
     date_str: str,
 ) -> CompletePlanResult:
     """Remove plan from roadmap and add completed entry to activeContext."""
-    mem_dir = root / ".cortex" / "memory-bank"
+    mem_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     roadmap_path = mem_dir / "roadmap.md"
     active_path = mem_dir / "activeContext.md"
 
@@ -437,7 +437,8 @@ def _execute_append_progress(
     root: Path, date_str: str, entry_text: str
 ) -> AppendProgressEntryResult:
     """Append one entry to progress.md under ## date_str. Returns result."""
-    progress_path = root / ".cortex" / "memory-bank" / "progress.md"
+    mem_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+    progress_path = mem_dir / "progress.md"
     content, read_err = _read_file(progress_path)
     if read_err or not content:
         return _progress_error("Failed to read progress", read_err or "Empty file")
@@ -475,7 +476,8 @@ def _execute_append_active_context(
     root: Path, date_str: str, title: str, summary: str
 ) -> AppendActiveContextEntryResult:
     """Append one completed entry to activeContext.md. Returns result."""
-    active_path = root / ".cortex" / "memory-bank" / "activeContext.md"
+    mem_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+    active_path = mem_dir / "activeContext.md"
     content, read_err = _read_file(active_path)
     if read_err or not content:
         return _active_context_error(

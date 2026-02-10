@@ -127,7 +127,9 @@ class MCPToolFailureHandler:
             # Auto-detect project root by finding .cortex directory
             project_root = Path.cwd()
             while project_root != project_root.parent:
-                if (project_root / ".cortex").exists():
+                if get_cortex_path(
+                    project_root, CortexResourceType.CORTEX_DIR
+                ).exists():
                     break
                 project_root = project_root.parent
             else:

@@ -15,6 +15,7 @@ from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.exceptions import FileConflictError, FileLockTimeoutError
 from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.models import AddRoadmapEntryResult, RemoveRoadmapEntryResult
@@ -235,7 +236,8 @@ def _execute_roadmap_removal(
     root_path: Path, entry_contains: str
 ) -> RemoveRoadmapEntryResult:
     """Remove first roadmap bullet line containing entry_contains. Returns result."""
-    roadmap_path = root_path / ".cortex" / "memory-bank" / "roadmap.md"
+    memory_bank_root = get_cortex_path(root_path, CortexResourceType.MEMORY_BANK)
+    roadmap_path = memory_bank_root / "roadmap.md"
     current_content, read_error = _read_roadmap_file(roadmap_path)
     if read_error:
         return _removal_error("Failed to read roadmap", read_error)
@@ -353,7 +355,8 @@ def _execute_roadmap_insertion(
     if section_error:
         return _handle_section_validation_error(section, section_error)
 
-    roadmap_path = root_path / ".cortex" / "memory-bank" / "roadmap.md"
+    memory_bank_root = get_cortex_path(root_path, CortexResourceType.MEMORY_BANK)
+    roadmap_path = memory_bank_root / "roadmap.md"
     current_content, read_error = _read_roadmap_file(roadmap_path)
     if read_error:
         return _handle_read_error(section_id, read_error)

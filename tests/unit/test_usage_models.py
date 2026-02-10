@@ -14,6 +14,8 @@ class TestToolUsageEvent:
             duration_ms=10.5,
             success=True,
         )
+        assert isinstance(event.id, str)
+        assert event.id
         assert event.tool_name == "manage_file"
         assert event.timestamp == "2026-02-01T12:00:00+00:00"
         assert event.duration_ms == 10.5
@@ -30,6 +32,8 @@ class TestToolUsageEvent:
             success=False,
             error_type="ValueError",
         )
+        assert isinstance(event.id, str)
+        assert event.id
         assert event.success is False
         assert event.error_type == "ValueError"
 
@@ -43,6 +47,9 @@ class TestToolUsageEvent:
             params_hash="abc123",
         )
         d = event.model_dump()
+        assert "id" in d
+        assert isinstance(d["id"], str)
+        assert d["id"]
         assert d["tool_name"] == "get_tool_usage_stats"
         assert d["params_hash"] == "abc123"
 

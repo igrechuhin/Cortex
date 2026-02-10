@@ -6,7 +6,8 @@ from typing import cast
 
 import pytest
 
-from cortex.managers.usage_tracker import UsageTracker
+from cortex.core.cache_json_access import read_cache_json
+from cortex.managers.usage_tracker import UsageTracker, generate_usage_event_id
 
 
 def _make_project_root(tmp_path: Path) -> Path:
@@ -63,6 +64,26 @@ class TestRecordToolUsage:
         assert "manage_file" in tools
         assert tools["manage_file"]["avg_duration_ms"] == 10.0
         assert tools["manage_file"]["successful_calls"] == 1
+
+    @pytest.mark.asyncio
+    async def test_record_persists_event_id(self, tmp_path: Path) -> None:
+        """Recorded events include a stable id field in persisted JSON."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage(
+            tool_name="with_id",
+            duration_ms=5.0,
+            success=True,
+        )
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        relative_key = f"usage/events/{today}.json"
+        raw = await read_cache_json(root, relative_key)
+        assert isinstance(raw, list) and raw
+        first = raw[0]
+        first_d = cast(dict[str, object], first) if isinstance(first, dict) else {}
+        id_val = first_d.get("id")
+        assert isinstance(id_val, str)
+        assert id_val
 
     @pytest.mark.asyncio
     async def test_record_appends_to_existing_file(self, tmp_path: Path) -> None:
@@ -136,6 +157,28 @@ class TestGetUsageStats:
             cast(dict[str, object], err_ty) if isinstance(err_ty, dict) else {}
         )
         assert err_d.get("Err") == 1
+
+
+class TestBackfillIdsForExistingEvents:
+    """Test ID backfill for events stored without id field."""
+
+    def test_backfill_assigns_stable_ids(self) -> None:
+        """Existing events without id receive stable, deterministic IDs."""
+        legacy_event: dict[str, object] = {
+            "tool_name": "legacy_tool",
+            "timestamp": "2026-02-01T12:00:00+00:00",
+            "duration_ms": 1.0,
+            "success": True,
+            "error_type": None,
+            "params_hash": None,
+            "handler_kind": "tool",
+        }
+        first_id = generate_usage_event_id(legacy_event)
+        assert isinstance(first_id, str)
+        assert first_id
+
+        second_id = generate_usage_event_id(legacy_event)
+        assert second_id == first_id
 
 
 class TestGetUnusedTools:

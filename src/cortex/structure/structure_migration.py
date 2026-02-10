@@ -13,7 +13,12 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.models import JsonValue, ModelDict
-from cortex.core.path_resolver import CursorResourceType, get_cursor_path
+from cortex.core.path_resolver import (
+    CortexResourceType,
+    CursorResourceType,
+    get_cortex_path,
+    get_cursor_path,
+)
 from cortex.structure.models import MigrationReport
 from cortex.structure.structure_config import (
     STANDARD_MEMORY_BANK_FILES,
@@ -70,7 +75,12 @@ class StructureMigrationManager:
 
         # Check for scattered files
         scattered_files = list(self.project_root.rglob("projectBrief.md"))
-        if scattered_files and not (self.project_root / ".cortex").exists():
+        if (
+            scattered_files
+            and not get_cortex_path(
+                self.project_root, CortexResourceType.CORTEX_DIR
+            ).exists()
+        ):
             return "scattered-files"
 
         # Check for default Cursor

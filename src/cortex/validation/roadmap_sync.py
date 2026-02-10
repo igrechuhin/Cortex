@@ -252,7 +252,8 @@ def _resolve_reference_path(project_root: Path, ref: RoadmapReference) -> Path:
     if ref.file_path.startswith(".cortex/plans/"):
         return plans_root / _plans_suffix(ref.file_path, ".cortex/plans/")
     if ref.file_path.startswith("cortex/"):
-        return project_root / ".cortex" / ref.file_path[7:]
+        cortex_root = get_cortex_path(project_root, CortexResourceType.CORTEX_DIR)
+        return cortex_root / ref.file_path[len("cortex/") :]
     # Bare .md filenames (e.g. activeContext.md) resolve to memory-bank when present
     if "/" not in ref.file_path and ref.file_path.endswith(".md"):
         memory_bank_root = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)

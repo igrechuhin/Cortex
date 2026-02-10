@@ -46,6 +46,7 @@ from cortex.analysis.pattern_types import (
 from cortex.core.async_file_utils import open_async_text_file
 from cortex.core.exceptions import MemoryBankError
 from cortex.core.models import JsonValue
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 # Re-export types for convenience
 __all__ = [
@@ -93,7 +94,8 @@ class PatternAnalyzer:
             track_task_patterns: Enable task pattern tracking (from config)
         """
         self.project_root: Path = Path(project_root)
-        self.access_log_path: Path = self.project_root / ".cortex" / "access-log.json"
+        cortex_root = get_cortex_path(self.project_root, CortexResourceType.CORTEX_DIR)
+        self.access_log_path: Path = cortex_root / "access-log.json"
         self.access_data: AccessLog = self._load_access_log()
 
         # Store config values for use in analysis methods

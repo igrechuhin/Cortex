@@ -9,6 +9,7 @@
     "aiter",
     "anonymization",
     "anyio",
+    "appr",
     "ASGI",
     "asyncmock",
     "autouse",
@@ -220,8 +221,10 @@
     "validator",
     "venv",
     "versionmanager",
+    "Virtualenv",
     "vitest",
-    "xdist"
+    "xdist",
+    "xfail"
   ],
   "ignoreWords": [],
   "ignorePaths": [

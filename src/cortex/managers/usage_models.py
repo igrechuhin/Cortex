@@ -1,6 +1,7 @@
 """Pydantic models for MCP tool usage tracking (Phase 29)."""
 
 from typing import Literal
+from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -10,6 +11,10 @@ class ToolUsageEvent(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    id: str = Field(
+        default_factory=lambda: str(uuid4()),
+        description="Stable unique ID for this usage event",
+    )
     tool_name: str = Field(description="Name of the MCP tool invoked")
     timestamp: str = Field(description="ISO 8601 timestamp")
     duration_ms: float = Field(ge=0, description="Execution duration in milliseconds")

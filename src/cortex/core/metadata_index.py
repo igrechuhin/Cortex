@@ -6,6 +6,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import cast
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
 from .async_file_utils import open_async_text_file
 from .exceptions import IndexCorruptedError
 from .retry import retry_async
@@ -78,9 +80,15 @@ class MetadataIndex:
             project_root: Root directory of the project
         """
         self.project_root: Path = Path(project_root)
-        self.cortex_dir: Path = self.project_root / ".cortex"
-        self.index_path: Path = self.cortex_dir / "index.json"
-        self.memory_bank_dir: Path = self.cortex_dir / "memory-bank"
+        self.cortex_dir: Path = get_cortex_path(
+            self.project_root, CortexResourceType.CORTEX_DIR
+        )
+        self.index_path: Path = get_cortex_path(
+            self.project_root, CortexResourceType.INDEX
+        )
+        self.memory_bank_dir: Path = get_cortex_path(
+            self.project_root, CortexResourceType.MEMORY_BANK
+        )
         self._data: dict[str, object] | None = None
 
     async def load(self) -> dict[str, object]:

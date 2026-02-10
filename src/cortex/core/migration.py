@@ -5,6 +5,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import cast
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
 from .dependency_graph import DependencyGraph
 from .exceptions import MigrationFailedError
 from .file_system import FileSystemManager
@@ -38,9 +40,15 @@ class MigrationManager:
             project_root: Root directory of the project
         """
         self.project_root: Path = Path(project_root)
-        self.cortex_dir: Path = self.project_root / ".cortex"
-        self.memory_bank_dir: Path = self.cortex_dir / "memory-bank"
-        self.index_path: Path = self.cortex_dir / "index.json"
+        self.cortex_dir: Path = get_cortex_path(
+            self.project_root, CortexResourceType.CORTEX_DIR
+        )
+        self.memory_bank_dir: Path = get_cortex_path(
+            self.project_root, CortexResourceType.MEMORY_BANK
+        )
+        self.index_path: Path = get_cortex_path(
+            self.project_root, CortexResourceType.INDEX
+        )
 
     async def detect_migration_needed(self) -> bool:
         """

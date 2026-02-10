@@ -6,7 +6,11 @@ Extracted from pre_commit_tools to keep that file under 400 lines.
 import subprocess
 from pathlib import Path
 
-from cortex.core.path_resolver import get_venv_bin_path
+from cortex.core.path_resolver import (
+    CortexResourceType,
+    get_cortex_path,
+    get_venv_bin_path,
+)
 from cortex.services.framework_adapters.base import CheckResult
 
 
@@ -73,9 +77,8 @@ def run_synapse_script(
     check_type: str,
 ) -> CheckResult:
     """Run a synapse script and return CheckResult. Scripts are implementation detail."""
-    script_path = (
-        project_root / ".cortex" / "synapse" / "scripts" / language / script_name
-    )
+    synapse_root = get_cortex_path(project_root, CortexResourceType.SYNAPSE)
+    script_path = synapse_root / "scripts" / language / script_name
     if not script_path.exists():
         return _synapse_script_skipped_result(check_type, language)
     python_bin = _resolve_synapse_python_bin(project_root)

@@ -1,6 +1,6 @@
 # Claude-mem Inspired Improvements (Usage Search, Observations, Progressive Disclosure)
 
-**Status**: PENDING  
+**Status**: IN PROGRESS (Steps 1–3 completed 2026-02-10)  
 **Created**: 2026-02-02  
 **Priority**: Future enhancement (after Phase 43)  
 **Estimated Effort**: 15–25 hours (phased)  
@@ -48,6 +48,8 @@ Implementation order: execute steps in sequence. Dependencies between steps are 
 
 **Dependencies**: None.
 
+**Status**: COMPLETED 2026-02-10 — CLAUDE.md context workflow and implement-next-roadmap-step prompt confirm progressive disclosure guidance.
+
 ---
 
 ### Step 2: Document Privacy / Exclusion Convention (Low Effort)
@@ -60,6 +62,8 @@ Implementation order: execute steps in sequence. Dependencies between steps are 
 **Success**: Convention documented; optional stripping implemented only if scoped and tested.
 
 **Dependencies**: None.
+
+**Status**: COMPLETED 2026-02-10 — Privacy convention documented in CLAUDE.md (and AGENTS.md) for `<private>` / `<!-- private -->` blocks.
 
 ---
 
@@ -74,6 +78,8 @@ Implementation order: execute steps in sequence. Dependencies between steps are 
 **Success**: All new events have IDs; existing data backfilled or documented as best-effort.
 
 **Dependencies**: None (Phase 43 not required for ID assignment).
+
+**Status**: COMPLETED 2026-02-10 — Implemented `id` on `ToolUsageEvent`, persisted IDs for new events, and added deterministic UUIDv5-based backfill in `usage_tracker` with tests.
 
 ---
 

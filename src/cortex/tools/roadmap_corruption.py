@@ -15,6 +15,7 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import destructive_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 
@@ -482,7 +483,8 @@ def _create_roadmap_success_response(matches: list[CorruptionMatch]) -> str:
 
 def _fix_roadmap_corruption_run(root_path: Path, dry_run: bool) -> tuple[str, bool]:
     """Run roadmap fix: path check, read, detect, apply. Return (response, ok)."""
-    roadmap_path = root_path / ".cortex" / "memory-bank" / "roadmap.md"
+    memory_bank_root = get_cortex_path(root_path, CortexResourceType.MEMORY_BANK)
+    roadmap_path = memory_bank_root / "roadmap.md"
     if not roadmap_path.exists():
         return (
             _create_roadmap_error_response(f"roadmap.md not found at {roadmap_path}"),

@@ -19,6 +19,7 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonValue, ModelDict
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.version_manager import VersionManager
 from cortex.managers import initialization
@@ -212,7 +213,7 @@ async def _collect_base_stats(root: Path) -> tuple[ModelDict, int]:
 
 async def _get_history_size(root: Path, version_manager: VersionManager) -> int:
     """Get total disk usage of version history directory."""
-    history_dir = root / ".cortex" / "history"
+    history_dir = get_cortex_path(root, CortexResourceType.HISTORY)
     if not history_dir.exists():
         return 0
     disk_usage = await version_manager.get_disk_usage()

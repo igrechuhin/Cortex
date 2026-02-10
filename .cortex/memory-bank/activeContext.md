@@ -24,6 +24,10 @@
 
 - ✅ **Session Optimization: Roadmap Section Removal and Roadmap Sync Clarity** - COMPLETE (2026-02-10) - Documented safe roadmap section removal pattern in memory-bank-updater and confirmed roadmap_sync behavior around archived plans/unlinked_plans so future roadmap edits avoid full-content manage_file writes for section removal.
 
+- ✅ **Claude-mem inspired improvements: documentation groundwork** - COMPLETE (2026-02-10) - Confirmed that CLAUDE.md and implement-next-roadmap-step already implement the claude-mem context workflow (progressive disclosure, token-aware context loading, search → select IDs → get_usage_event pattern) and the `<private>` / `<!-- private -->` privacy convention, then updated the `claude-mem-inspired-improvements` plan to mark Steps 1–2 as completed and set the plan status to IN PROGRESS.
+
+- ✅ **Claude-mem inspired improvements – Step 3: Stable IDs for usage events** - COMPLETE (2026-02-10) - Implemented stable `id` field on `ToolUsageEvent`, ensured new usage events persist IDs, added deterministic UUIDv5 backfill for legacy events in `usage_tracker`, and extended tests to cover ID assignment and backfill behavior within the existing usage tracking pipeline.
+
 ## Completed Work (2026-02-09)
 
 - ✅ **Investigate roadmap corruption on plan registration (blocker)** - COMPLETE (2026-02-09). Mandated `register_plan_in_roadmap` and `add_roadmap_entry` for plan registration: updated create-plan Step 6 and memory-bank-updater to require register_plan_in_roadmap for adding a new plan entry; manage_file(full content) only as fallback. Updated integration tests to assert prompt requires register_plan_in_roadmap. Documented structured JSON roadmap as future work. Blocker removed from roadmap.

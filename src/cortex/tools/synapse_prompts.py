@@ -14,6 +14,7 @@ from typing import cast
 
 from cortex.core.icon_helpers import create_emoji_icon
 from cortex.core.models import JsonDict, JsonValue, ModelDict
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.server import mcp
 
 SYNAPSE_PROMPT_ICONS: dict[str, str] = {
@@ -48,8 +49,9 @@ def get_prompts_paths() -> list[Path]:
     # Try current working directory first (works when server runs from project root)
     current = Path.cwd()
     for path in [current, *current.parents]:
+        cortex_root = get_cortex_path(path, CortexResourceType.CORTEX_DIR)
         for prompt_dir in prompt_dirs:
-            prompts_path = path / ".cortex" / prompt_dir
+            prompts_path = cortex_root / prompt_dir
             if prompts_path.exists() and prompts_path.is_dir():
                 if prompts_path not in found_paths:
                     found_paths.append(prompts_path)
@@ -62,8 +64,9 @@ def get_prompts_paths() -> list[Path]:
         module_file.parent.parent.parent.parent,
         *module_file.parent.parent.parent.parent.parents,
     ]:
+        cortex_root = get_cortex_path(path, CortexResourceType.CORTEX_DIR)
         for prompt_dir in prompt_dirs:
-            prompts_path = path / ".cortex" / prompt_dir
+            prompts_path = cortex_root / prompt_dir
             if prompts_path.exists() and prompts_path.is_dir():
                 if prompts_path not in found_paths:
                     found_paths.append(prompts_path)

@@ -19,6 +19,7 @@ from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.exceptions import FileConflictError, FileLockTimeoutError
 from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.roadmap_corruption import fix_roadmap_content_if_needed
@@ -62,7 +63,7 @@ def _sanitize_plan_slug(title: str) -> str:
 
 def _get_plan_directory(root: Path) -> Path:
     """Get the plans directory path."""
-    return root / ".cortex" / "plans"
+    return get_cortex_path(root, CortexResourceType.PLANS)
 
 
 def _create_plan_file(
@@ -468,7 +469,8 @@ async def _execute_register_plan(
     ctx: MCPContext | None,
 ) -> str:
     """Execute plan registration. Returns JSON result."""
-    roadmap_path = root / ".cortex" / "memory-bank" / "roadmap.md"
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+    roadmap_path = memory_bank_dir / "roadmap.md"
 
     # Read roadmap
     read_result = await _handle_roadmap_read(roadmap_path, ctx)

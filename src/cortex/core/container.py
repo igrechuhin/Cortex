@@ -29,6 +29,7 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.file_watcher import FileWatcherManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.migration import MigrationManager
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.linking.link_parser import LinkParser
@@ -216,7 +217,7 @@ class ManagerContainer(BaseModel):
             project_root: Project root directory
         """
         # Load metadata index if it exists
-        index_path = project_root / ".cortex" / "index.json"
+        index_path = get_cortex_path(project_root, CortexResourceType.INDEX)
         if index_path.exists():
             try:
                 _ = await self.metadata_index.load()
