@@ -109,8 +109,16 @@ class TestImplementPromptQualityGates:
         self, prompt_content: str
     ) -> None:
         """Token budget guidance mentions 15k–20k for narrow implement steps."""
-        assert "15000" in prompt_content or "15k" in prompt_content
-        assert "20000" in prompt_content or "20k" in prompt_content
+        assert (
+            "15000" in prompt_content
+            or "15k" in prompt_content
+            or "15,000" in prompt_content
+        )
+        assert (
+            "20000" in prompt_content
+            or "20k" in prompt_content
+            or "20,000" in prompt_content
+        )
 
 
 class TestPythonCodingStandardsTypedDictProhibition:

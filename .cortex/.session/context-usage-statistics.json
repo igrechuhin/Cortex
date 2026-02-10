@@ -1,34 +1,21 @@
 {
-  "last_updated": "2026-02-09T08:26",
-  "total_sessions_analyzed": 12,
-  "total_load_context_calls": 13,
-  "avg_token_utilization": 0.367,
-  "avg_files_selected": 8.31,
-  "avg_relevance_score": 0.581,
+  "last_updated": "2026-02-10T08:07",
+  "total_sessions_analyzed": 19,
+  "total_load_context_calls": 21,
+  "avg_token_utilization": 0.446,
+  "avg_files_selected": 7.29,
+  "avg_relevance_score": 0.584,
   "common_task_patterns": {
-    "fix/debug": 2,
-    "other": 5,
-    "implement/add": 4,
+    "fix/debug": 5,
+    "other": 6,
+    "implement/add": 7,
     "update/modify": 1,
-    "testing": 1
+    "testing": 1,
+    "documentation": 1
   },
   "insights": {
     "task_type_recommendations": {
       "fix/debug": {
-        "calls_count": 2,
-        "recommended_budget": 10000,
-        "essential_files": [
-          "activeContext.md",
-          "techContext.md",
-          "roadmap.md",
-          "phase-60-improve-manage-file-discoverability.plan.md",
-          "progress.md"
-        ],
-        "avg_utilization": 0.581,
-        "avg_relevance": 0.575,
-        "notes": "Limited data - insights will improve with more samples"
-      },
-      "other": {
         "calls_count": 5,
         "recommended_budget": 10000,
         "essential_files": [
@@ -38,12 +25,26 @@
           "progress.md",
           "systemPatterns.md"
         ],
-        "avg_utilization": 0.285,
-        "avg_relevance": 0.563,
+        "avg_utilization": 0.71,
+        "avg_relevance": 0.56,
+        "notes": "Adequate performance"
+      },
+      "other": {
+        "calls_count": 6,
+        "recommended_budget": 10000,
+        "essential_files": [
+          "activeContext.md",
+          "techContext.md",
+          "roadmap.md",
+          "progress.md",
+          "systemPatterns.md"
+        ],
+        "avg_utilization": 0.237,
+        "avg_relevance": 0.572,
         "notes": "Low utilization - consider smaller token budgets"
       },
       "implement/add": {
-        "calls_count": 4,
+        "calls_count": 7,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
@@ -52,8 +53,8 @@
           "productContext.md",
           "systemPatterns.md"
         ],
-        "avg_utilization": 0.418,
-        "avg_relevance": 0.605,
+        "avg_utilization": 0.422,
+        "avg_relevance": 0.613,
         "notes": "Moderate utilization - some budget optimization possible"
       },
       "update/modify": {
@@ -79,66 +80,85 @@
         "avg_utilization": 0.307,
         "avg_relevance": 0.572,
         "notes": "Moderate utilization - some budget optimization possible; Limited data - insights will improve with more samples"
+      },
+      "documentation": {
+        "calls_count": 1,
+        "recommended_budget": 10000,
+        "essential_files": [
+          "productContext.md",
+          "systemPatterns.md",
+          "projectBrief.md",
+          "roadmap.md",
+          "activeContext.md"
+        ],
+        "avg_utilization": 0.921,
+        "avg_relevance": 0.582,
+        "notes": "High utilization - budget well-matched to needs; Limited data - insights will improve with more samples"
       }
     },
     "file_effectiveness": {
       "activeContext.md": {
-        "times_selected": 13,
-        "avg_relevance": 0.825,
+        "times_selected": 18,
+        "avg_relevance": 0.813,
         "task_types_used": [
-          "fix/debug",
-          "testing",
+          "other",
           "update/modify",
           "implement/add",
-          "other"
+          "testing",
+          "documentation",
+          "fix/debug"
         ],
         "recommendation": "High value - prioritize for loading"
       },
       "techContext.md": {
-        "times_selected": 13,
-        "avg_relevance": 0.569,
+        "times_selected": 19,
+        "avg_relevance": 0.589,
         "task_types_used": [
-          "fix/debug",
-          "testing",
+          "other",
           "update/modify",
           "implement/add",
-          "other"
+          "testing",
+          "documentation",
+          "fix/debug"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "roadmap.md": {
-        "times_selected": 12,
-        "avg_relevance": 0.638,
+        "times_selected": 17,
+        "avg_relevance": 0.633,
         "task_types_used": [
-          "fix/debug",
-          "testing",
+          "other",
           "update/modify",
           "implement/add",
-          "other"
+          "testing",
+          "documentation",
+          "fix/debug"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "file.md": {
-        "times_selected": 13,
-        "avg_relevance": 0.341,
+        "times_selected": 19,
+        "avg_relevance": 0.319,
         "task_types_used": [
-          "fix/debug",
-          "testing",
+          "other",
           "update/modify",
           "implement/add",
-          "other"
+          "testing",
+          "documentation",
+          "fix/debug"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "projectBrief.md": {
-        "times_selected": 13,
-        "avg_relevance": 0.435,
+        "times_selected": 19,
+        "avg_relevance": 0.44,
         "task_types_used": [
-          "fix/debug",
-          "testing",
+          "other",
           "update/modify",
           "implement/add",
-          "other"
+          "testing",
+          "documentation",
+          "fix/debug"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -161,53 +181,57 @@
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "progress.md": {
-        "times_selected": 12,
-        "avg_relevance": 0.617,
+        "times_selected": 17,
+        "avg_relevance": 0.611,
         "task_types_used": [
-          "fix/debug",
-          "testing",
+          "other",
           "update/modify",
           "implement/add",
-          "other"
+          "testing",
+          "documentation",
+          "fix/debug"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "systemPatterns.md": {
-        "times_selected": 13,
-        "avg_relevance": 0.542,
+        "times_selected": 19,
+        "avg_relevance": 0.574,
         "task_types_used": [
-          "fix/debug",
-          "testing",
+          "other",
           "update/modify",
           "implement/add",
-          "other"
+          "testing",
+          "documentation",
+          "fix/debug"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "productContext.md": {
-        "times_selected": 13,
-        "avg_relevance": 0.553,
+        "times_selected": 19,
+        "avg_relevance": 0.583,
         "task_types_used": [
-          "fix/debug",
-          "testing",
+          "other",
           "update/modify",
           "implement/add",
-          "other"
+          "testing",
+          "documentation",
+          "fix/debug"
         ],
         "recommendation": "Moderate value - include when relevant"
       }
     },
     "learned_patterns": [
-      "Average 36% budget utilization - ~20k tokens unused per call",
-      "'activeContext.md' is most frequently loaded (13/13 calls)",
-      "Most common task type: 'other' (5 calls)"
+      "Average 44% budget utilization - ~13k tokens unused per call",
+      "'techContext.md' is most frequently loaded (19/21 calls)",
+      "Most common task type: 'implement/add' (7 calls)"
     ],
     "budget_recommendations": {
       "fix/debug": 10000,
       "other": 10000,
       "implement/add": 10000,
       "update/modify": 10000,
-      "testing": 10000
+      "testing": 10000,
+      "documentation": 10000
     }
   },
   "entries": [
@@ -618,6 +642,249 @@
         "techContext.md": 0.634,
         "productContext.md": 0.507,
         "systemPatterns.md": 0.552
+      }
+    },
+    {
+      "session_id": "3bd2cf007d6c",
+      "timestamp": "2026-02-09T21:30",
+      "task_description": "Evaluate moving roadmap to structured format (JSON) with dedicated read/write APIs; document as future work",
+      "token_budget": 10000,
+      "total_tokens": 9211,
+      "utilization": 0.9211,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.582,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "productContext.md",
+        "file.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "activeContext.md",
+        "techContext.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.604,
+        "progress.md": 0.6,
+        "activeContext.md": 0.792,
+        "file.md": 0.232,
+        "projectBrief.md": 0.592,
+        "techContext.md": 0.637,
+        "productContext.md": 0.639,
+        "systemPatterns.md": 0.563
+      }
+    },
+    {
+      "session_id": "b2ecc9457f93",
+      "timestamp": "2026-02-09T21:45",
+      "task_description": "Connection closed follow-ups: implement session optimization for fix_quality_issues connection-closed handling, retry logic, and error handling",
+      "token_budget": 15000,
+      "total_tokens": 9365,
+      "utilization": 0.6243333333333333,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.508,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "techContext.md",
+        "progress.md",
+        "roadmap.md",
+        "productContext.md",
+        "file.md",
+        "activeContext.md",
+        "systemPatterns.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.631,
+        "progress.md": 0.559,
+        "activeContext.md": 0.711,
+        "file.md": 0.232,
+        "projectBrief.md": 0.334,
+        "techContext.md": 0.505,
+        "productContext.md": 0.559,
+        "systemPatterns.md": 0.531
+      }
+    },
+    {
+      "session_id": "b2ecc9457f93",
+      "timestamp": "2026-02-09T21:53",
+      "task_description": "Connection closed follow-ups: implement follow-up improvements from connection-closed error handling in implement prompt (fix_quality_issues retry, quality gates)",
+      "token_budget": 10000,
+      "total_tokens": 9365,
+      "utilization": 0.9365,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.525,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "techContext.md",
+        "progress.md",
+        "roadmap.md",
+        "productContext.md",
+        "file.md",
+        "activeContext.md",
+        "systemPatterns.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.611,
+        "progress.md": 0.575,
+        "activeContext.md": 0.754,
+        "file.md": 0.232,
+        "projectBrief.md": 0.353,
+        "techContext.md": 0.489,
+        "productContext.md": 0.573,
+        "systemPatterns.md": 0.613
+      }
+    },
+    {
+      "session_id": "39cd196b3a73",
+      "timestamp": "2026-02-09T22:01",
+      "task_description": "Roadmap full-content enforcement: implement safe roadmap/progress/activeContext updates using dedicated MCP tools (remove_roadmap_entry, append_progress_entry, append_active_context_entry) instead of full-content manage_file writes to avoid corruption.",
+      "token_budget": 15000,
+      "total_tokens": 9489,
+      "utilization": 0.6326,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.6,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "techContext.md",
+        "file.md",
+        "systemPatterns.md",
+        "roadmap.md",
+        "productContext.md",
+        "progress.md",
+        "activeContext.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.623,
+        "progress.md": 0.641,
+        "activeContext.md": 0.852,
+        "file.md": 0.232,
+        "projectBrief.md": 0.396,
+        "techContext.md": 0.728,
+        "productContext.md": 0.658,
+        "systemPatterns.md": 0.672
+      }
+    },
+    {
+      "session_id": "2dbb3e6a5156",
+      "timestamp": "2026-02-10T07:42",
+      "task_description": "Implement load_context at step start, rules fallback, and task-type token budget for session optimization: update implement prompt to call load_context at step start, add rules fallback when load_context fails, and use task-type token budget",
+      "token_budget": 15000,
+      "total_tokens": 9756,
+      "utilization": 0.6504,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.674,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "projectBrief.md",
+        "roadmap.md",
+        "activeContext.md",
+        "progress.md",
+        "techContext.md",
+        "productContext.md",
+        "file.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.642,
+        "progress.md": 0.604,
+        "activeContext.md": 0.798,
+        "file.md": 0.475,
+        "projectBrief.md": 0.64,
+        "techContext.md": 0.733,
+        "productContext.md": 0.752,
+        "systemPatterns.md": 0.751
+      }
+    },
+    {
+      "session_id": "8620961116db",
+      "timestamp": "2026-02-10T07:45",
+      "task_description": "Implement prompt memory bank and function length - session optimization for implement prompt and memory bank updates, function length limits",
+      "token_budget": 0,
+      "total_tokens": 0,
+      "utilization": 0.0,
+      "files_selected": 0,
+      "files_excluded": 8,
+      "avg_relevance_score": 0.601,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [],
+      "relevance_by_file": {
+        "roadmap.md": 0.642,
+        "progress.md": 0.581,
+        "activeContext.md": 0.766,
+        "file.md": 0.23,
+        "projectBrief.md": 0.424,
+        "techContext.md": 0.755,
+        "productContext.md": 0.698,
+        "systemPatterns.md": 0.715
+      }
+    },
+    {
+      "session_id": "266580563bee",
+      "timestamp": "2026-02-10T07:50",
+      "task_description": "Archive 22 tool failure investigation plans to .cortex/plans/archive/Investigations/2026-02-04",
+      "token_budget": 0,
+      "total_tokens": 0,
+      "utilization": 0.0,
+      "files_selected": 0,
+      "files_excluded": 8,
+      "avg_relevance_score": 0.615,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [],
+      "relevance_by_file": {
+        "roadmap.md": 0.646,
+        "progress.md": 0.583,
+        "activeContext.md": 0.806,
+        "file.md": 0.23,
+        "projectBrief.md": 0.419,
+        "techContext.md": 0.766,
+        "productContext.md": 0.742,
+        "systemPatterns.md": 0.729
+      }
+    },
+    {
+      "session_id": "4b4b0192d227",
+      "timestamp": "2026-02-10T08:01",
+      "task_description": "Implement session optimization: markdown corruption in progress and plans - fix corruption detection and handling in progress.md and plan files",
+      "token_budget": 5000,
+      "total_tokens": 4126,
+      "utilization": 0.8252,
+      "files_selected": 5,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.615,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "projectBrief.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "file.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.643,
+        "activeContext.md": 0.85,
+        "file.md": 0.23,
+        "projectBrief.md": 0.396,
+        "techContext.md": 0.71,
+        "productContext.md": 0.708,
+        "systemPatterns.md": 0.729
       }
     }
   ]

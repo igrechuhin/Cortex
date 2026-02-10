@@ -10,45 +10,16 @@
 
 ## Future Enhancements
 
-- **Structured JSON roadmap (future)** - PENDING - Evaluate moving roadmap to a structured format (e.g. JSON) with dedicated read/write APIs so all edits are programmatic; documented as future work after plan-registration blocker fix.
-
 ## Pending plans (from .cortex/plans)
 
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
 
-#### Tool Failure Investigations (Archive Recommended)
-
-The following 22 investigation plans document MCP tool registration issues resolved by Phase 45 annotations). **Recommend archiving to `.cortex/plans/archive/Investigations/20262-4/`**:
-
-- phase-investigate-analyze_session_scripts-failure-20260204-80340- phase-investigate-analyze-failure-22620475106.md
-- phase-investigate-configure-failure-202620475107d
-- phase-investigate-execute_pre_commit_checks-failure-20260248256.md
-- phase-investigate-fix_markdown_lint-failure-2026020436d
-- phase-investigate-get_context_usage_statistics-failure-202602480331.md
-- phase-investigate-get_dependency_graph-failure-2026024-75114.md
-- phase-investigate-get_link_graph-failure-2026020480337.md
-- phase-investigate-get_memory_bank_stats-failure-202620475116md
-- phase-investigate-get_structure_info-failure-20260204-8737d
-- phase-investigate-get_version_history-failure-202602475115.md
-- phase-investigate-list_session_scripts-failure-22620480339md
-- phase-investigate-load_context-failure-2026020408337d
-- phase-investigate-parse_file_links-failure-2260204-8336md
-- phase-investigate-promote_session_script-failure-226204080340md
-- phase-investigate-read_cache_json-failure-2026020482030.md
-- phase-investigate-resolve_transclusions-failure-2026020480337.md
-- phase-investigate-rollback_file_version-failure-2026024075115d
-- phase-investigate-rules-failure-202620475121d
-- phase-investigate-suggest_tool_improvements-failure-202602480340 phase-investigate-validate-failure-20260204075123d
-- phase-investigate-write_cache_json-failure-202620431## Session Optimization Plans (2026023 **Analyze prompt and memory bank responsibilities** - PENDING - Plan: .cortex/plans/session-optimization-analyze-prompt-memory-bank-responsibilities-2026-2-3.
-- **Connection closed follow-ups** - PENDING - Plan: .cortex/plans/session-optimization-connection-closed-follow-ups-22603md.
-- **Roadmap full-content enforcement** - PENDING - Plan: .cortex/plans/session-optimization-roadmap-full-content-enforcement.md.
-
 ### Session Optimization Plans (2026-2
 
-- **Implement load_context at step start, rules fallback, and task-type token budget** - PENDING - Plan: .cortex/plans/session-optimization-implement-load-context-and-rules-fallback.md.
-- **Implement prompt memory bank and function length** - PENDING - Plan: .cortex/plans/session-optimization-implement-prompt-memory-bank.md.
+### Session Optimization Plans (202602
+
 - **Plan Status MD036 side-effect imports** - PENDING - Plan: .cortex/plans/session-optimization-plan-status-and-side-effect-imports.md.
 
 ### Session Optimization Plans (20261)

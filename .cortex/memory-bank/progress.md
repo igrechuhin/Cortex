@@ -1,5 +1,17 @@
 # Progress Log
 
+## 2026
+
+- **Implement prompt memory bank and function length** - COMPLETE. Enforced manage_file for all memory bank writes (Step 5 requirement/prohibition/fallback), added ≤30-line function reminder (Step 4), rules fallback in analyze prompt; test fix for token budget string.
+
+## 2026-02-10
+
+- **Implement load_context at step start, rules fallback, task-type token budget** - COMPLETE. Implement prompt now requires load_context at step start for analyze recording, rules-disabled fallback via Read from rules path, and task-type token budgets (10k/15k/20–30k/40–50k).
+- **Tool failure investigations archive** - COMPLETE. Archived 20 Phase 45 tool-failure investigation plans from .cortex/plans to .cortex/plans/archive/Investigations/2026-02-04; removed 22 roadmap bullets and section.
+- **Plan Status MD036 side-effect imports** - COMPLETE. Synapse markdown rule: plan Status section must use `Status: VALUE` or heading, not **VALUE**. Python testing rule: side-effect imports must reference module (e.g. `_ = module`) for Pyright. Commit prompt: new subsection "Plan Status and side-effect imports (Step 12)" with both reminders. Integration test added in test_commit_workflow_prompt_alignment.py.
+- **Markdown corruption in progress and plans** - COMPLETE. MD037/backticks in markdown rule; progress.md phrase corruption fix in manage_file path; verify code symbols in updater and workflow; tests and quality gate passed.
+- **Commit (markdown lint, tests, plan archive check)** - Pre-commit pipeline: fix_errors, format, markdown lint (9 files fixed, 0 errors), type_check, quality, tests 3735 passed, 90.14% coverage. Plan archiving: 0 completed plans in plans root.
+
 ## 2026-02-09
 
 - **Investigate roadmap corruption on plan registration (blocker)** - COMPLETE. Mandated register_plan_in_roadmap and add_roadmap_entry for plan registration: updated create-plan Step 6 and memory-bank-updater to require register_plan_in_roadmap for adding a new plan entry; manage_file(full content) only as fallback. Updated integration tests (test_plan_creation_workflow_compliance.py) to assert prompt requires register_plan_in_roadmap. Documented structured JSON roadmap as future work. Blocker removed from roadmap.

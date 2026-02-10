@@ -53,7 +53,7 @@ from cortex.tools.file_operation_helpers import (
     build_write_error_response,
     validate_manage_file_operation,
 )
-from cortex.tools.roadmap_corruption import fix_roadmap_content_if_needed
+from cortex.tools.roadmap_corruption import fix_memory_bank_content_if_needed
 from cortex.validation.schema_validator import SchemaValidator
 
 logger = logging.getLogger(__name__)
@@ -605,8 +605,8 @@ async def _handle_write_operation(
     if validation_error := _validate_write_request(file_path, file_name, content):
         return validation_error
     assert content is not None
-    if file_name == "roadmap.md":
-        content = fix_roadmap_content_if_needed(content)
+    if file_name in ("roadmap.md", "progress.md"):
+        content = fix_memory_bank_content_if_needed(content, file_name)
     if schema_validator is not None and schema_validator.get_schema(file_name):
         result = await schema_validator.validate_file(file_name, content)
         if not result.valid:

@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.tools.roadmap_corruption import (
+    fix_memory_bank_content_if_needed,
     fix_roadmap_content_if_needed,
     fix_roadmap_corruption,
 )
@@ -92,6 +93,37 @@ def test_fix_roadmap_content_if_needed_returns_same_when_no_corruption():
     """fix_roadmap_content_if_needed returns content unchanged when no corruption."""
     content = "# Roadmap\n\n## Section\n\nNo corruption here."
     result = fix_roadmap_content_if_needed(content)
+    assert result == content
+
+
+def test_fix_memory_bank_content_if_needed_fixes_progress_phrase_corruption():
+    """fix_memory_bank_content_if_needed fixes phrase corruption for progress.md."""
+    content = "## 2026-02-10\n\n- 90.32coverage 89.89to 0ctual\n"
+    result = fix_memory_bank_content_if_needed(content, "progress.md")
+    assert "90.32% coverage" in result
+    assert "89.89% to" in result
+    assert "0 actual" in result
+
+
+def test_fix_memory_bank_content_if_needed_roadmap_gets_full_fix():
+    """fix_memory_bank_content_if_needed applies full roadmap fix for roadmap.md."""
+    content = "89.89to 90.32coverage"
+    result = fix_memory_bank_content_if_needed(content, "roadmap.md")
+    assert "89.89% to" in result
+    assert "90.32% coverage" in result
+
+
+def test_fix_memory_bank_content_if_needed_returns_unchanged_for_other_files():
+    """fix_memory_bank_content_if_needed returns content unchanged for non-roadmap/progress."""
+    content = "90.32coverage in activeContext"
+    result = fix_memory_bank_content_if_needed(content, "activeContext.md")
+    assert result == content
+
+
+def test_fix_memory_bank_content_if_needed_progress_unchanged_when_no_phrase_corruption():
+    """fix_memory_bank_content_if_needed returns progress unchanged when no phrase corruption."""
+    content = "# Progress\n\n## 2026-02-10\n\n- Done.\n"
+    result = fix_memory_bank_content_if_needed(content, "progress.md")
     assert result == content
 
 

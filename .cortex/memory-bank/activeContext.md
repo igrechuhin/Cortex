@@ -2,6 +2,20 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026)
+
+- ✅ **Implement prompt memory bank and function length** - COMPLETE (2026) - Enforced manage_file-only for memory bank writes in implement Step 5 (requirement, prohibition, full-content fallback); added function-length reminder in Step 4; added rules-disabled fallback in analyze prompt. Fixed token-budget integration test to accept comma-formatted numbers.
+
+## Completed Work (2026-02-10)
+
+- ✅ **Implement load_context at step start, rules fallback, and task-type token budget** - COMPLETE (2026-02-10) - Updated implement-next-roadmap-step prompt: (1) load_context at step start with session-recording note in Pre-Action Checklist and Step 1; (2) rules fallback when status disabled (read from structure_info.paths.rules); (3) task-type token budget mapping (10k update/implement-add, 15k fix-debug/other, 20–30k small feature, 40–50k architecture).
+
+- ✅ **Tool failure investigations archive** - COMPLETE (2026-02-10) - Archived 20 tool-failure investigation plans (Phase 45 MCP annotations) to .cortex/plans/archive/Investigations/2026-02-04; two were already archived. Removed "Tool Failure Investigations (Archive Recommended)" section and 22 list entries from roadmap.
+
+- ✅ **Plan Status MD036 side-effect imports** - COMPLETE (2026-02-10) - Added Synapse rule for plan Status format (avoids MD036), Python testing rule for side-effect imports (_ = module), commit prompt reminders for both, and integration test asserting commit prompt contains the reminders.
+
+- ✅ **Markdown corruption in progress and plans** - COMPLETE (2026-02-10) - Added MD037 and code identifiers in backticks to markdown-formatting rule; extended corruption guard to progress.md via fix_memory_bank_content_if_needed (phrase-only fix); added verify-code-symbols guidance to memory-bank-updater and memory-bank-workflow; plan files documented as out of scope for phrase fix.
+
 ## Completed Work (2026-02-09)
 
 - ✅ **Investigate roadmap corruption on plan registration (blocker)** - COMPLETE (2026-02-09). Mandated `register_plan_in_roadmap` and `add_roadmap_entry` for plan registration: updated create-plan Step 6 and memory-bank-updater to require register_plan_in_roadmap for adding a new plan entry; manage_file(full content) only as fallback. Updated integration tests to assert prompt requires register_plan_in_roadmap. Documented structured JSON roadmap as future work. Blocker removed from roadmap.

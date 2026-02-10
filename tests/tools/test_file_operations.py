@@ -1166,6 +1166,71 @@ class TestEdgeCasesForCoverage:
                 mock_index.add_version_to_history.assert_called_once()
                 mock_index.get_file_metadata.assert_not_awaited()
 
+    async def test_manage_file_write_applies_corruption_fix_for_progress_md(self):
+        """When writing progress.md, phrase corruption is fixed before write."""
+        # Arrange: progress.md with phrase corruption (90.32coverage -> 90.32% coverage)
+        file_name = "progress.md"
+        corrupted = "## 2026-02-10\n\n- Item with 90.32coverage and 89.89to\n"
+        mock_path = MagicMock(spec=Path)
+        mock_path.exists.return_value = True
+        mock_path.name = file_name
+
+        mock_fs = AsyncMock()
+        mock_fs.construct_safe_path = MagicMock(return_value=mock_path)
+        mock_fs.read_file = AsyncMock(return_value=("Existing progress", "disk_hash"))
+        mock_fs.write_file = AsyncMock(return_value="new_hash")
+        mock_fs.compute_hash = MagicMock(return_value="new_hash")
+
+        mock_index = AsyncMock()
+        mock_index.get_file_metadata = AsyncMock(
+            return_value={"content_hash": "stale_hash"}
+        )
+        mock_index.update_file_metadata = AsyncMock()
+        mock_index.add_version_to_history = AsyncMock()
+
+        mock_tokens = MagicMock()
+        mock_tokens.count_tokens = MagicMock(return_value=30)
+
+        mock_versions = AsyncMock()
+        mock_versions.get_version_count = AsyncMock(return_value=1)
+        version_info = MagicMock()
+        version_info.version = 2
+        version_info.snapshot_path = "/tmp/snapshots/progress.md.v2"
+        mock_versions.create_snapshot = AsyncMock(return_value=version_info)
+
+        mock_managers_dict = {
+            "fs": mock_fs,
+            "index": mock_index,
+            "tokens": mock_tokens,
+            "versions": mock_versions,
+        }
+
+        with patch(
+            "cortex.tools.file_operations.get_managers",
+            new_callable=AsyncMock,
+            return_value=make_test_managers(**mock_managers_dict),
+        ):
+            with patch(
+                "cortex.tools.file_operations.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ):
+                # Act
+                result_str = await manage_file(
+                    file_name=file_name,
+                    operation="write",
+                    content=corrupted,
+                    change_description="Test progress update",
+                )
+
+                # Assert
+                result = json.loads(result_str)
+                assert result["status"] == "success"
+                assert result["file_name"] == file_name
+                written_content = mock_fs.write_file.call_args[0][1]
+                assert "90.32% coverage" in written_content
+                assert "89.89% to" in written_content
+
     async def test_manage_file_invalid_operation_dispatch(self):
         """Test invalid operation in dispatcher (line 600)."""
         # Arrange

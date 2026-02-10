@@ -180,3 +180,28 @@ class TestCommitPromptAlignment:
             or "type or lint fixes" in commit_prompt_content.lower()
             or "fixes can introduce new lint" in commit_prompt_content
         )
+
+    def test_commit_prompt_contains_plan_status_and_side_effect_import_reminders(
+        self, commit_prompt_content: str
+    ) -> None:
+        """Commit prompt must remind agents about plan Status format and side-effect imports.
+
+        Session optimization (2026-02-02): Plan Status MD036 and side-effect imports.
+        New/modified plan files: Status section uses Status: VALUE or heading, not **VALUE**.
+        New/modified tests with side-effect imports: reference import (e.g. _ = module).
+        """
+        assert (
+            "Plan Status" in commit_prompt_content
+            or "plan Status" in commit_prompt_content
+        )
+        assert (
+            "MD036" in commit_prompt_content or "Status: VALUE" in commit_prompt_content
+        )
+        assert (
+            "side-effect" in commit_prompt_content
+            or "side_effect" in commit_prompt_content
+        )
+        assert (
+            "_ = module" in commit_prompt_content
+            or "reportUnusedImport" in commit_prompt_content
+        )

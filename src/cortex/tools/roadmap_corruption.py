@@ -366,6 +366,18 @@ def _detect_misc_patterns(lines: list[str], matches: list[CorruptionMatch]) -> N
     _detect_plan24_phrase_patterns(lines, matches)
 
 
+def _detect_phrase_corruption(content: str) -> list[CorruptionMatch]:
+    """Detect only generic phrase corruptions (percent_to, percent_coverage, etc.).
+
+    Safe for progress.md and other memory-bank files that share phrase patterns
+    with roadmap but not roadmap-specific patterns (completion date, phase links).
+    """
+    matches: list[CorruptionMatch] = []
+    lines = content.split("\n")
+    _detect_plan24_phrase_patterns(lines, matches)
+    return matches
+
+
 def _detect_roadmap_corruption(content: str) -> list[CorruptionMatch]:
     """Detect all corruption patterns in roadmap content."""
     matches: list[CorruptionMatch] = []
@@ -384,6 +396,26 @@ def fix_roadmap_content_if_needed(content: str) -> str:
     """
     matches = _detect_roadmap_corruption(content)
     return _apply_roadmap_fixes(content, matches) if matches else content
+
+
+def fix_memory_bank_content_if_needed(content: str, file_name: str) -> str:
+    """Return content with corruption patterns fixed for the given memory-bank file.
+
+    - roadmap.md: full roadmap corruption fix (completion dates, phases, phrases).
+    - progress.md: phrase-only fix (percent_to, percent_coverage, etc.) to avoid
+      applying roadmap-specific patterns to progress.
+    - Other files: returned unchanged.
+
+    Plan files (.cortex/plans/*.md) are not written through manage_file; phrase
+    corruption fix for plans is out of scope (rely on MD037 rule and
+    verify-code-symbols guidance in memory-bank-workflow and agents).
+    """
+    if file_name == "roadmap.md":
+        return fix_roadmap_content_if_needed(content)
+    if file_name == "progress.md":
+        matches = _detect_phrase_corruption(content)
+        return _apply_roadmap_fixes(content, matches) if matches else content
+    return content
 
 
 def _apply_roadmap_fixes(content: str, matches: list[CorruptionMatch]) -> str:

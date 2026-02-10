@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-09T08:25:57.316226",
+  "last_updated": "2026-02-10T07:53:04.340998",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 7097,
-      "token_count": 1712,
+      "size_bytes": 4534,
+      "token_count": 1044,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-09T08:23:32.425957",
-      "content_hash": "sha256:597bdcf9a4552f3c1d6abdd3bbbdd6ce18980d036100c08d6df8df90066631a4",
+      "last_modified": "2026-02-10T07:53:04.339200",
+      "content_hash": "sha256:83a03d61b840e02882f000c1ae43736c7c366de65b91d9f14150933022136925",
       "sections": [
         {
           "title": "## Blockers (ASAP Priority)",
@@ -38,49 +38,49 @@
         {
           "title": "## Pending plans (from .cortex/plans)",
           "level": 2,
-          "line_start": 15,
-          "line_end": 15,
+          "line_start": 13,
+          "line_end": 13,
           "content_hash": null
         },
         {
           "title": "### Investigation Plans (Archive / Reference)",
           "level": 2,
-          "line_start": 17,
-          "line_end": 17,
+          "line_start": 15,
+          "line_end": 15,
           "content_hash": null
         },
         {
-          "title": "#### Tool Failure Investigations (Archive Recommended)",
+          "title": "### Session Optimization Plans (2026-2",
+          "level": 2,
+          "line_start": 19,
+          "line_end": 19,
+          "content_hash": null
+        },
+        {
+          "title": "### Session Optimization Plans (202602",
           "level": 2,
           "line_start": 21,
           "line_end": 21,
           "content_hash": null
         },
         {
-          "title": "### Session Optimization Plans (2026-2",
-          "level": 2,
-          "line_start": 48,
-          "line_end": 48,
-          "content_hash": null
-        },
-        {
           "title": "### Session Optimization Plans (20261)",
           "level": 2,
-          "line_start": 53,
-          "line_end": 53,
+          "line_start": 25,
+          "line_end": 25,
           "content_hash": null
         },
         {
           "title": "### Features & Enhancements",
           "level": 2,
-          "line_start": 59,
-          "line_end": 59,
+          "line_start": 31,
+          "line_end": 31,
           "content_hash": null
         }
       ],
       "read_count": 4,
-      "write_count": 93,
-      "last_read": "2026-02-09T08:23:32.425957",
+      "write_count": 96,
+      "last_read": "2026-02-10T07:53:04.339200",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -1139,6 +1139,39 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Removed completed blocker (roadmap corruption on plan registration); added structured JSON roadmap as future enhancement"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-10T07:52:08.371995",
+          "content_hash": "sha256:83a03d61b840e02882f000c1ae43736c7c366de65b91d9f14150933022136925",
+          "size_bytes": 4534,
+          "token_count": 1044,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Remove completed Tool Failure Investigations section after archiving 22 plans"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-10T07:52:29.986716",
+          "content_hash": "sha256:83a03d61b840e02882f000c1ae43736c7c366de65b91d9f14150933022136925",
+          "size_bytes": 4534,
+          "token_count": 1044,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Fix roadmap section headers and bullets corrupted by previous edit"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-10T07:53:04.338927",
+          "content_hash": "sha256:83a03d61b840e02882f000c1ae43736c7c366de65b91d9f14150933022136925",
+          "size_bytes": 4534,
+          "token_count": 1044,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Restore correct section headers and bullet text after Tool Failure Investigations removal"
         }
       ]
     },
@@ -1151,41 +1184,11 @@
       "last_modified": "2026-02-09T08:25:57.310664",
       "content_hash": "sha256:ac39395a7a35593156e91d2739a770307598f9102d52049ec625b514089ad940",
       "sections": [
-        {
-          "title": "## 2026-2-9- **Investigate roadmap corruption on plan registration (blocker)** - COMPLETE. Mandated `register_plan_in_roadmap` and `add_roadmap_entry` for plan registration: updated create-plan Step6nd memory-bank-updater to require register_plan_in_roadmap for adding a new plan entry; manage_file(full content) only as fallback. Updated integration tests (test_plan_creation_workflow_compliance.py) to assert prompt requires register_plan_in_roadmap. Documented structured JSON roadmap as future work in investigation plan. Blocker removed from roadmap; roadmap restored after accidental corruption during memory-bank write (recovery via git + minimal edits).",
-          "level": 2,
-          "line_start": 3,
-          "line_end": 3,
-          "content_hash": null
-        },
-        {
-          "title": "## 20262",
-          "level": 2,
-          "line_start": 7,
-          "line_end": 7,
-          "content_hash": null
-        },
-        {
-          "title": "## 22605- **Phase 4 and Validation (FastMCP logging plan)** - COMPLETE. Completed Phase 4 testing and validation for FastMCP Context logging: Test fixtures (mock_ctx in conftest.py), integration tests (test_context_logging_integration.py), all tests pass, quality gate passes. Phase 5cumentation) remained pending until 2026-2-7 Plan: `.cortex/plans/archive/Infrastructure/ensure-proper-logging-fastmcp.md`",
-          "level": 2,
-          "line_start": 29,
-          "line_end": 29,
-          "content_hash": null
-        },
-        {
-          "title": "## What Works",
-          "level": 2,
-          "line_start": 39,
-          "line_end": 39,
-          "content_hash": null
-        },
-        {
-          "title": "## What's Left",
-          "level": 2,
-          "line_start": 43,
-          "line_end": 43,
-          "content_hash": null
-        }
+        "## 2026-2-9- **Investigate roadmap corruption on plan registration (blocker)** - COMPLETE. Mandated `register_plan_in_roadmap` and `add_roadmap_entry` for plan registration: updated create-plan Step6nd memory-bank-updater to require register_plan_in_roadmap for adding a new plan entry; manage_file(full content) only as fallback. Updated integration tests (test_plan_creation_workflow_compliance.py) to assert prompt requires register_plan_in_roadmap. Documented structured JSON roadmap as future work in investigation plan. Blocker removed from roadmap; roadmap restored after accidental corruption during memory-bank write (recovery via git + minimal edits).",
+        "## 20262",
+        "## 22605- **Phase 4 and Validation (FastMCP logging plan)** - COMPLETE. Completed Phase 4 testing and validation for FastMCP Context logging: Test fixtures (mock_ctx in conftest.py), integration tests (test_context_logging_integration.py), all tests pass, quality gate passes. Phase 5cumentation) remained pending until 2026-2-7 Plan: `.cortex/plans/archive/Infrastructure/ensure-proper-logging-fastmcp.md`",
+        "## What Works",
+        "## What's Left"
       ],
       "read_count": 1,
       "write_count": 151,
@@ -6468,8 +6471,8 @@
   },
   "totals": {
     "total_files": 10,
-    "total_size_bytes": 50579,
-    "total_tokens": 11461,
-    "last_full_scan": "2026-02-09T08:25:57.310718"
+    "total_size_bytes": 48016,
+    "total_tokens": 10793,
+    "last_full_scan": "2026-02-10T07:53:04.339220"
   }
 }
