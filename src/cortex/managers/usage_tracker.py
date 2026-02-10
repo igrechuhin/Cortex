@@ -177,6 +177,22 @@ class UsageTracker:
                 unused.append(str(row["tool_name"]))
         return sorted(unused)
 
+    async def get_event_by_id(self, event_id: str) -> ToolUsageEvent | None:
+        """Return a single usage event by its stable ID.
+
+        Scans the default analytics window (last 365 days) for the given id.
+        """
+        events = await _load_events_in_range(
+            self._project_root,
+            None,
+            None,
+            None,
+        )
+        for event in events:
+            if event.id == event_id:
+                return event
+        return None
+
 
 def _to_row_dict(obj: object) -> dict[str, object]:
     """Convert tool stat to dict for get_unused_tools iteration."""

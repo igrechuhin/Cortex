@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-10T07:53:04.340998",
+  "last_updated": "2026-02-10T14:32:26.043042",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 4534,
-      "token_count": 1044,
+      "size_bytes": 4649,
+      "token_count": 1052,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-10T07:53:04.339200",
-      "content_hash": "sha256:83a03d61b840e02882f000c1ae43736c7c366de65b91d9f14150933022136925",
+      "last_modified": "2026-02-10T14:05:30.958021",
+      "content_hash": "sha256:02ecb10617c74f4a5bb4fdc24c508061d6050c909d6c0ee147ac68d6f2e8f98c",
       "sections": [
         {
           "title": "## Blockers (ASAP Priority)",
@@ -50,21 +50,21 @@
           "content_hash": null
         },
         {
-          "title": "### Session Optimization Plans (2026-2",
-          "level": 2,
-          "line_start": 19,
-          "line_end": 19,
-          "content_hash": null
-        },
-        {
-          "title": "### Session Optimization Plans (202602",
+          "title": "### Session Optimization Plans (2026-02-03)",
           "level": 2,
           "line_start": 21,
           "line_end": 21,
           "content_hash": null
         },
         {
-          "title": "### Session Optimization Plans (20261)",
+          "title": "### Session Optimization Plans (2026-02-02)",
+          "level": 2,
+          "line_start": 23,
+          "line_end": 23,
+          "content_hash": null
+        },
+        {
+          "title": "### Session Optimization Plans (2026-02-01)",
           "level": 2,
           "line_start": 25,
           "line_end": 25,
@@ -73,14 +73,14 @@
         {
           "title": "### Features & Enhancements",
           "level": 2,
-          "line_start": 31,
-          "line_end": 31,
+          "line_start": 27,
+          "line_end": 27,
           "content_hash": null
         }
       ],
       "read_count": 4,
-      "write_count": 96,
-      "last_read": "2026-02-10T07:53:04.339200",
+      "write_count": 97,
+      "last_read": "2026-02-10T14:05:30.958021",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -1172,27 +1172,82 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Restore correct section headers and bullet text after Tool Failure Investigations removal"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-10T14:05:30.957524",
+          "content_hash": "sha256:02ecb10617c74f4a5bb4fdc24c508061d6050c909d6c0ee147ac68d6f2e8f98c",
+          "size_bytes": 4649,
+          "token_count": 1052,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Add archived reference for Phase 18 Markdown Lint Fix Tool and keep roadmap in sync with plans archive."
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 6366,
-      "token_count": 1457,
+      "size_bytes": 12775,
+      "token_count": 2942,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-09T08:25:57.310664",
-      "content_hash": "sha256:ac39395a7a35593156e91d2739a770307598f9102d52049ec625b514089ad940",
+      "last_modified": "2026-02-10T14:32:26.039739",
+      "content_hash": "sha256:6e13a4e6f3b584729be05f1f33151901fbcf04213d979b13ea0e5a579dcec366",
       "sections": [
-        "## 2026-2-9- **Investigate roadmap corruption on plan registration (blocker)** - COMPLETE. Mandated `register_plan_in_roadmap` and `add_roadmap_entry` for plan registration: updated create-plan Step6nd memory-bank-updater to require register_plan_in_roadmap for adding a new plan entry; manage_file(full content) only as fallback. Updated integration tests (test_plan_creation_workflow_compliance.py) to assert prompt requires register_plan_in_roadmap. Documented structured JSON roadmap as future work in investigation plan. Blocker removed from roadmap; roadmap restored after accidental corruption during memory-bank write (recovery via git + minimal edits).",
-        "## 20262",
-        "## 22605- **Phase 4 and Validation (FastMCP logging plan)** - COMPLETE. Completed Phase 4 testing and validation for FastMCP Context logging: Test fixtures (mock_ctx in conftest.py), integration tests (test_context_logging_integration.py), all tests pass, quality gate passes. Phase 5cumentation) remained pending until 2026-2-7 Plan: `.cortex/plans/archive/Infrastructure/ensure-proper-logging-fastmcp.md`",
-        "## What Works",
-        "## What's Left"
+        {
+          "title": "## 2026",
+          "level": 2,
+          "line_start": 3,
+          "line_end": 3,
+          "content_hash": null
+        },
+        {
+          "title": "## 2026-02-10",
+          "level": 2,
+          "line_start": 7,
+          "line_end": 7,
+          "content_hash": null
+        },
+        {
+          "title": "## 2026-02-09",
+          "level": 2,
+          "line_start": 25,
+          "line_end": 25,
+          "content_hash": null
+        },
+        {
+          "title": "## 2026-02-07",
+          "level": 2,
+          "line_start": 39,
+          "line_end": 39,
+          "content_hash": null
+        },
+        {
+          "title": "## 2026-02-05",
+          "level": 2,
+          "line_start": 61,
+          "line_end": 61,
+          "content_hash": null
+        },
+        {
+          "title": "## What Works",
+          "level": 2,
+          "line_start": 73,
+          "line_end": 73,
+          "content_hash": null
+        },
+        {
+          "title": "## What's Left",
+          "level": 2,
+          "line_start": 77,
+          "line_end": 77,
+          "content_hash": null
+        }
       ],
       "read_count": 1,
-      "write_count": 151,
-      "last_read": "2026-02-09T08:25:57.310664",
+      "write_count": 152,
+      "last_read": "2026-02-10T14:32:26.039739",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -2856,6 +2911,17 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Added progress entry for roadmap corruption blocker completion"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-10T14:32:26.039316",
+          "content_hash": "sha256:6e13a4e6f3b584729be05f1f33151901fbcf04213d979b13ea0e5a579dcec366",
+          "size_bytes": 12775,
+          "token_count": 2942,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Log 2026-02-10 commit pipeline run (3759 tests, 90.16% coverage) in progress.md"
         }
       ]
     },
@@ -6471,8 +6537,8 @@
   },
   "totals": {
     "total_files": 10,
-    "total_size_bytes": 48016,
-    "total_tokens": 10793,
-    "last_full_scan": "2026-02-10T07:53:04.339220"
+    "total_size_bytes": 54540,
+    "total_tokens": 12286,
+    "last_full_scan": "2026-02-10T14:32:26.039764"
   }
 }

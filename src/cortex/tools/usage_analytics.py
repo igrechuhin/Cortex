@@ -62,6 +62,53 @@ async def _get_tracker(project_root: Path) -> UsageTracker | None:
     return raw if isinstance(raw, UsageTracker) else None
 
 
+async def _get_usage_observation_impl(
+    id: str,
+    root: Path,
+    tracker: UsageTracker | None,
+) -> str:
+    """Implementation helper for get_usage_observation."""
+    if tracker is None:
+        return json.dumps(
+            {"status": "unavailable", "message": "Usage tracker not available"},
+            indent=2,
+        )
+    event = await tracker.get_event_by_id(event_id=id)
+    if event is None:
+        return json.dumps(
+            {
+                "status": "error",
+                "error": f"Usage event not found for id {id}",
+                "error_type": "UsageEventNotFound",
+                "id": id,
+            },
+            indent=2,
+        )
+    return json.dumps(
+        {
+            "status": "success",
+            "project_root": str(root),
+            "event": event.model_dump(),
+        },
+        indent=2,
+    )
+
+
+@mcp.tool(annotations=read_only_annotations("Get Usage Observation"))
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_usage_observation(
+    id: str,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Get a single usage observation by ID."""
+    if ctx is not None:
+        await log_client(ctx, "debug", f"get_usage_observation: starting id={id}")
+    root = await resolve_project_root_async(None, ctx)
+    tracker = await _get_tracker(root)
+    return await _get_usage_observation_impl(id=id, root=root, tracker=tracker)
+
+
 @mcp.tool(annotations=read_only_annotations("Get Tool Usage Stats"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
@@ -345,3 +392,11 @@ async def get_tool_usage_report_resource() -> str:
 async def get_optimization_recommendations_resource() -> str:
     """Resource: Optimization recommendations (default threshold/days). Read via cortex://usage/optimization-recommendations."""
     return await get_optimization_recommendations(min_usage_threshold=5, days=90)
+
+
+@mcp.resource(uri="cortex://usage/observation/{id}")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_usage_observation_resource(id: str) -> str:
+    """Resource: Usage observation by ID. Read via cortex://usage/observation/{id}."""
+    return await get_usage_observation(id=id, ctx=None)

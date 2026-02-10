@@ -18,6 +18,8 @@ from cortex.tools.usage_analytics import (
     get_tool_usage_stats_resource,
     get_unused_tools,
     get_unused_tools_resource,
+    get_usage_observation,
+    get_usage_observation_resource,
     parse_date_range,
 )
 
@@ -118,6 +120,26 @@ class TestUsageAnalyticsResources:
         assert result["status"] == "success"
         assert result["min_usage_threshold"] == 5
         assert "low_usage_tools" in result
+
+    async def test_get_usage_observation_resource_returns_json(self) -> None:
+        """get_usage_observation_resource returns JSON (Phase 43)."""
+        payload = json.dumps(
+            {
+                "status": "success",
+                "project_root": "/tmp",
+                "event": {"id": "abc", "tool_name": "x"},
+            },
+            indent=2,
+        )
+        with patch(
+            "cortex.tools.usage_analytics.get_usage_observation",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ):
+            result_str = await get_usage_observation_resource("abc")
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["event"]["id"] == "abc"
 
 
 class TestParseDateRange:
@@ -289,6 +311,24 @@ class TestUsageAnalyticsToolsUnavailable:
         result = json.loads(result_str)
         assert result["status"] == "unavailable"
 
+    async def test_get_usage_observation_unavailable(self) -> None:
+        """get_usage_observation returns unavailable when tracker is None."""
+        with (
+            patch(
+                "cortex.tools.usage_analytics.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp"),
+            ),
+            patch(
+                "cortex.tools.usage_analytics._get_tracker",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+        ):
+            result_str = await get_usage_observation(id="abc", ctx=None)
+        result = json.loads(result_str)
+        assert result["status"] == "unavailable"
+
 
 @pytest.mark.asyncio
 class TestUsageAnalyticsToolsSuccess:
@@ -398,3 +438,56 @@ class TestUsageAnalyticsToolsSuccess:
         assert result["days"] == 90
         assert len(result["low_usage_tools"]) == 1
         assert "message" in result
+
+    async def test_get_usage_observation_success(self) -> None:
+        """get_usage_observation returns success with event payload."""
+
+        class FakeEvent:
+            def __init__(self, data: dict[str, object]) -> None:
+                self._data = data
+
+            def model_dump(self) -> dict[str, object]:
+                return self._data
+
+        mock_tracker = AsyncMock()
+        fake_event = FakeEvent({"id": "abc", "tool_name": "x"})
+        mock_tracker.get_event_by_id = AsyncMock(return_value=fake_event)
+        with (
+            patch(
+                "cortex.tools.usage_analytics.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp"),
+            ),
+            patch(
+                "cortex.tools.usage_analytics._get_tracker",
+                new_callable=AsyncMock,
+                return_value=mock_tracker,
+            ),
+        ):
+            result_str = await get_usage_observation(id="abc", ctx=None)
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["project_root"] == "/tmp"
+        assert result["event"]["id"] == "abc"
+        assert result["event"]["tool_name"] == "x"
+
+    async def test_get_usage_observation_not_found(self) -> None:
+        """get_usage_observation returns error when id is missing."""
+        mock_tracker = AsyncMock()
+        mock_tracker.get_event_by_id = AsyncMock(return_value=None)
+        with (
+            patch(
+                "cortex.tools.usage_analytics.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp"),
+            ),
+            patch(
+                "cortex.tools.usage_analytics._get_tracker",
+                new_callable=AsyncMock,
+                return_value=mock_tracker,
+            ),
+        ):
+            result_str = await get_usage_observation(id="missing", ctx=None)
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert result["error_type"] == "UsageEventNotFound"

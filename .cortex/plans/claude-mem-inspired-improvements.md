@@ -1,6 +1,6 @@
 # Claude-mem Inspired Improvements (Usage Search, Observations, Progressive Disclosure)
 
-**Status**: IN PROGRESS (Steps 1–3 completed 2026-02-10)  
+**Status**: IN PROGRESS (Steps 1–4 completed 2026-02-10)  
 **Created**: 2026-02-02  
 **Priority**: Future enhancement (after Phase 43)  
 **Estimated Effort**: 15–25 hours (phased)  
@@ -8,7 +8,7 @@
 
 ## Goal
 
-Improve Cortex MCP with token-efficient usage search, observation-level storage with citations, progressive disclosure in docs and prompts, and optional privacy/convention improvements—inspired by claude-mem’s persistent memory and context injection patterns.
+Improve Cortex MCP with token-efficient usage search, observation-level storage with citations, progressive disclosure in docs and prompts, and  privacy/convention improvements—inspired by claude-mem’s persistent memory and context injection patterns.
 
 ## Context
 
@@ -29,8 +29,8 @@ claude-mem captures tool usage, compresses it with AI, and injects relevant cont
 ## Approach
 
 1. **Short-term (docs/convention)**: Progressive disclosure section in CLAUDE.md/docs; document `<private>` convention; no new tools.
-2. **With Phase 43**: Observation IDs for usage events; resource `cortex://usage/observation/{id}`; search_usage (compact index) + get_usage_events(ids=[...]); optional get_usage_timeline(around_id, limit).
-3. **Later**: Optional keyword/semantic search over usage; context injection config; optional HTTP API or “query usage with jq” docs.
+2. **With Phase 43**: Observation IDs for usage events; resource `cortex://usage/observation/{id}`; search_usage (compact index) + get_usage_events(ids=[...]);  get_usage_timeline(around_id, limit).
+3. **Later**:  keyword/semantic search over usage; context injection config;  HTTP API or “query usage with jq” docs.
 
 ## Implementation Steps
 
@@ -42,7 +42,7 @@ Implementation order: execute steps in sequence. Dependencies between steps are 
 
 - Add a subsection (e.g. “Context loading workflow”) that recommends: prefer search/index first when querying usage or history, then fetch by ID; use `load_progressive_context` when appropriate; respect token budgets.
 - In prompts that reference usage or history (e.g. commit, implement-next-roadmap-step), add a note: prefer “search → select IDs → get_usage_event(ids=[...])” once that API exists; avoid “dump all” patterns.
-- Optionally add token estimates in tool responses (e.g. “~N tokens” for current payload) where feasible and non-intrusive.
+- ly add token estimates in tool responses (e.g. “~N tokens” for current payload) where feasible and non-intrusive.
 
 **Success**: CLAUDE.md and at least one doc or prompt updated; wording reviewable in PR.
 
@@ -57,9 +57,9 @@ Implementation order: execute steps in sequence. Dependencies between steps are 
 **Deliverable**: Convention for excluding sensitive content from storage and repetition.
 
 - Document a convention (e.g. `<private>...</private>` or `<!-- private -->`) in memory bank docs or Synapse prompts so agents know not to persist or repeat sensitive blocks.
-- Optionally: In tools that persist user content (e.g. session scripts, summaries), add optional stripping/redaction of content between these tags before writing. Keep scope minimal (convention first; stripping behind config if implemented).
+- In tools that persist user content (e.g. session scripts, summaries), add  stripping/redaction of content between these tags before writing. Keep scope minimal (convention first; stripping behind config if implemented).
 
-**Success**: Convention documented; optional stripping implemented only if scoped and tested.
+**Success**: Convention documented; stripping implemented only if scoped and tested.
 
 **Dependencies**: None.
 
@@ -88,26 +88,28 @@ Implementation order: execute steps in sequence. Dependencies between steps are 
 **Deliverable**: Read observation by ID via MCP resource, aligned with Phase 43 resource API.
 
 - Register resource template `cortex://usage/observation/{id}` (or equivalent) using `mcp.resource()` and `mcp_resource_wrapper`.
-- Handler: resolve `id` to stored event (and optional result summary if added); return JSON or text; 404 if not found.
+- Handler: resolve `id` to stored event (and result summary if added); return JSON or text; 404 if not found.
 - Follow Phase 43 decorator stack and URI scheme; document in resource API design.
 
 **Success**: Client can read observation by ID via resource; 404 for unknown ID; tests for success and 404.
 
 **Dependencies**: Phase 43 Step 3 (resource registration) and Step 3 (observation IDs).
 
+**Status**: COMPLETED 2026-02-10 — Implemented `get_usage_observation` MCP tool and `cortex://usage/observation/{id}` resource backed by `UsageTracker.get_event_by_id`, with tests for success and not-found cases.
+
 ---
 
 ### Step 5: search_usage Tool — Compact Index (Medium Effort)
 
-**Deliverable**: MCP tool `search_usage` (or `search_context_history`) that returns a compact list of usage/context entries with IDs and optional short summaries (e.g. tool_name, timestamp, one-line summary), without full payloads.
+**Deliverable**: MCP tool `search_usage` (or `search_context_history`) that returns a compact list of usage/context entries with IDs and short summaries (e.g. tool_name, timestamp, one-line summary), without full payloads.
 
 - Define response shape: list of `{ id, tool_name, timestamp, summary? }` (and other compact fields as needed).
-- Implement search over persisted usage (and optionally context logs): filter by date range, tool_name, success/failure; sort by time; limit results.
+- Implement search over persisted usage (and context logs): filter by date range, tool_name, success/failure; sort by time; limit results.
 - Return only compact fields to keep token cost low (~50–100 tokens per result).
 
 **Success**: Tool returns compact index; filters and limit work; tests for response shape and filtering.
 
-**Dependencies**: Step 3 (IDs). Phase 43 optional (tool-only).
+**Dependencies**: Step 3 (IDs). Phase 43 (tool-only).
 
 ---
 
@@ -125,7 +127,7 @@ Implementation order: execute steps in sequence. Dependencies between steps are 
 
 ---
 
-### Step 7: get_usage_timeline (Optional, Lower Priority)
+### Step 7: get_usage_timeline (Lower Priority)
 
 **Deliverable**: Tool or resource that returns chronological context around a given observation (e.g. “N events before and after this id”).
 
@@ -138,46 +140,46 @@ Implementation order: execute steps in sequence. Dependencies between steps are 
 
 ---
 
-### Step 8: Optional Result Summary per Observation (Later)
+### Step 8: Result Summary per Observation (Later)
 
-**Deliverable**: Optionally store a short result summary (e.g. for load_context, refactoring) with each observation for retrieval and future semantic search.
+**Deliverable**: ly store a short result summary (e.g. for load_context, refactoring) with each observation for retrieval and future semantic search.
 
-- Design: optional `result_summary` or similar field; populated for selected tools (e.g. load_context, apply_refactoring) if config enabled.
+- Design: `result_summary` or similar field; populated for selected tools (e.g. load_context, apply_refactoring) if config enabled.
 - Keep storage and computation minimal; consider feature flag or config.
 
 **Success**: When enabled, selected tools persist a short summary; retrieval includes it; tests cover on/off and presence/absence.
 
-**Dependencies**: Step 3; optional precursor to semantic search (Step 9).
+**Dependencies**: Step 3; precursor to semantic search (Step 9).
 
 ---
 
-### Step 9: Keyword / Semantic Search Over Usage (Later, Optional)
+### Step 9: Keyword / Semantic Search Over Usage
 
-**Deliverable**: Search usage/context by keyword (task_description, tool_name, error_type); optionally add semantic search (embeddings + vector DB) behind feature flag.
+**Deliverable**: Search usage/context by keyword (task_description, tool_name, error_type); ly add semantic search (embeddings + vector DB) behind feature flag.
 
 - Keyword: implement search over existing persisted fields (e.g. task_description, tool_name, error_type) via simple filter or FTS if available.
-- Semantic: only if needed; use optional dependency (e.g. Chroma) and feature flag; document in techContext.
+- Semantic: only if needed; use  dependency (e.g. Chroma) and feature flag; document in techContext.
 
-**Success**: Keyword search returns relevant observations; semantic layer, if added, is optional and documented.
+**Success**: Keyword search returns relevant observations; semantic layer, if added, is  and documented.
 
 **Dependencies**: Step 3, Step 5; Step 8 helpful for semantic.
 
 ---
 
-### Step 10: Context Injection Configuration (Later, Optional)
+### Step 10: Context Injection Configuration
 
-**Deliverable**: Optional “context injection” policy in config (e.g. always include memory bank core files, last N task types, max tokens for usage summary).
+**Deliverable**: “context injection” policy in config (e.g. always include memory bank core files, last N task types, max tokens for usage summary).
 
-- Extend optimization or config schema with optional policy; document in config docs.
+- Extend optimization or config schema with policy; document in config docs.
 - If clients auto-read resources at session start, align with this policy (e.g. `cortex://memory-bank/stats`, `cortex://usage/recent`).
 
 **Success**: Config schema and docs updated; behavior used by load_context or resources if implemented.
 
-**Dependencies**: Phase 43 resources; optional.
+**Dependencies**: Phase 43 resources.
 
 ---
 
-### Step 11: Document Querying Usage JSON (Optional)
+### Step 11: Document Querying Usage JSON
 
 **Deliverable**: Short doc or README section on how to query usage event files (e.g. `.cortex/usage/events/` or config path) with jq or scripts.
 
@@ -192,25 +194,25 @@ Implementation order: execute steps in sequence. Dependencies between steps are 
 ## Plan Dependencies
 
 - **Phase 43**: Required for Step 4 (resource `cortex://usage/observation/{id}`); recommended before or in parallel with Steps 4–6.
-- **Internal**: Step 3 before Steps 4, 5, 6, 7; Step 5 before Step 6; Step 8 optional before Step 9.
+- **Internal**: Step 3 before Steps 4, 5, 6, 7; Step 5 before Step 6; Step 8 before Step 9.
 
 ## Success Criteria
 
 - Progressive disclosure and privacy convention documented (Steps 1–2).
 - Usage events have stable IDs; observation readable by ID via resource (Steps 3–4).
 - Token-efficient workflow available: search_usage (index) → get_usage_events(ids) or resource read (Steps 5–6).
-- Optional: timeline (Step 7), result summary (Step 8), keyword/semantic search (Step 9), context injection config (Step 10), usage-query docs (Step 11).
+- Timeline (Step 7), result summary (Step 8), keyword/semantic search (Step 9), context injection config (Step 10), usage-query docs (Step 11).
 
 ## Technical Design
 
 - **IDs**: UUID or `{date}-{index}` per file; uniqueness within and across files as needed.
-- **Storage**: Keep existing usage event JSON layout; add `id` (and optionally `result_summary`) to schema; backfill strategy documented.
+- **Storage**: Keep existing usage event JSON layout; add `id` (and `result_summary`) to schema; backfill strategy documented.
 - **Resources**: Follow Phase 43 design (`cortex://`, `mcp_resource_wrapper`, `ensure_usage_context`); template resource `cortex://usage/observation/{id}`.
-- **Tools**: `search_usage` (and optionally `get_usage_timeline`) return compact structures; `get_usage_events(ids=[...])` returns full events; all with timeout wrappers and usage tracking.
+- **Tools**: `search_usage` (and `get_usage_timeline`) return compact structures; `get_usage_events(ids=[...])` returns full events; all with timeout wrappers and usage tracking.
 
 ## Testing Strategy (MANDATORY)
 
-- **Coverage target**: Minimum 95% for all new/updated code paths (ID assignment, search, fetch, resource handler, optional summary/timeline).
+- **Coverage target**: Minimum 95% for all new/updated code paths (ID assignment, search, fetch, resource handler, summary/timeline).
 - **Unit tests**:
   - ID assignment: assign ID at persist; id stable on re-read; backfill logic if present.
   - search_usage: response shape, filters (date, tool_name, success), limit, empty result.
@@ -225,7 +227,7 @@ Implementation order: execute steps in sequence. Dependencies between steps are 
 
 ## Risks & Mitigation
 
-- **Storage growth**: Optional result summaries and IDs add little; document retention or pruning if needed.
+- **Storage growth**: Result summaries and IDs add little; document retention or pruning if needed.
 - **Backfill cost**: One-time backfill for existing events; run offline or on first read; document in release notes.
 - **Phase 43 timing**: Steps 4–6 can be implemented as tools-only first; add resources when Phase 43 is ready.
 
@@ -233,9 +235,9 @@ Implementation order: execute steps in sequence. Dependencies between steps are 
 
 - **Steps 1–2**: 1–2 hours (docs/convention).
 - **Steps 3–6**: 8–12 hours (IDs, resource, search, fetch).
-- **Steps 7–11**: 6–11 hours (optional timeline, summary, search, config, docs).
+- **Steps 7–11**: 6–11 hours (timeline, summary, search, config, docs).
 
-Total estimate: 15–25 hours phased; later steps optional.
+Total estimate: 15–25 hours phased.
 
 ## Notes
 

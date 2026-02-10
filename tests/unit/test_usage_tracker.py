@@ -252,3 +252,39 @@ class TestAggregateEventsViaStats:
         assert tools_list[0]["tool_name"] == "single_tool"
         assert tools_list[0]["total_calls"] == 1
         assert tools_list[0]["avg_duration_ms"] == 10.0
+
+
+class TestGetEventById:
+    """Tests for UsageTracker.get_event_by_id."""
+
+    @pytest.mark.asyncio
+    async def test_get_event_by_id_returns_matching_event(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """get_event_by_id returns event when id exists."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage("tool_a", 1.0, True)
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        relative_key = f"usage/events/{today}.json"
+        raw = await read_cache_json(root, relative_key)
+        assert isinstance(raw, list) and raw
+        first = raw[0]
+        first_d = cast(dict[str, object], first) if isinstance(first, dict) else {}
+        event_id = str(first_d.get("id"))
+        found = await tracker.get_event_by_id(event_id)
+        assert found is not None
+        assert found.id == event_id
+        assert found.tool_name == "tool_a"
+
+    @pytest.mark.asyncio
+    async def test_get_event_by_id_returns_none_when_missing(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """get_event_by_id returns None when id does not exist."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        result = await tracker.get_event_by_id("non-existent-id")
+        assert result is None

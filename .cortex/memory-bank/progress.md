@@ -19,6 +19,8 @@
 - **Session Optimization: Roadmap Section Removal and Roadmap Sync Clarity** - COMPLETE. Documented safe roadmap section removal pattern in memory-bank-updater and confirmed roadmap_sync behavior for archived plans/unlinked_plans.
 - **Claude-mem docs (Steps 1–2)** - COMPLETE. Marked progressive disclosure + privacy convention work as done by confirming CLAUDE.md and implement-next-roadmap-step already document the context workflow and `<private>` / `<!-- private -->` exclusion convention, and updating the claude-mem plan status accordingly.
 - **Claude-mem inspired improvements – Step 3: Stable IDs for usage events** - COMPLETE. Implemented stable `id` on `ToolUsageEvent`, deterministic backfill in `usage_tracker`, and tests plus quality gate and coverage updates.
+- **Claude-mem inspired improvements – Step 4: usage observation resource** - COMPLETE. Added `get_usage_observation` tool and `cortex://usage/observation/{id}` resource backed by `UsageTracker.get_event_by_id`, with tests and full quality gate.
+- **Commit (pre-commit pipeline, 3759 tests, 90.16% coverage)** - COMPLETE. Pre-commit pipeline run: fix_errors, format, markdown lint (5 files fixed, 0 errors), type_check, quality, tests 3759 passed, 90.16% coverage; memory bank and roadmap formatting updated for this session.
 
 ## 2026-02-09
 

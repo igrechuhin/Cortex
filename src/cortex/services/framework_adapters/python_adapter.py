@@ -237,6 +237,17 @@ class PythonAdapter(FrameworkAdapter):
             stop_heartbeat.set()
             heart.join(timeout=2.0)
 
+    def _start_streaming_process(self, cmd: list[str]) -> subprocess.Popen[str]:
+        """Start pytest process for streaming output."""
+        return subprocess.Popen(
+            cmd,
+            cwd=self.project_root,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+
     def _execute_test_command_streaming(
         self,
         cmd: list[str],
@@ -248,18 +259,14 @@ class PythonAdapter(FrameworkAdapter):
         """Run pytest with Popen, stream output, report (completed, total)."""
         proc: subprocess.Popen[str] | None = None
         try:
-            proc = subprocess.Popen(
-                cmd,
-                cwd=self.project_root,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-            )
+            proc = self._start_streaming_process(cmd)
             lines = self._collect_streaming_output(proc, total, progress_callback)
             wait_timeout = timeout if timeout else 3600
             _ = proc.wait(timeout=wait_timeout)  # noqa: F841
             output = "".join(lines)
+            if proc.returncode == 0 and total > 0:
+                # Ensure final 100% progress update even if no per-test lines matched.
+                progress_callback(total, total)
             return self._parse_test_output(
                 output, proc.returncode == 0, coverage_threshold
             )

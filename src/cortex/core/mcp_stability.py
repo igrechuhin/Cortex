@@ -36,9 +36,7 @@ from cortex.core.usage_context import get_current_managers, set_current_managers
 logger = logging.getLogger(__name__)
 
 # Tools that report their own progress (file/step-based); skip wrapper time-based progress.
-_TOOLS_WITH_OWN_PROGRESS = frozenset(
-    {"execute_pre_commit_checks", "fix_markdown_lint", "fix_quality_issues"}
-)
+_TOOLS_WITH_OWN_PROGRESS = frozenset({"fix_markdown_lint", "fix_quality_issues"})
 
 # Serialize first-tool context setup so concurrent tool calls do not each run full init.
 _usage_context_init_lock: asyncio.Lock | None = None
@@ -544,7 +542,7 @@ def _create_progress_task_if_needed(
     """Create background progress task when enabled and ctx present (Phase 46).
 
     Skips time-based progress for tools that report their own progress
-    (e.g. execute_pre_commit_checks, fix_markdown_lint) to avoid mixing
+    (e.g. fix_markdown_lint, fix_quality_issues) to avoid mixing
     two progress scales (0-100 vs n/total).
     """
     if (

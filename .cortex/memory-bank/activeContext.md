@@ -28,6 +28,8 @@
 
 - ✅ **Claude-mem inspired improvements – Step 3: Stable IDs for usage events** - COMPLETE (2026-02-10) - Implemented stable `id` field on `ToolUsageEvent`, ensured new usage events persist IDs, added deterministic UUIDv5 backfill for legacy events in `usage_tracker`, and extended tests to cover ID assignment and backfill behavior within the existing usage tracking pipeline.
 
+- ✅ **Claude-mem inspired improvements – Step 4: usage observation resource** - COMPLETE (2026-02-10) - Implemented usage observation-by-ID support via `get_usage_observation` MCP tool and `cortex://usage/observation/{id}` resource on top of `UsageTracker.get_event_by_id`, including tests, coverage, and quality gate compliance.
+
 ## Completed Work (2026-02-09)
 
 - ✅ **Investigate roadmap corruption on plan registration (blocker)** - COMPLETE (2026-02-09). Mandated `register_plan_in_roadmap` and `add_roadmap_entry` for plan registration: updated create-plan Step 6 and memory-bank-updater to require register_plan_in_roadmap for adding a new plan entry; manage_file(full content) only as fallback. Updated integration tests to assert prompt requires register_plan_in_roadmap. Documented structured JSON roadmap as future work. Blocker removed from roadmap.
