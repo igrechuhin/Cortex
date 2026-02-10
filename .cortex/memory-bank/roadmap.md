@@ -22,9 +22,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Session Optimization Plans (2026-02-01)
 
-- **Public API, memory bank, rules** - PENDING - Plan: .cortex/plans/session-optimization-public-api-memory-bank-rules.md.
-- **Sequential thinking in Cortex MCP** - PENDING - Sequential thinking tool with thought history, revisions, branches. Plan: .cortex/plans/sequential-thinking-cortex-mcp.md.
-
 ### Features & Enhancements
 
 - **Claude-mem ideas for Cortex** - PENDING - Plan: .cortex/plans/claude-mem-ideas-for-cortex.md.
@@ -42,3 +39,4 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **MCP idempotent resource: project root path** - PENDING - Add an idempotent MCP resource that resolves and provides the project root path as a centralized entry point (e.g. cortex://project/root). Plan: .cortex/plans/mcp-idempotent-project-root-resource.md.
 - **Load context when agent encounters problem / fix path** - PENDING - Require agents to load context (and rules) when fixing so they follow project rules and guidelines. Plan: .cortex/plans/session-optimization-load-context-on-problem-fix-path-2026-02-09.md.
 - **Session optimization: roadmap section removal and roadmap_sync clarity** - PENDING - Safer roadmap section removal and roadmap_sync unlinked_plans clarity for archive.
+- **Reconsider Memory Bank Structure and File Responsibilities** - PENDING - Define canonical memory bank file set and single-responsibility per file; one DRY spec; align schema, path_resolver, template, rules, and docs. Plan: .cortex/plans/reconsider-memory-bank-structure.md

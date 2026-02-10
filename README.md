@@ -162,6 +162,10 @@ Provide more context to get better results.
 - **apply_refactoring** - Execute refactoring safely
 - **provide_feedback** - Submit feedback for learning
 
+### Planning & Reasoning Tools
+
+- **sequentialthinking** - Stepwise reasoning and planning (thought history, branches; compatible with MCP sequential thinking contract)
+
 ### Rules & Configuration Tools
 
 - **rules** - Manage cursor rules (index and get relevant rules)

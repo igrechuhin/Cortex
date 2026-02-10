@@ -11,6 +11,10 @@
 - **Plan Status MD036 side-effect imports** - COMPLETE. Synapse markdown rule: plan Status section must use `Status: VALUE` or heading, not **VALUE**. Python testing rule: side-effect imports must reference module (e.g. `_ = module`) for Pyright. Commit prompt: new subsection "Plan Status and side-effect imports (Step 12)" with both reminders. Integration test added in test_commit_workflow_prompt_alignment.py.
 - **Markdown corruption in progress and plans** - COMPLETE. MD037/backticks in markdown rule; progress.md phrase corruption fix in manage_file path; verify code symbols in updater and workflow; tests and quality gate passed.
 - **Commit (markdown lint, tests, plan archive check)** - Pre-commit pipeline: fix_errors, format, markdown lint (9 files fixed, 0 errors), type_check, quality, tests 3735 passed, 90.14% coverage. Plan archiving: 0 completed plans in plans root.
+- **Public API, memory bank, rules** - COMPLETE. Session optimization: rules for public API type names and SDK generics in python-coding-standards and python-mcp-development; implement prompt and memory-bank-updater now require updating memory bank after user-requested fixes that change API/type names/behavior; one-time alignment not needed (no _MCPContext/_LogLevel in memory bank).
+- **Sequential thinking in Cortex MCP** - COMPLETE. Added sequentialthinking tool: Pydantic input/output, SequentialThinkingCore (thought history, branches, total_thoughts adjustment), camelCase JSON response, optional thought logging; tests and docs updated.
+- **Commit (markdown lint, tests)** - Pre-commit pipeline: fix_errors, format, markdown lint (14 files fixed, 0 errors), type_check, quality, tests 3751 passed, 90.17% coverage. Plan archiving: 0 completed plans in plans root.
+- **Commit (full pipeline)** - Pre-commit: fix_errors, format, markdown lint (223 files, 0 errors), type_check, quality, tests 3751 passed, 90.17% coverage; memory bank and plan archiving.
 
 ## 2026-02-09
 

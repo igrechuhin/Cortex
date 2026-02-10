@@ -1,10 +1,10 @@
 # MCP Tools API Reference
 
-Complete reference for all 54 MCP tools provided by Cortex.
+Complete reference for all MCP tools provided by Cortex.
 
 ## Overview
 
-Cortex provides 54 tools organized by functionality phases. Tools return JSON responses with consistent error handling.
+Cortex provides tools organized by functionality phases. Tools return JSON responses with consistent error handling.
 
 **Project root:** Tools do **not** accept a `project_root` parameter. Each tool resolves the project root internally (via MCP roots when available, or current working directory). Do not pass `project_root` when calling tools.
 
@@ -22,6 +22,7 @@ Cortex provides 54 tools organized by functionality phases. Tools return JSON re
 | [Phase 6](#phase-6-shared-rules-repository) | 4 | Shared Rules Repository |
 | [Phase 8](#phase-8-project-structure-management) | 7 | Project Structure Management |
 | [Health-Check](#health-check-analysis) | 1 | Health-Check (prompts, rules, tools analysis) |
+| [Sequential Thinking](#sequential-thinking) | 1 | Stepwise reasoning and planning |
 | [Legacy](#legacy-tools) | 3 | Legacy Support |
 
 ---
@@ -2696,6 +2697,34 @@ Analyzes a project description and suggests what should go into each Memory Bank
   }
 }
 ```
+
+---
+
+## Sequential Thinking
+
+Stepwise, reflective problem-solving compatible with the MCP sequential thinking contract (thought history, revisions, branches).
+
+### sequentialthinking
+
+Run one step of sequential thinking and return structured state.
+
+**USE WHEN:** Breaking down complex problems, multi-step planning, analysis with revision, unclear scope, or when you need to filter irrelevant information (e.g. plan a refactor, debug a failing test, design an API).
+
+**Parameters:**
+
+- `thought` (str) - Current thinking step (required)
+- `next_thought_needed` (bool) - Whether another thought step is needed (required)
+- `thought_number` (int) - Current thought index, 1-based (required)
+- `total_thoughts` (int) - Estimated total thoughts; can be adjusted (required)
+- `is_revision` (bool) - This thought revises previous thinking (optional, default: false)
+- `revises_thought` (int | None) - Which thought number is being revised (optional)
+- `branch_from_thought` (int | None) - Branching point thought number (optional)
+- `branch_id` (str | None) - Branch identifier when branching (optional)
+- `needs_more_thoughts` (bool) - More thoughts needed than estimated (optional, default: false)
+
+**Returns:**
+
+JSON with camelCase keys: `thoughtNumber`, `totalThoughts`, `nextThoughtNeeded`, `branches` (list of branch IDs), `thoughtHistoryLength`. Compatible with the reference MCP sequential thinking server.
 
 ---
 

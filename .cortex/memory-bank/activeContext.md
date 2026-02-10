@@ -16,6 +16,10 @@
 
 - ✅ **Markdown corruption in progress and plans** - COMPLETE (2026-02-10) - Added MD037 and code identifiers in backticks to markdown-formatting rule; extended corruption guard to progress.md via fix_memory_bank_content_if_needed (phrase-only fix); added verify-code-symbols guidance to memory-bank-updater and memory-bank-workflow; plan files documented as out of scope for phrase fix.
 
+- ✅ **Public API, memory bank, rules** - COMPLETE (2026-02-10) - Added Synapse rules (public API no private type names, SDK generic type parameters), implement prompt and memory-bank-updater guidance to update memory bank after user-requested fixes; verified no outdated type names in progress/activeContext.
+
+- ✅ **Sequential thinking in Cortex MCP** - COMPLETE (2026-02-10) - Implemented sequentialthinking MCP tool: Pydantic models (SequentialThinkingInput/Output), SequentialThinkingCore with process_thought, in-memory thought history and branches, handler with USE WHEN/EXAMPLES/RETURNS, optional DISABLE_THOUGHT_LOGGING, registration in tools **init**, unit tests ≥95% coverage, docs (tools.md, README, CLAUDE.md).
+
 ## Completed Work (2026-02-09)
 
 - ✅ **Investigate roadmap corruption on plan registration (blocker)** - COMPLETE (2026-02-09). Mandated `register_plan_in_roadmap` and `add_roadmap_entry` for plan registration: updated create-plan Step 6 and memory-bank-updater to require register_plan_in_roadmap for adding a new plan entry; manage_file(full content) only as fallback. Updated integration tests to assert prompt requires register_plan_in_roadmap. Documented structured JSON roadmap as future work. Blocker removed from roadmap.

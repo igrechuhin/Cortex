@@ -1,13 +1,13 @@
 {
-  "last_updated": "2026-02-10T08:07",
-  "total_sessions_analyzed": 19,
-  "total_load_context_calls": 21,
-  "avg_token_utilization": 0.446,
-  "avg_files_selected": 7.29,
-  "avg_relevance_score": 0.584,
+  "last_updated": "2026-02-10T08:28",
+  "total_sessions_analyzed": 20,
+  "total_load_context_calls": 22,
+  "avg_token_utilization": 0.426,
+  "avg_files_selected": 6.95,
+  "avg_relevance_score": 0.583,
   "common_task_patterns": {
     "fix/debug": 5,
-    "other": 6,
+    "other": 7,
     "implement/add": 7,
     "update/modify": 1,
     "testing": 1,
@@ -30,7 +30,7 @@
         "notes": "Adequate performance"
       },
       "other": {
-        "calls_count": 6,
+        "calls_count": 7,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
@@ -39,8 +39,8 @@
           "progress.md",
           "systemPatterns.md"
         ],
-        "avg_utilization": 0.237,
-        "avg_relevance": 0.572,
+        "avg_utilization": 0.203,
+        "avg_relevance": 0.568,
         "notes": "Low utilization - consider smaller token budgets"
       },
       "implement/add": {
@@ -101,12 +101,12 @@
         "times_selected": 18,
         "avg_relevance": 0.813,
         "task_types_used": [
-          "other",
-          "update/modify",
           "implement/add",
+          "fix/debug",
+          "update/modify",
+          "other",
           "testing",
-          "documentation",
-          "fix/debug"
+          "documentation"
         ],
         "recommendation": "High value - prioritize for loading"
       },
@@ -114,12 +114,12 @@
         "times_selected": 19,
         "avg_relevance": 0.589,
         "task_types_used": [
-          "other",
-          "update/modify",
           "implement/add",
+          "fix/debug",
+          "update/modify",
+          "other",
           "testing",
-          "documentation",
-          "fix/debug"
+          "documentation"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -127,12 +127,12 @@
         "times_selected": 17,
         "avg_relevance": 0.633,
         "task_types_used": [
-          "other",
-          "update/modify",
           "implement/add",
+          "fix/debug",
+          "update/modify",
+          "other",
           "testing",
-          "documentation",
-          "fix/debug"
+          "documentation"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -140,12 +140,12 @@
         "times_selected": 19,
         "avg_relevance": 0.319,
         "task_types_used": [
-          "other",
-          "update/modify",
           "implement/add",
+          "fix/debug",
+          "update/modify",
+          "other",
           "testing",
-          "documentation",
-          "fix/debug"
+          "documentation"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -153,12 +153,12 @@
         "times_selected": 19,
         "avg_relevance": 0.44,
         "task_types_used": [
-          "other",
-          "update/modify",
           "implement/add",
+          "fix/debug",
+          "update/modify",
+          "other",
           "testing",
-          "documentation",
-          "fix/debug"
+          "documentation"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -166,8 +166,8 @@
         "times_selected": 3,
         "avg_relevance": 0.621,
         "task_types_used": [
-          "other",
-          "fix/debug"
+          "fix/debug",
+          "other"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -175,8 +175,8 @@
         "times_selected": 3,
         "avg_relevance": 0.24,
         "task_types_used": [
-          "other",
-          "fix/debug"
+          "fix/debug",
+          "other"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -184,12 +184,12 @@
         "times_selected": 17,
         "avg_relevance": 0.611,
         "task_types_used": [
-          "other",
-          "update/modify",
           "implement/add",
+          "fix/debug",
+          "update/modify",
+          "other",
           "testing",
-          "documentation",
-          "fix/debug"
+          "documentation"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -197,12 +197,12 @@
         "times_selected": 19,
         "avg_relevance": 0.574,
         "task_types_used": [
-          "other",
-          "update/modify",
           "implement/add",
+          "fix/debug",
+          "update/modify",
+          "other",
           "testing",
-          "documentation",
-          "fix/debug"
+          "documentation"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -210,20 +210,20 @@
         "times_selected": 19,
         "avg_relevance": 0.583,
         "task_types_used": [
-          "other",
-          "update/modify",
           "implement/add",
+          "fix/debug",
+          "update/modify",
+          "other",
           "testing",
-          "documentation",
-          "fix/debug"
+          "documentation"
         ],
         "recommendation": "Moderate value - include when relevant"
       }
     },
     "learned_patterns": [
-      "Average 44% budget utilization - ~13k tokens unused per call",
-      "'techContext.md' is most frequently loaded (19/21 calls)",
-      "Most common task type: 'implement/add' (7 calls)"
+      "Average 42% budget utilization - ~12k tokens unused per call",
+      "'techContext.md' is most frequently loaded (19/22 calls)",
+      "Most common task type: 'other' (7 calls)"
     ],
     "budget_recommendations": {
       "fix/debug": 10000,
@@ -885,6 +885,30 @@
         "techContext.md": 0.71,
         "productContext.md": 0.708,
         "systemPatterns.md": 0.729
+      }
+    },
+    {
+      "session_id": "84f963290917",
+      "timestamp": "2026-02-10T08:25",
+      "task_description": "Public API, memory bank, rules - session optimization for public API, memory bank, and rules",
+      "token_budget": 0,
+      "total_tokens": 0,
+      "utilization": 0.0,
+      "files_selected": 0,
+      "files_excluded": 8,
+      "avg_relevance_score": 0.548,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [],
+      "relevance_by_file": {
+        "roadmap.md": 0.629,
+        "progress.md": 0.515,
+        "activeContext.md": 0.683,
+        "file.md": 0.23,
+        "projectBrief.md": 0.427,
+        "techContext.md": 0.736,
+        "productContext.md": 0.635,
+        "systemPatterns.md": 0.528
       }
     }
   ]

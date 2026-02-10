@@ -28,8 +28,9 @@ Modules:
 - roadmap_operations: Roadmap entry management (1 tool)
 - plan_operations: Structured plan creation and roadmap registration (2 tools)
 - plan_completion: Complete plan (move from roadmap to activeContext) (1 tool)
+- sequential_thinking: Sequential thinking for stepwise reasoning (1 tool)
 
-Total: 69 tools + 7 prompts
+Total: 70 tools + 7 prompts
 """
 
 # Import all tool modules to register their decorators
@@ -62,6 +63,7 @@ from . import (
     roadmap_operations,  # noqa: F401
     rules_operations,  # noqa: F401
     script_capture_tools,  # noqa: F401
+    sequential_thinking,  # noqa: F401
     synapse_prompts,  # noqa: F401  # Dynamic Synapse prompts registration
     synapse_tools,  # noqa: F401
     usage_analytics,  # noqa: F401
@@ -95,6 +97,7 @@ __all__ = [
     "roadmap_corruption",
     "roadmap_operations",
     "plan_completion",
+    "sequential_thinking",
     "plan_operations",
     "phase8_structure",
     "pre_commit_tools",
