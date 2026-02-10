@@ -341,6 +341,17 @@ All Cortex data is stored in `.cortex/` directory. For IDE compatibility, `.curs
 - Use `mkdir -p .cortex/plans/archive/PhaseX/MilestoneY` to create archive directory
 - Move plans: `mv .cortex/plans/<plan-name>.plan.md .cortex/plans/archive/PhaseX/MilestoneY/`
 
+**Privacy convention**: Content that must not be persisted or repeated (secrets, PII) may be wrapped in `<private>...</private>` or marked with `<!-- private -->`. Agents must not store or echo such blocks in memory bank, usage logs, or session summaries. Tools that persist user content may strip or redact content between these markers.
+
+## Context Workflow (Progressive Disclosure)
+
+Use token-efficient context loading so sessions stay within budget and only relevant content is loaded:
+
+- **At task start**: Prefer `load_context(task_description="...", token_budget=<task-appropriate>)` so the session is recorded and files are selected by relevance. Use task-type budgets: 10k (update/implement-add), 15k (fix/debug), 20–30k (small feature), 40–50k (architecture).
+- **When incremental loading helps**: Use `load_progressive_context(task_description="...")` to load in batches by relevance or dependency.
+- **Avoid dumping everything**: Do not request full content for all usage/history when only a subset is needed. When search or fetch-by-ID tools exist (e.g. usage search, `get_usage_event(ids=[...])`), prefer **search → select IDs → fetch** instead of loading all.
+- **Token visibility**: Responses from `load_context` and `load_progressive_context` include token counts and utilization; use them to stay within budget.
+
 ## File Operations (MANDATORY)
 
 **Standard tools preference**:

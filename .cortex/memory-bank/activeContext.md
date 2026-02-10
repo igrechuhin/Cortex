@@ -20,6 +20,10 @@
 
 - ✅ **Sequential thinking in Cortex MCP** - COMPLETE (2026-02-10) - Implemented sequentialthinking MCP tool: Pydantic models (SequentialThinkingInput/Output), SequentialThinkingCore with process_thought, in-memory thought history and branches, handler with USE WHEN/EXAMPLES/RETURNS, optional DISABLE_THOUGHT_LOGGING, registration in tools **init**, unit tests ≥95% coverage, docs (tools.md, README, CLAUDE.md).
 
+- ✅ **Claude-mem ideas for Cortex** - COMPLETE (2026-02-10) - Implemented short-term items from the claude-mem ideas plan: (1) Progressive disclosure—added Context Workflow section to CLAUDE.md, added context workflow note to docs/api/tools.md, and added token-efficient guidance to the implement prompt; (2) Privacy convention—documented `<private>...</private>` and `<!-- private -->` in CLAUDE.md and memory-bank-workflow.mdc. Docs and prompts only; no production code changes.
+
+- ✅ **Session Optimization: Roadmap Section Removal and Roadmap Sync Clarity** - COMPLETE (2026-02-10) - Documented safe roadmap section removal pattern in memory-bank-updater and confirmed roadmap_sync behavior around archived plans/unlinked_plans so future roadmap edits avoid full-content manage_file writes for section removal.
+
 ## Completed Work (2026-02-09)
 
 - ✅ **Investigate roadmap corruption on plan registration (blocker)** - COMPLETE (2026-02-09). Mandated `register_plan_in_roadmap` and `add_roadmap_entry` for plan registration: updated create-plan Step 6 and memory-bank-updater to require register_plan_in_roadmap for adding a new plan entry; manage_file(full content) only as fallback. Updated integration tests to assert prompt requires register_plan_in_roadmap. Documented structured JSON roadmap as future work. Blocker removed from roadmap.

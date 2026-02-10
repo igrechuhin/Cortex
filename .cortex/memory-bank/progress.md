@@ -15,6 +15,8 @@
 - **Sequential thinking in Cortex MCP** - COMPLETE. Added sequentialthinking tool: Pydantic input/output, SequentialThinkingCore (thought history, branches, total_thoughts adjustment), camelCase JSON response, optional thought logging; tests and docs updated.
 - **Commit (markdown lint, tests)** - Pre-commit pipeline: fix_errors, format, markdown lint (14 files fixed, 0 errors), type_check, quality, tests 3751 passed, 90.17% coverage. Plan archiving: 0 completed plans in plans root.
 - **Commit (full pipeline)** - Pre-commit: fix_errors, format, markdown lint (223 files, 0 errors), type_check, quality, tests 3751 passed, 90.17% coverage; memory bank and plan archiving.
+- **Claude-mem ideas for Cortex** - COMPLETE. Short-term items: progressive disclosure in CLAUDE.md, docs/api/tools.md, and implement prompt; `<private>` convention in CLAUDE.md and memory-bank-workflow.mdc.
+- **Session Optimization: Roadmap Section Removal and Roadmap Sync Clarity** - COMPLETE. Documented safe roadmap section removal pattern in memory-bank-updater and confirmed roadmap_sync behavior for archived plans/unlinked_plans.
 
 ## 2026-02-09
 

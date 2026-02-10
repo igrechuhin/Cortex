@@ -972,6 +972,8 @@ Update configuration:
 
 Tools for smart context loading, relevance scoring, summarization, and custom rules integration.
 
+**Context workflow (progressive disclosure)**: Prefer loading context with a task-appropriate token budget rather than loading everything. Use `load_context` at task start with a budget that matches the task type (e.g. 10k for updates, 15k for fix/debug, 20–30k for features, 40–50k for architecture). Use `load_progressive_context` when incremental loading is needed. When usage search or fetch-by-ID tools are available, prefer search → select IDs → fetch instead of loading full history.
+
 ### load_context
 
 Load relevant context for a task within token budget.

@@ -24,7 +24,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Features & Enhancements
 
-- **Claude-mem ideas for Cortex** - PENDING - Plan: .cortex/plans/claude-mem-ideas-for-cortex.md.
 - **Claude-mem inspired improvements (usage search, observations, progressive disclosure)** - PENDING - Plan: .cortex/plans/claude-mem-inspired-improvements.md.
 - **Conditional prompt registration** - PENDING - Only show setup prompts when project not fully configured. Plan: .cortex/plans/conditional-prompt-registration.md.
 - **Make fix_markdown_lint report progress like tests tool** - PENDING - Progress reporting for markdown linting. Plan: .cortex/plans/fix-markdown-lint-progress-like-tests.md.
@@ -38,5 +37,5 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Compound engineering alignment (Cortex MCP)** - PENDING - Align Cortex with compound-engineering goal (each unit of work makes the next easier); adopt ideas from EveryInc compound-engineering-plugin; document Plan→Work→Review→Compound loop; add compound checklist to prompts; reduce recurring friction. Plan: .cortex/plans/compound-engineering-alignment-cortex.md.
 - **MCP idempotent resource: project root path** - PENDING - Add an idempotent MCP resource that resolves and provides the project root path as a centralized entry point (e.g. cortex://project/root). Plan: .cortex/plans/mcp-idempotent-project-root-resource.md.
 - **Load context when agent encounters problem / fix path** - PENDING - Require agents to load context (and rules) when fixing so they follow project rules and guidelines. Plan: .cortex/plans/session-optimization-load-context-on-problem-fix-path-2026-02-09.md.
-- **Session optimization: roadmap section removal and roadmap_sync clarity** - PENDING - Safer roadmap section removal and roadmap_sync unlinked_plans clarity for archive.
 - **Reconsider Memory Bank Structure and File Responsibilities** - PENDING - Define canonical memory bank file set and single-responsibility per file; one DRY spec; align schema, path_resolver, template, rules, and docs. Plan: .cortex/plans/reconsider-memory-bank-structure.md
+- **Session Optimization: Roadmap Completed-Section Cleanup** - PENDING - Clean up legacy completed sections in roadmap.md by migrating their content into activeContext.md/progress.md and removing the completed block using the documented single-block edit pattern, then validating with roadmap_sync and timestamps.
