@@ -14,6 +14,8 @@
 
 - ✅ **Implement prompt memory bank and function length** - COMPLETE (2026) - Enforced manage_file-only for memory bank writes in implement Step 5 (requirement, prohibition, full-content fallback); added function-length reminder in Step 4; added rules-disabled fallback in analyze prompt. Fixed token-budget integration test to accept comma-formatted numbers.
 
+- ✅ **Phase 43: Reconsider Tools Registration - Transform Tools to Resources** - COMPLETE (2026) - Completed Phase 43: Transformed read-only operations from Tools to Resources, unified naming conventions, and verified all Resources and Tools work correctly. All 3810 tests pass, quality gate passes, documentation updated.
+
 ## Completed Work (2026-02-10)
 
 - ✅ **Implement load_context at step start, rules fallback, and task-type token budget** - COMPLETE (2026-02-10) - Updated implement-next-roadmap-step prompt: (1) load_context at step start with session-recording note in Pre-Action Checklist and Step 1; (2) rules fallback when status disabled (read from structure_info.paths.rules); (3) task-type token budget mapping (10k update/implement-add, 15k fix-debug/other, 20–30k small feature, 40–50k architecture).

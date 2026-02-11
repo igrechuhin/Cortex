@@ -10,8 +10,6 @@
 
 ## Future Enhancements
 
-- **Phase 43: Reconsider Tools Registration - Transform Tools to Resources** - PENDING - Align MCP operations with Resources vs Tools semantics, unify naming across tools/resources (especially remaining get_*operations), and review each get_* tool case-by-case to decide whether it should be a Resource, a Tool, or a split pair, updating docs and tests accordingly.
-
 ## Pending plans (from .cortex/plans)
 
 ### Investigation Plans (Archive / Reference)

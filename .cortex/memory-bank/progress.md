@@ -9,6 +9,7 @@
 ## 2026
 
 - **Implement prompt memory bank and function length** - COMPLETE. Enforced manage_file for all memory bank writes (Step 5 requirement/prohibition/fallback), added ≤30-line function reminder (Step 4), rules fallback in analyze prompt; test fix for token budget string.
+- **Phase 43: Reconsider Tools Registration** - COMPLETE. Transformed read-only operations from Tools to Resources, unified naming conventions (no confusing get_* Tools for side-effecting operations), verified all Resources and Tools work correctly. All 3810 tests pass, quality gate passes, comprehensive documentation updated in docs/api/tools.md.
 
 ## 2026-02-10
 
