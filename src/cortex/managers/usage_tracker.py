@@ -193,6 +193,32 @@ class UsageTracker:
                 return event
         return None
 
+    async def get_events_by_ids(
+        self,
+        event_ids: list[str],
+    ) -> list[ToolUsageEvent]:
+        """Return all usage events matching the given stable IDs.
+
+        Args:
+            event_ids: List of event IDs to resolve.
+
+        Returns:
+            List of ToolUsageEvent instances whose id is in event_ids. The
+            result preserves the order of event_ids and omits IDs that are
+            not found.
+        """
+        if not event_ids:
+            return []
+        events = await _load_events_in_range(
+            self._project_root,
+            None,
+            None,
+            None,
+        )
+        by_id: dict[str, ToolUsageEvent] = {e.id: e for e in events}
+        # Preserve caller-specified order while skipping missing IDs.
+        return [by_id[event_id] for event_id in event_ids if event_id in by_id]
+
     async def search_usage(
         self,
         start_date: datetime | None,

@@ -110,6 +110,71 @@ async def get_usage_observation(
     return await _get_usage_observation_impl(id=id, root=root, tracker=tracker)
 
 
+def _normalize_ids(ids: list[str]) -> list[str]:
+    """Normalize requested IDs while preserving order."""
+    return [i for i in ids if i]
+
+
+def _build_usage_events_payload(
+    root: Path,
+    events: list[ToolUsageEvent],
+    requested_ids: list[str],
+) -> dict[str, object]:
+    """Build JSON-serializable payload for usage events lookup."""
+    by_id = {ev.id: ev for ev in events}
+    missing_ids = [eid for eid in requested_ids if eid not in by_id]
+    return {
+        "status": "success",
+        "project_root": str(root),
+        "events": [ev.model_dump() for ev in events],
+        "missing_ids": missing_ids,
+    }
+
+
+async def _get_usage_events_impl(
+    ids: list[str],
+    root: Path,
+    tracker: UsageTracker | None,
+) -> str:
+    """Implementation helper for get_usage_events MCP tool."""
+    if tracker is None:
+        return json.dumps(
+            {"status": "unavailable", "message": "Usage tracker not available"},
+            indent=2,
+        )
+    normalized_ids = _normalize_ids(ids)
+    if not normalized_ids:
+        payload = _build_usage_events_payload(root=root, events=[], requested_ids=[])
+        return json.dumps(payload, indent=2)
+    events = await tracker.get_events_by_ids(event_ids=normalized_ids)
+    payload = _build_usage_events_payload(
+        root=root,
+        events=events,
+        requested_ids=normalized_ids,
+    )
+    return json.dumps(payload, indent=2)
+
+
+@mcp.tool(annotations=read_only_annotations("Get Usage Events"))
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_usage_events(
+    ids: list[str],
+    ctx: MCPContext | None = None,
+) -> str:
+    """Get full usage events for a list of observation IDs.
+
+    This complements search_usage's compact index by allowing callers to fetch
+    full event payloads only for selected IDs, enabling the recommended
+    search → select IDs → get_usage_events(ids=[...]) workflow.
+    """
+    if ctx is not None:
+        await log_client(ctx, "debug", f"get_usage_events: starting ids={len(ids)}")
+    root = await resolve_project_root_async(None, ctx)
+    tracker = await _get_tracker(root)
+    return await _get_usage_events_impl(ids=ids, root=root, tracker=tracker)
+
+
 @mcp.tool(annotations=read_only_annotations("Get Tool Usage Stats"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)

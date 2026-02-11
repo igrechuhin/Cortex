@@ -10,6 +10,8 @@
 
 - ✅ **Phase 43 Step 6: Naming Unification and get_* Tool Review**- COMPLETE (2026-02-11) - Documented naming conventions (Tools: imperative verbs; Resources: cortex:// URIs; get_* read-only). Added inventory and per-case decisions to phase-43-reconsider-tools-registration.md. Updated docs/api/tools.md and AGENTS.md. Added tests/tools/test_phase43_get_tools_naming.py. No breaking renames; backward compatibility maintained.
 
+- ✅ **Claude-mem improvements: get_usage_events tool** - COMPLETE (2026-02-11) - Implemented MCP tool get_usage_events(ids=[...]) backed by UsageTracker.get_events_by_ids, plus unit tests and quality gate / coverage checks, enabling token-efficient workflow search_usage -> get_usage_events for selected observations.
+
 ## Completed Work (2026)
 
 - ✅ **Implement prompt memory bank and function length** - COMPLETE (2026) - Enforced manage_file-only for memory bank writes in implement Step 5 (requirement, prohibition, full-content fallback); added function-length reminder in Step 4; added rules-disabled fallback in analyze prompt. Fixed token-budget integration test to accept comma-formatted numbers.

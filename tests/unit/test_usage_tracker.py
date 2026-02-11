@@ -290,6 +290,55 @@ class TestGetEventById:
         assert result is None
 
 
+class TestGetEventsByIds:
+    """Tests for UsageTracker.get_events_by_ids."""
+
+    @pytest.mark.asyncio
+    async def test_get_events_by_ids_returns_matching_events(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """get_events_by_ids returns all events matching provided IDs."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage("tool_a", 1.0, True)
+        await tracker.record_tool_usage("tool_b", 2.0, False, error_type="Err")
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        relative_key = f"usage/events/{today}.json"
+        raw = await read_cache_json(root, relative_key)
+        assert isinstance(raw, list) and len(raw) >= 2
+        first = cast(dict[str, object], raw[0])
+        second = cast(dict[str, object], raw[1])
+        id1 = str(first.get("id"))
+        id2 = str(second.get("id"))
+        events = await tracker.get_events_by_ids([id1, id2])
+        ids = {e.id for e in events}
+        assert id1 in ids
+        assert id2 in ids
+
+    @pytest.mark.asyncio
+    async def test_get_events_by_ids_skips_missing_and_preserves_order(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """get_events_by_ids skips missing IDs and preserves requested order."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage("tool_a", 1.0, True)
+        await tracker.record_tool_usage("tool_b", 2.0, True)
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        relative_key = f"usage/events/{today}.json"
+        raw = await read_cache_json(root, relative_key)
+        assert isinstance(raw, list) and len(raw) >= 2
+        first = cast(dict[str, object], raw[0])
+        second = cast(dict[str, object], raw[1])
+        id1 = str(first.get("id"))
+        id2 = str(second.get("id"))
+        order = [id2, "missing-id", id1]
+        events = await tracker.get_events_by_ids(order)
+        assert [e.id for e in events] == [id2, id1]
+
+
 class TestSearchUsage:
     """Tests for UsageTracker.search_usage."""
 

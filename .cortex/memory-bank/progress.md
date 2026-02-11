@@ -5,6 +5,7 @@
 - **Session Optimization: Commit Pipeline Orchestration Refactor** — COMPLETE. Steps 6–8 implemented: cross-references from session-optimization/quality-gate plans to orchestration refactor; create-plan and Analyze prompts updated with phase-based orchestration, rule references (memory-bank-workflow.mdc, AGENTS.md), and Phase D doc update. Pre-commit checks passed.
 - **Commit (markdown lint, plan archive)** - COMPLETE. Fixed MD040 in CLAUDE.md (fenced code language), MD024 in docs/design/commit-pipeline-phases.md (unique phase headings). Archived session-optimization-commit-pipeline-orchestration-refactor.md to SessionOptimization; removed from roadmap.
 - **Phase 43 Step 6 (Naming Unification and get_* Tool Review)**- COMPLETE. Documented naming conventions, inventory, and per-case decisions in plan; added Tools vs Resources section to docs/api/tools.md and AGENTS.md; added test_phase43_get_tools_naming.py to enforce get_* read-only convention.
+- **Claude-mem improvements: get_usage_events tool** - COMPLETE. Implemented MCP tool get_usage_events(ids=[...]) backed by UsageTracker.get_events_by_ids, with tests, coverage, and quality gate passing to enable the search_usage → get_usage_events progressive-disclosure workflow.
 
 ## 2026
 

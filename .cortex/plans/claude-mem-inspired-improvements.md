@@ -1,6 +1,6 @@
 # Claude-mem Inspired Improvements (Usage Search, Observations, Progressive Disclosure)
 
-**Status**: IN PROGRESS (Steps 1–5 completed 2026-02-10)  
+**Status**: IN PROGRESS (Steps 1–6 completed 2026-02-11)  
 **Created**: 2026-02-02  
 **Priority**: Future enhancement (after Phase 43)  
 **Estimated Effort**: 15–25 hours (phased)  
@@ -126,6 +126,8 @@ Implementation order: execute steps in sequence. Dependencies between steps are 
 **Success**: Client can fetch full details for a set of IDs without loading all history; tests for multiple IDs and missing IDs.
 
 **Dependencies**: Step 3, Step 4 (if resource path).
+
+**Status**: COMPLETED 2026-02-11 — Implemented get_usage_events MCP tool backed by UsageTracker.get_events_by_ids, with tests and quality gate passing.
 
 ---
 
