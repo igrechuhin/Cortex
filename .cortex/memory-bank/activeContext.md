@@ -8,6 +8,8 @@
 
 - ✅ **Session Optimization: Commit Pipeline Orchestration Refactor — Steps 7–8** - COMPLETE (2026-02-11) - Step 7: create-plan.md — added explicit phases (1–5), Phases overview, slimmed Path Resolution and ERROR HANDLING by referencing memory-bank-workflow.mdc and AGENTS.md. Step 8: analyze.md — added Phases (1–3), Tooling reference to memory-bank-workflow.mdc/AGENTS.md, phase labels on Pre-Analysis Checklist and steps, Phase D alignment in commit-pipeline-phases.md, full-report/no-truncation for review writes. Plan status set to COMPLETED (Steps 1–8).
 
+- ✅ **Phase 43 Step 6: Naming Unification and get_* Tool Review**- COMPLETE (2026-02-11) - Documented naming conventions (Tools: imperative verbs; Resources: cortex:// URIs; get_* read-only). Added inventory and per-case decisions to phase-43-reconsider-tools-registration.md. Updated docs/api/tools.md and AGENTS.md. Added tests/tools/test_phase43_get_tools_naming.py. No breaking renames; backward compatibility maintained.
+
 ## Completed Work (2026)
 
 - ✅ **Implement prompt memory bank and function length** - COMPLETE (2026) - Enforced manage_file-only for memory bank writes in implement Step 5 (requirement, prohibition, full-content fallback); added function-length reminder in Step 4; added rules-disabled fallback in analyze prompt. Fixed token-budget integration test to accept comma-formatted numbers.

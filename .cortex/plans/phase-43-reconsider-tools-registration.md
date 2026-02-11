@@ -315,7 +315,7 @@ Current tool registration doesn't align with MCP protocol semantics:
 - Client compatibility report
 - Migration completion confirmation
 
-### Step 6: Naming Unification and `get_*` Tool Review (4-6 hours)
+### Step 6: Naming Unification and `get_*` Tool Review (4-6 hours) — COMPLETE (2026-02-11)
 
 This step incorporates the 2026-02-10 input to **unify Tools/Resources naming** and **reconsider remaining `get_*` Tools on a case-by-case basis**.
 
@@ -364,6 +364,46 @@ This step incorporates the 2026-02-10 input to **unify Tools/Resources naming** 
   - API docs: reflect final Tool/Resource names, especially for former `get_*` operations.
   - Architecture docs / CLAUDE.md: briefly describe the naming conventions and how Tools vs Resources should be named going forward.
 - Ensure the overall **Success Criteria** includes \"no confusing `get_*` Tool names\" and \"Tools/Resources naming scheme documented and applied\".
+
+#### Step 6 Deliverables (2026-02-11)
+
+**Task 6.1 — Naming conventions (documented):**
+
+- **Tools** (side-effecting, POST-like): Use imperative verb-based names (`write_file`, `apply_refactoring`, `update_config`, `fix_markdown_lint`). Do **not** use `get_*` for operations that mutate state.
+- **Resources** (read-only, GET-like): Identified by canonical `cortex://<category>/<resource>` URIs. Handler names may keep `get_*_resource` for clarity during migration; long term, view-oriented names (e.g. `memory_bank_stats`) are preferred. No `get_*` Tool should be the only way to perform a side-effecting operation.
+- **Hybrid pairs**: Read exposed as Resource (e.g. `get_file_resource` / `cortex://memory-bank/file/{file_name}`), write as Tool (`write_file`). Same stem where applicable.
+
+**Task 6.2 — Inventory of `get_*` Tools and Resources:**
+
+| Handler (Tool) | Resource (URI) | Behavior | Module |
+|----------------|----------------|----------|--------|
+| get_memory_bank_stats | cortex://memory-bank/stats | Pure read | phase1_foundation_stats, mcp_stability |
+| get_version_history | cortex://memory-bank/version-history/{file_name} | Pure read | phase1_foundation_version |
+| get_dependency_graph | cortex://memory-bank/dependency-graph | Pure read | phase1_foundation_dependency |
+| get_file (manage_file read) | cortex://memory-bank/file/{file_name} | Pure read | file_operations |
+| get_config | cortex://config/{component} | Pure read | configuration_hybrid |
+| get_structure_info | cortex://structure/info | Pure read | phase8_structure |
+| get_link_graph | cortex://links/graph | Pure read | link_graph_operations |
+| get_synapse_rules | cortex://synapse/rules/{task_description} | Pure read | synapse_tools |
+| get_synapse_prompts | cortex://synapse/prompts | Pure read | synapse_tools |
+| get_context_usage_statistics | cortex://optimization/context-usage-statistics | Pure read | context_analysis_handlers |
+| get_relevance_scores | cortex://optimization/relevance-scores/{task_description} | Pure read | phase4_optimization_handlers |
+| get_tool_usage_stats | cortex://usage/stats | Pure read | usage_analytics |
+| get_unused_tools | cortex://usage/unused | Pure read | usage_analytics |
+| get_tool_usage_report | cortex://usage/report | Pure read | usage_analytics |
+| get_optimization_recommendations | cortex://usage/optimization-recommendations | Pure read | usage_analytics |
+| get_usage_observation | cortex://usage/observation/{id} | Pure read | usage_analytics |
+
+All of the above are **pure read** (no side effects). No `get_*` Tool in the codebase performs writes or state mutation.
+
+**Task 6.3 — Per-case decisions:**
+
+- **All listed `get_*` operations**: Already have a Resource counterpart. **Decision:** Prefer Resource (cortex:// URI) for new clients; keep the Tool as a backward-compatible alias. No rename or removal of Tools in this step to avoid breaking existing clients.
+- **Side-effecting operations:** None of the current `get_*` Tools mutate state. Any future operation that both "gets" and mutates must be split into a Resource (read) and a Tool (write) with an action verb name.
+
+**Task 6.4 — Renames and wiring:** No breaking renames applied in this pass. Public-facing names and docstrings already align with read-only semantics. Backward compatibility maintained by keeping existing Tool names.
+
+**Task 6.5 — Tests and documentation:** Naming conventions and "Tools vs Resources" section added to `docs/api/tools.md`. Success criteria updated to include "no confusing `get_*` Tool names" and "Tools/Resources naming scheme documented".
 
 ## Technical Design
 

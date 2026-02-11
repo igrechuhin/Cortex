@@ -16,6 +16,8 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 | Project structure, paths | `get_structure_info` | Hardcode `.cortex/` paths |
 | Cache JSON under `.cortex/.cache` | `read_cache_json` / `write_cache_json` | Read/write cache files directly |
 
+**Tools vs Resources:** For read-only operations (e.g. load context, stats, file content), prefer MCP Resources (`cortex://` URIs) when available. Tools with `get_*` names are read-only; use Tools for writes (e.g. `write_file`, `update_config`). See `docs/api/tools.md` and Phase 43 plan for naming conventions.
+
 ## Workflow
 
 1. **Scope the task** — restate the user's goal.

@@ -8,6 +8,15 @@ Cortex provides tools organized by functionality phases. Tools return JSON respo
 
 **Project root:** Tools do **not** accept a `project_root` parameter. Each tool resolves the project root internally (via MCP roots when available, or current working directory). Do not pass `project_root` when calling tools.
 
+### Tools vs Resources (naming and when to use which)
+
+Cortex follows MCP semantics: **Resources** are GET-like (read-only, load data into context); **Tools** are POST-like (side effects, e.g. write, update, run).
+
+- **Tools** use imperative verb names: `write_file`, `apply_refactoring`, `update_config`, `fix_markdown_lint`. Do not use `get_*` for operations that mutate state.
+- **Resources** are identified by `cortex://` URIs (e.g. `cortex://memory-bank/stats`, `cortex://optimization/load-context/{task_description}`). Read-only operations are exposed as both a Tool (for backward compatibility) and a Resource.
+- **Prefer Resources for read-only operations** when your client supports MCP resources: use the `cortex://` URI to load data. Use Tools for any operation that writes or changes state.
+- **No `get_*` Tool performs writes**; all current `get_*` tools are read-only and have a corresponding Resource. See Phase 43 plan (`.cortex/plans/phase-43-reconsider-tools-registration.md`) for the full inventory and naming conventions.
+
 **Total Tools by Phase:**
 
 | Phase | Tools | Category |
