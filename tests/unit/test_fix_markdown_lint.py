@@ -1255,3 +1255,174 @@ class TestMarkdownlintBatchHelpers:
         mock_filter.assert_called_once()
         mock_run_files.assert_called_once()
         mock_update.assert_called_once()
+
+
+class TestFixMarkdownLintProgressReporting:
+    """Tests for progress reporting in fix_markdown_lint helpers."""
+
+    @pytest.mark.asyncio
+    async def test_run_markdownlint_for_files_reports_initial_progress_when_ctx(
+        self, tmp_path: Path
+    ) -> None:
+        """When ctx is provided, _run_markdownlint_for_files reports 0/total once."""
+        from cortex.tools.markdown_operations import (  # type: ignore[reportPrivateUsage]
+            FileResult,
+            _run_markdownlint_for_files,
+        )
+
+        files_to_lint = [tmp_path / "a.md", tmp_path / "b.md"]
+        initial_results: list[FileResult] = []
+
+        mock_results = [
+            FileResult(file="a.md", fixed=True, errors=[], error_message=None),
+            FileResult(file="b.md", fixed=False, errors=[], error_message=None),
+        ]
+
+        mock_ctx = AsyncMock()
+
+        with (
+            patch(
+                "cortex.tools.markdown_operations._process_markdown_files_sequential",
+                new_callable=AsyncMock,
+                return_value=mock_results,
+            ) as mock_seq,
+            patch(
+                "cortex.tools.markdown_operations.report_progress_safe",
+                new_callable=AsyncMock,
+            ) as mock_progress,
+        ):
+            results = await _run_markdownlint_for_files(
+                files_to_lint=files_to_lint,
+                initial_results=initial_results,
+                root_path=tmp_path,
+                markdownlint_cmd=["markdownlint-cli2"],
+                config_path=None,
+                dry_run=False,
+                ctx=mock_ctx,
+                index=None,
+                file_hashes=None,
+            )
+
+        assert results == mock_results
+        mock_seq.assert_awaited_once()
+        mock_progress.assert_awaited_once_with(mock_ctx, 0.0, float(len(files_to_lint)))
+
+    @pytest.mark.asyncio
+    async def test_run_markdownlint_for_files_no_progress_when_ctx_none(
+        self, tmp_path: Path
+    ) -> None:
+        """When ctx is None, _run_markdownlint_for_files does not report progress."""
+        from cortex.tools.markdown_operations import (  # type: ignore[reportPrivateUsage]
+            FileResult,
+            _run_markdownlint_for_files,
+        )
+
+        files_to_lint = [tmp_path / "a.md"]
+        initial_results: list[FileResult] = []
+
+        mock_results = [
+            FileResult(file="a.md", fixed=True, errors=[], error_message=None),
+        ]
+
+        with (
+            patch(
+                "cortex.tools.markdown_operations._process_markdown_files_sequential",
+                new_callable=AsyncMock,
+                return_value=mock_results,
+            ),
+            patch(
+                "cortex.tools.markdown_operations.report_progress_safe",
+                new_callable=AsyncMock,
+            ) as mock_progress,
+        ):
+            results = await _run_markdownlint_for_files(
+                files_to_lint=files_to_lint,
+                initial_results=initial_results,
+                root_path=tmp_path,
+                markdownlint_cmd=["markdownlint-cli2"],
+                config_path=None,
+                dry_run=False,
+                ctx=None,
+                index=None,
+                file_hashes=None,
+            )
+
+        assert results == mock_results
+        mock_progress.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_after_one_file_reports_progress_with_ctx_and_total(
+        self, tmp_path: Path
+    ) -> None:
+        """_after_one_file reports processed/total when ctx and progress_total set."""
+        from cortex.tools.markdown_operations import (  # type: ignore[reportPrivateUsage]
+            FileResult,
+            _after_one_file,
+        )
+
+        results: list[FileResult] = []
+        current_n = [0]
+        mock_ctx = AsyncMock()
+        file_result = FileResult(
+            file="a.md",
+            fixed=True,
+            errors=[],
+            error_message=None,
+        )
+
+        with patch(
+            "cortex.tools.markdown_operations.report_progress_safe",
+            new_callable=AsyncMock,
+        ) as mock_progress:
+            await _after_one_file(
+                file_result,
+                results,
+                current_n,
+                index=None,
+                file_hashes=None,
+                root_path=tmp_path,
+                progress_ctx=mock_ctx,
+                progress_total=3,
+            )
+
+        assert len(results) == 1
+        assert current_n[0] == 1
+        mock_progress.assert_awaited_once_with(mock_ctx, 1.0, 3.0)
+
+    @pytest.mark.asyncio
+    async def test_after_one_file_skips_progress_when_ctx_none(
+        self, tmp_path: Path
+    ) -> None:
+        """_after_one_file is a no-op for progress when ctx is None."""
+        from cortex.tools.markdown_operations import (  # type: ignore[reportPrivateUsage]
+            FileResult,
+            _after_one_file,
+        )
+
+        results: list[FileResult] = []
+        current_n = [0]
+        file_result = FileResult(
+            file="a.md",
+            fixed=True,
+            errors=[],
+            error_message=None,
+        )
+
+        with patch(
+            "cortex.tools.markdown_operations.report_progress_safe",
+            new_callable=AsyncMock,
+        ) as mock_progress:
+            await _after_one_file(
+                file_result,
+                results,
+                current_n,
+                index=None,
+                file_hashes=None,
+                root_path=tmp_path,
+                progress_ctx=None,
+                progress_total=3,
+            )
+
+        assert len(results) == 1
+        assert current_n[0] == 1
+        mock_progress.assert_not_called()

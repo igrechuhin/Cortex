@@ -558,13 +558,29 @@ def _create_progress_task_if_needed(
 
 
 async def _cancel_progress_and_report_done(
-    progress_task: asyncio.Task[None] | None, ctx: JsonValue | None
+    progress_task: asyncio.Task[None] | None,
+    ctx: JsonValue | None,
+    tool_name: str | None = None,
 ) -> None:
-    """Cancel progress task and report 100% (Phase 46)."""
+    """Cancel progress task and report 100% (Phase 46).
+
+    For tools that report their own progress (e.g., fix_markdown_lint),
+    skip the wrapper's 100% report to avoid mixing progress scales.
+    """
     from cortex.core.context_logging import MCPContext, report_progress_safe
 
     if progress_task is None:
         return
+
+    # Skip 100% report for tools that report their own progress
+    if tool_name is not None and tool_name in _TOOLS_WITH_OWN_PROGRESS:
+        _ = progress_task.cancel()
+        try:
+            await progress_task
+        except asyncio.CancelledError:
+            pass
+        return
+
     _ = progress_task.cancel()
     try:
         await progress_task
@@ -615,7 +631,7 @@ async def _run_with_retry_and_record[T](
         success, error_type = False, type(e).__name__
         raise
     finally:
-        await _cancel_progress_and_report_done(progress_task, ctx)
+        await _cancel_progress_and_report_done(progress_task, ctx, func.__name__)
         await _record_usage_finish(
             func.__name__, start_ns, success, error_type, kind=kind
         )

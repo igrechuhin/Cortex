@@ -20,6 +20,12 @@
 
 - ✅ **Claude-mem usage timeline support** - COMPLETE (2026-02-11) - Implemented UsageTracker.get_usage_timeline and validated the get_usage_timeline MCP tool with new unit tests and full quality gate passes; overall Claude-mem plan remains in progress with later steps still pending.
 
+- ✅ **Conditional prompt registration** - COMPLETE (2026-02-11) - Conditionally register setup and migration MCP prompts based on a synchronous project configuration status check so that setup prompts only appear when needed; implementation, tests, and documentation are all in place and passing the full quality and test gates.
+
+- ✅ **Make fix_markdown_lint report progress like tests tool** - COMPLETE (2026-02-11) - Implemented real file-count-based progress reporting for fix_markdown_lint by wiring ctx through the markdown lint pipeline, reporting (processed, total) after each file, and disabling wrapper-based time progress; added unit tests to verify progress behavior with and without ctx and all checks/tests now pass.
+
+- ✅ **Phase 9: Excellence 9.8+ – Complete TODO implementations (script promotion)** - COMPLETE (2026-02-11) - Eliminated remaining production TODO markers in script promotion templates by updating the script integrator and tool converter to reference the original script path and provide clear, non-TODO guidance for porting logic, with all tests, coverage (90%+), and quality gates passing.
+
 ## Completed Work (2026)
 
 - ✅ **Implement prompt memory bank and function length** - COMPLETE (2026) - Enforced manage_file-only for memory bank writes in implement Step 5 (requirement, prohibition, full-content fallback); added function-length reminder in Step 4; added rules-disabled fallback in analyze prompt. Fixed token-budget integration test to accept comma-formatted numbers.

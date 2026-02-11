@@ -1039,7 +1039,7 @@ async def _fix_markdown_lint_run_or_error(
 
 @mcp.tool(annotations=safe_write_annotations("Fix Markdown Lint"))
 @ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX)
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX, enable_progress=False)
 async def fix_markdown_lint(
     include_untracked_markdown: bool = False,
     dry_run: bool = False,

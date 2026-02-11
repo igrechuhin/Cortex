@@ -26,9 +26,11 @@ def tool_conversion_template(
     name = (tool_name or "").strip() or (record.task_description or "").strip()
     snake = _sanitize_tool_name(name or "session_script")
     doc = (record.task_description or "Session script").replace('"""', "'")
+    script_path = (record.script_path or "").replace('"""', "'")
     return f'''"""
 MCP tool template generated from session script: {record.script_id}
 Original task: {doc[:200]}
+Original script path: {script_path}
 """
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
@@ -40,7 +42,10 @@ from cortex.server import mcp
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def {snake}() -> str:
-    """{doc[:200]}."""
-    # TODO: Port logic from captured script (see script_content).
-    return '{{"status": "success", "message": "Not yet implemented"}}'
+    """{doc[:200]}.
+
+    Review the original script at {script_path} and adapt this handler to wrap
+    or replace its behavior.
+    """
+    return '{{"status": "success", "message": "Template for promoted session script; implement tool logic."}}'
 '''

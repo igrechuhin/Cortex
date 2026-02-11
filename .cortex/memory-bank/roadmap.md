@@ -24,11 +24,7 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Features & Enhancements
 
-- **Claude-mem inspired improvements (usage search, observations, progressive disclosure)** - PENDING - Plan: .cortex/plans/claude-mem-inspired-improvements.md.
-- **Conditional prompt registration** - PENDING - Only show setup prompts when project not fully configured. Plan: .cortex/plans/conditional-prompt-registration.md.
-- **Make fix_markdown_lint report progress like tests tool** - PENDING - Progress reporting for markdown linting. Plan: .cortex/plans/fix-markdown-lint-progress-like-tests.md.
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
-- **Phase 9: Excellence 98** - PENDING - Plan: .cortex/plans/phase-9-excellence-98.md.
 - **Quality gate: commit pipeline spelling gap** - PENDING - Plan: .cortex/plans/quality-gate-commit-pipeline-spelling-gap.md.
 - **Refactor setup prompts (simplify to 3)** - PENDING - Simplify from 4 to 3 prompts. Plan: .cortex/plans/refactor-setup-prompts.md.
 - **Type cleanup inventory (Phase 53)** - PENDING - Inventory of dict[str, object], list[object], TypedDict, Any. Plan: .cortex/plans/type-cleanup-inventory.md.
@@ -41,4 +37,3 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Session Optimization: Roadmap Completed-Section Cleanup** - PENDING - Clean up legacy completed sections in roadmap.md by migrating their content into activeContext.md/progress.md and removing the completed block using the documented single-block edit pattern, then validating with roadmap_sync and timestamps.
 - **Session Optimization: Pydantic v2 Context & Rules Improvements** - PENDING - Session optimization follow-up to anchor Pydantic v2 guidance in memory bank and Synapse rules, and harden load_context usage/analytics for refactor tasks so Pydantic-specific refactors always have the right context.
 - **Session Optimization: Context & Usage Analytics Improvements (2026-02-11)** - PENDING - Improve context defaults and usage-analytics/test-failure observability based on 2026-02-11 end-of-session analysis. Plan: .cortex/plans/session-optimization-context-usage-analytics-improvements-2026-02-11.md.
-- **Phase 18: Markdown lint fix tool** - PENDING - Plan: .cortex/plans/phase-18-markdown-lint-fix-tool.md.

@@ -31,9 +31,11 @@ def script_integration_template(
     )
     rel_path = f"scripts/{language}/{stem}.py"
     doc = (record.task_description or "Session script").replace('"""', "'")
+    script_path = (record.script_path or "").replace('"""', "'")
     content = f'''"""
 Synapse script template from session script: {record.script_id}
 Original task: {doc[:200]}
+Original script path: {script_path}
 Run via: {ProjectResourceType.VENV.value}/bin/python .cortex/synapse/scripts/{language}/{stem}.py
 """
 
@@ -41,8 +43,12 @@ import sys
 
 
 def main() -> int:
-    """Entry point. TODO: Port logic from captured script."""
-    # TODO: Port logic from script_content.
+    """Entry point for the promoted session script.
+
+    Review the original script at {script_path} and port its logic here.
+    """
+    # This template currently returns 0; update the implementation when promoting
+    # the script permanently.
     return 0
 
 
