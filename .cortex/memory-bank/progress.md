@@ -13,6 +13,7 @@
 - **Conditional prompt registration** - COMPLETE. Conditionally registers setup and migration MCP prompts based on project configuration status, with config-status helper, unit and integration tests, and docs updated; full test suite and quality gate are passing.
 - **Make fix_markdown_lint report progress like tests tool** - COMPLETE. fix_markdown_lint now reports actual file-count progress via MCP progress (processed vs total files) without using wrapper-based time progress, and new tests cover ctx and non-ctx paths with the quality gate and test suite passing.
 - **Phase 9: Excellence 9.8+ – Complete TODO implementations (script promotion)** - COMPLETE. Removed the last production TODO markers by updating `script_integration_template` and `tool_conversion_template` to embed original script path context instead of TODO comments, while keeping templates fully type-safe and passing all tests and quality gates.
+- **Refactor setup prompts (simplify to 3)** - COMPLETE. Simplified from 7 prompts to 3: initialize (combines initialize_memory_bank, setup_project_structure, setup_cursor_integration), migrate (combines check_migration_status, migrate_memory_bank, migrate_project_structure), setup_synapse (always available with default URL). Updated prompts.py, prompts_always.py, tests, and documentation.
 
 ## 2026
 

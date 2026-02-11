@@ -57,6 +57,12 @@ Expected output format:
 
 
 @mcp.prompt(icons=[create_emoji_icon(_SETUP_SYNAPSE_ICON)])
-def setup_synapse(synapse_repo_url: str) -> str:
-    """Setup Synapse via Git submodule."""
+def setup_synapse(
+    synapse_repo_url: str = "https://github.com/igrechuhin/Synapse.git",
+) -> str:
+    """Setup Synapse via Git submodule (always available).
+
+    Args:
+        synapse_repo_url: URL of Synapse repository (default provided)
+    """
     return _SETUP_SYNAPSE_PROMPT_TEMPLATE.format(synapse_repo_url=synapse_repo_url)

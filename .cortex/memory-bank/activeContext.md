@@ -26,6 +26,8 @@
 
 - ✅ **Phase 9: Excellence 9.8+ – Complete TODO implementations (script promotion)** - COMPLETE (2026-02-11) - Eliminated remaining production TODO markers in script promotion templates by updating the script integrator and tool converter to reference the original script path and provide clear, non-TODO guidance for porting logic, with all tests, coverage (90%+), and quality gates passing.
 
+- ✅ **Refactor setup prompts (simplify to 3)** - COMPLETE (2026-02-11) - Simplified setup prompt system from 7 prompts (4 setup + 3 migration) to 3 unified prompts: initialize (complete setup), migrate (legacy migration), and setup_synapse (always available with default URL). Updated all code, tests, and documentation.
+
 ## Completed Work (2026)
 
 - ✅ **Implement prompt memory bank and function length** - COMPLETE (2026) - Enforced manage_file-only for memory bank writes in implement Step 5 (requirement, prohibition, full-content fallback); added function-length reminder in Step 4; added rules-disabled fallback in analyze prompt. Fixed token-budget integration test to accept comma-formatted numbers.

@@ -3,11 +3,12 @@
 
 """Setup-related prompts and optional mounting logic.
 
-Setup prompts (initialize_memory_bank, setup_project_structure, migration
-prompts, etc.) are registered on the main MCP server when this package's
-prompts module is imported (e.g. from main.py). The current MCP SDK does not
-provide server mount(), so setup is implemented as a separate module that
-registers on the main server.
+Setup prompts (initialize, migrate, populate_tiktoken_cache) are registered
+on the main MCP server when this package's prompts module is imported
+(e.g. from main.py). The current MCP SDK does not provide server mount(),
+so setup is implemented as a separate module that registers on the main server.
+
+setup_synapse is always available via prompts_always module.
 """
 
 from cortex.tools.config_status import (

@@ -16,63 +16,65 @@ from cortex.tools.config_status import get_project_config_status
 _config_status = get_project_config_status()
 
 PROMPT_ICONS: dict[str, str] = {
-    "initialize_memory_bank": "🏗️",
-    "setup_project_structure": "📁",
-    "setup_cursor_integration": "⚙️",
+    "initialize": "🏗️",
+    "migrate": "🔄",
     "populate_tiktoken_cache": "💾",
-    "check_migration_status": "🔍",
-    "migrate_memory_bank": "🔄",
-    "migrate_project_structure": "📦",
 }
 
-_INIT_MEMORY_BANK_PROMPT = """Please initialize a Memory Bank in my project.
+_INITIALIZE_PROMPT = """Please initialize Cortex in my project with complete setup.
+
+This prompt performs complete project initialization including:
+1. Creating the .cortex/ directory structure (memory-bank, plans, config)
+2. Initializing Memory Bank with all 7 core files
+3. Setting up Cursor IDE integration (symlinks + mcp.json)
+4. Optionally setting up Synapse with default URL
 
 I need you to:
-1. Create the .cortex/memory-bank/ directory
-2. Generate all 7 core files from templates:
-   - projectBrief.md - Foundation document
-   - productContext.md - Product context and requirements
-   - activeContext.md - Current active development context
-   - systemPatterns.md - System architecture patterns
-   - techContext.md - Technical context and decisions
-   - progress.md - Development progress tracking
-   - roadmap.md - Development roadmap and milestones
-3. Initialize the metadata index at .cortex/index.json
-4. Create initial snapshots in .cortex/history/
 
-If an old format is detected, please migrate it to the current format.
+**Step 1: Create .cortex/ directory structure**
+- Create .cortex/ directory
+- Create .cortex/memory-bank/ directory
+- Create .cortex/plans/ directory
+- Create .cortex/config/ directory
 
-Expected output format:
-{
-  "status": "success",
-  "message": "Memory Bank initialized successfully",
-  "files_created": 7,
-  "total_tokens": <token_count>
-}"""
+**Step 2: Initialize Memory Bank with 7 core files**
+Generate all 7 core files from templates:
+- projectBrief.md - Foundation document
+- productContext.md - Product context and requirements
+- activeContext.md - Current active development context
+- systemPatterns.md - System architecture patterns
+- techContext.md - Technical context and decisions
+- progress.md - Development progress tracking
+- roadmap.md - Development roadmap and milestones
+- Initialize the metadata index at .cortex/index.json
+- Create initial snapshots in .cortex/history/
 
-_SETUP_PROJECT_STRUCTURE_PROMPT = """Please setup the standardized Cortex
-project structure.
+**Step 3: Setup Cursor IDE integration**
+- Create .cursor/ directory with symlinks to .cortex/ subdirectories:
+  - .cursor/memory-bank -> ../.cortex/memory-bank
+  - .cursor/synapse -> ../.cortex/synapse
+  - .cursor/plans -> ../.cortex/plans
+- Create .cursor/mcp.json with MCP server configuration:
+{{
+  "mcpServers": {{
+    "cortex": {{
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/igrechuhin/cortex.git", "cortex"]
+    }}
+  }}
+}}
 
-I need you to:
-1. Create the .cortex/ directory structure
-2. Setup .cortex/memory-bank/ with core files
-3. Create .cortex/synapse/ directory for Synapse repository (optional)
-4. Setup .cortex/plans/ directory for development plans
-5. Generate all necessary template files
-6. Create .cursor/ symlinks for IDE compatibility
+**Step 4: Optionally setup Synapse (recommended)**
+- Add Synapse repository as Git submodule to .cortex/synapse/
+- Use default URL: https://github.com/igrechuhin/Synapse.git
+- Or skip this step if you don't need shared rules/prompts
 
-Expected directory structure:
+Expected directory structure after initialization:
 .cortex/
-├── memory-bank/     # Core memory bank files
-├── rules/           # Project-specific rules
-│   └── local/       # Local rules
+├── memory-bank/     # Core memory bank files (7 files)
 ├── plans/           # Development plans
-│   ├── active/      # Active plans
-│   ├── completed/   # Completed plans
-│   └── archived/    # Archived plans
 ├── config/          # Configuration files
-├── history/         # Version history
-└── archived/        # Archived content
+└── history/         # Version history
 
 .cursor/ (symlinks for IDE compatibility):
 ├── memory-bank -> ../.cortex/memory-bank
@@ -80,53 +82,18 @@ Expected directory structure:
 └── plans -> ../.cortex/plans
 
 Expected output format:
-{
+{{
   "status": "success",
-  "message": "Project structure setup successfully",
-  "directories_created": [...],
-  "files_created": [...],
-  "total_files": <count>
-}"""
-
-_SETUP_CURSOR_INTEGRATION_PROMPT = """Please setup Cursor IDE integration in my project.
-
-I need you to:
-1. Create .cursor/ directory with symlinks to .cortex/ subdirectories
-2. Generate Cursor-specific config files
-3. Setup MCP server configuration
-4. Configure memory bank integration
-5. Setup rules and context loading
-6. Test the integration
-
-Symlinks to create:
-- .cursor/memory-bank -> ../.cortex/memory-bank
-- .cursor/synapse -> ../.cortex/synapse
-- .cursor/plans -> ../.cortex/plans
-
-Configuration files to create:
-- .cursor/mcp.json - MCP server config with Cortex server
-
-MCP configuration should include:
-{
-  "mcpServers": {
-    "cortex": {
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/igrechuhin/cortex.git", "cortex"]
-    }
-  }
-}
-
-Expected output format:
-{
-  "status": "success",
-  "message": "Cursor integration setup successfully",
+  "message": "Cortex initialized successfully",
+  "directories_created": [".cortex", ".cortex/memory-bank", ".cortex/plans", ".cortex/config", ".cursor"],
+  "files_created": 7,
   "symlinks_created": [".cursor/memory-bank", ".cursor/synapse", ".cursor/plans"],
   "config_files": [".cursor/mcp.json"],
-  "mcp_server": {
-    "name": "cortex",
-    "status": "configured"
-  }
-}"""
+  "synapse_setup": <true/false>,
+  "total_tokens": <token_count>
+}}
+
+If an old format is detected during initialization, please migrate it to the current format."""
 
 _POPULATE_TIKTOKEN_CACHE_PROMPT = """Please populate the bundled tiktoken cache
 with encoding files.
@@ -161,173 +128,131 @@ If download fails:
 - Try downloading encodings one at a time
 - Report which encodings failed and why"""
 
-_CHECK_MIGRATION_STATUS_PROMPT = """Please check if my project needs migration
-to the .cortex/ structure.
+_MIGRATE_PROMPT = """Please migrate my project from legacy structure to the new .cortex/ structure.
 
-I need you to:
-1. Detect the current project structure
-2. Check if it's using an old directory structure
-   (e.g., .cursor/memory-bank/, memory-bank/, .memory-bank/)
-3. Identify what changes would be needed
-4. Report the migration status
+This prompt performs complete migration including:
+1. Detecting legacy structure
+2. Initializing new .cortex/ structure (via initialize steps)
+3. Migrating all legacy files to new structure
+4. Validating migration
+5. Removing legacy directories after successful migration
 
+**Step 1: Detect legacy structure**
 Check for legacy formats:
 - .cursor/memory-bank/ (old Cursor-centric format)
 - memory-bank/ (root-level format)
 - .memory-bank/ (old standardized format)
+- Any other legacy locations
 
-Current format should be:
-- .cortex/memory-bank/ (new standardized format)
-- .cursor/ containing symlinks to .cortex/
+**Step 2: Initialize new .cortex/ structure**
+First, create the new structure (same as initialize prompt):
+- Create .cortex/ directory structure (memory-bank, plans, config)
+- Initialize Memory Bank with 7 core files (if not already present)
+- Setup Cursor integration (symlinks + mcp.json)
 
-Expected output format (up to date):
-{"status": "up_to_date", "message": "Project is already using the "
-".cortex/ structure", "current_location": ".cortex/memory-bank/",
-"files_count": 7}
-
-Expected output format (migration needed):
-{"status": "migration_needed", "message": "Legacy format detected",
-"old_location": "<detected_location>", "new_location":
-".cortex/memory-bank/", "files_to_migrate": 7}
-
-Expected output format (not initialized):
-{"status": "not_initialized", "message": "No Memory Bank found",
-"suggestion": "Run initialize_memory_bank to create one"}"""
-
-_MIGRATE_MEMORY_BANK_PROMPT = """Please migrate my Memory Bank to the
-.cortex/ structure.
-
-I need you to:
-1. Create the new .cortex/memory-bank/ directory
-2. Copy all files from the old location to .cortex/memory-bank/
-3. Preserve all content and version history
-4. Update the metadata index to .cortex/index.json
-5. Create snapshots in .cortex/history/
-6. Create .cursor/ symlinks for IDE compatibility
-7. Validate the migration succeeded
+**Step 3: Migrate legacy files**
+Copy/move all files from legacy locations to new structure:
 
 Migration mappings:
 - .cursor/memory-bank/ -> .cortex/memory-bank/ (+ symlink .cursor/memory-bank)
 - memory-bank/ -> .cortex/memory-bank/ (+ symlink .cursor/memory-bank)
 - .memory-bank/knowledge/ -> .cortex/memory-bank/
+- .cursor/synapse/ -> .cortex/synapse/ (+ symlink .cursor/synapse)
+- .cursor/plans/ -> .cortex/plans/ (+ symlink .cursor/plans)
+- rules/ -> .cortex/synapse/ (if using Synapse)
+- .plan/ -> .cortex/plans/
+- docs/plans/ -> .cortex/plans/
+
+**Step 4: Preserve content and history**
+- Copy all files preserving content
+- Migrate version history to .cortex/history/
+- Update metadata index to .cortex/index.json
+- Preserve all snapshots and version information
+
+**Step 5: Update references and links**
+- Update any internal references to old paths
+- Fix broken links in memory bank files
+- Update configuration files with new paths
+
+**Step 6: Validate migration**
+- Verify all files were migrated successfully
+- Check that content is preserved correctly
+- Validate symlinks are working
+- Ensure version history is intact
+
+**Step 7: Remove legacy directories**
+- Only after successful validation
+- Remove old .cursor/memory-bank/, memory-bank/, .memory-bank/ directories
+- Keep .cursor/ directory but remove old content
+- Clean up any other legacy locations
 
 Safety requirements:
 - Automatic rollback if migration fails
 - Content validation after migration
 - Version history preservation
 - Atomic operation (succeeds completely or fails completely)
+- Backup creation before migration (optional but recommended)
 
 Expected output format:
-{
+{{
   "status": "success",
-  "message": "Memory Bank migrated successfully",
-  "old_location": "<detected_location>",
-  "new_location": ".cortex/memory-bank/",
-  "files_migrated": 7,
-  "versions_migrated": <count>,
-  "symlinks_created": [".cursor/memory-bank"],
-  "duration_ms": <time>
-}"""
-
-_MIGRATE_PROJECT_STRUCTURE_PROMPT = """Please migrate my project to the
-.cortex/ structure.
-
-I need you to:
-1. Detect the current structure
-2. Create the new .cortex/ directory structure
-3. Move existing files to correct locations
-4. Preserve all content and history
-5. Update references and links
-6. Create .cursor/ symlinks for IDE compatibility
-7. Validate the migration
-
-Migration mappings:
-- .cursor/memory-bank/ -> .cortex/memory-bank/
-- .cursor/synapse/ -> .cortex/synapse/
-- .cursor/plans/ -> .cortex/plans/
-- memory-bank/ -> .cortex/memory-bank/
-- rules/ -> .cortex/synapse/ (if using Synapse)
-- .plan/ -> .cortex/plans/
-- docs/plans/ -> .cortex/plans/
-
-Symlinks to create in .cursor/:
-- .cursor/memory-bank -> ../.cortex/memory-bank
-- .cursor/synapse -> ../.cortex/synapse
-- .cursor/plans -> ../.cortex/plans
-
-Safety requirements:
-- Dry-run mode available
-- Automatic rollback on error
-- Content validation after migration
-- Link updating for broken references
-- Backup creation before migration
-
-Expected output format:
-{
-  "status": "success",
-  "message": "Project structure migrated successfully",
-  "migrations": {
-    "memory_bank": {"from": "<old_location>", "to": ".cortex/memory-bank/", "files": 7},
-    "synapse": {"from": "<old_location>", "to": ".cortex/synapse/", "files": <count>},
-    "plans": {"from": "<old_location>", "to": ".cortex/plans/", "files": <count>}
-  },
+  "message": "Project migrated successfully",
+  "legacy_locations_detected": ["<old_location1>", "<old_location2>"],
+  "migrations": {{
+    "memory_bank": {{"from": "<old_location>", "to": ".cortex/memory-bank/", "files": 7}},
+    "synapse": {{"from": "<old_location>", "to": ".cortex/synapse/", "files": <count>}},
+    "plans": {{"from": "<old_location>", "to": ".cortex/plans/", "files": <count>}}
+  }},
+  "directories_created": [".cortex", ".cortex/memory-bank", ".cortex/plans", ".cursor"],
   "symlinks_created": [".cursor/memory-bank", ".cursor/synapse", ".cursor/plans"],
+  "files_migrated": <total_count>,
+  "versions_migrated": <count>,
   "links_updated": <count>,
+  "legacy_directories_removed": ["<old_location1>", "<old_location2>"],
   "duration_ms": <time>
-}"""
+}}"""
 
 
-if not _config_status.memory_bank_initialized:
+# Initialize prompt: shown when project is not initialized and not configured
+# Exclude migration cases (migrate prompt handles those)
+if (
+    not _config_status.memory_bank_initialized
+    and not _config_status.structure_configured
+    and not _config_status.migration_needed
+):
 
-    @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["initialize_memory_bank"])])
-    def initialize_memory_bank() -> str:
-        """Initialize a new Memory Bank with all core files."""
-        return _INIT_MEMORY_BANK_PROMPT
+    @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["initialize"])])
+    def initialize() -> str:
+        """Complete project initialization.
 
-
-if not _config_status.structure_configured:
-
-    @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["setup_project_structure"])])
-    def setup_project_structure() -> str:
-        """Setup the standardized .cortex/ project structure."""
-        return _SETUP_PROJECT_STRUCTURE_PROMPT
-
-
-if not _config_status.cursor_integration_configured:
-
-    @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["setup_cursor_integration"])])
-    def setup_cursor_integration() -> str:
-        """Setup Cursor IDE integration with symlinks and MCP server configuration."""
-        return _SETUP_CURSOR_INTEGRATION_PROMPT
+        Creates:
+        - .cortex/ directory structure (memory-bank, plans, config)
+        - Memory bank with 7 core files
+        - Cursor integration (symlinks + mcp.json)
+        - Optional Synapse setup with default URL
+        """
+        return _INITIALIZE_PROMPT
 
 
+# Migrate prompt: shown when migration is needed
+if _config_status.migration_needed:
+
+    @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["migrate"])])
+    def migrate() -> str:
+        """Migrate legacy structure to new .cortex/ structure.
+
+        Steps:
+        1. Initialize new .cortex/ structure
+        2. Migrate legacy files
+        3. Remove legacy directories
+        """
+        return _MIGRATE_PROMPT
+
+
+# Populate tiktoken cache: shown when cache is not available
 if not _config_status.tiktoken_cache_available:
 
     @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["populate_tiktoken_cache"])])
     def populate_tiktoken_cache() -> str:
         """Populate bundled tiktoken cache with encoding files for offline operation."""
         return _POPULATE_TIKTOKEN_CACHE_PROMPT
-
-
-if _config_status.migration_needed:
-
-    @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["check_migration_status"])])
-    def check_migration_status() -> str:
-        """Check if project needs migration to the .cortex/ structure."""
-        return _CHECK_MIGRATION_STATUS_PROMPT
-
-
-if _config_status.migration_needed:
-
-    @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["migrate_memory_bank"])])
-    def migrate_memory_bank() -> str:
-        """Migrate Memory Bank to the .cortex/ structure."""
-        return _MIGRATE_MEMORY_BANK_PROMPT
-
-
-if _config_status.migration_needed:
-
-    @mcp.prompt(icons=[create_emoji_icon(PROMPT_ICONS["migrate_project_structure"])])
-    def migrate_project_structure() -> str:
-        """Migrate project to the .cortex/ structure."""
-        return _MIGRATE_PROJECT_STRUCTURE_PROMPT

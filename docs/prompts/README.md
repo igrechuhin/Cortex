@@ -6,15 +6,15 @@ This directory contains prompt templates for one-time Memory Bank operations. Th
 
 Prompts are **conditionally registered** based on project configuration:
 
-- **Setup prompts** (`initialize_memory_bank`, `setup_project_structure`, `setup_cursor_integration`) appear only when the corresponding part of the project is not configured (e.g. no memory bank, missing structure, or missing Cursor symlinks).
-- **Migration prompts** (`check_migration_status`, `migrate_memory_bank`, `migrate_project_structure`) appear only when a legacy format is detected and migration is needed.
+- **initialize** appears only when project is not initialized and not configured (no memory bank, missing structure).
+- **migrate** appears only when a legacy format is detected and migration is needed.
 - **setup_synapse** is always available (optional feature).
 
 If your project is fully configured, only active-development prompts (e.g. from Synapse) and `setup_synapse` will be listed.
 
 ## Prompt Icons
 
-Cortex registers each prompt with an **emoji icon** (per MCP spec): setup prompts use icons like 🏗️ 📁 ⚙️ 💾 🔗 🔍 🔄 📦, and Synapse prompts (commit, review, implement, plan) use 💾 👀 ⚡ 📋. The server sends these in the `prompts/list` response (each prompt has an `icons` array with a data-URI SVG).
+Cortex registers each prompt with an **emoji icon** (per MCP spec): setup prompts use icons like 🏗️ 🔄 💾 🔗, and Synapse prompts (commit, review, implement, plan) use 💾 👀 ⚡ 📋. The server sends these in the `prompts/list` response (each prompt has an `icons` array with a data-URI SVG).
 
 **Visibility in the UI** depends on your MCP client. Cursor IDE may show only prompt names and descriptions and **not render prompt icons** yet. To confirm the server is sending icons, you can use an MCP inspector or call the prompts list endpoint; the response will include `icons` for each prompt.
 
@@ -22,16 +22,12 @@ Cortex registers each prompt with an **emoji icon** (per MCP spec): setup prompt
 
 ### Setup & Initialization
 
-1. **[Initialize Memory Bank](initialize-memory-bank.md)** - Create new Memory Bank with all core files
-2. **[Setup Project Structure](setup-project-structure.md)** - Create standardized .cursor/ directory structure
-3. **[Setup Cursor Integration](setup-cursor-integration.md)** - Configure Cursor IDE integration
-4. **[Setup Shared Rules](setup-shared-rules.md)** - Add shared rules via Git submodule
+1. **[initialize](initialize.md)** - Complete project initialization (structure + memory bank + Cursor integration + optional Synapse)
+2. **[setup_synapse](setup-synapse.md)** - Add shared rules repository via Git submodule (always available)
 
 ### Migration
 
-1. **[Check Migration Status](check-migration-status.md)** - Check if migration is needed
-2. **[Migrate Memory Bank](migrate-memory-bank.md)** - Migrate old format to current
-3. **[Migrate Project Structure](migrate-project-structure.md)** - Migrate to standardized structure
+1. **[migrate](migrate.md)** - Migrate legacy structure to new `.cortex/` structure (detects, initializes, migrates, validates, cleans up)
 
 ## When to Use Prompts vs. MCP Tools
 
@@ -97,15 +93,19 @@ Cortex registers each prompt with an **emoji icon** (per MCP spec): setup prompt
 - **Easier updates** - Change prompts without code changes
 - **Clear purpose** - Prompts are self-documenting
 
-## Tool Count Impact
+## Simplified Prompt Structure
 
-By converting 7 one-time operations to prompts, we reduce:
+The setup prompt system has been simplified from 7 prompts to 3 unified prompts:
 
-- **Total MCP tools**: 52 → 45 (13% reduction)
-- **IDE tool budget**: More room for other MCP servers
-- **User cognitive load**: Fewer tools to learn
+- **Before**: `initialize_memory_bank`, `setup_project_structure`, `setup_cursor_integration`, `check_migration_status`, `migrate_memory_bank`, `migrate_project_structure`, `setup_synapse`
+- **After**: `initialize`, `migrate`, `setup_synapse`
 
-This is part of Phase 7.10 consolidation effort to reduce from 52 → 25 tools (52% reduction).
+This simplification:
+
+- Reduces cognitive load (fewer prompts to understand)
+- Better matches user workflows (initialize new project vs. migrate existing)
+- Provides default synapse_repo_url for easier setup
+- Maintains all functionality while improving usability
 
 ## Contributing
 

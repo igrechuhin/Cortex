@@ -59,12 +59,8 @@ class TestConditionalPromptRegistration:
             import cortex.setup.prompts as prompts_module
 
             # Assert - Setup prompts should not be registered
-            assert not hasattr(prompts_module, "initialize_memory_bank")
-            assert not hasattr(prompts_module, "setup_project_structure")
-            assert not hasattr(prompts_module, "setup_cursor_integration")
-            assert not hasattr(prompts_module, "check_migration_status")
-            assert not hasattr(prompts_module, "migrate_memory_bank")
-            assert not hasattr(prompts_module, "migrate_project_structure")
+            assert not hasattr(prompts_module, "initialize")
+            assert not hasattr(prompts_module, "migrate")
             import cortex.setup.prompts_always as always_module
 
             assert hasattr(always_module, "setup_synapse")
@@ -77,12 +73,8 @@ class TestConditionalPromptRegistration:
             _clear_setup_prompts_cache()
             import cortex.setup.prompts as prompts_module
 
-            assert hasattr(prompts_module, "initialize_memory_bank")
-            assert hasattr(prompts_module, "setup_project_structure")
-            assert hasattr(prompts_module, "setup_cursor_integration")
-            assert not hasattr(prompts_module, "check_migration_status")
-            assert not hasattr(prompts_module, "migrate_memory_bank")
-            assert not hasattr(prompts_module, "migrate_project_structure")
+            assert hasattr(prompts_module, "initialize")
+            assert not hasattr(prompts_module, "migrate")
             import cortex.setup.prompts_always as always_module
 
             assert hasattr(always_module, "setup_synapse")
@@ -99,12 +91,8 @@ class TestConditionalPromptRegistration:
             _clear_setup_prompts_cache()
             import cortex.setup.prompts as prompts_module
 
-            assert hasattr(prompts_module, "check_migration_status")
-            assert hasattr(prompts_module, "migrate_memory_bank")
-            assert hasattr(prompts_module, "migrate_project_structure")
-            assert hasattr(prompts_module, "initialize_memory_bank")
-            assert hasattr(prompts_module, "setup_project_structure")
-            assert hasattr(prompts_module, "setup_cursor_integration")
+            assert hasattr(prompts_module, "migrate")
+            assert not hasattr(prompts_module, "initialize")
             import cortex.setup.prompts_always as always_module
 
             assert hasattr(always_module, "setup_synapse")
@@ -134,9 +122,13 @@ class TestConditionalPromptRegistration:
             _clear_setup_prompts_cache()
             import cortex.setup.prompts as prompts_module
 
-            assert not hasattr(prompts_module, "initialize_memory_bank")
-            assert hasattr(prompts_module, "setup_project_structure")
-            assert hasattr(prompts_module, "setup_cursor_integration")
+            # When memory bank is initialized but structure is not configured,
+            # initialize should still be available (checks both conditions)
+            # Actually, initialize checks: not memory_bank_initialized AND not structure_configured
+            # So if memory_bank is initialized but structure is not, initialize won't show
+            # But we might still need setup prompts, so let's check what should happen
+            # Based on the new logic: initialize requires BOTH to be false
+            assert not hasattr(prompts_module, "initialize")
             import cortex.setup.prompts_always as always_module
 
             assert hasattr(always_module, "setup_synapse")
@@ -146,6 +138,11 @@ class TestConditionalPromptRegistration:
         import cortex.setup.prompts_always as always_module
 
         assert hasattr(always_module, "setup_synapse")
-        text = always_module.setup_synapse("https://example.com/repo.git")
-        assert "synapse" in text.lower()
-        assert "https://example.com/repo.git" in text
+        # Test with default parameter
+        text_default = always_module.setup_synapse()
+        assert "synapse" in text_default.lower()
+        assert "https://github.com/igrechuhin/Synapse.git" in text_default
+        # Test with custom URL
+        text_custom = always_module.setup_synapse("https://example.com/repo.git")
+        assert "synapse" in text_custom.lower()
+        assert "https://example.com/repo.git" in text_custom

@@ -181,7 +181,7 @@ Provide more context to get better results.
 
 Cortex provides MCP prompts for one-time setup and migration operations. Use prompts when you need guided assistance for initial configuration or structural changes.
 
-**Conditional availability**: Setup and migration prompts are only shown when needed. If your project is already configured (memory bank initialized, structure in place, Cursor symlinks valid), you will not see `initialize_memory_bank`, `setup_project_structure`, `setup_cursor_integration`, or migration prompts. The `setup_synapse` prompt is always available as an optional feature.
+**Conditional availability**: Setup and migration prompts are only shown when needed. If your project is already configured (memory bank initialized, structure in place, Cursor symlinks valid), you will not see `initialize` or `migrate` prompts. The `setup_synapse` prompt is always available as an optional feature.
 
 **End-of-session analysis**: The single **Analyze** prompt (Synapse) runs at end of session and checks all: context effectiveness (`load_context` usage) and session optimization (mistake patterns, Synapse recommendations, report saved to `.cortex/reviews/`). Use this instead of the former separate "Analyze Context Effectiveness" and "Analyze Session Optimization" prompts.
 
@@ -189,36 +189,33 @@ Cortex provides MCP prompts for one-time setup and migration operations. Use pro
 
 | Your Situation | Prompt to Use |
 |----------------|---------------|
-| Starting a new project, no Memory Bank exists | `initialize_memory_bank` |
-| Want full project structure with rules and plans | `setup_project_structure` |
-| Setting up Cursor IDE with MCP configuration | `setup_cursor_integration` |
+| Starting a new project, no Memory Bank exists | `initialize` |
+| Have old `.cursor/memory-bank/` or legacy format | `migrate` |
 | Want to share rules across multiple projects | `setup_synapse` |
-| Not sure if your Memory Bank needs updating | `check_migration_status` |
-| Have old `.cursor/memory-bank/` format | `migrate_memory_bank` |
-| Have files scattered in old locations | `migrate_project_structure` |
 | End of session: analyze context + session optimization | `analyze` (Synapse) |
 
 ### Setup Prompts
 
 Use these when starting fresh or configuring a new project:
 
-- **initialize_memory_bank** - Create a new Memory Bank with all 7 core files (projectBrief.md, productContext.md, activeContext.md, systemPatterns.md, techContext.md, progress.md, roadmap.md). Use this for new projects or projects without any Memory Bank.
+- **initialize** - Complete project initialization for new projects. Creates:
+  - `.cortex/` directory structure (memory-bank, plans, config)
+  - Memory Bank with all 7 core files (projectBrief.md, productContext.md, activeContext.md, systemPatterns.md, techContext.md, progress.md, roadmap.md)
+  - Cursor IDE integration (symlinks + mcp.json)
+  - Optionally sets up Synapse with default URL (`https://github.com/igrechuhin/Synapse.git`)
+  
+  Only shown when project is not initialized and not configured.
 
-- **setup_project_structure** - Create the full standardized `.cortex/` directory structure including memory-bank/, rules/, plans/, and config/. Creates `.cursor/` symlinks for IDE compatibility.
+- **migrate** - Migrate legacy structure to new `.cortex/` structure. Performs:
+  1. Detects legacy structure (`.cursor/memory-bank/`, `memory-bank/`, `.memory-bank/`)
+  2. Initializes new `.cortex/` structure (via initialize steps)
+  3. Migrates all legacy files to new structure
+  4. Validates migration
+  5. Removes legacy directories after successful migration
+  
+  Only shown when migration is needed.
 
-- **setup_cursor_integration** - Configure Cursor IDE to work with Cortex MCP server. Creates symlinks in `.cursor/` pointing to `.cortex/` subdirectories and `.cursor/mcp.json` for MCP configuration.
-
-- **setup_synapse** - Add a shared rules repository (Synapse) as a Git submodule to `.cortex/synapse/`. Use this when you want to share coding standards, security rules, prompts, or other guidelines across multiple projects. Example: `setup_synapse(synapse_repo_url="https://github.com/igrechuhin/Synapse.git")`
-
-### Migration Prompts
-
-Use these when updating an existing project to a newer format:
-
-- **check_migration_status** - Check if your project needs migration to the `.cortex/` structure. Use this first if you're unsure whether your project uses an old format. Returns one of: `up_to_date`, `migration_needed`, or `not_initialized`.
-
-- **migrate_memory_bank** - Move files from old locations (`.cursor/memory-bank/`, `memory-bank/`, `.memory-bank/`) to the new `.cortex/memory-bank/` location. Preserves all content and version history, creates `.cursor/` symlinks for IDE compatibility. Use this when `check_migration_status` reports `migration_needed`.
-
-- **migrate_project_structure** - Reorganize scattered files into the standardized `.cortex/` structure. Moves memory-bank/, rules/, and plan directories to their proper `.cortex/` locations and creates `.cursor/` symlinks. Use this for projects with files in non-standard locations.
+- **setup_synapse** - Add a shared rules repository (Synapse) as a Git submodule to `.cortex/synapse/`. Use this when you want to share coding standards, security rules, prompts, or other guidelines across multiple projects. Always available. Example: `setup_synapse()` (uses default URL) or `setup_synapse(synapse_repo_url="https://github.com/your-org/Synapse.git")`
 
 ### Prompts vs Tools
 

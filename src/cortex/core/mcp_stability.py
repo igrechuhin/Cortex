@@ -548,7 +548,7 @@ def _create_progress_task_if_needed(
     # Never create time-based progress for tools that report their own progress
     if tool_name in _TOOLS_WITH_OWN_PROGRESS:
         return None
-    
+
     if (
         enable_progress
         and ctx is not None

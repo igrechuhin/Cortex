@@ -6,8 +6,8 @@ from unittest.mock import patch
 
 def test_prompts_module_registers_conditional_prompts_when_needed() -> None:
     """Setup prompts in cortex.setup.prompts register conditionally."""
-    # Arrange - Force all conditional prompts to be defined during module import
-    fake_status = SimpleNamespace(
+    # Test migration scenario (migration_needed=True)
+    fake_status_migration = SimpleNamespace(
         memory_bank_initialized=False,
         structure_configured=False,
         cursor_integration_configured=False,
@@ -15,25 +15,49 @@ def test_prompts_module_registers_conditional_prompts_when_needed() -> None:
         migration_needed=True,
     )
 
-    # Act - Patch config so reload sees fake_status
     with patch(
         "cortex.tools.config_status.get_project_config_status",
-        return_value=fake_status,
+        return_value=fake_status_migration,
     ):
         if "cortex.setup.prompts" in sys.modules:
             del sys.modules["cortex.setup.prompts"]
-        import cortex.setup.prompts as prompts
+        import cortex.setup.prompts as prompts_migration
 
-        init_text = prompts.initialize_memory_bank()
-        structure_text = prompts.setup_project_structure()
-        cursor_text = prompts.setup_cursor_integration()
-        tiktoken_text = prompts.populate_tiktoken_cache()
-        mig_status_text = prompts.check_migration_status()
-        mig_mb_text = prompts.migrate_memory_bank()
-        mig_proj_text = prompts.migrate_project_structure()
+        migrate_text = prompts_migration.migrate()
+        tiktoken_text_migration = prompts_migration.populate_tiktoken_cache()
+        # initialize should NOT be registered when migration is needed
+        assert not hasattr(prompts_migration, "initialize")
+
+    # Test initialization scenario (migration_needed=False)
+    fake_status_init = SimpleNamespace(
+        memory_bank_initialized=False,
+        structure_configured=False,
+        cursor_integration_configured=False,
+        tiktoken_cache_available=False,
+        migration_needed=False,
+    )
+
+    with patch(
+        "cortex.tools.config_status.get_project_config_status",
+        return_value=fake_status_init,
+    ):
+        if "cortex.setup.prompts" in sys.modules:
+            del sys.modules["cortex.setup.prompts"]
+        import cortex.setup.prompts as prompts_init
+
+        init_text = prompts_init.initialize()
+        tiktoken_text_init = prompts_init.populate_tiktoken_cache()
+        # migrate should NOT be registered when migration is not needed
+        assert not hasattr(prompts_init, "migrate")
+
     import cortex.setup.prompts_always as prompts_always
 
-    synapse_text = prompts_always.setup_synapse("https://example.com/synapse.git")
+    # Test with default parameter
+    synapse_text_default = prompts_always.setup_synapse()
+    # Test with custom URL
+    synapse_text_custom = prompts_always.setup_synapse(
+        "https://example.com/synapse.git"
+    )
 
     # Restore module for other tests
     if "cortex.setup.prompts" in sys.modules:
@@ -41,14 +65,9 @@ def test_prompts_module_registers_conditional_prompts_when_needed() -> None:
     _ = importlib.import_module("cortex.setup.prompts")
 
     # Assert
-    assert "Please initialize a Memory Bank" in init_text
-    assert (
-        "standardized Cortex" in structure_text
-        and "project structure" in structure_text
-    )
-    assert "Please setup Cursor IDE integration" in cursor_text
-    assert "populate the bundled tiktoken cache" in tiktoken_text
-    assert "needs migration" in mig_status_text.lower()
-    assert "migrate my memory bank" in mig_mb_text.lower()
-    assert "migrate my project" in mig_proj_text.lower()
-    assert "https://example.com/synapse.git" in synapse_text
+    assert "Please initialize Cortex" in init_text or "initialize Cortex" in init_text
+    assert "migrate" in migrate_text.lower()
+    assert "populate the bundled tiktoken cache" in tiktoken_text_migration
+    assert "populate the bundled tiktoken cache" in tiktoken_text_init
+    assert "https://github.com/igrechuhin/Synapse.git" in synapse_text_default
+    assert "https://example.com/synapse.git" in synapse_text_custom
