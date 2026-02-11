@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-02-11
+
+- **Session Optimization: Commit Pipeline Orchestration Refactor** — COMPLETE. Steps 6–8 implemented: cross-references from session-optimization/quality-gate plans to orchestration refactor; create-plan and Analyze prompts updated with phase-based orchestration, rule references (memory-bank-workflow.mdc, AGENTS.md), and Phase D doc update. Pre-commit checks passed.
+- **Commit (markdown lint, plan archive)** - COMPLETE. Fixed MD040 in CLAUDE.md (fenced code language), MD024 in docs/design/commit-pipeline-phases.md (unique phase headings). Archived session-optimization-commit-pipeline-orchestration-refactor.md to SessionOptimization; removed from roadmap.
+
 ## 2026
 
 - **Implement prompt memory bank and function length** - COMPLETE. Enforced manage_file for all memory bank writes (Step 5 requirement/prohibition/fallback), added ≤30-line function reminder (Step 4), rules fallback in analyze prompt; test fix for token budget string.
@@ -21,6 +26,18 @@
 - **Claude-mem inspired improvements – Step 3: Stable IDs for usage events** - COMPLETE. Implemented stable `id` on `ToolUsageEvent`, deterministic backfill in `usage_tracker`, and tests plus quality gate and coverage updates.
 - **Claude-mem inspired improvements – Step 4: usage observation resource** - COMPLETE. Added `get_usage_observation` tool and `cortex://usage/observation/{id}` resource backed by `UsageTracker.get_event_by_id`, with tests and full quality gate.
 - **Commit (pre-commit pipeline, 3759 tests, 90.16% coverage)** - COMPLETE. Pre-commit pipeline run: fix_errors, format, markdown lint (5 files fixed, 0 errors), type_check, quality, tests 3759 passed, 90.16% coverage; memory bank and roadmap formatting updated for this session.
+- **Claude-mem Step 5: search_usage tool** - COMPLETE. Implemented `search_usage` MCP tool and `UsageTracker.search_usage` for compact usage index plus tests and quality gates.
+- **Usage analytics + commit pipeline** - COMPLETE. Normalized errors/quality via MCP tools, ensured formatting, type safety, quality gates, and tests all pass for current changes.
+- **fix_markdown_lint connection closed mitigations** - COMPLETE. Heartbeat 15 s → 5 s; batched markdownlint (25 files per batch). Plan archived to archive/Investigations/2026-02-10/.
+- **Commit Pipeline Orchestration Refactor - Step 1** - COMPLETE. Defined 4 canonical commit phases (A: Preflight Checks, B: Docs & Memory Bank Sync, C: Submodule & Git Operations, D: Session Analysis). Created design doc at `docs/design/commit-pipeline-phases.md` mapping all 16 existing commit steps to phases with inputs, outputs, failure semantics, and 7 preserved invariants.
+- **Session Optimization: Commit Pipeline Orchestration Refactor – run_preflight_checks helper** - COMPLETE. Implemented `run_preflight_checks` MCP tool with structured models and unit tests for Phase A preflight aggregation.
+- **Session Optimization – Phase B helper** - COMPLETE. Added `run_docs_and_memory_bank_sync` MCP tool for Phase B docs/memory-bank validations, with typed models and unit tests, and verified tests, type checks, and quality gate all pass.
+- **Session Optimization: Commit Pipeline Orchestration Refactor – Phase helpers extraction** - COMPLETE. Extracted Phase A preflight and Phase B docs/memory helper implementations into dedicated helper modules, updated the MCP wrapper tools and their tests, and re-ran format, type, tests, and quality gates successfully.
+- **Phase 18: Markdown Lint Fix Tool archival alignment** - COMPLETE. Resolved roadmap_sync unlinked plan warning by relying solely on the archived Phase 18 markdown lint fix tool plan under the Phase18 archive and cleaning up stale root-level references.
+- **Commit pipeline orchestration refactor** - IN PROGRESS. Wired new phase helpers into the `/cortex/commit` prompt (`run_preflight_checks`, `run_docs_and_memory_bank_sync`), updated MCP tool timeout docs, and fixed markdown batch processing tests so the full suite passes again.
+- **Commit Pipeline Orchestration Refactor (Step 2)** - COMPLETE. Completed Step 2: Phase A (`run_preflight_checks`) and Phase B (`run_docs_and_memory_bank_sync`) MCP tools with comprehensive test coverage (45 tests, 95-100% coverage on new modules). Also fixed pre-existing type errors in `test_markdown_operations_batch.py`. Previous session also partially completed Steps 3-4 (commit prompt phase references, helper commands created).
+- **Session Optimization: Commit Pipeline Orchestration Refactor** - Step 4 COMPLETE (markdown structure fixes for fix-quality.md, docs-sync.md). Step 5 IN PROGRESS: AGENTS.md "Commit pipeline (phase-based)" section added; commit and implement prompts now reference AGENTS for phase overview and quality-gate alignment.
+- **Session Optimization: Commit Pipeline Step 5 (Slim and centralize rules)** - COMPLETE. Added Synapse rule general/commit-pipeline.mdc; slimmed commit.md (Pre-Step Load Rules, Verify code conformance); added review.md reference to AGENTS phase-based commit for type/quality checks.
 
 ## 2026-02-09
 

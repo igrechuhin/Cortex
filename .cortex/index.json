@@ -1,18 +1,18 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-10T14:32:26.043042",
+  "last_updated": "2026-02-11T00:10:14.204184",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 4649,
-      "token_count": 1052,
+      "size_bytes": 5329,
+      "token_count": 1186,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-10T14:05:30.958021",
-      "content_hash": "sha256:02ecb10617c74f4a5bb4fdc24c508061d6050c909d6c0ee147ac68d6f2e8f98c",
+      "last_modified": "2026-02-11T00:10:14.202498",
+      "content_hash": "sha256:c86b116c58d43250ef6f51cd6c3e0fd46d5049c3257ad059dff7d335ca5e64ea",
       "sections": [
         {
           "title": "## Blockers (ASAP Priority)",
@@ -31,56 +31,56 @@
         {
           "title": "## Future Enhancements",
           "level": 2,
-          "line_start": 11,
-          "line_end": 11,
+          "line_start": 12,
+          "line_end": 12,
           "content_hash": null
         },
         {
           "title": "## Pending plans (from .cortex/plans)",
           "level": 2,
-          "line_start": 13,
-          "line_end": 13,
+          "line_start": 16,
+          "line_end": 16,
           "content_hash": null
         },
         {
           "title": "### Investigation Plans (Archive / Reference)",
           "level": 2,
-          "line_start": 15,
-          "line_end": 15,
+          "line_start": 18,
+          "line_end": 18,
           "content_hash": null
         },
         {
           "title": "### Session Optimization Plans (2026-02-03)",
           "level": 2,
-          "line_start": 21,
-          "line_end": 21,
+          "line_start": 22,
+          "line_end": 22,
           "content_hash": null
         },
         {
           "title": "### Session Optimization Plans (2026-02-02)",
           "level": 2,
-          "line_start": 23,
-          "line_end": 23,
+          "line_start": 24,
+          "line_end": 24,
           "content_hash": null
         },
         {
           "title": "### Session Optimization Plans (2026-02-01)",
           "level": 2,
-          "line_start": 25,
-          "line_end": 25,
+          "line_start": 26,
+          "line_end": 26,
           "content_hash": null
         },
         {
           "title": "### Features & Enhancements",
           "level": 2,
-          "line_start": 27,
-          "line_end": 27,
+          "line_start": 28,
+          "line_end": 28,
           "content_hash": null
         }
       ],
       "read_count": 4,
-      "write_count": 97,
-      "last_read": "2026-02-10T14:05:30.958021",
+      "write_count": 107,
+      "last_read": "2026-02-11T00:10:14.202498",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -1183,6 +1183,116 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Add archived reference for Phase 18 Markdown Lint Fix Tool and keep roadmap in sync with plans archive."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-10T16:55:53.118174",
+          "content_hash": "sha256:ec7643aaa0afe633de15b862a85f10912756f9898fe121bfe8feb4300b8f7d09",
+          "size_bytes": 5458,
+          "token_count": 1219,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Updated Commit Pipeline Orchestration Refactor to IN PROGRESS (Step 1/6 complete), added plan file reference"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-10T17:37:20.255007",
+          "content_hash": "sha256:7ad05d909c8ef1ed672f1bae166f0663dc669eab69a9b57ea22054600a8f287e",
+          "size_bytes": 5606,
+          "token_count": 1244,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Clarify that the commit pipeline orchestration refactor plan also covers aligning closely related prompts (especially the review prompt) with the new orchestration patterns."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-10T17:41:14.848204",
+          "content_hash": "sha256:5dff170099a3ab50fa12c92cc5a56e392df481ad5fa9bf83d4fa63b4b81bd356",
+          "size_bytes": 5652,
+          "token_count": 1257,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Update commit pipeline orchestration refactor entry to mention Analyze prompt and correct step count to 1/8"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-10T22:09:53.917538",
+          "content_hash": "sha256:e116840fad586f136583f111cfdbb8d78a558fe4875e4c14ad3c04eb7005bce0",
+          "size_bytes": 5266,
+          "token_count": 1168,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Update Active Work: Session Optimization Commit Pipeline Step 5 complete (Steps 1-5 complete, Steps 6-8 pending)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-10T22:10:52.916270",
+          "content_hash": "sha256:e116840fad586f136583f111cfdbb8d78a558fe4875e4c14ad3c04eb7005bce0",
+          "size_bytes": 5266,
+          "token_count": 1168,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Fix roadmap corruption: restore Active Work line (Steps 1-5 complete) and Pending plans section headings and bullet text"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-10T22:11:38.632041",
+          "content_hash": "sha256:e116840fad586f136583f111cfdbb8d78a558fe4875e4c14ad3c04eb7005bce0",
+          "size_bytes": 5266,
+          "token_count": 1168,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Restore roadmap: fix corruption and set Active Work to Steps 1-5 complete, Steps 6-8 pending"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-10T22:12:51.869999",
+          "content_hash": "sha256:e116840fad586f136583f111cfdbb8d78a558fe4875e4c14ad3c04eb7005bce0",
+          "size_bytes": 5266,
+          "token_count": 1168,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Fix roadmap Pending plans section: restore Session Optimization Plans headings, Phase 9"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-10T22:21:27.485523",
+          "content_hash": "sha256:e116840fad586f136583f111cfdbb8d78a558fe4875e4c14ad3c04eb7005bce0",
+          "size_bytes": 5266,
+          "token_count": 1168,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Restore Pending plans section: fix Session Optimization Plans headings, Phase 9, simplify, Phase 53, Commit Pipeline Improvements"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-11T00:09:17.308399",
+          "content_hash": "sha256:e116840fad586f136583f111cfdbb8d78a558fe4875e4c14ad3c04eb7005bce0",
+          "size_bytes": 5266,
+          "token_count": 1168,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Restore Pending plans section: fix Session Optimization Plans headings, Phase 9, simplify, Phase 53, Commit Pipeline Improvements"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-11T00:10:14.202216",
+          "content_hash": "sha256:c86b116c58d43250ef6f51cd6c3e0fd46d5049c3257ad059dff7d335ca5e64ea",
+          "size_bytes": 5329,
+          "token_count": 1186,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Restore roadmap: full corrected content (Active Work Steps 1-5 complete; Pending plans headings and bullets fixed)"
         }
       ]
     },
@@ -1195,55 +1305,13 @@
       "last_modified": "2026-02-10T14:32:26.039739",
       "content_hash": "sha256:6e13a4e6f3b584729be05f1f33151901fbcf04213d979b13ea0e5a579dcec366",
       "sections": [
-        {
-          "title": "## 2026",
-          "level": 2,
-          "line_start": 3,
-          "line_end": 3,
-          "content_hash": null
-        },
-        {
-          "title": "## 2026-02-10",
-          "level": 2,
-          "line_start": 7,
-          "line_end": 7,
-          "content_hash": null
-        },
-        {
-          "title": "## 2026-02-09",
-          "level": 2,
-          "line_start": 25,
-          "line_end": 25,
-          "content_hash": null
-        },
-        {
-          "title": "## 2026-02-07",
-          "level": 2,
-          "line_start": 39,
-          "line_end": 39,
-          "content_hash": null
-        },
-        {
-          "title": "## 2026-02-05",
-          "level": 2,
-          "line_start": 61,
-          "line_end": 61,
-          "content_hash": null
-        },
-        {
-          "title": "## What Works",
-          "level": 2,
-          "line_start": 73,
-          "line_end": 73,
-          "content_hash": null
-        },
-        {
-          "title": "## What's Left",
-          "level": 2,
-          "line_start": 77,
-          "line_end": 77,
-          "content_hash": null
-        }
+        "## 2026",
+        "## 2026-02-10",
+        "## 2026-02-09",
+        "## 2026-02-07",
+        "## 2026-02-05",
+        "## What Works",
+        "## What's Left"
       ],
       "read_count": 1,
       "write_count": 152,
@@ -6537,8 +6605,8 @@
   },
   "totals": {
     "total_files": 10,
-    "total_size_bytes": 54540,
-    "total_tokens": 12286,
-    "last_full_scan": "2026-02-10T14:32:26.039764"
+    "total_size_bytes": 55220,
+    "total_tokens": 12420,
+    "last_full_scan": "2026-02-11T00:10:14.202520"
   }
 }

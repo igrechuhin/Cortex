@@ -152,6 +152,8 @@ MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60  # Quality auto-fix tools (e.g. fix_quality_
 - `validate`
 - `summarize_content`
 - `get_relevance_scores`
+- `run_preflight_checks`
+- `run_docs_and_memory_bank_sync`
 
 ### Very Complex Operations (960 seconds / 16 minutes)
 
@@ -278,7 +280,7 @@ MCP tool <tool_name> exceeded timeout of <timeout>s
 Long-running MCP tools (e.g. `fix_markdown_lint(check_all_files=True)` with many files) may complete on the server after the client has already closed the connection. In that case the transport can raise an error (e.g. `anyio.ClosedResourceError`) and the client may see a message like `{"error":"MCP error -32000: Connection closed"}`.
 
 - **Meaning**: "Connection closed" in this context usually indicates the client disconnected or timed out, not that the tool failed. The tool may have completed successfully on the server.
-- **Server-side mitigations**: To reduce the chance of client idle timeout, the server (1) sends progress more frequently (every 5s instead of 10s) for tools with timeout ≥ 300s, and (2) for `fix_markdown_lint`, reports progress after every file and runs a 15s heartbeat (re-sends current file count) so the connection sees activity even when a single file takes a long time.
+- **Server-side mitigations**: To reduce the chance of client idle timeout, the server (1) sends progress more frequently (every 5s instead of 10s) for tools with timeout ≥ 300s, and (2) for `fix_markdown_lint`, reports progress after every file (and after every batch), runs a 5s heartbeat, and processes files in batches of 25 to reduce total duration.
 - **Recommendation**: In the commit workflow, when an MCP tool reports "Connection closed" or "ClosedResourceError": (1) Retry the tool once. (2) If it fails again with the same class of error, perform the documented fallback for that step (see commit prompt "Connection Closed During Long Tool") and record "MCP connection closed; fallback used" so the pipeline can proceed.
 - **Tool unavailability after disconnect**: After a connection closed error, a retry may fail with "tool not found" or similar (e.g. client/MCP reconnection or tool registration). In that case proceed with the documented fallback for that step (e.g. markdown lint via shell) and do not block the pipeline.
 

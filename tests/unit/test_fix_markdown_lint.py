@@ -13,8 +13,8 @@ import pytest
 # pyright: reportPrivateUsage=false
 from cortex.core.models import GitCommandResult
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.markdown_lint_responses import create_empty_success_response
 from cortex.tools.markdown_operations import (
-    _create_empty_success_response,  # type: ignore[reportPrivateUsage]
     _find_markdownlint_command,
     _get_all_markdown_files,  # type: ignore[reportPrivateUsage]
     _get_modified_markdown_files,
@@ -731,7 +731,7 @@ class TestFixMarkdownLintTool:
             ctx: object = None,
         ) -> str:
             run_markdownlint_with_cache_called_with.append(files)
-            return _create_empty_success_response()
+            return create_empty_success_response()
 
         with (
             patch(

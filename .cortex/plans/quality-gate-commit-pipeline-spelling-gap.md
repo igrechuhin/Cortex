@@ -1,5 +1,7 @@
 # Investigation: Commit Pipeline vs Quality Gate (Spelling)
 
+**Related**: See [Session Optimization: Commit Pipeline Orchestration Refactor](.cortex/plans/session-optimization-commit-pipeline-orchestration-refactor.md) for the phase-based pipeline structure; this plan focuses on the spelling-check gap and CI alignment.
+
 **Date**: 2026-02-02  
 **CI run**: <https://github.com/igrechuhin/Cortex/actions/runs/21602372138>  
 **Trigger**: Commit pipeline passed locally; quality gate failed in CI.

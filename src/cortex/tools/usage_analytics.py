@@ -20,6 +20,7 @@ from cortex.core.mcp_stability import (
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers.initialization import get_managers
 from cortex.managers.lazy_manager import LazyManager
+from cortex.managers.usage_models import ToolUsageEvent
 from cortex.managers.usage_tracker import UsageTracker
 from cortex.server import mcp
 
@@ -199,6 +200,82 @@ async def get_unused_tools(
         },
         indent=2,
     )
+
+
+async def _search_usage_impl(
+    tracker: UsageTracker,
+    root: Path,
+    start: datetime,
+    end: datetime,
+    tool_name: str | None,
+    success: bool | None,
+    limit: int,
+) -> dict[str, object]:
+    """Implementation helper for search_usage MCP tool."""
+    limit_val = max(1, min(limit, 500))
+    events = await tracker.search_usage(
+        start_date=start,
+        end_date=end,
+        tool_name=tool_name,
+        success=success,
+        limit=limit_val,
+    )
+    results = _build_search_results(events)
+    return {
+        "status": "success",
+        "project_root": str(root),
+        "results": results,
+        "total": len(results),
+    }
+
+
+def _build_search_results(events: list[ToolUsageEvent]) -> list[dict[str, object]]:
+    """Build compact search result entries from usage events."""
+    return [
+        {
+            "id": ev.id,
+            "tool_name": ev.tool_name,
+            "timestamp": ev.timestamp,
+            "duration_ms": ev.duration_ms,
+            "success": ev.success,
+            "error_type": ev.error_type,
+            "handler_kind": ev.handler_kind,
+        }
+        for ev in events
+    ]
+
+
+@mcp.tool(annotations=read_only_annotations("Search Usage Events"))
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def search_usage(
+    start_date: str | None = None,
+    end_date: str | None = None,
+    tool_name: str | None = None,
+    success: bool | None = None,
+    limit: int = 50,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Search usage events and return a compact index."""
+    if ctx is not None:
+        await log_client(ctx, "debug", "search_usage: starting")
+    root = await resolve_project_root_async(None, ctx)
+    tracker = await _get_tracker(root)
+    if tracker is None:
+        return json.dumps(
+            {"status": "unavailable", "message": "Usage tracker not available"}
+        )
+    start, end = _parse_date_range(start_date, end_date, 365)
+    payload = await _search_usage_impl(
+        tracker=tracker,
+        root=root,
+        start=start,
+        end=end,
+        tool_name=tool_name,
+        success=success,
+        limit=limit,
+    )
+    return json.dumps(payload, indent=2)
 
 
 def _calls_key(t: dict[str, object]) -> int:

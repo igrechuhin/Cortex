@@ -193,6 +193,28 @@ class UsageTracker:
                 return event
         return None
 
+    async def search_usage(
+        self,
+        start_date: datetime | None,
+        end_date: datetime | None,
+        tool_name: str | None,
+        success: bool | None,
+        limit: int,
+    ) -> list[ToolUsageEvent]:
+        """Search usage events and return a compact, time-sorted subset."""
+        if limit <= 0:
+            return []
+        events = await _load_events_in_range(
+            self._project_root,
+            start_date,
+            end_date,
+            tool_name,
+        )
+        if success is not None:
+            events = [e for e in events if e.success is success]
+        events.sort(key=lambda e: e.timestamp, reverse=True)
+        return events[:limit]
+
 
 def _to_row_dict(obj: object) -> dict[str, object]:
     """Convert tool stat to dict for get_unused_tools iteration."""

@@ -1,6 +1,6 @@
 # Claude-mem Inspired Improvements (Usage Search, Observations, Progressive Disclosure)
 
-**Status**: IN PROGRESS (Steps 1–4 completed 2026-02-10)  
+**Status**: IN PROGRESS (Steps 1–5 completed 2026-02-10)  
 **Created**: 2026-02-02  
 **Priority**: Future enhancement (after Phase 43)  
 **Estimated Effort**: 15–25 hours (phased)  
@@ -110,6 +110,8 @@ Implementation order: execute steps in sequence. Dependencies between steps are 
 **Success**: Tool returns compact index; filters and limit work; tests for response shape and filtering.
 
 **Dependencies**: Step 3 (IDs). Phase 43 (tool-only).
+
+**Status**: COMPLETED 2026-02-10 — Implemented `search_usage` MCP tool with compact index results and tests.
 
 ---
 

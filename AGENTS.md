@@ -1,55 +1,38 @@
 # AGENTS
 
-## Agent Operating Guidelines
+Workspace-wide rules for all IDE/AI agents in this repository.
 
-- **Scope first**: Confirm user intent, map to allowed operations, and avoid touching unrelated files. Ask clarifying questions only when necessary to unblock progress.
-- **Rules compliance**: Load applicable rules (workspace, memory bank, file-type) before actions; honor "avoid shell grep" by using `rg`/IDE tools; follow memory-bank workflow after significant changes.
-- **Safety rails**: Never run destructive git commands, never leak secrets, and respect sandbox limits. Use `gtimeout` wrappers for long-running commands.
-- **Tooling preference**: Use standard IDE tools (`Read`, `ApplyPatch`, `Write`, `Grep`, `Glob`, `LS`) for file operations; MCP filesystem tools are optional fallbacks only when explicitly requested or when standard tools unavailable; prefer ripgrep over shell `grep`; default to `.venv` binaries for Python tooling.
-- **Virtualenv discoverability**: `.venv/` is often ignored and may be invisible to IDE file tools. Don’t “discover” `.venv` via file-tree tools; instead, probe via shell (`test -x ./.venv/bin/python`) and run tools via explicit paths (`./.venv/bin/python -m pytest`).
-- **Plan archiving**: Archive completed plans under `.cursor/plans/archive/PhaseX/MilestoneY/` matching plan's Phase/Milestone; use `mkdir -p` and `mv` with absolute paths if needed.
-- **Change discipline**: Keep functions ≤30 lines (logical lines, excluding doc comments & blank lines) and files ≤400 lines (excluding license headers & imports); one public type per file; private constants at file level; pure helpers at file level; preserve async correctness; ensure clear input validation and domain-specific errors.
-- **Dependency injection**: All external dependencies MUST be injected via initializers; NO global state or singletons in production code.
-- **Documentation sync**: Update memory bank after meaningful changes. **activeContext.md** = completed work only; **roadmap.md** = future/upcoming work only (no overlap). When work is completed, move it from roadmap to activeContext. Add roadmap entries for any TODOs introduced; all TODO comments MUST be tracked in roadmap.md.
-- **Memory bank location**: All memory bank files MUST be in `.cursor/memory-bank/` directory; core files: projectBrief.md, productContext.md, systemPatterns.md, techContext.md, activeContext.md, progress.md, roadmap.md.
-- **Performance posture**: Avoid O(n²) regressions; record metrics where required; keep tests under 10s per case.
-- **No auto-commit**: Never create commits or push without explicit user request; follow documented commit workflow when requested.
-- **MCP tool error handling**: When encountering unexpected results from Cortex MCP tools, immediately create an investigation plan at `.cortex/plans/` and link it as a blocker (ASAP priority) in `.cortex/memory-bank/roadmap.md`. This ensures all tool issues are tracked and addressed systematically.
-- **Execution continuity (CRITICAL)**: Continue execution until one of these valid stopping conditions is met: (1) Question to user that is REQUIRED to proceed, (2) Job is fully done and verified, (3) Out of context and cannot proceed, (4) Unrecoverable error requiring user intervention. Do NOT stop for partial completion, intermediate steps, retryable errors, or uncertainty that can be resolved by exploring the codebase. Premature stopping is a CRITICAL violation. Never end a turn immediately after stating future work (e.g., "I’ll now refactor each function"); perform the described work before yielding or clearly explain why you are blocked.
-- **Automatic quality fixes (MANDATORY)**: Automatically call `fix_quality_issues()` MCP tool when: (1) Errors are detected in the IDE (type errors, linting errors), (2) After making code changes that might introduce quality issues, (3) Before starting new work to ensure clean state. This prevents error accumulation and reduces burden on the commit pipeline. The tool fixes type errors, formatting, linting, and markdown issues automatically without running tests.
+## Use Cortex MCP (MANDATORY)
 
-## Expectations for LLM Agents in This Repo
+This project has a **Cortex MCP server** that provides tools for everything agents need. **Always use Cortex MCP tools instead of reading files or running commands directly.**
 
-- **Security**: Validate paths/URIs, avoid hardcoded secrets, use parameterized queries, and sanitize logs. Reject traversal, control chars, and encoded slashes per existing helpers.
-- **Testing**: Follow AAA pattern (MANDATORY); no blanket skips (MANDATORY); justify every skip with clear reason and linked ticket; target 100% pass on `.venv/bin/pytest` with `gtimeout` guards; add coverage for new public APIs and toggles; unit tests for all critical business logic and every public API surface (MANDATORY); minimum 90% coverage for new code.
-- **Type hints**: 100% coverage required; NEVER use `Any` type (use Protocols, TypedDict, or `object` instead); use Python 3.13+ built-ins (`list[str]`, `dict[str, int]`, `tuple[str, int]`, `set[str]`, `T | None`) instead of `typing` module types (MANDATORY); use concrete types instead of `object` wherever possible - investigate actual return types and use them (MANDATORY); NEVER use `TYPE_CHECKING` or `if TYPE_CHECKING:` blocks - fix circular imports by restructuring modules or extracting shared types (STRICTLY FORBIDDEN).
-- **Formatting**: Run `./.venv/bin/black .` and `./.venv/bin/isort .` before commits; don't hand-format against Black/isort.
-- **Async correctness**: Use async for I/O, avoid blocking in event loop; offload CPU/file I/O; apply timeouts and structured concurrency.
-- **MCP specifics**: Register handlers on the MCP server instance, use `stdio_server()` as an async context manager without arguments, and prevent server objects from being used as async iterables.
-- **Memory bank**: Location `.cursor/memory-bank/` (MANDATORY); use YY-MM-DD timestamps only; validate with the ripgrep helper script; keep entries reverse-chronological; update after significant changes (MANDATORY).
-- **Git hygiene**: No commits/pushes without explicit user request (MANDATORY); stage only related changes; never rebase/reset/force-push; follow documented commit workflow when requested.
-- **File operations**: Use standard tools (`Read`, `ApplyPatch`, `Write`, `Grep`, `Glob`, `LS`) by default; MCP filesystem tools are optional fallbacks only when explicitly requested or when standard tools unavailable.
-- **Path resolution for `.cortex/` operations (MANDATORY)**: All file operations within `.cortex/` directory MUST use Cortex MCP tools for path resolution. Never hardcode `.cortex/` paths. Use `get_structure_info()` MCP tool to get structure paths dynamically, then use standard `Write` tool with the resolved path. This ensures consistent path resolution and prevents file location errors. Example: Call `get_structure_info()` → extract `structure_info.paths.reviews` → use `Write` tool with that path.
-- **Cortex MCP tools: no project_root (MANDATORY)**: Do not pass `project_root` to any Cortex MCP tool. Tools resolve the project root internally (via MCP roots or current working directory). See docs/api/tools.md.
-- **Cache JSON access (MANDATORY)**: All read/write of JSON files under `.cortex/.cache` (e.g. `usage/events/*.json`, `markdown-lint-index.json`) MUST go through the `read_cache_json` and `write_cache_json` MCP tools. Do NOT read or write cache JSON files directly (e.g. via standard file tools or shell). Using the cache JSON tools ensures reliable concurrent access from different chat sessions and prevents corruption.
-- **Python 3.13+ features**: Use modern built-ins - `list[str]` not `typing.List[str]`, `dict[str, int]` not `typing.Dict[str, int]`, `tuple[str, int]` not `typing.Tuple[str, int]`, `set[str]` not `typing.Set[str]`, `T | None` not `Optional[T]`, `asyncio.timeout()` not `asyncio.wait_for()`, `itertools.batched()`, `contextlib.chdir()`, `@cache`, `except*`, `typing.Self`, `Required`/`NotRequired` (MANDATORY); avoid `typing` module types when Python 3.13+ built-ins are available.
-- **Concrete types**: Use concrete types instead of `object` wherever possible - investigate actual return types (e.g., `list[RefactoringSuggestion]`, `RollbackResult`, `dict[str, str | None]`) and use them instead of generic `object` (MANDATORY).
-- **Type specificity**: Make types MORE specific, not less - prefer `dict[str, str]` over `dict[str, object]`, don't replace concrete types with generic ones (MANDATORY).
-- **Avoid abstractions**: Don't use `Mapping` or other abstractions when `dict` works - use `dict` directly (MANDATORY).
+| Need | Cortex MCP tool | Do NOT |
+|---|---|---|
+| Project context, architecture, decisions | `load_context` / `load_progressive_context` | Read `.cortex/memory-bank/` files directly |
+| Coding rules, standards, style | Rules/validation tools | Read `.cortex/rules/` or `.cortex/synapse/` |
+| Quality fixes (lint, format, types) | `fix_quality_issues` | Run `black`, `ruff`, `isort` manually |
+| Tests and pre-commit checks | `execute_pre_commit_checks` | Run `pytest` directly |
+| Memory bank, roadmap, plans, reviews | Dedicated MCP helpers | Edit `.cortex/` files directly |
+| Project structure, paths | `get_structure_info` | Hardcode `.cortex/` paths |
+| Cache JSON under `.cortex/.cache` | `read_cache_json` / `write_cache_json` | Read/write cache files directly |
 
-## Cursor + MCP Development Practices
+## Workflow
 
-- **Interpreter selection**: When using Cursor or other IDEs, always point the Python interpreter to `.venv/bin/python` so type information and MCP tools match the runtime.
-- **Typed MCP boundaries**: Define all MCP handlers with explicit parameter and return types, using `TypedDict`/dataclasses for JSON payloads instead of untyped `dict`.
-- **MCP tool decorator stack (MANDATORY)**: Every new `@mcp.tool()` MUST use the full stack in order: `@mcp.tool(annotations=...)`, `@ensure_usage_context`, `@mcp_tool_wrapper(timeout=...)`. Use annotation helpers from `cortex.core.mcp_annotations` (`read_only_annotations`, `safe_write_annotations`, `destructive_annotations`, `external_annotations`). Use timeout constants from `cortex.core.constants` (MCP_TOOL_TIMEOUT_FAST/MEDIUM/COMPLEX/VERY_COMPLEX/EXTERNAL). CI fails if any tool misses this stack. See `.cortex/synapse/rules/python/python-mcp-development.mdc`.
-- **Thin handlers, pure helpers**: Keep `@mcp.tool` handlers as thin async orchestrators that delegate to small, pure helper functions for business logic.
-- **JSON modeling**: Model request/response shapes with `TypedDict` hierarchies where keys are known; only use `dict[str, object]` at true protocol edges.
-- **Refactor strategy**: Prefer refactoring pure helpers (not handlers) when using automated tools, to preserve async behavior and protocol contracts.
+1. **Scope the task** — restate the user's goal.
+2. **Call Cortex MCP** — load context, fetch rules, discover tools. Let Cortex choose what's relevant.
+3. **Edit code** — use IDE tools (`Read`, `Write`, `Grep`, `Glob`, `LS`) for source files.
+4. **Verify** — use Cortex quality/test tools, not raw shell commands.
 
-## Synapse Architecture (CRITICAL)
+## Commit pipeline (phase-based)
 
-- **Prompts are language-AGNOSTIC**: All prompts in `.cortex/synapse/prompts/` MUST NOT contain language-specific commands. Use script references with `{language}` placeholder instead.
-- **Scripts are language-SPECIFIC**: All language-specific implementations go in `.cortex/synapse/scripts/{language}/` (e.g., `scripts/python/`).
-- **Never hardcode tool commands in prompts**: Use `.venv/bin/python .cortex/synapse/scripts/{language}/check_*.py` instead of `ruff`, `black`, `prettier`, etc.
-- **Scripts auto-detect**: Scripts handle project root, source directories, and tool discovery automatically.
-- **Add new languages**: Create `scripts/{language}/` directory with required scripts (check_formatting.py, check_linting.py, check_types.py, etc.).
+The commit workflow is organized into phases (see `docs/design/commit-pipeline-phases.md`). Use phase helpers so `/cortex/commit` orchestrates instead of micromanaging:
+
+- **Phase A**: `run_preflight_checks()` — fix_errors, format, markdown lint, type_check, quality, tests. If it fails, stop and use `/cortex/fix-tests` or `/cortex/fix-quality`; do not debug inline.
+- **Phase B**: `run_docs_and_memory_bank_sync()` — after memory-bank/roadmap steps, validates timestamps and sync. If it fails, use `/cortex/docs-sync` then retry.
+- **Zero-errors policy**: Any check with errors blocks commit; no exceptions. Apply fixes (or use the helper commands above) before proceeding.
+
+## Safety (non-negotiable)
+
+- No destructive git (`reset --hard`, force-push); no commits/pushes without explicit user request.
+- No hardcoded secrets; no sensitive data in logs or memory bank.
+- Continue until done or genuinely blocked; do not stop after planning work you can do now.

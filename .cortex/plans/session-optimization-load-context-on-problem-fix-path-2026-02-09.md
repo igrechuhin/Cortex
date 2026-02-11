@@ -1,5 +1,7 @@
 # Session Optimization (2026-02-09): Load Context When Agent Encounters Problem / Fix Path
 
+**Related**: See [Session Optimization: Commit Pipeline Orchestration Refactor](.cortex/plans/session-optimization-commit-pipeline-orchestration-refactor.md) for phase-based commit orchestration and helper commands; this plan focuses on requiring context/rules load when agents enter the fix path.
+
 **Status**: PENDING  
 **Created**: 2026-02-09  
 **Source**: User request + `.cortex/reviews/session-optimization-2026-02-09T08-12.md`  

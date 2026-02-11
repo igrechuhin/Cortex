@@ -111,8 +111,11 @@ PROGRESS_REPORT_INTERVAL_LONG_RUNNING_SECONDS = (
 PROGRESS_THRESHOLD_TIMEOUT_SECONDS = (
     120.0  # Enable progress for tools with timeout >= this
 )
-# Heartbeat during long markdown lint runs to avoid client idle timeout (-32000)
-MARKDOWN_LINT_PROGRESS_HEARTBEAT_SECONDS = 15
+# Heartbeat during long markdown lint runs to avoid client idle timeout (-32000).
+# 5s keeps wire traffic frequent enough to reduce ListOfferings-triggered disconnects.
+MARKDOWN_LINT_PROGRESS_HEARTBEAT_SECONDS = 5
+# Batch size for markdownlint invocations; reduces subprocess count and total duration.
+MARKDOWN_LINT_BATCH_SIZE = 25
 
 # =============================================================================
 # Performance Thresholds

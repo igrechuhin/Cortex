@@ -10,13 +10,13 @@
 
 ## Future Enhancements
 
+- **Phase 43: Reconsider Tools Registration - Transform Tools to Resources** - PENDING - Align MCP operations with Resources vs Tools semantics, unify naming across tools/resources (especially remaining get_*operations), and review each get_* tool case-by-case to decide whether it should be a Resource, a Tool, or a split pair, updating docs and tests accordingly.
+
 ## Pending plans (from .cortex/plans)
 
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
-
-- [Phase 18: Markdown Lint Fix Tool](../plans/archive/Phase18/phase-18-markdown-lint-fix-tool.md) - Archived reference for completed Phase 18 plan.
 
 ### Session Optimization Plans (2026-02-03)
 

@@ -1,18 +1,8 @@
-"""
-Markdown Operations Tools
-
-This module contains MCP tools for markdown file operations.
-
-Total: 2 tools
-- fix_markdown_lint: Fix markdownlint errors in markdown files (modified or all files)
-- fix_roadmap_corruption: Fix text corruption in roadmap.md
-  (missing spaces, malformed dates, etc.)
-"""
+"""MCP tools for markdown file operations (fix_markdown_lint, fix_roadmap_corruption)."""
 
 import asyncio
 import hashlib
 import json
-from importlib import import_module
 from pathlib import Path
 
 import aiofiles
@@ -20,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cortex.core.constants import (
     GIT_OPERATION_TIMEOUT_SECONDS,
+    MARKDOWN_LINT_BATCH_SIZE,
     MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL,
     MARKDOWN_LINT_PROGRESS_HEARTBEAT_SECONDS,
     MCP_TOOL_TIMEOUT_VERY_COMPLEX,
@@ -35,6 +26,10 @@ from cortex.tools.markdown_lint_cache import (
     MarkdownLintIndex,
     load_markdown_lint_index_safe,
     save_markdown_lint_index,
+)
+from cortex.tools.markdown_lint_responses import (
+    create_empty_success_response,
+    create_error_response,
 )
 from cortex.tools.roadmap_corruption import CorruptionMatch
 
@@ -334,6 +329,26 @@ def _parse_markdownlint_output(stdout: str) -> list[str]:
     return errors
 
 
+def _parse_markdownlint_lines_by_file(output: str) -> dict[str, list[str]]:
+    """Parse markdownlint output into per-file line groups.
+
+    Lines follow 'file: line: rule' format. Returns mapping of
+    relative file path to list of lines for that file.
+    """
+    by_file: dict[str, list[str]] = {}
+    for line in output.strip().split("\n"):
+        s = line.strip()
+        if not s or s.startswith("markdownlint"):
+            continue
+        idx = s.find(": ")
+        if idx <= 0:
+            continue
+        file_part = s[:idx].strip()
+        if file_part and (".md" in file_part or ".mdc" in file_part):
+            by_file.setdefault(file_part, []).append(s)
+    return by_file
+
+
 def _build_error_result(
     relative_path: str,
     errors: list[str],
@@ -361,7 +376,7 @@ def _build_error_result(
     )
 
 
-async def _run_markdownlint_fix(
+async def _run_markdownlint_fix(  # pyright: ignore[reportUnusedFunction]
     file_path: Path,
     project_root: Path,
     markdownlint_cmd: list[str],
@@ -395,18 +410,98 @@ async def _run_markdownlint_fix(
     )
 
 
-def _create_error_response(error_message: str) -> str:
-    """Create error response JSON."""
-    # fmt: off
-    return json.dumps({"success": False, "files_processed": 0, "files_fixed": 0, "files_unchanged": 0, "files_with_errors": 0, "results": [], "error_message": error_message}, indent=2)
-    # fmt: on
+async def _run_markdownlint_batch(
+    file_paths: list[Path],
+    project_root: Path,
+    markdownlint_cmd: list[str],
+    config_path: Path | None,
+    dry_run: bool,
+) -> list[FileResult]:
+    """Run markdownlint --fix on multiple files in one invocation."""
+    if not file_paths:
+        return []
+    rel_strs = [str(p.relative_to(project_root)) for p in file_paths]
+    cmd = markdownlint_cmd.copy()
+    if not dry_run:
+        cmd.append("--fix")
+    if config_path is not None:
+        cmd.extend(["--config", str(config_path.relative_to(project_root))])
+    cmd.extend(rel_strs)
+    result = await _run_command(cmd, cwd=project_root, timeout=120)
+    out = _result_stdout(result) if _result_success(result) else _result_stderr(result)
+    by_file = _parse_markdownlint_lines_by_file(out)
+    raw_lines = _parse_markdownlint_output(out) if _result_success(result) else []
+    return _build_markdownlint_batch_results(
+        rel_strs,
+        result,
+        by_file,
+        raw_lines,
+        dry_run,
+    )
 
 
-def _create_empty_success_response() -> str:
-    """Create empty success response JSON."""
-    # fmt: off
-    return json.dumps({"success": True, "files_processed": 0, "files_fixed": 0, "files_unchanged": 0, "files_with_errors": 0, "results": [], "error_message": None}, indent=2)
-    # fmt: on
+def _build_markdownlint_batch_results(
+    rel_strs: list[str],
+    result: GitCommandResult,
+    by_file: dict[str, list[str]],
+    raw_lines: list[str],
+    dry_run: bool,
+) -> list[FileResult]:
+    """Build per-file results from markdownlint batch output."""
+    success = _result_success(result)
+    output_suggests_fix = success and bool(raw_lines)
+    single_file = len(rel_strs) == 1
+    return [
+        (
+            _build_markdownlint_success_result(
+                rel,
+                by_file.get(rel, []),
+                raw_lines,
+                output_suggests_fix,
+                single_file,
+                dry_run,
+            )
+            if success
+            else _build_markdownlint_error_result(
+                rel,
+                by_file.get(rel, []),
+                result,
+            )
+        )
+        for rel in rel_strs
+    ]
+
+
+def _build_markdownlint_success_result(
+    rel: str,
+    lines: list[str],
+    raw_lines: list[str],
+    output_suggests_fix: bool,
+    single_file: bool,
+    dry_run: bool,
+) -> FileResult:
+    fixed = (bool(lines) or (output_suggests_fix and single_file)) and not dry_run
+    return FileResult(
+        file=rel,
+        fixed=fixed,
+        errors=lines or raw_lines,
+        error_message=None,
+    )
+
+
+def _build_markdownlint_error_result(
+    rel: str,
+    lines: list[str],
+    result: GitCommandResult,
+) -> FileResult:
+    """Return FileResult for a failed markdownlint run on one file."""
+    error_msg = _result_error(result) or "; ".join(lines[:3]) if lines else ""
+    return _build_error_result(
+        rel,
+        lines,
+        _result_returncode(result),
+        error_msg or "Markdown lint failed",
+    )
 
 
 async def _validate_markdown_prerequisites(
@@ -415,12 +510,12 @@ async def _validate_markdown_prerequisites(
     """Validate git and markdownlint; return (error_or_none, cmd_or_none, config_or_none)."""
     git_check = await _run_command(["git", "rev-parse", "--git-dir"], cwd=root_path)
     if not _result_success(git_check):
-        return _create_error_response("Not in a git repository"), None, None
+        return create_error_response("Not in a git repository"), None, None
 
     markdownlint_cmd = await _find_markdownlint_command()
     if markdownlint_cmd is None:
         return (
-            _create_error_response(
+            create_error_response(
                 "markdownlint-cli2 not found. "
                 + "Install it with: npm install -g markdownlint-cli2 "
                 + "or ensure npx is available (npx will auto-install it)"
@@ -526,28 +621,6 @@ async def _filter_files_for_linting(
     return files_to_lint, initial_results, hashes_for_cache
 
 
-async def _process_one_markdown_file(
-    file_path: Path,
-    root_path: Path,
-    markdownlint_cmd: list[str],
-    dry_run: bool,
-) -> FileResult | None:
-    """Run markdownlint on one file; return FileResult or None if file missing."""
-    if not file_path.exists():
-        return None
-    try:
-        return await _run_markdownlint_fix(
-            file_path, root_path, markdownlint_cmd, dry_run
-        )
-    except Exception as e:
-        return FileResult(
-            file=str(file_path.relative_to(root_path)),
-            fixed=False,
-            errors=[str(e)],
-            error_message=str(e),
-        )
-
-
 async def _markdown_lint_heartbeat_loop(
     progress_ctx: MCPContext,
     current_n: list[int],
@@ -624,10 +697,16 @@ async def _after_one_file(
         )
 
 
-async def _run_sequential_markdown_loop(
+def _chunk_paths(files: list[Path], size: int) -> list[list[Path]]:
+    """Split file list into chunks of at most size."""
+    return [files[i : i + size] for i in range(0, len(files), size)]
+
+
+async def _run_batched_markdown_loop(
     files: list[Path],
     root_path: Path,
     markdownlint_cmd: list[str],
+    config_path: Path | None,
     dry_run: bool,
     results: list[FileResult],
     current_n: list[int],
@@ -636,27 +715,30 @@ async def _run_sequential_markdown_loop(
     progress_ctx: MCPContext | None,
     progress_total: int | None,
 ) -> None:
-    """Run the sequential markdown lint loop; appends to results and updates current_n."""
-    for file_path in files:
-        result = await _process_one_markdown_file(
-            file_path, root_path, markdownlint_cmd, dry_run
+    """Run markdown lint in batches; appends to results and updates current_n."""
+    chunks = _chunk_paths(files, MARKDOWN_LINT_BATCH_SIZE)
+    for chunk in chunks:
+        batch_results = await _run_markdownlint_batch(
+            chunk, root_path, markdownlint_cmd, config_path, dry_run
         )
-        await _after_one_file(
-            result,
-            results,
-            current_n,
-            index,
-            file_hashes,
-            root_path,
-            progress_ctx,
-            progress_total,
-        )
+        for result in batch_results:
+            await _after_one_file(
+                result,
+                results,
+                current_n,
+                index,
+                file_hashes,
+                root_path,
+                progress_ctx,
+                progress_total,
+            )
 
 
 async def _process_markdown_files_sequential(
     files: list[Path],
     root_path: Path,
     markdownlint_cmd: list[str],
+    config_path: Path | None,
     dry_run: bool,
     *,
     progress_ctx: MCPContext | None = None,
@@ -664,27 +746,85 @@ async def _process_markdown_files_sequential(
     index: MarkdownLintIndex | None = None,
     file_hashes: dict[str, str] | None = None,
 ) -> list[FileResult]:
-    """Process markdown files sequentially. Heartbeat avoids MCP client idle timeout."""
-    results: list[FileResult] = []
+    """Process markdown files in batches. Heartbeat avoids MCP client idle timeout."""
+    existing_files = [f for f in files if f.is_file()]
+    if not existing_files:
+        return []
+    total = progress_total if progress_total is not None else len(existing_files)
+    return await _run_markdownlint_with_heartbeat(
+        existing_files,
+        root_path,
+        markdownlint_cmd,
+        config_path,
+        dry_run,
+        progress_ctx=progress_ctx,
+        progress_total=total,
+        index=index,
+        file_hashes=file_hashes,
+    )
+
+
+async def _run_markdownlint_with_heartbeat(
+    files: list[Path],
+    root_path: Path,
+    markdownlint_cmd: list[str],
+    config_path: Path | None,
+    dry_run: bool,
+    *,
+    progress_ctx: MCPContext | None,
+    progress_total: int,
+    index: MarkdownLintIndex | None,
+    file_hashes: dict[str, str] | None,
+) -> list[FileResult]:
+    """Run markdownlint batches while sending heartbeat progress."""
     current_n: list[int] = [0]
-    total = progress_total if progress_total is not None else 0
-    heartbeat_task = _start_markdown_lint_heartbeat(progress_ctx, current_n, total)
+    heartbeat_task = _start_markdown_lint_heartbeat(
+        progress_ctx, current_n, progress_total
+    )
     try:
-        await _run_sequential_markdown_loop(
+        return await _run_markdownlint_for_batches(
             files,
             root_path,
             markdownlint_cmd,
+            config_path,
             dry_run,
-            results,
-            current_n,
             index,
             file_hashes,
             progress_ctx,
             progress_total,
         )
-        return results
     finally:
         await _cancel_heartbeat_task(heartbeat_task)
+
+
+async def _run_markdownlint_for_batches(
+    files: list[Path],
+    root_path: Path,
+    markdownlint_cmd: list[str],
+    config_path: Path | None,
+    dry_run: bool,
+    index: MarkdownLintIndex | None,
+    file_hashes: dict[str, str] | None,
+    progress_ctx: MCPContext | None,
+    progress_total: int,
+) -> list[FileResult]:
+    """Run markdownlint batches and return the collected results."""
+    results: list[FileResult] = []
+    current_n: list[int] = [0]
+    await _run_batched_markdown_loop(
+        files,
+        root_path,
+        markdownlint_cmd,
+        config_path,
+        dry_run,
+        results,
+        current_n,
+        index,
+        file_hashes,
+        progress_ctx,
+        progress_total,
+    )
+    return results
 
 
 def _calculate_statistics(results: list[FileResult]) -> tuple[int, int, int]:
@@ -748,15 +888,11 @@ async def _run_markdownlint_for_files(
     if ctx is not None:
         await report_progress_safe(ctx, 0.0, float(len(files_to_lint)))
 
-    cmd_with_config = markdownlint_cmd.copy()
-    if config_path is not None:
-        config_relative = config_path.relative_to(root_path)
-        cmd_with_config.extend(["--config", str(config_relative)])
-
     lint_results = await _process_markdown_files_sequential(
         files_to_lint,
         root_path,
-        cmd_with_config,
+        markdownlint_cmd,
+        config_path,
         dry_run,
         progress_ctx=ctx,
         progress_total=len(files_to_lint),
@@ -796,7 +932,7 @@ async def _fix_markdown_lint_impl(
         root_path, check_all_files, include_untracked_markdown
     )
     if not files:
-        return _create_empty_success_response()
+        return create_empty_success_response()
     if check_all_files and len(files) > MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL:
         files = files[:MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL]
     return await _run_markdownlint_with_cache(
@@ -890,7 +1026,7 @@ async def _fix_markdown_lint_run_or_error(
         await log_client(
             ctx, "error", f"fix_markdown_lint: failed: {e}", logger_name=__name__
         )
-        return (_create_error_response(str(e)), False)
+        return (create_error_response(str(e)), False)
     except BaseException as e:  # pragma: no cover - defensive guardrail
         await log_client(
             ctx,
@@ -898,7 +1034,7 @@ async def _fix_markdown_lint_run_or_error(
             f"fix_markdown_lint: fatal: {e!r}",
             logger_name=__name__,
         )
-        return (_create_error_response(f"Fatal markdown lint error: {e!r}"), False)
+        return (create_error_response(f"Fatal markdown lint error: {e!r}"), False)
 
 
 @mcp.tool(annotations=safe_write_annotations("Fix Markdown Lint"))
@@ -943,16 +1079,4 @@ async def fix_markdown_lint(
     return result
 
 
-def _detect_roadmap_corruption(  # pyright: ignore[unused-function]
-    content: str,
-) -> list[CorruptionMatch]:
-    """Proxy to roadmap corruption detection helper for test compatibility.
-
-    This helper is imported in tests via private name usage.
-    """
-    module = import_module("cortex.tools.roadmap_corruption")
-    detector = getattr(module, "_detect_roadmap_corruption")  # noqa: B009
-    return detector(content)
-
-
-_ROADMAP_CORRUPTION_HELPER = _detect_roadmap_corruption
+_ROADMAP_CORRUPTION_HELPER = CorruptionMatch

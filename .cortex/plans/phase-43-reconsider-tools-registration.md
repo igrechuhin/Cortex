@@ -2,12 +2,12 @@
 
 **Status**: PLANNING  
 **Created**: 2026-01-17  
-**Priority**: Medium  
-**Estimated Effort**: 20-30 hours
+**Priority**: Medium → High (2026-02-10, tools/resources naming + get_*review)  
+**Estimated Effort**: 20-30 hours (initial); +4-6 hours for naming + get_* follow-up
 
 ## Goal
 
-Reconsider and optimize MCP tool registration by transforming read-only operations from Tools to Resources, aligning with MCP protocol best practices. Resources are like GET endpoints (load information into LLM context), while Tools are like POST endpoints (execute code or produce side effects).
+Reconsider and optimize MCP tool registration by transforming read-only operations from Tools to Resources, aligning with MCP protocol best practices, and **unifying naming across Tools and Resources (especially remaining `get_*` operations)**. Resources are like GET endpoints (load information into LLM context), while Tools are like POST endpoints (execute code or produce side effects).
 
 ## Context
 
@@ -18,6 +18,13 @@ The user has read the FastMCP documentation (<https://gofastmcp.com/getting-star
 - **Expose data through Resources** (think of these sort of like GET endpoints; they are used to load information into the LLM's context)
 - **Provide functionality through Tools** (sort of like POST endpoints; they are used to execute code or otherwise produce a side effect)
 - **Define interaction patterns through Prompts** (reusable templates for LLM interactions)
+
+### New Input (2026-02-10)
+
+Additional guidance from the user (2026-02-10) refines the scope:
+
+1. **Unify tools/resources naming**: Clean up the current mix of tool and resource function names/URIs so that naming consistently reflects behavior (read-only vs side-effecting) and follows a clear convention (e.g., verbs for Tools, nouns/\"views\" for Resources; no confusing `get_*` Tools that actually mutate state).
+2. **Reconsider remaining `get_*` Tools case-by-case**: For each `get_*` operation that is still exposed as a Tool, decide whether it should instead be (a) a pure Resource, (b) a Resource + Tool pair, or (c) remain a Tool with a better name. Document decisions and rationale inside this plan.
 
 ### Current State
 
@@ -307,6 +314,56 @@ Current tool registration doesn't align with MCP protocol semantics:
 - Performance comparison (if applicable)
 - Client compatibility report
 - Migration completion confirmation
+
+### Step 6: Naming Unification and `get_*` Tool Review (4-6 hours)
+
+This step incorporates the 2026-02-10 input to **unify Tools/Resources naming** and **reconsider remaining `get_*` Tools on a case-by-case basis**.
+
+#### Task 6.1: Define Naming Conventions for Tools and Resources
+
+- Document a concise naming standard in this plan (and later in CLAUDE.md / rules) that covers:
+  - **Tools** (side-effecting, POST-like): imperative verb-based names (`write_file`, `apply_refactoring`, `update_config`); avoid ambiguous `get_*` prefixes for anything that mutates state.
+  - **Resources** (read-only, GET-like): names that emphasize views or data (`memory_bank_stats`, `file_content`, `usage_report`) plus canonical `cortex://...` URIs; avoid redundant `_resource` suffix in the long term (keep temporarily if needed for clarity/migration).
+  - **Hybrid pairs**: when both exist (e.g., `get_file_resource` + `write_file`), ensure they share a clear stem and differ only by verb/role.
+- Align these naming rules with existing FastMCP conventions (where applicable) and Phase 43 design docs.
+
+#### Task 6.2: Inventory Remaining `get_*` Tools and Resources
+
+- Generate an up-to-date list of all `get_*` operations across:
+  - Tool handlers (still registered as Tools).
+  - Resource handlers (already converted in Step 3).
+- Classify each `get_*` by behavior:
+  - **Pure read** (no side effects, safe to be Resource-only).
+  - **Read + implicit side effects** (e.g., caching, logging) but logically \"view\".
+  - **Actual write/side-effect** (should not be `get_*`).
+
+#### Task 6.3: Decide Per-Case: Resource vs Tool vs Pair
+
+- For each `get_*` candidate, make an explicit decision and record it in this plan (e.g., a small table or bullet list):
+  - **Promote to Resource only**: if the operation is purely read-only and primarily used to load context (e.g., `get_memory_bank_stats` already handled via Resource).
+  - **Resource + Tool pair**: when the same conceptual operation has both read and write aspects (keep Resource for reads, Tool for writes; ensure names reflect this, e.g., `file_metadata` Resource vs `update_file_metadata` Tool).
+  - **Remain a Tool with a better name**: if the operation is truly side-effecting, rename away from `get_*` to an action verb (`compute_*`, `refresh_*`, `sync_*`, etc.).
+- Update the **Decision Criteria** section if needed to reflect any new categories or patterns discovered.
+
+#### Task 6.4: Apply Renames and Wiring Updates
+
+- Implement renames and registrations according to decisions from Task 6.3:
+  - Update handler function names and their decorators (`@mcp.tool`, `@mcp.resource`) while preserving the required wrapper stack (`ensure_usage_context`, `mcp_tool_wrapper` / `mcp_resource_wrapper`).
+  - Adjust FastMCP registration metadata (names, descriptions, URIs) to match the new naming conventions.
+  - Update any internal call sites or tests that referenced old names.
+- Ensure that:
+  - Public-facing names are consistent in `docs/api/tools.md`, CLAUDE.md, and any user-facing documentation.
+  - Backward-compatibility shims are added where necessary (e.g., accept old names/aliases for at least one release, or document the breaking change clearly).
+
+#### Task 6.5: Update Tests and Documentation for Naming
+
+- Add or update tests that assert:
+  - No unintended `get_*` Tools remain for side-effecting operations.
+  - All `get_*` Resources behave as pure reads and are wired through the Resource wrapper/analytics stack.
+- Update documentation:
+  - API docs: reflect final Tool/Resource names, especially for former `get_*` operations.
+  - Architecture docs / CLAUDE.md: briefly describe the naming conventions and how Tools vs Resources should be named going forward.
+- Ensure the overall **Success Criteria** includes \"no confusing `get_*` Tool names\" and \"Tools/Resources naming scheme documented and applied\".
 
 ## Technical Design
 

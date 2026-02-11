@@ -288,3 +288,52 @@ class TestGetEventById:
         tracker = UsageTracker(root)
         result = await tracker.get_event_by_id("non-existent-id")
         assert result is None
+
+
+class TestSearchUsage:
+    """Tests for UsageTracker.search_usage."""
+
+    @pytest.mark.asyncio
+    async def test_search_usage_limits_and_sorts_results(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """search_usage returns limited, time-sorted events."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage("tool_a", 5.0, True)
+        await tracker.record_tool_usage("tool_a", 10.0, False)
+        await tracker.record_tool_usage("tool_b", 3.0, True)
+        results = await tracker.search_usage(
+            start_date=None,
+            end_date=None,
+            tool_name=None,
+            success=None,
+            limit=2,
+        )
+        assert len(results) == 2
+        timestamps = [ev.timestamp for ev in results]
+        assert timestamps[0] >= timestamps[1]
+
+    @pytest.mark.asyncio
+    async def test_search_usage_filters_by_tool_and_success(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """search_usage filters events by tool_name and success flag."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage("tool_a", 5.0, True)
+        await tracker.record_tool_usage("tool_a", 10.0, False)
+        await tracker.record_tool_usage("tool_b", 3.0, True)
+        results = await tracker.search_usage(
+            start_date=None,
+            end_date=None,
+            tool_name="tool_a",
+            success=True,
+            limit=10,
+        )
+        assert len(results) == 1
+        ev = results[0]
+        assert ev.tool_name == "tool_a"
+        assert ev.success is True

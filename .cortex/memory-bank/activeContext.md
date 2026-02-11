@@ -2,6 +2,12 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-02-11)
+
+- ✅ **Session Optimization: Commit Pipeline Orchestration Refactor — Step 6** - COMPLETE (2026-02-11) - Updated session-optimization and quality plans with cross-references to orchestration refactor plan. session-optimization-commit-pipeline-improvements-2026-02-07.md, quality-gate-commit-pipeline-spelling-gap.md, session-optimization-load-context-on-problem-fix-path-2026-02-09.md now reference orchestration refactor for structural vs content focus. AGENTS.md already describes phase-based pipeline (Step 5). Plan status updated to Steps 1-6 complete.
+
+- ✅ **Session Optimization: Commit Pipeline Orchestration Refactor — Steps 7–8** - COMPLETE (2026-02-11) - Step 7: create-plan.md — added explicit phases (1–5), Phases overview, slimmed Path Resolution and ERROR HANDLING by referencing memory-bank-workflow.mdc and AGENTS.md. Step 8: analyze.md — added Phases (1–3), Tooling reference to memory-bank-workflow.mdc/AGENTS.md, phase labels on Pre-Analysis Checklist and steps, Phase D alignment in commit-pipeline-phases.md, full-report/no-truncation for review writes. Plan status set to COMPLETED (Steps 1–8).
+
 ## Completed Work (2026)
 
 - ✅ **Implement prompt memory bank and function length** - COMPLETE (2026) - Enforced manage_file-only for memory bank writes in implement Step 5 (requirement, prohibition, full-content fallback); added function-length reminder in Step 4; added rules-disabled fallback in analyze prompt. Fixed token-budget integration test to accept comma-formatted numbers.
@@ -29,6 +35,26 @@
 - ✅ **Claude-mem inspired improvements – Step 3: Stable IDs for usage events** - COMPLETE (2026-02-10) - Implemented stable `id` field on `ToolUsageEvent`, ensured new usage events persist IDs, added deterministic UUIDv5 backfill for legacy events in `usage_tracker`, and extended tests to cover ID assignment and backfill behavior within the existing usage tracking pipeline.
 
 - ✅ **Claude-mem inspired improvements – Step 4: usage observation resource** - COMPLETE (2026-02-10) - Implemented usage observation-by-ID support via `get_usage_observation` MCP tool and `cortex://usage/observation/{id}` resource on top of `UsageTracker.get_event_by_id`, including tests, coverage, and quality gate compliance.
+
+- ✅ **Usage analytics and commit pipeline maintenance** - COMPLETE (2026-02-10) - Ran full MCP-based pre-commit pipeline for usage tracking and analytics changes, auto-fixed quality and markdown issues, and validated tests/coverage for this session.
+
+- ✅ **fix_markdown_lint connection closed mitigations (2026-02-10)** - COMPLETE. Reduced heartbeat from 15 s to 5 s and added batched markdownlint (25 files per invocation) to cut duration and improve MCP connection stability. ListOfferings correlates with disconnect; shorter heartbeat and faster runs mitigate. Plan archived to .cortex/plans/archive/Investigations/2026-02-10/.
+
+- ✅ **Commit Pipeline Orchestration Refactor - Step 1: Define Canonical Phases** - COMPLETE (2026-02-10) - Created `docs/design/commit-pipeline-phases.md` defining 4 canonical commit phases (A: Preflight Checks covering Steps 0-4, B: Docs & Memory Bank Sync covering Steps 5-10, C: Submodule & Git Operations covering Steps 11-14, D: Session Analysis covering Step 15). All 16 existing commit steps mapped to exactly one phase with documented inputs/outputs and failure semantics. Plan updated to IN PROGRESS (Step 1/6 complete).
+
+- ✅ **Session Optimization: Commit Pipeline Orchestration Refactor – Phase A preflight helper** - COMPLETE (2026-02-10) - Implemented `run_preflight_checks` MCP tool that wraps `execute_pre_commit_checks` Phase A checks and `fix_markdown_lint` into a single structured preflight phase with Pydantic models and tests, ready for `/cortex/commit` orchestration.
+
+- ✅ **Session Optimization – Commit Pipeline Orchestration (Phase B helper)** - COMPLETE (2026-02-10) - Implemented `run_docs_and_memory_bank_sync` MCP tool to aggregate timestamps and roadmap_sync validations into a single Phase B helper with structured summaries, wired it into discovery, and added focused tests ensuring success, validation-failure, and tool-error paths are covered.
+
+- ✅ **Commit pipeline Phase A/B helper refactor** - COMPLETE (2026-02-10) - Extracted Phase A preflight and Phase B docs/memory bank helper logic into dedicated helper modules (`pre_commit_preflight_helpers.py` and `pre_commit_docs_memory_helpers.py`), slimmed `pre_commit_phase_tools.py` to thin MCP wrappers, updated unit tests, and ensured all format, type, tests, and quality gates pass for the new Phase helpers.
+
+- ✅ **Phase 18: Markdown Lint Fix Tool** - COMPLETE (2026-02-10) - Completed archival alignment for the Phase 18 markdown lint fix tool plan by ensuring only the archived copy under Phase18 is referenced from the roadmap and memory bank, and removing any stray unarchived root plan file so roadmap_sync no longer reports an unlinked plan for Phase 18.
+
+- ✅ **Commit Pipeline Orchestration Refactor - Step 2 Complete** - COMPLETE (2026-02-10) - Completed Step 2 (phase-level MCP tools/helpers) with 45 comprehensive tests achieving 95-100% coverage. Phase A (run_preflight_checks) and Phase B (run_docs_and_memory_bank_sync) tools fully tested with success, failure, tool-error, and edge-case scenarios. Steps 3-4 partially done from previous session (commit prompt updated, helper commands created).
+
+- ✅ **Commit Pipeline Orchestration Refactor (Steps 4–5)** - COMPLETE (2026-02-10) - Completed Step 4: markdown list/indentation fixes in fix-quality.md and docs-sync.md. Started Step 5: added AGENTS.md section 'Commit pipeline (phase-based)' with phase helpers and helper commands; added one-line references in commit.md and implement-next-roadmap-step.md to AGENTS. Quality gate passed.
+
+- ✅ **Session Optimization: Commit Pipeline Step 5 — Slim and centralize rules** - COMPLETE (2026-02-10) - Completed Step 5 of session-optimization-commit-pipeline-orchestration-refactor: added Synapse rule general/commit-pipeline.mdc for rules(operation="get_relevant"); slimmed commit.md (Pre-Step Load Rules references checklist and commit-pipeline.mdc/memory-bank-workflow.mdc; Verify code conformance shortened); review.md references AGENTS.md for Phase A type/quality checks. Quality gate passed.
 
 ## Completed Work (2026-02-09)
 

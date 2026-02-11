@@ -2,6 +2,8 @@
 
 **Status**: PENDING
 
+**Related**: See [Session Optimization: Commit Pipeline Orchestration Refactor](.cortex/plans/session-optimization-commit-pipeline-orchestration-refactor.md) for structural changes (phase-based pipeline, phase helpers, helper commands). This plan focuses on checks and content (async tests, markdown, spelling, integration test schema, memory-bank write quality).
+
 **Goal**: Implement improvements to the commit pipeline based on end-of-session analysis findings to prevent recurring issues (async test validation, markdown formatting, git SSL handling).
 
 ## Context

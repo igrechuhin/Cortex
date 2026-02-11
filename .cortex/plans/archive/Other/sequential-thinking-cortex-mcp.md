@@ -14,7 +14,7 @@ Implement sequential thinking functionality in Cortex MCP so that clients can us
 
 ## Context
 
-- **User need**: Use sequential thinking from Cortex (e.g. in Cursor) for complex planning, design, and analysis without running a separate sequential-thinking MCP server.
+- **User need**: Use sequential thinking from Cortex (e.g. in Cursor) for complex planning, design, and analysis without running a separate sequential thinking MCP server, by relying on the built-in `sequentialthinking` tool from Cortex MCP.
 - **Reference implementation**: TypeScript server in `modelcontextprotocol/servers` (`src/sequentialthinking/index.ts`, `lib.ts`): single tool `sequentialthinking`, stateful thought history and branches, rich tool description, JSON output with `thoughtNumber`, `totalThoughts`, `nextThoughtNeeded`, `branches`, `thoughtHistoryLength`.
 - **Cortex constraints**: Python 3.13+, async tools, `@mcp.tool()` + `@mcp_tool_wrapper(timeout=...)`, dependency injection, no global state in production (state must be scoped e.g. per server/session), 100% type hints, concrete types, files &lt;400 lines, functions &lt;30 lines.
 

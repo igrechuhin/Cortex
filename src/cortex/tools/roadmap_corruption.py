@@ -390,6 +390,11 @@ def _detect_roadmap_corruption(content: str) -> list[CorruptionMatch]:
     return matches
 
 
+def detect_roadmap_corruption(content: str) -> list[CorruptionMatch]:
+    """Public wrapper for roadmap corruption detection."""
+    return _detect_roadmap_corruption(content)
+
+
 def fix_roadmap_content_if_needed(content: str) -> str:
     """Return content with corruption patterns fixed; use before writing roadmap.md.
 

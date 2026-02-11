@@ -1,17 +1,19 @@
 {
-  "last_updated": "2026-02-10T14:11",
-  "total_sessions_analyzed": 24,
-  "total_load_context_calls": 26,
-  "avg_token_utilization": 0.43,
+  "last_updated": "2026-02-10T21:50",
+  "total_sessions_analyzed": 28,
+  "total_load_context_calls": 31,
+  "avg_token_utilization": 0.454,
   "avg_files_selected": 6.58,
-  "avg_relevance_score": 0.585,
+  "avg_relevance_score": 0.591,
   "common_task_patterns": {
     "fix/debug": 5,
-    "other": 8,
+    "other": 9,
     "implement/add": 10,
     "update/modify": 1,
     "testing": 1,
-    "documentation": 1
+    "documentation": 1,
+    "refactor": 3,
+    "review": 1
   },
   "insights": {
     "task_type_recommendations": {
@@ -30,7 +32,7 @@
         "notes": "Adequate performance"
       },
       "other": {
-        "calls_count": 8,
+        "calls_count": 9,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
@@ -39,9 +41,9 @@
           "progress.md",
           "systemPatterns.md"
         ],
-        "avg_utilization": 0.27,
-        "avg_relevance": 0.568,
-        "notes": "Low utilization - consider smaller token budgets"
+        "avg_utilization": 0.331,
+        "avg_relevance": 0.554,
+        "notes": "Moderate utilization - some budget optimization possible"
       },
       "implement/add": {
         "calls_count": 10,
@@ -94,45 +96,79 @@
         "avg_utilization": 0.921,
         "avg_relevance": 0.582,
         "notes": "High utilization - budget well-matched to needs; Limited data - insights will improve with more samples"
+      },
+      "refactor": {
+        "calls_count": 3,
+        "recommended_budget": 15000,
+        "essential_files": [
+          "techContext.md",
+          "roadmap.md",
+          "progress.md",
+          "systemPatterns.md",
+          "activeContext.md"
+        ],
+        "avg_utilization": 0.562,
+        "avg_relevance": 0.686,
+        "notes": "Adequate performance"
+      },
+      "review": {
+        "calls_count": 1,
+        "recommended_budget": 15000,
+        "essential_files": [
+          "techContext.md",
+          "roadmap.md",
+          "progress.md",
+          "systemPatterns.md",
+          "activeContext.md"
+        ],
+        "avg_utilization": 0.386,
+        "avg_relevance": 0.618,
+        "notes": "Moderate utilization - some budget optimization possible; Limited data - insights will improve with more samples"
       }
     },
     "file_effectiveness": {
       "activeContext.md": {
-        "times_selected": 20,
-        "avg_relevance": 0.809,
+        "times_selected": 25,
+        "avg_relevance": 0.804,
         "task_types_used": [
-          "implement/add",
-          "update/modify",
-          "testing",
-          "fix/debug",
+          "refactor",
           "other",
-          "documentation"
+          "update/modify",
+          "documentation",
+          "implement/add",
+          "review",
+          "fix/debug",
+          "testing"
         ],
         "recommendation": "High value - prioritize for loading"
       },
       "techContext.md": {
-        "times_selected": 22,
-        "avg_relevance": 0.588,
+        "times_selected": 27,
+        "avg_relevance": 0.603,
         "task_types_used": [
-          "implement/add",
-          "update/modify",
-          "testing",
-          "fix/debug",
+          "refactor",
           "other",
-          "documentation"
+          "update/modify",
+          "documentation",
+          "implement/add",
+          "review",
+          "fix/debug",
+          "testing"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "roadmap.md": {
-        "times_selected": 20,
-        "avg_relevance": 0.633,
+        "times_selected": 25,
+        "avg_relevance": 0.632,
         "task_types_used": [
-          "implement/add",
-          "update/modify",
-          "testing",
-          "fix/debug",
+          "refactor",
           "other",
-          "documentation"
+          "update/modify",
+          "documentation",
+          "implement/add",
+          "review",
+          "fix/debug",
+          "testing"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -140,25 +176,27 @@
         "times_selected": 19,
         "avg_relevance": 0.319,
         "task_types_used": [
-          "implement/add",
-          "update/modify",
-          "testing",
-          "fix/debug",
           "other",
-          "documentation"
+          "update/modify",
+          "documentation",
+          "implement/add",
+          "fix/debug",
+          "testing"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "projectBrief.md": {
-        "times_selected": 22,
-        "avg_relevance": 0.428,
+        "times_selected": 27,
+        "avg_relevance": 0.418,
         "task_types_used": [
-          "implement/add",
-          "update/modify",
-          "testing",
-          "fix/debug",
+          "refactor",
           "other",
-          "documentation"
+          "update/modify",
+          "documentation",
+          "implement/add",
+          "review",
+          "fix/debug",
+          "testing"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -166,8 +204,8 @@
         "times_selected": 3,
         "avg_relevance": 0.621,
         "task_types_used": [
-          "other",
-          "fix/debug"
+          "fix/debug",
+          "other"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -175,54 +213,60 @@
         "times_selected": 3,
         "avg_relevance": 0.24,
         "task_types_used": [
-          "other",
-          "fix/debug"
+          "fix/debug",
+          "other"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "progress.md": {
-        "times_selected": 19,
-        "avg_relevance": 0.606,
+        "times_selected": 22,
+        "avg_relevance": 0.609,
         "task_types_used": [
-          "implement/add",
-          "update/modify",
-          "testing",
-          "fix/debug",
+          "refactor",
           "other",
-          "documentation"
+          "update/modify",
+          "documentation",
+          "implement/add",
+          "review",
+          "fix/debug",
+          "testing"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "systemPatterns.md": {
-        "times_selected": 21,
-        "avg_relevance": 0.581,
+        "times_selected": 26,
+        "avg_relevance": 0.596,
         "task_types_used": [
-          "implement/add",
-          "update/modify",
-          "testing",
-          "fix/debug",
+          "refactor",
           "other",
-          "documentation"
+          "update/modify",
+          "documentation",
+          "implement/add",
+          "review",
+          "fix/debug",
+          "testing"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "productContext.md": {
-        "times_selected": 22,
-        "avg_relevance": 0.58,
+        "times_selected": 27,
+        "avg_relevance": 0.593,
         "task_types_used": [
-          "implement/add",
-          "update/modify",
-          "testing",
-          "fix/debug",
+          "refactor",
           "other",
-          "documentation"
+          "update/modify",
+          "documentation",
+          "implement/add",
+          "review",
+          "fix/debug",
+          "testing"
         ],
         "recommendation": "Moderate value - include when relevant"
       }
     },
     "learned_patterns": [
-      "Average 43% budget utilization - ~11k tokens unused per call",
-      "'techContext.md' is most frequently loaded (22/26 calls)",
+      "Average 45% budget utilization - ~11k tokens unused per call",
+      "'techContext.md' is most frequently loaded (27/31 calls)",
       "Most common task type: 'implement/add' (10 calls)"
     ],
     "budget_recommendations": {
@@ -231,7 +275,9 @@
       "implement/add": 10000,
       "update/modify": 10000,
       "testing": 10000,
-      "documentation": 10000
+      "documentation": 10000,
+      "refactor": 15000,
+      "review": 15000
     }
   },
   "entries": [
@@ -1022,6 +1068,159 @@
         "techContext.md": 0.706,
         "productContext.md": 0.589,
         "systemPatterns.md": 0.707
+      }
+    },
+    {
+      "session_id": "8802367cb9c4",
+      "timestamp": "2026-02-10T15:06",
+      "task_description": "Claude-mem inspired improvements (usage search, observations, progressive disclosure)",
+      "token_budget": 10000,
+      "total_tokens": 8234,
+      "utilization": 0.8234,
+      "files_selected": 6,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.445,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "projectBrief.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "activeContext.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.558,
+        "progress.md": 0.472,
+        "activeContext.md": 0.644,
+        "projectBrief.md": 0.242,
+        "techContext.md": 0.397,
+        "productContext.md": 0.377,
+        "systemPatterns.md": 0.427
+      }
+    },
+    {
+      "session_id": "c930465fe51f",
+      "timestamp": "2026-02-10T16:44",
+      "task_description": "Session Optimization: Commit Pipeline Orchestration Refactor - refactor the commit pipeline into modular phases and helper tools/commands so `/cortex/commit` remains a single top-level command but orchestrates smaller phase tools, improving reliability while preserving the zero-errors policy and all existing checks.",
+      "token_budget": 30000,
+      "total_tokens": 11583,
+      "utilization": 0.3861,
+      "files_selected": 7,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.688,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "techContext.md",
+        "roadmap.md",
+        "progress.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "activeContext.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.629,
+        "activeContext.md": 0.807,
+        "projectBrief.md": 0.427,
+        "techContext.md": 0.773,
+        "productContext.md": 0.771,
+        "systemPatterns.md": 0.761
+      }
+    },
+    {
+      "session_id": "c930465fe51f",
+      "timestamp": "2026-02-10T16:51",
+      "task_description": "Commit pipeline orchestration refactor - define canonical commit phases, modularize pipeline into phases with clear responsibilities, review current commit prompt and AGENTS rules",
+      "token_budget": 30000,
+      "total_tokens": 11583,
+      "utilization": 0.3861,
+      "files_selected": 7,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.618,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "techContext.md",
+        "roadmap.md",
+        "progress.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "activeContext.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.633,
+        "progress.md": 0.63,
+        "activeContext.md": 0.806,
+        "projectBrief.md": 0.366,
+        "techContext.md": 0.649,
+        "productContext.md": 0.588,
+        "systemPatterns.md": 0.655
+      }
+    },
+    {
+      "session_id": "11774cfcb8fa",
+      "timestamp": "2026-02-10T17:33",
+      "task_description": "Session Optimization: Commit Pipeline Orchestration Refactor - Refactor the commit pipeline into modular phases and helper tools/commands so `/cortex/commit` remains a single top-level command but orchestrates smaller phase tools, improving reliability while preserving the zero-errors policy and all existing checks.",
+      "token_budget": 30000,
+      "total_tokens": 11968,
+      "utilization": 0.3989333333333333,
+      "files_selected": 7,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.696,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "progress.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "activeContext.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.637,
+        "activeContext.md": 0.829,
+        "projectBrief.md": 0.427,
+        "techContext.md": 0.782,
+        "productContext.md": 0.78,
+        "systemPatterns.md": 0.77
+      }
+    },
+    {
+      "session_id": "611384e7f9a5",
+      "timestamp": "2026-02-10T21:39",
+      "task_description": "Continue implementing Session Optimization: Commit Pipeline Orchestration Refactor - Step 2 (phase-level MCP tools/helpers). Previous session completed Step 1 (phase definition) and partially completed Step 2 (preflight helper, docs/memory-bank helper). Need to finish Step 2 remaining work.",
+      "token_budget": 10000,
+      "total_tokens": 9017,
+      "utilization": 0.9017,
+      "files_selected": 6,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.674,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "roadmap.md",
+        "techContext.md",
+        "productContext.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "activeContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.645,
+        "progress.md": 0.64,
+        "activeContext.md": 0.841,
+        "projectBrief.md": 0.408,
+        "techContext.md": 0.752,
+        "productContext.md": 0.726,
+        "systemPatterns.md": 0.703
       }
     }
   ]

@@ -1880,6 +1880,144 @@ FixQualityIssuesResultUnion = FixQualityIssuesResult | FixQualityIssuesErrorResu
 
 
 # ============================================================================
+# run_preflight_checks Models
+# ============================================================================
+
+
+class PreflightCheckSummary(StrictBaseModel):
+    """Summary information for a single preflight check."""
+
+    name: str = Field(..., min_length=1, description="Name of the check or phase step")
+    status: Literal["success", "error"] = Field(
+        ..., description="Check status: success when no errors, error otherwise"
+    )
+    errors: int | None = Field(
+        default=None, ge=0, description="Number of errors reported by the check"
+    )
+    warnings: int | None = Field(
+        default=None, ge=0, description="Number of warnings reported by the check"
+    )
+    message: str | None = Field(
+        default=None,
+        description="Optional human-readable message or first-line summary for the check",
+    )
+
+
+class RunPreflightChecksResult(ToolResultBase):
+    """Result of run_preflight_checks operation (success)."""
+
+    status: Literal["success"] = Field(default="success")
+    preflight_passed: bool = Field(
+        ...,
+        description=(
+            "True when all required preflight checks passed with zero errors, "
+            "False when any check reports errors but the tool completed successfully"
+        ),
+    )
+    language: str | None = Field(
+        default=None,
+        description="Detected project language used for pre-commit checks, if any",
+    )
+    checks: list[PreflightCheckSummary] = Field(
+        default_factory=lambda: list[PreflightCheckSummary](),
+        description="Per-check summaries for preflight run (including markdown lint)",
+    )
+    execute_result: JsonDict | None = Field(
+        default=None,
+        description=(
+            "Raw execute_pre_commit_checks result for detailed inspection. "
+            "Shape matches ExecutePreCommitChecksResultUnion."
+        ),
+    )
+    markdown_result: JsonDict | None = Field(
+        default=None,
+        description=(
+            "Raw fix_markdown_lint result for detailed inspection. "
+            "Shape matches FixMarkdownLintResultUnion."
+        ),
+    )
+
+
+class RunPreflightChecksErrorResult(ErrorResultBase):
+    """Error result for run_preflight_checks operations."""
+
+    language: str | None = Field(
+        default=None,
+        description="Detected project language if available when the error occurred",
+    )
+    execute_result: JsonDict | None = Field(
+        default=None,
+        description="Partial execute_pre_commit_checks result, when available",
+    )
+    markdown_result: JsonDict | None = Field(
+        default=None,
+        description="Partial fix_markdown_lint result, when available",
+    )
+
+
+# Union type for run_preflight_checks return
+RunPreflightChecksResultUnion = RunPreflightChecksResult | RunPreflightChecksErrorResult
+
+
+# ============================================================================
+# run_docs_and_memory_bank_sync Models
+# ============================================================================
+
+
+class DocsAndMemoryBankSyncResult(ToolResultBase):
+    """Result of run_docs_and_memory_bank_sync operation (success)."""
+
+    status: Literal["success"] = Field(default="success")
+    docs_phase_passed: bool = Field(
+        ...,
+        description=(
+            "True when all documentation and memory bank validations passed with "
+            "zero errors, False when any validation reports errors but the tool "
+            "completed successfully"
+        ),
+    )
+    checks: list[PreflightCheckSummary] = Field(
+        default_factory=lambda: list[PreflightCheckSummary](),
+        description=(
+            "Per-check summaries for documentation and memory bank validations "
+            "(timestamps, roadmap_sync, etc.)"
+        ),
+    )
+    timestamps_result: JsonDict | None = Field(
+        default=None,
+        description=(
+            "Raw timestamps validation result for detailed inspection. "
+            "Shape matches validate(check_type='timestamps') response."
+        ),
+    )
+    roadmap_sync_result: JsonDict | None = Field(
+        default=None,
+        description=(
+            "Raw roadmap_sync validation result for detailed inspection. "
+            "Shape matches validate(check_type='roadmap_sync') response."
+        ),
+    )
+
+
+class DocsAndMemoryBankSyncErrorResult(ErrorResultBase):
+    """Error result for run_docs_and_memory_bank_sync operations."""
+
+    timestamps_result: JsonDict | None = Field(
+        default=None,
+        description="Partial timestamps validation result, when available",
+    )
+    roadmap_sync_result: JsonDict | None = Field(
+        default=None,
+        description="Partial roadmap_sync validation result, when available",
+    )
+
+
+DocsAndMemoryBankSyncResultUnion = (
+    DocsAndMemoryBankSyncResult | DocsAndMemoryBankSyncErrorResult
+)
+
+
+# ============================================================================
 # cleanup_metadata_index Models
 # ============================================================================
 
