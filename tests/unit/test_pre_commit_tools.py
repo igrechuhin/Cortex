@@ -13,7 +13,9 @@ import pytest
 from cortex.core.constants import MAX_FILE_LINES, MAX_FUNCTION_LINES
 from cortex.core.models import ModelDict
 from cortex.core.path_resolver import (
+    CortexResourceType,
     ProjectResourceType,
+    get_cortex_path,
     get_project_path,
     get_venv_bin_path,
 )
@@ -411,6 +413,38 @@ class TestExecutePreCommitChecks:
                 assert result["results"]["test_naming"]["success"] is True
                 assert "skipped" in result["results"]["test_naming"]["output"]
 
+    @pytest.mark.asyncio
+    async def test_check_async_tests_check_when_script_missing_returns_skipped(
+        self,
+    ) -> None:
+        """check_async_tests when script not present returns success (skipped)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            _ = (project_root / "pyproject.toml").write_text("[project]\nname = 'test'")
+            get_project_path(project_root, ProjectResourceType.VENV).mkdir()
+
+            with patch(
+                "cortex.tools.pre_commit_tools.PythonAdapter"
+            ) as mock_adapter_class:
+                mock_adapter = MagicMock()
+                mock_adapter_class.return_value = mock_adapter
+                mock_adapter.project_root = project_root
+
+                with patch(
+                    "cortex.tools.pre_commit_tools.get_or_resolve_project_root",
+                    new_callable=AsyncMock,
+                    return_value=project_root,
+                ):
+                    result = await execute_pre_commit_checks(
+                        checks=["check_async_tests"],
+                        **_EXECUTE_REQUIRED,
+                    )
+
+                assert result["status"] == "success"
+                assert "check_async_tests" in result["checks_performed"]
+                assert result["results"]["check_async_tests"]["success"] is True
+                assert "skipped" in result["results"]["check_async_tests"]["output"]
+
 
 class TestRunSynapseScript:
     """Test run_synapse_script helper."""
@@ -425,6 +459,38 @@ class TestRunSynapseScript:
             assert result.success is True
             assert "skipped" in result.output
             assert result.errors == []
+
+    def test_run_synapse_script_check_async_tests_when_script_missing_returns_skipped(
+        self,
+    ) -> None:
+        """check_async_tests when script path does not exist returns skipped."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            result = run_synapse_script(
+                root, "python", "check_async_tests.py", "check_async_tests"
+            )
+            assert result.success is True
+            assert "skipped" in result.output
+            assert result.errors == []
+
+    def test_run_synapse_script_check_async_tests_when_script_exists_runs(
+        self,
+    ) -> None:
+        """check_async_tests script runs and returns a result (pass or report)."""
+        project_root = Path(__file__).resolve().parents[2]
+        script_path = (
+            get_cortex_path(project_root, CortexResourceType.SYNAPSE)
+            / "scripts"
+            / "python"
+            / "check_async_tests.py"
+        )
+        if not script_path.exists():
+            pytest.skip("check_async_tests.py not present (e.g. in minimal tree)")
+        result = run_synapse_script(
+            project_root, "python", "check_async_tests.py", "check_async_tests"
+        )
+        assert result.check_type == "check_async_tests"
+        assert "skipped" not in result.output or result.success
 
     def test_resolve_synapse_python_bin_uses_python3_when_no_venv(self) -> None:
         """When .venv/bin/python does not exist, run_synapse_script uses python3."""

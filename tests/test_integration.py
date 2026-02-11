@@ -16,6 +16,7 @@ from cortex.tools.phase1_foundation_dependency import get_dependency_graph
 from cortex.tools.phase1_foundation_rollback import rollback_file_version
 from cortex.tools.phase1_foundation_stats import get_memory_bank_stats
 from cortex.tools.phase1_foundation_version import get_version_history
+from tests.helpers.schema_fixtures import MINIMAL_VALID_PROJECT_BRIEF_CONTENT
 
 
 # Helper function to replace initialize_memory_bank (which has been
@@ -109,14 +110,11 @@ async def test_full_workflow():
                 print(f"   ✓ Token count: {data['metadata']['token_count']}")
             print()
 
-            # Test 3: Write/update a file
+            # Test 3: Write/update a file (schema-aligned content from shared fixture)
             print("🧪 Test 3: Update projectBrief.md")
             new_content = (
                 "# Project Brief\n\nThis is an updated project brief.\n\n"
-                "## Project Overview\n\nTest overview.\n\n"
-                "## Goals\n\n- Test versioning\n- Test metadata tracking\n\n"
-                "## Core Requirements\n\n- Requirement.\n\n"
-                "## Success Criteria\n\nSchema-compliant write for integration test.\n"
+                + MINIMAL_VALID_PROJECT_BRIEF_CONTENT
             )
             result = await manage_file(
                 operation="write",

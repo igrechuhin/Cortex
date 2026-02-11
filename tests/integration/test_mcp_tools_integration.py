@@ -22,6 +22,7 @@ from cortex.tools.phase1_foundation_version import get_version_history
 from cortex.tools.phase2_linking import parse_file_links, validate_links
 from cortex.tools.phase4_optimization import load_context
 from cortex.tools.validation_operations import validate
+from tests.helpers.schema_fixtures import MINIMAL_VALID_PROJECT_BRIEF_CONTENT
 
 
 # Helper function to replace initialize_memory_bank
@@ -94,13 +95,10 @@ class TestMCPToolWorkflows:
             assert data["status"] == "success"
             assert "content" in data
 
-            # Act 3: Write file (schema: Project Overview, Goals, Core Requirements, Success Criteria)
+            # Act 3: Write file (schema-aligned content from shared fixture)
             new_content = (
                 "# Updated Project Brief\n\nUpdated content.\n\n"
-                "## Project Overview\n\nOverview.\n\n"
-                "## Goals\n\n- Goal.\n\n"
-                "## Core Requirements\n\n- Requirement.\n\n"
-                "## Success Criteria\n\nCriteria.\n"
+                + MINIMAL_VALID_PROJECT_BRIEF_CONTENT
             )
             result = await manage_file(
                 operation="write",

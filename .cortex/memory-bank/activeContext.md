@@ -37,6 +37,10 @@
 
 - ✅ **Phase 49 Step 5: Tool Search Tool - Infrastructure** - COMPLETE (2026-02-11) - Implemented Tool Search infrastructure: search_deferred_tools() (regex over name/rationale), search_tools MCP tool, tool_search config in optimization default and OptimizationConfig.get_tool_search_config(), server.py comment for deferred loading. Config model ToolSearchConfigModel; lazy tool_search injection in _load_config to avoid circular import. Next: Step 6 (testing token savings, discovery).
 
+- ✅ **Session Optimization: Commit Pipeline Improvements (Steps 1, 7, 8)** - COMPLETE (2026-02-11) - Implemented Step 1 (async test validation: check_async_tests.py script, PreCommitCheck.CHECK_ASYNC_TESTS, pipeline and tests), Step 7 (tests/helpers/schema_fixtures.py with MINIMAL_VALID_PROJECT_BRIEF_CONTENT; integration tests use it; unit test validates fixture), Step 8 (commit prompt: markdown lint scope includes .cortex/history/ and .cortex/reviews/; check_async_tests in Step 12 tools list). Plan file updated; steps 2–6 and 9 remain.
+
+- ✅ **Commit (pre-commit pipeline function length)** - COMPLETE (2026-02-11) - Refactored run_checks_pipeline in pre_commit_pipeline.py to satisfy 30-line limit by extracting _run_non_test_checks; Phase A and quality pass.
+
 ## Completed Work (2026)
 
 - ✅ **Implement prompt memory bank and function length** - COMPLETE (2026) - Enforced manage_file-only for memory bank writes in implement Step 5 (requirement, prohibition, full-content fallback); added function-length reminder in Step 4; added rules-disabled fallback in analyze prompt. Fixed token-budget integration test to accept comma-formatted numbers.
@@ -81,8 +85,6 @@
 
 - ✅ **Commit pipeline Phase A/B helper refactor** - COMPLETE (2026-02-10) - Extracted Phase A preflight and Phase B docs/memory bank helper logic into dedicated helper modules (`pre_commit_preflight_helpers.py` and `pre_commit_docs_memory_helpers.py`), slimmed `pre_commit_phase_tools.py` to thin MCP wrappers, updated unit tests, and ensured all format, type, tests, and quality gates pass for the new Phase helpers.
 
-- ✅ **Phase 18: Markdown Lint Fix Tool** - COMPLETE (2026-02-10) - Completed archival alignment for the Phase 18 markdown lint fix tool plan by ensuring only the archived copy under Phase18 is referenced from the roadmap and memory bank, and removing any stray unarchived root plan file so roadmap_sync no longer reports an unlinked plan for Phase 18.
-
 - ✅ **Commit Pipeline Orchestration Refactor - Step 2 Complete** - COMPLETE (2026-02-10) - Completed Step 2 (phase-level MCP tools/helpers) with 45 comprehensive tests achieving 95-100% coverage. Phase A (run_preflight_checks) and Phase B (run_docs_and_memory_bank_sync) tools fully tested with success, failure, tool-error, and edge-case scenarios. Steps 3-4 partially done from previous session (commit prompt updated, helper commands created).
 
 - ✅ **Commit Pipeline Orchestration Refactor (Steps 4–5)** - COMPLETE (2026-02-10) - Completed Step 4: markdown list/indentation fixes in fix-quality.md and docs-sync.md. Started Step 5: added AGENTS.md section 'Commit pipeline (phase-based)' with phase helpers and helper commands; added one-line references in commit.md and implement-next-roadmap-step.md to AGENTS. Quality gate passed.
@@ -116,8 +118,6 @@
 - ✅ **Commit (integration tests projectBrief schema, markdown lint)** - COMPLETE (2026-02-07). Fixed two failing integration tests: `test_full_workflow` (tests/test_integration.py) and `test_initialize_read_write_workflow` (tests/integration/test_mcp_tools_integration.py) by using projectBrief content with required schema sections (Project Overview, Goals, Core Requirements, Success Criteria). Fixed MD026 in .cortex/history/progress_v11.md. Markdown lint (check_all_files): 0 errors. All pre-commit checks pass; 3635 tests, 90.01% coverage.
 
 - ✅ **MCP transport HTTP/SSE analysis (blocker)** - COMPLETE. Delivered [docs/mcp-transport-http-sse-analysis.md](../../docs/mcp-transport-http-sse-analysis.md): SDK transport survey (stdio, SSE, streamable-http), client compatibility matrix (Cursor supports SSE URL), concurrency/behavior, design options (A/B/C), recommendation **Go**. Follow-up implementation plan added to roadmap ([.cortex/plans/archive/Transport/mcp-transport-http-sse-implementation.md](../plans/archive/Transport/mcp-transport-http-sse-implementation.md)). Analysis plan marked COMPLETED; roadmap blocker removed. Pre-existing function-length violations fixed (file_operation_helpers, file_operations); quality gate passed.
-
-- ✅ **Phase 18: Markdown Lint Fix Tool** - COMPLETE. Markdown lint fix tooling; plan archived. Reference: [.cortex/plans/archive/Phase18/phase-18-markdown-lint-fix-tool.md](../plans/archive/Phase18/phase-18-markdown-lint-fix-tool.md).
 
 - ✅ **Commit (roadmap_sync type fix, tests, markdown lint)** - COMPLETE (2026-02-07). Fixed Pyright reportUnknownVariableType for `completed_entries_in_roadmap` in `SyncValidationResult`: introduced typed default factory `_default_completed_entries_in_roadmap()` in `src/cortex/validation/roadmap_sync.py`. Added unit test `test_completed_entries_in_roadmap_default_is_empty_list` in `tests/unit/test_roadmap_sync.py`. Markdown lint (check_all_files): 16 files fixed, 0 errors. All pre-commit checks pass; 3631 tests, 90%.
 

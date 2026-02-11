@@ -35,6 +35,7 @@ class PreCommitCheck(str, Enum):
     QUALITY = "quality"
     SPELLING = "spelling"
     TEST_NAMING = "test_naming"
+    CHECK_ASYNC_TESTS = "check_async_tests"
     TESTS = "tests"
 
 

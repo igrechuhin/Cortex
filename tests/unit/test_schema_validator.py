@@ -17,6 +17,7 @@ import pytest
 
 from cortex.validation.models import FileSchemaModel, ValidationError
 from cortex.validation.schema_validator import DEFAULT_SCHEMAS, SchemaValidator
+from tests.helpers.schema_fixtures import MINIMAL_VALID_PROJECT_BRIEF_CONTENT
 
 
 @pytest.mark.unit
@@ -333,6 +334,21 @@ class TestGetSchema:
         schema = validator.get_schema("unknown.md")
 
         assert schema is None
+
+
+@pytest.mark.unit
+class TestSchemaFixturesAlignment:
+    """Test that shared schema fixtures pass validation (integration test alignment)."""
+
+    @pytest.mark.asyncio
+    async def test_minimal_valid_project_brief_content_passes_schema(self) -> None:
+        """MINIMAL_VALID_PROJECT_BRIEF_CONTENT satisfies projectBrief.md required sections."""
+        validator = SchemaValidator()
+        result = await validator.validate_file(
+            "projectBrief.md", MINIMAL_VALID_PROJECT_BRIEF_CONTENT
+        )
+        assert result.valid is True, result.errors
+        assert len(result.errors) == 0
 
 
 @pytest.mark.unit

@@ -24,6 +24,28 @@ from cortex.tools.pre_commit_helpers import (
 from cortex.tools.pre_commit_synapse import run_synapse_script
 
 
+def _run_non_test_checks(
+    adapter: FrameworkAdapter,
+    language: str,
+    checks_to_perform: list[PreCommitCheck],
+    strict_mode: bool,
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
+    stats: CheckStats,
+) -> None:
+    """Run fix_errors, quality, format, script-based, and type checks (mutates results/stats)."""
+    _process_fix_errors_check(adapter, checks_to_perform, strict_mode, results, stats)
+    _process_quality_check(adapter, language, checks_to_perform, results, stats)
+    _process_format_check(adapter, checks_to_perform, results, stats)
+    _process_script_based_checks(
+        adapter,
+        language,
+        checks_to_perform,
+        results,
+        stats,
+    )
+    _process_type_check(adapter, checks_to_perform, results, stats)
+
+
 def run_checks_pipeline(
     adapter: FrameworkAdapter,
     language: str,
@@ -37,15 +59,9 @@ def run_checks_pipeline(
     include_slow_tests: bool = False,
 ) -> None:
     """Run all check processors in order (mutates results and stats)."""
-    _process_fix_errors_check(adapter, checks_to_perform, strict_mode, results, stats)
-    _process_quality_check(adapter, language, checks_to_perform, results, stats)
-    _process_format_check(adapter, checks_to_perform, results, stats)
-    _process_format_ci_parity_check(
-        adapter, language, checks_to_perform, results, stats
+    _run_non_test_checks(
+        adapter, language, checks_to_perform, strict_mode, results, stats
     )
-    _process_type_check(adapter, checks_to_perform, results, stats)
-    _process_spelling_check(adapter, language, checks_to_perform, results, stats)
-    _process_test_naming_check(adapter, language, checks_to_perform, results, stats)
     _process_tests_check(
         adapter,
         checks_to_perform,
@@ -88,6 +104,22 @@ def _process_format_check(
         stats.checks_performed.append(PreCommitCheck.FORMAT.value)
         stats.total_errors += len(format_result.errors)
         stats.files_modified.extend(format_result.files_modified)
+
+
+def _process_script_based_checks(
+    adapter: FrameworkAdapter,
+    language: str,
+    checks_to_perform: list[PreCommitCheck],
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
+    stats: CheckStats,
+) -> None:
+    """Run format_ci_parity, spelling, test_naming, check_async_tests (synapse scripts)."""
+    _process_format_ci_parity_check(
+        adapter, language, checks_to_perform, results, stats
+    )
+    _process_spelling_check(adapter, language, checks_to_perform, results, stats)
+    _process_test_naming_check(adapter, language, checks_to_perform, results, stats)
+    _process_async_tests_check(adapter, language, checks_to_perform, results, stats)
 
 
 def _process_format_ci_parity_check(
@@ -153,6 +185,28 @@ def _process_test_naming_check(
     )
     results[PreCommitCheck.TEST_NAMING.value] = result
     stats.checks_performed.append(PreCommitCheck.TEST_NAMING.value)
+    stats.total_errors += len(result.errors)
+
+
+def _process_async_tests_check(
+    adapter: FrameworkAdapter,
+    language: str,
+    checks_to_perform: list[PreCommitCheck],
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
+    stats: CheckStats,
+) -> None:
+    """Process check_async_tests if requested (runs synapse script, before tests)."""
+    if PreCommitCheck.CHECK_ASYNC_TESTS not in checks_to_perform:
+        return
+    project_root = Path(adapter.project_root)
+    result = run_synapse_script(
+        project_root,
+        language,
+        "check_async_tests.py",
+        PreCommitCheck.CHECK_ASYNC_TESTS.value,
+    )
+    results[PreCommitCheck.CHECK_ASYNC_TESTS.value] = result
+    stats.checks_performed.append(PreCommitCheck.CHECK_ASYNC_TESTS.value)
     stats.total_errors += len(result.errors)
 
 

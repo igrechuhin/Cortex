@@ -83,6 +83,7 @@ PreCommitCheckName = Literal[
     "quality",
     "spelling",
     "test_naming",
+    "check_async_tests",
     "tests",
 ]
 
@@ -315,6 +316,7 @@ async def execute_pre_commit_checks(
     - quality: Lint, file size, function length; includes type_check
     - spelling: Check spelling in code files (script-based)
     - test_naming: Enforce test naming conventions (script-based)
+    - check_async_tests: Detect unawaited coroutines in test files (script-based)
     - tests: Run test suite with coverage
 
     All parameters are required. Example: checks=["fix_errors","format"],

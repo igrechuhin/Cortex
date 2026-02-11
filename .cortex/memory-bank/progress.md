@@ -20,6 +20,8 @@
 - **Commit (markdown lint phase-55 MD040)** - COMPLETE. Fixed MD040 in phase-55-lightweight-think-tool.md (fenced code language); preflight and tests passed.
 - **Phase 49 Step 5: Tool Search Infrastructure** - COMPLETE. Implemented defer_loading support (config + metadata), search_deferred_tools() regex search, search_tools MCP tool (always_loaded), tool_search in optimization default and get_tool_search_config(), server comment; ToolSearchConfigModel and tests.
 - **Commit (Phase 49 tool search, preflight)** - COMPLETE. Preflight checks passed: fix_errors, format, markdown lint (274 files, 0 errors), type_check, quality, tests 3896 passed, 90.14% coverage.
+- **Session Optimization: Commit Pipeline Improvements (Steps 1, 7, 8)** - COMPLETE. Added check_async_tests script and pre-commit integration; shared projectBrief schema fixture and schema alignment tests; commit prompt markdown lint scope and check_async_tests documentation.
+- **Commit (pre-commit pipeline function length)** - COMPLETE. Refactored run_checks_pipeline in pre_commit_pipeline.py to satisfy 30-line limit by extracting _run_non_test_checks; Phase A and quality pass.
 
 ## 2026
 
@@ -51,7 +53,6 @@
 - **Session Optimization: Commit Pipeline Orchestration Refactor – run_preflight_checks helper** - COMPLETE. Implemented `run_preflight_checks` MCP tool with structured models and unit tests for Phase A preflight aggregation.
 - **Session Optimization – Phase B helper** - COMPLETE. Added `run_docs_and_memory_bank_sync` MCP tool for Phase B docs/memory-bank validations, with typed models and unit tests, and verified tests, type checks, and quality gate all pass.
 - **Session Optimization: Commit Pipeline Orchestration Refactor – Phase helpers extraction** - COMPLETE. Extracted Phase A preflight and Phase B docs/memory helper implementations into dedicated helper modules, updated the MCP wrapper tools and their tests, and re-ran format, type, tests, and quality gates successfully.
-- **Phase 18: Markdown Lint Fix Tool archival alignment** - COMPLETE. Resolved roadmap_sync unlinked plan warning by relying solely on the archived Phase 18 markdown lint fix tool plan under the Phase18 archive and cleaning up stale root-level references.
 - **Commit pipeline orchestration refactor** - IN PROGRESS. Wired new phase helpers into the `/cortex/commit` prompt (`run_preflight_checks`, `run_docs_and_memory_bank_sync`), updated MCP tool timeout docs, and fixed markdown batch processing tests so the full suite passes again.
 - **Commit Pipeline Orchestration Refactor (Step 2)** - COMPLETE. Completed Step 2: Phase A (`run_preflight_checks`) and Phase B (`run_docs_and_memory_bank_sync`) MCP tools with comprehensive test coverage (45 tests, 95-100% coverage on new modules). Also fixed pre-existing type errors in `test_markdown_operations_batch.py`. Previous session also partially completed Steps 3-4 (commit prompt phase references, helper commands created).
 - **Session Optimization: Commit Pipeline Orchestration Refactor** - Step 4 COMPLETE (markdown structure fixes for fix-quality.md, docs-sync.md). Step 5 IN PROGRESS: AGENTS.md "Commit pipeline (phase-based)" section added; commit and implement prompts now reference AGENTS for phase overview and quality-gate alignment.

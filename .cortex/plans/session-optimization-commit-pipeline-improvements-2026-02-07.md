@@ -44,7 +44,7 @@ Implement improvements in three categories:
 
 ## Implementation Steps
 
-### Step 1: Add Async Test Validation
+### Step 1: Add Async Test Validation ✅ COMPLETED (2026-02-11)
 
 **Goal**: Add automated check to detect unawaited coroutines in test files.
 
@@ -287,7 +287,7 @@ Implement improvements in three categories:
 
 **Estimated Effort**: 2-3 hours
 
-### Step 7: Integration Test Schema Alignment
+### Step 7: Integration Test Schema Alignment ✅ COMPLETED (2026-02-11)
 
 **Goal**: Ensure integration tests that write projectBrief use content satisfying schema_validator required sections (Project Overview, Goals, Core Requirements, Success Criteria).
 
@@ -316,7 +316,7 @@ Implement improvements in three categories:
 
 **Estimated Effort**: 1-2 hours
 
-### Step 8: Markdown Lint Scope in Commit Prompt
+### Step 8: Markdown Lint Scope in Commit Prompt ✅ COMPLETED (2026-02-11)
 
 **Goal**: Clarify in the commit prompt that markdown lint runs on all markdown files, including `.cortex/history/` and `.cortex/reviews/`, so agents and tools don’t assume history/reviews are out of scope.
 
