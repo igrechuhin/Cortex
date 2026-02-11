@@ -581,6 +581,7 @@ class TestUsageAnalyticsToolsSuccess:
                 tool_name=None,
                 success=None,
                 limit=10,
+                query=None,
                 ctx=None,
             )
         result = json.loads(result_str)
@@ -592,6 +593,69 @@ class TestUsageAnalyticsToolsSuccess:
         assert entry["id"] == "e1"
         assert entry["tool_name"] == "manage_file"
         assert entry["success"] is True
+
+    async def test_search_usage_with_query_keyword(self) -> None:
+        """search_usage forwards query keyword to tracker and returns results."""
+
+        class FakeEvent:
+            def __init__(self, data: dict[str, object]) -> None:
+                self.id = str(data.get("id", "e1"))
+                self.tool_name = str(data.get("tool_name", "tool_x"))
+                self.timestamp = str(data.get("timestamp", "2026-02-10T12:00:00+00:00"))
+                dur_raw = data.get("duration_ms", 1.0)
+                self.duration_ms = (
+                    float(dur_raw) if isinstance(dur_raw, (int, float)) else 1.0
+                )
+                self.success = bool(data.get("success", True))
+                self.error_type = data.get("error_type")
+                self.handler_kind = str(data.get("handler_kind", "tool"))
+
+        mock_tracker = AsyncMock()
+        mock_tracker.search_usage = AsyncMock(
+            return_value=[
+                FakeEvent(
+                    {
+                        "id": "e2",
+                        "tool_name": "load_context",
+                        "timestamp": "2026-02-10T13:00:00+00:00",
+                        "duration_ms": 15.0,
+                        "success": False,
+                        "error_type": "CustomError",
+                        "handler_kind": "tool",
+                    }
+                )
+            ]
+        )
+        with (
+            patch(
+                "cortex.tools.usage_analytics.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp"),
+            ),
+            patch(
+                "cortex.tools.usage_analytics._get_tracker",
+                new_callable=AsyncMock,
+                return_value=mock_tracker,
+            ),
+        ):
+            result_str = await search_usage(
+                start_date=None,
+                end_date=None,
+                tool_name=None,
+                success=None,
+                limit=10,
+                query="CustomError",
+                ctx=None,
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["project_root"] == "/tmp"
+        assert result["total"] == 1
+        assert len(result["results"]) == 1
+        entry = result["results"][0]
+        assert entry["id"] == "e2"
+        assert entry["tool_name"] == "load_context"
+        mock_tracker.search_usage.assert_awaited_once()
 
     async def test_get_usage_observation_not_found(self) -> None:
         """get_usage_observation returns error when id is missing."""

@@ -111,10 +111,36 @@ This plan focuses on:
   - Mention the correct high-value file set.
   - Do not require `projectBrief.md` for commit/test/fix-debug flows.
 
+### 4. Memory-Bank Rollback Guardrails & Roadmap Invariants
+
+4.1 **Guardrails for rollback on roadmap/activeContext/progress**
+
+- Add a rule (and, if feasible, a runtime guard) that `rollback_file_version` **must not** be used on `roadmap.md`, `activeContext.md`, or `progress.md` during normal implementation flows.
+- Treat rollback on these files as a maintenance-only operation gated by a dedicated investigation/maintenance plan and explicit user approval.
+
+4.2 **Tighten implement-next-roadmap-step and memory-bank-updater prompts**
+
+- Update implement-next-roadmap-step to explicitly forbid:
+  - `rollback_file_version` on `roadmap.md`, `activeContext.md`, and `progress.md` for normal work.
+  - Full-content writes to those files outside the documented `remove_roadmap_entry` + `append_progress_entry` + `append_active_context_entry` pattern.
+- Update memory-bank-updater instructions to list rollback as a forbidden operation for roadmap/progress/activeContext in regular updates, alongside the existing prohibition on direct Writes/StrReplace.
+
+4.3 **Post-step validation of roadmap invariants**
+
+- Extend the Analyze/docs-sync flow to:
+  - Run `validate(check_type="roadmap_sync")` after roadmap edits.
+  - Add a lightweight “future-only” sanity check that flags large completed sections in `roadmap.md` and recommends migrating them to `activeContext.md`/`progress.md`.
+
+4.4 **Context defaults for roadmap/memory-bank surgery**
+
+- For tasks whose description includes `roadmap`, `activeContext`, or `progress`:
+  - Make `activeContext.md`, `roadmap.md`, and `progress.md` mandatory in `load_context` (dropping lower-value files if needed to stay within budget).
+  - Document this in CLAUDE.md, AGENTS.md, and memory-bank-workflow.mdc as the default pattern for roadmap/memory-bank surgery tasks.
+
 ## Success Criteria
 
 - New end-of-session context statistics (after this plan is implemented) show:
   - Average token utilization at or above current levels for fix/debug and testing tasks.
   - No unnecessary inclusion of low-relevance files in default context for commit/test/fix-debug.
 - MCP `execute_pre_commit_checks(checks=["tests"])` exposes failing test names and key messages in structured JSON when tests fail.
-- CLAUDE.md, AGENTS.md, and Synapse rules clearly encode context defaults and observability patterns so future agents follow them consistently.
+- CLAUDE.md, AGENTS.md, and Synapse rules clearly encode context defaults, observability patterns, and memory-bank invariants/rollback guardrails so future agents follow them consistently.

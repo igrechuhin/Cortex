@@ -137,6 +137,16 @@ Controls context optimization, progressive loading, and summarization.
       "progress.md"
     ]
   },
+   "context_injection": {
+     "enabled": false,
+     "always_include_files": [
+       "projectBrief.md",
+       "activeContext.md",
+       "systemPatterns.md"
+     ],
+     "recent_usage_events": 0,
+     "max_usage_summary_tokens": 0
+   },
   "summarization": {
     "enabled": true,
     "default_strategy": "extract_key_sections",
@@ -203,6 +213,13 @@ Controls context optimization, progressive loading, and summarization.
 - `enabled` (bool): Enable progressive loading
 - `default_strategy` (str): Strategy ("by_priority", "by_dependencies", "by_relevance")
 - `default_priority` (list): File priority order
+
+#### Context Injection Policy
+
+- `enabled` (bool): Enable automatic context injection from memory bank and usage analytics
+- `always_include_files` (list): Memory bank files that should always be injected when context injection is enabled (e.g. `projectBrief.md`, `activeContext.md`)
+- `recent_usage_events` (int): Number of recent usage observations to inject automatically (0 disables usage injection)
+- `max_usage_summary_tokens` (int): Maximum tokens to allocate for injected usage summaries (0 disables summaries)
 
 #### Summarization
 

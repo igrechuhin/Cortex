@@ -30,6 +30,38 @@ All structured data uses Pydantic `BaseModel` (no TypedDict).
 
 Paths are resolved via `get_cache_path(project_root, "usage")` from `cortex.core.path_resolver`.
 
+### Querying Usage JSON with jq (Step 11)
+
+Power users can inspect raw usage events directly from the JSON files for ad-hoc analysis or dashboards without adding an HTTP API.
+
+- **Directory**: `.cortex/.cache/usage/events/`
+- **Format**: Each `YYYY-MM-DD.json` file is a JSON array of `ToolUsageEvent` objects.
+
+Examples:
+
+- List all tool names used on a specific day:
+
+```bash
+jq '.[].tool_name' .cortex/.cache/usage/events/2026-02-11.json | sort -u
+```
+
+- Show failures with error types for a date range:
+
+```bash
+for f in .cortex/.cache/usage/events/2026-02-*.json; do
+  jq '.[] | select(.success == false) | {timestamp, tool_name, error_type}' \"$f\"
+done
+```
+
+- Filter events for a single tool and pretty-print:
+
+```bash
+jq '.[] | select(.tool_name == \"manage_file\")' \
+  .cortex/.cache/usage/events/2026-02-11.json
+```
+
+These examples operate on the same underlying data that powers the `search_usage`, `get_usage_events`, and `get_usage_timeline` MCP tools, but give you full control over post-processing via jq or shell scripts.
+
 ## Anonymization
 
 - Parameters are not stored; only an optional `params_hash` (hash of sorted keys + value types) for deduplication.

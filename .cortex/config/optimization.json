@@ -7,7 +7,9 @@
   },
   "loading_strategy": {
     "default": "dependency_aware",
-    "mandatory_files": ["memorybankinstructions.md"],
+    "mandatory_files": [
+      "memorybankinstructions.md"
+    ],
     "priority_order": [
       "memorybankinstructions.md",
       "projectBrief.md",
@@ -52,8 +54,22 @@
       "detect_from_task": true,
       "detect_from_files": true,
       "language_keywords": {
-        "python": ["python", "django", "flask", "fastapi", "pytest", "py"],
-        "swift": ["swift", "swiftui", "ios", "uikit", "combine", "cocoa"],
+        "python": [
+          "python",
+          "django",
+          "flask",
+          "fastapi",
+          "pytest",
+          "py"
+        ],
+        "swift": [
+          "swift",
+          "swiftui",
+          "ios",
+          "uikit",
+          "combine",
+          "cocoa"
+        ],
         "javascript": [
           "javascript",
           "js",
@@ -63,11 +79,32 @@
           "typescript",
           "ts"
         ],
-        "rust": ["rust", "cargo", "rustc"],
-        "go": ["golang", "go"],
-        "java": ["java", "spring", "maven", "gradle"],
-        "csharp": ["c#", "csharp", "dotnet", ".net"],
-        "cpp": ["c++", "cpp", "cmake"]
+        "rust": [
+          "rust",
+          "cargo",
+          "rustc"
+        ],
+        "go": [
+          "golang",
+          "go"
+        ],
+        "java": [
+          "java",
+          "spring",
+          "maven",
+          "gradle"
+        ],
+        "csharp": [
+          "c#",
+          "csharp",
+          "dotnet",
+          ".net"
+        ],
+        "cpp": [
+          "c++",
+          "cpp",
+          "cmake"
+        ]
       }
     }
   },
@@ -97,5 +134,15 @@
         "quality"
       ]
     }
+  },
+  "context_injection": {
+    "enabled": false,
+    "always_include_files": [
+      "projectBrief.md",
+      "activeContext.md",
+      "systemPatterns.md"
+    ],
+    "recent_usage_events": 0,
+    "max_usage_summary_tokens": 0
   }
 }

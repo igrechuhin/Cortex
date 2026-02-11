@@ -257,6 +257,7 @@ class UsageTracker:
         tool_name: str | None,
         success: bool | None,
         limit: int,
+        query: str | None = None,
     ) -> list[ToolUsageEvent]:
         """Search usage events and return a compact, time-sorted subset."""
         if limit <= 0:
@@ -267,8 +268,8 @@ class UsageTracker:
             end_date,
             tool_name,
         )
-        if success is not None:
-            events = [e for e in events if e.success is success]
+        events = _filter_events_by_success(events, success)
+        events = _filter_events_by_query(events, query)
         events.sort(key=lambda e: e.timestamp, reverse=True)
         return events[:limit]
 
@@ -366,6 +367,36 @@ def _aggregate_events(tool_name: str, events: list[ToolUsageEvent]) -> ToolUsage
         first_used=min(timestamps),
         last_used=max(timestamps),
     )
+
+
+def _filter_events_by_success(
+    events: list[ToolUsageEvent],
+    success: bool | None,
+) -> list[ToolUsageEvent]:
+    """Filter events by success flag when provided."""
+    if success is None:
+        return events
+    return [e for e in events if e.success is success]
+
+
+def _filter_events_by_query(
+    events: list[ToolUsageEvent],
+    query: str | None,
+) -> list[ToolUsageEvent]:
+    """Filter events by case-insensitive keyword across basic text fields."""
+    if not query:
+        return events
+    needle = query.lower()
+    filtered: list[ToolUsageEvent] = []
+    for event in events:
+        fields = [
+            event.tool_name,
+            event.error_type or "",
+            event.result_summary or "",
+        ]
+        if any(needle in value.lower() for value in fields):
+            filtered.append(event)
+    return filtered
 
 
 async def _persist_event(project_root: Path, event: ToolUsageEvent) -> None:

@@ -350,6 +350,7 @@ async def _search_usage_impl(
     tool_name: str | None,
     success: bool | None,
     limit: int,
+    query: str | None,
 ) -> SearchUsageResponse:
     """Implementation helper for search_usage MCP tool."""
     limit_val = max(1, min(limit, 500))
@@ -359,6 +360,7 @@ async def _search_usage_impl(
         tool_name=tool_name,
         success=success,
         limit=limit_val,
+        query=query,
     )
     entries = _build_search_results(events)
     return SearchUsageResponse(
@@ -422,6 +424,7 @@ async def search_usage(
     tool_name: str | None = None,
     success: bool | None = None,
     limit: int = 50,
+    query: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Search usage events and return a compact index."""
@@ -442,6 +445,7 @@ async def search_usage(
         tool_name=tool_name,
         success=success,
         limit=limit,
+        query=query,
     )
     return json.dumps(payload.model_dump(), indent=2)
 

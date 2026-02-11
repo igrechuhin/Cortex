@@ -341,16 +341,27 @@ def _validate_roadmap_references(
     return invalid_refs, warnings
 
 
+_GHOST_SECTION_MARKERS = [
+    "## Recent Findings",
+    "## Completed Milestones",
+    "### Planned Phases",
+]
+
+
+def _has_ghost_sections(roadmap_content: str) -> bool:
+    """Return True if roadmap content contains legacy ghost sections.
+
+    These sections only exist in historical roadmap snapshots and should not
+    affect validation for the current roadmap.md file.
+    """
+    return any(marker in roadmap_content for marker in _GHOST_SECTION_MARKERS)
+
+
 def _filter_references_from_ghost_phases(
     references: list[RoadmapReference], roadmap_content: str
 ) -> list[RoadmapReference]:
     """Filter out references from ghost phases and log if any were removed."""
-    ghost_sections = [
-        "## Recent Findings",
-        "## Completed Milestones",
-        "### Planned Phases",
-    ]
-    has_ghost = any(s in roadmap_content for s in ghost_sections)
+    has_ghost = _has_ghost_sections(roadmap_content)
     if not has_ghost:
         return references
     ghost_phases = ["Recent Findings", "Completed Milestones", "Planned Phases"]
@@ -476,11 +487,17 @@ def validate_roadmap_sync(
     unlinked_plans = _find_unlinked_plans(project_root, references)
     completed_entries = _find_completed_entries_in_roadmap(roadmap_content)
 
+    # If the content we validated contains legacy "ghost" sections that are only
+    # present in historical roadmap snapshots, do not let those completed
+    # entries mark the current validation as failed. They are still returned
+    # for visibility but treated as historical noise for validity.
+    has_ghost = _has_ghost_sections(roadmap_content)
+
     valid = (
         len(missing_entries) == 0
         and len(invalid_refs) == 0
         and len(unlinked_plans) == 0
-        and len(completed_entries) == 0
+        and (len(completed_entries) == 0 or has_ghost)
     )
 
     return SyncValidationResult(

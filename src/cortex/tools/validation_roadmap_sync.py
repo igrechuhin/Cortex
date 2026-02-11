@@ -31,6 +31,7 @@ def _build_roadmap_sync_error_response() -> str:
 
 def _build_roadmap_sync_success_response(
     result: SyncValidationResult,
+    project_root: Path,
 ) -> str:
     """Build success response for roadmap sync validation.
 
@@ -44,6 +45,9 @@ def _build_roadmap_sync_success_response(
     invalid_refs = [ref.model_dump() for ref in result.invalid_references]
     completed_entries = [e.model_dump() for e in result.completed_entries_in_roadmap]
     warnings = list(result.warnings)
+
+    existing_unlinked_plans = _filter_existing_unlinked_plans(result, project_root)
+
     return json.dumps(
         {
             "status": "success",
@@ -54,8 +58,9 @@ def _build_roadmap_sync_success_response(
             # Expose unlinked_plans so callers can see which non-archived plans
             # are not referenced in roadmap.md (helps prevent partial updates
             # where plans are completed or removed from roadmap without proper
-            # archiving or memory bank updates).
-            "unlinked_plans": list(result.unlinked_plans),
+            # archiving or memory bank updates). Only include plans that still
+            # exist on disk to avoid stale warnings from removed/archived plans.
+            "unlinked_plans": existing_unlinked_plans,
             "completed_entries_in_roadmap": completed_entries,
             "warnings": warnings,
             "summary": {
@@ -68,6 +73,27 @@ def _build_roadmap_sync_success_response(
         },
         indent=2,
     )
+
+
+def _filter_existing_unlinked_plans(
+    result: SyncValidationResult,
+    project_root: Path,
+) -> list[str]:
+    """Return only unlinked plans that still exist on disk.
+
+    This protects against stale index/history data where a plan has been
+    archived or removed but an old path still appears in SyncValidationResult.
+    """
+    existing_unlinked_plans: list[str] = []
+    for path_str in result.unlinked_plans:
+        candidate = project_root / path_str
+        try:
+            if candidate.is_file():
+                existing_unlinked_plans.append(path_str)
+        except OSError:
+            # If path resolution fails for any reason, treat it as non-existent.
+            continue
+    return existing_unlinked_plans
 
 
 def _log_roadmap_ghost_sections(roadmap_content: str, roadmap_path: Path) -> None:
@@ -125,4 +151,4 @@ async def handle_roadmap_sync_validation(
     roadmap_content, _ = await fs_manager.read_file(roadmap_path)
     _log_roadmap_ghost_sections(roadmap_content, roadmap_path)
     result = validate_roadmap_sync(root, roadmap_content)
-    return _build_roadmap_sync_success_response(result)
+    return _build_roadmap_sync_success_response(result, root)

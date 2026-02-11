@@ -448,8 +448,99 @@ class TestSearchUsage:
         assert ev.success is True
 
 
-class TestGetUsageTimeline:
+class TestGetUsageTimelineBasic:
     """Tests for UsageTracker.get_usage_timeline."""
+
+    @pytest.mark.asyncio
+    async def test_get_usage_timeline_returns_events_around_id(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """get_usage_timeline returns sorted events including the center ID."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        # Record multiple events so we have context around a middle ID.
+        await tracker.record_tool_usage("tool_a", 5.0, True)
+        await tracker.record_tool_usage("tool_b", 10.0, False)
+        await tracker.record_tool_usage("tool_c", 3.0, True)
+
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        relative_key = f"usage/events/{today}.json"
+        raw = await read_cache_json(root, relative_key)
+        assert isinstance(raw, list) and len(raw) >= 3
+
+        # Use the second event as the center of the timeline.
+        middle = cast(dict[str, object], raw[1])
+        center_id = str(middle.get("id"))
+
+        events = await tracker.get_usage_timeline(around_id=center_id, limit=3)
+        assert events
+        assert len(events) <= 3
+        assert any(ev.id == center_id for ev in events)
+
+        timestamps = [ev.timestamp for ev in events]
+        assert timestamps == sorted(timestamps)
+
+    @pytest.mark.asyncio
+    async def test_get_usage_timeline_returns_empty_for_missing_id(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """get_usage_timeline returns empty list when ID is not found."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage("tool_a", 1.0, True)
+
+        events = await tracker.get_usage_timeline(around_id="missing-id", limit=5)
+        assert events == []
+
+    @pytest.mark.asyncio
+    async def test_get_usage_timeline_returns_empty_for_non_positive_limit(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """get_usage_timeline returns empty list when limit is non-positive."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage("tool_a", 1.0, True)
+
+        events_zero = await tracker.get_usage_timeline(around_id="any", limit=0)
+        events_negative = await tracker.get_usage_timeline(around_id="any", limit=-1)
+        assert events_zero == []
+        assert events_negative == []
+
+    @pytest.mark.asyncio
+    async def test_search_usage_filters_by_query_keyword(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """search_usage filters events by keyword across basic text fields."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage("alpha_tool", 5.0, True)
+        await tracker.record_tool_usage(
+            "beta_tool",
+            10.0,
+            False,
+            error_type="CustomError",
+        )
+        await tracker.record_tool_usage("gamma_tool", 3.0, True)
+        results = await tracker.search_usage(
+            start_date=None,
+            end_date=None,
+            tool_name=None,
+            success=None,
+            limit=10,
+            query="CustomError",
+        )
+        assert len(results) == 1
+        event = results[0]
+        assert event.tool_name == "beta_tool"
+        assert event.error_type == "CustomError"
+
+
+class TestGetUsageTimelineWindow:
+    """Additional tests for UsageTracker.get_usage_timeline window behavior."""
 
     @pytest.mark.asyncio
     async def test_get_usage_timeline_returns_chronological_window(
