@@ -545,11 +545,14 @@ def _create_progress_task_if_needed(
     (e.g. fix_markdown_lint, fix_quality_issues) to avoid mixing
     two progress scales (0-100 vs n/total).
     """
+    # Never create time-based progress for tools that report their own progress
+    if tool_name in _TOOLS_WITH_OWN_PROGRESS:
+        return None
+    
     if (
         enable_progress
         and ctx is not None
         and effective_timeout >= PROGRESS_THRESHOLD_TIMEOUT_SECONDS
-        and tool_name not in _TOOLS_WITH_OWN_PROGRESS
     ):
         return asyncio.create_task(
             _progress_report_loop(ctx, effective_timeout, tool_name)

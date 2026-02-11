@@ -44,6 +44,7 @@ def run_checks_pipeline(
         adapter, language, checks_to_perform, results, stats
     )
     _process_type_check(adapter, checks_to_perform, results, stats)
+    _process_spelling_check(adapter, language, checks_to_perform, results, stats)
     _process_test_naming_check(adapter, language, checks_to_perform, results, stats)
     _process_tests_check(
         adapter,
@@ -108,6 +109,28 @@ def _process_format_ci_parity_check(
     )
     results[PreCommitCheck.FORMAT_CI_PARITY.value] = result
     stats.checks_performed.append(PreCommitCheck.FORMAT_CI_PARITY.value)
+    stats.total_errors += len(result.errors)
+
+
+def _process_spelling_check(
+    adapter: FrameworkAdapter,
+    language: str,
+    checks_to_perform: list[PreCommitCheck],
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
+    stats: CheckStats,
+) -> None:
+    """Process spelling check if requested (runs synapse script)."""
+    if PreCommitCheck.SPELLING not in checks_to_perform:
+        return
+    project_root = Path(adapter.project_root)
+    result = run_synapse_script(
+        project_root,
+        language,
+        "check_spelling.py",
+        PreCommitCheck.SPELLING.value,
+    )
+    results[PreCommitCheck.SPELLING.value] = result
+    stats.checks_performed.append(PreCommitCheck.SPELLING.value)
     stats.total_errors += len(result.errors)
 
 

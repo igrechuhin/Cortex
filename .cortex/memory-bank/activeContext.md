@@ -32,6 +32,8 @@
 
 - ✅ **Phase 43: Reconsider Tools Registration - Transform Tools to Resources** - COMPLETE (2026) - Completed Phase 43: Transformed read-only operations from Tools to Resources, unified naming conventions, and verified all Resources and Tools work correctly. All 3810 tests pass, quality gate passes, documentation updated.
 
+- ✅ **Quality gate: commit pipeline spelling gap** - COMPLETE (2026) - Added spelling check to execute_pre_commit_checks (PreCommitCheck.SPELLING enum, pipeline step via synapse script check_spelling.py), updated commit prompt Step 12 to explicitly call spelling check, and updated docstring. CI already pins cspell@8.6.1.
+
 ## Completed Work (2026-02-10)
 
 - ✅ **Implement load_context at step start, rules fallback, and task-type token budget** - COMPLETE (2026-02-10) - Updated implement-next-roadmap-step prompt: (1) load_context at step start with session-recording note in Pre-Action Checklist and Step 1; (2) rules fallback when status disabled (read from structure_info.paths.rules); (3) task-type token budget mapping (10k update/implement-add, 15k fix-debug/other, 20–30k small feature, 40–50k architecture).

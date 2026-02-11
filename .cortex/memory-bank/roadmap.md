@@ -25,7 +25,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 ### Features & Enhancements
 
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
-- **Quality gate: commit pipeline spelling gap** - PENDING - Plan: .cortex/plans/quality-gate-commit-pipeline-spelling-gap.md.
 - **Refactor setup prompts (simplify to 3)** - PENDING - Simplify from 4 to 3 prompts. Plan: .cortex/plans/refactor-setup-prompts.md.
 - **Type cleanup inventory (Phase 53)** - PENDING - Inventory of dict[str, object], list[object], TypedDict, Any. Plan: .cortex/plans/type-cleanup-inventory.md.
 - **Test Fixture Validation and Maintenance** - PENDING - Implement test fixture validation and maintenance mechanisms to prevent test failures caused by incomplete mock configurations. Addresses session optimization recommendations: fixture validation, documentation, and maintenance protocol.

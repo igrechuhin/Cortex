@@ -33,6 +33,7 @@ class PreCommitCheck(str, Enum):
     FORMAT_CI_PARITY = "format_ci_parity"
     TYPE_CHECK = "type_check"
     QUALITY = "quality"
+    SPELLING = "spelling"
     TEST_NAMING = "test_naming"
     TESTS = "tests"
 

@@ -81,6 +81,7 @@ PreCommitCheckName = Literal[
     "format_ci_parity",
     "type_check",
     "quality",
+    "spelling",
     "test_naming",
     "tests",
 ]
@@ -312,6 +313,7 @@ async def execute_pre_commit_checks(
     - format_ci_parity: Verify formatter matches CI (script-based)
     - type_check: Run type checker (e.g. pyright)
     - quality: Lint, file size, function length; includes type_check
+    - spelling: Check spelling in code files (script-based)
     - test_naming: Enforce test naming conventions (script-based)
     - tests: Run test suite with coverage
 
@@ -697,7 +699,7 @@ async def _fix_quality_issues_impl(
 @ensure_usage_context
 @mcp_tool_wrapper(
     timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX,
-    enable_progress=True,
+    enable_progress=False,
 )
 async def fix_quality_issues(
     include_untracked_markdown: bool = True,
