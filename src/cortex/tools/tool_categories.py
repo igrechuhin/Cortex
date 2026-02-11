@@ -19,6 +19,7 @@ Reference: Phase 49 – Introduce Anthropic Advanced Tool Use Features.
 
 from __future__ import annotations
 
+import re
 from enum import Enum
 from typing import Literal
 
@@ -137,6 +138,11 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         name="get_structure_info",
         category=ToolCategory.ALWAYS_LOADED,
         rationale="Project path discovery used in every implement session",
+    ),
+    ToolCategoryEntry(
+        name="search_tools",
+        category=ToolCategory.ALWAYS_LOADED,
+        rationale="Discover deferred tools by query when tool search is enabled",
     ),
     # ── Deferred medium (specific workflows) ──────────────────────────
     ToolCategoryEntry(
@@ -442,3 +448,69 @@ def build_category_config() -> ToolCategoryConfig:
 def get_category_summary() -> dict[str, int]:
     """Return a count of tools per category."""
     return {cat.value: len(get_tools_by_category(cat)) for cat in ToolCategory}
+
+
+# ---------------------------------------------------------------------------
+# Tool search (regex over name + rationale)
+# ---------------------------------------------------------------------------
+
+
+class ToolSearchResult(BaseModel):
+    """Single deferred tool match for search_tools response."""
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str
+    category: ToolCategory
+    rationale: str
+
+
+def _deferred_entries(
+    category: ToolCategoryName | None,
+) -> list[ToolCategoryEntry]:
+    """Return deferred tool entries, optionally filtered by category."""
+    deferred = [
+        e
+        for e in TOOL_CATEGORIES
+        if e.category in (ToolCategory.DEFERRED_MEDIUM, ToolCategory.DEFERRED_LOW)
+    ]
+    if category is not None:
+        deferred = [e for e in deferred if e.category == ToolCategory(category)]
+    return deferred
+
+
+def search_deferred_tools(
+    query: str,
+    *,
+    category: ToolCategoryName | None = None,
+    limit: int = 20,
+) -> list[ToolSearchResult]:
+    """Search deferred tools by regex over name and rationale.
+
+    Args:
+        query: Search string; compiled as case-insensitive regex.
+        category: If set, restrict to this category (deferred_medium or deferred_low).
+        limit: Maximum number of results to return (default 20).
+
+    Returns:
+        List of matching deferred tools, ordered by category (medium first) then name.
+    """
+    if not query or not query.strip():
+        return []
+    try:
+        pattern = re.compile(re.escape(query.strip()), re.IGNORECASE)
+    except re.error:
+        return []
+    matches: list[ToolSearchResult] = []
+    for entry in _deferred_entries(category):
+        if pattern.search(entry.name) or pattern.search(entry.rationale):
+            matches.append(
+                ToolSearchResult(
+                    name=entry.name,
+                    category=entry.category,
+                    rationale=entry.rationale,
+                )
+            )
+        if len(matches) >= limit:
+            break
+    return matches[:limit]

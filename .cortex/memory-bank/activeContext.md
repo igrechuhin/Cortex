@@ -35,6 +35,8 @@
 
 - ✅ **Commit (markdown lint phase-55 MD040)** - COMPLETE (2026-02-11) - Fixed MD040 in .cortex/plans/phase-55-lightweight-think-tool.md (fenced code blocks now have language specified). Preflight checks (fix_errors, format, type_check, quality, tests) and markdown lint passed; 3880 tests, 90.13% coverage.
 
+- ✅ **Phase 49 Step 5: Tool Search Tool - Infrastructure** - COMPLETE (2026-02-11) - Implemented Tool Search infrastructure: search_deferred_tools() (regex over name/rationale), search_tools MCP tool, tool_search config in optimization default and OptimizationConfig.get_tool_search_config(), server.py comment for deferred loading. Config model ToolSearchConfigModel; lazy tool_search injection in _load_config to avoid circular import. Next: Step 6 (testing token savings, discovery).
+
 ## Completed Work (2026)
 
 - ✅ **Implement prompt memory bank and function length** - COMPLETE (2026) - Enforced manage_file-only for memory bank writes in implement Step 5 (requirement, prohibition, full-content fallback); added function-length reminder in Step 4; added rules-disabled fallback in analyze prompt. Fixed token-budget integration test to accept comma-formatted numbers.

@@ -9,6 +9,12 @@ global state, it's an acceptable exception as:
 
 For proper dependency injection in your own code, use ManagerRegistry instead
 of relying on global state.
+
+Deferred tool loading (Phase 49): When tool_search.enabled is true in
+.cortex/config/optimization.json, categorization is used by the search_tools
+tool for discovery. Full list_tools filtering requires MCP SDK support for
+defer_loading; until then, all tools are registered and search_tools allows
+clients to discover deferred tools by query.
 """
 
 from mcp.server.fastmcp import FastMCP

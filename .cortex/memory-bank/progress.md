@@ -18,6 +18,8 @@
 - **Test Fixture Validation and Maintenance** - COMPLETE. Added fixture validation helper (validate_optimization_config_mock), wired it into mock_managers in test_phase4_optimization.py, added tests/helpers/fixture_validator.py and unit tests, and added FIXTURE_REQUIREMENTS.md and FIXTURE_MAINTENANCE.md. Quality gate and tests pass.
 - **Phase 49 Step 4: Tool Search Tool - Categorization** - COMPLETE. Categorized all 63 Cortex MCP tools into three loading priority tiers (always_loaded: 15, deferred_medium: 26, deferred_low: 22) in `src/cortex/tools/tool_categories.py` with Pydantic models, lookup helpers, and ToolCategoryConfig for future optimization.json integration. 41 comprehensive tests (100% coverage). Documentation updated in `docs/guides/advanced-tool-use.md`.
 - **Commit (markdown lint phase-55 MD040)** - COMPLETE. Fixed MD040 in phase-55-lightweight-think-tool.md (fenced code language); preflight and tests passed.
+- **Phase 49 Step 5: Tool Search Infrastructure** - COMPLETE. Implemented defer_loading support (config + metadata), search_deferred_tools() regex search, search_tools MCP tool (always_loaded), tool_search in optimization default and get_tool_search_config(), server comment; ToolSearchConfigModel and tests.
+- **Commit (Phase 49 tool search, preflight)** - COMPLETE. Preflight checks passed: fix_errors, format, markdown lint (274 files, 0 errors), type_check, quality, tests 3896 passed, 90.14% coverage.
 
 ## 2026
 

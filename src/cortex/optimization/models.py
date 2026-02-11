@@ -825,6 +825,31 @@ class SelfEvolutionConfigModel(OptimizationBaseModel):
     )
 
 
+class ToolSearchConfigModel(OptimizationBaseModel):
+    """Tool search (deferred loading) configuration for Phase 49.
+
+    When enabled, clients may receive only always_loaded tools initially;
+    search_tools allows discovering deferred tools by query.
+    """
+
+    enabled: bool = Field(
+        default=False,
+        description="Whether deferred tool loading / tool search is enabled",
+    )
+    always_loaded: list[str] = Field(
+        default_factory=list,
+        description="Tool names to load initially when tool search is enabled",
+    )
+    deferred_medium: list[str] = Field(
+        default_factory=list,
+        description="Deferred tool names (medium priority)",
+    )
+    deferred_low: list[str] = Field(
+        default_factory=list,
+        description="Deferred tool names (low priority)",
+    )
+
+
 class OptimizationConfigModel(OptimizationBaseModel):
     """Complete optimization configuration model."""
 
@@ -860,4 +885,8 @@ class OptimizationConfigModel(OptimizationBaseModel):
     self_evolution: SelfEvolutionConfigModel = Field(
         default_factory=SelfEvolutionConfigModel,
         description="Self-evolution configuration",
+    )
+    tool_search: ToolSearchConfigModel | None = Field(
+        default=None,
+        description="Tool search / deferred loading configuration (Phase 49)",
     )

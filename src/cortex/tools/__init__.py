@@ -66,6 +66,7 @@ from . import (
     sequential_thinking,  # noqa: F401
     synapse_prompts,  # noqa: F401  # Dynamic Synapse prompts registration
     synapse_tools,  # noqa: F401
+    tool_search_operations,  # noqa: F401
     usage_analytics,  # noqa: F401
     validation_operations,  # noqa: F401
 )
@@ -98,6 +99,7 @@ __all__ = [
     "roadmap_operations",
     "plan_completion",
     "sequential_thinking",
+    "tool_search_operations",
     "plan_operations",
     "phase8_structure",
     "pre_commit_tools",

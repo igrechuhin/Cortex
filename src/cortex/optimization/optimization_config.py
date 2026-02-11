@@ -115,6 +115,7 @@ DEFAULT_OPTIMIZATION_CONFIG = {
             ],
         },
     },
+    # tool_search default is injected in _load_config() to avoid circular import
 }
 
 
@@ -145,6 +146,10 @@ class OptimizationConfig:
             For performance-critical paths, consider using async alternatives.
         """
         default_config = cast(ModelDict, copy.deepcopy(DEFAULT_OPTIMIZATION_CONFIG))
+        # Inject tool_search default here to avoid circular import with tool_categories
+        from cortex.tools.tool_categories import build_category_config
+
+        default_config["tool_search"] = build_category_config().model_dump()
 
         # Early return if config file doesn't exist - use defaults
         if not self.config_path.exists():
@@ -276,6 +281,19 @@ class OptimizationConfig:
             self.config_path.unlink()
         self.config = cast(ModelDict, copy.deepcopy(DEFAULT_OPTIMIZATION_CONFIG))
         _ = await self.save_config()
+
+    def get_tool_search_config(self) -> ModelDict:
+        """Get tool search (deferred loading) config for Phase 49.
+
+        Returns dict with enabled, always_loaded, deferred_medium, deferred_low.
+        When tool_search key is missing, returns canonical build_category_config().
+        """
+        raw = self.config.get("tool_search")
+        if isinstance(raw, dict):
+            return cast(ModelDict, raw)
+        from cortex.tools.tool_categories import build_category_config
+
+        return cast(ModelDict, build_category_config().model_dump())
 
     def get_token_budget(self) -> int:
         """Get default token budget."""

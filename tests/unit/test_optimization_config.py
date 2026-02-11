@@ -42,8 +42,15 @@ class TestOptimizationConfigInitialization:
         # Arrange & Act
         config = OptimizationConfig(temp_project_root)
 
-        # Assert
-        assert config.config == DEFAULT_OPTIMIZATION_CONFIG
+        # Assert: all default keys present; tool_search injected in _load_config
+        for key in DEFAULT_OPTIMIZATION_CONFIG:
+            assert key in config.config, f"Missing key {key}"
+        tool_search = config.config.get("tool_search")
+        assert isinstance(tool_search, dict)
+        assert "enabled" in tool_search
+        assert "always_loaded" in tool_search
+        assert "deferred_medium" in tool_search
+        assert "deferred_low" in tool_search
 
     def test_initialization_loads_existing_config_file(
         self, temp_project_root: Path
@@ -95,8 +102,10 @@ class TestConfigFileOperations:
         with caplog.at_level(logging.WARNING):
             config = OptimizationConfig(temp_project_root)
 
-        # Assert
-        assert config.config == DEFAULT_OPTIMIZATION_CONFIG
+        # Assert: defaults used (tool_search injected in _load_config)
+        for key in DEFAULT_OPTIMIZATION_CONFIG:
+            assert key in config.config, f"Missing key {key}"
+        assert isinstance(config.config.get("tool_search"), dict)
         # Verify default config is used (main behavior)
         # Log capture may not work due to logger configuration, but behavior is correct
         # Check if any warning was logged (more lenient check)

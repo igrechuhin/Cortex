@@ -82,12 +82,12 @@ Implement features in order of risk/value:
 - [x] Categorization documented in `src/cortex/tools/tool_categories.py` with Pydantic models and lookup helpers; rationale in `docs/guides/advanced-tool-use.md`
 - [x] 41 comprehensive tests in `tests/tools/test_tool_categories.py` (100% coverage on new module)
 
-### Step 5: Tool Search Tool - Infrastructure
+### Step 5: Tool Search Tool - Infrastructure ✅
 
-- [ ] Implement `defer_loading` support in tool registration
-- [ ] Create tool search mechanism (regex or BM25)
-- [ ] Update server.py to support deferred tool loading
-- [ ] Configure tool categories in .cortex/config/optimization.json
+- [x] Implement `defer_loading` support in tool registration (metadata/config; full list_tools filtering when SDK supports it)
+- [x] Create tool search mechanism (regex over name + rationale in tool_categories.search_deferred_tools)
+- [x] Update server.py to support deferred tool loading (comment + get_tool_search_config in OptimizationConfig)
+- [x] Configure tool categories in .cortex/config/optimization.json (tool_search in default config, ToolSearchConfigModel, lazy injection in_load_config)
 
 ### Step 6: Tool Search Tool - Testing
 

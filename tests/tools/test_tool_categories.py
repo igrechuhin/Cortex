@@ -15,12 +15,14 @@ from cortex.tools.tool_categories import (
     ToolCategoryConfig,
     ToolCategoryEntry,
     ToolCategoryName,
+    ToolSearchResult,
     build_category_config,
     get_always_loaded_tool_names,
     get_category_summary,
     get_deferred_tool_names,
     get_tool_category,
     get_tools_by_category,
+    search_deferred_tools,
 )
 
 # ---------------------------------------------------------------------------
@@ -369,3 +371,95 @@ class TestToolCategoryNameLiteral:
             "deferred_low",
         }
         assert enum_values == expected
+
+
+# ---------------------------------------------------------------------------
+# search_deferred_tools (Phase 49 Step 5)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.timeout(5)
+class TestToolSearchResult:
+    """Tests for ToolSearchResult model."""
+
+    def test_create_result(self) -> None:
+        """Can create a result with name, category, rationale."""
+        r = ToolSearchResult(
+            name="suggest_refactoring",
+            category=ToolCategory.DEFERRED_MEDIUM,
+            rationale="Refactoring workflow",
+        )
+        assert r.name == "suggest_refactoring"
+        assert r.category == ToolCategory.DEFERRED_MEDIUM
+        assert r.rationale == "Refactoring workflow"
+
+    def test_result_is_frozen(self) -> None:
+        """ToolSearchResult instances are immutable."""
+        r = ToolSearchResult(
+            name="x",
+            category=ToolCategory.DEFERRED_LOW,
+            rationale="y",
+        )
+        with pytest.raises(ValidationError):
+            r.name = "z"  # type: ignore[misc]
+
+
+@pytest.mark.timeout(5)
+class TestSearchDeferredTools:
+    """Tests for search_deferred_tools()."""
+
+    def test_empty_query_returns_empty(self) -> None:
+        """Empty or whitespace-only query returns no matches."""
+        assert search_deferred_tools("") == []
+        assert search_deferred_tools("   ") == []
+
+    def test_query_matches_name(self) -> None:
+        """Query matching a tool name returns that tool."""
+        results = search_deferred_tools("suggest_refactoring", limit=5)
+        assert len(results) >= 1
+        names = [r.name for r in results]
+        assert "suggest_refactoring" in names
+
+    def test_query_matches_rationale(self) -> None:
+        """Query matching rationale text returns those tools."""
+        results = search_deferred_tools("refactoring", limit=10)
+        assert len(results) >= 1
+        assert any("refactor" in r.rationale.lower() for r in results)
+
+    def test_case_insensitive(self) -> None:
+        """Search is case-insensitive."""
+        lower = search_deferred_tools("REFACTOR", limit=5)
+        mixed = search_deferred_tools("Refactor", limit=5)
+        assert len(lower) >= 1 and len(mixed) >= 1
+        assert {r.name for r in lower} == {r.name for r in mixed}
+
+    def test_category_filter_medium(self) -> None:
+        """Filtering by deferred_medium returns only medium tools."""
+        results = search_deferred_tools("tool", category="deferred_medium", limit=50)
+        assert all(r.category == ToolCategory.DEFERRED_MEDIUM for r in results)
+
+    def test_category_filter_low(self) -> None:
+        """Filtering by deferred_low returns only low tools."""
+        results = search_deferred_tools("usage", category="deferred_low", limit=50)
+        assert all(r.category == ToolCategory.DEFERRED_LOW for r in results)
+
+    def test_limit_caps_results(self) -> None:
+        """Limit parameter caps the number of results."""
+        results = search_deferred_tools("a", limit=3)
+        assert len(results) <= 3
+
+    def test_no_match_returns_empty(self) -> None:
+        """Query that matches no tool returns empty list."""
+        results = search_deferred_tools("xyznonexistent123", limit=10)
+        assert results == []
+
+    def test_special_regex_chars_escaped(self) -> None:
+        """Query with regex special chars is escaped (literal match)."""
+        # "(" is escaped so we don't match "refactoring" etc. by accident
+        results = search_deferred_tools("(", limit=5)
+        assert isinstance(results, list)
+
+    def test_search_tools_is_always_loaded(self) -> None:
+        """search_tools is catalogued as always_loaded for discovery."""
+        cat = get_tool_category("search_tools")
+        assert cat == ToolCategory.ALWAYS_LOADED

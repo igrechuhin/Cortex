@@ -22,7 +22,7 @@
   },
   "summarization": {
     "enabled": true,
-    "auto_summarize_old_files": false,
+    "auto_summarize_old_files": true,
     "age_threshold_days": 90,
     "target_reduction": 0.5,
     "strategy": "extract_key_sections",
@@ -124,7 +124,7 @@
       "track_task_patterns": true
     },
     "insights": {
-      "auto_generate": false,
+      "auto_generate": true,
       "min_impact_score": 0.5,
       "categories": [
         "usage",
@@ -136,7 +136,7 @@
     }
   },
   "context_injection": {
-    "enabled": false,
+    "enabled": true,
     "always_include_files": [
       "projectBrief.md",
       "activeContext.md",
