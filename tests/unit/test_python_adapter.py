@@ -219,6 +219,31 @@ class TestPythonAdapter:
             assert len(errors) == 1
             assert "Test coverage 85.00% is below required threshold 90%" in errors[0]
 
+    @patch("cortex.services.framework_adapters.python_adapter.subprocess.run")
+    def test_run_tests_failure_populates_errors(self, mock_run: MagicMock) -> None:
+        """run_tests populates errors when tests fail but coverage passes."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            venv_bin = get_venv_bin_path(project_root)
+            venv_bin.mkdir(parents=True)
+            (venv_bin / "pytest").touch()
+
+            mock_result = MagicMock()
+            mock_result.returncode = 1
+            # One failing test, overall coverage above threshold.
+            mock_result.stdout = "1 failed, 1 passed in 1.23s\nTOTAL 95%\n"
+            mock_result.stderr = ""
+            mock_run.return_value = mock_result
+
+            adapter = PythonAdapter(str(project_root))
+            result = adapter.run_tests(coverage_threshold=0.90)
+
+            assert result["success"] is False
+            tests_failed = cast(int, result["tests_failed"])
+            assert tests_failed >= 1
+            errors = cast(list[str], result["errors"])
+            assert errors, "errors list should contain structured test failure details"
+
     def test_build_test_errors_failure_coverage_above_threshold(self) -> None:
         """Test _build_test_errors with success=False but coverage above threshold."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -227,6 +252,27 @@ class TestPythonAdapter:
                 success=False, coverage=0.95, coverage_threshold=0.90
             )
             assert errors == ["Test execution failed"]
+
+    def test_parse_test_output_includes_failed_test_identifier(self) -> None:
+        """_parse_test_output surfaces FAILED summary line in errors."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            output = "\n".join(
+                [
+                    "============================= test session starts ==============================",
+                    "platform darwin -- Python 3.13.6, pytest-9.0.2",
+                    "FAILED tests/unit/test_foo.py::TestFoo::test_bar - AssertionError: boom",
+                    "1 failed, 0 passed in 1.23s",
+                    "TOTAL 95%",
+                ]
+            )
+            result: TestResult = adapter._parse_test_output(  # type: ignore[attr-defined]
+                output,
+                success=False,
+                coverage_threshold=0.90,
+            )
+            errors = cast(list[str], result["errors"])
+            assert any("tests/unit/test_foo.py::TestFoo::test_bar" in e for e in errors)
 
     def test_parse_coverage_total_coverage_format(self) -> None:
         """_parse_coverage parses 'Total coverage: XX.XX%' format."""

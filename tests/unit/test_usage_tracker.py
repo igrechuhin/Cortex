@@ -7,6 +7,7 @@ from typing import cast
 import pytest
 
 from cortex.core.cache_json_access import read_cache_json
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.managers.usage_tracker import UsageTracker, generate_usage_event_id
 
 
@@ -114,6 +115,65 @@ class TestRecordToolUsage:
             cast(dict[str, object], err_types) if isinstance(err_types, dict) else {}
         )
         assert err_dict.get("ValueError") == 1
+
+
+class TestResultSummaryPersistence:
+    """Tests for result_summary field persistence."""
+
+    @pytest.mark.asyncio
+    async def test_result_summary_persisted_when_enabled(self, tmp_path: Path) -> None:
+        """result_summary is persisted when tool is enabled in config."""
+        import json
+
+        root = _make_project_root(tmp_path)
+        config_dir = get_cortex_path(root, CortexResourceType.CONFIG)
+        config_dir.mkdir(parents=True, exist_ok=True)
+        cfg_path = config_dir / "usage_tracking.json"
+        _ = cfg_path.write_text(
+            json.dumps(
+                {
+                    "result_summary_enabled_tools": ["summary_tool"],
+                }
+            ),
+            encoding="utf-8",
+        )
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage(
+            tool_name="summary_tool",
+            duration_ms=1.0,
+            success=True,
+            result_summary="Completed run",
+        )
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        relative_key = f"usage/events/{today}.json"
+        raw = await read_cache_json(root, relative_key)
+        assert isinstance(raw, list) and raw
+        first = raw[0]
+        first_d = cast(dict[str, object], first) if isinstance(first, dict) else {}
+        assert first_d.get("result_summary") == "Completed run"
+
+    @pytest.mark.asyncio
+    async def test_result_summary_omitted_when_not_enabled(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """result_summary is not stored when tool is not enabled in config."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage(
+            tool_name="other_tool",
+            duration_ms=1.0,
+            success=True,
+            result_summary="Should not persist",
+        )
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        relative_key = f"usage/events/{today}.json"
+        raw = await read_cache_json(root, relative_key)
+        assert isinstance(raw, list) and raw
+        first = raw[0]
+        first_d = cast(dict[str, object], first) if isinstance(first, dict) else {}
+        # When the tool is not enabled for summaries, the stored value is None.
+        assert first_d.get("result_summary") is None
 
 
 class TestGetUsageStats:
@@ -386,3 +446,69 @@ class TestSearchUsage:
         ev = results[0]
         assert ev.tool_name == "tool_a"
         assert ev.success is True
+
+
+class TestGetUsageTimeline:
+    """Tests for UsageTracker.get_usage_timeline."""
+
+    @pytest.mark.asyncio
+    async def test_get_usage_timeline_returns_chronological_window(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """get_usage_timeline returns a chronological window around the id."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        # Record several events so we have context around a center event.
+        for i in range(5):
+            await tracker.record_tool_usage(f"tool_{i}", float(i + 1), True)
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        relative_key = f"usage/events/{today}.json"
+        raw = await read_cache_json(root, relative_key)
+        assert isinstance(raw, list) and len(raw) >= 5
+        events = [
+            cast(dict[str, object], item) for item in raw if isinstance(item, dict)
+        ]
+        center = events[2]
+        center_id = str(center.get("id"))
+        results = await tracker.get_usage_timeline(around_id=center_id, limit=3)
+        assert 1 <= len(results) <= 3
+        # Includes the center event.
+        assert any(ev.id == center_id for ev in results)
+        # Results are sorted chronologically by timestamp.
+        timestamps = [ev.timestamp for ev in results]
+        assert timestamps == sorted(timestamps)
+
+    @pytest.mark.asyncio
+    async def test_get_usage_timeline_missing_or_non_positive_limit(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """get_usage_timeline returns empty list for missing id or non-positive limit."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        # No events yet: missing id yields empty list.
+        result_no_events = await tracker.get_usage_timeline(
+            around_id="missing",
+            limit=5,
+        )
+        assert result_no_events == []
+        # With events recorded, unknown id still yields empty list.
+        await tracker.record_tool_usage("tool_x", 1.0, True)
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        relative_key = f"usage/events/{today}.json"
+        raw = await read_cache_json(root, relative_key)
+        assert isinstance(raw, list) and raw
+        first = cast(dict[str, object], raw[0])
+        existing_id = str(first.get("id"))
+        missing_result = await tracker.get_usage_timeline(
+            around_id="unknown-id",
+            limit=5,
+        )
+        assert missing_result == []
+        # Non-positive limit returns empty list even for existing id.
+        zero_limit_result = await tracker.get_usage_timeline(
+            around_id=existing_id,
+            limit=0,
+        )
+        assert zero_limit_result == []

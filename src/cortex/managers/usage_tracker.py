@@ -20,7 +20,35 @@ def _default_config() -> dict[str, bool | int | float | list[str]]:
         "aggregation_enabled": True,
         "opt_out_tools": [],
         "min_duration_ms": 0.0,
+        "result_summary_enabled_tools": [],
     }
+
+
+def _apply_config_overrides(
+    config: dict[str, bool | int | float | list[str]],
+    data: dict[str, object],
+) -> None:
+    """Merge persisted usage_tracking.json values into the default config."""
+    for key in ("enabled", "anonymize_params", "aggregation_enabled"):
+        val = data.get(key)
+        if isinstance(val, bool):
+            config[key] = val
+    retention = data.get("retention_days")
+    if isinstance(retention, int):
+        config["retention_days"] = retention
+    opt_out_raw = data.get("opt_out_tools")
+    if isinstance(opt_out_raw, list):
+        raw_list = cast(list[object], opt_out_raw)
+        config["opt_out_tools"] = [s for s in raw_list if isinstance(s, str)]
+    min_dur = data.get("min_duration_ms")
+    if isinstance(min_dur, (int, float)):
+        config["min_duration_ms"] = float(min_dur)
+    summary_raw = data.get("result_summary_enabled_tools")
+    if isinstance(summary_raw, list):
+        raw_list = cast(list[object], summary_raw)
+        config["result_summary_enabled_tools"] = [
+            s for s in raw_list if isinstance(s, str)
+        ]
 
 
 def _load_config(project_root: Path) -> dict[str, bool | int | float | list[str]]:
@@ -36,18 +64,7 @@ def _load_config(project_root: Path) -> dict[str, bool | int | float | list[str]
             data = json.load(f)
         config = _default_config()
         if isinstance(data, dict):
-            for key in ("enabled", "anonymize_params", "aggregation_enabled"):
-                if key in data and isinstance(data[key], bool):
-                    config[key] = data[key]
-            if "retention_days" in data and isinstance(data["retention_days"], int):
-                config["retention_days"] = data["retention_days"]
-            if "opt_out_tools" in data and isinstance(data["opt_out_tools"], list):
-                _raw_opt = cast(list[object], data["opt_out_tools"])
-                config["opt_out_tools"] = [s for s in _raw_opt if isinstance(s, str)]
-            if "min_duration_ms" in data and isinstance(
-                data["min_duration_ms"], (int, float)
-            ):
-                config["min_duration_ms"] = float(data["min_duration_ms"])
+            _apply_config_overrides(config, cast(dict[str, object], data))
         return config
     except (OSError, json.JSONDecodeError):
         return _default_config()
@@ -75,6 +92,30 @@ class UsageTracker:
         opt_out: list[str] = list(opt_out_raw) if isinstance(opt_out_raw, list) else []
         return tool_name in opt_out
 
+    def _is_result_summary_enabled(self, tool_name: str) -> bool:
+        """Return True if result summaries are enabled for the given tool."""
+        raw = self._config.get("result_summary_enabled_tools")
+        tools: list[str] = list(raw) if isinstance(raw, list) else []
+        return tool_name in tools
+
+    def _should_record_event(self, tool_name: str, duration_ms: float) -> bool:
+        """Determine whether an event should be recorded based on config."""
+        if not self._is_enabled() or self._is_opt_out(tool_name):
+            return False
+        min_val = self._config.get("min_duration_ms", 0.0)
+        min_duration = float(min_val) if isinstance(min_val, (int, float)) else 0.0
+        return duration_ms >= min_duration
+
+    def _select_result_summary(
+        self,
+        tool_name: str,
+        result_summary: str | None,
+    ) -> str | None:
+        """Return stored result summary value for this tool/event."""
+        if not result_summary:
+            return None
+        return result_summary if self._is_result_summary_enabled(tool_name) else None
+
     async def record_tool_usage(
         self,
         tool_name: str,
@@ -83,24 +124,13 @@ class UsageTracker:
         error_type: str | None = None,
         params_hash: str | None = None,
         handler_kind: str = "tool",
+        result_summary: str | None = None,
     ) -> None:
-        """Record a single tool or resource usage event.
-
-        Args:
-            tool_name: Name of the MCP tool or resource handler invoked.
-            duration_ms: Execution duration in milliseconds.
-            success: Whether the handler completed without error.
-            error_type: Exception type name if failed.
-            params_hash: Optional hash of anonymized parameters.
-            handler_kind: "tool" or "resource" (Phase 43); default "tool".
-        """
-        if not self._is_enabled() or self._is_opt_out(tool_name):
-            return
-        min_val = self._config.get("min_duration_ms", 0.0)
-        min_duration = float(min_val) if isinstance(min_val, (int, float)) else 0.0
-        if duration_ms < min_duration:
+        """Record a single tool or resource usage event."""
+        if not self._should_record_event(tool_name, duration_ms):
             return
         kind = "resource" if handler_kind == "resource" else "tool"
+        summary = self._select_result_summary(tool_name, result_summary)
         event = ToolUsageEvent(
             tool_name=tool_name,
             timestamp=datetime.now(UTC).isoformat(),
@@ -111,6 +141,7 @@ class UsageTracker:
                 params_hash if self._config.get("anonymize_params", True) else None
             ),
             handler_kind=kind,
+            result_summary=summary,
         )
         await _persist_event(self._project_root, event)
 
@@ -240,6 +271,48 @@ class UsageTracker:
             events = [e for e in events if e.success is success]
         events.sort(key=lambda e: e.timestamp, reverse=True)
         return events[:limit]
+
+    async def get_usage_timeline(
+        self,
+        around_id: str,
+        limit: int,
+    ) -> list[ToolUsageEvent]:
+        """Return chronological context around a given usage event.
+
+        Args:
+            around_id: ID of the central usage event.
+            limit: Maximum number of events to return (including the center).
+
+        Returns:
+            List of usage events in chronological order that includes the
+            event with the given ID when found. Returns an empty list if
+            the ID is not found or limit is non-positive.
+        """
+        if limit <= 0:
+            return []
+        events = await _load_events_in_range(
+            self._project_root,
+            None,
+            None,
+            None,
+        )
+        if not events:
+            return []
+        events.sort(key=lambda e: e.timestamp)
+        center_index: int | None = None
+        for idx, event in enumerate(events):
+            if event.id == around_id:
+                center_index = idx
+                break
+        if center_index is None:
+            return []
+        window = min(limit, len(events))
+        start = max(0, center_index - window // 2)
+        end = start + window
+        if end > len(events):
+            end = len(events)
+            start = max(0, end - window)
+        return events[start:end]
 
 
 def _to_row_dict(obj: object) -> dict[str, object]:

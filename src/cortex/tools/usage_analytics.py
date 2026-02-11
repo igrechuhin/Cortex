@@ -9,6 +9,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import cast
 
+from pydantic import BaseModel, ConfigDict
+
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import read_only_annotations
@@ -115,20 +117,72 @@ def _normalize_ids(ids: list[str]) -> list[str]:
     return [i for i in ids if i]
 
 
+class UsageEventPayload(BaseModel):
+    """Looser wire model for usage events returned to external callers.
+
+    This sits at the communication boundary (JSON returned by the MCP tool).
+    Internally we still use the strict `ToolUsageEvent` model; this payload
+    only enforces a stable subset of fields and allows additional data via
+    Pydantic's ``extra='allow'`` configuration.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    tool_name: str | None = None
+    result_summary: str | None = None
+
+
+class UsageEventsResponse(BaseModel):
+    """Pydantic response model for usage events lookup."""
+
+    status: str
+    project_root: str
+    events: list[UsageEventPayload]
+    missing_ids: list[str]
+
+
 def _build_usage_events_payload(
     root: Path,
     events: list[ToolUsageEvent],
     requested_ids: list[str],
-) -> dict[str, object]:
-    """Build JSON-serializable payload for usage events lookup."""
-    by_id = {ev.id: ev for ev in events}
-    missing_ids = [eid for eid in requested_ids if eid not in by_id]
-    return {
-        "status": "success",
-        "project_root": str(root),
-        "events": [ev.model_dump() for ev in events],
-        "missing_ids": missing_ids,
-    }
+) -> UsageEventsResponse:
+    """Build response model for usage events lookup."""
+    payload_events: list[UsageEventPayload] = []
+    present_ids: set[str] = set()
+
+    for ev in events:
+        # Prefer model_dump when available (pydantic models and test fakes).
+        if hasattr(ev, "model_dump"):
+            raw = ev.model_dump()  # type: ignore[call-arg, attr-defined]
+            data: dict[str, object] = cast(dict[str, object], raw)
+        elif isinstance(ev, dict):
+            data = cast(dict[str, object], ev)
+        else:
+            # Fallback: use public attributes on arbitrary objects.
+            data = {k: v for k, v in vars(ev).items() if not k.startswith("_")}
+
+        # Ensure we have an ID in the payload; fall back to attribute access if needed.
+        if "id" not in data and hasattr(ev, "id"):
+            try:
+                data["id"] = cast(object, ev.id)  # type: ignore[assignment]
+            except AttributeError:
+                # If we still can't obtain an ID, let Pydantic validation surface it.
+                pass
+
+        payload = UsageEventPayload.model_validate(data)
+        payload_events.append(payload)
+
+        ev_id: str | None = payload.id
+        present_ids.add(ev_id)
+
+    missing_ids = [eid for eid in requested_ids if eid not in present_ids]
+    return UsageEventsResponse(
+        status="success",
+        project_root=str(root),
+        events=payload_events,
+        missing_ids=missing_ids,
+    )
 
 
 async def _get_usage_events_impl(
@@ -145,14 +199,14 @@ async def _get_usage_events_impl(
     normalized_ids = _normalize_ids(ids)
     if not normalized_ids:
         payload = _build_usage_events_payload(root=root, events=[], requested_ids=[])
-        return json.dumps(payload, indent=2)
+        return json.dumps(payload.model_dump(), indent=2)
     events = await tracker.get_events_by_ids(event_ids=normalized_ids)
     payload = _build_usage_events_payload(
         root=root,
         events=events,
         requested_ids=normalized_ids,
     )
-    return json.dumps(payload, indent=2)
+    return json.dumps(payload.model_dump(), indent=2)
 
 
 @mcp.tool(annotations=read_only_annotations("Get Usage Events"))
@@ -267,6 +321,27 @@ async def get_unused_tools(
     )
 
 
+class UsageSearchResultEntry(BaseModel):
+    """Pydantic model for compact search result entries."""
+
+    id: str
+    tool_name: str
+    timestamp: str
+    duration_ms: float
+    success: bool
+    error_type: str | None
+    handler_kind: str
+
+
+class SearchUsageResponse(BaseModel):
+    """Pydantic response model for search_usage results."""
+
+    status: str
+    project_root: str
+    results: list[UsageSearchResultEntry]
+    total: int
+
+
 async def _search_usage_impl(
     tracker: UsageTracker,
     root: Path,
@@ -275,7 +350,7 @@ async def _search_usage_impl(
     tool_name: str | None,
     success: bool | None,
     limit: int,
-) -> dict[str, object]:
+) -> SearchUsageResponse:
     """Implementation helper for search_usage MCP tool."""
     limit_val = max(1, min(limit, 500))
     events = await tracker.search_usage(
@@ -285,27 +360,55 @@ async def _search_usage_impl(
         success=success,
         limit=limit_val,
     )
-    results = _build_search_results(events)
-    return {
-        "status": "success",
-        "project_root": str(root),
-        "results": results,
-        "total": len(results),
-    }
+    entries = _build_search_results(events)
+    return SearchUsageResponse(
+        status="success",
+        project_root=str(root),
+        results=entries,
+        total=len(entries),
+    )
 
 
-def _build_search_results(events: list[ToolUsageEvent]) -> list[dict[str, object]]:
+def _build_search_results(events: list[ToolUsageEvent]) -> list[UsageSearchResultEntry]:
     """Build compact search result entries from usage events."""
     return [
-        {
-            "id": ev.id,
-            "tool_name": ev.tool_name,
-            "timestamp": ev.timestamp,
-            "duration_ms": ev.duration_ms,
-            "success": ev.success,
-            "error_type": ev.error_type,
-            "handler_kind": ev.handler_kind,
-        }
+        UsageSearchResultEntry(
+            id=ev.id,
+            tool_name=ev.tool_name,
+            timestamp=ev.timestamp,
+            duration_ms=ev.duration_ms,
+            success=ev.success,
+            error_type=ev.error_type,
+            handler_kind=ev.handler_kind,
+        )
+        for ev in events
+    ]
+
+
+class UsageTimelineEntry(BaseModel):
+    """Pydantic model for compact usage timeline entries."""
+
+    id: str
+    tool_name: str
+    timestamp: str
+    duration_ms: float
+    success: bool
+    error_type: str | None
+    handler_kind: str
+
+
+def _build_timeline_results(events: list[ToolUsageEvent]) -> list[UsageTimelineEntry]:
+    """Build compact timeline entries from usage events."""
+    return [
+        UsageTimelineEntry(
+            id=ev.id,
+            tool_name=ev.tool_name,
+            timestamp=ev.timestamp,
+            duration_ms=ev.duration_ms,
+            success=ev.success,
+            error_type=ev.error_type,
+            handler_kind=ev.handler_kind,
+        )
         for ev in events
     ]
 
@@ -340,7 +443,56 @@ async def search_usage(
         success=success,
         limit=limit,
     )
-    return json.dumps(payload, indent=2)
+    return json.dumps(payload.model_dump(), indent=2)
+
+
+async def _get_usage_timeline_impl(
+    around_id: str,
+    limit: int,
+    root: Path,
+    tracker: UsageTracker | None,
+) -> str:
+    """Implementation helper for get_usage_timeline MCP tool."""
+    if tracker is None:
+        return json.dumps(
+            {"status": "unavailable", "message": "Usage tracker not available"},
+            indent=2,
+        )
+    limit_val = max(1, min(limit, 500))
+    events = await tracker.get_usage_timeline(around_id=around_id, limit=limit_val)
+    timeline_entries = _build_timeline_results(events)
+    results = [entry.model_dump() for entry in timeline_entries]
+    return json.dumps(
+        {
+            "status": "success",
+            "project_root": str(root),
+            "around_id": around_id,
+            "results": results,
+            "total": len(results),
+        },
+        indent=2,
+    )
+
+
+@mcp.tool(annotations=read_only_annotations("Get Usage Timeline"))
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_usage_timeline(
+    around_id: str,
+    limit: int = 20,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Get chronological usage context around a given observation ID."""
+    if ctx is not None:
+        await log_client(ctx, "debug", f"get_usage_timeline: starting id={around_id}")
+    root = await resolve_project_root_async(None, ctx)
+    tracker = await _get_tracker(root)
+    return await _get_usage_timeline_impl(
+        around_id=around_id,
+        limit=limit,
+        root=root,
+        tracker=tracker,
+    )
 
 
 def _calls_key(t: dict[str, object]) -> int:

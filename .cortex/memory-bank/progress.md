@@ -6,6 +6,7 @@
 - **Commit (markdown lint, plan archive)** - COMPLETE. Fixed MD040 in CLAUDE.md (fenced code language), MD024 in docs/design/commit-pipeline-phases.md (unique phase headings). Archived session-optimization-commit-pipeline-orchestration-refactor.md to SessionOptimization; removed from roadmap.
 - **Phase 43 Step 6 (Naming Unification and get_* Tool Review)**- COMPLETE. Documented naming conventions, inventory, and per-case decisions in plan; added Tools vs Resources section to docs/api/tools.md and AGENTS.md; added test_phase43_get_tools_naming.py to enforce get_* read-only convention.
 - **Claude-mem improvements: get_usage_events tool** - COMPLETE. Implemented MCP tool get_usage_events(ids=[...]) backed by UsageTracker.get_events_by_ids, with tests, coverage, and quality gate passing to enable the search_usage → get_usage_events progressive-disclosure workflow.
+- - **Usage analytics boundary model and test fixes** - COMPLETE. Updated usage analytics models/tools to use a UsageEventPayload boundary model with stable IDs, aligned get_usage_events/search/observation flows, and fixed python_adapter tests/type issues so MCP pre-commit checks (fix_errors, format, quality, tests) pass with 3823 tests and ~90.19% coverage.
 
 ## 2026
 

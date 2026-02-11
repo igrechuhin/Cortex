@@ -12,6 +12,8 @@
 
 - ✅ **Claude-mem improvements: get_usage_events tool** - COMPLETE (2026-02-11) - Implemented MCP tool get_usage_events(ids=[...]) backed by UsageTracker.get_events_by_ids, plus unit tests and quality gate / coverage checks, enabling token-efficient workflow search_usage -> get_usage_events for selected observations.
 
+- ✅ **Usage analytics boundary model and test fixes** - COMPLETE (2026-02-11) - Updated usage analytics models and tools to use a UsageEventPayload boundary model with stable IDs, improved robustness of get_usage_events/search/observation flows, and fixed python_adapter tests/type checking so MCP-based pre-commit checks (fix_errors, format, quality, tests) pass with ~90.19% coverage.
+
 ## Completed Work (2026)
 
 - ✅ **Implement prompt memory bank and function length** - COMPLETE (2026) - Enforced manage_file-only for memory bank writes in implement Step 5 (requirement, prohibition, full-content fallback); added function-length reminder in Step 4; added rules-disabled fallback in analyze prompt. Fixed token-budget integration test to accept comma-formatted numbers.

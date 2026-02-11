@@ -21,6 +21,7 @@ from cortex.tools.usage_analytics import (
     get_usage_events,
     get_usage_observation,
     get_usage_observation_resource,
+    get_usage_timeline,
     parse_date_range,
     search_usage,
 )
@@ -331,6 +332,24 @@ class TestUsageAnalyticsToolsUnavailable:
         result = json.loads(result_str)
         assert result["status"] == "unavailable"
 
+    async def test_get_usage_timeline_unavailable(self) -> None:
+        """get_usage_timeline returns unavailable when tracker is None."""
+        with (
+            patch(
+                "cortex.tools.usage_analytics.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp"),
+            ),
+            patch(
+                "cortex.tools.usage_analytics._get_tracker",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+        ):
+            result_str = await get_usage_timeline(around_id="abc", ctx=None)
+        result = json.loads(result_str)
+        assert result["status"] == "unavailable"
+
     async def test_search_usage_unavailable(self) -> None:
         """search_usage returns unavailable when tracker is None."""
         with (
@@ -488,7 +507,9 @@ class TestUsageAnalyticsToolsSuccess:
                 return self._data
 
         mock_tracker = AsyncMock()
-        fake_event = FakeEvent({"id": "abc", "tool_name": "x"})
+        fake_event = FakeEvent(
+            {"id": "abc", "tool_name": "x", "result_summary": "short summary"}
+        )
         mock_tracker.get_event_by_id = AsyncMock(return_value=fake_event)
         with (
             patch(
@@ -508,6 +529,7 @@ class TestUsageAnalyticsToolsSuccess:
         assert result["project_root"] == "/tmp"
         assert result["event"]["id"] == "abc"
         assert result["event"]["tool_name"] == "x"
+        assert result["event"]["result_summary"] == "short summary"
 
     async def test_search_usage_success(self) -> None:
         """search_usage returns success with compact results."""
@@ -604,7 +626,9 @@ class TestUsageAnalyticsToolsSuccess:
                 return self._data
 
         mock_tracker = AsyncMock()
-        fake = FakeEvent({"id": "e1", "tool_name": "manage_file"})
+        fake = FakeEvent(
+            {"id": "e1", "tool_name": "manage_file", "result_summary": "summary text"}
+        )
         mock_tracker.get_events_by_ids = AsyncMock(return_value=[fake])
         with (
             patch(
@@ -624,4 +648,94 @@ class TestUsageAnalyticsToolsSuccess:
         assert result["project_root"] == "/tmp"
         assert len(result["events"]) == 1
         assert result["events"][0]["id"] == "e1"
+        assert result["events"][0]["result_summary"] == "summary text"
         assert "missing" in result["missing_ids"]
+
+    async def test_get_usage_timeline_success(self) -> None:
+        """get_usage_timeline returns success with compact timeline entries."""
+
+        class FakeEvent:
+            def __init__(self, data: dict[str, object]) -> None:
+                self.id = str(data.get("id", "e1"))
+                self.tool_name = str(data.get("tool_name", "tool_x"))
+                self.timestamp = str(data.get("timestamp", "2026-02-10T12:00:00+00:00"))
+                dur_raw = data.get("duration_ms", 1.0)
+                self.duration_ms = (
+                    float(dur_raw) if isinstance(dur_raw, (int, float)) else 1.0
+                )
+                self.success = bool(data.get("success", True))
+                self.error_type = data.get("error_type")
+                self.handler_kind = str(data.get("handler_kind", "tool"))
+
+        mock_tracker = AsyncMock()
+        mock_tracker.get_usage_timeline = AsyncMock(
+            return_value=[
+                FakeEvent(
+                    {
+                        "id": "e1",
+                        "tool_name": "manage_file",
+                        "timestamp": "2026-02-10T12:00:00+00:00",
+                        "duration_ms": 10.0,
+                        "success": True,
+                        "error_type": None,
+                        "handler_kind": "tool",
+                    }
+                )
+            ]
+        )
+        with (
+            patch(
+                "cortex.tools.usage_analytics.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp"),
+            ),
+            patch(
+                "cortex.tools.usage_analytics._get_tracker",
+                new_callable=AsyncMock,
+                return_value=mock_tracker,
+            ),
+        ):
+            result_str = await get_usage_timeline(
+                around_id="e1",
+                limit=10,
+                ctx=None,
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["project_root"] == "/tmp"
+        assert result["around_id"] == "e1"
+        assert result["total"] == 1
+        assert len(result["results"]) == 1
+        entry = result["results"][0]
+        assert entry["id"] == "e1"
+        assert entry["tool_name"] == "manage_file"
+        assert entry["success"] is True
+
+    async def test_get_usage_timeline_clamps_limit_bounds(self) -> None:
+        """get_usage_timeline clamps limit to [1, 500] before calling tracker."""
+        mock_tracker = AsyncMock()
+        mock_tracker.get_usage_timeline = AsyncMock(return_value=[])
+        with (
+            patch(
+                "cortex.tools.usage_analytics.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp"),
+            ),
+            patch(
+                "cortex.tools.usage_analytics._get_tracker",
+                new_callable=AsyncMock,
+                return_value=mock_tracker,
+            ),
+        ):
+            result_str = await get_usage_timeline(
+                around_id="e1",
+                limit=0,
+                ctx=None,
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["total"] == 0
+        mock_tracker.get_usage_timeline.assert_awaited_once_with(
+            around_id="e1",
+            limit=1,
+        )

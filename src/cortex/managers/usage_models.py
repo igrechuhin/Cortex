@@ -29,6 +29,13 @@ class ToolUsageEvent(BaseModel):
         default="tool",
         description="Whether the handler is an MCP tool or resource (Phase 43)",
     )
+    result_summary: str | None = Field(
+        default=None,
+        description=(
+            "Short, optional result summary for this usage event, when available. "
+            "Used for future semantic search and contextual retrieval."
+        ),
+    )
 
 
 class ToolUsageStats(BaseModel):

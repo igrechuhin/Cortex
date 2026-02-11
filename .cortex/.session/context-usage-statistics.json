@@ -1,24 +1,25 @@
 {
-  "last_updated": "2026-02-11T11:01",
-  "total_sessions_analyzed": 31,
-  "total_load_context_calls": 34,
-  "avg_token_utilization": 0.467,
-  "avg_files_selected": 6.59,
-  "avg_relevance_score": 0.6,
+  "last_updated": "2026-02-11T14:44",
+  "total_sessions_analyzed": 127,
+  "total_load_context_calls": 149,
+  "avg_token_utilization": 0.464,
+  "avg_files_selected": 6.91,
+  "avg_relevance_score": 0.606,
   "common_task_patterns": {
-    "fix/debug": 5,
-    "other": 9,
-    "implement/add": 11,
-    "update/modify": 1,
-    "testing": 1,
-    "documentation": 1,
-    "refactor": 3,
-    "review": 3
+    "fix/debug": 22,
+    "other": 30,
+    "implement/add": 45,
+    "update/modify": 5,
+    "testing": 22,
+    "documentation": 4,
+    "refactor": 9,
+    "review": 9,
+    "optimization": 3
   },
   "insights": {
     "task_type_recommendations": {
       "fix/debug": {
-        "calls_count": 5,
+        "calls_count": 22,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
@@ -27,12 +28,12 @@
           "progress.md",
           "systemPatterns.md"
         ],
-        "avg_utilization": 0.71,
-        "avg_relevance": 0.56,
+        "avg_utilization": 0.506,
+        "avg_relevance": 0.568,
         "notes": "Adequate performance"
       },
       "other": {
-        "calls_count": 9,
+        "calls_count": 30,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
@@ -41,12 +42,12 @@
           "progress.md",
           "systemPatterns.md"
         ],
-        "avg_utilization": 0.331,
-        "avg_relevance": 0.554,
+        "avg_utilization": 0.427,
+        "avg_relevance": 0.553,
         "notes": "Moderate utilization - some budget optimization possible"
       },
       "implement/add": {
-        "calls_count": 11,
+        "calls_count": 45,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
@@ -55,36 +56,12 @@
           "productContext.md",
           "systemPatterns.md"
         ],
-        "avg_utilization": 0.455,
-        "avg_relevance": 0.615,
+        "avg_utilization": 0.45,
+        "avg_relevance": 0.602,
         "notes": "Moderate utilization - some budget optimization possible"
       },
       "update/modify": {
-        "calls_count": 1,
-        "recommended_budget": 10000,
-        "essential_files": [
-          "roadmap.md",
-          "progress.md",
-          "activeContext.md"
-        ],
-        "avg_utilization": 0.206,
-        "avg_relevance": 0.595,
-        "notes": "Low utilization - consider smaller token budgets; Limited data - insights will improve with more samples"
-      },
-      "testing": {
-        "calls_count": 1,
-        "recommended_budget": 10000,
-        "essential_files": [
-          "roadmap.md",
-          "progress.md",
-          "activeContext.md"
-        ],
-        "avg_utilization": 0.307,
-        "avg_relevance": 0.572,
-        "notes": "Moderate utilization - some budget optimization possible; Limited data - insights will improve with more samples"
-      },
-      "documentation": {
-        "calls_count": 1,
+        "calls_count": 5,
         "recommended_budget": 10000,
         "essential_files": [
           "productContext.md",
@@ -93,27 +70,40 @@
           "roadmap.md",
           "activeContext.md"
         ],
-        "avg_utilization": 0.921,
-        "avg_relevance": 0.582,
-        "notes": "High utilization - budget well-matched to needs; Limited data - insights will improve with more samples"
-      },
-      "refactor": {
-        "calls_count": 3,
-        "recommended_budget": 15000,
-        "essential_files": [
-          "techContext.md",
-          "roadmap.md",
-          "progress.md",
-          "systemPatterns.md",
-          "activeContext.md"
-        ],
-        "avg_utilization": 0.562,
-        "avg_relevance": 0.686,
+        "avg_utilization": 0.636,
+        "avg_relevance": 0.674,
         "notes": "Adequate performance"
       },
-      "review": {
-        "calls_count": 3,
-        "recommended_budget": 15000,
+      "testing": {
+        "calls_count": 22,
+        "recommended_budget": 10000,
+        "essential_files": [
+          "productContext.md",
+          "techContext.md",
+          "systemPatterns.md",
+          "roadmap.md"
+        ],
+        "avg_utilization": 0.506,
+        "avg_relevance": 0.678,
+        "notes": "Adequate performance"
+      },
+      "documentation": {
+        "calls_count": 4,
+        "recommended_budget": 10000,
+        "essential_files": [
+          "productContext.md",
+          "systemPatterns.md",
+          "projectBrief.md",
+          "roadmap.md",
+          "activeContext.md"
+        ],
+        "avg_utilization": 0.529,
+        "avg_relevance": 0.595,
+        "notes": "Adequate performance"
+      },
+      "refactor": {
+        "calls_count": 9,
+        "recommended_budget": 10000,
         "essential_files": [
           "techContext.md",
           "roadmap.md",
@@ -121,80 +111,113 @@
           "systemPatterns.md",
           "activeContext.md"
         ],
-        "avg_utilization": 0.405,
-        "avg_relevance": 0.686,
+        "avg_utilization": 0.358,
+        "avg_relevance": 0.649,
         "notes": "Moderate utilization - some budget optimization possible"
+      },
+      "review": {
+        "calls_count": 9,
+        "recommended_budget": 10000,
+        "essential_files": [
+          "techContext.md",
+          "roadmap.md",
+          "progress.md",
+          "systemPatterns.md",
+          "activeContext.md"
+        ],
+        "avg_utilization": 0.409,
+        "avg_relevance": 0.626,
+        "notes": "Moderate utilization - some budget optimization possible"
+      },
+      "optimization": {
+        "calls_count": 3,
+        "recommended_budget": 15000,
+        "essential_files": [
+          "roadmap.md",
+          "progress.md",
+          "activeContext.md"
+        ],
+        "avg_utilization": 0.536,
+        "avg_relevance": 0.628,
+        "notes": "Adequate performance"
       }
     },
     "file_effectiveness": {
       "activeContext.md": {
-        "times_selected": 28,
-        "avg_relevance": 0.807,
+        "times_selected": 124,
+        "avg_relevance": 0.813,
         "task_types_used": [
-          "testing",
+          "documentation",
           "update/modify",
-          "other",
           "review",
           "refactor",
-          "documentation",
+          "other",
+          "optimization",
+          "testing",
           "implement/add",
           "fix/debug"
         ],
         "recommendation": "High value - prioritize for loading"
       },
       "techContext.md": {
-        "times_selected": 30,
-        "avg_relevance": 0.62,
+        "times_selected": 137,
+        "avg_relevance": 0.563,
         "task_types_used": [
-          "testing",
+          "documentation",
           "update/modify",
-          "other",
           "review",
           "refactor",
-          "documentation",
+          "other",
+          "optimization",
+          "testing",
           "implement/add",
           "fix/debug"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "roadmap.md": {
-        "times_selected": 28,
-        "avg_relevance": 0.633,
+        "times_selected": 124,
+        "avg_relevance": 0.628,
         "task_types_used": [
-          "testing",
+          "documentation",
           "update/modify",
-          "other",
           "review",
           "refactor",
-          "documentation",
+          "other",
+          "optimization",
+          "testing",
           "implement/add",
           "fix/debug"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "file.md": {
-        "times_selected": 19,
-        "avg_relevance": 0.319,
+        "times_selected": 108,
+        "avg_relevance": 0.289,
         "task_types_used": [
-          "testing",
-          "update/modify",
-          "other",
           "documentation",
+          "update/modify",
+          "review",
+          "refactor",
+          "other",
+          "optimization",
+          "testing",
           "implement/add",
           "fix/debug"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "projectBrief.md": {
-        "times_selected": 30,
-        "avg_relevance": 0.425,
+        "times_selected": 137,
+        "avg_relevance": 0.472,
         "task_types_used": [
-          "testing",
+          "documentation",
           "update/modify",
-          "other",
           "review",
           "refactor",
-          "documentation",
+          "other",
+          "optimization",
+          "testing",
           "implement/add",
           "fix/debug"
         ],
@@ -204,8 +227,8 @@
         "times_selected": 3,
         "avg_relevance": 0.621,
         "task_types_used": [
-          "fix/debug",
-          "other"
+          "other",
+          "fix/debug"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -213,61 +236,80 @@
         "times_selected": 3,
         "avg_relevance": 0.24,
         "task_types_used": [
-          "fix/debug",
-          "other"
+          "other",
+          "fix/debug"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "progress.md": {
-        "times_selected": 24,
-        "avg_relevance": 0.612,
+        "times_selected": 115,
+        "avg_relevance": 0.615,
         "task_types_used": [
-          "testing",
+          "documentation",
           "update/modify",
-          "other",
           "review",
           "refactor",
-          "documentation",
+          "other",
+          "optimization",
+          "testing",
           "implement/add",
           "fix/debug"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "systemPatterns.md": {
-        "times_selected": 29,
-        "avg_relevance": 0.614,
+        "times_selected": 134,
+        "avg_relevance": 0.555,
         "task_types_used": [
-          "testing",
+          "documentation",
           "update/modify",
-          "other",
           "review",
           "refactor",
-          "documentation",
+          "other",
+          "optimization",
+          "testing",
           "implement/add",
           "fix/debug"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "productContext.md": {
-        "times_selected": 30,
-        "avg_relevance": 0.607,
+        "times_selected": 135,
+        "avg_relevance": 0.549,
         "task_types_used": [
-          "testing",
+          "documentation",
           "update/modify",
-          "other",
           "review",
           "refactor",
-          "documentation",
+          "other",
+          "optimization",
+          "testing",
           "implement/add",
           "fix/debug"
         ],
         "recommendation": "Moderate value - include when relevant"
+      },
+      "file1.md": {
+        "times_selected": 5,
+        "avg_relevance": 0.9,
+        "task_types_used": [
+          "testing"
+        ],
+        "recommendation": "High value - prioritize for loading"
+      },
+      "file2.md": {
+        "times_selected": 5,
+        "avg_relevance": 0.8,
+        "task_types_used": [
+          "testing"
+        ],
+        "recommendation": "High value - prioritize for loading"
       }
     },
     "learned_patterns": [
-      "Average 46% budget utilization - ~11k tokens unused per call",
-      "'techContext.md' is most frequently loaded (30/34 calls)",
-      "Most common task type: 'implement/add' (11 calls)"
+      "Average 46% budget utilization - ~12k tokens unused per call",
+      "'techContext.md' is most frequently loaded (137/149 calls)",
+      "Most common task type: 'implement/add' (45 calls)"
     ],
     "budget_recommendations": {
       "fix/debug": 10000,
@@ -276,8 +318,9 @@
       "update/modify": 10000,
       "testing": 10000,
       "documentation": 10000,
-      "refactor": 15000,
-      "review": 15000
+      "refactor": 10000,
+      "review": 10000,
+      "optimization": 15000
     }
   },
   "entries": [
@@ -1313,6 +1356,3308 @@
         "techContext.md": 0.687,
         "productContext.md": 0.674,
         "systemPatterns.md": 0.687
+      }
+    },
+    {
+      "session_id": "bf9c7b1337b7",
+      "timestamp": "2026-02-11T11:27",
+      "task_description": "Run full /cortex/commit pipeline with all required checks, memory bank updates, and git commit+push.",
+      "token_budget": 5000,
+      "total_tokens": 4085,
+      "utilization": 0.817,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.696,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "productContext.md",
+        "techContext.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.634,
+        "progress.md": 0.638,
+        "activeContext.md": 0.837,
+        "projectBrief.md": 0.434,
+        "techContext.md": 0.802,
+        "productContext.md": 0.784,
+        "systemPatterns.md": 0.745
+      }
+    },
+    {
+      "session_id": "a8dfb25b3733",
+      "timestamp": "2026-02-11T11:55",
+      "task_description": "Implement roadmap step: Claude-mem inspired improvements (usage search, observations, progressive disclosure) based on its plan file.",
+      "token_budget": 10000,
+      "total_tokens": 9659,
+      "utilization": 0.9659,
+      "files_selected": 6,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.651,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "activeContext.md",
+        "projectBrief.md",
+        "techContext.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.645,
+        "progress.md": 0.64,
+        "activeContext.md": 0.844,
+        "projectBrief.md": 0.391,
+        "techContext.md": 0.718,
+        "productContext.md": 0.594,
+        "systemPatterns.md": 0.725
+      }
+    },
+    {
+      "session_id": "a8dfb25b3733",
+      "timestamp": "2026-02-11T12:13",
+      "task_description": "Continue implementing Claude-mem inspired improvements plan (usage timeline, observations, progressive disclosure) focusing now on get_usage_timeline tool and tests.",
+      "token_budget": 8000,
+      "total_tokens": 5097,
+      "utilization": 0.637125,
+      "files_selected": 5,
+      "files_excluded": 2,
+      "avg_relevance_score": 0.626,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "techContext.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.64,
+        "progress.md": 0.62,
+        "activeContext.md": 0.807,
+        "projectBrief.md": 0.369,
+        "techContext.md": 0.669,
+        "productContext.md": 0.655,
+        "systemPatterns.md": 0.622
+      }
+    },
+    {
+      "session_id": "a8dfb25b3733",
+      "timestamp": "2026-02-11T12:19",
+      "task_description": "Refactor usage_analytics get_usage_timeline timeline results helper to use a Pydantic v2 model instead of raw dicts, and keep MCP JSON API stable.",
+      "token_budget": 0,
+      "total_tokens": 0,
+      "utilization": 0.0,
+      "files_selected": 0,
+      "files_excluded": 7,
+      "avg_relevance_score": 0.584,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [],
+      "relevance_by_file": {
+        "roadmap.md": 0.482,
+        "progress.md": 0.548,
+        "activeContext.md": 0.715,
+        "projectBrief.md": 0.38,
+        "techContext.md": 0.661,
+        "productContext.md": 0.659,
+        "systemPatterns.md": 0.642
+      }
+    },
+    {
+      "session_id": "a8dfb25b3733",
+      "timestamp": "2026-02-11T12:25",
+      "task_description": "Refactor dict[str, object] usages in src/cortex/tools/usage_analytics.py to use Pydantic models where appropriate and fix tests.",
+      "token_budget": 2000,
+      "total_tokens": 1606,
+      "utilization": 0.803,
+      "files_selected": 2,
+      "files_excluded": 5,
+      "avg_relevance_score": 0.701,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "techContext.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.633,
+        "progress.md": 0.626,
+        "activeContext.md": 0.817,
+        "projectBrief.md": 0.442,
+        "techContext.md": 0.811,
+        "productContext.md": 0.781,
+        "systemPatterns.md": 0.797
+      }
+    },
+    {
+      "session_id": "a8dfb25b3733",
+      "timestamp": "2026-02-11T12:28",
+      "task_description": "End-of-session analysis for agent transcript 23a63e9d-d6f0-4866-ab57-bab025010ace focusing on context effectiveness (especially Pydantic v2 guidance) and session optimization.",
+      "token_budget": 5000,
+      "total_tokens": 3693,
+      "utilization": 0.7386,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.519,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "projectBrief.md",
+        "techContext.md",
+        "productContext.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.59,
+        "progress.md": 0.503,
+        "activeContext.md": 0.636,
+        "projectBrief.md": 0.339,
+        "techContext.md": 0.545,
+        "productContext.md": 0.555,
+        "systemPatterns.md": 0.464
+      }
+    },
+    {
+      "session_id": "a387c9f02a13",
+      "timestamp": "2026-02-11T13:13",
+      "task_description": "Implement roadmap step: Claude-mem inspired improvements (usage search, observations, progressive disclosure) based on its plan file.",
+      "token_budget": 0,
+      "total_tokens": 0,
+      "utilization": 0.0,
+      "files_selected": 0,
+      "files_excluded": 7,
+      "avg_relevance_score": 0.65,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [],
+      "relevance_by_file": {
+        "roadmap.md": 0.644,
+        "progress.md": 0.639,
+        "activeContext.md": 0.843,
+        "projectBrief.md": 0.391,
+        "techContext.md": 0.718,
+        "productContext.md": 0.594,
+        "systemPatterns.md": 0.724
+      }
+    },
+    {
+      "session_id": "f260b5b8a7d4",
+      "timestamp": "2026-02-11T13:43",
+      "task_description": "Run full /cortex/commit pipeline: preflight checks, docs/memory updates, final validation, git commit and push.",
+      "token_budget": 10000,
+      "total_tokens": 9723,
+      "utilization": 0.9723,
+      "files_selected": 6,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.677,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "activeContext.md",
+        "projectBrief.md",
+        "techContext.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.631,
+        "progress.md": 0.635,
+        "activeContext.md": 0.832,
+        "projectBrief.md": 0.418,
+        "techContext.md": 0.771,
+        "productContext.md": 0.726,
+        "systemPatterns.md": 0.725
+      }
+    },
+    {
+      "session_id": "f260b5b8a7d4",
+      "timestamp": "2026-02-11T13:50",
+      "task_description": "Diagnose and fix failing tests related to recent usage analytics and usage tracker changes, using Cortex MCP fix_tests workflow.",
+      "token_budget": 5000,
+      "total_tokens": 4085,
+      "utilization": 0.817,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.641,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.613,
+        "progress.md": 0.635,
+        "activeContext.md": 0.824,
+        "projectBrief.md": 0.394,
+        "techContext.md": 0.722,
+        "productContext.md": 0.62,
+        "systemPatterns.md": 0.679
+      }
+    },
+    {
+      "session_id": "f260b5b8a7d4",
+      "timestamp": "2026-02-11T14:00",
+      "task_description": "Fix failing tests in this Cortex repo based on the failure transcript at /Users/i.grechukhin/.cursor/projects/Users-i-grechukhin-Repo-Cortex/agent-transcripts/b3e2fa4d-6a09-4b14-a4a5-e05ecb8a3bc4.txt",
+      "token_budget": 5000,
+      "total_tokens": 4085,
+      "utilization": 0.817,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.655,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.632,
+        "progress.md": 0.639,
+        "activeContext.md": 0.831,
+        "projectBrief.md": 0.398,
+        "techContext.md": 0.731,
+        "productContext.md": 0.653,
+        "systemPatterns.md": 0.702
+      }
+    },
+    {
+      "session_id": "f260b5b8a7d4",
+      "timestamp": "2026-02-11T14:03",
+      "task_description": "Investigate and fix remaining test failure where coverage is OK but structured error details for failures are missing or inadequate, focusing on usage analytics / pre-commit checks error reporting.",
+      "token_budget": 5000,
+      "total_tokens": 4085,
+      "utilization": 0.817,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.695,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.578,
+        "progress.md": 0.642,
+        "activeContext.md": 0.833,
+        "projectBrief.md": 0.816,
+        "techContext.md": 0.773,
+        "productContext.md": 0.6,
+        "systemPatterns.md": 0.621
+      }
+    },
+    {
+      "session_id": "026e9009b804",
+      "timestamp": "2026-02-09T09:08",
+      "task_description": "Evaluate moving roadmap to structured format (JSON) with dedicated read/write APIs for programmatic edits; future work after plan-registration blocker fix",
+      "token_budget": 15000,
+      "total_tokens": 9031,
+      "utilization": 0.6020666666666666,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.598,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "techContext.md",
+        "progress.md",
+        "roadmap.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "file.md",
+        "productContext.md",
+        "activeContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.621,
+        "progress.md": 0.635,
+        "activeContext.md": 0.838,
+        "file.md": 0.234,
+        "projectBrief.md": 0.593,
+        "techContext.md": 0.652,
+        "productContext.md": 0.619,
+        "systemPatterns.md": 0.594
+      }
+    },
+    {
+      "session_id": "026e9009b804",
+      "timestamp": "2026-02-09T09:12",
+      "task_description": "Analyze prompt and memory bank responsibilities: clarify analyze prompt scope, memory bank updater agent, and document responsibilities",
+      "token_budget": 15000,
+      "total_tokens": 9157,
+      "utilization": 0.6104666666666667,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.506,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "techContext.md",
+        "progress.md",
+        "roadmap.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "file.md",
+        "productContext.md",
+        "activeContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.634,
+        "progress.md": 0.445,
+        "activeContext.md": 0.537,
+        "file.md": 0.234,
+        "projectBrief.md": 0.409,
+        "techContext.md": 0.657,
+        "productContext.md": 0.558,
+        "systemPatterns.md": 0.573
+      }
+    },
+    {
+      "session_id": "026e9009b804",
+      "timestamp": "2026-02-09T09:15",
+      "task_description": "Connection closed follow-ups: implement plan for fix_quality_issues connection-closed handling, retry logic, and related session optimization",
+      "token_budget": 15000,
+      "total_tokens": 9204,
+      "utilization": 0.6136,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.551,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "techContext.md",
+        "progress.md",
+        "roadmap.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "file.md",
+        "productContext.md",
+        "activeContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.612,
+        "activeContext.md": 0.812,
+        "file.md": 0.234,
+        "projectBrief.md": 0.337,
+        "techContext.md": 0.593,
+        "productContext.md": 0.599,
+        "systemPatterns.md": 0.573
+      }
+    },
+    {
+      "session_id": "03e2506436ee",
+      "timestamp": "2026-02-02T10:18",
+      "task_description": "Session optimization: commit prompt require explicit rule file read when rules() disabled, add Step 12.6 markdown lint fallback example, document tool unavailability after connection closed in mcp-tool-timeouts",
+      "token_budget": 25000,
+      "total_tokens": 9466,
+      "utilization": 0.37864,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.695,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "activeContext.md",
+        "progress.md",
+        "projectBrief.md",
+        "productContext.md",
+        "techContext.md",
+        "file.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.621
+      }
+    },
+    {
+      "session_id": "0a6520891498",
+      "timestamp": "2026-02-02T11:12",
+      "task_description": "Phase 43 Step 3.2 Phase 3 Validation: add MCP resources for validate tool (validate resource, Phase 3 Validation)",
+      "token_budget": 25000,
+      "total_tokens": 10418,
+      "utilization": 0.41672,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "roadmap.md",
+        "activeContext.md",
+        "file.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "projectBrief.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.225
+      }
+    },
+    {
+      "session_id": "0e05f687c739",
+      "timestamp": "2026-02-02T15:36",
+      "task_description": "Phase 46: Extract setup logic to separate MCP server - setup prompts, setup tools check_structure_health get_structure_info, dynamic mount FastMCP",
+      "token_budget": 25000,
+      "total_tokens": 11698,
+      "utilization": 0.46792,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "techContext.md",
+        "activeContext.md",
+        "projectBrief.md",
+        "progress.md",
+        "file.md",
+        "roadmap.md",
+        "productContext.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.648,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.225
+      }
+    },
+    {
+      "session_id": "106c8d90bdab",
+      "timestamp": "2026-01-29T11:05",
+      "task_description": "Phase 62 Synapse session optimization: next step is either Step 0 (harden commit.md against unauthorized git writes), Step 2 (enforce roadmap_sync as true commit gate), or Step 3 (plan archiver use preferred tool primitives). Need current state of commit.md and plan.",
+      "token_budget": 20000,
+      "total_tokens": 10413,
+      "utilization": 0.52065,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.657,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "techContext.md",
+        "projectBrief.md",
+        "productContext.md",
+        "roadmap.md",
+        "file.md",
+        "progress.md",
+        "activeContext.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.644,
+        "progress.md": 0.599,
+        "activeContext.md": 0.814,
+        "file.md": 0.573
+      }
+    },
+    {
+      "session_id": "106c8d90bdab",
+      "timestamp": "2026-01-29T11:18",
+      "task_description": "Phase 62 Step 0: Harden commit.md against unauthorized git writes - add precondition gate, Git Write Safety section, explicit checks in Step 13 Commit and Step 14 Push",
+      "token_budget": 25000,
+      "total_tokens": 10891,
+      "utilization": 0.43564,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.671,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "techContext.md",
+        "projectBrief.md",
+        "productContext.md",
+        "roadmap.md",
+        "file.md",
+        "progress.md",
+        "activeContext.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.645,
+        "progress.md": 0.616,
+        "activeContext.md": 0.837,
+        "file.md": 0.585
+      }
+    },
+    {
+      "session_id": "107f04e293cd",
+      "timestamp": "2026-01-29T12:24",
+      "task_description": "Implement the next roadmap step (respecting Blockers (ASAP Priority) section) from roadmap.md",
+      "token_budget": 20000,
+      "total_tokens": 11264,
+      "utilization": 0.5632,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.625,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "activeContext.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "techContext.md",
+        "file.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.618,
+        "progress.md": 0.557,
+        "activeContext.md": 0.729,
+        "file.md": 0.598
+      }
+    },
+    {
+      "session_id": "107f04e293cd",
+      "timestamp": "2026-01-29T12:32",
+      "task_description": "Phase 62 - Step 2: Enforce roadmap_sync as a true commit gate by updating commit.md Step 10 and the roadmap-sync-validator agent semantics and remediation.",
+      "token_budget": 20000,
+      "total_tokens": 11264,
+      "utilization": 0.5632,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.572,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "activeContext.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "techContext.md",
+        "file.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.64,
+        "progress.md": 0.589,
+        "activeContext.md": 0.818,
+        "file.md": 0.241
+      }
+    },
+    {
+      "session_id": "11e58b65bb92",
+      "timestamp": "2026-01-29T14:57",
+      "task_description": "Enhance Cortex MCP tool descriptions with USE WHEN triggers and EXAMPLES sections for all 53+ tools",
+      "token_budget": 30000,
+      "total_tokens": 10682,
+      "utilization": 0.35606666666666664,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.656,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "activeContext.md",
+        "projectBrief.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "file.md",
+        "productContext.md",
+        "progress.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.644,
+        "progress.md": 0.632,
+        "activeContext.md": 0.818,
+        "file.md": 0.53
+      }
+    },
+    {
+      "session_id": "138b631e7dc7",
+      "timestamp": "2026-02-05T19:28",
+      "task_description": "Implement structured plan creation via Cortex MCP tools: create_plan and register_plan_in_roadmap tools for roadmap management",
+      "token_budget": 50000,
+      "total_tokens": 15246,
+      "utilization": 0.30492,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.651,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "techContext.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "productContext.md",
+        "file.md",
+        "activeContext.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.646,
+        "activeContext.md": 0.855,
+        "file.md": 0.249,
+        "projectBrief.md": 0.433,
+        "techContext.md": 0.808,
+        "productContext.md": 0.767,
+        "systemPatterns.md": 0.803
+      }
+    },
+    {
+      "session_id": "138b631e7dc7",
+      "timestamp": "2026-02-05T19:43",
+      "task_description": "Wire optimization configuration to runtime behavior - connect optimization config settings to actual runtime execution and decision-making",
+      "token_budget": 20000,
+      "total_tokens": 14971,
+      "utilization": 0.74855,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.463,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "roadmap.md",
+        "techContext.md",
+        "projectBrief.md",
+        "productContext.md",
+        "file.md",
+        "activeContext.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.625,
+        "progress.md": 0.458,
+        "activeContext.md": 0.587,
+        "file.md": 0.249,
+        "projectBrief.md": 0.329,
+        "techContext.md": 0.479,
+        "productContext.md": 0.519,
+        "systemPatterns.md": 0.459
+      }
+    },
+    {
+      "session_id": "1767c7eb8c42",
+      "timestamp": "2026-01-31T21:53",
+      "task_description": "Phase 20 Code Review Fixes: fix test import error in test_fix_markdown_lint, fix type errors in test files, rules violations",
+      "token_budget": 20000,
+      "total_tokens": 8172,
+      "utilization": 0.4086,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "file.md",
+        "activeContext.md",
+        "productContext.md",
+        "techContext.md",
+        "roadmap.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.648,
+        "progress.md": 0.65,
+        "activeContext.md": 0.854,
+        "file.md": 0.231
+      }
+    },
+    {
+      "session_id": "17bbecbd5e27",
+      "timestamp": "2026-02-02T10:57",
+      "task_description": "Phase 43: manage_file read as MCP Resource; resource API design; tool registration",
+      "token_budget": 25000,
+      "total_tokens": 10028,
+      "utilization": 0.40112,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "progress.md",
+        "productContext.md",
+        "activeContext.md",
+        "techContext.md",
+        "file.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.225
+      }
+    },
+    {
+      "session_id": "182c216223d4",
+      "timestamp": "2026-02-01T11:35",
+      "task_description": "Phase 20 Code Review Fixes: split initialization and structure_analyzer files to under 400 lines",
+      "token_budget": 25000,
+      "total_tokens": 8882,
+      "utilization": 0.35528,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.597,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "activeContext.md",
+        "file.md",
+        "projectBrief.md",
+        "techContext.md",
+        "productContext.md",
+        "progress.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.647,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.229
+      }
+    },
+    {
+      "session_id": "1c8ce5b8bc39",
+      "timestamp": "2026-02-05T11:36",
+      "task_description": "Investigate and fix the capture_session_script MCP tool failure blocker from roadmap.md",
+      "token_budget": 15000,
+      "total_tokens": 9430,
+      "utilization": 0.6286666666666667,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.524,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 2,
+      "selected_file_names": [
+        "progress.md",
+        "projectBrief.md",
+        "file.md",
+        "productContext.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "activeContext.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.648,
+        "activeContext.md": 0.858,
+        "file.md": 0.214,
+        "projectBrief.md": 0.25
+      }
+    },
+    {
+      "session_id": "1cf5a9a271a7",
+      "timestamp": "2026-02-02T09:26",
+      "task_description": "Phase 43 Step 3.2: migrate remaining read-only tools to MCP resources (get_version_history, get_dependency_graph, Phase 2 linking tools). Resource decorator stack: @mcp.resource(uri), @ensure_usage_context, @mcp_resource_wrapper. Pilot resources get_memory_bank_stats_resource and get_structure_info_resource already exist.",
+      "token_budget": 25000,
+      "total_tokens": 8585,
+      "utilization": 0.3434,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.657,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "file.md",
+        "progress.md",
+        "roadmap.md",
+        "projectBrief.md",
+        "activeContext.md",
+        "techContext.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.47
+      }
+    },
+    {
+      "session_id": "2ca89705f2cd",
+      "timestamp": "2026-01-31T11:58",
+      "task_description": "Conditional prompt registration: only show setup/migration prompts when project is not properly configured",
+      "token_budget": 20000,
+      "total_tokens": 5666,
+      "utilization": 0.2833,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.497,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "systemPatterns.md",
+        "roadmap.md",
+        "activeContext.md",
+        "file.md",
+        "techContext.md",
+        "projectBrief.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.572,
+        "progress.md": 0.381,
+        "activeContext.md": 0.535,
+        "file.md": 0.502
+      }
+    },
+    {
+      "session_id": "2de1a48924c5",
+      "timestamp": "2026-02-05T16:51",
+      "task_description": "Phase 43: Update tool registrations - reconsider how tools are registered in the MCP server, update registration logic for tools",
+      "token_budget": 40000,
+      "total_tokens": 14787,
+      "utilization": 0.369675,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.712,
+      "files_with_high_relevance": 5,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "productContext.md",
+        "file.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "progress.md",
+        "projectBrief.md",
+        "techContext.md",
+        "activeContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.649,
+        "activeContext.md": 0.859,
+        "file.md": 0.25,
+        "projectBrief.md": 0.831,
+        "techContext.md": 0.834,
+        "productContext.md": 0.794,
+        "systemPatterns.md": 0.829
+      }
+    },
+    {
+      "session_id": "30194cffbc4c",
+      "timestamp": "2026-01-31T12:06",
+      "task_description": "Ensure proper logging (FastMCP context): audit and standardize logging to align with FastMCP Context-based logging",
+      "token_budget": 20000,
+      "total_tokens": 5939,
+      "utilization": 0.29695,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.428,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 2,
+      "selected_file_names": [
+        "projectBrief.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "file.md",
+        "techContext.md",
+        "progress.md",
+        "activeContext.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.467,
+        "progress.md": 0.25,
+        "activeContext.md": 0.762,
+        "file.md": 0.233
+      }
+    },
+    {
+      "session_id": "3aff3ed67e2a",
+      "timestamp": "2026-02-01T15:47",
+      "task_description": "Phase 27 Script generation prevention: implement steps from plan phase-27-script-generation-prevention.md",
+      "token_budget": 25000,
+      "total_tokens": 9691,
+      "utilization": 0.38764,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.597,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "activeContext.md",
+        "productContext.md",
+        "projectBrief.md",
+        "progress.md",
+        "techContext.md",
+        "file.md",
+        "roadmap.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.649,
+        "activeContext.md": 0.859,
+        "file.md": 0.228
+      }
+    },
+    {
+      "session_id": "3cd4d2a5148d",
+      "timestamp": "2026-02-11T13:32",
+      "task_description": "Execute the complete /cortex/commit pipeline for current changes, including fixes, formatting, linting, type checking, quality checks, tests with coverage, memory bank and roadmap updates, plan archiving validation, submodule handling, final validation gate, git commit, push, and end-of-session analysis.",
+      "token_budget": 5000,
+      "total_tokens": 4085,
+      "utilization": 0.817,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.706,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "projectBrief.md",
+        "techContext.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.647,
+        "progress.md": 0.646,
+        "activeContext.md": 0.85,
+        "projectBrief.md": 0.442,
+        "techContext.md": 0.824,
+        "productContext.md": 0.746,
+        "systemPatterns.md": 0.79
+      }
+    },
+    {
+      "session_id": "3d97df974d59",
+      "timestamp": "2026-01-31T22:11",
+      "task_description": "Phase 20 code review fixes: split files over 400 lines (rollback_manager, template_manager, initialization, structure_analyzer, optimization_strategies, phase8_structure, phase5_execution)",
+      "token_budget": 20000,
+      "total_tokens": 8469,
+      "utilization": 0.42345,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.597,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "roadmap.md",
+        "projectBrief.md",
+        "techContext.md",
+        "file.md",
+        "progress.md",
+        "productContext.md",
+        "activeContext.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.648,
+        "progress.md": 0.649,
+        "activeContext.md": 0.858,
+        "file.md": 0.231
+      }
+    },
+    {
+      "session_id": "3f6c6db42c99",
+      "timestamp": "2026-02-01T21:20",
+      "task_description": "Phase 32: Fix MCP tool connection closure errors - implement plan steps",
+      "token_budget": 25000,
+      "total_tokens": 11422,
+      "utilization": 0.45688,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.597,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "roadmap.md",
+        "projectBrief.md",
+        "file.md",
+        "productContext.md",
+        "techContext.md",
+        "activeContext.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.227
+      }
+    },
+    {
+      "session_id": "41959ef505bd",
+      "timestamp": "2026-01-29T22:08",
+      "task_description": "Add TypeScript pre-commit adapter: implement FrameworkAdapter for TypeScript (format, lint, type-check) following Python adapter pattern; register in pre_commit_tools; add unit tests.",
+      "token_budget": 20000,
+      "total_tokens": 7758,
+      "utilization": 0.3879,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.594,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "projectBrief.md",
+        "file.md",
+        "productContext.md",
+        "activeContext.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.645,
+        "progress.md": 0.641,
+        "activeContext.md": 0.851,
+        "file.md": 0.24
+      }
+    },
+    {
+      "session_id": "444b0ea80653",
+      "timestamp": "2026-02-02T17:46",
+      "task_description": "Phase 48: Optimize-context feedback analysis - implement recommendations from analyze-context-effectiveness prompt and feedback schema",
+      "token_budget": 25000,
+      "total_tokens": 9956,
+      "utilization": 0.39824,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.595,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "file.md",
+        "systemPatterns.md",
+        "roadmap.md",
+        "progress.md",
+        "productContext.md",
+        "projectBrief.md",
+        "techContext.md",
+        "activeContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.648,
+        "progress.md": 0.65,
+        "activeContext.md": 0.859,
+        "file.md": 0.224
+      }
+    },
+    {
+      "session_id": "44d12357875a",
+      "timestamp": "2026-01-29T10:52",
+      "task_description": "Add Step 11.5 submodule validation to commit.md: verify submodule is clean after Step 11.4, block commit if uncommitted changes",
+      "token_budget": 20000,
+      "total_tokens": 10114,
+      "utilization": 0.5057,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.565,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "activeContext.md",
+        "techContext.md",
+        "roadmap.md",
+        "progress.md",
+        "projectBrief.md",
+        "productContext.md",
+        "file.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.644,
+        "progress.md": 0.599,
+        "activeContext.md": 0.776,
+        "file.md": 0.242
+      }
+    },
+    {
+      "session_id": "4583b96a9c3c",
+      "timestamp": "2026-01-30T23:37",
+      "task_description": "Implement Java Pre-Commit Adapter: add JavaAdapter (like GoAdapter/RustAdapter) for Java projects - go fmt/go vet/go test equivalent for Java (e.g. spotless, checkstyle, maven/gradle test), register in pre_commit_tools, remove Java from StubAdapterLanguage",
+      "token_budget": 25000,
+      "total_tokens": 3327,
+      "utilization": 0.13308,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.598,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "roadmap.md",
+        "progress.md",
+        "productContext.md",
+        "techContext.md",
+        "file.md",
+        "activeContext.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.648,
+        "activeContext.md": 0.858,
+        "file.md": 0.235
+      }
+    },
+    {
+      "session_id": "472714ed0b46",
+      "timestamp": "2026-01-29T20:11",
+      "task_description": "Phase 55: Improve Implementation Prompt Quality Gates - Add quality gates to implement-next-roadmap-step.md: Pydantic/format/type checks, implicit-concatenation check in Step 4.6, run ReadLints before Step 4.5, optional token budget",
+      "token_budget": 25000,
+      "total_tokens": 6638,
+      "utilization": 0.26552,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.599,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "productContext.md",
+        "activeContext.md",
+        "roadmap.md",
+        "progress.md",
+        "file.md",
+        "techContext.md",
+        "projectBrief.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.648,
+        "progress.md": 0.649,
+        "activeContext.md": 0.859,
+        "file.md": 0.24
+      }
+    },
+    {
+      "session_id": "4798913c5cad",
+      "timestamp": "2026-02-11T14:34",
+      "task_description": "Fix failing tests and coverage issues after recent changes to usage tracking, usage analytics, and python framework adapter.",
+      "token_budget": 5000,
+      "total_tokens": 4085,
+      "utilization": 0.817,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.669,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "techContext.md",
+        "projectBrief.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.587,
+        "progress.md": 0.641,
+        "activeContext.md": 0.831,
+        "projectBrief.md": 0.634,
+        "techContext.md": 0.747,
+        "productContext.md": 0.604,
+        "systemPatterns.md": 0.636
+      }
+    },
+    {
+      "session_id": "48d55dcda75d",
+      "timestamp": "2026-02-01T09:12",
+      "task_description": "Phase 23: Fix CI failure validation refactor",
+      "token_budget": 20000,
+      "total_tokens": 8745,
+      "utilization": 0.43725,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "techContext.md",
+        "file.md",
+        "progress.md",
+        "productContext.md",
+        "activeContext.md",
+        "projectBrief.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.647,
+        "progress.md": 0.65,
+        "activeContext.md": 0.858,
+        "file.md": 0.229
+      }
+    },
+    {
+      "session_id": "4f30458114a3",
+      "timestamp": "2026-02-01T12:29",
+      "task_description": "Phase 21 Health-Check and Optimization Analysis: implement remaining steps 2-4, 6-9 (dependency mapper, prompt analyzer, quality validator, rule analyzer, similarity engine, tool analyzer, report generator)",
+      "token_budget": 25000,
+      "total_tokens": 9222,
+      "utilization": 0.36888,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.597,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "productContext.md",
+        "activeContext.md",
+        "systemPatterns.md",
+        "roadmap.md",
+        "techContext.md",
+        "progress.md",
+        "file.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.649,
+        "activeContext.md": 0.859,
+        "file.md": 0.229
+      }
+    },
+    {
+      "session_id": "505c35e1dc11",
+      "timestamp": "2026-02-02T20:58",
+      "task_description": "Phase 43 add MCP resources for get_structure_info, check_structure_health, rules get_relevant, get_synapse_rules, get_synapse_prompts",
+      "token_budget": 25000,
+      "total_tokens": 10813,
+      "utilization": 0.43252,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.595,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "activeContext.md",
+        "file.md",
+        "progress.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "techContext.md",
+        "productContext.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.648,
+        "progress.md": 0.649,
+        "activeContext.md": 0.859,
+        "file.md": 0.224
+      }
+    },
+    {
+      "session_id": "511a5cb10c7f",
+      "timestamp": "2026-02-01T22:43",
+      "task_description": "Phase 36: Enforce MCP tool failure protocol - implement failure protocol for MCP tools",
+      "token_budget": 20000,
+      "total_tokens": 13087,
+      "utilization": 0.65435,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "techContext.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "roadmap.md",
+        "progress.md",
+        "activeContext.md",
+        "projectBrief.md",
+        "file.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.649,
+        "activeContext.md": 0.859,
+        "file.md": 0.227
+      }
+    },
+    {
+      "session_id": "511a5cb10c7f",
+      "timestamp": "2026-02-01T22:50",
+      "task_description": "Phase 42: Investigate execute_pre_commit_checks JSON error from commit 20260117",
+      "token_budget": 20000,
+      "total_tokens": 13410,
+      "utilization": 0.6705,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "techContext.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "roadmap.md",
+        "progress.md",
+        "activeContext.md",
+        "projectBrief.md",
+        "file.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.65,
+        "activeContext.md": 0.859,
+        "file.md": 0.227
+      }
+    },
+    {
+      "session_id": "51ca536e34d8",
+      "timestamp": "2026-02-01T08:50",
+      "task_description": "Phase 21 Health-Check and Optimization Analysis: health-check system for prompts, rules, and MCP tools",
+      "token_budget": 20000,
+      "total_tokens": 8627,
+      "utilization": 0.43135,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "projectBrief.md",
+        "roadmap.md",
+        "activeContext.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "progress.md",
+        "file.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.647,
+        "progress.md": 0.648,
+        "activeContext.md": 0.858,
+        "file.md": 0.23
+      }
+    },
+    {
+      "session_id": "52c1607350ef",
+      "timestamp": "2026-02-04T17:26",
+      "task_description": "Investigate and fix markdown_lint MCP connection closed error",
+      "token_budget": 20000,
+      "total_tokens": 7618,
+      "utilization": 0.3809,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.519,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 2,
+      "selected_file_names": [
+        "activeContext.md",
+        "techContext.md",
+        "file.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "roadmap.md",
+        "productContext.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.633,
+        "activeContext.md": 0.844,
+        "file.md": 0.217,
+        "projectBrief.md": 0.249
+      }
+    },
+    {
+      "session_id": "53248a7c5c27",
+      "timestamp": "2026-02-10T09:00",
+      "task_description": "Implement Claude-mem ideas for Cortex plan: ideas and improvements from Claude memory bank pattern for Cortex MCP Memory Bank",
+      "token_budget": 10000,
+      "total_tokens": 7744,
+      "utilization": 0.7744,
+      "files_selected": 6,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.697,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "projectBrief.md",
+        "activeContext.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.63,
+        "activeContext.md": 0.842,
+        "projectBrief.md": 0.435,
+        "techContext.md": 0.802,
+        "productContext.md": 0.742,
+        "systemPatterns.md": 0.776
+      }
+    },
+    {
+      "session_id": "588060835bc2",
+      "timestamp": "2026-01-30T15:54",
+      "task_description": "Implement JavaScript pre-commit adapter to replace StubAdapter; follow TypeScript adapter pattern for format, lint, type check, and tests",
+      "token_budget": 20000,
+      "total_tokens": 4471,
+      "utilization": 0.22355,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.595,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "activeContext.md",
+        "techContext.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "progress.md",
+        "file.md",
+        "roadmap.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.649,
+        "activeContext.md": 0.847,
+        "file.md": 0.236
+      }
+    },
+    {
+      "session_id": "59a98bdebf01",
+      "timestamp": "2026-01-29T12:52",
+      "task_description": "Implement the next uncompleted step from Phase 62: Synapse Session Optimization \u2013 Harden Prompts and Rules",
+      "token_budget": 30000,
+      "total_tokens": 10302,
+      "utilization": 0.3434,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.563,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "activeContext.md",
+        "productContext.md",
+        "progress.md",
+        "file.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.633,
+        "progress.md": 0.599,
+        "activeContext.md": 0.78,
+        "file.md": 0.241
+      }
+    },
+    {
+      "session_id": "5c2cab6b80d9",
+      "timestamp": "2026-01-30T14:26",
+      "task_description": "Phase 64: Promote fixed string sets to enums - replace Literal and raw string sets with str-subclassed enums (RulesOperation, FileOperation, RefactoringAction, RefactoringSuggestionType, ValidationCheckType, ConfigAction, AnalysisTarget, StubAdapterLanguage)",
+      "token_budget": 25000,
+      "total_tokens": 8333,
+      "utilization": 0.33332,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.589,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "productContext.md",
+        "progress.md",
+        "roadmap.md",
+        "file.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "activeContext.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.632,
+        "progress.md": 0.636,
+        "activeContext.md": 0.852,
+        "file.md": 0.237
+      }
+    },
+    {
+      "session_id": "608eebddf21f",
+      "timestamp": "2026-02-04T12:27",
+      "task_description": "Investigate and fix MCP connection closed / quality issues for phase-68 plan",
+      "token_budget": 30000,
+      "total_tokens": 3908,
+      "utilization": 0.13026666666666667,
+      "files_selected": 7,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.515,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 2,
+      "selected_file_names": [
+        "file.md",
+        "productContext.md",
+        "activeContext.md",
+        "techContext.md",
+        "progress.md",
+        "systemPatterns.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.647,
+        "progress.md": 0.64,
+        "activeContext.md": 0.823,
+        "file.md": 0.217,
+        "projectBrief.md": 0.25
+      }
+    },
+    {
+      "session_id": "612c171043d3",
+      "timestamp": "2026-02-02T11:54",
+      "task_description": "Phase 43 Step 3.2: Add MCP resources for Phase 4 Optimization and remaining phases (validation done; next Phase 4 Optimization, etc.)",
+      "token_budget": 25000,
+      "total_tokens": 10816,
+      "utilization": 0.43264,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "projectBrief.md",
+        "systemPatterns.md",
+        "file.md",
+        "productContext.md",
+        "progress.md",
+        "roadmap.md",
+        "activeContext.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.225
+      }
+    },
+    {
+      "session_id": "6282fce09ca3",
+      "timestamp": "2026-02-04T10:39",
+      "task_description": "project",
+      "token_budget": 10000,
+      "total_tokens": 1929,
+      "utilization": 0.1929,
+      "files_selected": 7,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.439,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 3,
+      "selected_file_names": [
+        "projectBrief.md",
+        "progress.md",
+        "systemPatterns.md",
+        "file.md",
+        "productContext.md",
+        "techContext.md",
+        "activeContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.247,
+        "progress.md": 0.248,
+        "activeContext.md": 0.294,
+        "file.md": 0.606,
+        "projectBrief.md": 0.8
+      }
+    },
+    {
+      "session_id": "68612bdc11ad",
+      "timestamp": "2026-02-01T20:46",
+      "task_description": "Phase 30: Fix CI failure (commit 42a3362)",
+      "token_budget": 20000,
+      "total_tokens": 10929,
+      "utilization": 0.54645,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.597,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "activeContext.md",
+        "file.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "productContext.md",
+        "progress.md",
+        "techContext.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.65,
+        "activeContext.md": 0.859,
+        "file.md": 0.228
+      }
+    },
+    {
+      "session_id": "695437564ebb",
+      "timestamp": "2026-02-01T09:38",
+      "task_description": "Phase 20 Code Review Fixes: split optimization_strategies.py to under 400 lines; extract strategy implementations, strategy selection, strategy metrics",
+      "token_budget": 20000,
+      "total_tokens": 7788,
+      "utilization": 0.3894,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "file.md",
+        "projectBrief.md",
+        "progress.md",
+        "roadmap.md",
+        "activeContext.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.647,
+        "progress.md": 0.649,
+        "activeContext.md": 0.859,
+        "file.md": 0.229
+      }
+    },
+    {
+      "session_id": "6be2252b1aa5",
+      "timestamp": "2026-01-29T17:29",
+      "task_description": "Commit Workflow Parallelization Steps 9-11: optional integration tests, memory bank and docs updates",
+      "token_budget": 25000,
+      "total_tokens": 5958,
+      "utilization": 0.23832,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.594,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "techContext.md",
+        "progress.md",
+        "file.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "activeContext.md",
+        "productContext.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.637,
+        "progress.md": 0.644,
+        "activeContext.md": 0.855,
+        "file.md": 0.24
+      }
+    },
+    {
+      "session_id": "6c37e71c0491",
+      "timestamp": "2026-02-10T18:57",
+      "task_description": "Implement plan .cortex/plans/session-optimization-commit-pipeline-orchestration-refactor.md to refactor the commit/pipeline orchestration and pre-commit phase tools.",
+      "token_budget": 25000,
+      "total_tokens": 12388,
+      "utilization": 0.49552,
+      "files_selected": 7,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.696,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "techContext.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "projectBrief.md",
+        "progress.md",
+        "activeContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.647,
+        "activeContext.md": 0.85,
+        "projectBrief.md": 0.431,
+        "techContext.md": 0.798,
+        "productContext.md": 0.705,
+        "systemPatterns.md": 0.793
+      }
+    },
+    {
+      "session_id": "6c37e71c0491",
+      "timestamp": "2026-02-10T19:32",
+      "task_description": "Refactor AGENTS.md and CLAUDE.md to be compact, DRY entrypoints that mandate using Cortex MCP tools for detailed rules and context.",
+      "token_budget": 0,
+      "total_tokens": 0,
+      "utilization": 0.0,
+      "files_selected": 0,
+      "files_excluded": 7,
+      "avg_relevance_score": 0.657,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [],
+      "relevance_by_file": {
+        "roadmap.md": 0.633,
+        "progress.md": 0.575,
+        "activeContext.md": 0.757,
+        "projectBrief.md": 0.427,
+        "techContext.md": 0.762,
+        "productContext.md": 0.721,
+        "systemPatterns.md": 0.722
+      }
+    },
+    {
+      "session_id": "6c9b05eded6f",
+      "timestamp": "2026-02-10T12:10",
+      "task_description": "Implement roadmap step: Claude-mem inspired improvements (usage search, observations, progressive disclosure)",
+      "token_budget": 10000,
+      "total_tokens": 7918,
+      "utilization": 0.7918,
+      "files_selected": 6,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.582,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "techContext.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "roadmap.md",
+        "activeContext.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.621,
+        "progress.md": 0.608,
+        "activeContext.md": 0.821,
+        "projectBrief.md": 0.338,
+        "techContext.md": 0.536,
+        "productContext.md": 0.536,
+        "systemPatterns.md": 0.613
+      }
+    },
+    {
+      "session_id": "6f015849f7d6",
+      "timestamp": "2026-02-02T08:34",
+      "task_description": "Phase 43 reconsider tools registration: implement next step after audit (Step 1 complete). MCP resource vs tool registration, plan steps.",
+      "token_budget": 20000,
+      "total_tokens": 8783,
+      "utilization": 0.43915,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.597,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "projectBrief.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "file.md",
+        "roadmap.md",
+        "progress.md",
+        "activeContext.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.226
+      }
+    },
+    {
+      "session_id": "710e112c7749",
+      "timestamp": "2026-01-30T15:37",
+      "task_description": "Phase 64 Milestone 4: Document new enums (ValidationCheckType, ConfigAction, AnalysisTarget, StubAdapterLanguage, FileOperation, RulesOperation, RefactoringAction, RefactoringSuggestionType) and str Enum pattern; add guideline to Synapse/python rules for using str Enum for fixed string sets.",
+      "token_budget": 20000,
+      "total_tokens": 4098,
+      "utilization": 0.2049,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.597,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "productContext.md",
+        "activeContext.md",
+        "roadmap.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "file.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.647,
+        "progress.md": 0.645,
+        "activeContext.md": 0.857,
+        "file.md": 0.237
+      }
+    },
+    {
+      "session_id": "7b51405c600e",
+      "timestamp": "2026-02-02T14:14",
+      "task_description": "Phase 46 Add progress reporting - implement progress reporting MCP tools and UI",
+      "token_budget": 25000,
+      "total_tokens": 11621,
+      "utilization": 0.46484,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "progress.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "file.md",
+        "roadmap.md",
+        "productContext.md",
+        "activeContext.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.225
+      }
+    },
+    {
+      "session_id": "7c3cf13a62dd",
+      "timestamp": "2026-01-22T13:27",
+      "task_description": "Identify the next pending roadmap step to implement. Check for any uncompleted items or the next planned phase that should be started.",
+      "token_budget": 50000,
+      "total_tokens": 26512,
+      "utilization": 0.53024,
+      "files_selected": 7,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.583,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "roadmap.md",
+        "activeContext.md",
+        "progress.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "projectBrief.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "activeContext.md": 0.685,
+        "progress.md": 0.507,
+        "roadmap.md": 0.557
+      }
+    },
+    {
+      "session_id": "802f3e625309",
+      "timestamp": "2026-01-31T13:33",
+      "task_description": "Ensure proper logging FastMCP context: refactor MCP tools to use Context logging (ctx.info, ctx.error), markdown_operations and rules_operations",
+      "token_budget": 25000,
+      "total_tokens": 6648,
+      "utilization": 0.26592,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.659,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "roadmap.md",
+        "progress.md",
+        "techContext.md",
+        "file.md",
+        "systemPatterns.md",
+        "activeContext.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.625,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.502
+      }
+    },
+    {
+      "session_id": "80487ae31a32",
+      "timestamp": "2026-01-29T21:35",
+      "task_description": "Multi-Language Validation Support: Add support for additional language adapters in validation operations (JavaScript/TypeScript, Rust, Go, Java). Location: src/cortex/tools/validation_operations.py. Enable validation checks for multi-language projects.",
+      "token_budget": 20000,
+      "total_tokens": 7211,
+      "utilization": 0.36055,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.574,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "productContext.md",
+        "roadmap.md",
+        "techContext.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "activeContext.md",
+        "file.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.641,
+        "progress.md": 0.61,
+        "activeContext.md": 0.804,
+        "file.md": 0.24
+      }
+    },
+    {
+      "session_id": "8216ae3d446b",
+      "timestamp": "2026-02-01T09:17",
+      "task_description": "Phase 20 Code Review: split phase8_structure.py to under 400 lines (extract structure operations, validation, creation)",
+      "token_budget": 20000,
+      "total_tokens": 9016,
+      "utilization": 0.4508,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "file.md",
+        "projectBrief.md",
+        "productContext.md",
+        "activeContext.md",
+        "techContext.md",
+        "roadmap.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.646,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.229
+      }
+    },
+    {
+      "session_id": "835f607288ce",
+      "timestamp": "2026-02-02T16:08",
+      "task_description": "Phase 47: Add emoji icons to MCP prompts and use emoji in messages (success, error, warning). Icon helper utility, static setup prompts, dynamic synapse prompts, message strings in MCP tools.",
+      "token_budget": 25000,
+      "total_tokens": 12097,
+      "utilization": 0.48388,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.666,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "roadmap.md",
+        "activeContext.md",
+        "systemPatterns.md",
+        "progress.md",
+        "productContext.md",
+        "file.md",
+        "techContext.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.505
+      }
+    },
+    {
+      "session_id": "84bbb548b6d2",
+      "timestamp": "2026-02-05T15:07",
+      "task_description": "Implement roadmap README plan (.cortex/plans/README.md) from roadmap pending plans",
+      "token_budget": 20000,
+      "total_tokens": 9148,
+      "utilization": 0.4574,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.518,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 2,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "productContext.md",
+        "file.md",
+        "roadmap.md",
+        "techContext.md",
+        "activeContext.md",
+        "progress.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.637,
+        "activeContext.md": 0.844,
+        "file.md": 0.213,
+        "projectBrief.md": 0.249
+      }
+    },
+    {
+      "session_id": "8563b2630403",
+      "timestamp": "2026-01-29T13:32",
+      "task_description": "Phase 62 Step 1: Make Step 11 submodule handling deterministic in commit.md; Synapse session optimization",
+      "token_budget": 25000,
+      "total_tokens": 10548,
+      "utilization": 0.42192,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.582,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "file.md",
+        "productContext.md",
+        "techContext.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "progress.md",
+        "activeContext.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.641,
+        "progress.md": 0.615,
+        "activeContext.md": 0.831,
+        "file.md": 0.241
+      }
+    },
+    {
+      "session_id": "8a6575e0793f",
+      "timestamp": "2026-02-01T10:08",
+      "task_description": "Phase 24: Fix roadmap text corruption - implement fix for roadmap write/read corruption",
+      "token_budget": 20000,
+      "total_tokens": 8071,
+      "utilization": 0.40355,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.597,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "progress.md",
+        "techContext.md",
+        "roadmap.md",
+        "productContext.md",
+        "file.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "activeContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.229
+      }
+    },
+    {
+      "session_id": "8c9f32ab07fd",
+      "timestamp": "2026-02-02T16:49",
+      "task_description": "Fix commit workflow: require re-run of Step 12.3 (quality) after any code change in Step 12.2 or 12.3; prevent CI Ruff failure when type/lint fixes introduce new lint (e.g. E402)",
+      "token_budget": 20000,
+      "total_tokens": 12618,
+      "utilization": 0.6309,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.591,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "progress.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "techContext.md",
+        "activeContext.md",
+        "productContext.md",
+        "file.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.648,
+        "progress.md": 0.65,
+        "activeContext.md": 0.842,
+        "file.md": 0.224
+      }
+    },
+    {
+      "session_id": "8fd4f6901b08",
+      "timestamp": "2026-02-04T12:57",
+      "task_description": "Investigate and fix `analyze` MCP tool failure that occurred during commit procedure (Phase: Investigate analyze MCP tool failure).",
+      "token_budget": 20000,
+      "total_tokens": 8338,
+      "utilization": 0.4169,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.523,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 2,
+      "selected_file_names": [
+        "file.md",
+        "projectBrief.md",
+        "progress.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "roadmap.md",
+        "activeContext.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.647,
+        "progress.md": 0.647,
+        "activeContext.md": 0.856,
+        "file.md": 0.217,
+        "projectBrief.md": 0.25
+      }
+    },
+    {
+      "session_id": "91ddcf7ac3c2",
+      "timestamp": "2026-02-04T10:39",
+      "task_description": "project",
+      "token_budget": 10000,
+      "total_tokens": 1929,
+      "utilization": 0.1929,
+      "files_selected": 7,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.439,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 3,
+      "selected_file_names": [
+        "file.md",
+        "projectBrief.md",
+        "productContext.md",
+        "techContext.md",
+        "progress.md",
+        "activeContext.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.247,
+        "progress.md": 0.248,
+        "activeContext.md": 0.294,
+        "file.md": 0.606,
+        "projectBrief.md": 0.8
+      }
+    },
+    {
+      "session_id": "92988db675b1",
+      "timestamp": "2026-01-30T23:10",
+      "task_description": "Implement Go pre-commit adapter: format, lint, type check, test, fix. Follow RustAdapter and JavaScriptAdapter pattern. Register in pre_commit_tools, replace StubAdapter for go.",
+      "token_budget": 20000,
+      "total_tokens": 4148,
+      "utilization": 0.2074,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.598,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "roadmap.md",
+        "file.md",
+        "projectBrief.md",
+        "activeContext.md",
+        "techContext.md",
+        "progress.md",
+        "systemPatterns.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.65,
+        "activeContext.md": 0.859,
+        "file.md": 0.235
+      }
+    },
+    {
+      "session_id": "92d567ea020e",
+      "timestamp": "2026-02-02T12:10",
+      "task_description": "Phase 43 Step 3.2 Phase 4 Optimization: add MCP resources for load_context, load_progressive_context, summarize_content, get_relevance_scores, get_optimization_config",
+      "token_budget": 25000,
+      "total_tokens": 10816,
+      "utilization": 0.43264,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "projectBrief.md",
+        "productContext.md",
+        "activeContext.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "progress.md",
+        "techContext.md",
+        "file.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.225
+      }
+    },
+    {
+      "session_id": "941860aefaca",
+      "timestamp": "2026-01-29T15:49",
+      "task_description": "Implement commit workflow parallelization for Steps 9-11: timestamp-validator, roadmap-sync-validator, submodule handling. TaskGroup for Steps 9-11, keep Steps 0-8 and 12-14 sequential. Phase 56 plan.",
+      "token_budget": 30000,
+      "total_tokens": 5314,
+      "utilization": 0.17713333333333334,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.592,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "activeContext.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "roadmap.md",
+        "techContext.md",
+        "progress.md",
+        "file.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.628,
+        "progress.md": 0.646,
+        "activeContext.md": 0.854,
+        "file.md": 0.241
+      }
+    },
+    {
+      "session_id": "94c4b8f6b776",
+      "timestamp": "2026-02-01T23:14",
+      "task_description": "Session optimization: Connection closed handling in commit prompt and docs - retry once then fallback for MCP Connection closed / ClosedResourceError",
+      "token_budget": 15000,
+      "total_tokens": 13935,
+      "utilization": 0.929,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.585,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "productContext.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "progress.md",
+        "activeContext.md",
+        "techContext.md",
+        "projectBrief.md",
+        "file.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.644,
+        "progress.md": 0.632,
+        "activeContext.md": 0.835,
+        "file.md": 0.227
+      }
+    },
+    {
+      "session_id": "9a075b0eca7b",
+      "timestamp": "2026-02-04T13:17",
+      "task_description": "Investigate and fix `analyze` MCP tool failure that occurred during commit procedure (Phase plan .cortex/plans/phase-investigate-analyze-failure-20260204-075106.md).",
+      "token_budget": 20000,
+      "total_tokens": 8338,
+      "utilization": 0.4169,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.524,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 2,
+      "selected_file_names": [
+        "productContext.md",
+        "progress.md",
+        "techContext.md",
+        "activeContext.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "file.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.647,
+        "progress.md": 0.647,
+        "activeContext.md": 0.857,
+        "file.md": 0.217,
+        "projectBrief.md": 0.25
+      }
+    },
+    {
+      "session_id": "a0e149830348",
+      "timestamp": "2026-02-02T12:38",
+      "task_description": "Phase 45: Add MCP annotations",
+      "token_budget": 25000,
+      "total_tokens": 11318,
+      "utilization": 0.45272,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.595,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "progress.md",
+        "file.md",
+        "techContext.md",
+        "activeContext.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "projectBrief.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.648,
+        "progress.md": 0.649,
+        "activeContext.md": 0.859,
+        "file.md": 0.225
+      }
+    },
+    {
+      "session_id": "a0f3120fcc94",
+      "timestamp": "2026-02-04T08:19",
+      "task_description": "project",
+      "token_budget": 10000,
+      "total_tokens": 9916,
+      "utilization": 0.9916,
+      "files_selected": 7,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.439,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 3,
+      "selected_file_names": [
+        "productContext.md",
+        "projectBrief.md",
+        "file.md",
+        "activeContext.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.248,
+        "progress.md": 0.248,
+        "activeContext.md": 0.294,
+        "file.md": 0.607,
+        "projectBrief.md": 0.8
+      }
+    },
+    {
+      "session_id": "a36a90004ddd",
+      "timestamp": "2026-02-01T14:25",
+      "task_description": "Phase 27 Script generation prevention - implement plan to prevent script generation",
+      "token_budget": 25000,
+      "total_tokens": 9205,
+      "utilization": 0.3682,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.597,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "techContext.md",
+        "productContext.md",
+        "roadmap.md",
+        "projectBrief.md",
+        "progress.md",
+        "activeContext.md",
+        "file.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.649,
+        "activeContext.md": 0.859,
+        "file.md": 0.229
+      }
+    },
+    {
+      "session_id": "a61cf7c3a1e1",
+      "timestamp": "2026-01-31T12:57",
+      "task_description": "Ensure proper logging FastMCP context: add Context logging to analyze and configure MCP tools",
+      "token_budget": 20000,
+      "total_tokens": 6364,
+      "utilization": 0.3182,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.588,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "productContext.md",
+        "techContext.md",
+        "roadmap.md",
+        "projectBrief.md",
+        "file.md",
+        "activeContext.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.612,
+        "progress.md": 0.648,
+        "activeContext.md": 0.859,
+        "file.md": 0.233
+      }
+    },
+    {
+      "session_id": "aa4e9e3d7311",
+      "timestamp": "2026-02-02T09:47",
+      "task_description": "Phase 43 Reconsider tools registration: Step 3.2 Phase 2 linking tools, manage_file read to Resource. Pilot resources get_memory_bank_stats, get_structure_info done; get_dependency_graph, get_version_history done. Next Phase 2 linking tools.",
+      "token_budget": 25000,
+      "total_tokens": 8937,
+      "utilization": 0.35748,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "techContext.md",
+        "roadmap.md",
+        "file.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "progress.md",
+        "projectBrief.md",
+        "activeContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.225
+      }
+    },
+    {
+      "session_id": "ab85c0f78497",
+      "timestamp": "2026-02-01T22:33",
+      "task_description": "Phase 35: Fix execute_pre_commit_checks MCP JSON error - ensure tool returns proper JSON/dict for MCP clients",
+      "token_budget": 20000,
+      "total_tokens": 12697,
+      "utilization": 0.63485,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.597,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "roadmap.md",
+        "projectBrief.md",
+        "file.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "activeContext.md",
+        "progress.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.227
+      }
+    },
+    {
+      "session_id": "b19e7928b1a0",
+      "timestamp": "2026-01-31T09:36",
+      "task_description": "Implement session optimization recommendations: mandatory rules-load pre-step in commit prompt, rules-context in error-fixer agent, common error for fixing without loaded rules, project-wide rule ALL time references must use real time",
+      "token_budget": 25000,
+      "total_tokens": 4496,
+      "utilization": 0.17984,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.676,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "activeContext.md",
+        "progress.md",
+        "productContext.md",
+        "roadmap.md",
+        "techContext.md",
+        "projectBrief.md",
+        "file.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.643,
+        "progress.md": 0.648,
+        "activeContext.md": 0.854,
+        "file.md": 0.56
+      }
+    },
+    {
+      "session_id": "b4842a466e3f",
+      "timestamp": "2026-01-22T12:23",
+      "task_description": "Continue Phase 9: Excellence 9.8+ implementation - identify next pending sub-phase (9.7 or 9.9+)",
+      "token_budget": 50000,
+      "total_tokens": 25149,
+      "utilization": 0.50298,
+      "files_selected": 7,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.506,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "progress.md",
+        "projectBrief.md",
+        "techContext.md",
+        "activeContext.md",
+        "systemPatterns.md",
+        "roadmap.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "activeContext.md": 0.572,
+        "progress.md": 0.393,
+        "roadmap.md": 0.553
+      }
+    },
+    {
+      "session_id": "bde72651d63b",
+      "timestamp": "2026-02-02T08:00",
+      "task_description": "Require script-analysis when commit or any session runs a script; add to commit prompt and optional agent-workflow rule",
+      "token_budget": 20000,
+      "total_tokens": 14199,
+      "utilization": 0.70995,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.578,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "projectBrief.md",
+        "productContext.md",
+        "activeContext.md",
+        "roadmap.md",
+        "file.md",
+        "techContext.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.64,
+        "progress.md": 0.625,
+        "activeContext.md": 0.82,
+        "file.md": 0.226
+      }
+    },
+    {
+      "session_id": "c2a4504b2635",
+      "timestamp": "2026-02-11T14:21",
+      "task_description": "Fix failing tests using /cortex/fix_tests helper command",
+      "token_budget": 5000,
+      "total_tokens": 4134,
+      "utilization": 0.8268,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.647,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "roadmap.md",
+        "techContext.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.626,
+        "progress.md": 0.639,
+        "activeContext.md": 0.83,
+        "projectBrief.md": 0.391,
+        "techContext.md": 0.718,
+        "productContext.md": 0.616,
+        "systemPatterns.md": 0.707
+      }
+    },
+    {
+      "session_id": "c30ea3aaa167",
+      "timestamp": "2026-01-31T18:49",
+      "task_description": "Ensure proper logging FastMCP context: add optional ctx and log_client to phase2_linking.py tools",
+      "token_budget": 20000,
+      "total_tokens": 7503,
+      "utilization": 0.37515,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.579,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "techContext.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "file.md",
+        "activeContext.md",
+        "productContext.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.576,
+        "progress.md": 0.649,
+        "activeContext.md": 0.859,
+        "file.md": 0.232
+      }
+    },
+    {
+      "session_id": "c35f8334a17f",
+      "timestamp": "2026-02-02T17:06",
+      "task_description": "Phase 48 Improve optimize-context feedback: implement feedback improvements for load_context and optimize-context",
+      "token_budget": 20000,
+      "total_tokens": 12978,
+      "utilization": 0.6489,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.594,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "projectBrief.md",
+        "productContext.md",
+        "techContext.md",
+        "activeContext.md",
+        "systemPatterns.md",
+        "progress.md",
+        "file.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.646,
+        "progress.md": 0.648,
+        "activeContext.md": 0.856,
+        "file.md": 0.224
+      }
+    },
+    {
+      "session_id": "c37939b2b9b6",
+      "timestamp": "2026-02-11T11:07",
+      "task_description": "Run full /cortex/commit pipeline with all pre-commit checks, docs/memory updates, and git commit+push.",
+      "token_budget": 5000,
+      "total_tokens": 4085,
+      "utilization": 0.817,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.69,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "projectBrief.md",
+        "techContext.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.63,
+        "progress.md": 0.639,
+        "activeContext.md": 0.837,
+        "projectBrief.md": 0.426,
+        "techContext.md": 0.787,
+        "productContext.md": 0.774,
+        "systemPatterns.md": 0.738
+      }
+    },
+    {
+      "session_id": "c685c896ed7c",
+      "timestamp": "2026-01-31T12:36",
+      "task_description": "Ensure proper logging (FastMCP context): audit and standardize logging to align with FastMCP Context-based logging",
+      "token_budget": 25000,
+      "total_tokens": 6114,
+      "utilization": 0.24456,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.546,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "techContext.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "roadmap.md",
+        "progress.md",
+        "activeContext.md",
+        "file.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.467,
+        "progress.md": 0.635,
+        "activeContext.md": 0.849,
+        "file.md": 0.233
+      }
+    },
+    {
+      "session_id": "caacf4f90597",
+      "timestamp": "2026-01-28T22:05",
+      "task_description": "Phase 62: Synapse Session Optimization - Harden Prompts and Rules. CRITICAL priorities: Harden commit.md against unauthorized git writes, make Step 11 submodule handling deterministic, enforce roadmap_sync as true commit gate, and fix tooling/process mismatch.",
+      "token_budget": 50000,
+      "total_tokens": 9269,
+      "utilization": 0.18538,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.573,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "file.md",
+        "roadmap.md",
+        "productContext.md",
+        "projectBrief.md",
+        "activeContext.md",
+        "techContext.md",
+        "progress.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.645,
+        "progress.md": 0.592,
+        "activeContext.md": 0.81,
+        "file.md": 0.244
+      }
+    },
+    {
+      "session_id": "cfa1810ff56a",
+      "timestamp": "2026-02-01T10:45",
+      "task_description": "Phase 25: Fix CI failure (commit 302c5e2)",
+      "token_budget": 20000,
+      "total_tokens": 8435,
+      "utilization": 0.42175,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.597,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "productContext.md",
+        "roadmap.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "activeContext.md",
+        "file.md",
+        "techContext.md",
+        "progress.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.229
+      }
+    },
+    {
+      "session_id": "cfc09ef4b24d",
+      "timestamp": "2026-01-31T14:04",
+      "task_description": "Ensure proper logging (FastMCP context): audit and standardize logging to align with FastMCP Context-based logging",
+      "token_budget": 20000,
+      "total_tokens": 7130,
+      "utilization": 0.3565,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.552,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "progress.md",
+        "activeContext.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "projectBrief.md",
+        "file.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.467,
+        "progress.md": 0.649,
+        "activeContext.md": 0.86,
+        "file.md": 0.233
+      }
+    },
+    {
+      "session_id": "d1ab6ed0e478",
+      "timestamp": "2026-02-01T21:41",
+      "task_description": "Phase 33: Fix execute_pre_commit_checks JSON parsing error - parse tool output and return structured JSON",
+      "token_budget": 20000,
+      "total_tokens": 11910,
+      "utilization": 0.5955,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "activeContext.md",
+        "projectBrief.md",
+        "productContext.md",
+        "roadmap.md",
+        "file.md",
+        "techContext.md",
+        "progress.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.65,
+        "activeContext.md": 0.859,
+        "file.md": 0.227
+      }
+    },
+    {
+      "session_id": "d392dbfbbea0",
+      "timestamp": "2026-02-01T10:58",
+      "task_description": "Phase 20 Code Review Fixes: split rollback_manager, template_manager, initialization, structure_analyzer to under 400 lines",
+      "token_budget": 20000,
+      "total_tokens": 8728,
+      "utilization": 0.4364,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "productContext.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "activeContext.md",
+        "roadmap.md",
+        "progress.md",
+        "projectBrief.md",
+        "file.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.647,
+        "progress.md": 0.649,
+        "activeContext.md": 0.86,
+        "file.md": 0.229
+      }
+    },
+    {
+      "session_id": "d3eb742053b7",
+      "timestamp": "2026-02-01T21:05",
+      "task_description": "Phase 31: Fix optimize-context stale file errors - fix stale file errors in load_context/optimize-context flow",
+      "token_budget": 20000,
+      "total_tokens": 11204,
+      "utilization": 0.5602,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.695,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "techContext.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "file.md",
+        "progress.md",
+        "activeContext.md",
+        "systemPatterns.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.65,
+        "activeContext.md": 0.859,
+        "file.md": 0.621
+      }
+    },
+    {
+      "session_id": "dd4404db3a0b",
+      "timestamp": "2026-02-01T18:44",
+      "task_description": "Implement next roadmap step: identify first pending item and implement it",
+      "token_budget": 30000,
+      "total_tokens": 9950,
+      "utilization": 0.33166666666666667,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.558,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "roadmap.md",
+        "file.md",
+        "activeContext.md",
+        "progress.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "productContext.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.63,
+        "progress.md": 0.575,
+        "activeContext.md": 0.8,
+        "file.md": 0.228
+      }
+    },
+    {
+      "session_id": "e43601825007",
+      "timestamp": "2026-02-04T17:23",
+      "task_description": "Phase 53: Investigate manage_file conflict/index stale - verify update_index cleanup action implementation and test coverage",
+      "token_budget": 20000,
+      "total_tokens": 7330,
+      "utilization": 0.3665,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.631,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "roadmap.md",
+        "file.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "progress.md",
+        "activeContext.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.649,
+        "activeContext.md": 0.859,
+        "file.md": 0.217,
+        "projectBrief.md": 0.78
+      }
+    },
+    {
+      "session_id": "e5ff4ce0184b",
+      "timestamp": "2026-02-05T15:54",
+      "task_description": "Add add_roadmap_entry MCP tool for minimal roadmap updates with server-side insertion. Implement tool contract, parse/insert helpers, MCP tool handler, and integrate with create-plan prompt and memory-bank-updater agent. Include unit and integration tests with 95% coverage.",
+      "token_budget": 45000,
+      "total_tokens": 14317,
+      "utilization": 0.3181555555555556,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.662,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "activeContext.md",
+        "techContext.md",
+        "productContext.md",
+        "progress.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "roadmap.md",
+        "file.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.648,
+        "progress.md": 0.649,
+        "activeContext.md": 0.858,
+        "file.md": 0.25,
+        "projectBrief.md": 0.44,
+        "techContext.md": 0.822,
+        "productContext.md": 0.81,
+        "systemPatterns.md": 0.817
+      }
+    },
+    {
+      "session_id": "e9fdd1a461df",
+      "timestamp": "2026-02-04T18:22",
+      "task_description": "Investigate and fix MCP resource read timeouts (-32001). Phase 69: understand resource read flow, identify timeout causes, implement fixes.",
+      "token_budget": 25000,
+      "total_tokens": 8410,
+      "utilization": 0.3364,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.525,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 2,
+      "selected_file_names": [
+        "techContext.md",
+        "activeContext.md",
+        "progress.md",
+        "file.md",
+        "productContext.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.649,
+        "activeContext.md": 0.858,
+        "file.md": 0.216,
+        "projectBrief.md": 0.25
+      }
+    },
+    {
+      "session_id": "ea11c092081a",
+      "timestamp": "2026-01-31T19:18",
+      "task_description": "Ensure proper logging FastMCP context - Phase 3 phase3_validation phase4_optimization phase5 phase8 synapse_tools pre_commit_tools",
+      "token_budget": 25000,
+      "total_tokens": 7896,
+      "utilization": 0.31584,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.587,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "activeContext.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "file.md",
+        "progress.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.605,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.232
+      }
+    },
+    {
+      "session_id": "f127fb8eaae9",
+      "timestamp": "2026-02-01T19:18",
+      "task_description": "Phase 29: Track MCP tool usage - implement tool usage tracking for Cortex MCP",
+      "token_budget": 25000,
+      "total_tokens": 10443,
+      "utilization": 0.41772,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "techContext.md",
+        "roadmap.md",
+        "file.md",
+        "activeContext.md",
+        "progress.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.648,
+        "activeContext.md": 0.859,
+        "file.md": 0.228
+      }
+    },
+    {
+      "session_id": "f1dccbc226c6",
+      "timestamp": "2026-02-02T21:06",
+      "task_description": "Phase 43 remaining read-only tools registration: add MCP resources for read-only tools per plan",
+      "token_budget": 20000,
+      "total_tokens": 10843,
+      "utilization": 0.54215,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.596,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "techContext.md",
+        "progress.md",
+        "projectBrief.md",
+        "productContext.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "activeContext.md",
+        "file.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.649,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.224
+      }
+    },
+    {
+      "session_id": "f421155c5f2b",
+      "timestamp": "2026-02-04T08:03",
+      "task_description": "Test task",
+      "token_budget": 10000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      }
+    },
+    {
+      "session_id": "f421155c5f2b",
+      "timestamp": "2026-02-04T08:03",
+      "task_description": "Test task",
+      "token_budget": 10000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      }
+    },
+    {
+      "session_id": "f421155c5f2b",
+      "timestamp": "2026-02-04T08:03",
+      "task_description": "Test task",
+      "token_budget": 10000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      }
+    },
+    {
+      "session_id": "f421155c5f2b",
+      "timestamp": "2026-02-04T08:03",
+      "task_description": "Test task",
+      "token_budget": 80000,
+      "total_tokens": 8307,
+      "utilization": 0.1038375,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.493,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 2,
+      "selected_file_names": [
+        "projectBrief.md",
+        "roadmap.md",
+        "productContext.md",
+        "progress.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "activeContext.md",
+        "file.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.268,
+        "progress.md": 0.648,
+        "activeContext.md": 0.838,
+        "file.md": 0.218
+      }
+    },
+    {
+      "session_id": "f421155c5f2b",
+      "timestamp": "2026-02-04T08:03",
+      "task_description": "Test task",
+      "token_budget": 10000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      }
+    },
+    {
+      "session_id": "f421155c5f2b",
+      "timestamp": "2026-02-04T08:03",
+      "task_description": "Test task",
+      "token_budget": 10000,
+      "total_tokens": 5000,
+      "utilization": 0.5,
+      "files_selected": 2,
+      "files_excluded": 1,
+      "avg_relevance_score": 0.85,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "file1.md",
+        "file2.md"
+      ],
+      "relevance_by_file": {
+        "file1.md": 0.9,
+        "file2.md": 0.8
+      }
+    },
+    {
+      "session_id": "fe4529244cb7",
+      "timestamp": "2026-02-02T09:04",
+      "task_description": "Phase 43 Step 3 Implement MCP Resources: cortex:// URI scheme, resource registration, mcp_resource_wrapper, handler_kind for usage tracking",
+      "token_budget": 40000,
+      "total_tokens": 9125,
+      "utilization": 0.228125,
+      "files_selected": 8,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.597,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 1,
+      "selected_file_names": [
+        "activeContext.md",
+        "techContext.md",
+        "progress.md",
+        "file.md",
+        "systemPatterns.md",
+        "roadmap.md",
+        "projectBrief.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.65,
+        "activeContext.md": 0.86,
+        "file.md": 0.226
       }
     }
   ]

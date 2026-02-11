@@ -664,10 +664,18 @@ class PythonAdapter(FrameworkAdapter):
         # Success requires BOTH: tests passed AND coverage threshold met
         actual_success = tests_passed_check and coverage_met
 
-        # Build errors if tests failed OR coverage threshold not met
-        errors = self._build_test_errors(
-            not actual_success, coverage, coverage_threshold
-        )
+        # Build errors if tests failed OR coverage threshold not met.
+        # `_build_test_errors` expects the *actual* success flag and derives
+        # messages when it is False, so pass `actual_success` directly.
+        errors = self._build_test_errors(actual_success, coverage, coverage_threshold)
+
+        # If any tests failed, try to extract pytest FAILED summary lines and
+        # surface them as structured errors so callers can see the failing
+        # test identifiers even when the raw output is truncated in MCP.
+        if tests_failed > 0:
+            for line in self._extract_failed_test_lines(output):
+                if line not in errors:
+                    errors.append(line)
 
         # `TestResult.pass_rate` is a ratio in [0, 1] (not a percentage).
         pass_rate = (tests_passed / tests_run) if tests_run > 0 else 0.0
@@ -682,6 +690,25 @@ class PythonAdapter(FrameworkAdapter):
             output=output,
             errors=errors,
         )
+
+    def _extract_failed_test_lines(self, output: str) -> list[str]:
+        """Extract FAILED summary lines from pytest output.
+
+        These lines look like:
+            FAILED tests/path/test_file.py::TestClass::test_name - AssertionError: ...
+        We keep the full line but only a handful of them, so they remain small
+        and survive any later log truncation.
+        """
+        failed: list[str] = []
+        for raw in output.splitlines():
+            line = raw.strip()
+            if not line.startswith("FAILED "):
+                continue
+            # Ignore decorative lines that might contain FAILED but are not summaries.
+            if "====" in line or "======" in line:
+                continue
+            failed.append(line)
+        return failed
 
     def _parse_test_counts(self, output: str) -> tuple[int, int]:
         """Parse test passed/failed counts from output."""

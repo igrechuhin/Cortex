@@ -1,6 +1,6 @@
 # Claude-mem Inspired Improvements (Usage Search, Observations, Progressive Disclosure)
 
-**Status**: IN PROGRESS (Steps 1–6 completed 2026-02-11)  
+**Status**: IN PROGRESS (Steps 1–8 completed 2026-02-11; Steps 9–11 pending)  
 **Created**: 2026-02-02  
 **Priority**: Future enhancement (after Phase 43)  
 **Estimated Effort**: 15–25 hours (phased)  
@@ -142,18 +142,22 @@ Implementation order: execute steps in sequence. Dependencies between steps are 
 
 **Dependencies**: Step 3, Step 5.
 
+**Status**: COMPLETED 2026-02-11 — Implemented `UsageTracker.get_usage_timeline` and `get_usage_timeline` MCP tool with tests and quality gate passing.
+
 ---
 
-### Step 8: Result Summary per Observation (Later)
+### Step 8: Result Summary per Observation (Medium Effort)
 
 **Deliverable**: ly store a short result summary (e.g. for load_context, refactoring) with each observation for retrieval and future semantic search.
 
 - Design: `result_summary` or similar field; populated for selected tools (e.g. load_context, apply_refactoring) if config enabled.
 - Keep storage and computation minimal; consider feature flag or config.
 
-**Success**: When enabled, selected tools persist a short summary; retrieval includes it; tests cover on/off and presence/absence.
+**Success**: When enabled, selected tools persist a short summary; retrieval includes it via usage analytics tools; tests cover on/off and presence/absence for persistence and retrieval paths.
 
 **Dependencies**: Step 3; precursor to semantic search (Step 9).
+
+**Status**: COMPLETED 2026-02-11 — Added optional `result_summary` field to `ToolUsageEvent`, gated configuration for enabled tools, persisted summaries in `UsageTracker.record_tool_usage`, and extended usage analytics tools and tests so summaries round-trip correctly when present.
 
 ---
 
