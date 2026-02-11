@@ -27,6 +27,7 @@ from cortex.tools.phase4_optimization import (
     summarize_content,
     summarize_content_resource,
 )
+from tests.helpers.fixture_validator import validate_optimization_config_mock
 from tests.helpers.managers import make_test_managers
 
 # ============================================================================
@@ -93,7 +94,11 @@ def mock_loaded_content() -> list[Any]:
 def mock_managers(
     mock_optimization_result: MagicMock, mock_loaded_content: list[Any]
 ) -> ManagersDict:
-    """Create typed mock managers container."""
+    """Create typed mock managers container.
+
+    optimization_config mock must expose all members required by Phase 4 tools;
+    see tests/FIXTURE_REQUIREMENTS.md and validate_optimization_config_mock().
+    """
     optimization_config = MagicMock()
     optimization_config.get_token_budget.return_value = 10000
     optimization_config.get_max_token_budget.return_value = 100000
@@ -104,6 +109,10 @@ def mock_managers(
     optimization_config.is_optimization_enabled.return_value = True
     optimization_config.get_summarization_target_reduction.return_value = 0.5
     optimization_config.get_summarization_strategy.return_value = "extract_key_sections"
+
+    validation = validate_optimization_config_mock(optimization_config)
+    if not validation.valid:
+        pytest.fail(validation.message)
 
     context_optimizer = MagicMock()
     context_optimizer.optimize_context = AsyncMock(

@@ -2,6 +2,7 @@
 
 ## 2026-02-11
 
+- **Type cleanup inventory (Phase 53)** - COMPLETE. Added per-file drill-down (Section 4: response/config/metadata/report), Pydantic candidates and circular-import hotspots (Section 5), and first draft model groupings for Step 2 (Section 6) to .cortex/plans/type-cleanup-inventory.md.
 - **Session Optimization: Commit Pipeline Orchestration Refactor** — COMPLETE. Steps 6–8 implemented: cross-references from session-optimization/quality-gate plans to orchestration refactor; create-plan and Analyze prompts updated with phase-based orchestration, rule references (memory-bank-workflow.mdc, AGENTS.md), and Phase D doc update. Pre-commit checks passed.
 - **Commit (markdown lint, plan archive)** - COMPLETE. Fixed MD040 in CLAUDE.md (fenced code language), MD024 in docs/design/commit-pipeline-phases.md (unique phase headings). Archived session-optimization-commit-pipeline-orchestration-refactor.md to SessionOptimization; removed from roadmap.
 - **Phase 43 Step 6 (Naming Unification and get_* Tool Review)**- COMPLETE. Documented naming conventions, inventory, and per-case decisions in plan; added Tools vs Resources section to docs/api/tools.md and AGENTS.md; added test_phase43_get_tools_naming.py to enforce get_* read-only convention.
@@ -14,6 +15,9 @@
 - **Make fix_markdown_lint report progress like tests tool** - COMPLETE. fix_markdown_lint now reports actual file-count progress via MCP progress (processed vs total files) without using wrapper-based time progress, and new tests cover ctx and non-ctx paths with the quality gate and test suite passing.
 - **Phase 9: Excellence 9.8+ – Complete TODO implementations (script promotion)** - COMPLETE. Removed the last production TODO markers by updating `script_integration_template` and `tool_conversion_template` to embed original script path context instead of TODO comments, while keeping templates fully type-safe and passing all tests and quality gates.
 - **Refactor setup prompts (simplify to 3)** - COMPLETE. Simplified from 7 prompts to 3: initialize (combines initialize_memory_bank, setup_project_structure, setup_cursor_integration), migrate (combines check_migration_status, migrate_memory_bank, migrate_project_structure), setup_synapse (always available with default URL). Updated prompts.py, prompts_always.py, tests, and documentation.
+- **Test Fixture Validation and Maintenance** - COMPLETE. Added fixture validation helper (validate_optimization_config_mock), wired it into mock_managers in test_phase4_optimization.py, added tests/helpers/fixture_validator.py and unit tests, and added FIXTURE_REQUIREMENTS.md and FIXTURE_MAINTENANCE.md. Quality gate and tests pass.
+- **Phase 49 Step 4: Tool Search Tool - Categorization** - COMPLETE. Categorized all 63 Cortex MCP tools into three loading priority tiers (always_loaded: 15, deferred_medium: 26, deferred_low: 22) in `src/cortex/tools/tool_categories.py` with Pydantic models, lookup helpers, and ToolCategoryConfig for future optimization.json integration. 41 comprehensive tests (100% coverage). Documentation updated in `docs/guides/advanced-tool-use.md`.
+- **Commit (markdown lint phase-55 MD040)** - COMPLETE. Fixed MD040 in phase-55-lightweight-think-tool.md (fenced code language); preflight and tests passed.
 
 ## 2026
 

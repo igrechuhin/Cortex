@@ -45,11 +45,70 @@ Cortex uses the official **MCP SDK** (`mcp` package, `mcp.server.fastmcp.FastMCP
 - **Current state**: The MCP SDK does not expose `allowed_callers` in the Tool model. Programmatic tool calling (e.g. from a code execution environment) would be handled by the client and Anthropic API.
 - **Recommendation**: Document which tool chains are good candidates for code orchestration (e.g. validate → quality → duplications; suggest_refactoring → apply_refactoring) for when client/API support exists.
 
+## Tool Categorization (Phase 49 Step 4)
+
+All 63 Cortex MCP tools are categorized into three loading priority tiers in `src/cortex/tools/tool_categories.py`:
+
+| Tier | Count | Description | Examples |
+|------|-------|-------------|----------|
+| **always_loaded** | 15 | Core tools used in nearly every session | `manage_file`, `validate`, `load_context`, `execute_pre_commit_checks`, `rules` |
+| **deferred_medium** | 26 | Tools for specific workflows (refactoring, analysis, synapse, link ops) | `suggest_refactoring`, `analyze`, `sync_synapse`, `create_plan` |
+| **deferred_low** | 22 | Rarely used admin/analytics tools | `rollback_file_version`, `fix_roadmap_corruption`, usage analytics (8 tools), script capture (5 tools) |
+
+### Categorization Rationale
+
+- **always_loaded**: Tools that appear in the implement-prompt workflow, session startup (`load_context`), quality gates (`execute_pre_commit_checks`, `fix_quality_issues`), and memory bank updates (`complete_plan`, `append_progress_entry`, etc.).
+- **deferred_medium**: Tools used in specific workflows (plan creation, refactoring, synapse sync, commit pipeline phases) but not every session.
+- **deferred_low**: Usage analytics, script capture/promotion, admin operations (rollback, corruption fix, cleanup). These are used infrequently and can be loaded on-demand.
+
+### API
+
+```python
+from cortex.tools.tool_categories import (
+    get_tool_category,
+    get_always_loaded_tool_names,
+    get_deferred_tool_names,
+    build_category_config,
+    get_category_summary,
+)
+
+# Look up a single tool
+get_tool_category("manage_file")  # ToolCategory.ALWAYS_LOADED
+
+# Get all always-loaded tool names (sorted)
+get_always_loaded_tool_names()  # ["add_roadmap_entry", "append_active_context_entry", ...]
+
+# Build config for optimization.json
+config = build_category_config()
+config.model_dump()  # {"enabled": False, "always_loaded": [...], ...}
+
+# Summary counts
+get_category_summary()  # {"always_loaded": 15, "deferred_medium": 26, "deferred_low": 22}
+```
+
+### Configuration
+
+The `tool_search` section can be added to `.cortex/config/optimization.json` when MCP SDK supports deferred loading:
+
+```json
+{
+  "tool_search": {
+    "enabled": false,
+    "always_loaded": ["manage_file", "validate", "load_context", "..."],
+    "deferred_medium": ["suggest_refactoring", "analyze", "..."],
+    "deferred_low": ["rollback_file_version", "get_tool_usage_stats", "..."]
+  }
+}
+```
+
+Currently `enabled: false` — categorization is documented but deferred loading is not active until MCP SDK supports it.
+
 ## Implementation Status
 
-- **Phase 49 Step 1**: Research and feasibility documented in this guide.
+- **Phase 49 Steps 1–3**: Research, feasibility, and tool use examples (`input_examples` on `manage_file`, `validate`) documented and implemented.
+- **Phase 49 Step 4**: Tool categorization completed — 63 tools classified into three tiers with Pydantic models, lookup helpers, and comprehensive tests.
 - **Tool docstrings**: High-value tools include USE WHEN, EXAMPLES, RETURNS; additional input examples are added in docstrings and, where useful, in `meta` for compatible clients.
-- **Future**: When MCP or Anthropic standardizes `input_examples`, `defer_loading`, or `allowed_callers`, Cortex can adopt them via SDK updates or protocol extensions.
+- **Future**: When MCP or Anthropic standardizes `defer_loading`, Cortex can activate deferred loading using the categorization in `tool_categories.py`.
 
 ## Related Documentation
 

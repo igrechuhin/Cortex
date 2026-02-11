@@ -1,6 +1,6 @@
 # Phase 49: Introduce Anthropic Advanced Tool Use Features
 
-**Status:** IN PROGRESS (Steps 1–3 complete 2026-02-03)
+**Status:** IN PROGRESS (Steps 1–4 complete; Step 4 2026-02-11)
 **Created:** 2026-01-19
 **Target Completion:** 2026-02-15
 **Priority:** HIGH
@@ -72,14 +72,15 @@ Implement features in order of risk/value:
 - [ ] Test with Claude to verify accuracy improvement (manual; future)
 - [ ] Measure before/after accuracy metrics (future)
 
-### Step 4: Tool Search Tool - Categorization
+### Step 4: Tool Search Tool - Categorization ✅
 
-- [ ] Categorize all 53+ tools by usage frequency:
-  - **Always loaded** (high-frequency): manage_file, validate, get_memory_bank_stats
-  - **Deferred** (medium-frequency): suggest_refactoring, apply_refactoring, rules
-  - **Deferred** (low-frequency): rollback_file_version, fix_roadmap_corruption
-- [ ] Use Phase 29 data if available (Track MCP Tool Usage)
-- [ ] Document categorization rationale
+- [x] Categorize all 63 tools by usage frequency (2026-02-11):
+  - **Always loaded** (15 tools): manage_file, write_file, validate, load_context, get_memory_bank_stats, rules, add_roadmap_entry, remove_roadmap_entry, complete_plan, append_progress_entry, append_active_context_entry, execute_pre_commit_checks, fix_quality_issues, check_mcp_connection_health, get_structure_info
+  - **Deferred medium** (26 tools): analyze, load_progressive_context, summarize_content, get_relevance_scores, suggest_refactoring, apply_refactoring, configure, update_config, get_version_history, get_dependency_graph, parse_file_links, get_link_graph, validate_links, resolve_transclusions, fix_markdown_lint, create_plan, register_plan_in_roadmap, run_preflight_checks, run_docs_and_memory_bank_sync, sync_synapse, get_synapse_rules, get_synapse_prompts, check_structure_health, sequentialthinking, read_cache_json, write_cache_json, analyze_context_effectiveness
+  - **Deferred low** (22 tools): analyze_health_check, provide_feedback, rollback_file_version, fix_roadmap_corruption, update_synapse_rule, update_synapse_prompt, 8 usage analytics tools, get_context_usage_statistics, 5 script capture tools, cleanup_metadata_index
+- [x] Phase 29 data attempted but unavailable (lock error); categorized by tool purpose and implement-workflow usage patterns instead
+- [x] Categorization documented in `src/cortex/tools/tool_categories.py` with Pydantic models and lookup helpers; rationale in `docs/guides/advanced-tool-use.md`
+- [x] 41 comprehensive tests in `tests/tools/test_tool_categories.py` (100% coverage on new module)
 
 ### Step 5: Tool Search Tool - Infrastructure
 
@@ -229,3 +230,15 @@ async def validate(...):
 - [Phase 29: Track MCP Tool Usage](phase-29-track-mcp-tool-usage.md)
 - [Phase 43: Reconsider Tools Registration](phase-43-reconsider-tools-registration.md)
 - [Phase 45: Add MCP Annotations](phase-45-add-mcp-annotations.md)
+- [Phase 50: Tool Consolidation and Response Format](phase-50-tool-consolidation-response-format.md) — complements this plan by reducing tool count and adding response_format
+- [Phase 51: Just-in-Time Context with Section-Level Loading](phase-51-just-in-time-context-section-loading.md) — context engineering improvements
+- [Phase 52: Consistent Helpful Error Responses](phase-52-consistent-helpful-error-responses.md) — better error messages for tool use
+- [Phase 54: Session Start Initializer Pattern](phase-54-session-start-initializer-pattern.md) — session orientation optimization
+- [Phase 55: Lightweight Think Tool](phase-55-lightweight-think-tool.md) — simplified think tool for reasoning
+- [Phase 56: Session Compaction Workflow](phase-56-session-compaction-workflow.md) — context compaction and handoff
+- [Phase 57: Evaluation-Driven Tool Improvement](phase-57-evaluation-driven-tool-improvement.md) — systematic tool evaluation framework
+- [Phase 58: Multi-Agent Specialization](phase-58-multi-agent-specialization-task-locking.md) — role-based context and task locking
+
+### New Input (2026-02-11): Anthropic Engineering Blog Deep Dive
+
+Comprehensive analysis of 7 Anthropic engineering articles identified 9 improvement areas for Cortex MCP. This plan (Phase 49) covers ideas 2 (Deferred Tool Loading via Steps 4-6) and partially idea 1 (Tool Use Examples via Steps 2-3). The remaining 7 ideas are tracked as separate plans (Phases 50-58) listed above.
