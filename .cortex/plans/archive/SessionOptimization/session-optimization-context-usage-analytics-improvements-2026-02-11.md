@@ -87,7 +87,7 @@ This plan focuses on:
 
 - Update commit.md and fix-tests.md with a short section:
   - When `execute_pre_commit_checks(checks=["tests"])` reports failures but the structured error array is empty or truncated, agents should:
-    - Prefer a dedicated `/cortex/fix-tests` or `/cortex/diagnose-tests` command rather than guessing.
+    - Prefer a dedicated `/cortex/fix_tests` command rather than guessing.
     - Ask the user for a local `pytest` snippet when absolutely necessary.
 
 ### 3. Rules and Documentation Alignment

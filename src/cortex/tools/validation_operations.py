@@ -7,7 +7,8 @@ Total: 1 tool
 - validate: Schema/duplications/quality checks
 """
 
-from typing import Literal
+import json
+from typing import Literal, cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
@@ -63,6 +64,7 @@ async def validate(
     check_code_quality_consistency: bool = True,
     check_documentation_consistency: bool = True,
     check_config_consistency: bool = True,
+    response_format: Literal["concise", "detailed"] = "detailed",
     ctx: MCPContext | None = None,
 ) -> str:
     """Run validation checks on Memory Bank files for schema compliance,
@@ -473,7 +475,7 @@ async def validate(
     if parsed is None:
         await log_client(ctx, "warning", "validate: invalid check_type")
         return create_invalid_check_type_error(check_type or "null")
-    return await _execute_validation_with_error_handling(
+    raw = await _execute_validation_with_error_handling(
         parsed,
         file_name,
         similarity_threshold,
@@ -484,6 +486,7 @@ async def validate(
         check_config_consistency,
         ctx,
     )
+    return format_validate_response(raw, check_type, response_format)
 
 
 async def _execute_validation_with_error_handling(
@@ -518,6 +521,65 @@ async def _execute_validation_with_error_handling(
     except Exception as e:
         await log_client(ctx, "error", f"validate: failed: {e}", logger_name=__name__)
         return create_validation_error_response(e)
+
+
+def _parse_validate_json(raw: str) -> dict[str, object] | None:
+    """Parse raw JSON string into a dict or return None on failure."""
+    try:
+        loaded = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(loaded, dict):
+        return None
+    return cast(dict[str, object], loaded)
+
+
+def _compute_validate_valid_flag(
+    data: dict[str, object],
+    check_type: ValidateCheckTypeName,
+) -> bool:
+    """Best-effort validity flag for concise validate responses."""
+    valid_val: object = data.get("valid", True)
+    valid = bool(valid_val)
+
+    if check_type == "schema":
+        validation_obj: object = data.get("validation")
+        if isinstance(validation_obj, dict):
+            validation_dict = cast(dict[str, object], validation_obj)
+            inner_valid: object | None = validation_dict.get("valid")
+            if isinstance(inner_valid, bool):
+                valid = inner_valid
+    return valid
+
+
+def format_validate_response(
+    raw: str,
+    check_type: ValidateCheckTypeName,
+    response_format: Literal["concise", "detailed"],
+) -> str:
+    """Format validate response based on response_format."""
+    if response_format != "concise":
+        return raw
+
+    data = _parse_validate_json(raw)
+    if data is None:
+        return raw
+
+    status_val: object = data.get("status", "success")
+    status = str(status_val) if not isinstance(status_val, str) else status_val
+    if status != "success":
+        # Preserve full error payloads even in concise mode.
+        return raw
+
+    valid = _compute_validate_valid_flag(data, check_type)
+    concise_payload = {
+        "status": status,
+        "check_type": check_type,
+        "valid": bool(valid),
+        "error_count": 0,
+        "warning_count": 0,
+    }
+    return json.dumps(concise_payload, indent=2)
 
 
 @mcp.resource(uri="cortex://validation/validate/{check_type}")

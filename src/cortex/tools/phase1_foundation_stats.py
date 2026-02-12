@@ -36,6 +36,7 @@ async def get_memory_bank_stats(
     include_token_budget: bool = True,
     include_refactoring_history: bool = False,
     refactoring_days: int = 90,
+    response_format: Literal["concise", "detailed"] = "detailed",
     ctx: MCPContext | None = None,
 ) -> str:
     """Get overall Memory Bank statistics and analytics.
@@ -140,7 +141,7 @@ async def get_memory_bank_stats(
             include_refactoring_history,
             refactoring_days,
         )
-        return json.dumps(result_dict, indent=2)
+        return format_memory_bank_stats_response(result_dict, response_format)
     except Exception as e:
         await log_client(
             ctx,
@@ -152,6 +153,27 @@ async def get_memory_bank_stats(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+def format_memory_bank_stats_response(
+    result_dict: ModelDict, response_format: Literal["concise", "detailed"]
+) -> str:
+    """Format get_memory_bank_stats response based on response_format."""
+    if response_format == "concise":
+        summary_raw: JsonValue | None = result_dict.get("summary")  # type: ignore[assignment]
+        summary: ModelDict = summary_raw if isinstance(summary_raw, dict) else {}
+        token_budget_raw: JsonValue | None = result_dict.get("token_budget")  # type: ignore[assignment]
+        token_budget: ModelDict = (
+            token_budget_raw if isinstance(token_budget_raw, dict) else {}
+        )
+        concise_payload: dict[str, JsonValue] = {
+            "status": result_dict.get("status", "success"),
+            "total_files": summary.get("total_files"),
+            "total_tokens": summary.get("total_tokens"),
+            "usage_percentage": token_budget.get("usage_percentage"),
+        }
+        return json.dumps(concise_payload, indent=2)
+    return json.dumps(result_dict, indent=2)
 
 
 @mcp.resource(uri="cortex://memory-bank/stats")

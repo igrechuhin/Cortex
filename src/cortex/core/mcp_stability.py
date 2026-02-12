@@ -29,6 +29,7 @@ from cortex.core.constants import (
     PROGRESS_THRESHOLD_TIMEOUT_SECONDS,
 )
 from cortex.core.context_logging import MCPContext
+from cortex.core.mcp_async_utils import cancel_and_drain_progress_task
 from cortex.core.mcp_failure_handler import MCPToolFailureHandler
 from cortex.core.models import ConnectionHealth, JsonValue, MCPToolArguments
 from cortex.core.usage_context import get_current_managers, set_current_managers
@@ -452,8 +453,6 @@ async def _progress_report_loop(
     Uses a shorter interval for long-running tools (timeout >= 300s) to reduce
     client idle timeout risk (Connection closed -32000).
     """
-    from cortex.core.context_logging import MCPContext, report_progress_safe
-
     interval = (
         PROGRESS_REPORT_INTERVAL_LONG_RUNNING_SECONDS
         if timeout_sec >= 300
@@ -462,12 +461,45 @@ async def _progress_report_loop(
     start = time.perf_counter()
     while True:
         await asyncio.sleep(interval)
-        elapsed = time.perf_counter() - start
-        if elapsed >= timeout_sec:
+        if not await _progress_report_step(ctx, timeout_sec, start, _tool_name):
             break
-        pct = min(95, int((elapsed / timeout_sec) * 100))
-        mcp_ctx = cast(MCPContext | None, ctx)
+
+
+async def _progress_report_step(
+    ctx: JsonValue,
+    timeout_sec: float,
+    start: float,
+    tool_name: str,
+) -> bool:
+    """Run a single progress-report step; return False when loop should stop."""
+    from cortex.core.context_logging import MCPContext, report_progress_safe
+
+    elapsed = time.perf_counter() - start
+    if elapsed >= timeout_sec:
+        return False
+
+    pct = min(95, int((elapsed / timeout_sec) * 100))
+    mcp_ctx = cast(MCPContext | None, ctx)
+    try:
         await report_progress_safe(mcp_ctx, float(pct), 100.0)
+        return True
+    except Exception as e:  # pragma: no cover - exercised via live MCP connection
+        # If the client has disconnected (e.g. stdio closed), stop the
+        # progress loop quietly instead of surfacing an unhandled
+        # ExceptionGroup during TaskGroup cleanup.
+        if _is_connection_error(e):
+            logger.info(
+                "Progress loop for %s stopped due to connection error: %s",
+                tool_name,
+                e,
+            )
+            return False
+        logger.debug(
+            "Progress loop for %s stopped due to unexpected error: %s",
+            tool_name,
+            e,
+        )
+        return False
 
 
 async def _record_usage_if_available(
@@ -577,20 +609,28 @@ async def _cancel_progress_and_report_done(
 
     # Skip 100% report for tools that report their own progress
     if tool_name is not None and tool_name in _TOOLS_WITH_OWN_PROGRESS:
-        _ = progress_task.cancel()
-        try:
-            await progress_task
-        except asyncio.CancelledError:
-            pass
+        await cancel_and_drain_progress_task(progress_task)
         return
 
-    _ = progress_task.cancel()
-    try:
-        await progress_task
-    except asyncio.CancelledError:
-        pass
+    await cancel_and_drain_progress_task(progress_task)
     mcp_ctx = cast(MCPContext | None, ctx)
-    await report_progress_safe(mcp_ctx, 100.0, 100.0)
+    try:
+        await report_progress_safe(mcp_ctx, 100.0, 100.0)
+    except Exception as e:  # pragma: no cover - depends on live MCP connection
+        # If the connection is already closed, suppress the error so we don't
+        # turn a normal client disconnect into a tool failure.
+        if _is_connection_error(e):
+            logger.info(
+                "Suppressing final progress report error for %s due to connection issue: %s",
+                tool_name or "<unknown>",
+                e,
+            )
+            return
+        logger.debug(
+            "Final progress report for %s failed with unexpected error: %s",
+            tool_name or "<unknown>",
+            e,
+        )
 
 
 async def _record_usage_finish(

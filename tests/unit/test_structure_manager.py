@@ -621,11 +621,12 @@ class TestReadmeGeneration:
 class TestStructureInfo:
     """Test get_structure_info method."""
 
-    def test_get_structure_info_returns_complete_info(self, tmp_path: Path):
+    @pytest.mark.asyncio
+    async def test_get_structure_info_returns_complete_info(self, tmp_path: Path):
         """Test get_structure_info returns complete structure information."""
         # Arrange
         manager = StructureManager(tmp_path)
-        _ = manager.create_structure()
+        _ = await manager.create_structure()
 
         # Act
         info = manager.get_structure_info()

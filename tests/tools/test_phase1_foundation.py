@@ -1177,6 +1177,56 @@ def test_build_summary_dict():
     assert result["history_size_kb"] == 2.0
 
 
+def test_format_memory_bank_stats_response_concise() -> None:
+    """format_memory_bank_stats_response should produce a concise payload."""
+    from typing import cast
+
+    from cortex.core.models import ModelDict
+    from cortex.tools.phase1_foundation_stats import format_memory_bank_stats_response
+
+    result_dict = {
+        "status": "success",
+        "summary": {
+            "total_files": 3,
+            "total_tokens": 1234,
+        },
+        "token_budget": {
+            "usage_percentage": 42.5,
+        },
+    }
+
+    out = format_memory_bank_stats_response(
+        cast(ModelDict, result_dict), response_format="concise"
+    )
+    data = json.loads(out)
+
+    assert data["status"] == "success"
+    assert data["total_files"] == 3
+    assert data["total_tokens"] == 1234
+    assert data["usage_percentage"] == 42.5
+
+
+def test_format_memory_bank_stats_response_detailed_passthrough() -> None:
+    """When response_format is detailed, payload should be unchanged."""
+    from typing import cast
+
+    from cortex.core.models import ModelDict
+    from cortex.tools.phase1_foundation_stats import format_memory_bank_stats_response
+
+    original = {
+        "status": "success",
+        "summary": {"total_files": 1},
+        "token_budget": {"usage_percentage": 10.0},
+    }
+
+    out = format_memory_bank_stats_response(
+        cast(ModelDict, original), response_format="detailed"
+    )
+    data = json.loads(out)
+
+    assert data == original
+
+
 def test_calculate_token_status_healthy():
     """Test calculate_token_status returns healthy status."""
     # Arrange

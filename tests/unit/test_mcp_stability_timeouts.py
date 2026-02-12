@@ -22,6 +22,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_VERY_COMPLEX,
     PROGRESS_THRESHOLD_TIMEOUT_SECONDS,
 )
+from cortex.core.mcp_async_utils import cancel_and_drain_progress_task
 from cortex.core.mcp_stability import mcp_tool_wrapper, with_mcp_stability
 
 
@@ -252,6 +253,21 @@ class TestJsonValueTimeoutNormalization:
 
         # Assert
         assert result == "instant"
+
+
+class TestProgressHelpers:
+    """Tests for progress-related helper utilities."""
+
+    @pytest.mark.asyncio
+    async def test_cancel_and_drain_progress_task_cancels_task(self) -> None:
+        """cancel_and_drain_progress_task should cancel and drain the task."""
+
+        async def never_finishes() -> None:
+            await asyncio.sleep(10.0)
+
+        task = asyncio.create_task(never_finishes())
+        await cancel_and_drain_progress_task(task)
+        assert task.cancelled()
 
     @pytest.mark.asyncio
     async def test_timeout_with_exception_handling(self) -> None:

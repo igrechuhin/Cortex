@@ -114,7 +114,7 @@ From `get_context_usage_statistics()`:
 
 2. **Clarify agent behavior when test output is truncated**  
    - In `commit.md` and `fix-tests.md`, document the fallback strategy:
-     - Prefer dedicated `/cortex/fix-tests` or `/cortex/diagnose-tests` flows rather than guessing.
+     - Prefer dedicated `/cortex/fix_tests` flows rather than guessing.
      - Ask the user for local `pytest` output when structured MCP details are unavailable.
 
 3. **Refine context defaults for commit/test/fix-debug**  

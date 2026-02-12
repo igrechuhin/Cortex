@@ -12,6 +12,7 @@ Total: 4 tools, 4 resources
 """
 
 import json
+from typing import Literal, cast
 from urllib.parse import unquote
 
 # Import via facade to allow test patching
@@ -66,6 +67,7 @@ async def load_context(
     task_description: str,
     token_budget: int | None = None,
     strategy: str = "dependency_aware",
+    response_format: Literal["concise", "detailed"] = "detailed",
     ctx: MCPContext | None = None,
 ) -> str:
     """Load relevant context for a task within token budget.
@@ -107,13 +109,42 @@ async def load_context(
             mgrs, task_description, token_budget, strategy, project_root=root
         )
         await log_client(ctx, "info", "load_context: completed", logger_name=__name__)
-        return out
+        return _format_load_context_response(out, response_format)
     except Exception as e:
         await log_client(ctx, "error", f"load_context: {e!s}", logger_name=__name__)
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+def _format_load_context_response(
+    out: str, response_format: Literal["concise", "detailed"]
+) -> str:
+    """Format load_context response payload based on response_format."""
+    if response_format != "concise":
+        return out
+
+    try:
+        data = json.loads(out)
+    except json.JSONDecodeError:
+        return out
+
+    file_names: list[str] = []
+    selected_files_raw = data.get("selected_files")
+    if isinstance(selected_files_raw, dict):
+        selected_files_typed = cast(dict[str, object], selected_files_raw)
+        file_names = sorted(selected_files_typed.keys())
+
+    concise_payload: dict[str, object] = {
+        "status": data.get("status", "success"),
+        "task_description": data.get("task_description"),
+        "strategy": data.get("strategy"),
+        "file_names": file_names,
+        "total_tokens": data.get("total_tokens"),
+        "utilization": data.get("utilization"),
+    }
+    return json.dumps(concise_payload, indent=2)
 
 
 @mcp.tool(annotations=read_only_annotations("Load Progressive Context"))

@@ -52,7 +52,7 @@ direct file read) before any code-modifying step runs.
 
 - **Any check fails**: Stop the pipeline. Do not proceed to Phase B.
 - **Recommended recovery**: Use targeted helper commands such as
-  `/cortex/fix-tests`, `/cortex/fix-quality`, or the
+  `/cortex/fix_tests`, `/cortex/fix_quality`, or the
   `fix_quality_issues()` MCP tool to resolve specific failures, then
   re-run `/cortex/commit`.
 - **Zero-errors policy**: Pre-existing errors are not acceptable.
@@ -286,6 +286,6 @@ This document serves as the foundation for subsequent plan steps:
 - **Step 3**: Refactor `/cortex/commit` prompt to orchestrate phase
   tools instead of micromanaging individual checks.
 - **Step 4**: Add focused helper commands for common failure modes
-  (`/cortex/fix-tests`, `/cortex/fix-quality`, `/cortex/docs-sync`).
+  (`/cortex/fix_tests`, `/cortex/fix_quality`, `/cortex/docs_sync`).
 - **Step 5**: Slim and centralize rules to reduce prompt size.
 - **Step 6**: Update existing session-optimization plans and AGENTS.

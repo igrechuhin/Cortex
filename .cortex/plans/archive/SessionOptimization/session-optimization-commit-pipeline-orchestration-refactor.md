@@ -20,7 +20,7 @@ This plan builds on the existing session-optimization and quality-gate work and 
 1. **Modularize the pipeline** into explicit phases (e.g., preflight checks, docs/memory-bank sync, final gate + git operations, analyze session) with clear, small responsibilities.
 2. **Introduce helper MCP tools and/or sub-commands** that encapsulate phase logic, so `/cortex/commit` mainly orchestrates a few high-level calls instead of dozens of fine-grained steps.
 3. **Slim and de-duplicate prompts** by moving behavioral rules into code and referencing AGENTS/plan rules concisely.
-4. **Clarify failure semantics**: if any phase fails (especially tests), `/cortex/commit` should stop the commit pipeline cleanly and point to specific helper commands (e.g., `/cortex/fix-tests`) instead of attempting open-ended debugging.
+4. **Clarify failure semantics**: if any phase fails (especially tests), `/cortex/commit` should stop the commit pipeline cleanly and point to specific helper commands (e.g., `/cortex/fix_tests`) instead of attempting open-ended debugging.
 5. **Align the review and Analyze prompts** with these patterns where appropriate so that code-review and end-of-session analysis flows use the same MCP tools, pre-action checklist standards, and phase-style delegation (agents + tools) as the commit pipeline, without duplicating low-level rules.
 
 ## Implementation Steps
@@ -93,7 +93,7 @@ All 16 existing steps (including pre-step) are mapped to exactly one phase. Inpu
 **Session 2026-02-10 Progress**:
 
 - Updated commit prompt to reference `run_preflight_checks` and `run_docs_and_memory_bank_sync` phase helpers.
-- Phase A failures now explicitly point to `/cortex/fix-tests` and `/cortex/fix-quality`.
+- Phase A failures now explicitly point to `/cortex/fix_tests` and `/cortex/fix_quality`.
 - Phase B failures now explicitly point to `/cortex/docs-sync`.
 - Further prompt slimming (removing duplicated rules, shortening verbose sections) deferred to Step 5.
 
@@ -103,7 +103,7 @@ All 16 existing steps (including pre-step) are mapped to exactly one phase. Inpu
    - Call `run_preflight_checks` (or equivalent) and interpret its structured result.
    - If preflight fails (especially tests), **stop the commit pipeline** and:
      - Present a concise, structured summary of failures.
-     - Recommend explicit follow-up commands (e.g., `/cortex/fix-tests`, `/cortex/fix-quality`) rather than trying to debug inline.
+     - Recommend explicit follow-up commands (e.g., `/cortex/fix_tests`, `/cortex/fix_quality`) rather than trying to debug inline.
    - If preflight passes, proceed to `sync_docs_and_memory_bank` and then `run_final_gate_and_git_operations`.
    - Run session analysis (Analyze prompt or its MCP equivalent) only after successful commit.
 2. Remove or drastically shrink repeated bullet lists and redundant instructions already covered by AGENTS and phase tools.
@@ -132,13 +132,13 @@ All 16 existing steps (including pre-step) are mapped to exactly one phase. Inpu
 - Created `fix-tests.md` helper prompt: diagnose and fix failing tests using `execute_pre_commit_checks(checks=["tests"])`.
 - Created `fix-quality.md` helper prompt: fix type/format/lint issues using `fix_quality_issues` and `execute_pre_commit_checks`.
 - Created `docs-sync.md` helper prompt: repair docs/memory-bank inconsistencies using `run_docs_and_memory_bank_sync` and `validate`.
-- Registered all three in `prompts-manifest.json` as `/cortex/fix-tests`, `/cortex/fix-quality`, `/cortex/docs-sync`.
+- Registered all three in `prompts-manifest.json` as `/cortex/fix_tests`, `/cortex/fix_quality`, `/cortex/docs_sync`.
 - Markdown structure fixes applied to fix-quality.md and docs-sync.md (list indentation under checklists).
 
 **Tasks**:
 
 1. Design and document small, focused commands, for example:
-   - `/cortex/fix-tests` - locate and debug failing tests based on the last preflight run; open relevant modules and tests; run targeted test subsets.
+   - `/cortex/fix_tests` - locate and debug failing tests based on the last preflight run; open relevant modules and tests; run targeted test subsets.
    - `/cortex/fix-quality` - run quality tools and fix type/format/lint issues outside the commit pipeline.
    - `/cortex/docs-sync` - run memory bank/roadmap/timestamps sync without committing.
 2. Ensure each command:
@@ -166,7 +166,7 @@ All 16 existing steps (including pre-step) are mapped to exactly one phase. Inpu
 
 **Session 2026-02-10 Progress**:
 
-- Added AGENTS.md section "Commit pipeline (phase-based)" describing phase helpers (`run_preflight_checks`, `run_docs_and_memory_bank_sync`), failure semantics, and helper commands (`/cortex/fix-tests`, `/cortex/fix-quality`, `/cortex/docs-sync`).
+- Added AGENTS.md section "Commit pipeline (phase-based)" describing phase helpers (`run_preflight_checks`, `run_docs_and_memory_bank_sync`), failure semantics, and helper commands (`/cortex/fix_tests`, `/cortex/fix_quality`, `/cortex/docs_sync`).
 - Commit prompt: added one-line reference to AGENTS.md at Phase Helper MCP Tools section.
 - Implement prompt: added reference to AGENTS.md and phase alignment in Step 4.7 (quality gate).
 - **Completed this session**: Added Synapse rule `general/commit-pipeline.mdc` (zero-errors, phase helpers, memory bank refs) for `rules(operation="get_relevant")`. Slimmed commit.md: Pre-Step Load Rules now references Pre-Action Checklist item 2 and commit-pipeline.mdc/memory-bank-workflow.mdc; Verify code conformance checklist item shortened to reference rules loaded above and memory-bank-workflow.mdc. review.md: added one-line reference to AGENTS.md "Commit pipeline (phase-based)" in Static analysis step for type/quality checks.
@@ -315,7 +315,7 @@ All 16 existing steps (including pre-step) are mapped to exactly one phase. Inpu
    - Success and failure paths for each helper, including structured error reporting and zero-errors enforcement.
    - Validation of request/response Pydantic models, including optional fields and edge cases.
 2. **Helper commands for failure modes (Step 4)**:
-   - `/cortex/fix-tests`, `/cortex/fix-quality`, and `/cortex/docs-sync` flows exercising their narrow scopes.
+   - `/cortex/fix_tests`, `/cortex/fix_quality`, and `/cortex/docs_sync` flows exercising their narrow scopes.
    - Assertions that they do not attempt to run the full commit pipeline and respect memory bank/roadmap contracts.
 3. **Create-plan and Analyze orchestration (Steps 7-8)**:
    - Any new helper logic used by `create-plan` to resolve paths, discover existing plans, and register in the roadmap, and any helpers used by Analyze to orchestrate its phases and write reviews.

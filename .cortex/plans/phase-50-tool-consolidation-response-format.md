@@ -1,6 +1,6 @@
 # Phase 50: Tool Consolidation and Response Format Optimization
 
-**Status:** PENDING
+**Status:** IN PROGRESS
 **Created:** 2026-02-11
 **Priority:** HIGH
 **Estimated Effort:** 2-3 sprints
@@ -65,13 +65,14 @@ Additionally, many tools return verbose JSON responses (200+ tokens) when a conc
 
 ### Step 3: Implement response_format Parameter
 
-- [ ] Add `response_format: Literal["concise", "detailed"]` parameter to tools with verbose output:
+- [x] Add `response_format: Literal["concise", "detailed"]` parameter to tools with verbose output:
   - `get_memory_bank_stats` — concise returns just: total_files, total_tokens, usage_percentage, status
   - `validate` — concise returns just: valid/invalid, error_count, warning_count
   - `load_context` — concise returns just: file_names, total_tokens, utilization
   - `suggest_refactoring` — concise returns just: suggestion_id, type, confidence, one-line recommendation
   - `get_tool_usage_stats` — concise returns just: top_5_tools with call_counts
-  - `search_usage` — concise returns just: ids and one-line summaries
+- `search_usage` — concise returns just: ids and one-line summaries
+- **2026-02-12 status:** Implemented `response_format` for `load_context`, `get_memory_bank_stats`, `get_tool_usage_stats`, `search_usage`, `validate`, and `suggest_refactoring` (concise vs detailed).
 - [ ] Default to "concise" for most tools (agents can request "detailed" when needed)
 - [ ] Implement response formatting logic in each tool handler
 - [ ] Measure token savings: target 50-70% reduction on concise responses
