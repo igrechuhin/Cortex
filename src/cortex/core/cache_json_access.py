@@ -7,6 +7,7 @@ chat sessions and processes get reliable, serialized access via file locking.
 
 import asyncio
 import json
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import cast
@@ -59,9 +60,28 @@ def _lock_path_for(file_path: Path) -> Path:
 
 
 async def _acquire_lock(lock_path: Path, timeout_seconds: float) -> None:
-    """Acquire file lock with timeout. Raises FileLockTimeoutError on timeout."""
+    """Acquire file lock with timeout.
+
+    Treats any existing lock older than a small safety window as stale and
+    cleans it up before proceeding. This prevents broken sessions from
+    permanently blocking access to usage/cache files.
+    """
     start = asyncio.get_event_loop().time()
     while lock_path.exists():
+        # Stale-lock cleanup: if the lock file is older than 180 seconds,
+        # assume it was left behind by a crashed session and remove it.
+        try:
+            mtime = lock_path.stat().st_mtime
+        except OSError:
+            mtime = None
+        if mtime is not None and (time.time() - mtime) > 180:
+            try:
+                lock_path.unlink()
+                break
+            except OSError:
+                # If we fail to delete, fall back to normal timeout behaviour.
+                pass
+
         if (asyncio.get_event_loop().time() - start) > timeout_seconds:
             raise FileLockTimeoutError(
                 file_name=lock_path.stem,

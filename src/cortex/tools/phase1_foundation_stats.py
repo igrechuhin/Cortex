@@ -36,7 +36,7 @@ async def get_memory_bank_stats(
     include_token_budget: bool = True,
     include_refactoring_history: bool = False,
     refactoring_days: int = 90,
-    response_format: Literal["concise", "detailed"] = "detailed",
+    response_format: Literal["concise", "detailed"] = "concise",
     ctx: MCPContext | None = None,
 ) -> str:
     """Get overall Memory Bank statistics and analytics.

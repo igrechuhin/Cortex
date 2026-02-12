@@ -174,14 +174,17 @@ class TestMCPToolWorkflows:
             assert data["status"] in ["success", "validation_failed", "error"]
 
             # Act 2: Get quality score
-            result = await validate(check_type="quality")
+            result = await validate(check_type="quality", response_format="detailed")
             data = json.loads(result)
             assert data["status"] == "success"
             assert "overall_score" in data
             assert 0 <= data["overall_score"] <= 100
 
             # Act 3: Check duplications
-            result = await validate(check_type="duplications")
+            result = await validate(
+                check_type="duplications",
+                response_format="detailed",
+            )
             data = json.loads(result)
             assert data["status"] == "success"
             # Can be duplications, exact_duplicates, or similar_content
@@ -209,6 +212,7 @@ class TestMCPToolWorkflows:
             result = await load_context(
                 task_description="project",
                 token_budget=10000,
+                response_format="detailed",
             )
             data = json.loads(result)
             assert data["status"] == "success"
@@ -308,7 +312,7 @@ class TestMCPToolWorkflows:
             return_value=temp_project_root,
         ):
             # Act: Get stats
-            result = await get_memory_bank_stats()
+            result = await get_memory_bank_stats(response_format="detailed")
             data = json.loads(result)
             assert data["status"] == "success"
             assert "summary" in data

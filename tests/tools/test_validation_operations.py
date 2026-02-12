@@ -1375,6 +1375,7 @@ class TestValidateMainFunction:
                 strict_mode=True,
                 similarity_threshold=0.9,
                 suggest_fixes=False,
+                response_format="detailed",
             )
 
             # Assert

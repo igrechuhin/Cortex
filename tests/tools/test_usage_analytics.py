@@ -413,7 +413,10 @@ class TestUsageAnalyticsToolsSuccess:
                 return_value=mock_tracker,
             ),
         ):
-            result_str = await get_tool_usage_stats(ctx=None)
+            result_str = await get_tool_usage_stats(
+                ctx=None,
+                response_format="detailed",
+            )
         result = json.loads(result_str)
         assert result["status"] == "success"
         assert result["project_root"] == "/tmp"
@@ -583,6 +586,7 @@ class TestUsageAnalyticsToolsSuccess:
                 success=None,
                 limit=10,
                 query=None,
+                response_format="detailed",
                 ctx=None,
             )
         result = json.loads(result_str)
@@ -646,6 +650,7 @@ class TestUsageAnalyticsToolsSuccess:
                 success=None,
                 limit=10,
                 query="CustomError",
+                response_format="detailed",
                 ctx=None,
             )
         result = json.loads(result_str)

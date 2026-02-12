@@ -14,6 +14,8 @@
 - **Session Optimization: Pydantic v2 Context & Rules Improvements** - COMPLETE. Added a Pydantic v2 rule for Python, hardened context-effectiveness analytics for refactor tasks, and added tests around usage analytics models and load_context logging.
 - **Session Optimization: Context & Usage Analytics Improvements (2026-02-11)** - COMPLETE. Implemented context and usage analytics improvements based on the 2026-02-11 analysis, updating context-effectiveness metrics, usage analytics tooling, optimization config, and tests.
 - **Phase 50: response_format for validate & suggest_refactoring** - COMPLETE. Added response_format parameter and concise formatting helpers for validate() and suggest_refactoring() tools, including unit tests and quality gate fixes.
+- **Phase 50: Tool consolidation usage audit** - PARTIAL. Documented consolidation groups and a usage-matrix template for overlapping MCP tools; numeric usage statistics are still blocked by usage JSON file locks and should be filled in a later session when `get_tool_usage_stats` / `get_unused_tools` are available.
+- **Phase 50: Tool Consolidation and Response Format Optimization** - IN PROGRESS. Defaulted response_format to 'concise' for high-token tools (load_context, get_memory_bank_stats, validate, suggest_refactoring, get_tool_usage_stats, search_usage), updated tests accordingly, and verified coverage at approximately 90.0%.
 
 ## 2026-02-11
 

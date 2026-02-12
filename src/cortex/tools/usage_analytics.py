@@ -236,7 +236,7 @@ async def get_tool_usage_stats(
     start_date: str | None = None,
     end_date: str | None = None,
     tool_name: str | None = None,
-    response_format: Literal["concise", "detailed"] = "detailed",
+    response_format: Literal["concise", "detailed"] = "concise",
     ctx: MCPContext | None = None,
 ) -> str:
     """Get usage statistics for MCP tools.
@@ -429,7 +429,7 @@ async def search_usage(
     success: bool | None = None,
     limit: int = 50,
     query: str | None = None,
-    response_format: Literal["concise", "detailed"] = "detailed",
+    response_format: Literal["concise", "detailed"] = "concise",
     ctx: MCPContext | None = None,
 ) -> str:
     """Search usage events and return a compact index."""

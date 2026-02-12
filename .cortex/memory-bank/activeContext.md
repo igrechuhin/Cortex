@@ -2,6 +2,12 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-01-14)
+
+- ✅ **Phase 18: Markdown Lint Fix Tool** - COMPLETE (2026-01-14) - Implemented the Phase 18 Markdown lint fix tool plan, adding the `fix_markdown_lint` MCP tool to automatically scan and fix markdownlint issues in modified Markdown files, wired into the commit pipeline and documented in the plan at `../plans/archive/Phase18/phase-18-markdown-lint-fix-tool.md`.
+
+- ✅ **Phase 18: Markdown Lint Fix Tool (plan link)** - COMPLETE (2026-01-14) - Archived Phase 18 plan is available at [Phase 18: Markdown Lint Fix Tool](../plans/archive/Phase18/phase-18-markdown-lint-fix-tool.md) documenting the `fix_markdown_lint` MCP tool and its integration into the markdown formatting workflow.
+
 ## Completed Work (2026-02-12)
 
 - ✅ **Session Optimization: Commit Pipeline Improvements – Step 2 (Early Markdown Lint Validation)** - COMPLETE (2026-02-12) - Added pre-commit markdownlint hook (markdownlint-cli2 --fix on staged .md/.mdc), documented in getting-started and commit prompt, Cursor rule for lint-on-save, unit test for config; quality gate and tests passed.
@@ -27,6 +33,10 @@
 - ✅ **Session Optimization: Context & Usage Analytics Improvements (2026-02-11)** - COMPLETE (2026-02-12) - Implemented context and usage analytics improvements based on the 2026-02-11 analysis: refined context-effectiveness statistics and usage analytics models, updated optimization configuration defaults, and extended tests for context analysis and usage analytics tools.
 
 - ✅ **Phase 50: response_format for validate & suggest_refactoring** - COMPLETE (2026-02-12) - Implemented response_format support for validate() and suggest_refactoring() tools, with concise-mode formatting helpers, tests, and passing quality gate.
+
+- ✅ **Phase 50: Tool consolidation – preliminary audit** - COMPLETE (2026-02-12) - Completed a qualitative audit of overlapping MCP tools for Phase 50 (file operations, context, config, memory-bank query, refactoring, roadmap, and usage analytics groups) and recorded a structured usage-matrix template; quantitative usage metrics remain pending due to temporary file-lock issues in usage telemetry.
+
+- ✅ **Phase 50 Step 3: response_format defaults to 'concise'** - COMPLETE (2026-02-12) - Updated high-token MCP tools so response_format defaults to 'concise' while still supporting 'detailed' on demand, adjusted unit/integration tests to request detailed output where needed, and ensured all quality gates (type_check, tests, and quality) pass with coverage around 90%.
 
 ## Completed Work (2026-02-11)
 

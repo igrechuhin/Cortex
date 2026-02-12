@@ -1,14 +1,14 @@
 {
-  "last_updated": "2026-02-12T17:27",
-  "total_sessions_analyzed": 149,
-  "total_load_context_calls": 176,
-  "avg_token_utilization": 0.491,
-  "avg_files_selected": 6.5,
-  "avg_relevance_score": 0.622,
+  "last_updated": "2026-02-12T18:29",
+  "total_sessions_analyzed": 151,
+  "total_load_context_calls": 178,
+  "avg_token_utilization": 0.492,
+  "avg_files_selected": 6.49,
+  "avg_relevance_score": 0.623,
   "common_task_patterns": {
     "fix/debug": 23,
     "other": 35,
-    "implement/add": 52,
+    "implement/add": 54,
     "update/modify": 7,
     "testing": 31,
     "documentation": 6,
@@ -47,7 +47,7 @@
         "notes": "Moderate utilization - some budget optimization possible"
       },
       "implement/add": {
-        "calls_count": 52,
+        "calls_count": 54,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
@@ -56,8 +56,8 @@
           "productContext.md",
           "systemPatterns.md"
         ],
-        "avg_utilization": 0.465,
-        "avg_relevance": 0.619,
+        "avg_utilization": 0.468,
+        "avg_relevance": 0.624,
         "notes": "Moderate utilization - some budget optimization possible"
       },
       "update/modify": {
@@ -142,49 +142,49 @@
     },
     "file_effectiveness": {
       "activeContext.md": {
-        "times_selected": 132,
+        "times_selected": 133,
         "avg_relevance": 0.813,
         "task_types_used": [
-          "other",
-          "fix/debug",
-          "implement/add",
-          "testing",
-          "documentation",
           "optimization",
           "update/modify",
+          "implement/add",
+          "testing",
           "review",
+          "fix/debug",
+          "documentation",
+          "other",
           "refactor"
         ],
         "recommendation": "High value - prioritize for loading"
       },
       "techContext.md": {
-        "times_selected": 160,
-        "avg_relevance": 0.595,
+        "times_selected": 162,
+        "avg_relevance": 0.598,
         "task_types_used": [
-          "other",
-          "fix/debug",
-          "implement/add",
-          "testing",
-          "documentation",
           "optimization",
           "update/modify",
+          "implement/add",
+          "testing",
           "review",
+          "fix/debug",
+          "documentation",
+          "other",
           "refactor"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "roadmap.md": {
-        "times_selected": 135,
+        "times_selected": 137,
         "avg_relevance": 0.628,
         "task_types_used": [
-          "other",
-          "fix/debug",
-          "implement/add",
-          "testing",
-          "documentation",
           "optimization",
           "update/modify",
+          "implement/add",
+          "testing",
           "review",
+          "fix/debug",
+          "documentation",
+          "other",
           "refactor"
         ],
         "recommendation": "Moderate value - include when relevant"
@@ -193,33 +193,33 @@
         "times_selected": 108,
         "avg_relevance": 0.289,
         "task_types_used": [
-          "other",
-          "fix/debug",
-          "implement/add",
-          "testing",
-          "documentation",
           "optimization",
           "update/modify",
-          "review",
-          "refactor"
+          "refactor",
+          "implement/add",
+          "testing",
+          "fix/debug",
+          "documentation",
+          "other",
+          "review"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "projectBrief.md": {
-        "times_selected": 160,
-        "avg_relevance": 0.499,
+        "times_selected": 162,
+        "avg_relevance": 0.5,
         "task_types_used": [
-          "other",
-          "fix/debug",
-          "implement/add",
-          "testing",
-          "documentation",
           "optimization",
           "update/modify",
+          "implement/add",
+          "testing",
           "review",
+          "fix/debug",
+          "documentation",
+          "other",
           "refactor"
         ],
-        "recommendation": "Lower relevance - consider excluding for most tasks"
+        "recommendation": "Moderate value - include when relevant"
       },
       "phase-60-improve-manage-file-discoverability.plan.md": {
         "times_selected": 3,
@@ -240,49 +240,49 @@
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "progress.md": {
-        "times_selected": 118,
+        "times_selected": 119,
         "avg_relevance": 0.615,
         "task_types_used": [
-          "other",
-          "fix/debug",
-          "implement/add",
-          "testing",
-          "documentation",
           "optimization",
           "update/modify",
+          "implement/add",
+          "testing",
           "review",
+          "fix/debug",
+          "documentation",
+          "other",
           "refactor"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "systemPatterns.md": {
-        "times_selected": 157,
-        "avg_relevance": 0.582,
+        "times_selected": 159,
+        "avg_relevance": 0.585,
         "task_types_used": [
-          "other",
-          "fix/debug",
-          "implement/add",
-          "testing",
-          "documentation",
           "optimization",
           "update/modify",
+          "implement/add",
+          "testing",
           "review",
+          "fix/debug",
+          "documentation",
+          "other",
           "refactor"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "productContext.md": {
-        "times_selected": 158,
-        "avg_relevance": 0.576,
+        "times_selected": 160,
+        "avg_relevance": 0.579,
         "task_types_used": [
-          "other",
-          "fix/debug",
-          "implement/add",
-          "testing",
-          "documentation",
           "optimization",
           "update/modify",
+          "implement/add",
+          "testing",
           "review",
+          "fix/debug",
+          "documentation",
+          "other",
           "refactor"
         ],
         "recommendation": "Moderate value - include when relevant"
@@ -306,8 +306,8 @@
     },
     "learned_patterns": [
       "Average 49% budget utilization - ~10k tokens unused per call",
-      "'techContext.md' is most frequently loaded (160/176 calls)",
-      "Most common task type: 'implement/add' (52 calls)",
+      "'techContext.md' is most frequently loaded (162/178 calls)",
+      "Most common task type: 'implement/add' (54 calls)",
       "Warning: at least one load_context call had token_budget=0 or no selected files. Treat this as a configuration or instrumentation issue for non-trivial tasks (especially refactor/fix/debug)."
     ],
     "budget_recommendations": {
@@ -5415,6 +5415,66 @@
         "techContext.md": 0.764,
         "productContext.md": 0.58,
         "systemPatterns.md": 0.728
+      }
+    },
+    {
+      "session_id": "8fce646148c2",
+      "timestamp": "2026-02-12T17:41",
+      "task_description": "Phase 50: Tool Consolidation and Response Format Optimization - Reduce tool count from 53+ to ~30, add response_format (concise/detailed) parameter to verbose tools, merge overlapping tools following Anthropic's guidance.",
+      "token_budget": 10000,
+      "total_tokens": 5229,
+      "utilization": 0.5229,
+      "files_selected": 5,
+      "files_excluded": 2,
+      "avg_relevance_score": 0.734,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "projectBrief.md",
+        "roadmap.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.645,
+        "progress.md": 0.638,
+        "activeContext.md": 0.842,
+        "projectBrief.md": 0.555,
+        "techContext.md": 0.821,
+        "productContext.md": 0.81,
+        "systemPatterns.md": 0.83
+      }
+    },
+    {
+      "session_id": "b844ebae0a1d",
+      "timestamp": "2026-02-12T18:06",
+      "task_description": "Implement Phase 50: Tool Consolidation and Response Format Optimization - reduce tool count from 53+ to ~30, add response_format (concise/detailed) parameter to verbose tools, merge overlapping tools.",
+      "token_budget": 30000,
+      "total_tokens": 18055,
+      "utilization": 0.6018333333333333,
+      "files_selected": 7,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.756,
+      "files_with_high_relevance": 5,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "activeContext.md",
+        "productContext.md",
+        "roadmap.md",
+        "projectBrief.md",
+        "techContext.md",
+        "progress.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.638,
+        "activeContext.md": 0.843,
+        "projectBrief.md": 0.72,
+        "techContext.md": 0.804,
+        "productContext.md": 0.81,
+        "systemPatterns.md": 0.825
       }
     }
   ]

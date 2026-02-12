@@ -1267,7 +1267,9 @@ class TestSuggestRefactoringHandler:
 
             # Act
             result = await suggest_refactoring(
-                type="consolidation", min_similarity=0.85
+                type="consolidation",
+                min_similarity=0.85,
+                response_format="detailed",
             )
 
             # Assert
@@ -1281,6 +1283,7 @@ class TestSuggestRefactoringHandler:
         # Act
         result = await suggest_refactoring(
             type="invalid",  # type: ignore
+            response_format="detailed",
         )
 
         # Assert
@@ -1335,6 +1338,7 @@ class TestRefactoringOperationsContextLogging:
             result = await suggest_refactoring(
                 type="consolidation",
                 min_similarity=0.85,
+                response_format="detailed",
                 ctx=mock_ctx,
             )
             result_data = json.loads(result)

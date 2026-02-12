@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import re
+import time
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
@@ -275,6 +276,20 @@ class FileSystemManager:
         lock_exists = lock_path.exists()
 
         while lock_exists:
+            # Stale-lock cleanup: if the lock file is older than 180 seconds,
+            # assume it belongs to a crashed or abandoned session and remove it.
+            try:
+                mtime = lock_path.stat().st_mtime
+            except OSError:
+                mtime = None
+            if mtime is not None and (time.time() - mtime) > 180:
+                try:
+                    lock_path.unlink()
+                    break
+                except OSError:
+                    # If deletion fails, fall back to normal timeout behaviour.
+                    pass
+
             if (asyncio.get_event_loop().time() - start_time) > float(
                 self.lock_timeout
             ):

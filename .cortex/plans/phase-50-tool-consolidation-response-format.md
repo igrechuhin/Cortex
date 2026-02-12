@@ -49,6 +49,53 @@ Additionally, many tools return verbose JSON responses (200+ tokens) when a conc
   - Usage analytics group: `get_tool_usage_stats`, `get_unused_tools`, `get_tool_usage_report`, `get_optimization_recommendations`, `search_usage`, `get_usage_events`, `get_usage_observation`, `get_usage_timeline`
 - [ ] Document consolidation rationale for each group
 
+#### 2026-02-12 Progress and Preliminary Audit
+
+- **Usage data collection status**: Attempts to run `get_tool_usage_stats` and `get_unused_tools` for the last 90 days are currently failing because `read_cache_json` cannot acquire a lock for recent usage JSON files (e.g., `2026-02-07.json`, `2026-02-08.json`), which is most likely due to **stale `.lock` files from a previous broken session** rather than any active concurrent process. Tool implementations remain healthy, but full quantitative stats (calls/month, avg_tokens_returned) could not be retrieved in this session; a future session should clean up any `usage/events/*.json.lock` files under `.cortex/.cache` if present and then retry to populate the numeric columns of the usage matrix.
+- **Qualitative overlap confirmation**: Based on the current MCP tool inventory, the consolidation groups listed above accurately capture the main overlap clusters:
+  - **File operations group**: `manage_file`, `write_file`
+  - **Context group**: `load_context`, `load_progressive_context`, `get_relevance_scores`
+  - **Config group**: `configure`, `update_config`
+  - **Memory bank query group**: `get_memory_bank_stats`, `get_version_history`, `get_dependency_graph`, `get_link_graph`, `parse_file_links`, `validate_links`, `resolve_transclusions`
+  - **Refactoring group**: `suggest_refactoring`, `apply_refactoring`, `provide_feedback`
+  - **Roadmap group**: `add_roadmap_entry`, `remove_roadmap_entry`, `register_plan_in_roadmap`, `complete_plan`
+  - **Usage analytics group**: `get_tool_usage_stats`, `get_unused_tools`, `get_tool_usage_report`, `get_optimization_recommendations`, `search_usage`, `get_usage_events`, `get_usage_observation`, `get_usage_timeline`
+- **Preliminary usage matrix shape**: The planned usage matrix remains the same:
+
+  | Tool name | Calls/month (TBD) | Avg tokens returned (TBD) | Overlap group |
+  |-----------|-------------------|---------------------------|---------------|
+  | `manage_file` | _TBD_ | _TBD_ | File operations |
+  | `write_file` | _TBD_ | _TBD_ | File operations |
+  | `load_context` | _TBD_ | _TBD_ | Context |
+  | `load_progressive_context` | _TBD_ | _TBD_ | Context |
+  | `get_relevance_scores` | _TBD_ | _TBD_ | Context |
+  | `configure` | _TBD_ | _TBD_ | Config |
+  | `update_config` | _TBD_ | _TBD_ | Config |
+  | `get_memory_bank_stats` | _TBD_ | _TBD_ | Memory bank query |
+  | `get_version_history` | _TBD_ | _TBD_ | Memory bank query |
+  | `get_dependency_graph` | _TBD_ | _TBD_ | Memory bank query |
+  | `get_link_graph` | _TBD_ | _TBD_ | Memory bank query |
+  | `parse_file_links` | _TBD_ | _TBD_ | Memory bank query |
+  | `validate_links` | _TBD_ | _TBD_ | Memory bank query |
+  | `resolve_transclusions` | _TBD_ | _TBD_ | Memory bank query |
+  | `suggest_refactoring` | _TBD_ | _TBD_ | Refactoring |
+  | `apply_refactoring` | _TBD_ | _TBD_ | Refactoring |
+  | `provide_feedback` | _TBD_ | _TBD_ | Refactoring |
+  | `add_roadmap_entry` | _TBD_ | _TBD_ | Roadmap |
+  | `remove_roadmap_entry` | _TBD_ | _TBD_ | Roadmap |
+  | `register_plan_in_roadmap` | _TBD_ | _TBD_ | Roadmap |
+  | `complete_plan` | _TBD_ | _TBD_ | Roadmap |
+  | `get_tool_usage_stats` | _TBD_ | _TBD_ | Usage analytics |
+  | `get_unused_tools` | _TBD_ | _TBD_ | Usage analytics |
+  | `get_tool_usage_report` | _TBD_ | _TBD_ | Usage analytics |
+  | `get_optimization_recommendations` | _TBD_ | _TBD_ | Usage analytics |
+  | `search_usage` | _TBD_ | _TBD_ | Usage analytics |
+  | `get_usage_events` | _TBD_ | _TBD_ | Usage analytics |
+  | `get_usage_observation` | _TBD_ | _TBD_ | Usage analytics |
+  | `get_usage_timeline` | _TBD_ | _TBD_ | Usage analytics |
+
+This section should be updated in a future session once locks on usage JSON files are released, filling in the numeric columns from `get_tool_usage_stats` / `get_unused_tools` and adding any newly introduced tools to the appropriate overlap group.
+
 ### Step 2: Design Consolidated Tool Interfaces
 
 - [ ] Design unified interfaces for each consolidation group:
@@ -73,8 +120,8 @@ Additionally, many tools return verbose JSON responses (200+ tokens) when a conc
   - `get_tool_usage_stats` — concise returns just: top_5_tools with call_counts
 - `search_usage` — concise returns just: ids and one-line summaries
 - **2026-02-12 status:** Implemented `response_format` for `load_context`, `get_memory_bank_stats`, `get_tool_usage_stats`, `search_usage`, `validate`, and `suggest_refactoring` (concise vs detailed).
-- [ ] Default to "concise" for most tools (agents can request "detailed" when needed)
-- [ ] Implement response formatting logic in each tool handler
+- [x] Default to "concise" for most tools (agents can request "detailed" when needed)
+- [x] Implement response formatting logic in each tool handler
 - [ ] Measure token savings: target 50-70% reduction on concise responses
 
 ### Step 4: Implement Tool Consolidation

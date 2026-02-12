@@ -67,7 +67,7 @@ async def load_context(
     task_description: str,
     token_budget: int | None = None,
     strategy: str = "dependency_aware",
-    response_format: Literal["concise", "detailed"] = "detailed",
+    response_format: Literal["concise", "detailed"] = "concise",
     ctx: MCPContext | None = None,
 ) -> str:
     """Load relevant context for a task within token budget.

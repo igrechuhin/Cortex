@@ -1,33 +1,86 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-12T08:18:02.125934",
+  "last_updated": "2026-02-12T17:50:54.247548",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 5097,
-      "token_count": 1154,
+      "size_bytes": 4699,
+      "token_count": 1062,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-11T17:12:19.550574",
-      "content_hash": "sha256:3010b016a2db25efdb37010a5edc719c648350d69602bed2abbd11b291e059d3",
+      "last_modified": "2026-02-12T17:50:54.243522",
+      "content_hash": "sha256:cc51f6b21f649fc2dcbacffb89e66efcfb6d596fa683f1b023b0a1ca3b161401",
       "sections": [
-        "# Roadmap: MCP Memory Bank",
-        "## Blockers (ASAP Priority)",
-        "## Active Work (in progress)",
-        "## Future Enhancements",
-        "## Pending plans (from .cortex/plans)",
-        "### Investigation Plans (Archive / Reference)",
-        "### Session Optimization Plans (2026-02-03)",
-        "### Session Optimization Plans (2026-02-02)",
-        "### Session Optimization Plans (2026-02-01)",
-        "### Features & Enhancements"
+        {
+          "title": "## Blockers (ASAP Priority)",
+          "level": 2,
+          "line_start": 7,
+          "line_end": 7,
+          "content_hash": null
+        },
+        {
+          "title": "## Active Work (in progress)",
+          "level": 2,
+          "line_start": 9,
+          "line_end": 9,
+          "content_hash": null
+        },
+        {
+          "title": "## Future Enhancements",
+          "level": 2,
+          "line_start": 11,
+          "line_end": 11,
+          "content_hash": null
+        },
+        {
+          "title": "## Pending plans (from .cortex/plans)",
+          "level": 2,
+          "line_start": 13,
+          "line_end": 13,
+          "content_hash": null
+        },
+        {
+          "title": "### Investigation Plans (Archive / Reference)",
+          "level": 2,
+          "line_start": 15,
+          "line_end": 15,
+          "content_hash": null
+        },
+        {
+          "title": "### Session Optimization Plans (2026-02-03)",
+          "level": 2,
+          "line_start": 20,
+          "line_end": 20,
+          "content_hash": null
+        },
+        {
+          "title": "### Session Optimization Plans (2026-02-02)",
+          "level": 2,
+          "line_start": 22,
+          "line_end": 22,
+          "content_hash": null
+        },
+        {
+          "title": "### Session Optimization Plans (2026-02-01)",
+          "level": 2,
+          "line_start": 24,
+          "line_end": 24,
+          "content_hash": null
+        },
+        {
+          "title": "### Features & Enhancements",
+          "level": 2,
+          "line_start": 26,
+          "line_end": 26,
+          "content_hash": null
+        }
       ],
       "read_count": 6,
-      "write_count": 109,
-      "last_read": "2026-02-11T16:46:45.915570",
+      "write_count": 112,
+      "last_read": "2026-02-12T17:50:54.243522",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -1273,6 +1326,39 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Add explicit plan path for Session Optimization: Context & Usage Analytics Improvements (2026-02-11) entry in roadmap."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-12T17:48:37.908898",
+          "content_hash": "sha256:01d68a115efc301745bf8b53461ec8c20bba52f38ba24a9b4f49b9287cb0e04d",
+          "size_bytes": 4702,
+          "token_count": 1066,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Link archived Phase 18 markdown lint fix plan from Investigation Plans section to satisfy roadmap_sync unlinked_plans check."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-12T17:49:16.197083",
+          "content_hash": "sha256:5d273186aab52fa54cb6478f1f27322cd0b26fc232061717b08f37b45276de3c",
+          "size_bytes": 4704,
+          "token_count": 1065,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Add archived Phase 18 markdown lint fix tool reference and correct arrow character in Phase 57+ session optimization description."
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-12T17:50:54.243084",
+          "content_hash": "sha256:cc51f6b21f649fc2dcbacffb89e66efcfb6d596fa683f1b023b0a1ca3b161401",
+          "size_bytes": 4699,
+          "token_count": 1062,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Fix Phase 18 archived plan link to use memory-bank-relative path so validate_links resolves correctly."
         }
       ]
     },
@@ -6485,41 +6571,11 @@
       "last_modified": "2026-02-12T08:18:02.123491",
       "content_hash": "sha256:e1e77504095a8d8dd6186c095088aae22dcd86e10ab83119b125a1aad1c5bb75",
       "sections": [
-        {
-          "title": "## Project Overview",
-          "level": 2,
-          "line_start": 5,
-          "line_end": 5,
-          "content_hash": null
-        },
-        {
-          "title": "## Goals",
-          "level": 2,
-          "line_start": 9,
-          "line_end": 9,
-          "content_hash": null
-        },
-        {
-          "title": "## Core Requirements",
-          "level": 2,
-          "line_start": 14,
-          "line_end": 14,
-          "content_hash": null
-        },
-        {
-          "title": "## Design Principle: Compound Engineering",
-          "level": 2,
-          "line_start": 18,
-          "line_end": 18,
-          "content_hash": null
-        },
-        {
-          "title": "## Success Criteria",
-          "level": 2,
-          "line_start": 22,
-          "line_end": 22,
-          "content_hash": null
-        }
+        "## Project Overview",
+        "## Goals",
+        "## Core Requirements",
+        "## Design Principle: Compound Engineering",
+        "## Success Criteria"
       ],
       "last_read": "2026-02-12T08:18:02.123491"
     },
@@ -6633,8 +6689,8 @@
   },
   "totals": {
     "total_files": 10,
-    "total_size_bytes": 77817,
-    "total_tokens": 17494,
-    "last_full_scan": "2026-02-12T08:18:02.123517"
+    "total_size_bytes": 77419,
+    "total_tokens": 17402,
+    "last_full_scan": "2026-02-12T17:50:54.243544"
   }
 }

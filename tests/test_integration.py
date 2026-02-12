@@ -169,7 +169,7 @@ async def test_full_workflow():
 
             # Test 7: Get overall stats
             print("🧪 Test 7: Get Memory Bank statistics")
-            result = await get_memory_bank_stats()
+            result = await get_memory_bank_stats(response_format="detailed")
             data = json.loads(result)
             assert data["status"] == "success", "Get stats failed"
             summary = data["summary"]

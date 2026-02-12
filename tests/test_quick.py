@@ -20,7 +20,7 @@ async def main():
         print("1. Skipping check_migration_status (replaced by prompt templates)")
         print("2. Skipping initialize_memory_bank (replaced by prompt templates)")
         print("3. Get stats...")
-        result = await get_memory_bank_stats(tmpdir)
+        result = await get_memory_bank_stats(response_format="detailed")
         data = json.loads(result)
         if data["status"] == "success":
             print(f"   Total files: {data['summary']['total_files']}")

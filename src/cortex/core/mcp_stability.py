@@ -35,10 +35,14 @@ from cortex.core.models import ConnectionHealth, JsonValue, MCPToolArguments
 from cortex.core.usage_context import get_current_managers, set_current_managers
 
 logger = logging.getLogger(__name__)
-
 # Tools that report their own progress (file/step-based); skip wrapper time-based progress.
-_TOOLS_WITH_OWN_PROGRESS = frozenset({"fix_markdown_lint", "fix_quality_issues"})
-
+_TOOLS_WITH_OWN_PROGRESS = frozenset(
+    {
+        "fix_markdown_lint",
+        "fix_quality_issues",
+        "execute_pre_commit_checks",
+    }
+)
 # Serialize first-tool context setup so concurrent tool calls do not each run full init.
 _usage_context_init_lock: asyncio.Lock | None = None
 
@@ -142,8 +146,7 @@ class _SignatureAware(Protocol):
 
 
 class TrackedSemaphore:
-    """Semaphore wrapper that tracks available count without accessing
-    private attributes."""
+    """Semaphore wrapper that tracks available count without accessing private attributes."""
 
     def __init__(self, value: int) -> None:
         """Initialize semaphore with initial value.
@@ -448,11 +451,9 @@ async def _progress_report_loop(
     timeout_sec: float,
     _tool_name: str,
 ) -> None:
-    """Background task: report progress every N seconds (Phase 46).
-
-    Uses a shorter interval for long-running tools (timeout >= 300s) to reduce
-    client idle timeout risk (Connection closed -32000).
-    """
+    """Background task: report progress every N seconds (Phase 46). Uses a shorter
+    interval for long-running tools (timeout >= 300s) to reduce client idle
+    timeout risk (Connection closed -32000)."""
     interval = (
         PROGRESS_REPORT_INTERVAL_LONG_RUNNING_SECONDS
         if timeout_sec >= 300

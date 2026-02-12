@@ -673,6 +673,7 @@ async def test_get_memory_bank_stats_success_basic(
             result = await get_memory_bank_stats(
                 include_token_budget=False,
                 include_refactoring_history=False,
+                response_format="detailed",
             )
 
             # Assert
@@ -705,6 +706,7 @@ async def test_get_memory_bank_stats_with_token_budget(
             result = await get_memory_bank_stats(
                 include_token_budget=True,
                 include_refactoring_history=False,
+                response_format="detailed",
             )
 
             # Assert
@@ -758,6 +760,7 @@ async def test_get_memory_bank_stats_with_refactoring_history(
                 include_token_budget=False,
                 include_refactoring_history=True,
                 refactoring_days=30,
+                response_format="detailed",
             )
 
             # Assert
@@ -801,6 +804,7 @@ async def test_get_memory_bank_stats_refactoring_executor_unavailable(
             result = await get_memory_bank_stats(
                 include_token_budget=False,
                 include_refactoring_history=True,
+                response_format="detailed",
             )
 
             # Assert
@@ -845,7 +849,10 @@ async def test_get_memory_bank_stats_empty_metadata(
             new=AsyncMock(return_value=mock_managers),
         ):
             # Act
-            result = await get_memory_bank_stats(include_token_budget=False)
+            result = await get_memory_bank_stats(
+                include_token_budget=False,
+                response_format="detailed",
+            )
 
             # Assert
             result_dict = json.loads(result)

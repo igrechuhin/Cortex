@@ -455,7 +455,11 @@ class TestValidate:
                 return_value=temp_memory_bank.parent.parent.parent,
             ),
         ):
-            result_str = await validate(check_type="schema", file_name=file_name)
+            result_str = await validate(
+                check_type="schema",
+                file_name=file_name,
+                response_format="detailed",
+            )
         result = json.loads(result_str)
         assert result["status"] == "success"
         assert result["check_type"] == "schema"
@@ -543,7 +547,11 @@ class TestValidate:
                 return_value={"file1.md": "# Content", "file2.md": "# Content"},
             ),
         ):
-            result_str = await validate(check_type="duplications", suggest_fixes=True)
+            result_str = await validate(
+                check_type="duplications",
+                suggest_fixes=True,
+                response_format="detailed",
+            )
         result = json.loads(result_str)
         if result["status"] != "success":
             import json as json_module
@@ -620,7 +628,10 @@ class TestValidate:
                 return_value=temp_memory_bank.parent.parent.parent,
             ),
         ):
-            result_str = await validate(check_type="quality")
+            result_str = await validate(
+                check_type="quality",
+                response_format="detailed",
+            )
         result = json.loads(result_str)
         assert result["status"] == "success"
         assert result["check_type"] == "quality"
@@ -980,7 +991,10 @@ class TestSuggestRefactoring:
                 return_value=Path("/tmp/test"),
             ),
         ):
-            result_str = await suggest_refactoring(type="consolidation")
+            result_str = await suggest_refactoring(
+                type="consolidation",
+                response_format="detailed",
+            )
         result = json.loads(result_str)
         assert result["status"] == "success"
         assert result["type"] == "consolidation"
@@ -1029,7 +1043,10 @@ class TestSuggestRefactoring:
                 return_value=Path("/tmp/test"),
             ),
         ):
-            result_str = await suggest_refactoring(type="splits")
+            result_str = await suggest_refactoring(
+                type="splits",
+                response_format="detailed",
+            )
         result = json.loads(result_str)
         assert result["status"] == "success"
         assert result["type"] == "splits"
@@ -1096,7 +1113,10 @@ class TestSuggestRefactoring:
                 return_value=Path("/tmp/test"),
             ),
         ):
-            result_str = await suggest_refactoring(type="reorganization")
+            result_str = await suggest_refactoring(
+                type="reorganization",
+                response_format="detailed",
+            )
         result = json.loads(result_str)
         assert result["status"] == "success"
         assert result["type"] == "reorganization"

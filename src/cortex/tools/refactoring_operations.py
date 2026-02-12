@@ -99,7 +99,7 @@ async def suggest_refactoring(
     preview_suggestion_id: str | None = None,
     show_diff: bool = True,
     estimate_impact: bool = True,
-    response_format: Literal["concise", "detailed"] = "detailed",
+    response_format: Literal["concise", "detailed"] = "concise",
     ctx: MCPContext | None = None,
 ) -> str:
     """Generate intelligent refactoring suggestions to improve Memory Bank

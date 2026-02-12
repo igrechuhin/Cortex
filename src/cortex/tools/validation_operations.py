@@ -64,7 +64,7 @@ async def validate(
     check_code_quality_consistency: bool = True,
     check_documentation_consistency: bool = True,
     check_config_consistency: bool = True,
-    response_format: Literal["concise", "detailed"] = "detailed",
+    response_format: Literal["concise", "detailed"] = "concise",
     ctx: MCPContext | None = None,
 ) -> str:
     """Run validation checks on Memory Bank files for schema compliance,

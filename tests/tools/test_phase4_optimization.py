@@ -204,7 +204,10 @@ class TestLoadContext:
         ):
             # Act
             result_str = await load_context(
-                task_description="Test task", token_budget=50000, strategy="priority"
+                task_description="Test task",
+                token_budget=50000,
+                strategy="priority",
+                response_format="detailed",
             )
             result = json.loads(result_str)
 
@@ -238,7 +241,10 @@ class TestLoadContext:
             ),
         ):
             # Act
-            result_str = await load_context(task_description="Test task")
+            result_str = await load_context(
+                task_description="Test task",
+                response_format="detailed",
+            )
             result = json.loads(result_str)
 
             # Assert
@@ -268,7 +274,9 @@ class TestLoadContext:
         ):
             # Act
             result_str = await load_context(
-                task_description="Test task", strategy="dependency_aware"
+                task_description="Test task",
+                strategy="dependency_aware",
+                response_format="detailed",
             )
             result = json.loads(result_str)
 
