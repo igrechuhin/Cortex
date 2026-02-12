@@ -6,6 +6,9 @@ and consistency with actual registered MCP tools.
 
 from __future__ import annotations
 
+import re
+from unittest.mock import patch
+
 import pytest
 from pydantic import ValidationError
 
@@ -355,6 +358,12 @@ class TestGetCategorySummary:
         summary = get_category_summary()
         assert sum(summary.values()) == len(TOOL_CATEGORIES)
 
+    def test_summary_keys_match_category_values(self) -> None:
+        """Summary keys exactly match ToolCategory enum values."""
+        summary = get_category_summary()
+        category_values = {cat.value for cat in ToolCategory}
+        assert set(summary.keys()) == category_values
+
 
 @pytest.mark.timeout(5)
 class TestToolCategoryNameLiteral:
@@ -463,3 +472,38 @@ class TestSearchDeferredTools:
         """search_tools is catalogued as always_loaded for discovery."""
         cat = get_tool_category("search_tools")
         assert cat == ToolCategory.ALWAYS_LOADED
+
+    def test_category_filter_with_empty_results(self) -> None:
+        """Category filter works even when no matches found."""
+        # Search for something that won't match, but with category filter
+        results = search_deferred_tools(
+            "xyznonexistent123", category="deferred_medium", limit=10
+        )
+        assert results == []
+
+    def test_search_with_deferred_low_category_filter(self) -> None:
+        """Search with deferred_low category filter returns only low-priority tools."""
+        results = search_deferred_tools("usage", category="deferred_low", limit=10)
+        assert all(r.category == ToolCategory.DEFERRED_LOW for r in results)
+        assert len(results) > 0
+
+    def test_limit_zero_returns_empty(self) -> None:
+        """Limit of 0 returns empty list even if matches exist."""
+        results = search_deferred_tools("tool", limit=0)
+        assert results == []
+
+    def test_limit_one_returns_single_result(self) -> None:
+        """Limit of 1 returns at most one result."""
+        results = search_deferred_tools("refactor", limit=1)
+        assert len(results) <= 1
+        if results:
+            assert isinstance(results[0], ToolSearchResult)
+
+    def test_re_compile_error_returns_empty(self) -> None:
+        """If re.compile raises (e.g. invalid pattern), search returns empty list."""
+        with patch(
+            "cortex.tools.tool_categories.re.compile",
+            side_effect=re.error("mock invalid pattern"),
+        ):
+            results = search_deferred_tools("valid_query", limit=5)
+        assert results == []

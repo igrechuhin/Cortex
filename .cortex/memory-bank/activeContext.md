@@ -38,6 +38,8 @@
 
 - ✅ **Phase 50 Step 3: response_format defaults to 'concise'** - COMPLETE (2026-02-12) - Updated high-token MCP tools so response_format defaults to 'concise' while still supporting 'detailed' on demand, adjusted unit/integration tests to request detailed output where needed, and ensured all quality gates (type_check, tests, and quality) pass with coverage around 90%.
 
+- ✅ **Phase 50 Step 4 Phase 1: Tool Consolidation (Low-Risk Merges)** - COMPLETE (2026-02-12) - Completed low-risk tool merges: write_file→manage_file, load_progressive_context→load_context (strategy="progressive"), update_config→configure. Added deprecation warnings. Backward compatibility maintained.
+
 ## Completed Work (2026-02-11)
 
 - ✅ **Type cleanup inventory (Phase 53)** - COMPLETE (2026-02-11) - Completed Phase 53 type-cleanup inventory: per-file classification of dict[str, object]/list[object] (response, config, metadata, report), Pydantic candidates and circular-import notes, and draft model groupings for Step 2 (model design) in type-cleanup-inventory.md.

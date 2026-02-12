@@ -70,11 +70,6 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Core file read/write/metadata used every session",
     ),
     ToolCategoryEntry(
-        name="write_file",
-        category=ToolCategory.ALWAYS_LOADED,
-        rationale="Core file write shortcut used every session",
-    ),
-    ToolCategoryEntry(
         name="validate",
         category=ToolCategory.ALWAYS_LOADED,
         rationale="Core validation (schema, quality, roadmap_sync) in workflow",
@@ -151,11 +146,6 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Periodic memory bank analysis (usage, structure, insights)",
     ),
     ToolCategoryEntry(
-        name="load_progressive_context",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Alternative context loading strategy",
-    ),
-    ToolCategoryEntry(
         name="summarize_content",
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="Token reduction when budget is tight",
@@ -179,11 +169,6 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         name="configure",
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="View/update validation/optimization/learning config",
-    ),
-    ToolCategoryEntry(
-        name="update_config",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Write-only config updates",
     ),
     ToolCategoryEntry(
         name="get_version_history",

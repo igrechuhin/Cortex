@@ -1,13 +1,14 @@
 """
 File Operations Tools
 
-This module contains the consolidated file management tool, write-only tool,
-and read resource for Memory Bank.
+This module contains the consolidated file management tool and read resource
+for Memory Bank.
 
-Total: 2 tools, 1 resource
+Total: 1 tool, 1 resource
 - manage_file: Read/write/metadata operations (unified)
-- write_file: Write-only tool (Phase 43 hybrid split)
 - get_file_resource: Read file via cortex://memory-bank/file/{file_name}
+
+Note: write_file has been merged into manage_file with operation="write"
 """
 
 import json
@@ -325,43 +326,6 @@ async def get_file_resource(file_name: str) -> str:
         None,
         False,
         None,
-    )
-
-
-@mcp.tool(annotations=safe_write_annotations("Write Memory Bank File"))
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
-async def write_file(
-    file_name: str,
-    content: str,
-    change_description: str | None = None,
-    ctx: MCPContext | None = None,
-) -> str:
-    """Write a Memory Bank file (write-only tool; read via get_file_resource or manage_file).
-
-    USE WHEN: User wants to update a memory bank file, write content to
-    activeContext.md, roadmap.md, or other .cortex/memory-bank/ files.
-
-    RETURNS: JSON with status, file_name, message, snapshot_id, version, tokens.
-
-    Args:
-        file_name: Name of the file within memory-bank/ (e.g. activeContext.md).
-        content: Full file content to write (required).
-        change_description: Optional description for version history.
-    """
-    await log_client(
-        ctx,
-        "info",
-        f"write_file: starting file_name={file_name!r}",
-        logger_name=__name__,
-    )
-    return await _manage_file_validate_and_run(
-        ctx,
-        file_name,
-        FileOperation.WRITE.value,
-        content,
-        False,
-        change_description,
     )
 
 

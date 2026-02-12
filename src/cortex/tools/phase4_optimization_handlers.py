@@ -2,13 +2,14 @@
 Phase 4: Token Optimization Tool Handlers
 
 This module contains the MCP tool decorators and handlers for context loading,
-progressive loading, content summarization, and relevance scoring.
+content summarization, and relevance scoring.
 
-Total: 4 tools, 4 resources
+Total: 3 tools, 3 resources
 - load_context / load_context_resource (cortex://optimization/load-context/{task_description})
-- load_progressive_context / load_progressive_context_resource (cortex://optimization/load-progressive-context/{task_description})
 - summarize_content / summarize_content_resource (cortex://optimization/summarize/{file_name})
 - get_relevance_scores / get_relevance_scores_resource (cortex://optimization/relevance-scores/{task_description})
+
+Note: load_progressive_context has been merged into load_context with strategy="progressive"
 """
 
 import json
@@ -35,9 +36,6 @@ from cortex.managers.types import ManagersDict
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.server import mcp
 from cortex.tools.phase4_context_operations import load_context_impl
-from cortex.tools.phase4_progressive_operations import (
-    load_progressive_context_impl,
-)
 from cortex.tools.phase4_relevance_operations import get_relevance_scores_impl
 from cortex.tools.phase4_summarization_operations import summarize_content_impl
 
@@ -67,6 +65,7 @@ async def load_context(
     task_description: str,
     token_budget: int | None = None,
     strategy: str = "dependency_aware",
+    loading_strategy: str | None = None,
     response_format: Literal["concise", "detailed"] = "concise",
     ctx: MCPContext | None = None,
 ) -> str:
@@ -91,7 +90,16 @@ async def load_context(
     Args:
         task_description: Description of the task to perform
         token_budget: Maximum tokens to include (default from config)
-        strategy: Loading strategy (dependency_aware, priority, hybrid)
+        strategy: Loading strategy. Options:
+            - "dependency_aware" (default): Includes dependency trees
+            - "priority": Greedy selection by predefined priority
+            - "hybrid": Combines multiple strategies
+            - "section_level": Partial file inclusion
+            - "progressive": Progressive loading (use loading_strategy parameter)
+        loading_strategy: Required when strategy="progressive". Options:
+            - "by_relevance" (default): Load by task-specific relevance
+            - "by_priority": Load by predefined priority order
+            - "by_dependencies": Load by dependency chain traversal
 
     Returns:
         JSON with selected files, their content, and relevance scores
@@ -105,9 +113,15 @@ async def load_context(
         if enabled_error:
             return enabled_error
 
-        out = await load_context_impl(
-            mgrs, task_description, token_budget, strategy, project_root=root
-        )
+        # Route to progressive loading if strategy is "progressive"
+        if strategy == "progressive":
+            out = await _load_context_progressive(
+                mgrs, task_description, token_budget, loading_strategy
+            )
+        else:
+            out = await load_context_impl(
+                mgrs, task_description, token_budget, strategy, project_root=root
+            )
         await log_client(ctx, "info", "load_context: completed", logger_name=__name__)
         return _format_load_context_response(out, response_format)
     except Exception as e:
@@ -116,6 +130,23 @@ async def load_context(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+async def _load_context_progressive(
+    mgrs: ManagersDict,
+    task_description: str,
+    token_budget: int | None,
+    loading_strategy: str | None,
+) -> str:
+    """Load context using progressive strategy."""
+    from cortex.tools.phase4_progressive_operations import (
+        load_progressive_context_impl,
+    )
+
+    effective_loading_strategy = loading_strategy or "by_relevance"
+    return await load_progressive_context_impl(
+        mgrs, task_description, token_budget, effective_loading_strategy
+    )
 
 
 def _format_load_context_response(
@@ -145,56 +176,6 @@ def _format_load_context_response(
         "utilization": data.get("utilization"),
     }
     return json.dumps(concise_payload, indent=2)
-
-
-@mcp.tool(annotations=read_only_annotations("Load Progressive Context"))
-@ensure_usage_context
-@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
-async def load_progressive_context(
-    task_description: str,
-    token_budget: int | None = None,
-    loading_strategy: str = "by_relevance",
-    ctx: MCPContext | None = None,
-) -> str:
-    """Load context progressively based on relevance, loading files
-    incrementally as needed.
-
-    USE WHEN: User needs incremental context loading, user wants progressive
-    file loading, user requests staged context, user needs context in
-    batches.
-
-    EXAMPLES: 'load progressive context for task', 'get context
-    progressively', 'load context in stages'.
-
-    RETURNS: JSON with progressive context batches, each with files and
-    relevance scores.
-    """
-    await log_client(
-        ctx, "info", "load_progressive_context: starting", logger_name=__name__
-    )
-    try:
-        root = await resolve_project_root_async(None, ctx)
-        mgrs = await phase4_opt.get_managers(root)
-
-        enabled_error = await _check_optimization_enabled(mgrs)
-        if enabled_error:
-            return enabled_error
-
-        out = await load_progressive_context_impl(
-            mgrs, task_description, token_budget, loading_strategy
-        )
-        await log_client(
-            ctx, "info", "load_progressive_context: completed", logger_name=__name__
-        )
-        return out
-    except Exception as e:
-        await log_client(
-            ctx, "error", f"load_progressive_context: {e!s}", logger_name=__name__
-        )
-        return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
-            indent=2,
-        )
 
 
 @mcp.tool(annotations=read_only_annotations("Summarize Content"))
@@ -300,19 +281,6 @@ async def load_context_resource(task_description: str) -> str:
         task_description=decoded,
         token_budget=None,
         strategy="dependency_aware",
-    )
-
-
-@mcp.resource(uri="cortex://optimization/load-progressive-context/{task_description}")
-@ensure_usage_context
-@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
-async def load_progressive_context_resource(task_description: str) -> str:
-    """Resource: Load progressive context for task. Read via cortex://optimization/load-progressive-context/{task_description}. Task description may be URL-encoded."""
-    decoded = unquote(task_description)
-    return await load_progressive_context(
-        task_description=decoded,
-        token_budget=None,
-        loading_strategy="by_relevance",
     )
 
 

@@ -8,6 +8,8 @@
 
 ## Active Work (in progress)
 
+- **Phase 50: Tool Consolidation and Response Format Optimization** - IN PROGRESS - Plan: .cortex/plans/phase-50-tool-consolidation-response-format.md.
+
 ## Future Enhancements
 
 ## Pending plans (from .cortex/plans)
@@ -25,7 +27,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 ### Features & Enhancements
 
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
-- **Phase 50: Tool Consolidation and Response Format Optimization** - PENDING - Reduce tool count from 53+ to ~30, add response_format (concise/detailed) parameter to verbose tools, merge overlapping tools following Anthropic's guidance. Plan: .cortex/plans/phase-50-tool-consolidation-response-format.md.
 - **Phase 51: Just-in-Time Context with Section-Level Loading** - PENDING - Transform context loading to metadata-first with section-level drill-down; hybrid retrieval strategy (always-load essentials + on-demand sections); 90%+ token savings for context map. Plan: .cortex/plans/phase-51-just-in-time-context-section-loading.md.
 - **Phase 52: Consistent Helpful Error Responses** - PENDING - Standardize all tool error responses with ToolErrorResponse schema: what went wrong, suggestion, example of correct usage, fuzzy matching for did-you-mean. Plan: .cortex/plans/phase-52-consistent-helpful-error-responses.md.
 - **Phase 54: Session Start Initializer Pattern** - PENDING - Single session_start tool replacing 3-5 manual orientation calls; returns SessionBrief (current focus, next work item, health check, git status) in less than 1000 tokens. Plan: .cortex/plans/phase-54-session-start-initializer-pattern.md.

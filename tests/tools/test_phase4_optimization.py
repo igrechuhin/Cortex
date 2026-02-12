@@ -22,8 +22,6 @@ from cortex.tools.phase4_optimization import (
     get_relevance_scores_resource,
     load_context,
     load_context_resource,
-    load_progressive_context,
-    load_progressive_context_resource,
     summarize_content,
     summarize_content_resource,
 )
@@ -284,6 +282,69 @@ class TestLoadContext:
             assert result["status"] == "success"
             assert result["strategy"] == "dependency_aware"
 
+    async def test_load_context_progressive_strategy(
+        self, mock_project_root: Path, mock_managers: dict[str, object]
+    ) -> None:
+        """Test context loading with progressive strategy."""
+        # Arrange
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_progressive_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            # Act
+            result_str = await load_context(
+                task_description="Test task",
+                strategy="progressive",
+                loading_strategy="by_relevance",
+                response_format="detailed",
+            )
+            result = json.loads(result_str)
+
+            # Assert
+            assert result["status"] == "success"
+
+    async def test_load_context_progressive_strategy_default_loading(
+        self, mock_project_root: Path, mock_managers: dict[str, object]
+    ) -> None:
+        """Test progressive strategy with default loading_strategy (by_relevance)."""
+        # Arrange
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_progressive_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            # Act - don't specify loading_strategy, should default to "by_relevance"
+            result_str = await load_context(
+                task_description="Test task",
+                strategy="progressive",
+                response_format="detailed",
+            )
+            result = json.loads(result_str)
+
+            # Assert
+            assert result["status"] == "success"
+
     async def test_load_context_exception_handling(
         self, mock_project_root: Path
     ) -> None:
@@ -303,153 +364,201 @@ class TestLoadContext:
             assert "Test error" in result["error"]
             assert result["error_type"] == "RuntimeError"
 
-
-# ============================================================================
-# Test load_progressive_context()
-# ============================================================================
-
-
-class TestLoadProgressiveContext:
-    """Tests for load_progressive_context() tool."""
-
-    async def test_load_progressive_by_priority(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
-    ) -> None:
-        """Test progressive loading by priority."""
-        # Arrange
-        with (
-            patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.phase4_optimization.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.phase4_progressive_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-        ):
-            # Act
-            result_str = await load_progressive_context(
-                task_description="Test task", loading_strategy="by_priority"
-            )
-            result = json.loads(result_str)
-
-            # Assert
-            assert result["status"] == "success"
-            assert result["loading_strategy"] == "by_priority"
-            assert result["files_loaded"] == 2
-            assert len(result["loaded_files"]) == 2
-
-    async def test_load_progressive_by_dependencies(
-        self, mock_project_root: Path, mock_managers: dict[str, object]
-    ) -> None:
-        """Test progressive loading by dependencies."""
-        # Arrange
-        with (
-            patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.phase4_optimization.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.phase4_progressive_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-        ):
-            # Act
-            result_str = await load_progressive_context(
-                task_description="Test task", loading_strategy="by_dependencies"
-            )
-            result = json.loads(result_str)
-
-            # Assert
-            assert result["status"] == "success"
-            assert result["loading_strategy"] == "by_dependencies"
-
-    async def test_load_progressive_by_relevance(
-        self, mock_project_root: Path, mock_managers: dict[str, object]
-    ) -> None:
-        """Test progressive loading by relevance."""
-        # Arrange
-        with (
-            patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.phase4_optimization.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.phase4_progressive_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-        ):
-            # Act
-            result_str = await load_progressive_context(
-                task_description="Test task", loading_strategy="by_relevance"
-            )
-            result = json.loads(result_str)
-
-            # Assert
-            assert result["status"] == "success"
-            assert result["loading_strategy"] == "by_relevance"
-
-    async def test_load_progressive_default_budget(
-        self, mock_project_root: Path, mock_managers: dict[str, object]
-    ) -> None:
-        """Test progressive loading with default budget."""
-        # Arrange
-        with (
-            patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.phase4_optimization.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.phase4_progressive_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-        ):
-            # Act
-            result_str = await load_progressive_context(task_description="Test task")
-            result = json.loads(result_str)
-
-            # Assert
-            assert result["status"] == "success"
-            # Effective budget = min(10000, 100000) - 10000 = 0
-            assert result["token_budget"] == 0
-
-    async def test_load_progressive_exception_handling(
+    async def test_load_context_optimization_disabled(
         self, mock_project_root: Path
     ) -> None:
-        """Test exception handling in load_progressive_context."""
-        # Arrange
-        with patch(
-            "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
-            new_callable=AsyncMock,
-            side_effect=ValueError("Invalid project root"),
+        """Test load_context when optimization is disabled."""
+        # Arrange - create managers with optimization disabled
+        disabled_optimization_config = MagicMock()
+        disabled_optimization_config.is_optimization_enabled = MagicMock(
+            return_value=False
+        )
+        disabled_managers = make_test_managers(
+            optimization_config=disabled_optimization_config
+        )
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=disabled_managers,
+            ),
         ):
             # Act
-            result_str = await load_progressive_context(task_description="Test task")
+            result_str = await load_context(task_description="Test task")
             result = json.loads(result_str)
 
             # Assert
             assert result["status"] == "error"
-            assert "Invalid project root" in result["error"]
+            assert "disabled" in result["error"].lower()
+
+    async def test_load_context_concise_format(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """Test load_context with concise response format."""
+        # Arrange
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_context_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            # Act
+            result_str = await load_context(
+                task_description="Test task",
+                token_budget=50000,
+                response_format="concise",
+            )
+            result = json.loads(result_str)
+
+            # Assert
+            assert result["status"] == "success"
+            assert "file_names" in result  # Concise format uses file_names
+            assert "selected_files" not in result  # Detailed format uses selected_files
+            assert isinstance(result["file_names"], list)  # file_names is always a list
+
+    async def test_load_context_concise_format_with_non_dict_selected_files(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """Test concise format when selected_files is not a dict (edge case)."""
+        # Arrange - patch load_context_impl to return response with selected_files as list
+
+        async def mock_load_context_impl(*args: Any, **kwargs: Any) -> str:
+            """Mock that returns response with selected_files as list."""
+            return json.dumps(
+                {
+                    "status": "success",
+                    "task_description": "Test",
+                    "strategy": "priority",
+                    "selected_files": ["file1.md", "file2.md"],  # List, not dict
+                    "total_tokens": 1000,
+                    "utilization": 0.5,
+                },
+                indent=2,
+            )
+
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization_handlers.load_context_impl",
+                side_effect=mock_load_context_impl,
+            ),
+        ):
+            # Act
+            result_str = await load_context(
+                task_description="Test task",
+                response_format="concise",
+            )
+            result = json.loads(result_str)
+
+            # Assert - file_names should be empty list when selected_files is not dict
+            assert result["status"] == "success"
+            assert result["file_names"] == []
+
+    async def test_load_context_concise_format_with_none_selected_files(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """Test concise format when selected_files is None (edge case)."""
+
+        # Arrange - patch load_context_impl to return response with selected_files as None
+        async def mock_load_context_impl(*args: Any, **kwargs: Any) -> str:
+            """Mock that returns response with selected_files as None."""
+            return json.dumps(
+                {
+                    "status": "success",
+                    "task_description": "Test",
+                    "strategy": "priority",
+                    "selected_files": None,  # None instead of dict
+                    "total_tokens": 1000,
+                    "utilization": 0.5,
+                },
+                indent=2,
+            )
+
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization_handlers.load_context_impl",
+                side_effect=mock_load_context_impl,
+            ),
+        ):
+            # Act
+            result_str = await load_context(
+                task_description="Test task",
+                response_format="concise",
+            )
+            result = json.loads(result_str)
+
+            # Assert - file_names should be empty list when selected_files is None
+            assert result["status"] == "success"
+            assert result["file_names"] == []
+
+    async def test_load_context_concise_format_with_invalid_json(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """Test concise format when load_context_impl returns invalid JSON (error handling)."""
+
+        # Arrange - patch load_context_impl to return invalid JSON
+        async def mock_load_context_impl(*args: Any, **kwargs: Any) -> str:
+            """Mock that returns invalid JSON."""
+            return "invalid json {"
+
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization_handlers.load_context_impl",
+                side_effect=mock_load_context_impl,
+            ),
+        ):
+            # Act
+            result_str = await load_context(
+                task_description="Test task",
+                response_format="concise",
+            )
+
+            # Assert - when JSON parsing fails, original response is returned
+            assert result_str == "invalid json {"
+
+
+# ============================================================================
+# Test load_progressive_context()
+# ============================================================================
 
 
 # ============================================================================
@@ -897,38 +1006,6 @@ class TestIntegration:
             # Assert 3
             assert summary_data["status"] == "success"
 
-    async def test_progressive_loading_workflow(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
-    ) -> None:
-        """Test progressive loading with all strategies."""
-        with (
-            patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.phase4_optimization.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.phase4_progressive_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-        ):
-            # Test each loading strategy
-            for strategy in ["by_priority", "by_dependencies", "by_relevance"]:
-                # Act
-                result_str = await load_progressive_context(
-                    task_description="Test task", loading_strategy=strategy
-                )
-                result = json.loads(result_str)
-
-                # Assert
-                assert result["status"] == "success"
-                assert result["loading_strategy"] == strategy
-                assert result["files_loaded"] > 0
-
 
 # ============================================================================
 # Context logging (FastMCP)
@@ -1009,32 +1086,6 @@ class TestPhase4OptimizationResources:
         assert result["status"] == "success"
         assert result["task_description"] == "Test task"
         assert result["strategy"] == "dependency_aware"
-
-    async def test_load_progressive_context_resource_returns_success(
-        self, mock_project_root: Path, mock_managers: dict[str, Any]
-    ) -> None:
-        """load_progressive_context_resource returns JSON success."""
-        with (
-            patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.phase4_optimization.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.phase4_progressive_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-        ):
-            result_str = await load_progressive_context_resource(
-                task_description="progressive%20load"
-            )
-            result = json.loads(result_str)
-        assert result["status"] == "success"
-        assert result["loading_strategy"] == "by_relevance"
 
     async def test_get_relevance_scores_resource_returns_success(
         self, mock_project_root: Path, mock_managers: dict[str, Any]

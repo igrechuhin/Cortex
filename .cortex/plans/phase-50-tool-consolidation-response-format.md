@@ -29,7 +29,7 @@ Additionally, many tools return verbose JSON responses (200+ tokens) when a conc
 1. Audit all 53+ tools, categorize by usage frequency and overlap
 2. Merge overlapping tools into consolidated interfaces
 3. Add `response_format` parameter to high-token-output tools
-4. Deprecate redundant tools with backward-compatible aliases
+4. Remove redundant tools immediately (no deprecation period needed)
 5. Measure token savings before/after
 
 ## Implementation Steps
@@ -108,7 +108,7 @@ This section should be updated in a future session once locks on usage JSON file
   - New `query_usage(query_type=...)` for stats/unused/report/recommendations/search/events/timeline
 - [ ] Define parameter schemas for each consolidated tool
 - [ ] Ensure no functionality is lost in consolidation
-- [ ] Create backward-compatibility plan (deprecated aliases)
+- [ ] Remove redundant tools immediately (no deprecation period)
 
 ### Step 3: Implement response_format Parameter
 
@@ -126,14 +126,17 @@ This section should be updated in a future session once locks on usage JSON file
 
 ### Step 4: Implement Tool Consolidation
 
-- [ ] Implement consolidated tool handlers (Phase 1: low-risk merges)
-  - Merge `write_file` into `manage_file` (add deprecation warning on `write_file`)
-  - Merge `load_progressive_context` into `load_context` with `strategy="progressive"`
-  - Merge `update_config` into `configure` (add deprecation warning)
+- [x] Implement consolidated tool handlers (Phase 1: low-risk merges)
+  - [x] Merge `write_file` into `manage_file` - COMPLETE 2026-02-12
+  - [x] Merge `load_progressive_context` into `load_context` with `strategy="progressive"` - COMPLETE 2026-02-12
+  - [x] Merge `update_config` into `configure` - COMPLETE 2026-02-12
+- [x] Remove redundant tools immediately:
+  - [x] Remove `write_file` tool (functionality in `manage_file`) - COMPLETE 2026-02-12
+  - [x] Remove `load_progressive_context` tool (functionality in `load_context`) - COMPLETE 2026-02-12
+  - [x] Remove `update_config` tool (functionality in `configure`) - COMPLETE 2026-02-12
 - [ ] Implement consolidated tool handlers (Phase 2: new unified tools)
   - Create `query_memory_bank` tool
   - Create `query_usage` tool
-- [ ] Implement backward-compatible aliases for deprecated tools
 - [ ] Update tool registration in server.py
 
 ### Step 5: Update Documentation and Tool Descriptions
@@ -144,12 +147,12 @@ This section should be updated in a future session once locks on usage JSON file
   - Include when-to-use and when-not-to-use guidance
 - [ ] Update AGENTS.md tool reference table
 - [ ] Update docs/api/tools.md
-- [ ] Add migration guide for deprecated tools
+- [ ] Remove references to removed tools from documentation
 
 ### Step 6: Testing and Validation
 
 - [ ] Unit tests for all consolidated tools (95%+ coverage)
-- [ ] Integration tests verifying backward compatibility of deprecated aliases
+- [ ] Remove tests for removed tools
 - [ ] Measure before/after metrics:
   - Total tool count reduction (target: 53 → ~30)
   - Average token savings per tool response (target: 50%+)
@@ -166,16 +169,16 @@ This section should be updated in a future session once locks on usage JSON file
 1. Tool count reduced from 53+ to ~35 or fewer
 2. `response_format` parameter available on 8+ high-token tools
 3. Average concise response is 50%+ smaller than current default
-4. Zero breaking changes (deprecated tools still work via aliases)
+4. Redundant tools removed (no deprecated aliases)
 5. 95%+ test coverage for all new/modified tools
 6. Documentation updated for all changes
 
 ## Testing Strategy
 
 - **Coverage Target:** 95%+ for all new/modified tools
-- **Unit Tests:** Test each consolidated tool with all action/query_type values, test response_format concise vs detailed output, test backward-compatible aliases
+- **Unit Tests:** Test each consolidated tool with all action/query_type values, test response_format concise vs detailed output
 - **Integration Tests:** Verify full workflows (validate → fix → commit) work with consolidated tools
-- **Edge Cases:** Test deprecated tool aliases, invalid response_format values, missing required parameters
+- **Edge Cases:** Test invalid response_format values, missing required parameters
 - **Regression Tests:** Run full existing test suite to verify no breakage
 - **AAA Pattern:** All tests follow Arrange-Act-Assert
 - **Pydantic v2:** Use Pydantic models for response validation in tests
@@ -184,10 +187,10 @@ This section should be updated in a future session once locks on usage JSON file
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Breaking existing agent workflows | High | Backward-compatible aliases, gradual deprecation |
+| Breaking existing agent workflows | Low | Tools are internal MCP tools, immediate removal is safe |
 | Consolidated tools too complex | Medium | Clear parameter documentation, input_examples |
 | Concise responses lose critical info | Medium | Test with real agent workflows before defaulting |
-| Large migration effort | Medium | Phase implementation over 2-3 sprints |
+| Large migration effort | Low | Direct removal, no migration needed |
 
 ## Notes
 

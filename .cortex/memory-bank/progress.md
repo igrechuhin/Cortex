@@ -16,6 +16,7 @@
 - **Phase 50: response_format for validate & suggest_refactoring** - COMPLETE. Added response_format parameter and concise formatting helpers for validate() and suggest_refactoring() tools, including unit tests and quality gate fixes.
 - **Phase 50: Tool consolidation usage audit** - PARTIAL. Documented consolidation groups and a usage-matrix template for overlapping MCP tools; numeric usage statistics are still blocked by usage JSON file locks and should be filled in a later session when `get_tool_usage_stats` / `get_unused_tools` are available.
 - **Phase 50: Tool Consolidation and Response Format Optimization** - IN PROGRESS. Defaulted response_format to 'concise' for high-token tools (load_context, get_memory_bank_stats, validate, suggest_refactoring, get_tool_usage_stats, search_usage), updated tests accordingly, and verified coverage at approximately 90.0%.
+- **Phase 50 Step 4 Phase 1: Tool Consolidation (Low-Risk Merges)** - COMPLETE. Merged `write_file` into `manage_file`, `load_progressive_context` into `load_context` (with `strategy="progressive"`), and `update_config` into `configure`. All deprecated tools now include deprecation warnings in docstrings and responses. Backward compatibility maintained. Quality gate passed.
 
 ## 2026-02-11
 

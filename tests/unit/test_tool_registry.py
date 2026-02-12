@@ -45,3 +45,21 @@ class TestGetKnownScriptNames:
         assert "check_format" in names
         assert "run_tests" in names
         assert "_utils" not in names
+
+    def test_returns_sorted_script_names(self, tmp_path: Path) -> None:
+        """Returns script names in sorted order."""
+        scripts_dir = tmp_path / ".cortex" / "synapse" / "scripts" / "python"
+        scripts_dir.mkdir(parents=True)
+        # Create scripts in non-alphabetical order
+        (scripts_dir / "zebra.py").touch()
+        (scripts_dir / "alpha.py").touch()
+        (scripts_dir / "beta.py").touch()
+        names = get_known_script_names(tmp_path)
+        assert names == ["alpha", "beta", "zebra"]
+
+    def test_returns_empty_list_when_scripts_dir_empty(self, tmp_path: Path) -> None:
+        """Returns empty list when scripts directory exists but is empty."""
+        scripts_dir = tmp_path / ".cortex" / "synapse" / "scripts" / "python"
+        scripts_dir.mkdir(parents=True)
+        names = get_known_script_names(tmp_path)
+        assert names == []
