@@ -22,6 +22,8 @@ Token budget guide: 10k (small update), 15k (fix/debug), 20-30k (feature), 40-50
 
 **Workflow and compound-engineering guidance:** Delivered by Cortex MCP (e.g. `load_context`, memory bank). Do not duplicate here — fetch from MCP.
 
+**Note for AI agents**: When you need detailed workflows (commit, implement, fix-path, etc.), read the corresponding Synapse prompts and rules via Cortex MCP instead of adding guidance to `CLAUDE.md` or `AGENTS.md`.
+
 ## Safety (non-negotiable)
 
 - No destructive git; no commits/pushes without explicit user request.

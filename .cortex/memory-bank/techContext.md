@@ -157,12 +157,13 @@ Cortex/
 - **Access**: Use Cortex MCP tool `manage_file(file_name="...", operation="read"|"write")`; resolve path via `get_structure_info()` → `structure_info.paths.memory_bank` if needed.
 - **Core Files**: projectBrief.md, productContext.md, activeContext.md, systemPatterns.md, techContext.md, progress.md, roadmap.md
 - **Metadata**: Managed by Cortex (index, version history)
+- **Structure & responsibilities**: See the canonical "Memory Bank Structure (Canonical Spec)" section in the Memory Bank workflow rule for each file's single dedicated goal.
 
 ## Code Quality Standards
 
 - **Formatting**: Black (88 columns) + Ruff (import sorting)
-- **Type Hints**:100verage, Python 3.13 built-ins only
-- **Testing**: AAA pattern,90coverage
+- **Type Hints**: 100% coverage, Python 3.13 built-ins only
+- **Testing**: AAA pattern, 90% coverage
 - **File Size**: ≤400s (excluding license/imports)
 - **Function Size**: ≤30 logical lines
 - **No Global State**: Dependency injection only

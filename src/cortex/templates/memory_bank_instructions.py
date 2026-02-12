@@ -37,12 +37,10 @@ flowchart TD
    - User experience goals
 
 3. `activeContext.md`
-   - Current work focus
-   - Recent changes
-   - Next steps
-   - Active decisions and considerations
-   - Important patterns and preferences
-   - Learnings and project insights
+   - Durable summary of completed work only
+   - High-level narrative of what is now true about the project
+   - Organized by theme and/or date (reverse-chronological)
+   - Does not list in-progress or future work
 
 4. `systemPatterns.md`
    - System architecture
@@ -59,11 +57,15 @@ flowchart TD
    - Tool usage patterns
 
 6. `progress.md`
-   - What works
-   - What's left to build
-   - Current status
-   - Known issues
-   - Evolution of project decisions
+   - Date-ordered log of what works and what's left
+   - Current and historical status snapshots
+   - Known issues and coverage/status notes
+   - Connects specific days of work to summaries in `activeContext.md`
+
+7. `roadmap.md`
+   - Single source of truth for future and in-progress work
+   - Tracks blockers, active work, future enhancements, and pending plans
+   - Contains no completed-work history (move summaries to `activeContext.md`/`progress.md` when done)
 
 ## Core Workflows
 

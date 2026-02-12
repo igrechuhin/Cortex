@@ -16,6 +16,12 @@
 
 - ✅ **Commit (reportPrivateUsage phase8_structure)** - COMPLETE (2026-02-12) - Fixed reportPrivateUsage in tests/tools/test_phase8_structure.py: added public invalidate_structure_resource_cache(key) in phase8_structure.py; test now uses it instead of accessing _structure_resource_cache. Type check and preflight pass.
 
+- ✅ **Load context when agent encounters problem / fix path** - COMPLETE (2026-02-12) - Added mandatory requirement to load context and rules before fixing errors, test failures, or quality violations. Updated commit prompt, implement prompt, AGENTS.md, and CLAUDE.md with explicit instructions. Ensures fix-path work follows project rules and reduces mistake patterns (e.g. wrong mocks, usage-context assumptions).
+
+- ✅ **Reconsider Memory Bank Structure and File Responsibilities** - COMPLETE (2026-02-12) - Defined a canonical Memory Bank structure spec and aligned schema validation, templates, techContext, and tests so all seven core files have single, non-overlapping responsibilities.
+
+- ✅ **Session Optimization: Roadmap Completed-Section Cleanup** - COMPLETE (2026-02-12) - Verified that legacy completed sections were removed from `roadmap.md`, ensuring completed work is tracked only in `activeContext.md`/`progress.md` and that roadmap now contains future/pending items only.
+
 ## Completed Work (2026-02-11)
 
 - ✅ **Type cleanup inventory (Phase 53)** - COMPLETE (2026-02-11) - Completed Phase 53 type-cleanup inventory: per-file classification of dict[str, object]/list[object] (response, config, metadata, report), Pydantic candidates and circular-import notes, and draft model groupings for Step 2 (model design) in type-cleanup-inventory.md.

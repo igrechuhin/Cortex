@@ -754,6 +754,37 @@ class TestSchemaValidatorIntegration:
             assert len(result.errors) == 0
             assert result.score >= 85
 
+
+@pytest.mark.unit
+class TestMemoryBankSchemaAlignment:
+    """Tests that memory bank core files and default schemas stay aligned."""
+
+    def test_all_core_memory_bank_files_have_default_schemas(self) -> None:
+        """Every core memory bank file must have a DEFAULT_SCHEMAS entry."""
+        core_files = (
+            "projectBrief.md",
+            "productContext.md",
+            "activeContext.md",
+            "systemPatterns.md",
+            "techContext.md",
+            "progress.md",
+            "roadmap.md",
+        )
+        for file_name in core_files:
+            assert (
+                file_name in DEFAULT_SCHEMAS
+            ), f"Missing default schema for core memory bank file: {file_name}"
+
+    def test_roadmap_schema_required_sections_match_expected_headings(self) -> None:
+        """roadmap.md schema must match the canonical section headings."""
+        roadmap_schema = DEFAULT_SCHEMAS["roadmap.md"]
+        assert roadmap_schema["required_sections"] == [
+            "Blockers (ASAP Priority)",
+            "Active Work (in progress)",
+            "Future Enhancements",
+            "Pending plans (from .cortex/plans)",
+        ]
+
     @pytest.mark.asyncio
     async def test_validate_file_complete_workflow(self, tmp_path: Path) -> None:
         """Test complete validation workflow with custom schemas."""

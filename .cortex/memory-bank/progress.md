@@ -8,6 +8,9 @@
 - **Compound engineering alignment (Cortex MCP)** - COMPLETE. Documented compound goal and loop in project brief and agent docs; aligned implement/commit/analyze prompts; added 5-item compound checklist to commit prompt; documented compound in memory bank and analyze purpose; cross-referenced session-optimization plans; added prompt sanity tests.
 - **MCP idempotent resource: project root path** - COMPLETE. Added cortex://project/root resource, unit tests, docs.
 - **Commit (reportPrivateUsage phase8_structure)** - COMPLETE. Fixed reportPrivateUsage in tests: added public invalidate_structure_resource_cache() in phase8_structure.py; test uses it instead of accessing _structure_resource_cache. Type check and preflight pass.
+- **Load context when agent encounters problem / fix path** - COMPLETE. Added mandatory requirement to load context and rules before fixing errors, test failures, or quality violations in commit prompt, implement prompt, AGENTS.md, and CLAUDE.md. Ensures fix-path work follows project rules and reduces mistake patterns.
+- **Reconsider Memory Bank Structure and File Responsibilities** - COMPLETE. Defined a canonical Memory Bank structure spec and aligned schema_validator, memory_bank_instructions, techContext, and tests so all seven core files have single, non-overlapping responsibilities.
+- **Session Optimization: Roadmap Completed-Section Cleanup** - COMPLETE. Legacy completed sections have been removed from `roadmap.md` and completion tracking is now handled exclusively via `activeContext.md` and `progress.md`, with roadmap reserved for future work only.
 
 ## 2026-02-11
 

@@ -43,7 +43,11 @@ DEFAULT_SCHEMAS: dict[str, SchemaDict] = {
     },
     "activeContext.md": {
         "required_sections": ["Current Focus", "Recent Changes", "Next Steps"],
-        "recommended_sections": ["Active Decisions", "Important Patterns"],
+        "recommended_sections": [
+            "Completed Work",
+            "Active Decisions",
+            "Important Patterns",
+        ],
         "heading_level": 2,
         "max_nesting": 3,
     },
@@ -66,6 +70,17 @@ DEFAULT_SCHEMAS: dict[str, SchemaDict] = {
     "progress.md": {
         "required_sections": ["What Works", "What's Left"],
         "recommended_sections": ["Known Issues", "Recent Milestones"],
+        "heading_level": 2,
+        "max_nesting": 3,
+    },
+    "roadmap.md": {
+        "required_sections": [
+            "Blockers (ASAP Priority)",
+            "Active Work (in progress)",
+            "Future Enhancements",
+            "Pending plans (from .cortex/plans)",
+        ],
+        "recommended_sections": [],
         "heading_level": 2,
         "max_nesting": 3,
     },

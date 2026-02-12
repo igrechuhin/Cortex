@@ -21,6 +21,8 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 
 **Workflow and compound-engineering:** Delivered by Cortex MCP; do not duplicate here — fetch via `load_context` / memory bank.
 
+**Note for AI agents**: Do not add detailed workflow guides (including fix-path rules) to `AGENTS.md` or `CLAUDE.md`; always fetch commit/implement/fix-path behavior from Cortex MCP (Synapse prompts, rules, and memory bank).
+
 ## Workflow
 
 1. **Scope the task** — restate the user's goal.

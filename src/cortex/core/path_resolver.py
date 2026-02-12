@@ -163,6 +163,8 @@ def has_memory_bank(project_root: Path) -> bool:
     return get_cortex_path(project_root, CortexResourceType.MEMORY_BANK).is_dir()
 
 
+# Core Memory Bank files; kept in sync with the canonical spec
+# in the Memory Bank workflow rule (memory-bank-workflow.mdc).
 _MEMORY_BANK_CORE_FILES = (
     "projectBrief.md",
     "productContext.md",
