@@ -67,6 +67,11 @@ class TestImplementPromptQualityGates:
         assert "Pre-Implementation Checklist" in prompt_content
         assert "FOR PYTHON" in prompt_content and "NOT TypedDict" in prompt_content
 
+    def test_mentions_compound_engineering_loop(self, prompt_content: str) -> None:
+        """Implement prompt references compound-engineering loop (Plan→Work→Review→Compound)."""
+        assert "compound" in prompt_content.lower()
+        assert "memory bank" in prompt_content.lower()
+
     def test_step_2_includes_load_context_error_handling(
         self, prompt_content: str
     ) -> None:

@@ -37,10 +37,12 @@ def test_pre_commit_config_has_markdownlint_hook() -> None:
     ), "Markdownlint hook entry must run markdownlint-cli2"
     files_val = markdownlint.get("files")
     types_val = markdownlint.get("types")
+    entry_str = str(markdownlint.get("entry", ""))
     has_files_match = files_val == r"\.(md|mdc)$"
     has_types_match = isinstance(types_val, list) and any(
         "md" in str(t) for t in cast(list[Any], types_val)
     )
+    has_entry_md = "*.md" in entry_str or ".md" in entry_str
     assert (
-        has_files_match or has_types_match
-    ), "Markdownlint hook must target .md/.mdc files (files regex or types)"
+        has_files_match or has_types_match or has_entry_md
+    ), "Markdownlint hook must target .md/.mdc files (files regex, types, or entry glob)"

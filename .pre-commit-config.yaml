@@ -35,11 +35,15 @@ repos:
 
   - repo: local
     hooks:
+      # Lint all markdown in repo (including .cortex/reviews/) so MD032 and
+      # other rules are caught even when files are not staged. Matches commit
+      # pipeline Step 12.5 (check_all_files).
       - id: markdownlint
-        name: Markdown lint (markdownlint-cli2)
-        entry: markdownlint-cli2 --fix
+        name: Markdown lint (markdownlint-cli2, all files)
+        entry: markdownlint-cli2 --fix "**/*.md" "**/*.mdc" "!**/node_modules/**" "!**/.venv/**" "!**/venv/**" "!**/__pycache__/**" "!**/.git/**"
         language: system
-        files: \.(md|mdc)$
+        pass_filenames: false
+        always_run: true
 
       - id: check-file-sizes
         name: Check file sizes (max 400 lines)

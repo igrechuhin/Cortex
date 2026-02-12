@@ -74,6 +74,13 @@ class TestCommitPromptAlignment:
         assert "9" in commit_prompt_content and "11" in commit_prompt_content
         assert "parallel" in commit_prompt_content.lower()
 
+    def test_prompt_mentions_compound_and_checklist(
+        self, commit_prompt_content: str
+    ) -> None:
+        """Commit prompt references compound loop and compound checklist."""
+        assert "compound" in commit_prompt_content.lower()
+        assert "manage_file" in commit_prompt_content
+
     def test_prompt_mentions_sequential_steps(self, commit_prompt_content: str) -> None:
         """Commit prompt mentions sequential steps 0–8 and 12–14."""
         assert "0–8" in commit_prompt_content or "0-8" in commit_prompt_content

@@ -9,7 +9,8 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 | Need | Cortex MCP tool | Do NOT |
 |---|---|---|
 | Project context, architecture, decisions | `load_context` / `load_progressive_context` | Read `.cortex/memory-bank/` files directly |
-| Coding rules, standards, style | Rules/validation tools | Read `.cortex/rules/` or `.cortex/synapse/` |
+| Coding rules, standards, style | Rules/validation tools, `get_synapse_rules` | Read `.cortex/rules/` or `.cortex/synapse/` directly |
+| Markdown formatting (headings vs emphasis, MD036) | `get_synapse_rules(task_description="markdown formatting")`, [docs/guides/markdown-formatting.md](docs/guides/markdown-formatting.md) | Use bold for section titles (use `#`/`##`/`###` instead) |
 | Quality fixes (lint, format, types) | `fix_quality_issues` | Run `black`, `ruff`, `isort` manually |
 | Tests and pre-commit checks | `execute_pre_commit_checks` | Run `pytest` directly |
 | Memory bank, roadmap, plans, reviews | Dedicated MCP helpers | Edit `.cortex/` files directly |
@@ -17,6 +18,8 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 | Cache JSON under `.cortex/.cache` | `read_cache_json` / `write_cache_json` | Read/write cache files directly |
 
 **Tools vs Resources:** For read-only operations (e.g. load context, stats, file content), prefer MCP Resources (`cortex://` URIs) when available. Tools with `get_*` names are read-only; use Tools for writes (e.g. `write_file`, `update_config`). See `docs/api/tools.md` and Phase 43 plan for naming conventions.
+
+**Workflow and compound-engineering:** Delivered by Cortex MCP; do not duplicate here — fetch via `load_context` / memory bank.
 
 ## Workflow
 

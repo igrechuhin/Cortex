@@ -2578,6 +2578,24 @@ Returns information about the current structure configuration and status.
 }
 ```
 
+### cortex://project/root (resource)
+
+Idempotent MCP resource that returns the resolved project root path. Single recommended entry point for obtaining project root via MCP; use instead of parsing `get_structure_info` / `cortex://structure/info` when only the root path is needed.
+
+**URI:** `cortex://project/root`
+
+**Method:** GET (resource read).
+
+**Returns:**
+
+```json
+{
+  "project_root": "/absolute/path/to/project"
+}
+```
+
+Repeated reads in the same context return the same path (idempotent). Resolution uses the same logic as tools (MCP roots when available, else current working directory / script-based fallback).
+
 ---
 
 ## Health-Check Analysis

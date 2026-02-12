@@ -6,6 +6,16 @@
 
 - ✅ **Session Optimization: Commit Pipeline Improvements – Step 2 (Early Markdown Lint Validation)** - COMPLETE (2026-02-12) - Added pre-commit markdownlint hook (markdownlint-cli2 --fix on staged .md/.mdc), documented in getting-started and commit prompt, Cursor rule for lint-on-save, unit test for config; quality gate and tests passed.
 
+- ✅ **Session Optimization Commit Pipeline – Step 3: Markdown Formatting Guidelines** - COMPLETE (2026-02-12) - Created docs/guides/markdown-formatting.md (headings vs emphasis, MD036 examples). Referenced in AGENTS.md, implement-next-roadmap-step prompt (Step 4 markdown files bullet), and commit prompt (Step 1.5). Synapse rule .cortex/synapse/rules/markdown/markdown-formatting.mdc already existed and is used via get_synapse_rules.
+
+- ✅ **Session Optimization: Commit Pipeline Improvements** - COMPLETE (2026-02-12) - Completed Steps 4–6 and 9: Git SSL documentation (troubleshooting + git-operations), test maintenance guide and checklist in implement/commit prompts, push retry and non-blocking in commit prompt, memory-bank write quality guidance in memory-bank-updater and implement prompt. Steps 1–3, 7–8 were already done.
+
+- ✅ **Compound engineering alignment (Cortex MCP)** - COMPLETE (2026-02-12) - Documented compound-engineering goal and Plan→Work→Review→Compound loop in projectBrief, CLAUDE.md, AGENTS.md; aligned implement, commit, and analyze prompts with the loop; added compound checklist to commit prompt; documented compound in memory-bank and session-optimization wording; added Related plans section; added minimal sanity tests for compound keywords in implement/commit prompts.
+
+- ✅ **MCP idempotent resource: project root path** - COMPLETE (2026-02-12) - Added cortex://project/root MCP resource in phase8_structure.py; returns JSON with project_root (absolute path); idempotent with TTL cache; unit tests and docs/api/tools.md updated.
+
+- ✅ **Commit (reportPrivateUsage phase8_structure)** - COMPLETE (2026-02-12) - Fixed reportPrivateUsage in tests/tools/test_phase8_structure.py: added public invalidate_structure_resource_cache(key) in phase8_structure.py; test now uses it instead of accessing _structure_resource_cache. Type check and preflight pass.
+
 ## Completed Work (2026-02-11)
 
 - ✅ **Type cleanup inventory (Phase 53)** - COMPLETE (2026-02-11) - Completed Phase 53 type-cleanup inventory: per-file classification of dict[str, object]/list[object] (response, config, metadata, report), Pydantic candidates and circular-import notes, and draft model groupings for Step 2 (model design) in type-cleanup-inventory.md.

@@ -1,16 +1,16 @@
 {
-  "last_updated": "2026-02-11T22:46",
-  "total_sessions_analyzed": 136,
-  "total_load_context_calls": 160,
-  "avg_token_utilization": 0.488,
-  "avg_files_selected": 6.75,
-  "avg_relevance_score": 0.611,
+  "last_updated": "2026-02-12T08:33",
+  "total_sessions_analyzed": 140,
+  "total_load_context_calls": 164,
+  "avg_token_utilization": 0.487,
+  "avg_files_selected": 6.67,
+  "avg_relevance_score": 0.614,
   "common_task_patterns": {
     "fix/debug": 22,
     "other": 32,
-    "implement/add": 48,
+    "implement/add": 49,
     "update/modify": 7,
-    "testing": 25,
+    "testing": 28,
     "documentation": 5,
     "refactor": 9,
     "review": 9,
@@ -47,7 +47,7 @@
         "notes": "Moderate utilization - some budget optimization possible"
       },
       "implement/add": {
-        "calls_count": 48,
+        "calls_count": 49,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
@@ -56,8 +56,8 @@
           "productContext.md",
           "systemPatterns.md"
         ],
-        "avg_utilization": 0.48,
-        "avg_relevance": 0.609,
+        "avg_utilization": 0.47,
+        "avg_relevance": 0.612,
         "notes": "Moderate utilization - some budget optimization possible"
       },
       "update/modify": {
@@ -73,7 +73,7 @@
         "notes": "Adequate performance"
       },
       "testing": {
-        "calls_count": 25,
+        "calls_count": 28,
         "recommended_budget": 10000,
         "essential_files": [
           "productContext.md",
@@ -81,8 +81,8 @@
           "systemPatterns.md",
           "projectBrief.md"
         ],
-        "avg_utilization": 0.514,
-        "avg_relevance": 0.681,
+        "avg_utilization": 0.528,
+        "avg_relevance": 0.69,
         "notes": "Adequate performance"
       },
       "documentation": {
@@ -146,46 +146,46 @@
         "avg_relevance": 0.813,
         "task_types_used": [
           "implement/add",
+          "update/modify",
+          "refactor",
           "testing",
-          "documentation",
           "review",
           "other",
-          "refactor",
-          "optimization",
-          "update/modify",
-          "fix/debug"
+          "fix/debug",
+          "documentation",
+          "optimization"
         ],
         "recommendation": "High value - prioritize for loading"
       },
       "techContext.md": {
-        "times_selected": 147,
-        "avg_relevance": 0.577,
+        "times_selected": 150,
+        "avg_relevance": 0.582,
         "task_types_used": [
           "implement/add",
+          "update/modify",
+          "refactor",
           "testing",
-          "documentation",
           "review",
           "other",
-          "refactor",
-          "optimization",
-          "update/modify",
-          "fix/debug"
+          "fix/debug",
+          "documentation",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "roadmap.md": {
-        "times_selected": 127,
+        "times_selected": 129,
         "avg_relevance": 0.628,
         "task_types_used": [
           "implement/add",
+          "update/modify",
+          "refactor",
           "testing",
-          "documentation",
           "review",
           "other",
-          "refactor",
-          "optimization",
-          "update/modify",
-          "fix/debug"
+          "fix/debug",
+          "documentation",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -194,30 +194,30 @@
         "avg_relevance": 0.289,
         "task_types_used": [
           "implement/add",
+          "update/modify",
+          "refactor",
           "testing",
-          "documentation",
           "review",
           "other",
-          "refactor",
-          "optimization",
-          "update/modify",
-          "fix/debug"
+          "fix/debug",
+          "documentation",
+          "optimization"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "projectBrief.md": {
-        "times_selected": 147,
-        "avg_relevance": 0.476,
+        "times_selected": 150,
+        "avg_relevance": 0.483,
         "task_types_used": [
           "implement/add",
+          "update/modify",
+          "refactor",
           "testing",
-          "documentation",
           "review",
           "other",
-          "refactor",
-          "optimization",
-          "update/modify",
-          "fix/debug"
+          "fix/debug",
+          "documentation",
+          "optimization"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -225,8 +225,8 @@
         "times_selected": 3,
         "avg_relevance": 0.621,
         "task_types_used": [
-          "other",
-          "fix/debug"
+          "fix/debug",
+          "other"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -234,8 +234,8 @@
         "times_selected": 3,
         "avg_relevance": 0.24,
         "task_types_used": [
-          "other",
-          "fix/debug"
+          "fix/debug",
+          "other"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -244,46 +244,46 @@
         "avg_relevance": 0.615,
         "task_types_used": [
           "implement/add",
+          "update/modify",
+          "refactor",
           "testing",
-          "documentation",
           "review",
           "other",
-          "refactor",
-          "optimization",
-          "update/modify",
-          "fix/debug"
+          "fix/debug",
+          "documentation",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "systemPatterns.md": {
-        "times_selected": 144,
-        "avg_relevance": 0.567,
+        "times_selected": 147,
+        "avg_relevance": 0.571,
         "task_types_used": [
           "implement/add",
+          "update/modify",
+          "refactor",
           "testing",
-          "documentation",
           "review",
           "other",
-          "refactor",
-          "optimization",
-          "update/modify",
-          "fix/debug"
+          "fix/debug",
+          "documentation",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "productContext.md": {
-        "times_selected": 145,
-        "avg_relevance": 0.561,
+        "times_selected": 148,
+        "avg_relevance": 0.565,
         "task_types_used": [
           "implement/add",
+          "update/modify",
+          "refactor",
           "testing",
-          "documentation",
           "review",
           "other",
-          "refactor",
-          "optimization",
-          "update/modify",
-          "fix/debug"
+          "fix/debug",
+          "documentation",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -306,8 +306,8 @@
     },
     "learned_patterns": [
       "Average 48% budget utilization - ~11k tokens unused per call",
-      "'techContext.md' is most frequently loaded (147/160 calls)",
-      "Most common task type: 'implement/add' (48 calls)"
+      "'techContext.md' is most frequently loaded (150/164 calls)",
+      "Most common task type: 'implement/add' (49 calls)"
     ],
     "budget_recommendations": {
       "fix/debug": 10000,
@@ -4969,6 +4969,115 @@
         "techContext.md": 0.832,
         "productContext.md": 0.758,
         "systemPatterns.md": 0.759
+      }
+    },
+    {
+      "session_id": "292c35f8e776",
+      "timestamp": "2026-02-12T07:44",
+      "task_description": "Session Optimization: Commit Pipeline Improvements - async test validation, early markdown lint, markdown formatting guidelines, git SSL docs, test maintenance checklist, push strategy; integration test schema alignment, markdown lint scope, memory-bank write quality",
+      "token_budget": 10000,
+      "total_tokens": 5525,
+      "utilization": 0.5525,
+      "files_selected": 5,
+      "files_excluded": 2,
+      "avg_relevance_score": 0.762,
+      "files_with_high_relevance": 5,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "techContext.md",
+        "roadmap.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.647,
+        "progress.md": 0.647,
+        "activeContext.md": 0.854,
+        "projectBrief.md": 0.843,
+        "techContext.md": 0.831,
+        "productContext.md": 0.757,
+        "systemPatterns.md": 0.758
+      }
+    },
+    {
+      "session_id": "17c6d48bf0b8",
+      "timestamp": "2026-02-12T08:07",
+      "task_description": "Session Optimization: Commit Pipeline Improvements - async test validation, early markdown lint, markdown formatting guidelines, git SSL docs, test maintenance checklist, push strategy; integration test schema alignment, markdown lint scope, memory-bank write quality",
+      "token_budget": 10000,
+      "total_tokens": 5525,
+      "utilization": 0.5525,
+      "files_selected": 5,
+      "files_excluded": 2,
+      "avg_relevance_score": 0.763,
+      "files_with_high_relevance": 5,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "roadmap.md",
+        "techContext.md",
+        "projectBrief.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.647,
+        "progress.md": 0.647,
+        "activeContext.md": 0.855,
+        "projectBrief.md": 0.843,
+        "techContext.md": 0.831,
+        "productContext.md": 0.757,
+        "systemPatterns.md": 0.758
+      }
+    },
+    {
+      "session_id": "866fb3e30948",
+      "timestamp": "2026-02-12T08:11",
+      "task_description": "Session Optimization: Commit Pipeline Improvements - async test validation, early markdown lint, markdown formatting guidelines, git SSL docs, test maintenance checklist, push strategy; integration test schema alignment, markdown lint scope, memory-bank write quality",
+      "token_budget": 5000,
+      "total_tokens": 4085,
+      "utilization": 0.817,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.763,
+      "files_with_high_relevance": 5,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "projectBrief.md",
+        "techContext.md",
+        "productContext.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.647,
+        "progress.md": 0.647,
+        "activeContext.md": 0.855,
+        "projectBrief.md": 0.843,
+        "techContext.md": 0.831,
+        "productContext.md": 0.758,
+        "systemPatterns.md": 0.758
+      }
+    },
+    {
+      "session_id": "e889a798c88d",
+      "timestamp": "2026-02-12T08:27",
+      "task_description": "Implement MCP idempotent resource for project root path: add cortex://project/root resource that resolves and provides project root as centralized entry point",
+      "token_budget": 0,
+      "total_tokens": 0,
+      "utilization": 0.0,
+      "files_selected": 0,
+      "files_excluded": 7,
+      "avg_relevance_score": 0.754,
+      "files_with_high_relevance": 5,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [],
+      "relevance_by_file": {
+        "roadmap.md": 0.637,
+        "progress.md": 0.618,
+        "activeContext.md": 0.819,
+        "projectBrief.md": 0.796,
+        "techContext.md": 0.813,
+        "productContext.md": 0.793,
+        "systemPatterns.md": 0.801
       }
     }
   ]

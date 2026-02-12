@@ -20,6 +20,8 @@ Token budget guide: 10k (small update), 15k (fix/debug), 20-30k (feature), 40-50
 
 **For memory bank, plans, reviews:** Use dedicated Cortex MCP helpers — do not edit `.cortex/` files directly.
 
+**Workflow and compound-engineering guidance:** Delivered by Cortex MCP (e.g. `load_context`, memory bank). Do not duplicate here — fetch from MCP.
+
 ## Safety (non-negotiable)
 
 - No destructive git; no commits/pushes without explicit user request.

@@ -3,6 +3,11 @@
 ## 2026-02-12
 
 - **Session Optimization: Commit Pipeline Improvements – Step 2 (Early Markdown Lint)** - COMPLETE. Added pre-commit markdownlint hook to .pre-commit-config.yaml, documented in docs/getting-started.md and commit prompt Step 1.5, Cursor rule .cursor/rules/markdown-lint-on-save.md, unit test tests/unit/test_pre_commit_config.py.
+- **Markdown Formatting Guidelines (Session Optimization Commit Pipeline)** - COMPLETE. Added docs/guides/markdown-formatting.md; referenced in AGENTS.md, implement prompt, and commit prompt; Synapse rule markdown-formatting.mdc already present and indexed.
+- **Session Optimization: Commit Pipeline Improvements** - COMPLETE. Git SSL docs (troubleshooting + git-operations), test maintenance guide and async checklist, push retry and non-blocking, memory-bank write quality guidance.
+- **Compound engineering alignment (Cortex MCP)** - COMPLETE. Documented compound goal and loop in project brief and agent docs; aligned implement/commit/analyze prompts; added 5-item compound checklist to commit prompt; documented compound in memory bank and analyze purpose; cross-referenced session-optimization plans; added prompt sanity tests.
+- **MCP idempotent resource: project root path** - COMPLETE. Added cortex://project/root resource, unit tests, docs.
+- **Commit (reportPrivateUsage phase8_structure)** - COMPLETE. Fixed reportPrivateUsage in tests: added public invalidate_structure_resource_cache() in phase8_structure.py; test uses it instead of accessing _structure_resource_cache. Type check and preflight pass.
 
 ## 2026-02-11
 

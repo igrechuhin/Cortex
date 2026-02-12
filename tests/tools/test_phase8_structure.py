@@ -22,6 +22,7 @@ from cortex.tools.phase8_structure import (
     check_structure_health_resource,
     check_structure_initialized,
     find_stale_plans,
+    get_project_root_resource,
     get_structure_info,
     get_structure_info_resource,
     move_stale_plans,
@@ -470,6 +471,57 @@ class TestPhase8StructureResources:
             result = json.loads(result_str)
         assert "score" in result or "success" in result or "error" in result
         assert "cleanup" not in result
+
+    async def test_get_project_root_resource_returns_json_with_absolute_path(
+        self,
+        mock_project_root: Path,
+    ) -> None:
+        """get_project_root_resource returns JSON with project_root key and absolute path."""
+        with patch(
+            "cortex.tools.phase8_structure.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=mock_project_root,
+        ):
+            result_str = await get_project_root_resource()
+        result = json.loads(result_str)
+        assert "project_root" in result
+        path = Path(result["project_root"])
+        assert path.is_absolute()
+        assert path == mock_project_root.resolve()
+
+    async def test_get_project_root_resource_idempotent(
+        self,
+        mock_project_root: Path,
+    ) -> None:
+        """Two consecutive reads of project root resource return the same path."""
+        with patch(
+            "cortex.tools.phase8_structure.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=mock_project_root,
+        ):
+            first = await get_project_root_resource()
+            second = await get_project_root_resource()
+        first_data = json.loads(first)
+        second_data = json.loads(second)
+        assert first_data["project_root"] == second_data["project_root"]
+
+    async def test_get_project_root_resource_resolution_invoked(
+        self,
+        mock_project_root: Path,
+    ) -> None:
+        """get_project_root_resource invokes resolve_project_root_async and returns result."""
+        from cortex.tools import phase8_structure
+
+        phase8_structure.invalidate_structure_resource_cache("project/root")
+        with patch(
+            "cortex.tools.phase8_structure.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=mock_project_root,
+        ) as resolve_mock:
+            result_str = await get_project_root_resource()
+        resolve_mock.assert_awaited_once_with(None, None)
+        result = json.loads(result_str)
+        assert result["project_root"] == str(mock_project_root.resolve())
 
 
 # ============================================================================

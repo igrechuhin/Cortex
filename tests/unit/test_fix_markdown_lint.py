@@ -1304,8 +1304,10 @@ class TestFixMarkdownLintProgressReporting:
             )
 
         assert results == mock_results
-        mock_seq.assert_awaited_once()
-        mock_progress.assert_awaited_once_with(mock_ctx, 0.0, float(len(files_to_lint)))
+        _ = mock_seq.assert_awaited_once()
+        _ = mock_progress.assert_awaited_once_with(
+            mock_ctx, 0.0, float(len(files_to_lint))
+        )
 
     @pytest.mark.asyncio
     async def test_run_markdownlint_for_files_no_progress_when_ctx_none(
@@ -1387,7 +1389,7 @@ class TestFixMarkdownLintProgressReporting:
 
         assert len(results) == 1
         assert current_n[0] == 1
-        mock_progress.assert_awaited_once_with(mock_ctx, 1.0, 3.0)
+        _ = mock_progress.assert_awaited_once_with(mock_ctx, 1.0, 3.0)
 
     @pytest.mark.asyncio
     async def test_after_one_file_skips_progress_when_ctx_none(

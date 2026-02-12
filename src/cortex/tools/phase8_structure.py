@@ -59,8 +59,18 @@ from cortex.tools.phase8_structure_validation import (
 # Short-TTL cache for structure resources so queued reads after a long tool drain quickly
 _structure_resource_cache: TTLCache[str] = TTLCache(MCP_RESOURCE_CACHE_TTL_SECONDS)
 
+
+def invalidate_structure_resource_cache(key: str | None = None) -> None:
+    """Invalidate cache entry by key, or clear all if key is None. Used by tests."""
+    if key is None:
+        _structure_resource_cache.clear()
+    else:
+        _structure_resource_cache.invalidate(key)
+
+
 # Re-export for tests and backward compatibility
 __all__ = [
+    "invalidate_structure_resource_cache",
     "build_health_result",
     "check_structure_health",
     "check_structure_health_resource",
@@ -68,6 +78,7 @@ __all__ = [
     "find_stale_plans",
     "get_structure_info",
     "get_structure_info_resource",
+    "get_project_root_resource",
     "move_stale_plans",
     "perform_archive_stale",
     "perform_cleanup_actions",
@@ -242,6 +253,23 @@ async def check_structure_health_resource() -> str:
         dry_run=True,
     )
     _structure_resource_cache.set("structure/health", result)
+    return result
+
+
+@mcp.resource(uri="cortex://project/root")
+@ensure_usage_context
+@mcp_resource_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_project_root_resource() -> str:
+    """Resource: Resolved project root path (idempotent). Read via cortex://project/root."""
+    cached = _structure_resource_cache.get("project/root")
+    if cached is not None:
+        return cached
+    root = await resolve_project_root_async(None, None)
+    result = json.dumps(
+        {"project_root": str(root.resolve())},
+        indent=2,
+    )
+    _structure_resource_cache.set("project/root", result)
     return result
 
 

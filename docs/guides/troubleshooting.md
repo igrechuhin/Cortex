@@ -571,6 +571,82 @@ SharedRulesGitError: Git clone failed for shared rules
    }
    ```
 
+### Git and SSL Certificate Issues
+
+#### Issue: SSL certificate verification failed (git push / clone / fetch)
+
+**Symptoms**:
+
+```text
+fatal: unable to access 'https://github.com/...': SSL certificate problem: unable to get local issuer certificate
+```
+
+or:
+
+```text
+fatal: unable to access '...': SSL certificate problem: self signed certificate in certificate chain
+```
+
+**Causes**:
+
+- Missing or outdated CA certificates on the system
+- Incorrect certificate path configured for Git
+- Corporate or self-signed certificates in the chain
+- Certificate expiration or revoked certificate
+
+**Solutions**:
+
+1. **Install or update CA certificates** (most common):
+
+   ```bash
+   # macOS (Homebrew)
+   brew install ca-certificates
+
+   # Ubuntu/Debian
+   sudo apt-get update && sudo apt-get install ca-certificates
+
+   # Windows (Git for Windows)
+   # Use the certificate manager or run: git config --global http.sslBackend schannel
+   ```
+
+2. **Point Git to the correct CA bundle** (if certificates are in a custom path):
+
+   ```bash
+   # macOS (system store)
+   git config --global http.sslCAInfo /etc/ssl/cert.pem
+
+   # Linux (common paths)
+   git config --global http.sslCAInfo /etc/ssl/certs/ca-certificates.crt
+
+   # Or use system store (OpenSSL)
+   git config --global http.sslCAInfo "$(openssl version -d | sed 's/OPENSSLDIR: "\(.*\)"/\1/')/certs/cert.pem"
+   ```
+
+3. **Self-signed or corporate certificates** (use only in controlled environments):
+
+   ```bash
+   # Option A: Add the specific CA certificate
+   git config --global http.sslCAInfo /path/to/your/ca-bundle.crt
+
+   # Option B: Temporarily disable verification (NOT recommended for production)
+   git config --global http.sslVerify false
+   ```
+
+   Prefer Option A; use Option B only for local or isolated networks and revert when done.
+
+4. **Certificate expiration**:
+
+   - Update system and CA packages (e.g. `apt-get upgrade`, `brew upgrade`)
+   - On corporate proxies, ask IT for an updated CA bundle
+
+**Commit pipeline note**: Push happens after the commit is created. If push fails due to SSL (or network) errors, the commit is still saved locally. See [Git operations](./git-operations.md#push-failures-and-ssl) and retry push manually after fixing SSL, or push from another environment.
+
+**Platform-specific**:
+
+- **macOS**: System keychain is used by default; if Git was installed via Homebrew, ensure `brew install openssl` and that Git uses the Homebrew CA path if needed.
+- **Linux**: Distribution package `ca-certificates` must be installed and up to date.
+- **Windows**: Git for Windows can use the Windows certificate store; set `git config --global http.sslBackend schannel` to use it.
+
 ### Refactoring Issues
 
 #### Issue: Refactoring execution fails
