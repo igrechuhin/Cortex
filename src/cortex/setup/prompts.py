@@ -69,6 +69,13 @@ Generate all 7 core files from templates:
 - Use default URL: https://github.com/igrechuhin/Synapse.git
 - Or skip this step if you don't need shared rules/prompts
 
+**Step 5: Optional pre-commit hook for markdown lint**
+- If the project has a Git repository (.git exists):
+  - If .pre-commit-config.yaml does NOT exist: create it with a single local hook that runs markdown lint on staged .md/.mdc files (entry: markdownlint-cli2 --fix, files: \\.(md|mdc)$). This requires markdownlint-cli2 (e.g. npm install -g markdownlint-cli2) and pre-commit (e.g. pip install pre-commit).
+  - If .pre-commit-config.yaml already exists: add the same markdownlint hook to the existing local repos/hooks (id: markdownlint, name: Markdown lint (markdownlint-cli2), entry: markdownlint-cli2 --fix, language: system, files: \\.(md|mdc)$).
+  - Run `pre-commit install` to install the git hook (or instruct the user to run it once). If pre-commit is not installed, instruct the user to install it and run pre-commit install.
+- If the project is not a Git repository, skip this step.
+
 Expected directory structure after initialization:
 .cortex/
 ├── memory-bank/     # Core memory bank files (7 files)
@@ -90,6 +97,7 @@ Expected output format:
   "symlinks_created": [".cursor/memory-bank", ".cursor/synapse", ".cursor/plans"],
   "config_files": [".cursor/mcp.json"],
   "synapse_setup": <true/false>,
+  "pre_commit_installed": <true/false or omitted if skipped>,
   "total_tokens": <token_count>
 }}
 

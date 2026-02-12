@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-02-12
+
+- **Session Optimization: Commit Pipeline Improvements – Step 2 (Early Markdown Lint)** - COMPLETE. Added pre-commit markdownlint hook to .pre-commit-config.yaml, documented in docs/getting-started.md and commit prompt Step 1.5, Cursor rule .cursor/rules/markdown-lint-on-save.md, unit test tests/unit/test_pre_commit_config.py.
+
 ## 2026-02-11
 
 - **Type cleanup inventory (Phase 53)** - COMPLETE. Added per-file drill-down (Section 4: response/config/metadata/report), Pydantic candidates and circular-import hotspots (Section 5), and first draft model groupings for Step 2 (Section 6) to .cortex/plans/type-cleanup-inventory.md.

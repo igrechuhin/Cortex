@@ -54,6 +54,26 @@ uv sync --dev
 uv run cortex
 ```
 
+### Pre-commit hooks (recommended for development)
+
+The project uses [pre-commit](https://pre-commit.com) for git hooks. When you **initialize** a project with Cortex (Initialize prompt), the setup can create a `.pre-commit-config.yaml` with a markdown lint hook and run `pre-commit install` for you. For this repo (or if you clone without running Initialize), after cloning and installing dependencies:
+
+```bash
+# Install pre-commit (if not already installed)
+pip install pre-commit
+# or: uv add --dev pre-commit
+
+# Install the git hooks (run once per clone)
+pre-commit install
+```
+
+When you run `git commit`, pre-commit will:
+
+- Run **markdown lint** on staged `.md` and `.mdc` files (`markdownlint-cli2 --fix`). Fixable issues are auto-fixed and re-staged; the commit is blocked if unfixable errors remain.
+- Run other configured checks (formatting, file sizes, function lengths, type check, etc.).
+
+To run all hooks manually without committing: `pre-commit run --all-files`.
+
 ## Configuration
 
 ### MCP Client Configuration

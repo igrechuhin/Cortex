@@ -2,6 +2,10 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-02-12)
+
+- ✅ **Session Optimization: Commit Pipeline Improvements – Step 2 (Early Markdown Lint Validation)** - COMPLETE (2026-02-12) - Added pre-commit markdownlint hook (markdownlint-cli2 --fix on staged .md/.mdc), documented in getting-started and commit prompt, Cursor rule for lint-on-save, unit test for config; quality gate and tests passed.
+
 ## Completed Work (2026-02-11)
 
 - ✅ **Type cleanup inventory (Phase 53)** - COMPLETE (2026-02-11) - Completed Phase 53 type-cleanup inventory: per-file classification of dict[str, object]/list[object] (response, config, metadata, report), Pydantic candidates and circular-import notes, and draft model groupings for Step 2 (model design) in type-cleanup-inventory.md.

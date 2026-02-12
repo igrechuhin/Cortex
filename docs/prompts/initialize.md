@@ -52,6 +52,14 @@ The assistant will perform complete project initialization:
 - Uses default URL: `https://github.com/igrechuhin/Synapse.git`
 - Or skip this step if you don't need shared rules/prompts
 
+### Step 5: Optional pre-commit hook for markdown lint
+
+- If the project has a Git repository (`.git` exists):
+  - **No existing pre-commit config**: Creates `.pre-commit-config.yaml` with a single hook that runs markdown lint on staged `.md`/`.mdc` files (`markdownlint-cli2 --fix`). Requires `markdownlint-cli2` (e.g. `npm install -g markdownlint-cli2`) and `pre-commit` (e.g. `pip install pre-commit`).
+  - **Existing pre-commit config**: Adds the same markdownlint hook to the config so commits run markdown lint on staged markdown files.
+  - Runs `pre-commit install` (or instructs the user to run it once) so the git hook is active.
+- If the project is not a Git repository, this step is skipped.
+
 ## Expected Output
 
 ### Successful Initialization
@@ -75,6 +83,7 @@ The assistant will perform complete project initialization:
   ],
   "config_files": [".cursor/mcp.json"],
   "synapse_setup": true,
+  "pre_commit_installed": true,
   "total_tokens": 1234
 }
 ```
@@ -109,7 +118,8 @@ After initialization:
 1. **Review generated files** - Check that all 7 core files were created
 2. **Customize content** - Fill in project-specific details in each file
 3. **Setup Synapse** (if skipped) - Use `setup_synapse` prompt to add shared rules
-4. **Start using Memory Bank** - Begin using Memory Bank tools for validation and optimization
+4. **Pre-commit** (if Step 5 ran) - Run `pre-commit install` if the assistant could not; markdown lint will then run on staged `.md`/`.mdc` files at commit time
+5. **Start using Memory Bank** - Begin using Memory Bank tools for validation and optimization
 
 ## Related Prompts
 
