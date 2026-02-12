@@ -347,6 +347,17 @@ def _generate_learned_patterns(entries: list[ContextUsageEntry]) -> list[str]:
     if task_pattern:
         patterns.append(task_pattern)
 
+    zero_budget = any(e.token_budget == 0 for e in entries)
+    zero_files = any(e.files_selected == 0 for e in entries)
+    if zero_budget or zero_files:
+        warning = (
+            "Warning: at least one load_context call had token_budget=0 or "
+            "no selected files. Treat this as a configuration or "
+            "instrumentation issue for non-trivial tasks (especially "
+            "refactor/fix/debug)."
+        )
+        patterns.append(warning)
+
     return patterns
 
 

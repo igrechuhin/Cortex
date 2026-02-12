@@ -388,7 +388,13 @@ def _build_search_results(events: list[ToolUsageEvent]) -> list[UsageSearchResul
 
 
 class UsageTimelineEntry(BaseModel):
-    """Pydantic model for compact usage timeline entries."""
+    """Pydantic model for compact usage timeline entries.
+
+    NOTE: This model is part of the canonical Pydantic v2 usage pattern for
+    usage analytics. Its schema is documented in the tech context Pydantic v2
+    section and the Python Pydantic v2 rule; keep fields stable for external
+    callers and update docs/tests together with any changes.
+    """
 
     id: str
     tool_name: str

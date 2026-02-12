@@ -591,6 +591,48 @@ class TestInsightGeneration:
         pattern_text = " ".join(patterns).lower()
         assert "utilization" in pattern_text or "common_file.md" in pattern_text
 
+    def test_learned_patterns_warn_on_zero_budget_or_files(
+        self, tmp_path: Path
+    ) -> None:
+        """learned_patterns includes warning when calls have zero budget or no files."""
+        # Arrange
+        session_dir = get_cortex_path(tmp_path, CortexResourceType.SESSION)
+        _ = session_dir.mkdir(parents=True)
+
+        log_data: dict[str, object] = {
+            "session_id": "zero_budget_files_test",
+            "session_start": "2026-01-21T10:00",
+            "load_context_calls": [
+                {
+                    "timestamp": "2026-01-21T10:05",
+                    "task_description": "Refactor usage models to Pydantic v2",
+                    "token_budget": 0,
+                    "strategy": "dependency_aware",
+                    "selected_files": [],
+                    "selected_sections": {},
+                    "total_tokens": 0,
+                    "utilization": 0.0,
+                    "excluded_files": [],
+                    "relevance_scores": {},
+                }
+            ],
+        }
+        _ = (session_dir / "context-session-zero_budget_files_test.json").write_text(
+            json.dumps(log_data)
+        )
+
+        # Act
+        result = analyze_session_logs(tmp_path)
+
+        # Assert
+        assert result.status == "success"
+        insights_raw = result.insights
+        assert insights_raw is not None
+        insights = cast(dict[str, object], insights_raw.model_dump(mode="python"))
+        patterns = cast(list[str], insights["learned_patterns"])
+        joined = " ".join(patterns).lower()
+        assert "token_budget=0" in joined or "files_selected=0" in joined
+
     def test_budget_recommendations_via_insights(self, tmp_path: Path) -> None:
         """Test budget recommendations through insights."""
         # Arrange

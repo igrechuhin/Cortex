@@ -11,6 +11,8 @@
 - **Load context when agent encounters problem / fix path** - COMPLETE. Added mandatory requirement to load context and rules before fixing errors, test failures, or quality violations in commit prompt, implement prompt, AGENTS.md, and CLAUDE.md. Ensures fix-path work follows project rules and reduces mistake patterns.
 - **Reconsider Memory Bank Structure and File Responsibilities** - COMPLETE. Defined a canonical Memory Bank structure spec and aligned schema_validator, memory_bank_instructions, techContext, and tests so all seven core files have single, non-overlapping responsibilities.
 - **Session Optimization: Roadmap Completed-Section Cleanup** - COMPLETE. Legacy completed sections have been removed from `roadmap.md` and completion tracking is now handled exclusively via `activeContext.md` and `progress.md`, with roadmap reserved for future work only.
+- **Session Optimization: Pydantic v2 Context & Rules Improvements** - COMPLETE. Added a Pydantic v2 rule for Python, hardened context-effectiveness analytics for refactor tasks, and added tests around usage analytics models and load_context logging.
+- **Session Optimization: Context & Usage Analytics Improvements (2026-02-11)** - COMPLETE. Implemented context and usage analytics improvements based on the 2026-02-11 analysis, updating context-effectiveness metrics, usage analytics tooling, optimization config, and tests.
 
 ## 2026-02-11
 

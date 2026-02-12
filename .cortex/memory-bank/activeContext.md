@@ -22,6 +22,10 @@
 
 - ✅ **Session Optimization: Roadmap Completed-Section Cleanup** - COMPLETE (2026-02-12) - Verified that legacy completed sections were removed from `roadmap.md`, ensuring completed work is tracked only in `activeContext.md`/`progress.md` and that roadmap now contains future/pending items only.
 
+- ✅ **Session Optimization: Pydantic v2 Context & Rules Improvements** - COMPLETE (2026-02-12) - Anchored Pydantic v2 usage patterns in a dedicated Python rule and usage-analytics models, added analytics warnings for zero-budget/zero-files load_context calls, and added regression tests that validate get_usage_timeline output against Pydantic v2 models.
+
+- ✅ **Session Optimization: Context & Usage Analytics Improvements (2026-02-11)** - COMPLETE (2026-02-12) - Implemented context and usage analytics improvements based on the 2026-02-11 analysis: refined context-effectiveness statistics and usage analytics models, updated optimization configuration defaults, and extended tests for context analysis and usage analytics tools.
+
 ## Completed Work (2026-02-11)
 
 - ✅ **Type cleanup inventory (Phase 53)** - COMPLETE (2026-02-11) - Completed Phase 53 type-cleanup inventory: per-file classification of dict[str, object]/list[object] (response, config, metadata, report), Pydantic candidates and circular-import notes, and draft model groupings for Step 2 (model design) in type-cleanup-inventory.md.

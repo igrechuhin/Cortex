@@ -74,15 +74,20 @@ class TestMemoryBankWatcherLifecycle:
         watcher = MemoryBankWatcher(tmp_path, callback)
         loop = asyncio.get_event_loop()
 
-        watcher.start(loop)
+        with patch("cortex.core.file_watcher.Observer") as MockObserver:
+            observer_instance = MockObserver.return_value
+            observer_instance.is_alive.return_value = True
 
-        try:
-            assert watcher.observer is not None
-            assert watcher.loop == loop
-            observer = cast(_ObserverWithIsAlive, watcher.observer)
-            assert observer.is_alive()
-        finally:
-            watcher.stop()
+            watcher.start(loop)
+
+            try:
+                assert watcher.observer is not None
+                assert watcher.loop == loop
+                observer = cast(_ObserverWithIsAlive, watcher.observer)
+                assert observer.is_alive()
+                observer_instance.start.assert_called_once()
+            finally:
+                watcher.stop()
 
     @pytest.mark.asyncio
     async def test_stop_stops_observer(self, tmp_path: Path) -> None:

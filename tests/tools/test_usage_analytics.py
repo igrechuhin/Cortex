@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.tools.usage_analytics import (
+    UsageTimelineEntry,
     build_usage_report_text,
     calls_key,
     get_optimization_recommendations,
@@ -774,6 +775,63 @@ class TestUsageAnalyticsToolsSuccess:
         assert entry["id"] == "e1"
         assert entry["tool_name"] == "manage_file"
         assert entry["success"] is True
+
+    async def test_get_usage_timeline_entries_validate_with_pydantic(self) -> None:
+        """get_usage_timeline results validate against UsageTimelineEntry model."""
+
+        class FakeEvent:
+            def __init__(self, data: dict[str, object]) -> None:
+                self.id = str(data.get("id", "e1"))
+                self.tool_name = str(data.get("tool_name", "tool_x"))
+                self.timestamp = str(data.get("timestamp", "2026-02-10T12:00:00+00:00"))
+                dur_raw = data.get("duration_ms", 1.0)
+                self.duration_ms = (
+                    float(dur_raw) if isinstance(dur_raw, (int, float)) else 1.0
+                )
+                self.success = bool(data.get("success", True))
+                self.error_type = data.get("error_type")
+                self.handler_kind = str(data.get("handler_kind", "tool"))
+
+        mock_tracker = AsyncMock()
+        mock_tracker.get_usage_timeline = AsyncMock(
+            return_value=[
+                FakeEvent(
+                    {
+                        "id": "e1",
+                        "tool_name": "manage_file",
+                        "timestamp": "2026-02-10T12:00:00+00:00",
+                        "duration_ms": 10.0,
+                        "success": True,
+                        "error_type": None,
+                        "handler_kind": "tool",
+                    }
+                )
+            ]
+        )
+        with (
+            patch(
+                "cortex.tools.usage_analytics.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp"),
+            ),
+            patch(
+                "cortex.tools.usage_analytics._get_tracker",
+                new_callable=AsyncMock,
+                return_value=mock_tracker,
+            ),
+        ):
+            result_str = await get_usage_timeline(
+                around_id="e1",
+                limit=10,
+                ctx=None,
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        entries = result["results"]
+        # Validate each entry using the Pydantic v2 model to lock in schema shape.
+        for entry in entries:
+            model = UsageTimelineEntry.model_validate(entry)
+            assert model.id == entry["id"]
 
     async def test_get_usage_timeline_clamps_limit_bounds(self) -> None:
         """get_usage_timeline clamps limit to [1, 500] before calling tracker."""
