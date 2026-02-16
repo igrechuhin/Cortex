@@ -25,7 +25,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 ### Features & Enhancements
 
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
-- **Phase 54: Session Start Initializer Pattern** - PENDING - Single session_start tool replacing 3-5 manual orientation calls; returns SessionBrief (current focus, next work item, health check, git status) in less than 1000 tokens. Plan: .cortex/plans/phase-54-session-start-initializer-pattern.md.
 - **Phase 55: Lightweight Think Tool Enhancement** - PENDING - Add minimal think(thought) tool alongside sequentialthinking; add domain-specific thinking examples to commit, implement, and plan prompts for better reasoning. Plan: .cortex/plans/phase-55-lightweight-think-tool.md.
 - **Phase 56: Session Compaction Workflow** - PENDING - Automatic compaction for activeContext/progress, structured JSON session handoff, progressive summarization (daily/weekly/monthly tiers), compact_session tool. Plan: .cortex/plans/phase-56-session-compaction-workflow.md.
 - **Phase 57: Evaluation-Driven Tool Improvement** - PENDING - Build evaluation framework for tool effectiveness (success rates, token efficiency, error patterns); 20+ eval tasks for real workflows; automated tool description optimization using Claude; A/B testing for improvements. Plan: .cortex/plans/phase-57-evaluation-driven-tool-improvement.md.

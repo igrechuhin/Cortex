@@ -8,9 +8,19 @@ This project runs a **Cortex MCP server**. All project knowledge, rules, and wor
 
 **At the start of every non-trivial task:**
 
+**For session orientation** (recommended first step):
+
+```text
+session_start(task_description=None)  # Get orientation brief (< 1000 tokens)
+```
+
+**For task-specific context**:
+
 ```text
 load_context(task_description="<your goal>", token_budget=<appropriate>)
 ```
+
+**Pattern**: `session_start()` → review brief → `load_context(task_description=brief.next_work_item, ...)` → work
 
 Token budget guide: 10k (small update), 15k (fix/debug), 20-30k (feature), 40-50k (architecture).
 

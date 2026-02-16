@@ -720,6 +720,50 @@ async def _finalize_execution(
     await _record_usage_finish(func_name, start_ns, success, error_type, kind=kind)
 
 
+async def _handle_cancellation(
+    progress_task: asyncio.Task[None] | None,
+) -> tuple[bool, str, bool]:
+    """Handle cancellation exception.
+
+    Args:
+        progress_task: Progress task to cancel
+
+    Returns:
+        Tuple of (success=False, error_type="CancelledError", was_cancelled=True)
+    """
+    if progress_task is not None:
+        await cancel_and_drain_progress_task(progress_task)
+    return False, "CancelledError", True
+
+
+async def _execute_with_error_handling[T](
+    func: Callable[..., Awaitable[T]],
+    semaphore: TrackedSemaphore,
+    effective_timeout: float,
+    args: tuple[JsonValue, ...],
+    kwargs_model: MCPToolArguments,
+    ctx: JsonValue | None,
+    progress_task: asyncio.Task[None] | None,
+) -> tuple[T, bool, str | None, bool]:
+    """Execute function with retry and handle exceptions.
+
+    Returns:
+        Tuple of (result, success, error_type, was_cancelled)
+    """
+    success, error_type, was_cancelled = True, None, False
+    try:
+        result = await _execute_with_retry(
+            func, semaphore, effective_timeout, args, kwargs_model, ctx
+        )
+        return result, success, error_type, was_cancelled
+    except asyncio.CancelledError:
+        success, error_type, was_cancelled = await _handle_cancellation(progress_task)
+        raise
+    except Exception as e:
+        success, error_type = False, type(e).__name__
+        raise
+
+
 async def _run_with_retry_and_record[T](
     func: Callable[..., Awaitable[T]],
     args: tuple[JsonValue, ...],
@@ -742,17 +786,10 @@ async def _run_with_retry_and_record[T](
     )
     success, error_type, was_cancelled = True, None, False
     try:
-        return await _execute_with_retry(
-            func, semaphore, effective_timeout, args, kwargs_model, ctx
+        result, success, error_type, was_cancelled = await _execute_with_error_handling(
+            func, semaphore, effective_timeout, args, kwargs_model, ctx, progress_task
         )
-    except asyncio.CancelledError:
-        was_cancelled, success, error_type = True, False, "CancelledError"
-        if progress_task is not None:
-            await cancel_and_drain_progress_task(progress_task)
-        raise
-    except Exception as e:
-        success, error_type = False, type(e).__name__
-        raise
+        return result
     finally:
         await _finalize_execution(
             progress_task,
