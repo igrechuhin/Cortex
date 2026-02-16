@@ -13,7 +13,11 @@ from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.core.constants import MAX_FILE_LINES, MAX_FUNCTION_LINES
+from cortex.core.constants import (
+    FILE_SIZE_EXCLUDED_FILENAMES,
+    MAX_FILE_LINES,
+    MAX_FUNCTION_LINES,
+)
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.path_resolver import has_memory_bank
 from cortex.managers.initialization import get_project_root
@@ -685,8 +689,8 @@ def check_file_sizes(
         max_lines = MAX_FILE_LINES
     violations: list[FileSizeViolation] = []
     src_dir = project_root / "src"
-    # models.py: large schema-heavy module; mcp_stability.py: 401 lines, 1 over due to required _ = await for reportUnusedCallResult (cannot merge except/pass per E701)
-    excluded_files = {"models.py", "mcp_stability.py"}
+    # Must match CI (.cortex/synapse/scripts/python/check_file_sizes.py) and constants.FILE_SIZE_EXCLUDED_FILENAMES
+    excluded_files = frozenset(FILE_SIZE_EXCLUDED_FILENAMES)
 
     if not src_dir.exists():
         return violations

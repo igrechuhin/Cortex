@@ -17,6 +17,9 @@ MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB - Maximum file size for processi
 MAX_FILE_LINES = 400  # Maximum lines per file (maintainability rule)
 MAX_FUNCTION_LINES = 30  # Maximum logical lines per function
 
+# Filenames excluded from file-size check (must match CI and local quality gate)
+FILE_SIZE_EXCLUDED_FILENAMES: tuple[str, ...] = ("models.py",)  # Pydantic schema-heavy
+
 # =============================================================================
 # Token Budget Defaults
 # =============================================================================

@@ -37,9 +37,7 @@ from cortex.core.usage_context import get_current_managers, set_current_managers
 
 logger = logging.getLogger(__name__)
 # Tools that report their own progress (file/step-based); skip wrapper time-based progress.
-# Note: execute_pre_commit_checks removed - it only reports progress during test execution,
-# not during setup/initialization, causing client disconnects. Generic time-based progress
-# is needed to keep connection alive during setup phase.
+# execute_pre_commit_checks removed: it only reports during tests, not setup; generic progress keeps connection alive.
 _TOOLS_WITH_OWN_PROGRESS = frozenset(
     {
         "fix_markdown_lint",
@@ -61,8 +59,7 @@ _usage_context_init_lock: asyncio.Lock | None = None
 def _get_usage_context_init_lock() -> asyncio.Lock:
     """Return the shared lock for usage context init (lazy-create for tests)."""
     global _usage_context_init_lock
-    if _usage_context_init_lock is None:
-        _usage_context_init_lock = asyncio.Lock()
+    _usage_context_init_lock = _usage_context_init_lock or asyncio.Lock()
     return _usage_context_init_lock
 
 
@@ -659,13 +656,9 @@ async def _cancel_progress_and_report_done(
 
     if progress_task is None:
         return
-
-    # Skip 100% report for tools that report their own progress
-    if tool_name is not None and tool_name in _TOOLS_WITH_OWN_PROGRESS:
-        await cancel_and_drain_progress_task(progress_task)
-        return
-
     await cancel_and_drain_progress_task(progress_task)
+    if tool_name is not None and tool_name in _TOOLS_WITH_OWN_PROGRESS:
+        return
     mcp_ctx = cast(MCPContext | None, ctx)
     try:
         await report_progress_safe(mcp_ctx, 100.0, 100.0)
