@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -194,3 +195,170 @@ async def test_query_memory_bank_logs_to_context() -> None:
         assert "query_memory_bank" in call_args[2]
 
     query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"] = original_handler  # type: ignore[reportPrivateUsage]
+
+
+@pytest.mark.asyncio
+async def test_query_memory_bank_version_history_with_file_name() -> None:
+    """query_memory_bank calls version_history handler when file_name is provided."""
+
+    async def mock_handler(
+        params: QueryMemoryBankParams, ctx: MCPContext | None
+    ) -> str:
+        return '{"status": "success", "version_history": []}'
+
+    original_handler = query_memory_bank_operations._MEMORY_BANK_HANDLERS[  # type: ignore[reportPrivateUsage]
+        "version_history"
+    ]
+    query_memory_bank_operations._MEMORY_BANK_HANDLERS["version_history"] = (  # type: ignore[reportPrivateUsage]
+        mock_handler
+    )
+    try:
+        result_str = await query_memory_bank(
+            query_type="version_history",
+            file_name="test.md",
+            ctx=None,
+        )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+    finally:
+        query_memory_bank_operations._MEMORY_BANK_HANDLERS["version_history"] = (  # type: ignore[reportPrivateUsage]
+            original_handler
+        )
+
+
+@pytest.mark.asyncio
+async def test_query_memory_bank_parse_links_with_file_name() -> None:
+    """query_memory_bank calls parse_links handler when file_name is provided."""
+
+    async def mock_handler(
+        params: QueryMemoryBankParams, ctx: MCPContext | None
+    ) -> str:
+        return '{"status": "success", "links": []}'
+
+    original_handler = query_memory_bank_operations._MEMORY_BANK_HANDLERS[  # type: ignore[reportPrivateUsage]
+        "parse_links"
+    ]
+    query_memory_bank_operations._MEMORY_BANK_HANDLERS["parse_links"] = (  # type: ignore[reportPrivateUsage]
+        mock_handler
+    )
+    try:
+        result_str = await query_memory_bank(
+            query_type="parse_links",
+            file_name="test.md",
+            ctx=None,
+        )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+    finally:
+        query_memory_bank_operations._MEMORY_BANK_HANDLERS["parse_links"] = (  # type: ignore[reportPrivateUsage]
+            original_handler
+        )
+
+
+@pytest.mark.asyncio
+async def test_query_memory_bank_resolve_transclusions_with_file_name() -> None:
+    """query_memory_bank calls resolve_transclusions handler when file_name is provided."""
+
+    async def mock_handler(
+        params: QueryMemoryBankParams, ctx: MCPContext | None
+    ) -> str:
+        return '{"status": "success", "resolved": ""}'
+
+    original_handler = query_memory_bank_operations._MEMORY_BANK_HANDLERS[  # type: ignore[reportPrivateUsage]
+        "resolve_transclusions"
+    ]
+    query_memory_bank_operations._MEMORY_BANK_HANDLERS["resolve_transclusions"] = (  # type: ignore[reportPrivateUsage]
+        mock_handler
+    )
+    try:
+        result_str = await query_memory_bank(
+            query_type="resolve_transclusions",
+            file_name="test.md",
+            ctx=None,
+        )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+    finally:
+        query_memory_bank_operations._MEMORY_BANK_HANDLERS["resolve_transclusions"] = (  # type: ignore[reportPrivateUsage]
+            original_handler
+        )
+
+
+@pytest.mark.asyncio
+async def test_query_memory_bank_stats_with_response_format_concise() -> None:
+    """query_memory_bank passes response_format=concise to stats handler."""
+
+    async def mock_handler(
+        params: QueryMemoryBankParams, ctx: MCPContext | None
+    ) -> str:
+        assert params.response_format == "concise"
+        return '{"status": "success", "total_files": 7, "total_tokens": 1000}'
+
+    original_handler = query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"]  # type: ignore[reportPrivateUsage]
+    query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"] = mock_handler  # type: ignore[reportPrivateUsage]
+    try:
+        result_str = await query_memory_bank(
+            query_type="stats",
+            response_format="concise",
+            ctx=None,
+        )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+    finally:
+        query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"] = original_handler  # type: ignore[reportPrivateUsage]
+
+
+@pytest.mark.asyncio
+async def test_query_memory_bank_stats_with_response_format_detailed() -> None:
+    """query_memory_bank passes response_format=detailed to stats handler."""
+
+    async def mock_handler(
+        params: QueryMemoryBankParams, ctx: MCPContext | None
+    ) -> str:
+        assert params.response_format == "detailed"
+        return (
+            '{"status": "success", "total_files": 7, "total_tokens": 1000, "files": []}'
+        )
+
+    original_handler = query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"]  # type: ignore[reportPrivateUsage]
+    query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"] = mock_handler  # type: ignore[reportPrivateUsage]
+    try:
+        result_str = await query_memory_bank(
+            query_type="stats",
+            response_format="detailed",
+            ctx=None,
+        )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+    finally:
+        query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"] = original_handler  # type: ignore[reportPrivateUsage]
+
+
+@pytest.mark.asyncio
+async def test_query_memory_bank_stats_calls_real_handler(
+    temp_project_root: Path, memory_bank_dir: Path
+) -> None:
+    """query_memory_bank calls real stats handler to cover import statements."""
+    # Create a basic memory bank file to ensure stats handler can run
+    test_file = memory_bank_dir / "projectBrief.md"
+    _ = test_file.write_text("# Project Brief\n\nTest content.")
+
+    # This test ensures the import statements inside handlers are covered
+    with patch(
+        "cortex.tools.query_memory_bank_operations.log_client",
+        new_callable=AsyncMock,
+    ):
+        with patch(
+            "cortex.core.project_root_resolver.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=temp_project_root,
+        ):
+            # Call without mocking the handler to execute imports
+            result_str = await query_memory_bank(
+                query_type="stats",
+                response_format="concise",
+                ctx=None,
+            )
+            result = json.loads(result_str)
+            assert result["status"] == "success"
+            assert "total_files" in result or "summary" in result

@@ -305,3 +305,85 @@ async def test_query_usage_handler_exception_returns_error_json() -> None:
     data = json.loads(result)
     assert data["status"] == "error"
     assert "backend unavailable" in data["error"]
+
+
+@pytest.mark.asyncio
+async def test_query_usage_stats_with_response_format_concise() -> None:
+    """query_usage passes response_format=concise to stats handler."""
+    payload = json.dumps(
+        {"status": "success", "project_root": "/tmp", "top_5_tools": []},
+        indent=2,
+    )
+    with patch(
+        "cortex.tools.query_usage_operations.log_client",
+        new_callable=AsyncMock,
+    ):
+        with patch(
+            "cortex.tools.usage_analytics.get_tool_usage_stats",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ) as mock_stats:
+            result = await query_usage(
+                query_type="stats",
+                response_format="concise",
+                ctx=None,
+            )
+    data = json.loads(result)
+    assert data["status"] == "success"
+    # Verify response_format was passed to handler
+    call_kwargs = mock_stats.call_args[1]
+    assert call_kwargs["response_format"] == "concise"
+
+
+@pytest.mark.asyncio
+async def test_query_usage_stats_with_response_format_detailed() -> None:
+    """query_usage passes response_format=detailed to stats handler."""
+    payload = json.dumps(
+        {"status": "success", "project_root": "/tmp", "all_tools": []},
+        indent=2,
+    )
+    with patch(
+        "cortex.tools.query_usage_operations.log_client",
+        new_callable=AsyncMock,
+    ):
+        with patch(
+            "cortex.tools.usage_analytics.get_tool_usage_stats",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ) as mock_stats:
+            result = await query_usage(
+                query_type="stats",
+                response_format="detailed",
+                ctx=None,
+            )
+    data = json.loads(result)
+    assert data["status"] == "success"
+    # Verify response_format was passed to handler
+    call_kwargs = mock_stats.call_args[1]
+    assert call_kwargs["response_format"] == "detailed"
+
+
+@pytest.mark.asyncio
+async def test_query_usage_search_with_response_format_concise() -> None:
+    """query_usage passes response_format=concise to search handler."""
+    payload = json.dumps({"status": "success", "matches": []}, indent=2)
+    with patch(
+        "cortex.tools.query_usage_operations.log_client",
+        new_callable=AsyncMock,
+    ):
+        with patch(
+            "cortex.tools.usage_analytics.search_usage",
+            new_callable=AsyncMock,
+            return_value=payload,
+        ) as mock_search:
+            result = await query_usage(
+                query_type="search",
+                query="test",
+                response_format="concise",
+                ctx=None,
+            )
+    data = json.loads(result)
+    assert data["status"] == "success"
+    # Verify response_format was passed to handler
+    call_kwargs = mock_search.call_args[1]
+    assert call_kwargs["response_format"] == "concise"

@@ -8,8 +8,6 @@
 
 ## Active Work (in progress)
 
-- **Phase 50: Tool Consolidation and Response Format Optimization** - IN PROGRESS - Plan: .cortex/plans/phase-50-tool-consolidation-response-format.md.
-
 ## Future Enhancements
 
 ## Pending plans (from .cortex/plans)
@@ -39,3 +37,4 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Session Optimization: Rules and Context Loading Follow-Ups (2026-02-12 Analysis)** - PENDING - Follow-up work from the 2026-02-12 end-of-session analysis to improve watcher testing rules, task-type context budgets, rules indexing, and zero-budget/zero-files load_context guardrails.
 - **Session Optimization: Pydantic Rule Visibility and Rule Discovery (2026-02-12 Analysis)** - PENDING - Ensure Pydantic-for-params rule is visible when implementing/refactoring MCP tools; add implement prompt + AGENTS/CLAUDE bullet and rule-discovery fallback so agents apply it without user reminder.
 - **Session Optimization: Quality gate skip documentation when environment unavailable** - PENDING - Document when quality gate can be skipped for doc-only sessions when execute_pre_commit_checks fails due to env (ruff/black not in path or type_check unavailable); implement prompt + optional troubleshooting/AGENTS.
+- **Session Optimization: Testing Coverage Documentation and Planning (2026-02-16 Analysis)** - PENDING - Document coverage expectations for consolidated tools (90%+ acceptable, 95%+ ideal), add test planning checklist to implement prompt, document integration test pattern for handler dispatch tools.
