@@ -18,7 +18,14 @@
       "techContext.md",
       "productContext.md",
       "progress.md"
-    ]
+    ],
+    "always_load_sections": {
+      "projectBrief.md": [],
+      "activeContext.md": [
+        "## Current Focus",
+        "## Next Steps"
+      ]
+    }
   },
   "summarization": {
     "enabled": true,

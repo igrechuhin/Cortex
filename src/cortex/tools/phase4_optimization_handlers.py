@@ -13,6 +13,7 @@ Note: load_progressive_context has been merged into load_context with strategy="
 """
 
 import json
+from pathlib import Path
 from typing import Literal, cast
 from urllib.parse import unquote
 
@@ -58,6 +59,141 @@ async def _check_optimization_enabled(
     return None
 
 
+async def _load_context_execute(
+    mgrs: ManagersDict,
+    task_description: str,
+    token_budget: int | None,
+    strategy: str,
+    loading_strategy: str | None,
+    effective_depth: str,
+    root: Path,
+) -> str:
+    """Execute context loading with appropriate strategy.
+
+    Args:
+        mgrs: Managers dictionary
+        task_description: Task description
+        token_budget: Token budget
+        strategy: Loading strategy
+        loading_strategy: Progressive loading strategy
+        effective_depth: Effective depth level
+        root: Project root path
+
+    Returns:
+        JSON string with loaded context
+    """
+    if strategy == "progressive":
+        return await _load_context_progressive(
+            mgrs, task_description, token_budget, loading_strategy
+        )
+
+    return await load_context_impl(
+        mgrs,
+        task_description,
+        token_budget,
+        strategy,
+        depth=effective_depth,
+        project_root=root,
+    )
+
+
+async def _load_context_with_error_handling(
+    mgrs: ManagersDict,
+    task_description: str,
+    token_budget: int | None,
+    strategy: str,
+    loading_strategy: str | None,
+    effective_depth: str,
+    root: Path,
+) -> str:
+    """Execute context loading with error handling.
+
+    Args:
+        mgrs: Managers dictionary
+        task_description: Task description
+        token_budget: Token budget
+        strategy: Loading strategy
+        loading_strategy: Progressive loading strategy
+        effective_depth: Effective depth level
+        root: Project root path
+
+    Returns:
+        JSON string with loaded context or error
+    """
+    try:
+        return await _load_context_execute(
+            mgrs,
+            task_description,
+            token_budget,
+            strategy,
+            loading_strategy,
+            effective_depth,
+            root,
+        )
+    except Exception as e:
+        return json.dumps(
+            {"status": "error", "error": str(e), "error_type": type(e).__name__},
+            indent=2,
+        )
+
+
+async def _initialize_context_loading(
+    ctx: MCPContext | None,
+) -> tuple[Path, ManagersDict, str | None]:
+    """Initialize context loading with managers and check enabled status.
+
+    Args:
+        ctx: MCP context
+
+    Returns:
+        Tuple of (root, mgrs, enabled_error). enabled_error is None if enabled.
+    """
+    root = await resolve_project_root_async(None, ctx)
+    mgrs = await phase4_opt.get_managers(root)
+    enabled_error = await _check_optimization_enabled(mgrs)
+    return root, mgrs, enabled_error
+
+
+async def _execute_load_context(
+    task_description: str,
+    token_budget: int | None,
+    strategy: str,
+    loading_strategy: str | None,
+    depth: Literal["metadata_only", "summary", "full"] | None,
+    response_format: Literal["concise", "detailed"],
+    ctx: MCPContext | None,
+) -> str:
+    """Execute load_context with initialization and error handling.
+
+    Args:
+        task_description: Task description
+        token_budget: Token budget
+        strategy: Loading strategy
+        loading_strategy: Progressive loading strategy
+        depth: Content depth level
+        response_format: Response format
+        ctx: MCP context
+
+    Returns:
+        JSON string with loaded context or error
+    """
+    root, mgrs, enabled_error = await _initialize_context_loading(ctx)
+    if enabled_error:
+        return enabled_error
+
+    effective_depth = _determine_depth_from_budget(depth, token_budget)
+    out = await _load_context_with_error_handling(
+        mgrs,
+        task_description,
+        token_budget,
+        strategy,
+        loading_strategy,
+        effective_depth,
+        root,
+    )
+    return _format_load_context_response(out, response_format)
+
+
 @mcp.tool(annotations=read_only_annotations("Load Context"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
@@ -66,6 +202,7 @@ async def load_context(
     token_budget: int | None = None,
     strategy: str = "dependency_aware",
     loading_strategy: str | None = None,
+    depth: Literal["metadata_only", "summary", "full"] | None = None,
     response_format: Literal["concise", "detailed"] = "concise",
     ctx: MCPContext | None = None,
 ) -> str:
@@ -100,36 +237,63 @@ async def load_context(
             - "by_relevance" (default): Load by task-specific relevance
             - "by_priority": Load by predefined priority order
             - "by_dependencies": Load by dependency chain traversal
+        depth: Content depth level. Options:
+            - "metadata_only": Returns context map (file names, sections, token counts, relevance) without full content (~500 tokens)
+            - "summary": Returns first paragraph of each file + section headings (~5000-15000 tokens)
+            - "full": Returns full file contents (current behavior, default for budgets > 15000)
+            If None, auto-selects based on token_budget:
+            - budget < 5000: metadata_only
+            - budget 5000-15000: summary
+            - budget > 15000: full
 
     Returns:
         JSON with selected files, their content, and relevance scores
     """
     await log_client(ctx, "info", "load_context: starting", logger_name=__name__)
     try:
-        root = await resolve_project_root_async(None, ctx)
-        mgrs = await phase4_opt.get_managers(root)
-
-        enabled_error = await _check_optimization_enabled(mgrs)
-        if enabled_error:
-            return enabled_error
-
-        # Route to progressive loading if strategy is "progressive"
-        if strategy == "progressive":
-            out = await _load_context_progressive(
-                mgrs, task_description, token_budget, loading_strategy
-            )
-        else:
-            out = await load_context_impl(
-                mgrs, task_description, token_budget, strategy, project_root=root
-            )
+        result = await _execute_load_context(
+            task_description,
+            token_budget,
+            strategy,
+            loading_strategy,
+            depth,
+            response_format,
+            ctx,
+        )
         await log_client(ctx, "info", "load_context: completed", logger_name=__name__)
-        return _format_load_context_response(out, response_format)
+        return result
     except Exception as e:
         await log_client(ctx, "error", f"load_context: {e!s}", logger_name=__name__)
         return json.dumps(
             {"status": "error", "error": str(e), "error_type": type(e).__name__},
             indent=2,
         )
+
+
+def _determine_depth_from_budget(
+    depth: Literal["metadata_only", "summary", "full"] | None,
+    token_budget: int | None,
+) -> Literal["metadata_only", "summary", "full"]:
+    """Determine depth level from budget if not explicitly specified.
+
+    Args:
+        depth: Explicit depth level or None
+        token_budget: Token budget or None
+
+    Returns:
+        Effective depth level
+    """
+    if depth is not None:
+        return depth
+
+    if token_budget is None:
+        return "full"
+
+    if token_budget < 5000:
+        return "metadata_only"
+    if token_budget <= 15000:
+        return "summary"
+    return "full"
 
 
 async def _load_context_progressive(

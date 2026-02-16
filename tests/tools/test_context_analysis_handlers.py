@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.tools.context_analysis_handlers import (
+    _analyze_context_effectiveness_impl,  # type: ignore[reportPrivateUsage]
     analyze_context_effectiveness,
     analyze_context_effectiveness_resource,
     get_context_usage_statistics,
@@ -213,3 +214,60 @@ class TestContextAnalysisResources:
             result_str = await get_context_usage_statistics_resource()
         result = json.loads(result_str)
         assert result["status"] == "success"
+
+
+@pytest.mark.asyncio
+@pytest.mark.timeout(60)
+class TestAnalyzeContextEffectivenessImpl:
+    """Test _analyze_context_effectiveness_impl function directly."""
+
+    def test_analyze_context_effectiveness_impl_current_session(
+        self, tmp_path: Path
+    ) -> None:
+        """Test _analyze_context_effectiveness_impl with current session."""
+        analysis_result = MagicMock(
+            model_dump=MagicMock(
+                return_value={"status": "success", "sessions_analyzed": 1}
+            )
+        )
+        with patch(
+            "cortex.tools.context_analysis_handlers.analyze_current_session",
+            return_value=analysis_result,
+        ):
+            result_str = _analyze_context_effectiveness_impl(
+                tmp_path, analyze_all_sessions=False
+            )
+            result = json.loads(result_str)
+        assert result["status"] == "success"
+
+    def test_analyze_context_effectiveness_impl_all_sessions(
+        self, tmp_path: Path
+    ) -> None:
+        """Test _analyze_context_effectiveness_impl with all sessions."""
+        analysis_result = MagicMock(
+            model_dump=MagicMock(
+                return_value={"status": "success", "sessions_analyzed": 5}
+            )
+        )
+        with patch(
+            "cortex.tools.context_analysis_handlers.analyze_session_logs",
+            return_value=analysis_result,
+        ):
+            result_str = _analyze_context_effectiveness_impl(
+                tmp_path, analyze_all_sessions=True
+            )
+            result = json.loads(result_str)
+        assert result["status"] == "success"
+
+    def test_analyze_context_effectiveness_impl_raises_exception(
+        self, tmp_path: Path
+    ) -> None:
+        """Test _analyze_context_effectiveness_impl when underlying function raises."""
+        with patch(
+            "cortex.tools.context_analysis_handlers.analyze_current_session",
+            side_effect=ValueError("Test error"),
+        ):
+            with pytest.raises(ValueError, match="Test error"):
+                _ = _analyze_context_effectiveness_impl(
+                    tmp_path, analyze_all_sessions=False
+                )

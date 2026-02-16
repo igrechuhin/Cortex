@@ -8,7 +8,7 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 
 | Need | Cortex MCP tool | Do NOT |
 |---|---|---|
-| Project context, architecture, decisions | `load_context` (use `strategy="progressive"` for incremental loading) | Read `.cortex/memory-bank/` files directly |
+| Project context, architecture, decisions | `load_context` with two-step pattern: `load_context(depth="metadata_only")` → `manage_file(sections=[...])` for section-level drill-down. Use `strategy="progressive"` for incremental loading. | Read `.cortex/memory-bank/` files directly |
 | Coding rules, standards, style | Rules/validation tools, `get_synapse_rules` | Read `.cortex/rules/` or `.cortex/synapse/` directly |
 | Markdown formatting (headings vs emphasis, MD036) | `get_synapse_rules(task_description="markdown formatting")`, [docs/guides/markdown-formatting.md](docs/guides/markdown-formatting.md) | Use bold for section titles (use `#`/`##`/`###` instead) |
 | Quality fixes (lint, format, types) | `fix_quality_issues` | Run `black`, `ruff`, `isort` manually |
@@ -26,7 +26,7 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 ## Workflow
 
 1. **Scope the task** — restate the user's goal.
-2. **Call Cortex MCP** — load context, fetch rules, discover tools. Let Cortex choose what's relevant.
+2. **Call Cortex MCP** — load context using two-step pattern (`load_context(depth="metadata_only")` → `manage_file(sections=[...])`), fetch rules, discover tools. Let Cortex choose what's relevant.
 3. **Edit code** — use IDE tools (`Read`, `Write`, `Grep`, `Glob`, `LS`) for source files.
 4. **Verify** — use Cortex quality/test tools, not raw shell commands.
 

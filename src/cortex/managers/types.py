@@ -7,7 +7,9 @@ All manager types are imported directly - no forward string references needed
 because none of these modules import from cortex.managers.
 """
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import CoreSchema
 
 # Import concrete classes that were previously forward references
 from cortex.analysis.insight_engine import InsightEngine
@@ -64,6 +66,18 @@ class CoreManagersDict(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls, core_schema: CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        """Generate JSON schema excluding arbitrary types that can't be serialized.
+
+        This prevents Pydantic from trying to generate JSON schema for
+        FileSystemManager and other manager instances, which would fail.
+        """
+        # Return an empty object schema since managers are runtime-only
+        return {"type": "object", "description": "Manager instances (runtime-only)"}
+
     fs: FileSystemManager = Field(description="File system manager")
     index: MetadataIndex = Field(description="Metadata index")
     tokens: TokenCounter = Field(description="Token counter")
@@ -87,6 +101,19 @@ class ManagersDict(BaseModel):
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls, core_schema: CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        """Generate JSON schema excluding arbitrary types that can't be serialized.
+
+        This prevents Pydantic from trying to generate JSON schema for
+        FileSystemManager and other manager instances, which would fail.
+        ManagersDict is only used internally and never as a tool parameter.
+        """
+        # Return an empty object schema since managers are runtime-only
+        return {"type": "object", "description": "Manager instances (runtime-only)"}
 
     # Phase 1: Core managers (eagerly loaded - always available)
     fs: FileSystemManager = Field(description="File system manager")

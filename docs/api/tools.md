@@ -778,7 +778,13 @@ Update configuration:
 
 Tools for smart context loading, relevance scoring, summarization, and custom rules integration.
 
-**Context workflow (progressive disclosure)**: Prefer loading context with a task-appropriate token budget rather than loading everything. Use `load_context` at task start with a budget that matches the task type (e.g. 10k for updates, 15k for fix/debug, 20–30k for features, 40–50k for architecture). For incremental loading, use `load_context(strategy="progressive", loading_strategy="by_relevance"|"by_priority"|"by_dependencies")`. When usage search or fetch-by-ID tools are available, prefer `query_usage(query_type="search", ...)` then fetch by ID instead of loading full history.
+**Context workflow (two-step pattern for efficiency)**: Use the two-step pattern for optimal token efficiency:
+
+1. **First**: Call `load_context(task_description="...", depth="metadata_only", token_budget=...)` to get a lightweight context map (~500 tokens) with file names, sections, token counts, and relevance scores.
+2. **Then**: Use `manage_file(file_name="[file]", operation="read", sections=["## Section Name"])` to drill into specific relevant sections on demand.
+This provides 90%+ token savings compared to full file loads. Essential sections (e.g., "## Current Focus" and "## Next Steps" from activeContext.md) are automatically loaded in full via the hybrid retrieval strategy even when `depth="metadata_only"`.
+
+**Alternative workflows**: For full context upfront, use `load_context(depth="full")` or `depth="summary"`. For incremental loading, use `load_context(strategy="progressive", loading_strategy="by_relevance"|"by_priority"|"by_dependencies")`. When usage search or fetch-by-ID tools are available, prefer `query_usage(query_type="search", ...)` then fetch by ID instead of loading full history.
 
 ### load_context
 
@@ -800,11 +806,21 @@ This tool should be called at the START of any task to:
   - `"section_level"` - Partial file inclusion
   - `"hybrid"` - Combines multiple strategies
   - `"progressive"` - Incremental loading (replaces former `load_progressive_context`); use with `loading_strategy` for order (e.g. `by_relevance`, `by_priority`, `by_dependencies`)
+- `depth` (str | None) - Content depth level (default: auto-selects based on token_budget)
+  - `"metadata_only"` - Returns context map (file names, sections, token counts, relevance) without full content (~500 tokens). Essential sections (e.g., "## Current Focus" from activeContext.md) are automatically loaded in full via hybrid retrieval strategy.
+  - `"summary"` - Returns first paragraph of each file + section headings (~5000-15000 tokens)
+  - `"full"` - Returns full file contents (default for budgets > 15000)
+  - Auto-selection: budget < 5000 → metadata_only, budget 5000-15000 → summary, budget > 15000 → full
+- `loading_strategy` (str | None) - Required when strategy="progressive". Options: "by_relevance" (default), "by_priority", "by_dependencies"
+- `response_format` (str) - Response format: "concise" (default) or "detailed"
+
 **Description:**
 
-Uses relevance scoring and loading strategies to select the best subset of Memory Bank files that fit within a token budget.
+Uses relevance scoring and loading strategies to select the best subset of Memory Bank files that fit within a token budget. Supports hybrid retrieval strategy: when `depth="metadata_only"`, essential sections from configured files (e.g., "## Current Focus" and "## Next Steps" from activeContext.md) are automatically loaded in full, while other files return metadata only. Use the two-step pattern: `load_context(depth="metadata_only")` → `manage_file(sections=[...])` for optimal token efficiency (90%+ savings).
 
 **Returns:**
+
+For `depth="full"` or `depth="summary"`:
 
 ```json
 {
@@ -812,22 +828,9 @@ Uses relevance scoring and loading strategies to select the best subset of Memor
   "task_description": "Implement authentication system",
   "token_budget": 10000,
   "strategy": "dependency_aware",
-  "selected_files": [
-    {
-      "file": "systemPatterns.md",
-      "tokens": 1500,
-      "relevance_score": 0.95,
-      "reason": "High relevance to authentication"
-    }
-  ],
-  "selected_sections": [
-    {
-      "file": "techContext.md",
-      "section": "## Security",
-      "tokens": 300,
-      "relevance_score": 0.88
-    }
-  ],
+  "depth": "full",
+  "selected_files": ["systemPatterns.md", "techContext.md"],
+  "selected_sections": {"techContext.md": ["## Security"]},
   "total_tokens": 8500,
   "utilization": 85.0,
   "excluded_files": ["progress.md"],
@@ -835,6 +838,38 @@ Uses relevance scoring and loading strategies to select the best subset of Memor
     "systemPatterns.md": 0.95,
     "techContext.md": 0.88
   }
+}
+```
+
+For `depth="metadata_only"` (hybrid retrieval):
+
+```json
+{
+  "status": "success",
+  "task_description": "Implement authentication system",
+  "token_budget": 10000,
+  "strategy": "dependency_aware",
+  "depth": "metadata_only",
+  "files": [
+    {
+      "name": "systemPatterns.md",
+      "total_tokens": 1500,
+      "last_modified": "2026-02-16T10:00:00",
+      "relevance_score": 0.95,
+      "sections": [
+        {"heading": "## Architecture", "tokens": 500, "level": 2},
+        {"heading": "## Security Patterns", "tokens": 1000, "level": 2}
+      ]
+    }
+  ],
+  "total_files": 7,
+  "total_tokens_available": 15000,
+  "always_loaded": {
+    "activeContext.md": "## Current Focus\n\nWorking on Phase 51.\n\n## Next Steps\n\nComplete Step 5."
+  },
+  "always_loaded_tokens": 50,
+  "total_tokens": 550,
+  "utilization": 0.06
 }
 ```
 

@@ -4,6 +4,7 @@ Context Analysis Tool Handlers
 MCP tools for analyzing load_context effectiveness and managing statistics.
 """
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -28,7 +29,11 @@ from cortex.tools.context_analysis_operations import (
 
 
 def _analyze_context_effectiveness_impl(root: Path, analyze_all_sessions: bool) -> str:
-    """Run analyze_context_effectiveness logic. Raises on error."""
+    """Run analyze_context_effectiveness logic. Raises on error.
+
+    This is a synchronous function that performs blocking I/O operations.
+    It should be called via asyncio.to_thread() to avoid blocking the event loop.
+    """
     if analyze_all_sessions:
         result = analyze_session_logs(root)
     else:
@@ -72,7 +77,11 @@ async def analyze_context_effectiveness(
     )
     try:
         root = await resolve_project_root_async(None, ctx)
-        out = _analyze_context_effectiveness_impl(root, analyze_all_sessions)
+        # Run blocking I/O in executor to avoid blocking event loop and allow progress updates
+        # This prevents connection timeouts during long-running analysis operations
+        out = await asyncio.to_thread(
+            _analyze_context_effectiveness_impl, root, analyze_all_sessions
+        )
         await log_client(
             ctx,
             "info",
@@ -121,7 +130,8 @@ async def get_context_usage_statistics(
     )
     try:
         root = await resolve_project_root_async(None, ctx)
-        result = get_context_statistics(root)
+        # Run blocking I/O in executor to avoid blocking event loop
+        result = await asyncio.to_thread(get_context_statistics, root)
         out = json.dumps(result.model_dump(mode="json"), indent=2)
         await log_client(
             ctx,

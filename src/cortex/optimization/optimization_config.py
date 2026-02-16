@@ -34,6 +34,10 @@ DEFAULT_OPTIMIZATION_CONFIG = {
             "productContext.md",
             "progress.md",
         ],
+        "always_load_sections": {
+            "projectBrief.md": [],
+            "activeContext.md": ["## Current Focus", "## Next Steps"],
+        },
     },
     "summarization": {
         "enabled": True,
@@ -330,6 +334,38 @@ class OptimizationConfig:
             return []
         items = cast(list[JsonValue], value)
         return [str(item) for item in items if isinstance(item, str)]
+
+    def get_always_load_sections(self) -> dict[str, list[str]]:
+        """Get always-load sections configuration.
+
+        Returns dict mapping file names to lists of section headings that
+        should always be loaded in full even when depth=metadata_only.
+
+        Returns:
+            Dict mapping file names to lists of section headings
+        """
+        value = self.get(
+            "loading_strategy.always_load_sections",
+            {
+                "projectBrief.md": [],
+                "activeContext.md": ["## Current Focus", "## Next Steps"],
+            },
+        )
+        if not isinstance(value, dict):
+            return {
+                "projectBrief.md": [],
+                "activeContext.md": ["## Current Focus", "## Next Steps"],
+            }
+
+        result: dict[str, list[str]] = {}
+        for file_name, sections_raw in value.items():
+            if isinstance(sections_raw, list):
+                sections = [str(s) for s in sections_raw if isinstance(s, str)]
+                result[str(file_name)] = sections
+            else:
+                result[str(file_name)] = []
+
+        return result
 
     def is_summarization_enabled(self) -> bool:
         """Check if summarization is enabled."""

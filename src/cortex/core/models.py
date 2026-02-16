@@ -323,6 +323,9 @@ class SectionMetadata(DictLikeModel):
     content_hash: str | None = Field(
         default=None, description="SHA-256 hash of section content"
     )
+    token_count: int = Field(
+        default=0, ge=0, description="Token count for this section"
+    )
 
 
 class DetailedFileMetadata(BaseModel):

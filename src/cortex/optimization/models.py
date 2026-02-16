@@ -612,6 +612,17 @@ class LoadingStrategyConfigModel(OptimizationBaseModel):
         ],
         description="File loading priority order",
     )
+    always_load_sections: dict[str, list[str]] = Field(
+        default_factory=lambda: {
+            "projectBrief.md": [],
+            "activeContext.md": ["## Current Focus", "## Next Steps"],
+        },
+        description=(
+            "Sections that must always be loaded in full even when depth=metadata_only. "
+            "Maps file names to lists of section headings (e.g., '## Current Focus'). "
+            "Empty list means load entire file. Used for hybrid retrieval strategy."
+        ),
+    )
 
 
 SummarizationStrategy = Literal[

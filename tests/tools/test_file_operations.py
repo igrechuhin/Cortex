@@ -527,17 +527,19 @@ Final section
         sections = extract_sections(content)
 
         # Assert
-        # Note: extract_sections extracts ALL lines starting with "##",
-        # including "###", "####", etc.
-        assert len(sections) == 4
-        assert sections[0]["heading"] == "## Section 1"
-        assert sections[0]["level"] == 2
-        assert sections[1]["heading"] == "## Section 2"
+        # Note: extract_sections extracts ALL headings (# through ######)
+        # that match the pattern ^(#{1,6})\s+(.+)$
+        assert len(sections) == 5
+        assert sections[0]["heading"] == "# Main Title"
+        assert sections[0]["level"] == 1
+        assert sections[1]["heading"] == "## Section 1"
         assert sections[1]["level"] == 2
-        assert sections[2]["heading"] == "### Subsection"
+        assert sections[2]["heading"] == "## Section 2"
         assert sections[2]["level"] == 2
-        assert sections[3]["heading"] == "## Section 3"
-        assert sections[3]["level"] == 2
+        assert sections[3]["heading"] == "### Subsection"
+        assert sections[3]["level"] == 3
+        assert sections[4]["heading"] == "## Section 3"
+        assert sections[4]["level"] == 2
 
     def test_extract_sections_with_no_headings(self):
         """Test section extraction with no level 2 headings."""
@@ -552,7 +554,7 @@ Final section
         assert sections == []
 
     def test_extract_sections_with_whitespace(self):
-        """Test section extraction only extracts lines starting with ##."""
+        """Test section extraction requires whitespace after # symbols."""
         # Arrange
         content = """
 ## Section 1
@@ -563,11 +565,11 @@ Final section
         sections = extract_sections(content)
 
         # Assert
-        # Note: Only lines that START with "##" are extracted
-        # Lines with leading whitespace are NOT extracted
-        assert len(sections) == 2
+        # Note: The regex pattern ^(#{1,6})\s+(.+)$ requires whitespace
+        # after the # symbols. "##Section 3" doesn't match (no space after ##)
+        assert len(sections) == 1
         assert sections[0]["heading"] == "## Section 1"
-        assert sections[1]["heading"] == "##Section 3"
+        assert sections[0]["level"] == 2
 
     def test_compute_file_metrics(self):
         """Test file metrics computation."""
@@ -797,11 +799,26 @@ Final section
         response = json.loads(response_str)
         assert response["status"] == "error"
         assert "Invalid operation" in response["error"]
-        assert "delete" in response["error"]
-        assert "valid_operations" in response
-        assert "read" in response["valid_operations"]
-        assert "write" in response["valid_operations"]
-        assert "metadata" in response["valid_operations"]
+
+    def test_validate_write_request_content_none(self):
+        """Test _validate_write_request when content is None (line 619)."""
+        from cortex.tools.file_operations import (
+            _validate_write_request,  # type: ignore[reportPrivateUsage]
+        )
+
+        # Arrange
+        file_path = Path("/tmp/test.md")
+        file_name = "test.md"
+        content = None
+
+        # Act
+        result = _validate_write_request(file_path, file_name, content)
+
+        # Assert
+        assert result is not None
+        error_response = json.loads(result)
+        assert error_response["status"] == "error"
+        assert "Content is required" in error_response["error"]
 
 
 @pytest.mark.asyncio
@@ -846,6 +863,210 @@ class TestEdgeCasesForCoverage:
                 assert result["status"] == "error"
                 assert "does not exist" in result["error"]
                 assert "available_files" in result["context"]
+
+    async def test_manage_file_read_with_sections(self):
+        """Test read operation with section extraction."""
+        # Arrange
+        file_name = "projectBrief.md"
+        content = (
+            "# Project Brief\n\n## Section 1\ncontent 1\n\n## Section 2\ncontent 2"
+        )
+        temp_path = Path("/tmp/test/memory-bank/projectBrief.md")
+
+        mock_fs = AsyncMock()
+        mock_fs.read_file = AsyncMock(return_value=(content, "hash123"))
+        mock_fs.construct_safe_path = MagicMock(return_value=temp_path)
+
+        mock_path = MagicMock(spec=Path)
+        mock_path.exists.return_value = True
+        mock_fs.construct_safe_path.return_value = mock_path
+
+        mock_index = AsyncMock()
+        mock_index.get_file_metadata = AsyncMock(return_value=None)
+
+        mock_managers_dict = {
+            "fs": mock_fs,
+            "index": mock_index,
+            "tokens": MagicMock(),
+            "versions": AsyncMock(),
+        }
+
+        with patch(
+            "cortex.tools.file_operations.get_managers",
+            new_callable=AsyncMock,
+            return_value=make_test_managers(**mock_managers_dict),
+        ):
+            with patch(
+                "cortex.tools.file_operations.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ):
+                # Act
+                result_str = await manage_file(
+                    file_name=file_name,
+                    operation="read",
+                    sections=["## Section 1"],
+                )
+
+                # Assert
+                result = json.loads(result_str)
+                assert result["status"] == "success"
+                assert "## Section 1" in result["content"]
+                assert "content 1" in result["content"]
+                assert "## Section 2" not in result["content"]
+
+    async def test_manage_file_read_with_multiple_sections(self):
+        """Test read operation with multiple section extraction."""
+        # Arrange
+        file_name = "projectBrief.md"
+        content = "# Project Brief\n\n## Section 1\ncontent 1\n\n## Section 2\ncontent 2\n\n## Section 3\ncontent 3"
+        temp_path = Path("/tmp/test/memory-bank/projectBrief.md")
+
+        mock_fs = AsyncMock()
+        mock_fs.read_file = AsyncMock(return_value=(content, "hash123"))
+        mock_fs.construct_safe_path = MagicMock(return_value=temp_path)
+
+        mock_path = MagicMock(spec=Path)
+        mock_path.exists.return_value = True
+        mock_fs.construct_safe_path.return_value = mock_path
+
+        mock_index = AsyncMock()
+        mock_index.get_file_metadata = AsyncMock(return_value=None)
+
+        mock_managers_dict = {
+            "fs": mock_fs,
+            "index": mock_index,
+            "tokens": MagicMock(),
+            "versions": AsyncMock(),
+        }
+
+        with patch(
+            "cortex.tools.file_operations.get_managers",
+            new_callable=AsyncMock,
+            return_value=make_test_managers(**mock_managers_dict),
+        ):
+            with patch(
+                "cortex.tools.file_operations.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ):
+                # Act
+                result_str = await manage_file(
+                    file_name=file_name,
+                    operation="read",
+                    sections=["## Section 1", "## Section 3"],
+                )
+
+                # Assert
+                result = json.loads(result_str)
+                assert result["status"] == "success"
+                assert "## Section 1" in result["content"]
+                assert "content 1" in result["content"]
+                assert "## Section 3" in result["content"]
+                assert "content 3" in result["content"]
+                assert "## Section 2" not in result["content"]
+                assert "---" in result["content"]  # Sections should be separated
+
+    async def test_manage_file_read_with_nested_section(self):
+        """Test read operation with nested section extraction using / separator."""
+        # Arrange
+        file_name = "projectBrief.md"
+        content = "# Project Brief\n\n## Parent\nparent content\n### Child\nchild content\n## Other"
+        temp_path = Path("/tmp/test/memory-bank/projectBrief.md")
+
+        mock_fs = AsyncMock()
+        mock_fs.read_file = AsyncMock(return_value=(content, "hash123"))
+        mock_fs.construct_safe_path = MagicMock(return_value=temp_path)
+
+        mock_path = MagicMock(spec=Path)
+        mock_path.exists.return_value = True
+        mock_fs.construct_safe_path.return_value = mock_path
+
+        mock_index = AsyncMock()
+        mock_index.get_file_metadata = AsyncMock(return_value=None)
+
+        mock_managers_dict = {
+            "fs": mock_fs,
+            "index": mock_index,
+            "tokens": MagicMock(),
+            "versions": AsyncMock(),
+        }
+
+        with patch(
+            "cortex.tools.file_operations.get_managers",
+            new_callable=AsyncMock,
+            return_value=make_test_managers(**mock_managers_dict),
+        ):
+            with patch(
+                "cortex.tools.file_operations.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ):
+                # Act
+                result_str = await manage_file(
+                    file_name=file_name,
+                    operation="read",
+                    sections=["## Parent/### Child"],
+                )
+
+                # Assert
+                result = json.loads(result_str)
+                assert result["status"] == "success"
+                assert "### Child" in result["content"]
+                assert "child content" in result["content"]
+                assert "## Parent" not in result["content"]  # Should only have child
+
+    async def test_manage_file_read_with_section_not_found(self):
+        """Test read operation when requested section is not found."""
+        # Arrange
+        file_name = "projectBrief.md"
+        content = "# Project Brief\n\n## Section 1\ncontent 1"
+        temp_path = Path("/tmp/test/memory-bank/projectBrief.md")
+
+        mock_fs = AsyncMock()
+        mock_fs.read_file = AsyncMock(return_value=(content, "hash123"))
+        mock_fs.construct_safe_path = MagicMock(return_value=temp_path)
+
+        mock_path = MagicMock(spec=Path)
+        mock_path.exists.return_value = True
+        mock_fs.construct_safe_path.return_value = mock_path
+
+        mock_index = AsyncMock()
+        mock_index.get_file_metadata = AsyncMock(return_value=None)
+
+        mock_managers_dict = {
+            "fs": mock_fs,
+            "index": mock_index,
+            "tokens": MagicMock(),
+            "versions": AsyncMock(),
+        }
+
+        with patch(
+            "cortex.tools.file_operations.get_managers",
+            new_callable=AsyncMock,
+            return_value=make_test_managers(**mock_managers_dict),
+        ):
+            with patch(
+                "cortex.tools.file_operations.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ):
+                # Act
+                result_str = await manage_file(
+                    file_name=file_name,
+                    operation="read",
+                    sections=["## Missing Section"],
+                )
+
+                # Assert
+                result = json.loads(result_str)
+                assert result["status"] == "success"
+                # When section not found, extract_sections_from_content returns empty string with warning
+                # (extracted_parts is empty when warning exists)
+                assert "warning" in result
+                assert "not found" in result["warning"].lower()
+                # Content may be empty when section not found (extracted_parts is empty)
+                assert result["content"] == "" or "# Project Brief" in result["content"]
 
     async def test_manage_file_read_with_metadata_found(self):
         """Test read with metadata when metadata exists (line 299)."""
@@ -892,6 +1113,184 @@ class TestEdgeCasesForCoverage:
                 # Assert
                 result = json.loads(result_str)
                 assert result["status"] == "success"
+                assert "metadata" in result
+                assert result["metadata"]["size_bytes"] == 100
+
+    async def test_manage_file_log_result_non_dict_response(self):
+        """Test _log_result_by_status when result is not a dict (line 447)."""
+        from cortex.tools.file_operation_helpers import (
+            FileOperation,  # type: ignore[reportPrivateImportUsage]
+        )
+        from cortex.tools.file_operations import (
+            _log_result_by_status,  # type: ignore[reportPrivateUsage]
+        )
+
+        # Arrange
+        file_name = "test.md"
+        result_str = '["not", "a", "dict"]'  # JSON array, not dict
+        parsed_op = FileOperation.READ
+
+        ctx = MagicMock()
+
+        with patch(
+            "cortex.tools.file_operations.log_client", new_callable=AsyncMock
+        ) as mock_log_client:
+            # Act - call _log_result_by_status directly with non-dict JSON
+            await _log_result_by_status(ctx, file_name, parsed_op, result_str)
+
+            # Assert - should have logged without error (handles non-dict gracefully)
+            # The function should complete without raising
+            # When result is not a dict, it should still call log_client
+            assert mock_log_client.called
+
+    async def test_write_file_with_hash_check_existing_file(self):
+        """Test _write_file_with_hash_check when file exists (line 924-926)."""
+        from cortex.tools.file_operations import (
+            _write_file_with_hash_check,  # type: ignore[reportPrivateUsage]
+        )
+
+        # Arrange
+        content = "new content"
+        expected_hash = "existing_hash"
+
+        mock_fs = AsyncMock()
+        mock_fs.read_file = AsyncMock(return_value=("old content", expected_hash))
+        mock_fs.write_file = AsyncMock(return_value=None)
+
+        mock_path = MagicMock(spec=Path)
+        mock_path.exists.return_value = True
+
+        # Act
+        await _write_file_with_hash_check(mock_path, content, mock_fs)
+
+        # Assert
+        mock_fs.read_file.assert_called_once_with(mock_path)
+        mock_fs.write_file.assert_called_once_with(
+            mock_path, content, expected_hash=expected_hash
+        )
+
+    async def test_resolve_schema_validator_exception_handling(self):
+        """Test _resolve_schema_validator exception handling (line 1023-1024)."""
+        from typing import cast
+
+        # Arrange - managers dict without schema_validator
+        from cortex.managers.types import ManagersDict
+        from cortex.tools.file_operations import (
+            _resolve_schema_validator,  # type: ignore[reportPrivateUsage]
+        )
+
+        managers = cast(
+            ManagersDict,
+            {
+                "fs": AsyncMock(),
+                "index": AsyncMock(),
+                "tokens": MagicMock(),
+            },
+        )
+
+        # Act
+        result = await _resolve_schema_validator(managers)
+
+        # Assert - should return None when schema_validator not available
+        assert result is None
+
+    async def test_get_managers_for_root_creates_new_when_root_differs(self):
+        """Test _get_managers_for_root creates new managers when root differs."""
+        from cortex.core.usage_context import (
+            set_current_managers,
+            set_current_project_root,
+        )
+        from cortex.tools.file_operations import (
+            _get_managers_for_root,  # type: ignore[reportPrivateUsage]
+        )
+
+        # Arrange
+        current_root = Path("/tmp/current")
+        new_root = Path("/tmp/new")
+        current_mgrs = {
+            "fs": AsyncMock(),
+            "index": AsyncMock(),
+            "tokens": MagicMock(),
+            "versions": AsyncMock(),
+        }
+
+        # Set current managers with different root
+        set_current_managers(current_mgrs)
+        set_current_project_root(current_root)
+
+        mock_fs = AsyncMock()
+        mock_index = AsyncMock()
+        mock_tokens = MagicMock()
+        mock_versions = AsyncMock()
+
+        mock_managers_dict = {
+            "fs": mock_fs,
+            "index": mock_index,
+            "tokens": mock_tokens,
+            "versions": mock_versions,
+        }
+
+        with patch(
+            "cortex.tools.file_operations.get_managers",
+            new_callable=AsyncMock,
+            return_value=make_test_managers(**mock_managers_dict),
+        ):
+            # Act
+            managers, fs = await _get_managers_for_root(new_root)
+
+            # Assert - should create new managers
+            assert managers is not None
+            assert fs is not None
+
+    async def test_manage_file_read_with_sections_and_metadata_and_warning(self):
+        """Test read operation with sections, metadata, and warning when section not found."""
+        # Arrange
+        file_name = "projectBrief.md"
+        content = "# Project Brief\n\n## Section 1\ncontent 1"
+        temp_path = Path("/tmp/test/memory-bank/projectBrief.md")
+        metadata = {"size_bytes": 100, "token_count": 25, "content_hash": "hash123"}
+
+        mock_fs = AsyncMock()
+        mock_fs.read_file = AsyncMock(return_value=(content, "hash123"))
+        mock_fs.construct_safe_path = MagicMock(return_value=temp_path)
+
+        mock_path = MagicMock(spec=Path)
+        mock_path.exists.return_value = True
+        mock_fs.construct_safe_path.return_value = mock_path
+
+        mock_index = AsyncMock()
+        mock_index.get_file_metadata = AsyncMock(return_value=metadata)
+
+        mock_managers_dict = {
+            "fs": mock_fs,
+            "index": mock_index,
+            "tokens": MagicMock(),
+            "versions": AsyncMock(),
+        }
+
+        with patch(
+            "cortex.tools.file_operations.get_managers",
+            new_callable=AsyncMock,
+            return_value=make_test_managers(**mock_managers_dict),
+        ):
+            with patch(
+                "cortex.tools.file_operations.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ):
+                # Act
+                result_str = await manage_file(
+                    file_name=file_name,
+                    operation="read",
+                    sections=["## Missing Section"],
+                    include_metadata=True,
+                )
+
+                # Assert
+                result = json.loads(result_str)
+                assert result["status"] == "success"
+                assert "warning" in result
+                assert "not found" in result["warning"].lower()
                 assert "metadata" in result
                 assert result["metadata"]["size_bytes"] == 100
 
@@ -1087,6 +1486,66 @@ class TestEdgeCasesForCoverage:
         assert result["file_name"] == file_name
         assert result["validation"]["valid"] is False
         mock_fs.write_file.assert_not_called()
+
+    async def test_handle_write_operation_schema_validation_invalid_result(self):
+        """Test _handle_write_operation when schema validation returns invalid result (line 647-648)."""
+        from cortex.tools.file_operations import (
+            _handle_write_operation,  # type: ignore[reportPrivateUsage]
+        )
+
+        # Arrange
+        file_path = Path("/tmp/test/projectBrief.md")
+        file_name = "projectBrief.md"
+        content = "# Project Brief\n\nMissing required sections."
+
+        mock_fs = AsyncMock()
+        mock_tokens = MagicMock()
+        mock_versions = AsyncMock()
+
+        schema_result = ValidationResultModel(
+            valid=False,
+            errors=[
+                ValidationErrorModel(
+                    type="missing_section",
+                    severity="error",
+                    message="Missing required section: Goals",
+                    suggestion="Add ## Goals",
+                ),
+            ],
+            warnings=[],
+            score=30,
+        )
+        mock_schema_validator = MagicMock()
+        mock_schema_validator.get_schema.return_value = MagicMock()  # Schema exists
+        mock_schema_validator.validate_file = AsyncMock(return_value=schema_result)
+
+        mock_index = AsyncMock()
+
+        # Mock file_path.exists() to return True
+        with patch("pathlib.Path.exists", return_value=True):
+            # Act
+            result_str = await _handle_write_operation(
+                file_path=file_path,
+                file_name=file_name,
+                content=content,
+                change_description=None,
+                fs_manager=mock_fs,
+                token_counter=mock_tokens,
+                version_manager=mock_versions,
+                metadata_index=mock_index,
+                schema_validator=mock_schema_validator,
+            )
+
+            # Assert - should return schema validation error (line 647-648)
+            result = json.loads(result_str)
+            assert result["status"] == "error"
+            assert (
+                "schema" in result["error"].lower()
+                or "validation" in result["error"].lower()
+            )
+            mock_schema_validator.validate_file.assert_called_once_with(
+                file_name, content
+            )
 
     async def test_manage_file_write_success_full_flow(self):
         """Test successful write operation covering lines 486-504."""

@@ -54,6 +54,9 @@ from cortex.tools.file_operation_helpers import (
     build_write_error_response,
     validate_manage_file_operation,
 )
+from cortex.tools.file_section_helpers import (
+    extract_content_sections,
+)
 from cortex.tools.roadmap_corruption import fix_memory_bank_content_if_needed
 from cortex.validation.schema_validator import SchemaValidator
 
@@ -86,6 +89,7 @@ async def manage_file(
     content: str | None = None,
     include_metadata: bool = False,
     change_description: str | None = None,
+    sections: list[str] | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Manage Memory Bank file operations: read, write, or get metadata.
@@ -134,6 +138,13 @@ async def manage_file(
             Stored in version history for tracking changes.
             Example: "Updated project goals and milestones"
             Default: "Updated via MCP"
+
+        sections: For read operation, extract one or more sections by heading.
+            Example: ["## Current Focus"] for single section
+            Example: ["## Current Focus", "## Next Steps"] for multiple sections
+            Supports nested headings using "/" separator (e.g., ["## Completed Work/### 2026-02-11"]).
+            If section not found, returns full file with warning.
+            Returns concatenated content of all requested sections (separated by "---").
 
     Returns:
         JSON string with operation result. Structure varies by operation:
@@ -310,6 +321,7 @@ async def manage_file(
         content,
         include_metadata,
         change_description,
+        sections,
     )
 
 
@@ -326,12 +338,31 @@ async def get_file_resource(file_name: str) -> str:
         None,
         False,
         None,
+        None,  # sections
     )
 
 
 async def _manage_file_get_root(ctx: MCPContext | None) -> Path:
     """Return current project root or resolve via ctx."""
     return await get_or_resolve_project_root(ctx)
+
+
+async def _log_validation_failure(
+    ctx: MCPContext | None, file_name: str | None, operation: str | None
+) -> None:
+    """Log validation failure for manage_file.
+
+    Args:
+        ctx: MCP context
+        file_name: File name (may be None)
+        operation: Operation (may be None)
+    """
+    await log_client(
+        ctx,
+        "warning",
+        f"manage_file: validation failed file_name={file_name!r} operation={operation!r}",
+        logger_name=__name__,
+    )
 
 
 async def _manage_file_validate_and_run(
@@ -341,17 +372,14 @@ async def _manage_file_validate_and_run(
     content: str | None,
     include_metadata: bool,
     change_description: str | None,
+    sections: list[str] | None,
 ) -> str:
     """Validate manage_file inputs and run operation or return error."""
     parsed_op, err = validate_manage_file_operation(operation, file_name)
     if err is not None:
-        await log_client(
-            ctx,
-            "warning",
-            f"manage_file: validation failed file_name={file_name!r} operation={operation!r}",
-            logger_name=__name__,
-        )
+        await _log_validation_failure(ctx, file_name, operation)
         return err
+
     assert parsed_op is not None and file_name is not None
     root = await _manage_file_get_root(ctx)
     return await _manage_file_run_or_error(
@@ -362,6 +390,7 @@ async def _manage_file_validate_and_run(
         root,
         include_metadata,
         change_description,
+        sections,
     )
 
 
@@ -428,6 +457,7 @@ async def _manage_file_run_or_error(
     root: Path,
     include_metadata: bool,
     change_description: str | None,
+    sections: list[str] | None,
 ) -> str:
     """Run _execute_file_operation and handle exceptions with logging."""
     try:
@@ -438,6 +468,7 @@ async def _manage_file_run_or_error(
             content,
             include_metadata,
             change_description,
+            sections,
         )
         await _log_result_by_status(ctx, file_name, parsed_op, result)
         return result
@@ -478,6 +509,7 @@ async def _execute_file_operation(
     content: str | None,
     include_metadata: bool,
     change_description: str | None,
+    sections: list[str] | None,
 ) -> str:
     """Execute file operation after validation. Reuses current managers when root matches."""
     managers, fs_manager = await _get_managers_for_root(root)
@@ -493,6 +525,7 @@ async def _execute_file_operation(
         include_metadata,
         root,
         managers,
+        sections,
     )
 
 
@@ -515,6 +548,42 @@ def _validate_file_path(
         return (None, error_json)
 
 
+async def _build_read_response(
+    file_name: str,
+    extracted_content: str,
+    section_warning: str | None,
+    include_metadata: bool,
+    metadata_index: MetadataIndex,
+) -> str:
+    """Build read operation JSON response.
+
+    Args:
+        file_name: Name of file
+        extracted_content: Content to include
+        section_warning: Optional warning message
+        include_metadata: Whether to include metadata
+        metadata_index: Metadata index instance
+
+    Returns:
+        JSON response string
+    """
+    response: ModelDict = {
+        "status": "success",
+        "file_name": file_name,
+        "content": extracted_content,
+    }
+
+    if section_warning:
+        response["warning"] = section_warning
+
+    if include_metadata:
+        metadata = await metadata_index.get_file_metadata(file_name)
+        if isinstance(metadata, dict):
+            response["metadata"] = cast(JsonValue, metadata)
+
+    return json.dumps(response, indent=2)
+
+
 async def _handle_read_operation(
     file_path: Path,
     file_name: str,
@@ -522,22 +591,18 @@ async def _handle_read_operation(
     fs_manager: FileSystemManager,
     metadata_index: MetadataIndex,
     include_metadata: bool,
+    sections: list[str] | None,
 ) -> str:
-    """Handle read operation."""
+    """Handle read operation with optional section extraction."""
     if not file_path.exists():
         return build_read_error_response(file_name, root)
 
     content_str, _ = await fs_manager.read_file(file_path)
-    response: ModelDict = {
-        "status": "success",
-        "file_name": file_name,
-        "content": content_str,
-    }
-    if include_metadata:
-        metadata = await metadata_index.get_file_metadata(file_name)
-        if isinstance(metadata, dict):
-            response["metadata"] = cast(JsonValue, metadata)
-    return json.dumps(response, indent=2)
+    extracted_content, section_warning = extract_content_sections(content_str, sections)
+
+    return await _build_read_response(
+        file_name, extracted_content, section_warning, include_metadata, metadata_index
+    )
 
 
 def _validate_write_request(
@@ -691,9 +756,10 @@ async def update_file_metadata(
     file_metrics: ModelDict,
     metadata_index: MetadataIndex,
     version_info: VersionMetadata,
+    token_counter: TokenCounter | None = None,
 ) -> None:
     """Update file metadata and version history."""
-    sections_raw = extract_sections(content)
+    sections_raw = extract_sections(content, token_counter=token_counter)
     sections = [section.model_dump(mode="json") for section in sections_raw]
     await metadata_index.update_file_metadata(
         file_name,
@@ -710,23 +776,92 @@ async def update_file_metadata(
     )
 
 
-def extract_sections(content: str) -> list[SectionMetadata]:
-    """Extract sections from content (lines starting with ##).
+def _close_section_and_add(
+    current_section: dict[str, str | int],
+    line_end: int,
+    lines: list[str],
+    sections: list[SectionMetadata],
+    token_counter: TokenCounter,
+) -> None:
+    """Close a section and add it to sections list.
 
-    Note: For backward compatibility with tests, all extracted headings are reported
-    with `level=2` even if the original heading is ###, ####, etc.
+    Args:
+        current_section: Section dictionary with heading, level, line_start
+        line_end: Ending line number (exclusive)
+        lines: All file lines
+        sections: List to append section to
+        token_counter: Token counter instance
     """
+    import hashlib
+
+    line_start = int(current_section["line_start"])
+    section_lines = lines[line_start - 1 : line_end]
+    section_content = "\n".join(section_lines)
+    section_tokens = token_counter.count_tokens(section_content)
+    section_hash = (
+        "sha256:" + hashlib.sha256(section_content.encode("utf-8")).hexdigest()
+    )
+
+    sections.append(
+        SectionMetadata(
+            heading=str(current_section["heading"]),
+            level=int(current_section["level"]),
+            line_start=line_start,
+            line_end=line_end,
+            content_hash=section_hash,
+            token_count=section_tokens,
+        )
+    )
+
+
+def extract_sections(
+    content: str, token_counter: TokenCounter | None = None
+) -> list[SectionMetadata]:
+    """Extract sections from markdown content with proper boundaries and token counts.
+
+    Extracts all markdown headings (# through ######) and calculates:
+    - Proper line_end by finding next heading of same or higher level
+    - Token count for each section
+    - Content hash for each section
+
+    Args:
+        content: Markdown file content
+        token_counter: Optional TokenCounter instance. If None, creates one.
+
+    Returns:
+        List of SectionMetadata with proper boundaries and token counts
+    """
+    import re
+
+    lines = content.split("\n")
     sections: list[SectionMetadata] = []
-    for line_num, line in enumerate(content.split("\n"), start=1):
-        if line.startswith("##"):
-            sections.append(
-                SectionMetadata(
-                    heading=line,
-                    level=2,
-                    line_start=line_num,
-                    line_end=line_num,
+    heading_pattern = re.compile(r"^(#{1,6})\s+(.+)$")
+
+    if token_counter is None:
+        token_counter = TokenCounter()
+    current_section: dict[str, str | int] | None = None
+
+    for i, line in enumerate(lines, start=1):
+        match = heading_pattern.match(line.strip())
+
+        if match:
+            if current_section is not None:
+                _close_section_and_add(
+                    current_section, i - 1, lines, sections, token_counter
                 )
-            )
+
+            level = len(match.group(1))
+            current_section = {
+                "heading": line.strip(),
+                "level": level,
+                "line_start": i,
+            }
+
+    if current_section is not None:
+        _close_section_and_add(
+            current_section, len(lines), lines, sections, token_counter
+        )
+
     return sections
 
 
@@ -769,6 +904,22 @@ def validate_write_content(content: str | None) -> str | None:
     return None
 
 
+async def _write_file_with_hash_check(
+    file_path: Path, content: str, fs_manager: FileSystemManager
+) -> None:
+    """Write file using on-disk hash as conflict baseline.
+
+    Rationale: `MetadataIndex` may be stale relative to disk (e.g. external edits,
+    editor save, git operations). Using the cached hash can incorrectly block
+    writes with FileConflictError even when the caller is acting on the latest
+    file contents.
+    """
+    expected_hash: str | None = None
+    if file_path.exists():
+        _, expected_hash = await fs_manager.read_file(file_path)
+    _ = await fs_manager.write_file(file_path, content, expected_hash=expected_hash)
+
+
 async def _execute_write_flow(
     file_path: Path,
     file_name: str,
@@ -780,16 +931,7 @@ async def _execute_write_flow(
     version_manager: VersionManager,
 ) -> str:
     """Execute the main write flow."""
-    # Use the on-disk hash as the conflict baseline.
-    #
-    # Rationale: `MetadataIndex` may be stale relative to disk (e.g. external edits,
-    # editor save, git operations). Using the cached hash can incorrectly block
-    # writes with FileConflictError even when the caller is acting on the latest
-    # file contents.
-    expected_hash: str | None = None
-    if file_path.exists():
-        _, expected_hash = await fs_manager.read_file(file_path)
-    _ = await fs_manager.write_file(file_path, content, expected_hash=expected_hash)
+    await _write_file_with_hash_check(file_path, content, fs_manager)
 
     file_metrics = compute_file_metrics(content, fs_manager, token_counter)
     version_info = await create_version_snapshot(
@@ -807,6 +949,7 @@ async def _execute_write_flow(
         file_metrics,
         metadata_index,
         version_info,
+        token_counter=token_counter,
     )
 
     return build_write_response(file_name, version_info, token_counter, content)
@@ -829,11 +972,12 @@ async def _dispatch_operation(
     include_metadata: bool,
     root: Path,
     managers: ManagersDict,
+    sections: list[str] | None,
 ) -> str:
     """Dispatch operation to appropriate handler."""
     if operation == FileOperation.READ:
         return await _dispatch_read_operation(
-            file_path, file_name, root, managers, include_metadata
+            file_path, file_name, root, managers, include_metadata, sections
         )
     if operation == FileOperation.WRITE:
         return await _dispatch_write_operation(
@@ -850,6 +994,7 @@ async def _dispatch_read_operation(
     root: Path,
     managers: ManagersDict,
     include_metadata: bool,
+    sections: list[str] | None,
 ) -> str:
     """Dispatch read operation."""
     return await _handle_read_operation(
@@ -859,6 +1004,7 @@ async def _dispatch_read_operation(
         managers.fs,
         managers.index,
         include_metadata,
+        sections,
     )
 
 
