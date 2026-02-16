@@ -9,7 +9,6 @@ Notes:
   apply_refactoring(action=...).
 """
 
-import json
 from typing import Literal
 
 from cortex.core.constants import (
@@ -408,7 +407,19 @@ async def provide_feedback(
         )
     except Exception as e:
         await log_client(ctx, "error", f"provide_feedback: {e!s}", logger_name=__name__)
-        return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
-            indent=2,
+        from cortex.tools.tool_error_formatters import format_tool_error
+
+        return format_tool_error(
+            e,
+            suggestion=(
+                "Review the error details. Ensure suggestion_id is valid and "
+                "feedback_type is one of: 'helpful', 'not_helpful', or 'incorrect'. "
+                "Check that the suggestion exists before providing feedback."
+            ),
+            example={
+                "suggestion_id": "ref-consolidate-20240115123045",
+                "feedback_type": "helpful",
+                "comment": "Great consolidation suggestion",
+            },
+            available_options=["helpful", "not_helpful", "incorrect"],
         )

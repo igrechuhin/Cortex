@@ -41,6 +41,24 @@ from cortex.tools.phase4_relevance_operations import get_relevance_scores_impl
 from cortex.tools.phase4_summarization_operations import summarize_content_impl
 
 
+def _format_load_context_error(error: Exception) -> str:
+    """Format error response for load_context failures."""
+    from cortex.tools.tool_error_formatters import format_tool_error
+
+    return format_tool_error(
+        error,
+        suggestion=(
+            "Verify task_description is clear and token_budget is appropriate. "
+            "Try reducing token_budget or using depth='metadata_only' for large contexts."
+        ),
+        example={
+            "task_description": "Example task description",
+            "token_budget": 10000,
+            "strategy": "dependency_aware",
+        },
+    )
+
+
 async def _check_optimization_enabled(
     mgrs: ManagersDict,
 ) -> str | None:
@@ -208,43 +226,17 @@ async def load_context(
 ) -> str:
     """Load relevant context for a task within token budget.
 
-    USE WHEN: User starts a task, user needs project context, user requests
-    relevant files, user wants context for specific task, user needs memory
-    bank content.
-
-    EXAMPLES: 'load context for refactoring task', 'get relevant files for
-    feature X', 'load context with 5000 token budget', 'get context for bug
-    fix'.
-
-    RETURNS: JSON with selected files, their content, relevance scores, and
-    token usage.
-
-    This tool should be called at the START of any task to:
-    - Load memory bank files relevant to the task
-    - Load applicable rules and patterns
-    - Provide project context before making changes
+    USE WHEN: User starts a task, needs project context, requests relevant files.
+    EXAMPLES: 'load context for refactoring task', 'get relevant files for feature X'.
+    RETURNS: JSON with selected files, content, relevance scores, token usage.
 
     Args:
         task_description: Description of the task to perform
-        token_budget: Maximum tokens to include (default from config)
-        strategy: Loading strategy. Options:
-            - "dependency_aware" (default): Includes dependency trees
-            - "priority": Greedy selection by predefined priority
-            - "hybrid": Combines multiple strategies
-            - "section_level": Partial file inclusion
-            - "progressive": Progressive loading (use loading_strategy parameter)
-        loading_strategy: Required when strategy="progressive". Options:
-            - "by_relevance" (default): Load by task-specific relevance
-            - "by_priority": Load by predefined priority order
-            - "by_dependencies": Load by dependency chain traversal
-        depth: Content depth level. Options:
-            - "metadata_only": Returns context map (file names, sections, token counts, relevance) without full content (~500 tokens)
-            - "summary": Returns first paragraph of each file + section headings (~5000-15000 tokens)
-            - "full": Returns full file contents (current behavior, default for budgets > 15000)
-            If None, auto-selects based on token_budget:
-            - budget < 5000: metadata_only
-            - budget 5000-15000: summary
-            - budget > 15000: full
+        token_budget: Maximum tokens (default from config)
+        strategy: Loading strategy (dependency_aware, priority, hybrid, section_level, progressive)
+        loading_strategy: Required when strategy="progressive" (by_relevance, by_priority, by_dependencies)
+        depth: Content depth (metadata_only, summary, full). Auto-selected if None based on budget.
+        response_format: Response format (concise or detailed)
 
     Returns:
         JSON with selected files, their content, and relevance scores
@@ -264,10 +256,7 @@ async def load_context(
         return result
     except Exception as e:
         await log_client(ctx, "error", f"load_context: {e!s}", logger_name=__name__)
-        return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
-            indent=2,
-        )
+        return _format_load_context_error(e)
 
 
 def _determine_depth_from_budget(

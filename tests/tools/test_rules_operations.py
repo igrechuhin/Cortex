@@ -668,7 +668,8 @@ async def test_rules_invalid_operation_returns_error(
     result_dict = json.loads(result)
     assert result_dict["status"] == "error"
     assert "invalid" in result_dict["error"].lower()
-    assert "valid_operations" in result_dict
+    assert "available_options" in result_dict
+    assert "suggestion" in result_dict
 
 
 # ============================================================================
@@ -948,8 +949,9 @@ async def test_rules_missing_operation_returns_friendly_error(
         result_dict = json.loads(result)
         assert result_dict["status"] == "error"
         assert "missing required parameter" in result_dict["error"].lower()
-        assert result_dict["details"]["missing"] == ["operation"]
-        assert "operation_values" in result_dict["details"]
+        assert "suggestion" in result_dict
+        assert "example" in result_dict
+        assert result_dict["context"]["missing_parameters"] == ["operation"]
 
 
 # ============================================================================

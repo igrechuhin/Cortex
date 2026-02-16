@@ -168,9 +168,21 @@ async def get_structure_data(mgrs: ManagersDict) -> ModelDict:
 
 def suggest_refactoring_error_json(exc: Exception) -> str:
     """Build JSON error response for suggest_refactoring failures."""
-    return json.dumps(
-        {"status": "error", "error": str(exc), "error_type": exc.__class__.__name__},
-        indent=2,
+    from cortex.tools.tool_error_formatters import format_tool_error
+
+    return format_tool_error(
+        exc,
+        suggestion=(
+            "Review the error details. Ensure type parameter is one of: "
+            "'consolidation', 'splits', or 'reorganization'. "
+            "Check that the memory bank is properly initialized."
+        ),
+        example={
+            "type": "consolidation",
+            "min_similarity": 0.8,
+            "size_threshold": 10000,
+        },
+        available_options=["consolidation", "splits", "reorganization"],
     )
 
 

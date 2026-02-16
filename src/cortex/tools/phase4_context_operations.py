@@ -534,8 +534,12 @@ async def _prepare_hybrid_metadata_context(
         files_metadata, relevance_scores, always_load_sections
     )
     return _build_hybrid_context_result(
-        always_loaded_content, always_loaded_tokens, files_metadata,
-        relevance_scores, files_map, total_tokens_available
+        always_loaded_content,
+        always_loaded_tokens,
+        files_metadata,
+        relevance_scores,
+        files_map,
+        total_tokens_available,
     )
 
 

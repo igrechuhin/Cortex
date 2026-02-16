@@ -298,7 +298,39 @@ def create_error_result(error: str, error_type: str = "ValueError") -> str:
 
 def create_error_result_dict(error: str, error_type: str = "ValueError") -> ModelDict:
     """Create error response as dict for MCP (avoids double JSON encoding)."""
-    return {"status": "error", "error": error, "error_type": error_type}
+    from cortex.tools.tool_error_formatters import format_tool_error
+
+    # Create exception object for formatter
+    exception: Exception
+    if error_type == "ValueError":
+        exception = ValueError(error)
+    elif error_type == "FileNotFoundError":
+        exception = FileNotFoundError(error)
+    elif error_type == "Exception":
+        exception = Exception(error)
+    else:
+        # For other types, use ValueError but preserve error_type in response
+        exception = ValueError(error)
+
+    # Format using standardized formatter and parse back to dict
+    json_response = format_tool_error(
+        exception,
+        suggestion=(
+            "Review the error details and ensure all parameters are valid. "
+            "Check the tool documentation for correct usage."
+        ),
+        example={
+            "checks": ["format", "type_check"],
+            "test_timeout": 300,
+            "coverage_threshold": 0.9,
+            "strict_mode": False,
+        },
+    )
+    result = json.loads(json_response)
+    # Override error_type if it was changed (e.g., generic Exception -> ValueError)
+    if error_type != "ValueError" and error_type != type(exception).__name__:
+        result["error_type"] = error_type
+    return result
 
 
 def get_project_root_str(project_root: str | None) -> str:

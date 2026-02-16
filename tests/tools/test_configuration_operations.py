@@ -168,8 +168,9 @@ class TestConfigureMainHandler:
             # Assert
             result_data = json.loads(result)
             assert result_data["status"] == "error"
-            assert "Unknown component" in result_data["error"]
-            assert "valid_components" in result_data
+            assert "Invalid component" in result_data["error"]
+            assert "available_options" in result_data
+            assert "suggestion" in result_data
 
     @pytest.mark.asyncio
     async def test_configure_exception_handling(self, tmp_path: Path) -> None:
@@ -308,7 +309,8 @@ class TestGetConfigResourceAndUpdateConfig:
                 result = await get_config_resource(component="unknown")
                 result_data = json.loads(result)
                 assert result_data["status"] == "error"
-                assert "Unknown component" in result_data["error"]
+                assert "Invalid component" in result_data["error"]
+                assert "available_options" in result_data
 
 
 @pytest.mark.timeout(10)
@@ -420,8 +422,9 @@ class TestValidationConfiguration:
         # Assert
         result_data = json.loads(result)
         assert result_data["status"] == "error"
-        assert "Unknown action" in result_data["error"]
-        assert "valid_actions" in result_data
+        assert "Invalid action" in result_data["error"]
+        assert "available_options" in result_data
+        assert "suggestion" in result_data
 
     @pytest.mark.asyncio
     async def test_handle_validation_update(self) -> None:
@@ -538,8 +541,9 @@ class TestOptimizationConfiguration:
         # Assert
         result_data = json.loads(result)
         assert result_data["status"] == "error"
-        assert "Unknown action" in result_data["error"]
-        assert "valid_actions" in result_data
+        assert "Invalid action" in result_data["error"]
+        assert "available_options" in result_data
+        assert "suggestion" in result_data
 
     @pytest.mark.asyncio
     async def test_handle_optimization_update(self) -> None:
@@ -698,8 +702,9 @@ class TestLearningConfiguration:
         # Assert
         result_data = json.loads(result)
         assert result_data["status"] == "error"
-        assert "Unknown action" in result_data["error"]
-        assert "valid_actions" in result_data
+        assert "Invalid action" in result_data["error"]
+        assert "available_options" in result_data
+        assert "suggestion" in result_data
 
     @pytest.mark.asyncio
     async def test_handle_learning_view(self) -> None:
@@ -872,7 +877,8 @@ class TestHelperFunctions:
         result_data = json.loads(result)
         assert result_data["status"] == "error"
         assert result_data["error"] == error
-        assert result_data["valid_actions"] == ["view", "update", "reset"]
+        assert result_data["available_options"] == ["view", "update", "reset"]
+        assert "suggestion" in result_data
 
     def test_get_learned_patterns(self) -> None:
         """Test getting learned patterns."""

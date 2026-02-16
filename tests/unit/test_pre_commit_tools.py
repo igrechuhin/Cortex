@@ -814,9 +814,9 @@ class TestFixQualityIssues:
                 result = json.loads(result_json)
 
                 assert result["status"] == "error"
-                assert result["error_message"] == "Test error"
-                assert result["errors_fixed"] == 0
-                assert result["files_modified"] == []
+                assert result["error"] == "Test error"
+                assert "error_type" in result
+                assert "suggestion" in result
 
     @pytest.mark.asyncio
     async def test_fix_quality_issues_success_when_checks_report_errors(self) -> None:
@@ -887,8 +887,9 @@ class TestFixQualityIssues:
             result = json.loads(result_json)
 
             assert result["status"] == "error"
-            assert result["error_message"] == "Root error"
-            assert result["errors_fixed"] == 0
+            assert result["error"] == "Root error"
+            assert "error_type" in result
+            assert "suggestion" in result
 
     @pytest.mark.asyncio
     async def test_fix_quality_issues_success_path(self) -> None:

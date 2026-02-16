@@ -1,6 +1,5 @@
 """Shared validation helper functions."""
 
-import json
 from enum import Enum
 from pathlib import Path
 from typing import cast
@@ -8,6 +7,10 @@ from typing import cast
 from cortex.core.file_system import FileSystemManager
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.tool_error_formatters import (
+    format_invalid_parameter_error,
+    format_tool_error,
+)
 
 
 class ValidationCheckType(str, Enum):
@@ -54,13 +57,11 @@ def create_invalid_check_type_error(check_type: str) -> str:
         JSON string with error response
     """
     valid_types = [e.value for e in ValidationCheckType]
-    return json.dumps(
-        {
-            "status": "error",
-            "error": f"Invalid check_type: {check_type}",
-            "valid_check_types": valid_types,
-        },
-        indent=2,
+    return format_invalid_parameter_error(
+        parameter_name="check_type",
+        invalid_value=check_type,
+        valid_options=valid_types,
+        tool_name="validate",
     )
 
 
@@ -73,13 +74,13 @@ def create_validation_error_response(error: Exception) -> str:
     Returns:
         JSON string with error response
     """
-    return json.dumps(
-        {
-            "status": "error",
-            "error": str(error),
-            "error_type": type(error).__name__,
-        },
-        indent=2,
+    return format_tool_error(
+        error,
+        suggestion=(
+            "Review the error details and ensure all parameters are valid. "
+            "Check the tool documentation for correct usage."
+        ),
+        example={"check_type": "schema", "file_name": "activeContext.md"},
     )
 
 

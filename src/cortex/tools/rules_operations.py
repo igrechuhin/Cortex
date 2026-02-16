@@ -517,6 +517,22 @@ async def _run_rules_operation_impl(
     )
 
 
+def _format_rules_error(error: Exception) -> str:
+    """Format error response for rules operation failures."""
+    from cortex.tools.tool_error_formatters import format_tool_error
+
+    return format_tool_error(
+        error,
+        suggestion=(
+            "Review the error details. Ensure operation is 'index' or 'get_relevant'. "
+            "For 'get_relevant', provide task_description. "
+            "Check that rules folder is configured in optimization config."
+        ),
+        example={"operation": "index"},
+        available_options=["index", "get_relevant"],
+    )
+
+
 async def _execute_rules_operation(
     operation: RulesOperation,
     root: Path,
@@ -529,21 +545,13 @@ async def _execute_rules_operation(
     """Execute rules operation with error handling."""
     try:
         result = await _run_rules_operation_impl(
-            operation,
-            root,
-            force,
-            task_description,
-            max_tokens,
-            min_relevance_score,
+            operation, root, force, task_description, max_tokens, min_relevance_score
         )
         await log_client(ctx, "info", "rules: completed", logger_name=__name__)
         return result
     except Exception as e:
         await log_client(ctx, "error", f"rules: failed: {e}", logger_name=__name__)
-        return json.dumps(
-            {"status": "error", "error": str(e), "error_type": type(e).__name__},
-            indent=2,
-        )
+        return _format_rules_error(e)
 
 
 @mcp.resource(uri="cortex://rules/relevant/{task_description}")

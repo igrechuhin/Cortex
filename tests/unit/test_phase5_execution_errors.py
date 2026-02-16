@@ -16,8 +16,9 @@ class TestCreateMissingParamError:
         result = create_missing_param_error("suggestion_id", "approve")
         data = json.loads(result)
         assert data["status"] == "error"
-        assert "suggestion_id" in data.get("action_required", "")
-        assert "approve" in data.get("action_required", "")
+        assert "suggestion_id" in data.get("suggestion", "")
+        assert "example" in data
+        assert data["example"]["suggestion_id"] == "your-value"
 
 
 class TestCreateInvalidActionError:
@@ -27,7 +28,9 @@ class TestCreateInvalidActionError:
         result = create_invalid_action_error("unknown")
         data = json.loads(result)
         assert data["status"] == "error"
-        assert "unknown" in data.get("action_required", "")
+        assert "unknown" in data.get("error", "")
+        assert "available_options" in data
+        assert "suggestion" in data
 
 
 class TestCreateExecutionErrorResponse:
@@ -38,7 +41,7 @@ class TestCreateExecutionErrorResponse:
         result = create_execution_error_response(error)
         data = json.loads(result)
         assert data["status"] == "error"
-        assert "validate_first" in data.get("action_required", "")
+        assert "validate_first" in data.get("suggestion", "")
 
     def test_validation_error_type_name_hits_validation_branch(self) -> None:
         """Error type name containing ValidationError hits validation branch."""
@@ -50,25 +53,25 @@ class TestCreateExecutionErrorResponse:
         result = create_execution_error_response(error)
         data = json.loads(result)
         assert data["status"] == "error"
-        assert "validate_first" in data.get("action_required", "")
+        assert "validate_first" in data.get("suggestion", "")
 
     def test_permission_error_branch_sets_permission_action_required(self) -> None:
         error = PermissionError("permission denied")
         result = create_execution_error_response(error)
         data = json.loads(result)
         assert data["status"] == "error"
-        assert "permission" in data.get("action_required", "").lower()
+        assert "permission" in data.get("suggestion", "").lower()
 
     def test_file_not_found_error_branch_sets_not_found_action_required(self) -> None:
         error = FileNotFoundError("file not found")
         result = create_execution_error_response(error)
         data = json.loads(result)
         assert data["status"] == "error"
-        assert "get_memory_bank_stats" in data.get("action_required", "")
+        assert "get_memory_bank_stats" in data.get("suggestion", "")
 
     def test_generic_error_branch_sets_generic_action_required(self) -> None:
         error = RuntimeError("unexpected failure")
         result = create_execution_error_response(error)
         data = json.loads(result)
         assert data["status"] == "error"
-        assert "dry_run" in data.get("action_required", "")
+        assert "dry_run" in data.get("suggestion", "")

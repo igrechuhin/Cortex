@@ -848,10 +848,12 @@ class TestErrorHelpers:
         result_data = json.loads(result)
         assert result_data["status"] == "error"
         assert "invalid_type" in result_data["error"]
-        assert "valid_check_types" in result_data
-        assert "schema" in result_data["valid_check_types"]
-        assert "duplications" in result_data["valid_check_types"]
-        assert "quality" in result_data["valid_check_types"]
+        assert "available_options" in result_data
+        assert "schema" in result_data["available_options"]
+        assert "duplications" in result_data["available_options"]
+        assert "quality" in result_data["available_options"]
+        assert "suggestion" in result_data
+        assert "example" in result_data
 
     def test_create_validation_error_response(self) -> None:
         """Test creation of validation error response."""
@@ -874,7 +876,7 @@ class TestErrorHelpers:
 
         # Assert
         result_data = json.loads(result)
-        assert "infrastructure" in result_data["valid_check_types"]
+        assert "infrastructure" in result_data["available_options"]
 
 
 class TestHandleInfrastructureValidation:

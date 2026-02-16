@@ -36,7 +36,8 @@ class TestHandleApproveActionMissingParam:
         )
         data = json.loads(result)
         assert data["status"] == "error"
-        assert "suggestion_id" in data.get("action_required", "")
+        assert "suggestion_id" in data.get("suggestion", "")
+        assert "example" in data
 
 
 class TestHandleApplyActionMissingParams:
@@ -56,7 +57,8 @@ class TestHandleApplyActionMissingParams:
         )
         data = json.loads(result)
         assert data["status"] == "error"
-        assert "suggestion_id" in data.get("action_required", "")
+        assert "suggestion_id" in data.get("suggestion", "")
+        assert "example" in data
 
     @pytest.mark.asyncio
     async def test_missing_approval_id_returns_error_json(
@@ -72,7 +74,8 @@ class TestHandleApplyActionMissingParams:
         )
         data = json.loads(result)
         assert data["status"] == "error"
-        assert "approval_id" in data.get("action_required", "")
+        assert "approval_id" in data.get("suggestion", "")
+        assert "example" in data
 
 
 class TestHandleRollbackActionMissingParam:
@@ -92,7 +95,8 @@ class TestHandleRollbackActionMissingParam:
         )
         data = json.loads(result)
         assert data["status"] == "error"
-        assert "execution_id" in data.get("action_required", "")
+        assert "execution_id" in data.get("suggestion", "")
+        assert "example" in data
 
 
 class TestHandleApplyActionSuggestionNotFound:

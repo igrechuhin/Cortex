@@ -7,6 +7,10 @@ from typing import cast
 from cortex.core.models import ModelDict
 from cortex.optimization.models import RulesManagerStatusModel
 from cortex.optimization.optimization_config import OptimizationConfig
+from cortex.tools.tool_error_formatters import (
+    format_invalid_parameter_error,
+    format_missing_parameter_error,
+)
 
 
 class RulesOperation(str, Enum):
@@ -136,36 +140,18 @@ def build_get_relevant_response(
 def build_invalid_operation_error(operation: str) -> str:
     """Build error response for invalid operation."""
     valid_operations = [op.value for op in RulesOperation]
-    return json.dumps(
-        {
-            "status": "error",
-            "error": f"Invalid operation: {operation}",
-            "valid_operations": valid_operations,
-            "hint": (
-                "Use one of: 'index' or 'get_relevant' for the operation "
-                "parameter when calling rules()."
-            ),
-        },
-        indent=2,
+    return format_invalid_parameter_error(
+        parameter_name="operation",
+        invalid_value=operation,
+        valid_options=valid_operations,
+        tool_name="rules",
     )
 
 
 def build_missing_rules_parameters_error() -> str:
     """Build error response for missing operation parameter."""
-    operation_values = [op.value for op in RulesOperation]
-    return json.dumps(
-        {
-            "status": "error",
-            "error": "Missing required parameters: operation",
-            "details": {
-                "missing": ["operation"],
-                "required": ["operation"],
-                "operation_values": operation_values,
-            },
-            "hint": (
-                "Call rules(operation=...) with one of: 'index' or 'get_relevant'. "
-                "See docs/api/tools.md#rules."
-            ),
-        },
-        indent=2,
+    return format_missing_parameter_error(
+        missing_parameters=["operation"],
+        tool_name="rules",
+        example={"operation": "index"},
     )

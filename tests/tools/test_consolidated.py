@@ -1510,7 +1510,8 @@ class TestConfigure:
             result_str = await configure(component="invalid_component", action="view")
         result = json.loads(result_str)
         assert result["status"] == "error"
-        assert "Unknown component" in result["error"]
+        assert "Invalid component" in result["error"]
+        assert "available_options" in result
 
     async def test_configure_invalid_action(self, mock_managers: dict[str, object]):
         """Test invalid action type."""
@@ -1537,7 +1538,8 @@ class TestConfigure:
             )
         result = json.loads(result_str)
         assert result["status"] == "error"
-        assert "Unknown action" in result["error"]
+        assert "Invalid action" in result["error"]
+        assert "available_options" in result
 
     async def test_configure_update_missing_params(
         self, mock_managers: dict[str, object]

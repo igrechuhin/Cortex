@@ -418,20 +418,19 @@ class FixQualityResult(BaseModel):
 
 def _create_quality_error_response(error_message: str) -> str:
     """Create error response for quality fixes."""
-    result = FixQualityResult(
-        status="error",
-        errors_fixed=0,
-        warnings_fixed=0,
-        formatting_issues_fixed=0,
-        markdown_issues_fixed=0,
-        type_errors_fixed=0,
-        files_modified=[],
-        remaining_issues=[],
-        error_message=error_message,
+    from cortex.tools.tool_error_formatters import format_tool_error
+
+    return format_tool_error(
+        Exception(error_message),
+        suggestion=(
+            "Review the error details. Ensure the project root is valid and "
+            "quality tools (ruff, black, etc.) are available. Check file permissions."
+        ),
+        example={
+            "include_untracked_markdown": True,
+        },
+        context={"error_message": error_message},
     )
-    data = result.model_dump(mode="json")
-    compact = truncate_large_logs_in_data(data)
-    return json.dumps(compact, separators=(",", ":"))
 
 
 async def _run_quality_checks(root_str: str) -> ModelDict | str:

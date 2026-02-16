@@ -318,7 +318,9 @@ class TestApplyRefactoringApprove:
 
             # Assert
             assert result["status"] == "error"
-            assert "suggestion_id is required" in result["error"]
+            assert "suggestion_id" in result["error"]
+            assert "suggestion" in result
+            assert "example" in result
 
 
 # ============================================================================
@@ -498,7 +500,9 @@ class TestApplyRefactoringApply:
 
             # Assert
             assert result["status"] == "error"
-            assert "suggestion_id is required" in result["error"]
+            assert "suggestion_id" in result["error"]
+            assert "suggestion" in result
+            assert "example" in result
 
     async def test_apply_missing_approval_id(self, mock_project_root: Path) -> None:
         """Test application without approval_id."""
@@ -511,7 +515,10 @@ class TestApplyRefactoringApply:
             )
             result = json.loads(result_str)
             assert result["status"] == "error"
-            assert "approval_id is required" in result["error"]
+            assert "approval_id" in result["error"] or "approval_id" in result.get(
+                "suggestion", ""
+            )
+            assert "suggestion" in result
 
 
 # ============================================================================
@@ -636,7 +643,10 @@ class TestApplyRefactoringRollback:
 
             # Assert
             assert result["status"] == "error"
-            assert "execution_id is required" in result["error"]
+            assert "execution_id" in result["error"] or "execution_id" in result.get(
+                "suggestion", ""
+            )
+            assert "suggestion" in result
 
 
 # ============================================================================

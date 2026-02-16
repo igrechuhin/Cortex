@@ -20,7 +20,6 @@ from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.project_root_resolver import resolve_project_root_async
-from cortex.core.responses import error_response
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.optimization.optimization_config import OptimizationConfig
@@ -29,6 +28,10 @@ from cortex.refactoring.learning_engine import LearningEngine
 from cortex.server import mcp
 from cortex.tools.configuration_helpers import ConfigAction, parse_config_action
 from cortex.tools.models import LearnedPatternsResult
+from cortex.tools.tool_error_formatters import (
+    format_invalid_parameter_error,
+    format_tool_error,
+)
 from cortex.validation.validation_config import ValidationConfig
 
 
@@ -273,18 +276,12 @@ async def configure(
 
 def create_invalid_component_error(component: str) -> str:
     """Create error response for invalid component."""
-    return create_error_response(
-        f"Unknown component: {component}",
-        valid_components=["validation", "optimization", "learning"],
-        action_required=(
-            f"Use one of the valid components: 'validation', "
-            f"'optimization', or 'learning'. Received: '{component}'. "
-            f"Example: {{'component': 'validation', 'action': 'view'}}"
-        ),
-        context={
-            "invalid_component": component,
-            "valid_components": ["validation", "optimization", "learning"],
-        },
+    valid_components = ["validation", "optimization", "learning"]
+    return format_invalid_parameter_error(
+        parameter_name="component",
+        invalid_value=component,
+        valid_options=valid_components,
+        tool_name="configure",
     )
 
 
@@ -292,13 +289,17 @@ def create_configuration_exception_error(
     e: Exception, component: str, action: str
 ) -> str:
     """Create error response for configuration exception."""
-    return error_response(
+    return format_tool_error(
         e,
-        action_required=(
+        suggestion=(
             "Review the error details and verify your configuration parameters. "
             "Check that component, action, and settings are valid. "
             "Run with 'action=view' to see current configuration."
         ),
+        example={
+            "component": component,
+            "action": "view",
+        },
         context={"component": component, "action": action},
     )
 
@@ -356,18 +357,11 @@ async def handle_validation_reset(validation_config: ValidationConfig) -> str:
 def create_invalid_action_error(action: str) -> str:
     """Create error response for invalid action."""
     valid_actions = [a.value for a in ConfigAction]
-    return create_error_response(
-        f"Unknown action: {action}",
-        valid_actions=cast(JsonValue, valid_actions),
-        action_required=(
-            f"Use one of the valid actions: 'view', 'update', or 'reset'. "
-            f"Received: '{action}'. "
-            f"Example: {{'component': 'validation', 'action': 'view'}}"
-        ),
-        context=cast(
-            JsonValue,
-            {"invalid_action": action, "valid_actions": valid_actions},
-        ),
+    return format_invalid_parameter_error(
+        parameter_name="action",
+        invalid_value=action,
+        valid_options=valid_actions,
+        tool_name="configure",
     )
 
 
@@ -614,54 +608,66 @@ def _generate_action_required(error: str, extra_fields: dict[str, JsonValue]) ->
         )
 
 
+def _extract_available_options(extra_fields: dict[str, JsonValue]) -> list[str] | None:
+    """Extract available_options from extra_fields."""
+    for field in ["valid_components", "valid_actions", "valid_operations"]:
+        if field in extra_fields:
+            value = extra_fields[field]
+            if isinstance(value, list):
+                return [str(v) for v in value]
+    return None
+
+
+def _build_error_example(
+    error: str, available_options: list[str] | None
+) -> dict[str, JsonValue] | None:
+    """Build example dict from error message and available options."""
+    if not available_options:
+        return None
+    error_lower = error.lower()
+    if "component" in error_lower:
+        return {"component": available_options[0], "action": "view"}
+    elif "action" in error_lower:
+        return {"action": available_options[0]}
+    return None
+
+
 def create_error_response(error: str, **extra_fields: JsonValue) -> str:
     """Create an error response with optional extra fields and recovery suggestions.
 
     Args:
         error: Error message string
         **extra_fields: Additional fields to include in response
-            (e.g., action_required, context)
+            (e.g., action_required, context, valid_components, valid_actions)
 
     Returns:
         JSON string with standardized error response
     """
-    import json
-
-    # Extract action_required and context if provided
     action_required = extra_fields.pop("action_required", None)
     context = extra_fields.pop("context", None)
 
-    # Generate default action_required if not provided
     if not action_required:
         action_required = _generate_action_required(error, extra_fields)
 
-    # Build context from extra_fields if not explicitly provided
     if not context and extra_fields:
         context = extra_fields
 
-    # Type assertions for error_response
-    action_required_str = str(action_required)
-    context_dict: ModelDict | None = (
-        cast(ModelDict, context) if isinstance(context, dict) else None
+    available_options = _extract_available_options(extra_fields)
+    context_dict: dict[str, JsonValue] | None = (
+        context
+        if isinstance(context, dict)
+        else {"context": context} if context else None
     )
+    example = _build_error_example(error, available_options)
 
-    # Create base error response
-    base_response = json.loads(
-        error_response(
-            ValueError(error),
-            action_required=action_required_str,
-            context=context_dict,
-        )
+    return format_tool_error(
+        ValueError(error),
+        suggestion=str(action_required) if action_required else None,
+        example=example,
+        available_options=available_options,
+        context=context_dict,
+        action_required=str(action_required) if action_required else None,
     )
-
-    # Merge top-level fields from extra_fields (for backward compatibility with tests)
-    # Fields like valid_components, valid_actions should be at top level
-    top_level_fields = ["valid_components", "valid_actions", "valid_operations"]
-    for field in top_level_fields:
-        if field in extra_fields:
-            base_response[field] = extra_fields[field]
-
-    return json.dumps(base_response, indent=2)
 
 
 def get_learned_patterns(learning_engine: LearningEngine) -> LearnedPatternsResult:
