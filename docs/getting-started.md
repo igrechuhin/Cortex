@@ -8,13 +8,14 @@ This guide will help you install and start using Cortex.
 
 - Python 3.13 or later
 - `uv` package manager (recommended) or `pip`
-- Node.js and npm (for markdownlint-cli2, required by `fix_markdown_lint` MCP tool)
+- Node.js and npm (for markdownlint-cli2, required by `fix_markdown_lint` MCP tool and commit pipeline; optional if you use the repo’s local install—see below)
 
 ### Install via uv (Recommended)
 
 ```bash
-# Install markdownlint-cli2 (required dependency)
-npm install -g markdownlint-cli2
+# Optional: install markdownlint-cli2 for fix_markdown_lint and commit pipeline.
+# Option A (recommended): from a clone, run in repo root: npm install
+# Option B: global install: npm install -g markdownlint-cli2
 
 # Run from git repository
 uvx --from git+https://github.com/igrechuhin/cortex.git cortex
@@ -27,8 +28,8 @@ uvx --from git+https://github.com/igrechuhin/cortex.git cortex
 git clone https://github.com/igrechuhin/cortex.git
 cd cortex
 
-# Install markdownlint-cli2 (required dependency)
-npm install -g markdownlint-cli2
+# Install markdownlint-cli2: run npm install (uses package.json), or npm install -g markdownlint-cli2
+npm install
 
 # Install dependencies
 pip install -r requirements.txt
@@ -44,8 +45,8 @@ python -m cortex.main
 git clone https://github.com/igrechuhin/cortex.git
 cd cortex
 
-# Install markdownlint-cli2 (required dependency)
-npm install -g markdownlint-cli2
+# Install markdownlint-cli2: run npm install (uses package.json), or npm install -g markdownlint-cli2
+npm install
 
 # Install with development dependencies
 uv sync --dev

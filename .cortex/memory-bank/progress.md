@@ -12,6 +12,7 @@
 - **Commit (function length and file size violations)** - COMPLETE. Fixed function length violations: extracted `_load_memory_bank_files` helper from `_session_start_impl` in `session_start_tools.py` (34→30 lines); extracted `_prepare_execution_context` and `_finalize_execution` helpers from `_run_with_retry_and_record` in `mcp_stability.py` (37→30 lines), inlined `_handle_cancellation`. Fixed file size violation in `mcp_stability.py` (425→400 lines) by removing blank lines and consolidating docstrings. All quality checks pass; 4123 tests, 90.17% coverage.
 - **Commit (preflight and pipeline)** - Pre-commit: fix_errors, format, markdown lint (1 file fixed, 0 errors), type_check, quality, tests 4134 passed, 90.21% coverage. No completed plans in plans root; memory bank and roadmap consistent.
 - **Commit (synapse_lint check_file_sizes)** - COMPLETE. Fixed I001 import order in `.cortex/synapse/scripts/python/check_file_sizes.py` via ruff --fix. Phase A preflight passed; 4134 tests, 90.21% coverage.
+- **Commit (type, file size, markdown lint)** - Type fix in test_fix_markdown_lint.py (reportUnusedCallResult). Extracted markdown_lint_helpers.py from markdown_operations.py to fix file size violation (502→399 lines). Fixed MD051/MD036 in docs/guides/troubleshooting.md. All preflight and markdown lint pass.
 
 ## 2026-02-13
 

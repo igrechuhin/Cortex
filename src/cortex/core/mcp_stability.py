@@ -40,16 +40,15 @@ logger = logging.getLogger(__name__)
 # execute_pre_commit_checks removed: it only reports during tests, not setup; generic progress keeps connection alive.
 _TOOLS_WITH_OWN_PROGRESS = frozenset(
     {
-        "fix_markdown_lint",
         "fix_quality_issues",
     }
 )
-# Tools that need more frequent progress reporting to prevent client idle timeout.
-# These tools run long operations (especially tests) and need progress every 2-3 seconds
-# instead of the default 5 seconds to prevent "Connection closed" errors.
+# Tools that need more frequent progress reporting to prevent client idle timeout (-32000).
+# Wrapper sends progress every 2s; fix_markdown_lint also has its own heartbeat for double keep-alive.
 _TOOLS_NEEDING_FREQUENT_PROGRESS = frozenset(
     {
         "execute_pre_commit_checks",
+        "fix_markdown_lint",
     }
 )
 # Serialize first-tool context setup so concurrent tool calls do not each run full init.
@@ -624,8 +623,8 @@ def _create_progress_task_if_needed(
     """Create background progress task when enabled and ctx present (Phase 46).
 
     Skips time-based progress for tools that report their own progress
-    (e.g. fix_markdown_lint, fix_quality_issues) to avoid mixing
-    two progress scales (0-100 vs n/total).
+    (e.g. fix_quality_issues) to avoid mixing two progress scales (0-100 vs n/total).
+    fix_markdown_lint gets both wrapper progress (2s keep-alive) and its own file progress.
     """
     # Never create time-based progress for tools that report their own progress
     if tool_name in _TOOLS_WITH_OWN_PROGRESS:
@@ -649,7 +648,7 @@ async def _cancel_progress_and_report_done(
 ) -> None:
     """Cancel progress task and report 100% (Phase 46).
 
-    For tools that report their own progress (e.g., fix_markdown_lint),
+    For tools that report their own progress (e.g., fix_quality_issues),
     skip the wrapper's 100% report to avoid mixing progress scales.
     """
     from cortex.core.context_logging import MCPContext, report_progress_safe

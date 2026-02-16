@@ -26,6 +26,9 @@ ENV/
 env/
 .env
 
+# Node (local markdownlint-cli2 for fix_markdown_lint)
+node_modules/
+
 # IDE
 .idea/
 .vscode/

@@ -77,6 +77,8 @@ The server distinguishes between:
 - **Graceful disconnection** (exit code 0): Client closed connection
 - **Actual errors** (exit code 1): Server-side failures
 
+If the **client** shows `MCP error -32000: Connection closed` during a tool call, see [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed).
+
 #### Issue: MCP server not found by client
 
 **Symptoms**:
@@ -104,6 +106,119 @@ The server distinguishes between:
    ```
 
 3. Restart the MCP client
+
+#### Issue: MCP error -32000: Connection closed {#issue-mcp-error-32000-connection-closed}
+
+**Symptoms**:
+
+- Tool call returns: `{"error":"MCP error -32000: Connection closed"}`
+- Occurs during long-running tools (e.g. `fix_markdown_lint`, `execute_pre_commit_checks`, `fix_quality_issues`)
+
+**Cause**:
+
+The **client** (e.g. Cursor) closed the MCP connection before the tool finished—usually due to client-side tool timeout or IDE lifecycle, not a server bug. The tool may have completed on the server; the connection was already closed when the response was sent.
+
+**Fix (what to do)**:
+
+1. **Retry once**  
+   The client or agent should retry the same tool once. Many connection drops are transient; the second call often succeeds.
+
+2. **Use local markdownlint**  
+   For `fix_markdown_lint`, use a local install so the tool runs faster and is less likely to hit the client timeout:
+   - From project root: `npm install` (uses `package.json`). The tool prefers `node_modules/.bin/markdownlint-cli2` and avoids npx/network at run time.
+   - See [markdownlint-cli2 and npm (fix_markdown_lint)](#markdownlint-cli2-and-npm-fix_markdown_lint).
+
+3. **Use documented fallbacks in the commit pipeline**  
+   If a retry still fails with "Connection closed", follow the commit prompt’s fallback for that step (e.g. run markdown lint via shell for Step 12.5, or the fallback scripts for Step 12.6) and record "MCP connection closed; fallback used". Do not block the pipeline on "tool not found" after a disconnect—use the fallback.
+
+HTTP/SSE or a stdio–HTTP bridge is not a supported workaround for this issue (it has been tried and does not resolve connection closed during long tools).
+
+**Server-side mitigations (already in place)**:
+
+- Progress and heartbeat for long tools (e.g. 2 s heartbeat and wrapper progress for `fix_markdown_lint`, frequent progress for `execute_pre_commit_checks`).
+- Automatic retry for connection errors in the tool wrapper (one retry).
+- Batched markdown lint to reduce total duration.
+
+### Development and Testing
+
+#### Issue: I don't see any option to run tests in Cursor
+
+**Symptoms**:
+
+- No "Run Test" / "Run All Tests" buttons
+- No Test view or testing icon in the sidebar
+
+**Solution**:
+
+1. **Open the Testing view**  
+   - Click the **flask/beaker icon** in the left sidebar (Testing), or  
+   - **View → Testing**, or  
+   - Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`) → type **"Testing: Focus on Test View"**.
+
+2. **Install the Python extension**  
+   - Extensions panel (`Cmd+Shift+X` / `Ctrl+Shift+X`) → search **"Python"** (Microsoft) → Install if missing.  
+   - The built-in Test explorer depends on this extension.
+
+3. **Select the workspace interpreter**  
+   - Command Palette → **"Python: Select Interpreter"** → pick **`.venv (Python 3.13.x)`** under the project folder.  
+   - Without this, test discovery may not run or may use the wrong environment.
+
+4. **If the Test view is empty or discovery fails**  
+   Cursor’s bundled Python extension can have pytest discovery issues. Try:
+   - **Cursor Pytest** extension: Extensions → search **"Cursor Pytest"** (by Arun Dev) → Install. It adds inline Run/Debug buttons and test discovery.
+   - Or run tests from the terminal: `uv run pytest tests/ -k "test_name"` for a single test, or use Cortex MCP `execute_pre_commit_checks(checks=["tests"], ...)` for the full suite.
+
+5. **Ensure `.vscode/settings.json` exists** (see next subsection) so that when tests do run from the UI, the correct interpreter is used.
+
+#### Issue: "pytest-cov is not installed" during test discovery
+
+**Symptoms**:
+
+- Python extension log shows: `VSCodePytestError: ERROR: pytest-cov is not installed, please install this before running pytest with coverage as pytest-cov is required.`
+- Test discovery fails and the Test view stays empty.
+
+**Cause**:
+
+The Microsoft Python extension runs pytest for discovery. If `pytest.ini` has `--cov` in `addopts`, the extension requires `pytest-cov` to be installed and aborts discovery otherwise (even when coverage is disabled for that run).
+
+**Solution** (applied in this repo):
+
+Coverage is **not** in the default `pytest.ini` addopts. CI and `execute_pre_commit_checks` pass `--cov=src/cortex`, `--cov-report=...`, and `--cov-fail-under=90` explicitly, so full runs still enforce coverage. IDE discovery no longer sees coverage options and no longer requires `pytest-cov` for discovery.
+
+If you see this error in another project, either add coverage options only when running tests (e.g. via CI or a script), or install dev deps so `pytest-cov` is present: `uv sync --group dev --extra dev`.
+
+#### Issue: Tests don't run or always fail from Cursor/VS Code UI
+
+**Symptoms**:
+
+- Clicking "Run Test" / "Run All Tests" in the Test view does nothing or shows failures
+- Running a single test file exits with "FAILED" due to coverage (e.g. "Required test coverage of 90% not reached")
+
+**Cause**:
+
+`pytest.ini` sets `--cov-fail-under=90` in `addopts`. When you run one test or one file from the IDE, coverage is computed over the whole codebase, so the run fails even if the tests passed.
+
+**Solution**:
+
+1. **Use the project venv**  
+   Select the workspace interpreter: `.venv/bin/python` (Command Palette → "Python: Select Interpreter" → choose the one under the project folder).
+
+2. **Disable coverage for IDE test runs**  
+   So the Test UI doesn't enforce 90% coverage on partial runs, add or merge this into `.vscode/settings.json` (this folder is gitignored; create it if needed):
+
+   ```json
+   {
+     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+     "python.testing.pytestEnabled": true,
+     "python.testing.unittestEnabled": false,
+     "python.testing.pytestArgs": ["-p", "no:cov"]
+   }
+   ```
+
+   `-p no:cov` disables the coverage plugin for that run. In Cortex, default `pytest.ini` addopts do not include coverage; CI and MCP pass `--cov` explicitly for full runs.
+
+3. **Reload the window**  
+   After changing settings: Command Palette → "Developer: Reload Window", then use the Test view again.
 
 ### File Operations
 
@@ -690,6 +805,33 @@ When the implement step or commit pipeline runs the quality gate (`execute_pre_c
 - To make the fix persistent, add the chosen `export` to your shell profile (e.g. `~/.zshrc`) or use a `.env` file in the project root if your tooling supports it.
 
 See also [Git and SSL certificate issues](#git-and-ssl-certificate-issues) for certificate configuration.
+
+#### markdownlint-cli2 and npm (fix_markdown_lint)
+
+The `fix_markdown_lint` MCP tool and the commit pipeline require `markdownlint-cli2`. The tool looks for it in this order: (1) local `node_modules/.bin/markdownlint-cli2` (if present), (2) `markdownlint-cli2` in PATH, (3) `npx --yes markdownlint-cli2`.
+
+##### Recommended: local install (no global install, avoids npx network at run time)
+
+From the project root:
+
+```bash
+npm install
+```
+
+This uses the repo’s `package.json` and installs `markdownlint-cli2` into `node_modules/.bin/`. The MCP tool will use that binary when present, so no global install or npx is needed when running lint.
+
+**If `npm install` fails with SSL (e.g. UNABLE_TO_GET_ISSUER_CERT_LOCALLY)**
+
+- Use the system CA bundle (same idea as for Git/uv): set `NODE_EXTRA_CA_CERTS` or `npm config set cafile /path/to/ca-bundle.crt` if you have a custom bundle, or ensure the system CA store is up to date.
+- As a last resort in controlled environments only: `npm config set strict-ssl false` (project-only: run in repo root so it writes to `.npmrc` in the project). After `npm install` succeeds, you can remove or revert `.npmrc` if desired. Do not disable strict-ssl in shared or CI config unless required by your network.
+
+##### Alternative: global install
+
+```bash
+npm install -g markdownlint-cli2
+```
+
+Then the tool will find `markdownlint-cli2` in PATH. If npm hits SSL errors, use the same SSL workarounds as above.
 
 ### Refactoring Issues
 

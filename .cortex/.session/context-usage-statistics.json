@@ -1,25 +1,25 @@
 {
-  "last_updated": "2026-02-16T18:05",
-  "total_sessions_analyzed": 157,
-  "total_load_context_calls": 187,
-  "avg_token_utilization": 0.482,
-  "avg_files_selected": 6.47,
-  "avg_relevance_score": 0.617,
+  "last_updated": "2026-02-16T22:17",
+  "total_sessions_analyzed": 182,
+  "total_load_context_calls": 219,
+  "avg_token_utilization": 0.493,
+  "avg_files_selected": 6.22,
+  "avg_relevance_score": 0.615,
   "common_task_patterns": {
-    "fix/debug": 25,
-    "other": 35,
-    "implement/add": 56,
-    "update/modify": 7,
-    "testing": 35,
-    "documentation": 7,
-    "refactor": 10,
+    "fix/debug": 29,
+    "other": 41,
+    "implement/add": 58,
+    "update/modify": 9,
+    "testing": 51,
+    "documentation": 8,
+    "refactor": 11,
     "review": 9,
     "optimization": 3
   },
   "insights": {
     "task_type_recommendations": {
       "fix/debug": {
-        "calls_count": 25,
+        "calls_count": 29,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
@@ -28,12 +28,12 @@
           "progress.md",
           "systemPatterns.md"
         ],
-        "avg_utilization": 0.479,
-        "avg_relevance": 0.545,
-        "notes": "Moderate utilization - some budget optimization possible"
+        "avg_utilization": 0.518,
+        "avg_relevance": 0.564,
+        "notes": "Adequate performance"
       },
       "other": {
-        "calls_count": 35,
+        "calls_count": 41,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
@@ -42,12 +42,12 @@
           "projectBrief.md",
           "progress.md"
         ],
-        "avg_utilization": 0.467,
-        "avg_relevance": 0.568,
+        "avg_utilization": 0.477,
+        "avg_relevance": 0.573,
         "notes": "Moderate utilization - some budget optimization possible"
       },
       "implement/add": {
-        "calls_count": 56,
+        "calls_count": 58,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
@@ -56,24 +56,24 @@
           "productContext.md",
           "systemPatterns.md"
         ],
-        "avg_utilization": 0.47,
-        "avg_relevance": 0.628,
+        "avg_utilization": 0.465,
+        "avg_relevance": 0.631,
         "notes": "Moderate utilization - some budget optimization possible"
       },
       "update/modify": {
-        "calls_count": 7,
+        "calls_count": 9,
         "recommended_budget": 10000,
         "essential_files": [
           "productContext.md",
           "systemPatterns.md",
           "techContext.md"
         ],
-        "avg_utilization": 0.688,
-        "avg_relevance": 0.682,
+        "avg_utilization": 0.629,
+        "avg_relevance": 0.636,
         "notes": "Adequate performance"
       },
       "testing": {
-        "calls_count": 35,
+        "calls_count": 51,
         "recommended_budget": 10000,
         "essential_files": [
           "productContext.md",
@@ -82,12 +82,12 @@
           "roadmap.md",
           "projectBrief.md"
         ],
-        "avg_utilization": 0.516,
-        "avg_relevance": 0.666,
+        "avg_utilization": 0.533,
+        "avg_relevance": 0.645,
         "notes": "Adequate performance"
       },
       "documentation": {
-        "calls_count": 7,
+        "calls_count": 8,
         "recommended_budget": 10000,
         "essential_files": [
           "productContext.md",
@@ -96,12 +96,12 @@
           "roadmap.md",
           "activeContext.md"
         ],
-        "avg_utilization": 0.52,
-        "avg_relevance": 0.64,
+        "avg_utilization": 0.561,
+        "avg_relevance": 0.636,
         "notes": "Adequate performance"
       },
       "refactor": {
-        "calls_count": 10,
+        "calls_count": 11,
         "recommended_budget": 10000,
         "essential_files": [
           "techContext.md",
@@ -110,8 +110,8 @@
           "systemPatterns.md",
           "projectBrief.md"
         ],
-        "avg_utilization": 0.374,
-        "avg_relevance": 0.659,
+        "avg_utilization": 0.34,
+        "avg_relevance": 0.642,
         "notes": "Moderate utilization - some budget optimization possible"
       },
       "review": {
@@ -143,50 +143,50 @@
     },
     "file_effectiveness": {
       "activeContext.md": {
-        "times_selected": 137,
-        "avg_relevance": 0.796,
+        "times_selected": 145,
+        "avg_relevance": 0.777,
         "task_types_used": [
           "other",
-          "refactor",
-          "testing",
-          "fix/debug",
-          "optimization",
-          "update/modify",
           "review",
           "implement/add",
-          "documentation"
+          "update/modify",
+          "refactor",
+          "fix/debug",
+          "documentation",
+          "testing",
+          "optimization"
         ],
         "recommendation": "High value - prioritize for loading"
       },
       "techContext.md": {
-        "times_selected": 171,
-        "avg_relevance": 0.595,
+        "times_selected": 201,
+        "avg_relevance": 0.608,
         "task_types_used": [
           "other",
-          "refactor",
-          "testing",
-          "fix/debug",
-          "optimization",
-          "update/modify",
           "review",
           "implement/add",
-          "documentation"
+          "update/modify",
+          "refactor",
+          "fix/debug",
+          "documentation",
+          "testing",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "roadmap.md": {
-        "times_selected": 146,
-        "avg_relevance": 0.617,
+        "times_selected": 163,
+        "avg_relevance": 0.601,
         "task_types_used": [
           "other",
-          "refactor",
-          "testing",
-          "fix/debug",
-          "optimization",
-          "update/modify",
           "review",
           "implement/add",
-          "documentation"
+          "update/modify",
+          "refactor",
+          "fix/debug",
+          "documentation",
+          "testing",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -195,32 +195,32 @@
         "avg_relevance": 0.289,
         "task_types_used": [
           "other",
-          "refactor",
-          "testing",
-          "fix/debug",
-          "optimization",
-          "update/modify",
           "review",
           "implement/add",
-          "documentation"
+          "update/modify",
+          "refactor",
+          "fix/debug",
+          "documentation",
+          "testing",
+          "optimization"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "projectBrief.md": {
-        "times_selected": 171,
-        "avg_relevance": 0.5,
+        "times_selected": 201,
+        "avg_relevance": 0.515,
         "task_types_used": [
           "other",
-          "refactor",
-          "testing",
-          "fix/debug",
-          "optimization",
-          "update/modify",
           "review",
           "implement/add",
-          "documentation"
+          "update/modify",
+          "refactor",
+          "fix/debug",
+          "documentation",
+          "testing",
+          "optimization"
         ],
-        "recommendation": "Lower relevance - consider excluding for most tasks"
+        "recommendation": "Moderate value - include when relevant"
       },
       "phase-60-improve-manage-file-discoverability.plan.md": {
         "times_selected": 3,
@@ -241,50 +241,50 @@
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "progress.md": {
-        "times_selected": 123,
-        "avg_relevance": 0.603,
+        "times_selected": 131,
+        "avg_relevance": 0.589,
         "task_types_used": [
           "other",
-          "refactor",
-          "testing",
-          "fix/debug",
-          "optimization",
-          "update/modify",
           "review",
           "implement/add",
-          "documentation"
+          "update/modify",
+          "refactor",
+          "fix/debug",
+          "documentation",
+          "testing",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "systemPatterns.md": {
-        "times_selected": 168,
-        "avg_relevance": 0.581,
+        "times_selected": 198,
+        "avg_relevance": 0.587,
         "task_types_used": [
           "other",
-          "refactor",
-          "testing",
-          "fix/debug",
-          "optimization",
-          "update/modify",
           "review",
           "implement/add",
-          "documentation"
+          "update/modify",
+          "refactor",
+          "fix/debug",
+          "documentation",
+          "testing",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "productContext.md": {
-        "times_selected": 169,
-        "avg_relevance": 0.574,
+        "times_selected": 199,
+        "avg_relevance": 0.579,
         "task_types_used": [
           "other",
-          "refactor",
-          "testing",
-          "fix/debug",
-          "optimization",
-          "update/modify",
           "review",
           "implement/add",
-          "documentation"
+          "update/modify",
+          "refactor",
+          "fix/debug",
+          "documentation",
+          "testing",
+          "optimization"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -306,9 +306,9 @@
       }
     },
     "learned_patterns": [
-      "Average 48% budget utilization - ~10k tokens unused per call",
-      "'techContext.md' is most frequently loaded (171/187 calls)",
-      "Most common task type: 'implement/add' (56 calls)",
+      "Average 49% budget utilization - ~9k tokens unused per call",
+      "'techContext.md' is most frequently loaded (201/219 calls)",
+      "Most common task type: 'implement/add' (58 calls)",
       "Warning: at least one load_context call had token_budget=0 or no selected files. Treat this as a configuration or instrumentation issue for non-trivial tasks (especially refactor/fix/debug)."
     ],
     "budget_recommendations": {
@@ -5745,6 +5745,925 @@
         "techContext.md": 0.229,
         "productContext.md": 0.229,
         "systemPatterns.md": 0.229
+      }
+    },
+    {
+      "session_id": "0206edaccb4a",
+      "timestamp": "2026-02-12T10:11",
+      "task_description": "Load context when agent encounters problem / fix path - Require agents to load context (and rules) when fixing so they follow project rules and guidelines",
+      "token_budget": 5000,
+      "total_tokens": 4182,
+      "utilization": 0.8364,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.735,
+      "files_with_high_relevance": 5,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "projectBrief.md",
+        "techContext.md",
+        "productContext.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.646,
+        "progress.md": 0.597,
+        "activeContext.md": 0.771,
+        "projectBrief.md": 0.831,
+        "techContext.md": 0.781,
+        "productContext.md": 0.771,
+        "systemPatterns.md": 0.747
+      }
+    },
+    {
+      "session_id": "05b85fa5a211",
+      "timestamp": "2026-02-16T14:04",
+      "task_description": "Phase 51: Just-in-Time Context with Section-Level Loading - Transform context loading to metadata-first with section-level drill-down; hybrid retrieval strategy (always-load essentials + on-demand sections); 90%+ token savings for context map",
+      "token_budget": 30000,
+      "total_tokens": 19491,
+      "utilization": 0.6497,
+      "files_selected": 7,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.69,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "techContext.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "progress.md",
+        "projectBrief.md",
+        "activeContext.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.632,
+        "progress.md": 0.597,
+        "activeContext.md": 0.798,
+        "projectBrief.md": 0.675,
+        "techContext.md": 0.741,
+        "productContext.md": 0.613,
+        "systemPatterns.md": 0.775
+      }
+    },
+    {
+      "session_id": "16173d23e723",
+      "timestamp": "2026-02-12T14:50",
+      "task_description": "Run full /cortex/commit pipeline with all required checks and updates",
+      "token_budget": 5000,
+      "total_tokens": 4218,
+      "utilization": 0.8436,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.721,
+      "files_with_high_relevance": 5,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.554,
+        "progress.md": 0.626,
+        "activeContext.md": 0.819,
+        "projectBrief.md": 0.765,
+        "techContext.md": 0.772,
+        "productContext.md": 0.775,
+        "systemPatterns.md": 0.735
+      }
+    },
+    {
+      "session_id": "16173d23e723",
+      "timestamp": "2026-02-12T14:52",
+      "task_description": "Fixing test coverage shortfall for commit (coverage 89.98%)",
+      "token_budget": 5000,
+      "total_tokens": 4218,
+      "utilization": 0.8436,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.676,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.428,
+        "progress.md": 0.636,
+        "activeContext.md": 0.826,
+        "projectBrief.md": 0.806,
+        "techContext.md": 0.812,
+        "productContext.md": 0.634,
+        "systemPatterns.md": 0.591
+      }
+    },
+    {
+      "session_id": "4801d03bd0df",
+      "timestamp": "2026-02-16T17:45",
+      "task_description": "Phase 54 Session Start Initializer Pattern implementation - write unit tests and update prompts",
+      "token_budget": 5000,
+      "total_tokens": 28,
+      "utilization": 0.0056,
+      "files_selected": 7,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.23,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 7,
+      "selected_file_names": [
+        "activeContext.md",
+        "productContext.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "progress.md",
+        "techContext.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.233,
+        "progress.md": 0.229,
+        "activeContext.md": 0.229,
+        "projectBrief.md": 0.231,
+        "techContext.md": 0.229,
+        "productContext.md": 0.229,
+        "systemPatterns.md": 0.229
+      }
+    },
+    {
+      "session_id": "4bd640c4aeab",
+      "timestamp": "2026-02-16T16:23",
+      "task_description": "Commit pipeline execution with pre-commit checks, test coverage, and memory bank updates",
+      "token_budget": 10000,
+      "total_tokens": 5316,
+      "utilization": 0.5316,
+      "files_selected": 5,
+      "files_excluded": 2,
+      "avg_relevance_score": 0.713,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "roadmap.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "techContext.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.57,
+        "progress.md": 0.627,
+        "activeContext.md": 0.833,
+        "projectBrief.md": 0.81,
+        "techContext.md": 0.816,
+        "productContext.md": 0.677,
+        "systemPatterns.md": 0.66
+      }
+    },
+    {
+      "session_id": "4bd640c4aeab",
+      "timestamp": "2026-02-16T16:24",
+      "task_description": "Fixing code quality violations (file size, function length) and type check errors in tests",
+      "token_budget": 5000,
+      "total_tokens": 28,
+      "utilization": 0.0056,
+      "files_selected": 7,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.23,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 7,
+      "selected_file_names": [
+        "roadmap.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "progress.md",
+        "activeContext.md",
+        "projectBrief.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.233,
+        "progress.md": 0.229,
+        "activeContext.md": 0.229,
+        "projectBrief.md": 0.232,
+        "techContext.md": 0.229,
+        "productContext.md": 0.229,
+        "systemPatterns.md": 0.229
+      }
+    },
+    {
+      "session_id": "55da7e60b234",
+      "timestamp": "2026-02-16T18:44",
+      "task_description": "Commit pipeline: pre-commit checks, memory bank updates, and git operations",
+      "token_budget": 5000,
+      "total_tokens": 28,
+      "utilization": 0.0056,
+      "files_selected": 7,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.23,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 7,
+      "selected_file_names": [
+        "productContext.md",
+        "techContext.md",
+        "activeContext.md",
+        "progress.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.233,
+        "progress.md": 0.229,
+        "activeContext.md": 0.229,
+        "projectBrief.md": 0.231,
+        "techContext.md": 0.229,
+        "productContext.md": 0.229,
+        "systemPatterns.md": 0.229
+      }
+    },
+    {
+      "session_id": "58c40fa4f7f0",
+      "timestamp": "2026-02-12T15:17",
+      "task_description": "Fixing async test violations - unawaited coroutines in test files",
+      "token_budget": 5000,
+      "total_tokens": 4218,
+      "utilization": 0.8436,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.645,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "techContext.md",
+        "projectBrief.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.448,
+        "progress.md": 0.6,
+        "activeContext.md": 0.755,
+        "projectBrief.md": 0.763,
+        "techContext.md": 0.778,
+        "productContext.md": 0.564,
+        "systemPatterns.md": 0.605
+      }
+    },
+    {
+      "session_id": "58c40fa4f7f0",
+      "timestamp": "2026-02-12T15:24",
+      "task_description": "Fix tests: resolve check_async_tests unawaited coroutine violations and ensure tests/coverage pass",
+      "token_budget": 5000,
+      "total_tokens": 4218,
+      "utilization": 0.8436,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.601,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "techContext.md",
+        "projectBrief.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.402,
+        "progress.md": 0.641,
+        "activeContext.md": 0.836,
+        "projectBrief.md": 0.387,
+        "techContext.md": 0.71,
+        "productContext.md": 0.543,
+        "systemPatterns.md": 0.687
+      }
+    },
+    {
+      "session_id": "598b0ed0c6a9",
+      "timestamp": "2026-02-12T20:10",
+      "task_description": "Fixing test coverage to meet 90% threshold - need to identify uncovered code and add tests",
+      "token_budget": 5000,
+      "total_tokens": 4218,
+      "utilization": 0.8436,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.705,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "projectBrief.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.469,
+        "progress.md": 0.637,
+        "activeContext.md": 0.827,
+        "projectBrief.md": 0.797,
+        "techContext.md": 0.825,
+        "productContext.md": 0.697,
+        "systemPatterns.md": 0.68
+      }
+    },
+    {
+      "session_id": "8518c49d7495",
+      "timestamp": "2026-02-16T17:27",
+      "task_description": "Commit pipeline execution with pre-commit checks, test coverage, and memory bank updates",
+      "token_budget": 10000,
+      "total_tokens": 5295,
+      "utilization": 0.5295,
+      "files_selected": 5,
+      "files_excluded": 2,
+      "avg_relevance_score": 0.717,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "techContext.md",
+        "productContext.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.596,
+        "progress.md": 0.627,
+        "activeContext.md": 0.833,
+        "projectBrief.md": 0.81,
+        "techContext.md": 0.816,
+        "productContext.md": 0.677,
+        "systemPatterns.md": 0.66
+      }
+    },
+    {
+      "session_id": "92fdb77760c7",
+      "timestamp": "2026-02-16T15:59",
+      "task_description": "Phase 51: Just-in-Time Context with Section-Level Loading - Transform context loading to metadata-first with section-level drill-down; hybrid retrieval strategy (always-load essentials + on-demand sections); 90%+ token savings for context map",
+      "token_budget": 30000,
+      "total_tokens": 19539,
+      "utilization": 0.6513,
+      "files_selected": 7,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.69,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "techContext.md",
+        "roadmap.md",
+        "projectBrief.md",
+        "activeContext.md",
+        "systemPatterns.md",
+        "progress.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.632,
+        "progress.md": 0.597,
+        "activeContext.md": 0.798,
+        "projectBrief.md": 0.675,
+        "techContext.md": 0.741,
+        "productContext.md": 0.613,
+        "systemPatterns.md": 0.775
+      }
+    },
+    {
+      "session_id": "92fdb77760c7",
+      "timestamp": "2026-02-16T16:12",
+      "task_description": "Implement Step 7 of Phase 51: comprehensive testing and validation for hybrid retrieval strategy and section-level loading. Need 95%+ coverage, integration tests, token savings measurement, and performance benchmarks.",
+      "token_budget": 10000,
+      "total_tokens": 5413,
+      "utilization": 0.5413,
+      "files_selected": 5,
+      "files_excluded": 2,
+      "avg_relevance_score": 0.71,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "techContext.md",
+        "roadmap.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.628,
+        "progress.md": 0.62,
+        "activeContext.md": 0.828,
+        "projectBrief.md": 0.68,
+        "techContext.md": 0.763,
+        "productContext.md": 0.669,
+        "systemPatterns.md": 0.78
+      }
+    },
+    {
+      "session_id": "9624e73af33b",
+      "timestamp": "2026-02-12T13:03",
+      "task_description": "Running full /cortex/commit pipeline: fix errors, run checks, update memory bank, and commit changes",
+      "token_budget": 10000,
+      "total_tokens": 5163,
+      "utilization": 0.5163,
+      "files_selected": 5,
+      "files_excluded": 2,
+      "avg_relevance_score": 0.721,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "roadmap.md",
+        "projectBrief.md",
+        "techContext.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.571,
+        "progress.md": 0.64,
+        "activeContext.md": 0.842,
+        "projectBrief.md": 0.782,
+        "techContext.md": 0.797,
+        "productContext.md": 0.692,
+        "systemPatterns.md": 0.72
+      }
+    },
+    {
+      "session_id": "9c1a09e8c7da",
+      "timestamp": "2026-02-12T15:00",
+      "task_description": "Fix failing tests and coverage issues for current changes using the /cortex/fix_tests helper workflow.",
+      "token_budget": 5000,
+      "total_tokens": 4218,
+      "utilization": 0.8436,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.672,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "projectBrief.md",
+        "productContext.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.54,
+        "progress.md": 0.641,
+        "activeContext.md": 0.839,
+        "projectBrief.md": 0.577,
+        "techContext.md": 0.761,
+        "productContext.md": 0.63,
+        "systemPatterns.md": 0.716
+      }
+    },
+    {
+      "session_id": "a103eb6e0015",
+      "timestamp": "2026-02-16T14:50",
+      "task_description": "Commit pipeline execution with pre-commit checks, test coverage, and memory bank updates",
+      "token_budget": 10000,
+      "total_tokens": 5341,
+      "utilization": 0.5341,
+      "files_selected": 5,
+      "files_excluded": 2,
+      "avg_relevance_score": 0.71,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "roadmap.md",
+        "productContext.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.543,
+        "progress.md": 0.628,
+        "activeContext.md": 0.834,
+        "projectBrief.md": 0.81,
+        "techContext.md": 0.817,
+        "productContext.md": 0.678,
+        "systemPatterns.md": 0.661
+      }
+    },
+    {
+      "session_id": "a103eb6e0015",
+      "timestamp": "2026-02-16T14:51",
+      "task_description": "Fixing file size violation, test failures, and coverage issues for commit",
+      "token_budget": 5000,
+      "total_tokens": 28,
+      "utilization": 0.0056,
+      "files_selected": 7,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.23,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 7,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "roadmap.md",
+        "productContext.md",
+        "progress.md",
+        "techContext.md",
+        "activeContext.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.233,
+        "progress.md": 0.229,
+        "activeContext.md": 0.229,
+        "projectBrief.md": 0.232,
+        "techContext.md": 0.229,
+        "productContext.md": 0.229,
+        "systemPatterns.md": 0.229
+      }
+    },
+    {
+      "session_id": "a103eb6e0015",
+      "timestamp": "2026-02-16T14:52",
+      "task_description": "Investigate Pydantic JSON schema error for FileSystemManager in phase4_optimization_handlers.py load_context tool",
+      "token_budget": 5000,
+      "total_tokens": 28,
+      "utilization": 0.0056,
+      "files_selected": 7,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.23,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 7,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "roadmap.md",
+        "productContext.md",
+        "progress.md",
+        "techContext.md",
+        "activeContext.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.233,
+        "progress.md": 0.229,
+        "activeContext.md": 0.229,
+        "projectBrief.md": 0.232,
+        "techContext.md": 0.229,
+        "productContext.md": 0.229,
+        "systemPatterns.md": 0.229
+      }
+    },
+    {
+      "session_id": "a3b947f00b80",
+      "timestamp": "2026-02-12T17:13",
+      "task_description": "Run full /cortex/commit pipeline with all phases and checks (second attempt after MCP restart)",
+      "token_budget": 5000,
+      "total_tokens": 4218,
+      "utilization": 0.8436,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.731,
+      "files_with_high_relevance": 5,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "projectBrief.md",
+        "techContext.md",
+        "systemPatterns.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.558,
+        "progress.md": 0.632,
+        "activeContext.md": 0.831,
+        "projectBrief.md": 0.754,
+        "techContext.md": 0.794,
+        "productContext.md": 0.79,
+        "systemPatterns.md": 0.761
+      }
+    },
+    {
+      "session_id": "b4fa5b99fb29",
+      "timestamp": "2026-02-16T17:35",
+      "task_description": "MCP server stdio connection handling, TaskGroup cleanup, concurrent request management, connection lifecycle",
+      "token_budget": 10000,
+      "total_tokens": 5295,
+      "utilization": 0.5295,
+      "files_selected": 5,
+      "files_excluded": 2,
+      "avg_relevance_score": 0.564,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "projectBrief.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "roadmap.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.362,
+        "progress.md": 0.523,
+        "activeContext.md": 0.691,
+        "projectBrief.md": 0.389,
+        "techContext.md": 0.692,
+        "productContext.md": 0.631,
+        "systemPatterns.md": 0.662
+      }
+    },
+    {
+      "session_id": "b943e3400286",
+      "timestamp": "2026-02-15T18:46",
+      "task_description": "Quality gate skip documentation when environment unavailable: preflight fails due to missing dev tools or SSL; allow skip or soft-fail for docs-only changes",
+      "token_budget": 5000,
+      "total_tokens": 4218,
+      "utilization": 0.8436,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.607,
+      "files_with_high_relevance": 2,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "projectBrief.md",
+        "productContext.md",
+        "systemPatterns.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.53,
+        "progress.md": 0.593,
+        "activeContext.md": 0.75,
+        "projectBrief.md": 0.403,
+        "techContext.md": 0.636,
+        "productContext.md": 0.725,
+        "systemPatterns.md": 0.615
+      }
+    },
+    {
+      "session_id": "bcb5715b5a65",
+      "timestamp": "2026-02-11T20:18",
+      "task_description": "Quality gate: commit pipeline spelling gap - implement spelling check in commit pipeline",
+      "token_budget": 0,
+      "total_tokens": 0,
+      "utilization": 0.0,
+      "files_selected": 0,
+      "files_excluded": 7,
+      "avg_relevance_score": 0.663,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [],
+      "relevance_by_file": {
+        "roadmap.md": 0.612,
+        "progress.md": 0.643,
+        "activeContext.md": 0.842,
+        "projectBrief.md": 0.398,
+        "techContext.md": 0.676,
+        "productContext.md": 0.734,
+        "systemPatterns.md": 0.736
+      }
+    },
+    {
+      "session_id": "c3890d99242d",
+      "timestamp": "2026-02-12T23:28",
+      "task_description": "Fixing function length violations in query_usage_operations and test coverage for commit",
+      "token_budget": 5000,
+      "total_tokens": 4218,
+      "utilization": 0.8436,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.644,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "systemPatterns.md",
+        "projectBrief.md",
+        "productContext.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.385,
+        "progress.md": 0.62,
+        "activeContext.md": 0.792,
+        "projectBrief.md": 0.751,
+        "techContext.md": 0.775,
+        "productContext.md": 0.595,
+        "systemPatterns.md": 0.59
+      }
+    },
+    {
+      "session_id": "d2b4a71abbfe",
+      "timestamp": "2026-02-16T13:47",
+      "task_description": "Run full /cortex/commit pipeline with all validation, tests, docs, and git operations",
+      "token_budget": 10000,
+      "total_tokens": 5341,
+      "utilization": 0.5341,
+      "files_selected": 5,
+      "files_excluded": 2,
+      "avg_relevance_score": 0.721,
+      "files_with_high_relevance": 5,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.542,
+        "progress.md": 0.622,
+        "activeContext.md": 0.821,
+        "projectBrief.md": 0.742,
+        "techContext.md": 0.788,
+        "productContext.md": 0.771,
+        "systemPatterns.md": 0.762
+      }
+    },
+    {
+      "session_id": "d5b896984b42",
+      "timestamp": "2026-02-12T14:33",
+      "task_description": "Fix failing tests and coverage issues for the current changes using the /cortex/fix_tests workflow.",
+      "token_budget": 5000,
+      "total_tokens": 4218,
+      "utilization": 0.8436,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.668,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "techContext.md",
+        "projectBrief.md",
+        "systemPatterns.md",
+        "productContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.541,
+        "progress.md": 0.64,
+        "activeContext.md": 0.836,
+        "projectBrief.md": 0.579,
+        "techContext.md": 0.76,
+        "productContext.md": 0.607,
+        "systemPatterns.md": 0.715
+      }
+    },
+    {
+      "session_id": "d8ff4cdafe35",
+      "timestamp": "2026-02-12T15:49",
+      "task_description": "Run full /cortex/commit pipeline with all phases and checks",
+      "token_budget": 10000,
+      "total_tokens": 5229,
+      "utilization": 0.5229,
+      "files_selected": 5,
+      "files_excluded": 2,
+      "avg_relevance_score": 0.718,
+      "files_with_high_relevance": 5,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "techContext.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "productContext.md",
+        "roadmap.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.554,
+        "progress.md": 0.626,
+        "activeContext.md": 0.82,
+        "projectBrief.md": 0.745,
+        "techContext.md": 0.77,
+        "productContext.md": 0.772,
+        "systemPatterns.md": 0.74
+      }
+    },
+    {
+      "session_id": "dfd70f17c322",
+      "timestamp": "2026-02-12T19:44",
+      "task_description": "Phase 50: Tool Consolidation and Response Format Optimization - Reduce tool count from 53+ to ~30, add response_format (concise/detailed) parameter to verbose tools, merge overlapping tools following Anthropic's guidance",
+      "token_budget": 30000,
+      "total_tokens": 18398,
+      "utilization": 0.6132666666666666,
+      "files_selected": 7,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.736,
+      "files_with_high_relevance": 4,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "roadmap.md",
+        "activeContext.md",
+        "productContext.md",
+        "progress.md",
+        "systemPatterns.md",
+        "projectBrief.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.65,
+        "progress.md": 0.639,
+        "activeContext.md": 0.846,
+        "projectBrief.md": 0.554,
+        "techContext.md": 0.823,
+        "productContext.md": 0.812,
+        "systemPatterns.md": 0.831
+      }
+    },
+    {
+      "session_id": "e3e1c3c65bd9",
+      "timestamp": "2026-02-12T17:13",
+      "task_description": "Debug and fix MCP stdio connection broken / Connection closed errors when calling user-cortex tools execute_pre_commit_checks and fix_markdown_lint, as shown in recent log snippet.",
+      "token_budget": 5000,
+      "total_tokens": 4218,
+      "utilization": 0.8436,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.59,
+      "files_with_high_relevance": 1,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.356,
+        "progress.md": 0.618,
+        "activeContext.md": 0.797,
+        "projectBrief.md": 0.385,
+        "techContext.md": 0.693,
+        "productContext.md": 0.653,
+        "systemPatterns.md": 0.63
+      }
+    },
+    {
+      "session_id": "e3e1c3c65bd9",
+      "timestamp": "2026-02-12T17:15",
+      "task_description": "Fix function length violations in src/cortex/core/mcp_stability.py for commit quality gate",
+      "token_budget": 5000,
+      "total_tokens": 4218,
+      "utilization": 0.8436,
+      "files_selected": 4,
+      "files_excluded": 3,
+      "avg_relevance_score": 0.682,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "systemPatterns.md",
+        "techContext.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.519,
+        "progress.md": 0.64,
+        "activeContext.md": 0.837,
+        "projectBrief.md": 0.645,
+        "techContext.md": 0.753,
+        "productContext.md": 0.64,
+        "systemPatterns.md": 0.742
+      }
+    },
+    {
+      "session_id": "e88dc737b780",
+      "timestamp": "2026-02-12T15:10",
+      "task_description": "Commit pipeline execution with pre-commit checks, test coverage, and memory bank updates",
+      "token_budget": 10000,
+      "total_tokens": 5229,
+      "utilization": 0.5229,
+      "files_selected": 5,
+      "files_excluded": 2,
+      "avg_relevance_score": 0.721,
+      "files_with_high_relevance": 3,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [
+        "productContext.md",
+        "roadmap.md",
+        "techContext.md",
+        "systemPatterns.md",
+        "projectBrief.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.516,
+        "progress.md": 0.645,
+        "activeContext.md": 0.852,
+        "projectBrief.md": 0.827,
+        "techContext.md": 0.834,
+        "productContext.md": 0.695,
+        "systemPatterns.md": 0.678
+      }
+    },
+    {
+      "session_id": "ff5200195528",
+      "timestamp": "2026-02-11T20:57",
+      "task_description": "Refactor setup prompts (simplify to 3) - Simplify from 4 to 3 prompts",
+      "token_budget": 0,
+      "total_tokens": 0,
+      "utilization": 0.0,
+      "files_selected": 0,
+      "files_excluded": 7,
+      "avg_relevance_score": 0.475,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 0,
+      "selected_file_names": [],
+      "relevance_by_file": {
+        "roadmap.md": 0.564,
+        "progress.md": 0.402,
+        "activeContext.md": 0.485,
+        "projectBrief.md": 0.362,
+        "techContext.md": 0.484,
+        "productContext.md": 0.482,
+        "systemPatterns.md": 0.546
       }
     }
   ]

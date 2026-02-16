@@ -337,6 +337,35 @@ class TestCheckMarkdownlintAvailable:
             assert result is None
             assert mock_run.call_count == 2  # Should try both markdownlint-cli2 and npx
 
+    @pytest.mark.asyncio
+    async def test_markdownlint_prefers_local_node_modules(self, tmp_path: Path):
+        """Test that local node_modules/.bin/markdownlint-cli2 is used when present."""
+        (tmp_path / "node_modules" / ".bin").mkdir(parents=True)
+        local_bin = tmp_path / "node_modules" / ".bin" / "markdownlint-cli2"
+        _ = local_bin.write_text("#!/bin/sh\nexit 0")
+
+        with patch(
+            "cortex.tools.markdown_operations._run_command",
+            new_callable=AsyncMock,
+        ) as mock_run:
+            mock_run.return_value = GitCommandResult(
+                success=True,
+                stdout="markdownlint-cli2 version 1.0.0",
+                stderr="",
+                returncode=0,
+            )
+
+            result = await _find_markdownlint_command(tmp_path)
+
+            assert result is not None
+            assert len(result) == 1
+            assert "markdownlint-cli2" in result[0]
+            assert str(tmp_path) in result[0]
+            mock_run.assert_called_once()
+            call_args = mock_run.call_args[0][0]
+            assert call_args[0] == str(local_bin.resolve())
+            assert call_args[1] == "--version"
+
 
 class TestRunMarkdownlintFix:
     """Test _run_markdownlint_fix function."""

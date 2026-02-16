@@ -1,5 +1,7 @@
 """MCP tools for markdown file operations (fix_markdown_lint, fix_roadmap_corruption)."""
 
+# pyright: reportPrivateUsage=false
+
 import asyncio
 import hashlib
 import json
@@ -27,22 +29,34 @@ from cortex.tools.markdown_lint_cache import (
     load_markdown_lint_index_safe,
     save_markdown_lint_index,
 )
+from cortex.tools.markdown_lint_helpers import (
+    FileResult,
+    _apply_validation_error_hint,
+    _build_error_result,
+    _build_markdownlint_batch_results,
+    _calculate_statistics,
+    _chunk_paths,
+    _parse_markdownlint_errors,
+    _parse_markdownlint_lines_by_file,
+    _parse_markdownlint_output,
+    _result_error,
+    _result_returncode,
+    _result_stderr,
+    _result_stdout,
+    _result_success,
+)
 from cortex.tools.markdown_lint_responses import (
     create_empty_success_response,
     create_error_response,
 )
 from cortex.tools.roadmap_corruption import CorruptionMatch
 
-
-class FileResult(BaseModel):
-    """Result for a single file processing."""
-
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
-
-    file: str = Field(description="File path")
-    fixed: bool = Field(description="Whether file was fixed")
-    errors: list[str] = Field(default_factory=list, description="List of errors")
-    error_message: str | None = Field(default=None, description="Error message if any")
+__all__ = [
+    "FileResult",
+    "FixMarkdownLintResult",
+    "_calculate_statistics",
+    "fix_markdown_lint",
+]
 
 
 class FixMarkdownLintResult(BaseModel):
@@ -106,26 +120,6 @@ async def _run_command(
         return _create_error_result(f"Command timed out after {timeout}s")
     except Exception as e:
         return _create_error_result(str(e))
-
-
-def _result_success(result: GitCommandResult) -> bool:
-    return result.success
-
-
-def _result_stdout(result: GitCommandResult) -> str:
-    return result.stdout
-
-
-def _result_stderr(result: GitCommandResult) -> str:
-    return result.stderr
-
-
-def _result_returncode(result: GitCommandResult) -> int | None:
-    return result.returncode
-
-
-def _result_error(result: GitCommandResult) -> str | None:
-    return result.error
 
 
 def _parse_git_output(stdout: str, project_root: Path, files: list[Path]) -> None:
@@ -261,25 +255,48 @@ async def _get_modified_markdown_files(
     return sorted(set(files))
 
 
-async def _find_markdownlint_command() -> list[str] | None:
+def _local_markdownlint_path(project_root: Path) -> Path | None:
+    """Return path to local node_modules/.bin/markdownlint-cli2 if present."""
+    local_bin = project_root / "node_modules" / ".bin" / "markdownlint-cli2"
+    if local_bin.exists():
+        return local_bin.resolve()
+    # Windows
+    win_cmd = project_root / "node_modules" / ".bin" / "markdownlint-cli2.cmd"
+    if win_cmd.exists():
+        return win_cmd.resolve()
+    return None
+
+
+async def _find_markdownlint_command(
+    project_root: Path | None = None,
+) -> list[str] | None:
     """Find available markdownlint-cli2 command.
 
-    Checks for markdownlint-cli2 in PATH first, then tries npx as fallback.
+    Checks (1) local node_modules/.bin if project_root given, (2) PATH,
+    (3) npx as fallback.
 
     Returns:
-        Command list to use (e.g., ["markdownlint-cli2"] or
-        ["npx", "markdownlint-cli2"]),
-        or None if not available
+        Command list to use (e.g., ["/path/to/markdownlint-cli2"] or
+        ["npx", "--yes", "markdownlint-cli2"]), or None if not available
     """
-    # Try direct command first
+    # Prefer local install (avoids npx network/SSL when running)
+    if project_root is not None:
+        local = _local_markdownlint_path(project_root)
+        if local is not None:
+            result = await _run_command([str(local), "--version"], cwd=project_root)
+            if _result_success(result) or "markdownlint-cli2" in _result_stdout(result):
+                return [str(local)]
+
+    # Try direct command in PATH
     result = await _run_command(["markdownlint-cli2", "--version"])
     if _result_success(result) or "markdownlint-cli2" in _result_stdout(result):
         return ["markdownlint-cli2"]
 
-    # Try npx as fallback (doesn't require global installation)
-    # Note: npx may return non-zero exit code even when version check succeeds
-    # (if it lints files), so check stdout for version string
-    result = await _run_command(["npx", "--yes", "markdownlint-cli2", "--version"])
+    # Try npx as fallback (may hit network/SSL in some environments)
+    result = await _run_command(
+        ["npx", "--yes", "markdownlint-cli2", "--version"],
+        cwd=project_root if project_root is not None else None,
+    )
     if _result_success(result) or "markdownlint-cli2" in _result_stdout(result):
         return ["npx", "--yes", "markdownlint-cli2"]
 
@@ -309,71 +326,6 @@ def _find_markdownlint_config(project_root: Path) -> Path | None:
         return json_config
 
     return None
-
-
-def _parse_markdownlint_errors(stderr: str) -> list[str]:
-    """Parse markdownlint errors from stderr."""
-    errors: list[str] = []
-    for line in stderr.strip().split("\n"):
-        if line.strip() and not line.startswith("markdownlint-cli2"):
-            errors.append(line.strip())
-    return errors
-
-
-def _parse_markdownlint_output(stdout: str) -> list[str]:
-    """Parse markdownlint output from stdout."""
-    errors: list[str] = []
-    for line in stdout.strip().split("\n"):
-        if line.strip():
-            errors.append(line.strip())
-    return errors
-
-
-def _parse_markdownlint_lines_by_file(output: str) -> dict[str, list[str]]:
-    """Parse markdownlint output into per-file line groups.
-
-    Lines follow 'file: line: rule' format. Returns mapping of
-    relative file path to list of lines for that file.
-    """
-    by_file: dict[str, list[str]] = {}
-    for line in output.strip().split("\n"):
-        s = line.strip()
-        if not s or s.startswith("markdownlint"):
-            continue
-        idx = s.find(": ")
-        if idx <= 0:
-            continue
-        file_part = s[:idx].strip()
-        if file_part and (".md" in file_part or ".mdc" in file_part):
-            by_file.setdefault(file_part, []).append(s)
-    return by_file
-
-
-def _build_error_result(
-    relative_path: str,
-    errors: list[str],
-    return_code: int | None,
-    error_msg: str | None,
-) -> FileResult:
-    """Build error result for markdownlint fix."""
-    if return_code == 0 and errors:
-        return FileResult(
-            file=relative_path,
-            fixed=True,
-            errors=errors,
-            error_message=None,
-        )
-
-    error_message = error_msg if isinstance(error_msg, str) else "Unknown error"
-    if not error_message and errors:
-        error_message = "; ".join(errors[:3])
-
-    return FileResult(
-        file=relative_path,
-        fixed=False,
-        errors=errors,
-        error_message=error_message,
-    )
 
 
 async def _run_markdownlint_fix(  # pyright: ignore[reportUnusedFunction]
@@ -440,70 +392,6 @@ async def _run_markdownlint_batch(
     )
 
 
-def _build_markdownlint_batch_results(
-    rel_strs: list[str],
-    result: GitCommandResult,
-    by_file: dict[str, list[str]],
-    raw_lines: list[str],
-    dry_run: bool,
-) -> list[FileResult]:
-    """Build per-file results from markdownlint batch output."""
-    success = _result_success(result)
-    output_suggests_fix = success and bool(raw_lines)
-    single_file = len(rel_strs) == 1
-    return [
-        (
-            _build_markdownlint_success_result(
-                rel,
-                by_file.get(rel, []),
-                raw_lines,
-                output_suggests_fix,
-                single_file,
-                dry_run,
-            )
-            if success
-            else _build_markdownlint_error_result(
-                rel,
-                by_file.get(rel, []),
-                result,
-            )
-        )
-        for rel in rel_strs
-    ]
-
-
-def _build_markdownlint_success_result(
-    rel: str,
-    lines: list[str],
-    raw_lines: list[str],
-    output_suggests_fix: bool,
-    single_file: bool,
-    dry_run: bool,
-) -> FileResult:
-    fixed = (bool(lines) or (output_suggests_fix and single_file)) and not dry_run
-    return FileResult(
-        file=rel,
-        fixed=fixed,
-        errors=lines or raw_lines,
-        error_message=None,
-    )
-
-
-def _build_markdownlint_error_result(
-    rel: str,
-    lines: list[str],
-    result: GitCommandResult,
-) -> FileResult:
-    """Return FileResult for a failed markdownlint run on one file."""
-    error_msg = _result_error(result) or "; ".join(lines[:3]) if lines else ""
-    return _build_error_result(
-        rel,
-        lines,
-        _result_returncode(result),
-        error_msg or "Markdown lint failed",
-    )
-
-
 async def _validate_markdown_prerequisites(
     root_path: Path,
 ) -> tuple[str | None, list[str] | None, Path | None]:
@@ -512,26 +400,19 @@ async def _validate_markdown_prerequisites(
     if not _result_success(git_check):
         return create_error_response("Not in a git repository"), None, None
 
-    markdownlint_cmd = await _find_markdownlint_command()
+    markdownlint_cmd = await _find_markdownlint_command(root_path)
     if markdownlint_cmd is None:
         return (
             create_error_response(
                 "markdownlint-cli2 not found. "
-                + "Install it with: npm install -g markdownlint-cli2 "
-                + "or ensure npx is available (npx will auto-install it)"
+                + "From project root run: npm install (uses package.json), "
+                + "or: npm install -g markdownlint-cli2, or ensure npx is available."
             ),
             None,
             None,
         )
     config_path = _find_markdownlint_config(root_path)
     return None, markdownlint_cmd, config_path
-
-
-def _not_in_git_repo_hint(project_root_was_none: bool) -> str:
-    """Return hint when git check fails."""
-    if not project_root_was_none:
-        return ""
-    return " When running under MCP, use workspace root or client roots (roots/list)."
 
 
 async def _get_markdown_files_to_process(
@@ -697,11 +578,6 @@ async def _after_one_file(
         )
 
 
-def _chunk_paths(files: list[Path], size: int) -> list[list[Path]]:
-    """Split file list into chunks of at most size."""
-    return [files[i : i + size] for i in range(0, len(files), size)]
-
-
 async def _run_batched_markdown_loop(
     files: list[Path],
     root_path: Path,
@@ -827,14 +703,6 @@ async def _run_markdownlint_for_batches(
     return results
 
 
-def _calculate_statistics(results: list[FileResult]) -> tuple[int, int, int]:
-    """Return (files_fixed, files_with_errors, files_unchanged)."""
-    files_fixed = sum(1 for r in results if r.fixed)
-    files_with_errors = sum(1 for r in results if r.error_message is not None)
-    files_unchanged = len(results) - files_fixed - files_with_errors
-    return (files_fixed, files_with_errors, files_unchanged)
-
-
 def _build_fix_response(results: list[FileResult]) -> str:
     """Build JSON response from file results."""
     files_fixed, files_with_errors, files_unchanged = _calculate_statistics(results)
@@ -900,18 +768,6 @@ async def _run_markdownlint_for_files(
         file_hashes=file_hashes,
     )
     return [*initial_results, *lint_results]
-
-
-def _apply_validation_error_hint(validation_error: str) -> str:
-    """Apply not-in-git hint to validation error JSON when applicable; return final JSON."""
-    if "Not in a git repository" in validation_error:
-        hint = _not_in_git_repo_hint(True)
-        if hint:
-            data = json.loads(validation_error)
-            if data.get("error_message"):
-                data["error_message"] = data["error_message"].rstrip() + hint
-                return json.dumps(data, indent=2)
-    return validation_error
 
 
 async def _fix_markdown_lint_impl(
