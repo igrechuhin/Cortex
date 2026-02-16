@@ -35,7 +35,9 @@ from cortex.tools.tool_categories import (
 _MIN_ALWAYS_LOADED = 12  # at least this many core tools
 _MIN_DEFERRED_MEDIUM = 15
 _MIN_DEFERRED_LOW = 10
-_MIN_TOTAL_TOOLS = 50
+_MIN_TOTAL_TOOLS = (
+    48  # Phase 50: query_memory_bank + query_usage consolidated 15 tools → 2
+)
 
 
 @pytest.mark.timeout(5)
@@ -180,20 +182,12 @@ class TestToolCategoriesMapping:
             ), f"Core tool {name!r} should be ALWAYS_LOADED, got {cat}"
 
     def test_analytics_tools_are_deferred_low(self) -> None:
-        """Usage analytics tools should be deferred_low."""
-        analytics_tools = {
-            "get_tool_usage_stats",
-            "get_unused_tools",
-            "search_usage",
-            "get_usage_timeline",
-            "get_tool_usage_report",
-            "get_optimization_recommendations",
-        }
-        for name in analytics_tools:
-            cat = get_tool_category(name)
-            assert (
-                cat == ToolCategory.DEFERRED_LOW
-            ), f"Analytics tool {name!r} should be DEFERRED_LOW, got {cat}"
+        """Usage analytics consolidated tool should be deferred_low (Phase 50)."""
+        analytics_tool = "query_usage"
+        cat = get_tool_category(analytics_tool)
+        assert (
+            cat == ToolCategory.DEFERRED_LOW
+        ), f"Analytics tool {analytics_tool!r} should be DEFERRED_LOW, got {cat}"
 
 
 @pytest.mark.timeout(5)

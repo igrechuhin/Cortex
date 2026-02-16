@@ -9,12 +9,11 @@ from cortex.discovery.tool_registry import get_known_tool_names
 
 # Phase 43: read-only get_* tool names (subset of get_known_tool_names()).
 # Keep in sync with discovery/tool_registry.py. Any new get_* tool must be read-only.
+# Phase 50: get_dependency_graph, get_link_graph, get_memory_bank_stats, get_version_history
+# consolidated into query_memory_bank (no longer get_* tools).
 _READ_ONLY_GET_TOOLS: frozenset[str] = frozenset(
     {
-        "get_dependency_graph",
         "get_file_metadata",
-        "get_link_graph",
-        "get_memory_bank_stats",
         "get_memory_bank_structure",
         "get_optimization_insights",
         "get_quality_score",
@@ -22,7 +21,6 @@ _READ_ONLY_GET_TOOLS: frozenset[str] = frozenset(
         "get_refactoring_history",
         "get_relevant_rules",
         "get_structure_info",
-        "get_version_history",
     }
 )
 

@@ -1,5 +1,13 @@
 # Progress Log
 
+## 2026-02-16
+
+- **Commit (type fixes test_query_memory_bank_operations)** - COMPLETE. Fixed type errors in `tests/tools/test_query_memory_bank_operations.py`: added type annotations (`QueryMemoryBankParams`, `MCPContext | None`) to mock handler functions, added `# type: ignore[reportPrivateUsage]` comments for private `_MEMORY_BANK_HANDLERS` access in tests, removed unused imports (`Awaitable`, `Callable`). All 3985 tests pass; 90.11% coverage.
+
+## 2026-02-13
+
+- **Phase 50 Step 5: Documentation and tool descriptions** - COMPLETE. Updated docs/api/tools.md (Phase 50 section, query_memory_bank, query_usage; removed standalone get_*/ load_progressive_context sections); AGENTS.md tool table (load_context, manage_file, configure, query_*); mcp-tool-timeouts, tool-usage-tracking, troubleshooting, failure-modes, error-recovery, advanced-tool-use, setup-cursor-integration to reference consolidated tools.
+
 ## 2026-02-12
 
 - **Session Optimization: Commit Pipeline Improvements – Step 2 (Early Markdown Lint)** - COMPLETE. Added pre-commit markdownlint hook to .pre-commit-config.yaml, documented in docs/getting-started.md and commit prompt Step 1.5, Cursor rule .cursor/rules/markdown-lint-on-save.md, unit test tests/unit/test_pre_commit_config.py.
@@ -17,6 +25,7 @@
 - **Phase 50: Tool consolidation usage audit** - PARTIAL. Documented consolidation groups and a usage-matrix template for overlapping MCP tools; numeric usage statistics are still blocked by usage JSON file locks and should be filled in a later session when `get_tool_usage_stats` / `get_unused_tools` are available.
 - **Phase 50: Tool Consolidation and Response Format Optimization** - IN PROGRESS. Defaulted response_format to 'concise' for high-token tools (load_context, get_memory_bank_stats, validate, suggest_refactoring, get_tool_usage_stats, search_usage), updated tests accordingly, and verified coverage at approximately 90.0%.
 - **Phase 50 Step 4 Phase 1: Tool Consolidation (Low-Risk Merges)** - COMPLETE. Merged `write_file` into `manage_file`, `load_progressive_context` into `load_context` (with `strategy="progressive"`), and `update_config` into `configure`. All deprecated tools now include deprecation warnings in docstrings and responses. Backward compatibility maintained. Quality gate passed.
+- **Phase 50 Step 4 Phase 2: query_memory_bank and query_usage** - COMPLETE. Implemented consolidated tools query_memory_bank (stats, version_history, dependency_graph, link_graph, parse_links, validate_links, resolve_transclusions) and query_usage (stats, unused, report, recommendations, search, events, observation, timeline). Removed @mcp.tool from 15 legacy tools; updated tool_categories, tool_registry, tests. Quality and tests pass.
 
 ## 2026-02-11
 

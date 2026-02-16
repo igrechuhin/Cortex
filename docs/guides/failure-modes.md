@@ -53,7 +53,7 @@ These failures can prevent the system from operating and require immediate actio
    rm .memory-bank-index
 
    # Run any operation to trigger rebuild
-   get_memory_bank_stats()
+   query_memory_bank(query_type="stats")
    ```
 
    The system automatically:
@@ -69,7 +69,7 @@ These failures can prevent the system from operating and require immediate actio
    validate_memory_bank()
 
    # Check stats look correct
-   get_memory_bank_stats()
+   query_memory_bank(query_type="stats")
    ```
 
 3. **If Problems Persist:**
@@ -381,7 +381,7 @@ These failures degrade functionality but allow system to continue operating.
 
    ```python
    # Token counts will now be accurate
-   result = await get_memory_bank_stats()
+   result = await query_memory_bank(query_type="stats")
    ```
 
 **Prevention:**
@@ -571,7 +571,7 @@ if result['status'] != 'valid':
     handle_issues(result['issues'])
 
 # Stats check
-stats = await get_memory_bank_stats()
+stats = await query_memory_bank(query_type="stats")
 if stats['totals']['total_files'] == 0:
     alert("No files found")
 ```

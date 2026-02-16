@@ -12,7 +12,7 @@ Cortex provides tools organized by functionality phases. Tools return JSON respo
 
 Cortex follows MCP semantics: **Resources** are GET-like (read-only, load data into context); **Tools** are POST-like (side effects, e.g. write, update, run).
 
-- **Tools** use imperative verb names: `write_file`, `apply_refactoring`, `update_config`, `fix_markdown_lint`. Do not use `get_*` for operations that mutate state.
+- **Tools** use imperative verb names: `manage_file`, `apply_refactoring`, `configure`, `fix_markdown_lint`. Do not use `get_*` for operations that mutate state.
 - **Resources** are identified by `cortex://` URIs (e.g. `cortex://memory-bank/stats`, `cortex://optimization/load-context/{task_description}`). Read-only operations are exposed as both a Tool (for backward compatibility) and a Resource.
 - **Prefer Resources for read-only operations** when your client supports MCP resources: use the `cortex://` URI to load data. Use Tools for any operation that writes or changes state.
 - **No `get_*` Tool performs writes**; all current `get_*` tools are read-only and have a corresponding Resource. See Phase 43 plan (`.cortex/plans/phase-43-reconsider-tools-registration.md`) for the full inventory and naming conventions.
@@ -21,10 +21,11 @@ Cortex follows MCP semantics: **Resources** are GET-like (read-only, load data i
 
 | Phase | Tools | Category |
 |-------|-------|----------|
-| [Phase 1](#phase-1-foundation-tools) | 10 | Foundation (initialization, file ops, versioning) |
-| [Phase 2](#phase-2-link-management-tools) | 4 | Link Management (parsing, validation, transclusion) |
+| [Phase 1](#phase-1-foundation-tools) | 8 | Foundation (initialization, file ops, versioning) |
+| [Phase 50](#phase-50-consolidated-query-tools) | 2 | Consolidated query (memory bank, usage) |
+| [Phase 2](#phase-2-link-management-tools) | — | Link ops via [query_memory_bank](#query_memory_bank) |
 | [Phase 3](#phase-3-validation-and-quality-tools) | 5 | Validation & Quality (schema, duplication, scoring) |
-| [Phase 4](#phase-4-token-optimization-tools) | 7 | Token Optimization (context, loading, summarization, rules) |
+| [Phase 4](#phase-4-token-optimization-tools) | 6 | Token Optimization (context, summarization, rules) |
 | [Phase 5.1](#phase-51-pattern-analysis-and-insights) | 3 | Pattern Analysis & Insights |
 | [Phase 5.2](#phase-52-refactoring-suggestions) | 4 | Refactoring Suggestions |
 | [Phase 5.3-5.4](#phase-53-54-safe-execution-and-learning) | 6 | Safe Execution & Learning |
@@ -33,6 +34,8 @@ Cortex follows MCP semantics: **Resources** are GET-like (read-only, load data i
 | [Health-Check](#health-check-analysis) | 1 | Health-Check (prompts, rules, tools analysis) |
 | [Sequential Thinking](#sequential-thinking) | 1 | Stepwise reasoning and planning |
 | [Legacy](#legacy-tools) | 3 | Legacy Support |
+
+**Phase 50 consolidation (2026-02):** Memory bank read operations (stats, version_history, dependency_graph, link_graph, parse_links, validate_links, resolve_transclusions) are available via **`query_memory_bank`**. Usage analytics (stats, unused, report, recommendations, search, events, observation, timeline) are available via **`query_usage`**. Context loading supports progressive strategy via **`load_context(strategy="progressive", ...)`**. File writes and config updates use **`manage_file`** and **`configure`**.
 
 ---
 
@@ -368,85 +371,69 @@ Unified Memory Bank file management tool for read/write/metadata operations.
 
 ---
 
-### get_dependency_graph
+## Phase 50: Consolidated query tools
 
-Get the Memory Bank dependency graph.
+Single-entry-point tools for Memory Bank and usage analytics (replacing multiple per-operation tools). Use when you need stats, version history, graphs, link parsing/validation, or usage data.
+
+### query_memory_bank
+
+Query Memory Bank with a single tool. Replaces standalone `get_memory_bank_stats`, `get_version_history`, `get_dependency_graph`, `get_link_graph`, `parse_file_links`, `validate_links`, and `resolve_transclusions`.
+
+**USE WHEN:** You need memory bank stats, version history, dependency/link graphs, link parsing or validation, or transclusion resolution. Prefer this over calling multiple separate tools.
 
 **Parameters:**
 
-- `format` (str) - Output format: `"json"` or `"mermaid"`
+- `query_type` (str) - **Required.** One of: `stats`, `version_history`, `dependency_graph`, `link_graph`, `parse_links`, `validate_links`, `resolve_transclusions`.
+- `file_name` (str | None) - Required for `version_history`, `parse_links`, `validate_links`, `resolve_transclusions`; optional for others.
+- `limit` (int) - Max items for version_history (default: 10).
+- `format` (str) - Output format for graph types: `"json"` or `"mermaid"` (default: `"json"`).
+- `include_transclusions` (bool) - Include transclusions in link_graph (default: True).
+- `max_depth` (int) - Max transclusion depth for resolve_transclusions (default: 5).
+- `include_token_budget` (bool) - Include token budget in stats (default: True).
+- `include_refactoring_history` (bool) - Include refactoring history in stats (default: False).
+- `refactoring_days` (int) - Days for refactoring history (default: 90).
+- `response_format` (str) - `"concise"` (default) or `"detailed"`. Concise reduces token count.
 
-**Description:**
+**Returns:** JSON string. Structure varies by `query_type`. Use `response_format="detailed"` when you need full payloads.
 
-Shows relationships between files and their loading priority. Supports JSON (for programmatic use) and Mermaid (for visualization) formats.
+**Example:**
 
-**Returns:**
-
-JSON format:
-
-```json
-{
-  "status": "success",
-  "format": "json",
-  "graph": {
-    "files": {
-      "projectBrief.md": {
-        "priority": 1,
-        "dependencies": []
-      },
-      "activeContext.md": {
-        "priority": 2,
-        "dependencies": ["projectBrief.md"]
-      }
-    }
-  },
-  "loading_order": ["projectBrief.md", "productContext.md", "..."]
-}
-```
-
-Mermaid format:
-
-```json
-{
-  "status": "success",
-  "format": "mermaid",
-  "diagram": "graph TD\n  A[projectBrief.md] --> B[productContext.md]\n  ..."
-}
+```python
+await query_memory_bank(query_type="stats", response_format="concise")
+await query_memory_bank(query_type="version_history", file_name="projectBrief.md", limit=5)
+await query_memory_bank(query_type="validate_links", file_name="activeContext.md")
 ```
 
 ---
 
-### get_version_history
+### query_usage
 
-Get version history for a Memory Bank file.
+Query usage analytics with a single tool. Replaces standalone `get_tool_usage_stats`, `get_unused_tools`, `get_tool_usage_report`, `get_optimization_recommendations`, `search_usage`, `get_usage_events`, `get_usage_observation`, and `get_usage_timeline`.
+
+**USE WHEN:** You need tool usage stats, unused tools, reports, recommendations, or event/observation/timeline search. Prefer this over calling multiple usage tools.
 
 **Parameters:**
 
-- `file_name` (str) - Name of the file (e.g., "projectBrief.md")
-- `limit` (int) - Maximum number of versions to return (default: 10)
+- `query_type` (str) - **Required.** One of: `stats`, `unused`, `report`, `recommendations`, `search`, `events`, `observation`, `timeline`.
+- `start_date`, `end_date` (str | None) - Date range for stats/events.
+- `tool_name` (str | None) - Filter by tool.
+- `response_format` (str) - `"concise"` (default) or `"detailed"`.
+- `days` (int) - Days for unused/report (default: 90).
+- `min_usage_count`, `min_usage_threshold` (int) - Thresholds for unused.
+- `ids`, `observation_id`, `around_id` - For events/observation/timeline.
+- `success` (bool | None) - Filter by success.
+- `limit` (int) - Max results (default: 50).
+- `query` (str | None) - Search query for search type.
+- `format` (str) - Output format for report (default: `"markdown"`).
+- `include_recommendations` (bool) - Include recommendations (default: True).
 
-**Description:**
+**Returns:** JSON string. Structure varies by `query_type`. Use `response_format="detailed"` for full payloads.
 
-Returns list of versions with timestamps, change types, and descriptions.
+**Example:**
 
-**Returns:**
-
-```json
-{
-  "status": "success",
-  "file_name": "projectBrief.md",
-  "total_versions": 15,
-  "versions": [
-    {
-      "version": 15,
-      "timestamp": "2025-12-25T10:30:00Z",
-      "change_type": "update",
-      "change_description": "Updated project goals",
-      "token_count": 1250,
-      "size_bytes": 5120
-    }
-  ]
-}
+```python
+await query_usage(query_type="stats", response_format="concise")
+await query_usage(query_type="search", query="load_context", limit=20)
 ```
 
 ---
@@ -536,199 +523,9 @@ Creates backup, initializes metadata index, generates version history, and verif
 
 ---
 
-### get_memory_bank_stats
-
-Get overall Memory Bank statistics and analytics.
-
-**Parameters:**
-
-**Description:**
-
-Returns comprehensive statistics about token usage, file sizes, version history, and usage patterns.
-
-**Returns:**
-
-```json
-{
-  "status": "success",
-  "project_root": "/path/to/project",
-  "summary": {
-    "total_files": 7,
-    "total_tokens": 8500,
-    "total_size_bytes": 35000,
-    "average_tokens_per_file": 1214,
-    "total_versions": 42,
-    "total_accesses": 156
-  },
-  "files": {
-    "projectBrief.md": {
-      "token_count": 1234,
-      "versions": 5,
-      "accesses": 20
-    }
-  },
-  "last_updated": "2025-12-25T15:00:00Z"
-}
-```
-
----
-
 ## Phase 2: Link Management Tools
 
-Tools for parsing, resolving, and validating markdown links and transclusions.
-
-### parse_file_links
-
-Parse and return all links in a Memory Bank file.
-
-**Parameters:**
-
-- `file_name` (str) - Name of the file to parse (e.g., "activeContext.md")
-**Description:**
-
-Extracts markdown links `[text](target)` and transclusion directives `{{include: file}}` from the specified file.
-
-**Returns:**
-
-```json
-{
-  "status": "success",
-  "file": "activeContext.md",
-  "markdown_links": [
-    {
-      "text": "Project Brief",
-      "target": "projectBrief.md",
-      "line": 10
-    }
-  ],
-  "transclusions": [
-    {
-      "target": "progress.md",
-      "section": "Current Sprint",
-      "line": 25
-    }
-  ],
-  "summary": {
-    "markdown_links": 5,
-    "transclusions": 2,
-    "total": 7,
-    "unique_files": 4
-  }
-}
-```
-
----
-
-### resolve_transclusions
-
-Read file with all transclusions resolved.
-
-**Parameters:**
-
-- `file_name` (str) - Name of the file to read (e.g., "activeContext.md")
-- `max_depth` (int) - Maximum transclusion depth (default: 5)
-
-**Description:**
-
-Resolves all `{{include: ...}}` directives by replacing them with actual content from referenced files and sections. Includes caching for performance.
-
-**Returns:**
-
-```json
-{
-  "status": "success",
-  "file": "activeContext.md",
-  "original_content": "# Active Context\n{{include: progress.md#Current Sprint}}",
-  "resolved_content": "# Active Context\n## Current Sprint\n...",
-  "has_transclusions": true,
-  "transclusions_resolved": 2,
-  "cache_stats": {
-    "hits": 1,
-    "misses": 1
-  }
-}
-```
-
-**Errors:**
-
-- `CircularDependencyError` - File includes itself (directly or indirectly)
-- `MaxDepthExceededError` - Transclusion nesting exceeds max_depth
-
----
-
-### validate_links
-
-Validate links in a file or all files.
-
-**Parameters:**
-
-- `file_name` (str | None) - Optional specific file to validate (if None, validates all files)
-**Description:**
-
-Checks that all markdown links and transclusion directives point to existing files and sections. Generates validation report with broken links and suggestions.
-
-**Returns:**
-
-```json
-{
-  "status": "success",
-  "mode": "all_files",
-  "files_checked": 7,
-  "total_links": 42,
-  "valid_links": 38,
-  "broken_links": 4,
-  "warnings": 2,
-  "details": [
-    {
-      "file": "activeContext.md",
-      "line": 15,
-      "type": "broken_link",
-      "target": "missing.md",
-      "suggestion": "Did you mean 'systemPatterns.md'?"
-    }
-  ]
-}
-```
-
----
-
-### get_link_graph
-
-Get dynamic dependency graph based on actual links.
-
-**Parameters:**
-
-- `include_transclusions` (bool) - Include transclusion links (default: True)
-- `format` (str) - Output format: `"json"` or `"mermaid"`
-
-**Description:**
-
-Builds dependency graph by parsing all markdown links and transclusion directives. Shows how files reference each other, including cycle detection.
-
-**Returns:**
-
-JSON format:
-
-```json
-{
-  "status": "success",
-  "format": "json",
-  "nodes": [
-    {"file": "projectBrief.md", "links_out": 3, "links_in": 0}
-  ],
-  "edges": [
-    {"from": "activeContext.md", "to": "progress.md", "type": "transclusion"}
-  ],
-  "cycles": [
-    ["fileA.md", "fileB.md", "fileA.md"]
-  ],
-  "summary": {
-    "total_nodes": 7,
-    "total_edges": 15,
-    "cycles_detected": 0
-  }
-}
-```
+Link parsing, validation, transclusion resolution, and link graph are available via **`query_memory_bank`** with `query_type` set to `parse_links`, `validate_links`, `resolve_transclusions`, or `link_graph`. See [Phase 50: query_memory_bank](#query_memory_bank).
 
 ---
 
@@ -981,7 +778,7 @@ Update configuration:
 
 Tools for smart context loading, relevance scoring, summarization, and custom rules integration.
 
-**Context workflow (progressive disclosure)**: Prefer loading context with a task-appropriate token budget rather than loading everything. Use `load_context` at task start with a budget that matches the task type (e.g. 10k for updates, 15k for fix/debug, 20–30k for features, 40–50k for architecture). Use `load_progressive_context` when incremental loading is needed. When usage search or fetch-by-ID tools are available, prefer search → select IDs → fetch instead of loading full history.
+**Context workflow (progressive disclosure)**: Prefer loading context with a task-appropriate token budget rather than loading everything. Use `load_context` at task start with a budget that matches the task type (e.g. 10k for updates, 15k for fix/debug, 20–30k for features, 40–50k for architecture). For incremental loading, use `load_context(strategy="progressive", loading_strategy="by_relevance"|"by_priority"|"by_dependencies")`. When usage search or fetch-by-ID tools are available, prefer `query_usage(query_type="search", ...)` then fetch by ID instead of loading full history.
 
 ### load_context
 
@@ -1002,6 +799,7 @@ This tool should be called at the START of any task to:
   - `"dependency_aware"` - Includes dependency trees
   - `"section_level"` - Partial file inclusion
   - `"hybrid"` - Combines multiple strategies
+  - `"progressive"` - Incremental loading (replaces former `load_progressive_context`); use with `loading_strategy` for order (e.g. `by_relevance`, `by_priority`, `by_dependencies`)
 **Description:**
 
 Uses relevance scoring and loading strategies to select the best subset of Memory Bank files that fit within a token budget.
@@ -1037,53 +835,6 @@ Uses relevance scoring and loading strategies to select the best subset of Memor
     "systemPatterns.md": 0.95,
     "techContext.md": 0.88
   }
-}
-```
-
----
-
-### load_progressive_context
-
-Load context progressively based on strategy.
-
-**Parameters:**
-
-- `task_description` (str) - Description of the task
-- `token_budget` (int | None) - Maximum tokens to load (defaults to config value)
-- `loading_strategy` (str) - Strategy (default: "by_relevance")
-  - `"by_priority"` - Load by predefined priority order
-  - `"by_dependencies"` - Load by dependency chain traversal
-  - `"by_relevance"` - Load by task-specific relevance
-**Description:**
-
-Loads Memory Bank files incrementally, ordered by priority, relevance, or dependencies. Useful for streaming contexts or early stopping.
-
-**Returns:**
-
-```json
-{
-  "status": "success",
-  "task_description": "Implement authentication",
-  "loading_strategy": "by_relevance",
-  "token_budget": 10000,
-  "files_loaded": 5,
-  "total_tokens": 8200,
-  "loaded_files": [
-    {
-      "order": 1,
-      "file": "systemPatterns.md",
-      "tokens": 1500,
-      "cumulative_tokens": 1500,
-      "relevance_score": 0.95
-    },
-    {
-      "order": 2,
-      "file": "techContext.md",
-      "tokens": 1200,
-      "cumulative_tokens": 2700,
-      "relevance_score": 0.88
-    }
-  ]
 }
 ```
 

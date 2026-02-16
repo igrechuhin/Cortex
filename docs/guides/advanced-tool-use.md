@@ -96,7 +96,7 @@ The `tool_search` section is part of the optimization config default (Phase 49 S
     "enabled": false,
     "always_loaded": ["manage_file", "validate", "load_context", "..."],
     "deferred_medium": ["suggest_refactoring", "analyze", "..."],
-    "deferred_low": ["rollback_file_version", "get_tool_usage_stats", "..."]
+    "deferred_low": ["rollback_file_version", "query_usage", "..."]
   }
 }
 ```

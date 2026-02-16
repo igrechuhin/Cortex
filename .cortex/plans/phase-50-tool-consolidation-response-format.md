@@ -134,20 +134,22 @@ This section should be updated in a future session once locks on usage JSON file
   - [x] Remove `write_file` tool (functionality in `manage_file`) - COMPLETE 2026-02-12
   - [x] Remove `load_progressive_context` tool (functionality in `load_context`) - COMPLETE 2026-02-12
   - [x] Remove `update_config` tool (functionality in `configure`) - COMPLETE 2026-02-12
-- [ ] Implement consolidated tool handlers (Phase 2: new unified tools)
-  - Create `query_memory_bank` tool
-  - Create `query_usage` tool
-- [ ] Update tool registration in server.py
+- [x] Implement consolidated tool handlers (Phase 2: new unified tools) - COMPLETE 2026-02-12
+  - [x] Create `query_memory_bank` tool (query_type: stats, version_history, dependency_graph, link_graph, parse_links, validate_links, resolve_transclusions)
+  - [x] Create `query_usage` tool (query_type: stats, unused, report, recommendations, search, events, observation, timeline)
+  - [x] Remove @mcp.tool from 7 memory-bank and 8 usage tools; register query_memory_bank and query_usage only
+- [x] Update tool registration: tool_categories.py, discovery/tool_registry.py, tools/**init**.py
 
 ### Step 5: Update Documentation and Tool Descriptions
 
-- [ ] Update all tool descriptions following Anthropic's guidance:
+- [x] Update all tool descriptions following Anthropic's guidance:
   - Clear, descriptive names reflecting natural task subdivisions
   - Unambiguous parameter names (e.g., `user_id` not `user`)
   - Include when-to-use and when-not-to-use guidance
-- [ ] Update AGENTS.md tool reference table
-- [ ] Update docs/api/tools.md
-- [ ] Remove references to removed tools from documentation
+- [x] Update AGENTS.md tool reference table
+- [x] Update docs/api/tools.md
+- [x] Remove references to removed tools from documentation
+- **2026-02-13:** Completed. Added Phase 50 section (query_memory_bank, query_usage); updated Tools vs Resources and context workflow; replaced standalone get_* / load_progressive_context / write_file / update_config references across docs, AGENTS.md, mcp-tool-timeouts, tool-usage-tracking, troubleshooting, failure-modes, error-recovery, advanced-tool-use, setup-cursor-integration.
 
 ### Step 6: Testing and Validation
 

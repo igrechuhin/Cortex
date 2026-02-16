@@ -211,7 +211,7 @@ This guide provides solutions for common errors in Cortex.
    rm .memory-bank-index
 
    # Trigger rebuild by running any operation
-   get_memory_bank_stats()
+   query_memory_bank(query_type="stats")
    ```
 
 2. **Verify with Validation:**
@@ -324,7 +324,7 @@ This guide provides solutions for common errors in Cortex.
 
    ```python
    # Parse file to see available sections
-   result = await parse_file_links(file_name)
+   result = await query_memory_bank(query_type="parse_links", file_name=file_name)
    print(result['sections'])
    ```
 

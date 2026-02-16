@@ -122,11 +122,7 @@ MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60  # Quality auto-fix tools (e.g. fix_quality_
 **Tools using this category**:
 
 - `manage_file`
-- `parse_file_links`
-- `validate_links`
-- `get_dependency_graph`
-- `get_version_history`
-- `get_link_graph`
+- `query_memory_bank` (query_type: parse_links, validate_links, dependency_graph, version_history, link_graph)
 - `rollback_file_version`
 - `cleanup_metadata_index`
 - `fix_roadmap_corruption`
@@ -146,9 +142,8 @@ MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60  # Quality auto-fix tools (e.g. fix_quality_
 
 **Tools using this category**:
 
-- `load_context`
-- `load_progressive_context`
-- `resolve_transclusions`
+- `load_context` (including `strategy="progressive"`)
+- `query_memory_bank` (query_type: resolve_transclusions)
 - `validate`
 - `summarize_content`
 - `get_relevance_scores`
@@ -171,7 +166,7 @@ MCP_TOOL_TIMEOUT_QUALITY_FIXES = 60  # Quality auto-fix tools (e.g. fix_quality_
 - `suggest_refactoring`
 - `apply_refactoring`
 - `analyze`
-- `get_memory_bank_stats`
+- `query_memory_bank` (query_type: stats)
 - `provide_feedback`
 - `rules`
 
@@ -296,7 +291,7 @@ When the client (e.g. Cursor) fetches many MCP **resources** in parallel (e.g. w
 
 **Recommendations**:
 
-1. **Prefer tools over resources during commit or long workflows**: Use MCP tools (e.g. `get_structure_info()`, `manage_file()`, `get_memory_bank_stats()`) instead of reading `cortex://...` resources when running the commit flow or other long operations. Tools are invoked explicitly and are not affected by the client’s parallel resource prefetch.
+1. **Prefer tools over resources during commit or long workflows**: Use MCP tools (e.g. `get_structure_info()`, `manage_file()`, `query_memory_bank(query_type="stats")`) instead of reading `cortex://...` resources when running the commit flow or other long operations. Tools are invoked explicitly and are not affected by the client’s parallel resource prefetch.
 2. **Avoid resource-heavy UI during long tools**: If the commit prompt or a long tool is running, avoid opening views that trigger many parallel resource reads (e.g. MCP resources panel) until the run completes.
 3. **Ignore transient resource errors in logs**: Timeout and "unknown message ID" for resources during or right after a long tool run are expected; they do not indicate a server bug and do not require action.
 
@@ -354,7 +349,7 @@ Error code **-32001** is the standard MCP "Request timed out" response. For **re
 
 **Guidance**:
 
-- Prefer **tools** over **resources** when you need bulk or structured data during commit or long operations (e.g. `get_memory_bank_stats()`, `get_structure_info()` instead of reading `cortex://memory-bank/stats`, `cortex://structure/info`).
+- Prefer **tools** over **resources** when you need bulk or structured data during commit or long operations (e.g. `query_memory_bank(query_type="stats")`, `get_structure_info()` instead of reading `cortex://memory-bank/stats`, `cortex://structure/info`).
 - Avoid opening many resource-backed views in parallel while a long tool is running; or use the corresponding tools instead.
 
 ## Troubleshooting

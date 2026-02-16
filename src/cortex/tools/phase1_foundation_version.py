@@ -11,7 +11,6 @@ from typing import cast
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
@@ -25,11 +24,7 @@ from cortex.managers.manager_utils import get_manager
 from cortex.server import mcp
 
 
-@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
-    annotations=read_only_annotations(
-        "Get Version History"
-    ),  # pyright: ignore[reportCallIssue]
-)
+# Tool consolidated into query_memory_bank (Phase 50); kept as callable for dispatch.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_version_history(

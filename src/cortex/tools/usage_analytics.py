@@ -13,7 +13,6 @@ from pydantic import BaseModel, ConfigDict
 
 from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_resource_wrapper,
@@ -97,7 +96,7 @@ async def _get_usage_observation_impl(
     )
 
 
-@mcp.tool(annotations=read_only_annotations("Get Usage Observation"))
+# Tool consolidated into query_usage (Phase 50); kept as callable for dispatch.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_usage_observation(
@@ -209,7 +208,7 @@ async def _get_usage_events_impl(
     return json.dumps(payload.model_dump(), indent=2)
 
 
-@mcp.tool(annotations=read_only_annotations("Get Usage Events"))
+# Tool consolidated into query_usage (Phase 50); kept as callable for dispatch.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_usage_events(
@@ -229,7 +228,7 @@ async def get_usage_events(
     return await _get_usage_events_impl(ids=ids, root=root, tracker=tracker)
 
 
-@mcp.tool(annotations=read_only_annotations("Get Tool Usage Stats"))
+# Tool consolidated into query_usage (Phase 50); kept as callable for dispatch.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_tool_usage_stats(
@@ -273,7 +272,7 @@ async def get_tool_usage_stats(
     return _format_tool_usage_stats_response(root, result, response_format)
 
 
-@mcp.tool(annotations=read_only_annotations("Get Unused Tools"))
+# Tool consolidated into query_usage (Phase 50); kept as callable for dispatch.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_unused_tools(
@@ -419,7 +418,7 @@ def _build_timeline_results(events: list[ToolUsageEvent]) -> list[UsageTimelineE
     ]
 
 
-@mcp.tool(annotations=read_only_annotations("Search Usage Events"))
+# Tool consolidated into query_usage (Phase 50); kept as callable for dispatch.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def search_usage(
@@ -553,7 +552,7 @@ async def _get_usage_timeline_impl(
     )
 
 
-@mcp.tool(annotations=read_only_annotations("Get Usage Timeline"))
+# Tool consolidated into query_usage (Phase 50); kept as callable for dispatch.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_usage_timeline(
@@ -643,7 +642,7 @@ async def _fetch_report_data(
     return out
 
 
-@mcp.tool(annotations=read_only_annotations("Get Tool Usage Report"))
+# Tool consolidated into query_usage (Phase 50); kept as callable for dispatch.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_tool_usage_report(
@@ -680,7 +679,7 @@ async def get_tool_usage_report(
     return json.dumps(out, indent=2)
 
 
-@mcp.tool(annotations=read_only_annotations("Get Optimization Recommendations"))
+# Tool consolidated into query_usage (Phase 50); kept as callable for dispatch.
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
 async def get_optimization_recommendations(

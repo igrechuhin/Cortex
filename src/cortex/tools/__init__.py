@@ -58,6 +58,8 @@ from . import (
     plan_operations,  # noqa: F401
     pre_commit_tools,  # noqa: F401
     prompts,  # noqa: F401
+    query_memory_bank_operations,  # noqa: F401
+    query_usage_operations,  # noqa: F401
     refactoring_operations,  # noqa: F401
     roadmap_corruption,  # noqa: F401
     roadmap_operations,  # noqa: F401
@@ -98,6 +100,8 @@ __all__ = [
     "roadmap_corruption",
     "roadmap_operations",
     "plan_completion",
+    "query_memory_bank_operations",
+    "query_usage_operations",
     "sequential_thinking",
     "tool_search_operations",
     "plan_operations",

@@ -60,7 +60,7 @@ jq '.[] | select(.tool_name == \"manage_file\")' \
   .cortex/.cache/usage/events/2026-02-11.json
 ```
 
-These examples operate on the same underlying data that powers the `search_usage`, `get_usage_events`, and `get_usage_timeline` MCP tools, but give you full control over post-processing via jq or shell scripts.
+These examples operate on the same underlying data that powers the `query_usage` MCP tool (query_type: search, events, timeline), but give you full control over post-processing via jq or shell scripts.
 
 ## Anonymization
 
@@ -77,7 +77,7 @@ These examples operate on the same underlying data that powers the `search_usage
 
 1. **UsageTracker** manager: Created by manager initialization; lazy-loaded like other managers.
 2. **Recording**: `with_mcp_stability` (in `mcp_stability.py`) records usage after each tool run. It obtains the current managers from a contextvar set by `get_managers()` so that no extra `get_managers` call is needed in the hot path.
-3. **Analytics**: MCP tools `get_tool_usage_stats`, `get_unused_tools`, `get_tool_usage_report`, `get_optimization_recommendations` in `cortex.tools.usage_analytics` query the UsageTracker.
+3. **Analytics**: MCP tool `query_usage` (query_type: stats, unused, report, recommendations, search, events, observation, timeline) in `cortex.tools.query_usage_operations` queries the UsageTracker.
 
 ## Configuration
 

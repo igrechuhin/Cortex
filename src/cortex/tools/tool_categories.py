@@ -80,9 +80,9 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Called at session start for every task",
     ),
     ToolCategoryEntry(
-        name="get_memory_bank_stats",
+        name="query_memory_bank",
         category=ToolCategory.ALWAYS_LOADED,
-        rationale="Monitoring token budget and memory bank health",
+        rationale="Memory bank stats, version history, graphs, links, validation (Phase 50)",
     ),
     ToolCategoryEntry(
         name="rules",
@@ -169,36 +169,6 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         name="configure",
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="View/update validation/optimization/learning config",
-    ),
-    ToolCategoryEntry(
-        name="get_version_history",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="File version inspection before rollback decisions",
-    ),
-    ToolCategoryEntry(
-        name="get_dependency_graph",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Dependency visualization for architecture tasks",
-    ),
-    ToolCategoryEntry(
-        name="parse_file_links",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Link extraction for specific file analysis",
-    ),
-    ToolCategoryEntry(
-        name="get_link_graph",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Cross-file link visualization",
-    ),
-    ToolCategoryEntry(
-        name="validate_links",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Broken link detection in memory bank",
-    ),
-    ToolCategoryEntry(
-        name="resolve_transclusions",
-        category=ToolCategory.DEFERRED_MEDIUM,
-        rationale="Expand transclusion directives in files",
     ),
     ToolCategoryEntry(
         name="fix_markdown_lint",
@@ -297,44 +267,9 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Modify shared prompts (rare admin action)",
     ),
     ToolCategoryEntry(
-        name="get_usage_observation",
+        name="query_usage",
         category=ToolCategory.DEFERRED_LOW,
-        rationale="Single usage event inspection (analytics)",
-    ),
-    ToolCategoryEntry(
-        name="get_usage_events",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Batch usage event retrieval (analytics)",
-    ),
-    ToolCategoryEntry(
-        name="get_tool_usage_stats",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Tool usage frequency statistics (analytics)",
-    ),
-    ToolCategoryEntry(
-        name="get_unused_tools",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Identify unused tools for deprecation (analytics)",
-    ),
-    ToolCategoryEntry(
-        name="search_usage",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Search usage events by query/filter (analytics)",
-    ),
-    ToolCategoryEntry(
-        name="get_usage_timeline",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Chronological usage context (analytics)",
-    ),
-    ToolCategoryEntry(
-        name="get_tool_usage_report",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Comprehensive usage report generation (analytics)",
-    ),
-    ToolCategoryEntry(
-        name="get_optimization_recommendations",
-        category=ToolCategory.DEFERRED_LOW,
-        rationale="Tool optimization suggestions (analytics)",
+        rationale="Usage stats, unused tools, report, search, events, timeline (Phase 50)",
     ),
     ToolCategoryEntry(
         name="get_context_usage_statistics",

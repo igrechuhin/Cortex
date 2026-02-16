@@ -2,6 +2,10 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-02-13)
+
+- ✅ **Phase 50 Step 5: Update documentation and tool descriptions** - COMPLETE (2026-02-13) - Documentation updated for Phase 50 consolidation: docs/api/tools.md now has Phase 50 section for query_memory_bank and query_usage; Tools vs Resources and context workflow use manage_file, configure, load_context(strategy=progressive); removed references to write_file, load_progressive_context, update_config, get_memory_bank_stats, get_version_history, get_dependency_graph, get_link_graph, parse_file_links, validate_links, resolve_transclusions, get_tool_usage_stats, get_unused_tools, search_usage, get_usage_events, get_usage_timeline across AGENTS.md, mcp-tool-timeouts.md, tool-usage-tracking.md, troubleshooting, failure-modes, error-recovery, advanced-tool-use, setup-cursor-integration. Plan Step 5 checkboxes marked complete.
+
 ## Completed Work (2026-01-14)
 
 - ✅ **Phase 18: Markdown Lint Fix Tool** - COMPLETE (2026-01-14) - Implemented the Phase 18 Markdown lint fix tool plan, adding the `fix_markdown_lint` MCP tool to automatically scan and fix markdownlint issues in modified Markdown files, wired into the commit pipeline and documented in the plan at `../plans/archive/Phase18/phase-18-markdown-lint-fix-tool.md`.
@@ -39,6 +43,8 @@
 - ✅ **Phase 50 Step 3: response_format defaults to 'concise'** - COMPLETE (2026-02-12) - Updated high-token MCP tools so response_format defaults to 'concise' while still supporting 'detailed' on demand, adjusted unit/integration tests to request detailed output where needed, and ensured all quality gates (type_check, tests, and quality) pass with coverage around 90%.
 
 - ✅ **Phase 50 Step 4 Phase 1: Tool Consolidation (Low-Risk Merges)** - COMPLETE (2026-02-12) - Completed low-risk tool merges: write_file→manage_file, load_progressive_context→load_context (strategy="progressive"), update_config→configure. Added deprecation warnings. Backward compatibility maintained.
+
+- ✅ **Phase 50 Step 4 Phase 2: query_memory_bank and query_usage** - COMPLETE (2026-02-12) - Implemented consolidated MCP tools query_memory_bank and query_usage; removed registration of 7 memory-bank and 8 usage tools (kept impl callable for dispatch). Updated tool_categories, discovery/tool_registry, tests. All pre-commit checks pass.
 
 ## Completed Work (2026-02-11)
 

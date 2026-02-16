@@ -129,7 +129,7 @@ After successful setup:
 
 1. Restart Cursor IDE to load configuration
 2. Verify MCP server appears in Cursor's tool list
-3. Test a Memory Bank tool (e.g., `get_memory_bank_stats`)
+3. Test a Memory Bank tool (e.g., `query_memory_bank(query_type="stats")`)
 4. Check that rules are indexed
 5. Verify context loading works
 

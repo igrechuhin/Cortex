@@ -388,9 +388,9 @@ Error: Section 'NonExistent' not found in shared.md
 
    ```json
    {
-     "tool": "parse_file_links",
+     "tool": "query_memory_bank",
      "args": {
-       "project_root": "/path/to/project",
+       "query_type": "parse_links",
        "file_name": "shared.md"
      }
    }
@@ -647,6 +647,50 @@ fatal: unable to access '...': SSL certificate problem: self signed certificate 
 - **Linux**: Distribution package `ca-certificates` must be installed and up to date.
 - **Windows**: Git for Windows can use the Windows certificate store; set `git config --global http.sslBackend schannel` to use it.
 
+### Quality gate unavailable in environment
+
+When the implement step or commit pipeline runs the quality gate (`execute_pre_commit_checks(checks=["quality"])`), it may fail due to environment issues rather than code issues.
+
+**Symptoms**:
+
+- Tool output reports "ruff not found", "black not found", or similar at expected `.venv` paths
+- Type check fails with download or certificate errors (e.g. when downloading a Python build or packages)
+
+**Causes**:
+
+- Dev dependencies (ruff, black, pyright) not installed—e.g. `.venv` created without `uv sync --group dev` or equivalent
+- Venv not activated in the environment where the MCP server or checks run
+- Network or SSL/certificate problems (e.g. corporate proxy, invalid peer certificate) when the tool tries to download runtimes or packages
+
+**Recommendation**:
+
+- **Documentation-only changes**: If the change set only touches docs (no `src/` or `tests/` code changes), you may treat the quality gate as skipped for that session. Note: "Quality gate skipped - environment (doc-only session); run full pre-commit before commit." Run the full commit pipeline (or pre-commit) in a healthy environment before committing.
+- **Code changes**: Fix the environment first (install dev deps, fix SSL/certificate, or run from a shell where `uv sync --group dev` and `uv run black` / `uv run ruff` succeed), then re-run the quality gate and commit pipeline.
+
+**Fixing uv SSL / certificate errors** (e.g. `invalid peer certificate: UnknownIssuer` when running `uv sync` or type check):
+
+- uv uses bundled certificates by default. If you see SSL errors (e.g. when downloading Python builds or packages), use the system certificate store or a custom bundle:
+  1. **Point to the system CA bundle** (often fixes the issue on macOS/Linux): set `SSL_CERT_FILE` before running uv. Example (macOS):
+
+     ```bash
+     export SSL_CERT_FILE=/etc/ssl/cert.pem
+     uv sync
+     ```
+
+     On many Linux systems use `SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt` (or your distro’s CA bundle path).
+  2. **Use system TLS** (alternative, e.g. corporate CAs in system store): run uv with `UV_NATIVE_TLS=true` (or `uv --native-tls ...`). You can combine with `SSL_CERT_FILE` if needed:
+
+     ```bash
+     export UV_NATIVE_TLS=true
+     uv sync
+     ```
+
+  3. **CI or custom bundle**: set `SSL_CERT_FILE` to the path of your certificate bundle.
+- Ensure your system CA store is up to date (e.g. `brew install ca-certificates` on macOS, or your distro’s `ca-certificates` package). See [Git and SSL certificate issues](#git-and-ssl-certificate-issues).
+- To make the fix persistent, add the chosen `export` to your shell profile (e.g. `~/.zshrc`) or use a `.env` file in the project root if your tooling supports it.
+
+See also [Git and SSL certificate issues](#git-and-ssl-certificate-issues) for certificate configuration.
+
 ### Refactoring Issues
 
 #### Issue: Refactoring execution fails
@@ -712,10 +756,9 @@ RollbackError: Failed to rollback refactoring split_002
 
    ```json
    {
-     "tool": "get_memory_bank_stats",
+     "tool": "query_memory_bank",
      "args": {
-       "project_root": "/path/to/project",
-       "rebuild_index": true
+       "query_type": "stats"
      }
    }
    ```
@@ -796,9 +839,9 @@ uv run cortex
 
 ```json
 {
-  "tool": "get_memory_bank_stats",
+  "tool": "query_memory_bank",
   "args": {
-    "project_root": "/path/to/project"
+    "query_type": "stats"
   }
 }
 ```
