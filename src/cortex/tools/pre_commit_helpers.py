@@ -35,6 +35,8 @@ class PreCommitCheck(str, Enum):
     FIX_ERRORS = "fix_errors"
     FORMAT = "format"
     FORMAT_CI_PARITY = "format_ci_parity"
+    SYNAPSE_FORMAT = "synapse_format"
+    SYNAPSE_LINT = "synapse_lint"
     TYPE_CHECK = "type_check"
     QUALITY = "quality"
     SPELLING = "spelling"
@@ -47,6 +49,8 @@ DEFAULT_CHECKS: list[PreCommitCheck] = [
     PreCommitCheck.FIX_ERRORS,
     PreCommitCheck.QUALITY,
     PreCommitCheck.FORMAT,
+    PreCommitCheck.SYNAPSE_FORMAT,
+    PreCommitCheck.SYNAPSE_LINT,
     PreCommitCheck.TYPE_CHECK,
     PreCommitCheck.TESTS,
 ]

@@ -11,6 +11,7 @@
 - **Phase52: Consistent Helpful Error Responses Step 3 Phase 2** - COMPLETE. Updated medium-impact tools (suggest_refactoring, apply_refactoring, rules, configure) to use standardized error formatters. All 4 medium-impact tools now return consistent ToolErrorResponse format with suggestions, examples, and available_options. Updated tests to use new format. All 4090 tests pass, quality gate passes.
 - **Commit (function length and file size violations)** - COMPLETE. Fixed function length violations: extracted `_load_memory_bank_files` helper from `_session_start_impl` in `session_start_tools.py` (34→30 lines); extracted `_prepare_execution_context` and `_finalize_execution` helpers from `_run_with_retry_and_record` in `mcp_stability.py` (37→30 lines), inlined `_handle_cancellation`. Fixed file size violation in `mcp_stability.py` (425→400 lines) by removing blank lines and consolidating docstrings. All quality checks pass; 4123 tests, 90.17% coverage.
 - **Commit (preflight and pipeline)** - Pre-commit: fix_errors, format, markdown lint (1 file fixed, 0 errors), type_check, quality, tests 4134 passed, 90.21% coverage. No completed plans in plans root; memory bank and roadmap consistent.
+- **Commit (synapse_lint check_file_sizes)** - COMPLETE. Fixed I001 import order in `.cortex/synapse/scripts/python/check_file_sizes.py` via ruff --fix. Phase A preflight passed; 4134 tests, 90.21% coverage.
 
 ## 2026-02-13
 

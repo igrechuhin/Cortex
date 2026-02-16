@@ -32,10 +32,12 @@ def _run_non_test_checks(
     results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
 ) -> None:
-    """Run fix_errors, quality, format, script-based, and type checks (mutates results/stats)."""
+    """Run fix_errors, quality, format, synapse scripts, script-based, and type checks (mutates results/stats)."""
     _process_fix_errors_check(adapter, checks_to_perform, strict_mode, results, stats)
     _process_quality_check(adapter, language, checks_to_perform, results, stats)
     _process_format_check(adapter, checks_to_perform, results, stats)
+    _process_synapse_format_check(adapter, language, checks_to_perform, results, stats)
+    _process_synapse_lint_check(adapter, language, checks_to_perform, results, stats)
     _process_script_based_checks(
         adapter,
         language,
@@ -104,6 +106,50 @@ def _process_format_check(
         stats.checks_performed.append(PreCommitCheck.FORMAT.value)
         stats.total_errors += len(format_result.errors)
         stats.files_modified.extend(format_result.files_modified)
+
+
+def _process_synapse_format_check(
+    adapter: FrameworkAdapter,
+    language: str,
+    checks_to_perform: list[PreCommitCheck],
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
+    stats: CheckStats,
+) -> None:
+    """Process synapse script formatting (matches CI Black check for .cortex/synapse/scripts)."""
+    if PreCommitCheck.SYNAPSE_FORMAT not in checks_to_perform:
+        return
+    project_root = Path(adapter.project_root)
+    result = run_synapse_script(
+        project_root,
+        language,
+        "check_formatting.py",
+        PreCommitCheck.SYNAPSE_FORMAT.value,
+    )
+    results[PreCommitCheck.SYNAPSE_FORMAT.value] = result
+    stats.checks_performed.append(PreCommitCheck.SYNAPSE_FORMAT.value)
+    stats.total_errors += len(result.errors)
+
+
+def _process_synapse_lint_check(
+    adapter: FrameworkAdapter,
+    language: str,
+    checks_to_perform: list[PreCommitCheck],
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
+    stats: CheckStats,
+) -> None:
+    """Process synapse script linting (matches CI Ruff check for .cortex/synapse/scripts)."""
+    if PreCommitCheck.SYNAPSE_LINT not in checks_to_perform:
+        return
+    project_root = Path(adapter.project_root)
+    result = run_synapse_script(
+        project_root,
+        language,
+        "check_linting.py",
+        PreCommitCheck.SYNAPSE_LINT.value,
+    )
+    results[PreCommitCheck.SYNAPSE_LINT.value] = result
+    stats.checks_performed.append(PreCommitCheck.SYNAPSE_LINT.value)
+    stats.total_errors += len(result.errors)
 
 
 def _process_script_based_checks(

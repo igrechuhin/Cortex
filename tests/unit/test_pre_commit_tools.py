@@ -324,9 +324,11 @@ class TestExecutePreCommitChecks:
                     )
 
                 assert result["status"] == "success"
-                assert len(result["checks_performed"]) == 5
+                assert len(result["checks_performed"]) == 7
                 assert "fix_errors" in result["checks_performed"]
                 assert "format" in result["checks_performed"]
+                assert "synapse_format" in result["checks_performed"]
+                assert "synapse_lint" in result["checks_performed"]
                 assert "type_check" in result["checks_performed"]
                 assert "quality" in result["checks_performed"]
                 assert "tests" in result["checks_performed"]

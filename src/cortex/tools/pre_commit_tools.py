@@ -79,6 +79,8 @@ PreCommitCheckName = Literal[
     "fix_errors",
     "format",
     "format_ci_parity",
+    "synapse_format",
+    "synapse_lint",
     "type_check",
     "quality",
     "spelling",

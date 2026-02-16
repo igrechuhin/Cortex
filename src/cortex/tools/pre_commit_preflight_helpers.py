@@ -25,6 +25,8 @@ from cortex.tools.pre_commit_tools import PreCommitCheckName, execute_pre_commit
 _PRE_FLIGHT_DEFAULT_CHECKS: tuple[PreCommitCheckName, ...] = (
     "fix_errors",
     "format",
+    "synapse_format",
+    "synapse_lint",
     "type_check",
     "quality",
     "tests",
