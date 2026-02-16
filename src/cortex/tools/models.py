@@ -2818,3 +2818,76 @@ class AppendActiveContextEntryResult(StrictBaseModel):
     error: str | None = Field(None, description="Error message if status is error")
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+
+# ============================================================================
+# Session Start Models
+# ============================================================================
+
+
+class SessionHealthSummary(StrictBaseModel):
+    """Quick health check results for session start."""
+
+    file_count: int = Field(ge=0, description="Number of memory bank files")
+    total_tokens: int = Field(ge=0, description="Total tokens across all files")
+    token_budget_status: Literal["healthy", "warning", "over_budget"] = Field(
+        description="Token budget status"
+    )
+    missing_files: list[str] = Field(
+        default_factory=list, description="Missing required files"
+    )
+    has_errors: bool = Field(
+        default=False, description="Whether critical validation errors exist"
+    )
+
+
+class GitStatusSummary(StrictBaseModel):
+    """Git status summary for session start."""
+
+    has_uncommitted_changes: bool = Field(
+        description="Whether there are uncommitted changes"
+    )
+    modified_files_count: int = Field(ge=0, description="Number of modified files")
+    untracked_files_count: int = Field(ge=0, description="Number of untracked files")
+
+
+class SessionBrief(StrictBaseModel):
+    """Session brief with orientation information."""
+
+    project_name: str = Field(description="Project name")
+    current_focus: str = Field(
+        default="", description="Current focus from activeContext '## Current Focus'"
+    )
+    recent_completed: list[str] = Field(
+        default_factory=list,
+        description="Last 3-5 completed items from activeContext",
+    )
+    next_work_item: str | None = Field(
+        None, description="First PENDING item from roadmap"
+    )
+    next_work_plan_path: str | None = Field(
+        None, description="Path to plan file for next work item"
+    )
+    health: SessionHealthSummary = Field(description="Quick health check results")
+    git_status: GitStatusSummary | None = Field(
+        None, description="Git status summary if available"
+    )
+    session_suggestions: list[str] = Field(
+        default_factory=list, description="Actionable suggestions for the session"
+    )
+
+
+class SessionStartResult(ToolResultBase):
+    """Result of session_start operation (success)."""
+
+    status: Literal["success"] = Field(default="success")
+    brief: SessionBrief = Field(description="Session brief with orientation data")
+    token_count: int = Field(ge=0, description="Token count of the brief")
+
+
+class SessionStartErrorResult(ErrorResultBase):
+    """Error result for session_start operations."""
+
+
+# Union type for session_start return
+SessionStartResultUnion = SessionStartResult | SessionStartErrorResult

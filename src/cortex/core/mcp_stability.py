@@ -406,7 +406,12 @@ async def _execute_with_retry[T](
     kwargs: MCPToolArguments,
     ctx: JsonValue | None = None,
 ) -> T:
-    """Execute function with retry logic for transient failures."""
+    """Execute function with retry logic for transient failures.
+
+    Handles cancellation gracefully: if the client cancels the request,
+    we re-raise CancelledError immediately without retrying or sending
+    responses, preventing "duplicate response suppressed" errors.
+    """
     last_exception: Exception | None = None
     func_name = func.__name__
 
@@ -415,6 +420,18 @@ async def _execute_with_retry[T](
             return await _execute_single_attempt(
                 func, semaphore, timeout, args, kwargs, ctx
             )
+        except asyncio.CancelledError:
+            # Client cancelled the request - re-raise immediately without retrying
+            # This prevents the MCP SDK from trying to send a response for a cancelled
+            # request, which causes "duplicate response suppressed" errors and connection
+            # issues. Cancellation is not retryable.
+            logger.debug(
+                "Request for %s was cancelled by client (attempt %d/%d)",
+                func_name,
+                attempt,
+                MCP_CONNECTION_RETRY_ATTEMPTS,
+            )
+            raise
         except Exception as e:
             _, last_exception = await _handle_retry_exception(
                 func_name, timeout, attempt, e, last_exception
@@ -453,17 +470,26 @@ async def _progress_report_loop(
 ) -> None:
     """Background task: report progress every N seconds (Phase 46). Uses a shorter
     interval for long-running tools (timeout >= 300s) to reduce client idle
-    timeout risk (Connection closed -32000)."""
+    timeout risk (Connection closed -32000).
+
+    Handles cancellation gracefully: if the request is cancelled, the loop
+    stops immediately without trying to send more progress updates.
+    """
     interval = (
         PROGRESS_REPORT_INTERVAL_LONG_RUNNING_SECONDS
         if timeout_sec >= 300
         else PROGRESS_REPORT_INTERVAL_SECONDS
     )
     start = time.perf_counter()
-    while True:
-        await asyncio.sleep(interval)
-        if not await _progress_report_step(ctx, timeout_sec, start, _tool_name):
-            break
+    try:
+        while True:
+            await asyncio.sleep(interval)
+            if not await _progress_report_step(ctx, timeout_sec, start, _tool_name):
+                break
+    except asyncio.CancelledError:
+        # Request was cancelled - stop progress reporting immediately
+        logger.debug("Progress loop for %s cancelled", _tool_name)
+        raise
 
 
 async def _progress_report_step(
@@ -648,6 +674,52 @@ async def _record_usage_finish(
     )
 
 
+def _prepare_execution_context(
+    timeout: JsonValue | None,
+    stability_timeout: JsonValue | None,
+    kwargs: dict[str, JsonValue],
+    kind: Literal["tool", "resource"],
+    enable_progress: bool,
+    func_name: str,
+) -> tuple[
+    TrackedSemaphore,
+    float,
+    MCPToolArguments,
+    JsonValue | None,
+    asyncio.Task[None] | None,
+    int,
+]:
+    """Prepare execution context for retry and record.
+
+    Returns:
+        Tuple of (semaphore, effective_timeout, kwargs_model, ctx, progress_task, start_ns)
+    """
+    semaphore = _get_resource_semaphore() if kind == "resource" else _get_semaphore()
+    effective_timeout, kwargs_model, ctx = _stability_params(
+        timeout, stability_timeout, kwargs
+    )
+    progress_task = _create_progress_task_if_needed(
+        enable_progress, ctx, effective_timeout, func_name
+    )
+    start_ns = time.perf_counter_ns()
+    return semaphore, effective_timeout, kwargs_model, ctx, progress_task, start_ns
+
+
+async def _finalize_execution(
+    progress_task: asyncio.Task[None] | None,
+    ctx: JsonValue | None,
+    func_name: str,
+    start_ns: int,
+    was_cancelled: bool,
+    success: bool,
+    error_type: str | None,
+    kind: Literal["tool", "resource"],
+) -> None:  # Finalize execution: cancel progress and record usage.
+    if not was_cancelled:
+        await _cancel_progress_and_report_done(progress_task, ctx, func_name)
+    await _record_usage_finish(func_name, start_ns, success, error_type, kind=kind)
+
+
 async def _run_with_retry_and_record[T](
     func: Callable[..., Awaitable[T]],
     args: tuple[JsonValue, ...],
@@ -657,27 +729,40 @@ async def _run_with_retry_and_record[T](
     kind: Literal["tool", "resource"] = "tool",
     enable_progress: bool = False,
 ) -> T:
-    """Run func with retry and record usage (used by with_mcp_stability)."""
-    semaphore = _get_resource_semaphore() if kind == "resource" else _get_semaphore()
-    effective_timeout, kwargs_model, ctx = _stability_params(
-        timeout, stability_timeout, kwargs
+    """Run func with retry and record usage (used by with_mcp_stability).
+
+    Handles cancellation gracefully: if the request is cancelled, we cancel
+    the progress task immediately and re-raise without trying to send final
+    progress updates, preventing connection errors.
+    """
+    semaphore, effective_timeout, kwargs_model, ctx, progress_task, start_ns = (
+        _prepare_execution_context(
+            timeout, stability_timeout, kwargs, kind, enable_progress, func.__name__
+        )
     )
-    progress_task = _create_progress_task_if_needed(
-        enable_progress, ctx, effective_timeout, func.__name__
-    )
-    start_ns = time.perf_counter_ns()
-    success, error_type = True, None
+    success, error_type, was_cancelled = True, None, False
     try:
         return await _execute_with_retry(
             func, semaphore, effective_timeout, args, kwargs_model, ctx
         )
+    except asyncio.CancelledError:
+        was_cancelled, success, error_type = True, False, "CancelledError"
+        if progress_task is not None:
+            await cancel_and_drain_progress_task(progress_task)
+        raise
     except Exception as e:
         success, error_type = False, type(e).__name__
         raise
     finally:
-        await _cancel_progress_and_report_done(progress_task, ctx, func.__name__)
-        await _record_usage_finish(
-            func.__name__, start_ns, success, error_type, kind=kind
+        await _finalize_execution(
+            progress_task,
+            ctx,
+            func.__name__,
+            start_ns,
+            was_cancelled,
+            success,
+            error_type,
+            kind,
         )
 
 

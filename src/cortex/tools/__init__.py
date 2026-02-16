@@ -66,6 +66,7 @@ from . import (
     rules_operations,  # noqa: F401
     script_capture_tools,  # noqa: F401
     sequential_thinking,  # noqa: F401
+    session_start_tools,  # noqa: F401
     synapse_prompts,  # noqa: F401  # Dynamic Synapse prompts registration
     synapse_tools,  # noqa: F401
     tool_search_operations,  # noqa: F401
@@ -103,6 +104,7 @@ __all__ = [
     "query_memory_bank_operations",
     "query_usage_operations",
     "sequential_thinking",
+    "session_start_tools",
     "tool_search_operations",
     "plan_operations",
     "phase8_structure",

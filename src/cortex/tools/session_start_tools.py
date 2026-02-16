@@ -1,0 +1,647 @@
+"""Session Start Tool
+
+This module provides the session_start tool that combines orientation tasks
+(reading progress, checking git status, loading active context, health check)
+into a single call - reducing tokens and time agents spend getting their bearings
+at the start of every session.
+
+Total: 1 tool
+- session_start: Single tool replacing 3-5 manual orientation calls
+"""
+
+import asyncio
+import logging
+import re
+from pathlib import Path
+from typing import Literal, cast
+
+from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
+from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.file_system import FileSystemManager
+from cortex.core.mcp_annotations import read_only_annotations
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_tool_wrapper,
+)
+from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import GitCommandResult
+from cortex.core.token_counter import TokenCounter
+from cortex.core.usage_context import (
+    get_current_managers,
+    get_or_resolve_project_root,
+)
+from cortex.managers.manager_utils import get_manager
+from cortex.managers.types import ManagersDict
+from cortex.server import mcp
+from cortex.tools.file_section_helpers import extract_section_from_content
+from cortex.tools.models import (
+    GitStatusSummary,
+    SessionBrief,
+    SessionHealthSummary,
+    SessionStartErrorResult,
+    SessionStartResult,
+    SessionStartResultUnion,
+)
+
+logger = logging.getLogger(__name__)
+
+
+def _parse_roadmap_sections(content: str) -> dict[str, tuple[int, int]]:
+    """Parse roadmap to get section boundaries.
+
+    Returns: {section_id: (start_line, end_line)}
+    """
+    sections: dict[str, tuple[int, int]] = {}
+    lines = content.split("\n")
+    header_pattern = re.compile(r"^(#{2,3})\s+(.+)$")
+    header_to_section = {
+        "Blockers (ASAP Priority)": "blockers",
+        "Active Work (in progress)": "active_work",
+        "Future Enhancements": "future",
+        "Pending plans (from .cortex/plans)": "pending",
+    }
+
+    current_section_name: str | None = None
+    current_section_start = 0
+
+    for i, line in enumerate(lines):
+        match = header_pattern.match(line)
+        if not match:
+            continue
+        header_text = match.group(2)
+        section_id = header_to_section.get(header_text)
+
+        if current_section_name is not None:
+            sections[current_section_name] = (current_section_start, i - 1)
+
+        if section_id:
+            current_section_name = section_id
+            current_section_start = i
+
+    if current_section_name is not None:
+        sections[current_section_name] = (current_section_start, len(lines) - 1)
+
+    return sections
+
+
+def _create_error_result(msg: str) -> GitCommandResult:
+    """Create error GitCommandResult."""
+    return GitCommandResult(
+        success=False, stdout="", stderr=msg, returncode=None, error=msg
+    )
+
+
+async def _run_git_command(
+    cmd: list[str], cwd: Path | None = None, timeout: float = 5.0
+) -> GitCommandResult:
+    """Run a git command asynchronously with timeout.
+
+    Args:
+        cmd: Command and arguments as list
+        cwd: Working directory (default: None)
+        timeout: Timeout in seconds (default: 5.0)
+
+    Returns:
+        GitCommandResult with success status, stdout, stderr, returncode
+    """
+    try:
+        async with asyncio.timeout(timeout):
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                cwd=str(cwd) if cwd else None,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await process.communicate()
+            return GitCommandResult(
+                success=process.returncode == 0,
+                stdout=stdout.decode("utf-8", errors="replace"),
+                stderr=stderr.decode("utf-8", errors="replace"),
+                returncode=process.returncode,
+            )
+    except TimeoutError:
+        return _create_error_result(f"Command timed out after {timeout}s")
+    except Exception as e:
+        return _create_error_result(str(e))
+
+
+def _extract_current_focus(active_context_content: str) -> str:
+    """Extract current focus from activeContext.md.
+
+    Args:
+        active_context_content: Full content of activeContext.md
+
+    Returns:
+        Current focus text (empty string if not found)
+    """
+    section_content, warning = extract_section_from_content(
+        active_context_content, "## Current Focus"
+    )
+    # If section not found, extract_section_from_content returns full content
+    if warning or not section_content:
+        return ""
+    # Remove the heading line and return content
+    lines = section_content.split("\n")
+    if lines and lines[0].strip().startswith("#"):
+        return "\n".join(lines[1:]).strip()
+    return section_content.strip()
+
+
+def _extract_recent_completed(
+    active_context_content: str, max_items: int = 5
+) -> list[str]:
+    """Extract recent completed items from activeContext.md.
+
+    Args:
+        active_context_content: Full content of activeContext.md
+        max_items: Maximum number of items to return
+
+    Returns:
+        List of recent completed item descriptions
+    """
+    completed_items: list[str] = []
+    lines = active_context_content.split("\n")
+
+    # Find all "## Completed Work" sections
+    in_completed_section = False
+    for line in lines:
+        if line.strip().startswith("## Completed Work"):
+            in_completed_section = True
+            continue
+        if in_completed_section:
+            # Stop at next top-level section (##)
+            if line.strip().startswith("##") and not line.strip().startswith("###"):
+                break
+            # Extract bullet items (starting with "- ✅")
+            if line.strip().startswith("- ✅") or line.strip().startswith("- **"):
+                # Extract title/description (remove markdown formatting)
+                item_text = line.strip()
+                # Remove "- ✅" or "- **" prefix
+                item_text = re.sub(r"^-\s*(✅\s*)?\*\*", "", item_text)
+                # Remove trailing "**" and status markers
+                item_text = re.sub(r"\*\*\s*-.*$", "", item_text)
+                item_text = item_text.strip()
+                if item_text:
+                    completed_items.append(item_text)
+                    if len(completed_items) >= max_items:
+                        break
+
+    return completed_items
+
+
+def _extract_next_work_item(roadmap_content: str) -> tuple[str | None, str | None]:
+    """Extract next PENDING work item from roadmap.
+
+    Args:
+        roadmap_content: Full content of roadmap.md
+
+    Returns:
+        Tuple of (next_work_item_description, plan_path) or (None, None)
+    """
+    sections = _parse_roadmap_sections(roadmap_content)
+    lines = roadmap_content.split("\n")
+
+    # Check sections in priority order: blockers -> active_work -> future -> pending
+    for section_id in ["blockers", "active_work", "future", "pending"]:
+        if section_id not in sections:
+            continue
+
+        section_start, section_end = sections[section_id]
+        for i in range(section_start + 1, section_end + 1):
+            if i >= len(lines):
+                break
+            line = lines[i].strip()
+
+            # Look for PENDING items (format: "- **Title** - PENDING - Description")
+            if line.startswith("- **") and "PENDING" in line:
+                # Extract title and plan path
+                # Format: "- **Title** - PENDING - Description. Plan: .cortex/plans/..."
+                match = re.match(
+                    r"^-\s*\*\*(.+?)\*\*\s*-\s*PENDING\s*-\s*(.+?)(?:\.\s*Plan:\s*(.+?))?\.?$",
+                    line,
+                )
+                if match:
+                    title = match.group(1).strip()
+                    description = match.group(2).strip()
+                    plan_path = match.group(3).strip() if match.group(3) else None
+                    work_item = f"{title} - {description}"
+                    return (work_item, plan_path)
+
+                # Fallback: extract just the title
+                title_match = re.match(r"^-\s*\*\*(.+?)\*\*", line)
+                if title_match:
+                    return (title_match.group(1).strip(), None)
+
+    return (None, None)
+
+
+async def _get_git_status(project_root: Path) -> GitStatusSummary | None:
+    """Get git status summary.
+
+    Args:
+        project_root: Project root directory
+
+    Returns:
+        GitStatusSummary or None if git is unavailable
+    """
+    # Check if .git exists
+    if not (project_root / ".git").exists():
+        return None
+
+    # Run git status --porcelain
+    result = await _run_git_command(["git", "status", "--porcelain"], cwd=project_root)
+
+    if not result.success:
+        return None
+
+    # Parse porcelain output
+    modified_count = 0
+    untracked_count = 0
+
+    for line in result.stdout.strip().split("\n"):
+        if not line.strip():
+            continue
+        # Porcelain format: XY filename
+        # X = staged, Y = unstaged
+        # M = modified, A = added, D = deleted, ?? = untracked
+        status = line[:2]
+        if status == "??":
+            untracked_count += 1
+        elif status[0] in "MAD" or status[1] in "MAD":
+            modified_count += 1
+
+    return GitStatusSummary(
+        has_uncommitted_changes=modified_count > 0 or untracked_count > 0,
+        modified_files_count=modified_count,
+        untracked_files_count=untracked_count,
+    )
+
+
+def _determine_token_budget_status(
+    total_tokens: int, default_budget: int = 80000
+) -> Literal["healthy", "warning", "over_budget"]:
+    """Determine token budget status from usage.
+
+    Args:
+        total_tokens: Total tokens used
+        default_budget: Default token budget
+
+    Returns:
+        Token budget status
+    """
+    token_usage_percent = (
+        (total_tokens / default_budget * 100) if default_budget > 0 else 0
+    )
+    if token_usage_percent >= 100:
+        return "over_budget"
+    if token_usage_percent >= 85:
+        return "warning"
+    return "healthy"
+
+
+async def _count_file_tokens(metadata_index: MetadataIndex, file_name: str) -> int:
+    """Get token count for a file from metadata."""
+    metadata = await metadata_index.get_file_metadata(file_name)
+    if metadata and "token_count" in metadata:
+        token_count_value = metadata["token_count"]
+        if isinstance(token_count_value, int):
+            return token_count_value
+    return 0
+
+
+async def _check_file_and_count_tokens(
+    metadata_index: MetadataIndex,
+    memory_bank_dir: Path,
+    file_name: str,
+) -> tuple[bool, int]:
+    """Check if file exists and get its token count."""
+    file_path = memory_bank_dir / file_name
+    if file_path.exists():
+        return True, await _count_file_tokens(metadata_index, file_name)
+    return False, 0
+
+
+_REQUIRED_FILES = [
+    "projectBrief.md",
+    "activeContext.md",
+    "roadmap.md",
+    "progress.md",
+    "systemPatterns.md",
+    "techContext.md",
+    "productContext.md",
+]
+
+
+async def _calculate_health_summary(
+    managers: dict[str, object],
+    project_root: Path,
+) -> SessionHealthSummary:
+    """Calculate health summary for session start."""
+    managers_dict = cast(ManagersDict, managers)
+    fs_manager: FileSystemManager = await get_manager(
+        managers_dict, "fs", FileSystemManager
+    )
+    metadata_index: MetadataIndex = await get_manager(
+        managers_dict, "index", MetadataIndex
+    )
+
+    file_count = 0
+    total_tokens = 0
+    missing_files: list[str] = []
+
+    for file_name in _REQUIRED_FILES:
+        exists, tokens = await _check_file_and_count_tokens(
+            metadata_index, fs_manager.memory_bank_dir, file_name
+        )
+        if exists:
+            file_count += 1
+            total_tokens += tokens
+        else:
+            missing_files.append(file_name)
+
+    return SessionHealthSummary(
+        file_count=file_count,
+        total_tokens=total_tokens,
+        token_budget_status=_determine_token_budget_status(total_tokens),
+        missing_files=missing_files,
+        has_errors=len(missing_files) > 0,
+    )
+
+
+def _generate_session_suggestions(
+    health: SessionHealthSummary,
+    git_status: GitStatusSummary | None,
+    next_work_item: str | None,
+) -> list[str]:
+    """Generate actionable suggestions for the session.
+
+    Args:
+        health: Health summary
+        git_status: Git status summary (optional)
+        next_work_item: Next work item (optional)
+
+    Returns:
+        List of suggestion strings
+    """
+    suggestions: list[str] = []
+
+    if git_status and git_status.has_uncommitted_changes:
+        suggestion_text = (
+            f"You have uncommitted changes ({git_status.modified_files_count} modified, "
+            f"{git_status.untracked_files_count} untracked) — consider committing first"
+        )
+        suggestions.append(suggestion_text)
+
+    if health.token_budget_status == "over_budget":
+        suggestions.append(
+            f"Token budget exceeded ({health.total_tokens} tokens) — consider compaction"
+        )
+    elif health.token_budget_status == "warning":
+        suggestions.append(
+            f"Token budget at {health.total_tokens / 80000 * 100:.0f}% — consider compaction"
+        )
+
+    if health.missing_files:
+        suggestions.append(
+            f"Missing required files: {', '.join(health.missing_files)} — run initialization"
+        )
+
+    if next_work_item:
+        suggestions.append(f"Next roadmap item: {next_work_item}")
+
+    return suggestions
+
+
+async def _read_memory_bank_file(
+    fs_manager: FileSystemManager, file_name: str
+) -> tuple[str | None, str | None]:
+    """Read a memory bank file.
+
+    Args:
+        fs_manager: File system manager
+        file_name: Name of file to read
+
+    Returns:
+        Tuple of (content, error_message) or (None, error_message) if not found
+    """
+    file_path: Path = fs_manager.memory_bank_dir / file_name
+    if not file_path.exists():
+        return None, f"{file_name} not found"
+    content: str
+    content, _ = await fs_manager.read_file(file_path)
+    return content, None
+
+
+async def _extract_project_name(fs_manager: FileSystemManager) -> str:
+    """Extract project name from projectBrief.md or return default.
+
+    Args:
+        fs_manager: File system manager
+
+    Returns:
+        Project name
+    """
+    project_name: str = "Cortex"
+    project_brief_path: Path = fs_manager.memory_bank_dir / "projectBrief.md"
+    if project_brief_path.exists():
+        project_brief_content: str
+        project_brief_content, _ = await fs_manager.read_file(project_brief_path)
+        first_line: str = (
+            project_brief_content.split("\n")[0] if project_brief_content else ""
+        )
+        if first_line.startswith("#"):
+            project_name = first_line.replace("#", "").strip()
+    return project_name
+
+
+async def _build_session_brief(
+    active_context_content: str,
+    roadmap_content: str,
+    managers: dict[str, object],
+    project_root: Path,
+    fs_manager: FileSystemManager,
+) -> SessionBrief:
+    """Build session brief from extracted information."""
+    current_focus = _extract_current_focus(active_context_content)
+    recent_completed = _extract_recent_completed(active_context_content)
+    next_work_item, next_work_plan_path = _extract_next_work_item(roadmap_content)
+    health = await _calculate_health_summary(managers, project_root)
+    git_status = await _get_git_status(project_root)
+    session_suggestions = _generate_session_suggestions(
+        health, git_status, next_work_item
+    )
+    project_name = await _extract_project_name(fs_manager)
+
+    return SessionBrief(
+        project_name=project_name,
+        current_focus=current_focus,
+        recent_completed=recent_completed,
+        next_work_item=next_work_item,
+        next_work_plan_path=next_work_plan_path,
+        health=health,
+        git_status=git_status,
+        session_suggestions=session_suggestions,
+    )
+
+
+async def _load_memory_bank_files(
+    fs_manager: FileSystemManager,
+) -> tuple[str, str] | SessionStartErrorResult:
+    """Load activeContext.md and roadmap.md files.
+
+    Returns:
+        Tuple of (active_context_content, roadmap_content) or error result
+    """
+    active_context_content, error = await _read_memory_bank_file(
+        fs_manager, "activeContext.md"
+    )
+    if error:
+        return SessionStartErrorResult(status="error", error=error)
+
+    roadmap_content, error = await _read_memory_bank_file(fs_manager, "roadmap.md")
+    if error:
+        return SessionStartErrorResult(status="error", error=error)
+
+    assert active_context_content is not None
+    assert roadmap_content is not None
+    return active_context_content, roadmap_content
+
+
+async def _session_start_impl(
+    task_description: str | None,
+    project_root: Path,
+    managers: dict[str, object],
+) -> SessionStartResultUnion:
+    """Implementation of session_start tool.
+
+    Args:
+        task_description: Optional task description for relevance scoring
+        project_root: Project root directory
+        managers: Managers dictionary
+
+    Returns:
+        SessionStartResult or SessionStartErrorResult
+    """
+    managers_dict = cast(ManagersDict, managers)
+    fs_manager: FileSystemManager = await get_manager(
+        managers_dict, "fs", FileSystemManager
+    )
+
+    try:
+        memory_bank_result = await _load_memory_bank_files(fs_manager)
+        if isinstance(memory_bank_result, SessionStartErrorResult):
+            return memory_bank_result
+
+        active_context_content, roadmap_content = memory_bank_result
+
+        brief = await _build_session_brief(
+            active_context_content, roadmap_content, managers, project_root, fs_manager
+        )
+
+        token_counter: TokenCounter = await get_manager(
+            managers_dict, "tokens", TokenCounter
+        )
+        token_count = token_counter.count_tokens(brief.model_dump_json())
+
+        return SessionStartResult(
+            status="success", brief=brief, token_count=token_count
+        )
+
+    except Exception as e:
+        logger.exception("Error in session_start")
+        return SessionStartErrorResult(
+            status="error", error=f"Failed to generate session brief: {str(e)}"
+        )
+
+
+@mcp.tool(
+    annotations=read_only_annotations(
+        "Session Start Initializer",
+        idempotent=False,
+    ),
+)
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def session_start(
+    task_description: str | None = None,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Get session orientation brief combining multiple orientation tasks.
+
+    USE WHEN: Starting a new session, user wants project context, user needs
+    orientation, user requests session brief.
+
+    EXAMPLES: 'session start', 'get session brief', 'orient me to the project',
+    'what should I work on next'.
+
+    RETURNS: JSON with SessionBrief containing current focus, next work item,
+    health check, git status, and actionable suggestions.
+
+    This tool combines 3-5 manual orientation calls into a single call:
+    - Reads activeContext.md for current focus and recent completed work
+    - Reads roadmap.md to find next PENDING work item
+    - Runs lightweight health check (file count, token budget, missing files)
+    - Optionally reads git status (uncommitted changes count)
+    - Generates actionable suggestions
+
+    The brief is designed to be < 1000 tokens, providing efficient orientation
+    without loading full context.
+
+    Args:
+        task_description: Optional task description for future relevance scoring.
+            Currently unused but reserved for future enhancements.
+
+    Returns:
+        JSON string containing SessionStartResult with:
+        - status: "success" or "error"
+        - brief: SessionBrief with orientation data
+        - token_count: Token count of the brief
+        - error: Error message (only if status is "error")
+
+    Example:
+        >>> session_start()
+        {
+          "status": "success",
+          "brief": {
+            "project_name": "Cortex",
+            "current_focus": "Implementing Phase 54: Session Start Initializer",
+            "recent_completed": [
+              "Phase 50 Step 6: Testing and Validation",
+              "Phase 51: Just-in-Time Context with Section-Level Loading"
+            ],
+            "next_work_item": "Phase 54: Session Start Initializer Pattern",
+            "next_work_plan_path": ".cortex/plans/phase-54-session-start-initializer-pattern.md",
+            "health": {
+              "file_count": 7,
+              "total_tokens": 45000,
+              "token_budget_status": "healthy",
+              "missing_files": [],
+              "has_errors": false
+            },
+            "git_status": {
+              "has_uncommitted_changes": true,
+              "modified_files_count": 2,
+              "untracked_files_count": 0
+            },
+            "session_suggestions": [
+              "You have uncommitted changes (2 modified, 0 untracked) — consider committing first",
+              "Next roadmap item: Phase 54: Session Start Initializer Pattern"
+            ]
+          },
+          "token_count": 856
+        }
+    """
+    await log_client(ctx, "info", "session_start: starting", logger_name=__name__)
+
+    project_root: Path = await get_or_resolve_project_root(ctx)
+    managers_raw = get_current_managers()
+    if managers_raw is None:
+        return SessionStartErrorResult(
+            status="error",
+            error="Managers not initialized",
+        ).model_dump_json(exclude_none=True)
+    managers: dict[str, object] = managers_raw
+
+    result = await _session_start_impl(task_description, project_root, managers)
+
+    return result.model_dump_json(exclude_none=True)
