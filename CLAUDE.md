@@ -24,6 +24,8 @@ load_context(task_description="<your goal>", token_budget=<appropriate>)
 
 Token budget guide: 10k (small update), 15k (fix/debug), 20-30k (feature), 40-50k (architecture).
 
+**For thinking and reasoning:** Use the `think` tool for quick deliberation moments (analyzing tool outputs, checking policy compliance, planning multi-step operations). For formal multi-step reasoning with revisions and branches, use `sequentialthinking`.
+
 **For rules and standards:** Use Cortex rules/validation tools — do not read `.cortex/rules/` or `.cortex/synapse/` directly.
 
 **For quality and tests:** Use `fix_quality_issues` and `execute_pre_commit_checks` — do not run formatters/linters/pytest directly.

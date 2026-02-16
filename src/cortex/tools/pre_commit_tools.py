@@ -142,7 +142,8 @@ def _make_test_progress_callback(
     """Build (completed, total) callback that reports test counts to MCP.
 
     Reports progress as (tests executed, total tests) so the client sees
-    actual test counts. Time-based progress is disabled for this tool.
+    actual test counts. This complements (does not replace) the generic
+    time-based progress loop that keeps the connection alive during setup.
     """
     if ctx is None:
         return None

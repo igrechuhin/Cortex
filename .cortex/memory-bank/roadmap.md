@@ -6,9 +6,13 @@
 
 ## Blockers (ASAP Priority)
 
+- [Phase: Investigate fix_markdown_lint MCP Tool Failure](.cortex/plans/phase-investigate-fix_markdown_lint-failure-20260216-204350.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `fix_markdown_lint`, Error: TypeError - Impact: Commit procedure blocked - Target completion: 2026-02-16
+
 ## Active Work (in progress)
 
 ## Future Enhancements
+
+- **Session Optimization: Analysis-Only Context and Rules Indexing** - PENDING - Document analysis-only no_data behavior, rules indexing fallback, and verify manage_file read behavior from 2026-02-16 session analysis.
 
 ## Pending plans (from .cortex/plans)
 
@@ -25,7 +29,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 ### Features & Enhancements
 
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
-- **Phase 55: Lightweight Think Tool Enhancement** - PENDING - Add minimal think(thought) tool alongside sequentialthinking; add domain-specific thinking examples to commit, implement, and plan prompts for better reasoning. Plan: .cortex/plans/phase-55-lightweight-think-tool.md.
 - **Phase 56: Session Compaction Workflow** - PENDING - Automatic compaction for activeContext/progress, structured JSON session handoff, progressive summarization (daily/weekly/monthly tiers), compact_session tool. Plan: .cortex/plans/phase-56-session-compaction-workflow.md.
 - **Phase 57: Evaluation-Driven Tool Improvement** - PENDING - Build evaluation framework for tool effectiveness (success rates, token efficiency, error patterns); 20+ eval tasks for real workflows; automated tool description optimization using Claude; A/B testing for improvements. Plan: .cortex/plans/phase-57-evaluation-driven-tool-improvement.md.
 - **Phase 58: Multi-Agent Specialization and Task Locking** - PENDING - Role-based context loading (quality/feature/test/docs agents), task locking for roadmap items to prevent duplicate work, concurrent session visibility, agent role profiles. Plan: .cortex/plans/phase-58-multi-agent-specialization-task-locking.md.
@@ -37,3 +40,5 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Session Optimization: Testing Coverage Documentation and Planning (2026-02-16 Analysis)** - PENDING - Document coverage expectations for consolidated tools (90%+ acceptable, 95%+ ideal), add test planning checklist to implement prompt, document integration test pattern for handler dispatch tools.
 - **Session Optimization: Test Coverage and Development Workflow Improvements** - PENDING - Improve coverage gap identification, proactive file size enforcement, test coverage guidance, and reduce test development friction based on 2026-02-16 session analysis
 - **Session Optimization: Commit Pipeline Context Loading and Helper Module Pattern** - PENDING - Optimize commit pipeline context loading (reduce token usage 40-60%) and document helper module extraction pattern for code quality violations
+- **Session Optimization: fix_markdown_lint Opaque Errors and Commit Fallback** - PENDING - Improve fix_markdown_lint error reporting when batch fails; document commit fallback when tool returns no rule codes. Plan: .cortex/plans/session-optimization-fix-markdown-lint-opaque-errors.md.
+- **Fix Broken Progress Entry: Phase 54 Title Corruption** - PENDING - Fix corrupted entry in progress.md line 66 ("Phase 54lizer Pattern" → "Phase 54: Session Start Initializer Pattern") and extend corruption detection to catch truncation patterns. Plan: .cortex/plans/fix-progress-phase-54-corruption.md.

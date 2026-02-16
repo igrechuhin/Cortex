@@ -221,6 +221,11 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Stepwise reasoning for complex planning",
     ),
     ToolCategoryEntry(
+        name="think",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale="Lightweight thinking for quick deliberation moments",
+    ),
+    ToolCategoryEntry(
         name="read_cache_json",
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="Concurrent-safe cache reads",

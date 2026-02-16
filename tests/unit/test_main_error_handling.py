@@ -469,20 +469,17 @@ class TestMCPStabilityConnectionErrorDetection:
         # Assert
         assert result is True
 
-    def test_runtime_error_is_connection_error(self) -> None:
-        """Test that RuntimeError is recognized as connection error."""
-        # Arrange
+    def test_runtime_error_with_connection_message_is_connection_error(self) -> None:
+        """RuntimeError is connection error only when message indicates closure."""
         from cortex.core.mcp_stability import (
             _is_connection_error,  # type: ignore[reportPrivateUsage]
         )
 
-        error = RuntimeError("Runtime error")
+        error = RuntimeError("MCP error -32000: Connection closed")
+        assert _is_connection_error(error) is True
 
-        # Act
-        result = _is_connection_error(error)
-
-        # Assert
-        assert result is True
+        generic = RuntimeError("Runtime error")
+        assert _is_connection_error(generic) is False
 
     def test_value_error_is_not_connection_error(self) -> None:
         """Test that ValueError is not recognized as connection error."""

@@ -1,7 +1,9 @@
 """Sequential thinking MCP tool for stepwise, reflective problem-solving.
 
-Exposes a single tool `sequentialthinking` compatible with the reference
-MCP sequential thinking server API (thought history, revisions, branches).
+Exposes two tools:
+- `sequentialthinking`: Full-featured sequential thinking compatible with the reference
+  MCP sequential thinking server API (thought history, revisions, branches).
+- `think`: Lightweight think tool for quick deliberation moments - just a thought string.
 """
 
 import json
@@ -77,6 +79,10 @@ class SequentialThinkingCore:
     def __init__(self) -> None:
         self._thought_history: list[ThoughtEntry] = []
         self._branches: dict[str, list[ThoughtEntry]] = {}
+
+    def get_history_length(self) -> int:
+        """Get the current length of thought history."""
+        return len(self._thought_history)
 
     def process_thought(self, inp: SequentialThinkingInput) -> SequentialThinkingOutput:
         """Append thought to history (and optionally to a branch); return output."""
@@ -207,3 +213,50 @@ async def sequentialthinking(
     core = _get_core()
     output = core.process_thought(inp)
     return _output_to_json_string(output)
+
+
+@mcp.tool(annotations=safe_write_annotations("Lightweight Thinking"))
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def think(thought: str) -> str:
+    """Use to think about something before taking action.
+
+    USE WHEN: Analyzing tool outputs, checking policy compliance, planning
+    multi-step operations, or reasoning about complex decisions. This is a
+    lightweight alternative to sequentialthinking for quick deliberation moments.
+
+    EXAMPLES: "Which pre-commit checks apply to these changes?", "Verify all
+    files are staged and no secrets included", "Check if memory bank updates
+    are needed", "Analyze dependencies before implementing a feature".
+
+    RETURNS: JSON with status and thought_number indicating the thought was logged.
+
+    Parameters:
+        thought: A thought to think about (required).
+    """
+    core = _get_core()
+    # Auto-increment thought_number based on current history length
+    thought_number = core.get_history_length() + 1
+    total_thoughts = max(thought_number, 1)  # At least 1
+
+    inp = SequentialThinkingInput(
+        thought=thought,
+        next_thought_needed=False,  # Lightweight tool assumes single thought
+        thought_number=thought_number,
+        total_thoughts=total_thoughts,
+        is_revision=False,
+        revises_thought=None,
+        branch_from_thought=None,
+        branch_id=None,
+        needs_more_thoughts=False,
+    )
+    _maybe_log_thought(thought_number, total_thoughts, thought)
+    output = core.process_thought(inp)
+
+    # Return simplified response
+    return json.dumps(
+        {
+            "status": "thought_logged",
+            "thought_number": output.thought_number,
+        }
+    )

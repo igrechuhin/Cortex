@@ -94,7 +94,7 @@ def _handle_broken_resource_in_group(eg: BaseExceptionGroup) -> bool:
     """
     for exc in eg.exceptions:
         if _is_connection_error(exc):
-            logger.warning(
+            logger.info(
                 (
                     "MCP stdio connection broken during TaskGroup cleanup "
                     "(client disconnected); group_msg=%s sub_count=%d "

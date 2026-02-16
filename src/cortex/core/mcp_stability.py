@@ -26,6 +26,7 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_SECONDS,
     PROGRESS_REPORT_INTERVAL_LONG_RUNNING_SECONDS,
     PROGRESS_REPORT_INTERVAL_SECONDS,
+    PROGRESS_REPORT_INTERVAL_VERY_FREQUENT_SECONDS,
     PROGRESS_THRESHOLD_TIMEOUT_SECONDS,
 )
 from cortex.core.context_logging import MCPContext
@@ -36,10 +37,20 @@ from cortex.core.usage_context import get_current_managers, set_current_managers
 
 logger = logging.getLogger(__name__)
 # Tools that report their own progress (file/step-based); skip wrapper time-based progress.
+# Note: execute_pre_commit_checks removed - it only reports progress during test execution,
+# not during setup/initialization, causing client disconnects. Generic time-based progress
+# is needed to keep connection alive during setup phase.
 _TOOLS_WITH_OWN_PROGRESS = frozenset(
     {
         "fix_markdown_lint",
         "fix_quality_issues",
+    }
+)
+# Tools that need more frequent progress reporting to prevent client idle timeout.
+# These tools run long operations (especially tests) and need progress every 2-3 seconds
+# instead of the default 5 seconds to prevent "Connection closed" errors.
+_TOOLS_NEEDING_FREQUENT_PROGRESS = frozenset(
+    {
         "execute_pre_commit_checks",
     }
 )
@@ -197,7 +208,6 @@ class TrackedSemaphore:
 _concurrent_tools_semaphore: TrackedSemaphore | None = None
 # Semaphore for resource reads (Phase 69: separate from tools to avoid -32001 queueing)
 _concurrent_resources_semaphore: TrackedSemaphore | None = None
-
 # Connection state for diagnostics (Phase 32)
 _connection_closure_count: int = 0
 _connection_recovery_count: int = 0
@@ -323,11 +333,16 @@ def _is_connection_error(e: Exception) -> bool:
         OSError,
         anyio.BrokenResourceError,  # anyio resource errors (e.g., stdio closed)
         anyio.ClosedResourceError,  # send on closed stream after client disconnect
-        RuntimeError,  # Main wraps connection closure in RuntimeError for MCP
     )
 
     if isinstance(e, connection_error_types):
         return True
+
+    # RuntimeError only when MCP/client reports connection closed (e.g. -32000)
+    if isinstance(e, RuntimeError):
+        msg = str(e).lower()
+        if "-32000" in str(e) or "connection closed" in msg or "connection" in msg:
+            return True
 
     error_message = str(e).lower()
     connection_keywords = [
@@ -470,25 +485,36 @@ async def _progress_report_loop(
 ) -> None:
     """Background task: report progress every N seconds (Phase 46). Uses a shorter
     interval for long-running tools (timeout >= 300s) to reduce client idle
-    timeout risk (Connection closed -32000).
+    timeout risk (Connection closed -32000). Uses very frequent interval for
+    tools prone to connection closed errors (e.g. execute_pre_commit_checks).
 
     Handles cancellation gracefully: if the request is cancelled, the loop
     stops immediately without trying to send more progress updates.
     """
-    interval = (
-        PROGRESS_REPORT_INTERVAL_LONG_RUNNING_SECONDS
-        if timeout_sec >= 300
-        else PROGRESS_REPORT_INTERVAL_SECONDS
-    )
+    if _tool_name in _TOOLS_NEEDING_FREQUENT_PROGRESS:
+        interval = PROGRESS_REPORT_INTERVAL_VERY_FREQUENT_SECONDS
+    elif timeout_sec >= 300:
+        interval = PROGRESS_REPORT_INTERVAL_LONG_RUNNING_SECONDS
+    else:
+        interval = PROGRESS_REPORT_INTERVAL_SECONDS
+
     start = time.perf_counter()
+    try:
+        _ = await _progress_report_step(
+            ctx, timeout_sec, start, _tool_name
+        )  # Send immediate progress report at start (0%) to establish connection activity
+    except Exception:
+        pass  # If initial progress fails, continue anyway - the loop will retry
+
     try:
         while True:
             await asyncio.sleep(interval)
             if not await _progress_report_step(ctx, timeout_sec, start, _tool_name):
                 break
     except asyncio.CancelledError:
-        # Request was cancelled - stop progress reporting immediately
-        logger.debug("Progress loop for %s cancelled", _tool_name)
+        logger.debug(
+            "Progress loop for %s cancelled", _tool_name
+        )  # Request was cancelled - stop progress reporting immediately
         raise
 
 

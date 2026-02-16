@@ -616,7 +616,7 @@ async def test_rollback_file_version_error_handling(mock_project_root: Path):
     # Arrange
     with patch(
         "cortex.tools.phase1_foundation_rollback._execute_rollback",
-        side_effect=RuntimeError("Test error"),
+        side_effect=RuntimeError("MCP error -32000: Connection closed"),
     ):
         # Act
         result = await rollback_file_version(file_name="test.md", version=1)
