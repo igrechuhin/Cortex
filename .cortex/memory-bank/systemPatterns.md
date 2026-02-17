@@ -1,5 +1,7 @@
 # System Patterns: Cortex
 
+**Schema Extension Note**: This file has schema validation with required sections (`## System Architecture`/`## Architecture`, `## Design Patterns`/`## Design Patterns in Use`, `## Component Relationships`). When adding new content, maintain proper heading hierarchy (H2 → H3 → H4, max 3 levels) and do not skip heading levels. See `memory-bank-workflow.mdc` for detailed extension guidance.
+
 ## System Architecture
 
 Cortex is structured as an MCP (Model Context Protocol) server with a modular, layered architecture:
@@ -41,6 +43,10 @@ Synapse is a git submodule (Synapse directory) providing shared resources with a
 - **Synapse scripts directory** – Language-SPECIFIC implementations (`{language}/` e.g. python/, typescript/)
 
 Resolve actual paths via `get_structure_info()` where available; do not hardcode `.cortex/synapse/` in prompts.
+
+### Coding Standards Ownership
+
+**Pydantic 2 Standards**: Pydantic 2 standards are owned by Synapse and defined in `python-pydantic-standards.mdc` (Synapse rules directory). Do not duplicate Pydantic guidance in project-local documentation (techContext.md, systemPatterns.md). Instead, reference the Synapse rule via `rules(operation="get_relevant", task_description="Pydantic 2 standards")` or `get_synapse_rules(task_description="Pydantic 2")`.
 
 ### Prompts: Language-AGNOSTIC (MANDATORY)
 

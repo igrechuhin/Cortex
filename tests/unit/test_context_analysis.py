@@ -631,7 +631,22 @@ class TestInsightGeneration:
         insights = cast(dict[str, object], insights_raw.model_dump(mode="python"))
         patterns = cast(list[str], insights["learned_patterns"])
         joined = " ".join(patterns).lower()
-        assert "token_budget=0" in joined or "files_selected=0" in joined
+        # Check for enhanced warning for non-trivial tasks
+        assert (
+            "token_budget=0" in joined
+            or "files_selected=0" in joined
+            or "critical" in joined
+            or "non-trivial" in joined
+        )
+        # Verify warning mentions refactor/fix/debug/implement
+        assert (
+            "refactor" in joined
+            or "fix" in joined
+            or "debug" in joined
+            or "implement" in joined
+        )
+        # Verify enhanced warning mentions memory-bank guidance violation
+        assert "memory-bank" in joined or "workflow" in joined or "guidance" in joined
 
     def test_budget_recommendations_via_insights(self, tmp_path: Path) -> None:
         """Test budget recommendations through insights."""

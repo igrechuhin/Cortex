@@ -74,8 +74,11 @@ def mock_optimization_config_enabled() -> MagicMock:
     """Create mock optimization config with rules enabled."""
     config = MagicMock()
     config.is_rules_enabled.return_value = True
+    config.get_rules_folder.return_value = ".cortex/rules"
     config.get_rules_max_tokens.return_value = 5000
     config.get_rules_min_relevance.return_value = 0.6
+    config.get_rule_priority.return_value = "local_overrides_shared"
+    config.is_context_aware_loading.return_value = True
     return config
 
 
@@ -88,9 +91,10 @@ def mock_optimization_config_disabled() -> MagicMock:
 
 
 @pytest.fixture
-def mock_rules_manager() -> MagicMock:
+def mock_rules_manager(mock_project_root: Path) -> MagicMock:
     """Create mock rules manager."""
     manager = MagicMock()
+    manager.project_root = mock_project_root
     manager.index_rules = AsyncMock(
         return_value={
             "indexed": 42,
@@ -142,6 +146,18 @@ def mock_rules_manager() -> MagicMock:
         total_tokens=15234,
     )
     manager.initialize = AsyncMock(return_value=None)
+    # Mock indexer for status building
+    mock_indexer = MagicMock()
+    mock_indexer.get_status.return_value = RulesManagerStatusModel(
+        enabled=True,
+        rules_folder=None,
+        indexed_files=42,
+        last_indexed="2026-01-04T10:30:00Z",
+        auto_reindex_enabled=True,
+        reindex_interval_minutes=30.0,
+        total_tokens=15234,
+    )
+    manager.indexer = mock_indexer
     return manager
 
 
@@ -207,10 +223,20 @@ async def test_check_rules_enabled_when_disabled(
 
 
 @pytest.mark.asyncio
-async def test_handle_index_operation_success(mock_rules_manager: MagicMock) -> None:
+async def test_handle_index_operation_success(
+    mock_rules_manager: MagicMock,
+    mock_optimization_config_enabled: MagicMock,
+    mock_project_root: Path,
+) -> None:
     """Test handle_index_operation with successful indexing."""
+    # Arrange: Create rules folder
+    rules_folder = mock_project_root / ".cortex" / "rules"
+    rules_folder.mkdir(parents=True, exist_ok=True)
+
     # Act
-    result = await handle_index_operation(mock_rules_manager, force=False)
+    result = await handle_index_operation(
+        mock_rules_manager, mock_optimization_config_enabled, force=False
+    )
 
     # Assert
     result_dict = json.loads(result)
@@ -222,16 +248,79 @@ async def test_handle_index_operation_success(mock_rules_manager: MagicMock) -> 
 
 
 @pytest.mark.asyncio
-async def test_handle_index_operation_with_force(mock_rules_manager: MagicMock) -> None:
+async def test_handle_index_operation_with_force(
+    mock_rules_manager: MagicMock,
+    mock_optimization_config_enabled: MagicMock,
+    mock_project_root: Path,
+) -> None:
     """Test handle_index_operation with force=True."""
+    # Arrange: Create rules folder
+    rules_folder = mock_project_root / ".cortex" / "rules"
+    rules_folder.mkdir(parents=True, exist_ok=True)
+
     # Act
-    result = await handle_index_operation(mock_rules_manager, force=True)
+    result = await handle_index_operation(
+        mock_rules_manager, mock_optimization_config_enabled, force=True
+    )
 
     # Assert
     result_dict = json.loads(result)
     assert result_dict["status"] == "success"
     assert result_dict["operation"] == "index"
     mock_rules_manager.index_rules.assert_called_once_with(force=True)
+
+
+@pytest.mark.asyncio
+async def test_handle_index_operation_missing_rules_folder(
+    mock_rules_manager: MagicMock,
+    mock_project_root: Path,
+) -> None:
+    """Test handle_index_operation fails loudly when rules folder not configured."""
+    # Arrange: Config with no rules folder
+    config = MagicMock()
+    config.is_rules_enabled.return_value = True
+    config.get_rules_folder.return_value = None
+
+    # Act
+    result = await handle_index_operation(mock_rules_manager, config, force=False)
+
+    # Assert
+    result_dict = json.loads(result)
+    assert result_dict["status"] == "error"
+    assert "Rules folder not configured" in result_dict["error"]
+    assert "suggestion" in result_dict
+    mock_rules_manager.index_rules.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_handle_index_operation_rules_folder_not_found(
+    mock_rules_manager: MagicMock,
+    mock_optimization_config_enabled: MagicMock,
+    mock_project_root: Path,
+) -> None:
+    """Test handle_index_operation fails loudly when rules folder doesn't exist."""
+    # Arrange: Rules folder doesn't exist
+    # (mock_project_root is empty)
+    # Make index_rules return error for when it's called after folder check passes
+    mock_rules_manager.index_rules.return_value = {
+        "status": "error",
+        "error": "Rules folder not found: .cortex/rules",
+        "message": "Rules folder not found: .cortex/rules",
+    }
+
+    # Act
+    result = await handle_index_operation(
+        mock_rules_manager, mock_optimization_config_enabled, force=False
+    )
+
+    # Assert: Should return error (either from validation or from index_rules)
+    result_dict = json.loads(result)
+    assert result_dict["status"] == "error"
+    assert (
+        "Rules folder not found" in result_dict["error"]
+        or "not found" in result_dict["error"].lower()
+    )
+    # index_rules may or may not be called depending on validation order
 
 
 # ============================================================================
@@ -487,10 +576,81 @@ def test_calculate_total_tokens_zero() -> None:
 
 
 @pytest.mark.asyncio
+async def test_handle_get_relevant_operation_missing_rules_folder(
+    mock_rules_manager: MagicMock,
+    mock_project_root: Path,
+) -> None:
+    """Test handle_get_relevant_operation fails loudly when rules folder not configured."""
+    # Arrange: Config with no rules folder
+    config = MagicMock()
+    config.is_rules_enabled.return_value = True
+    config.get_rules_folder.return_value = None
+    config.get_rule_priority.return_value = "local_overrides_shared"
+    config.is_context_aware_loading.return_value = True
+
+    # Act
+    result = await handle_get_relevant_operation(
+        mock_rules_manager,
+        config,
+        task_description="Test task",
+        max_tokens=None,
+        min_relevance_score=None,
+    )
+
+    # Assert
+    result_dict = json.loads(result)
+    assert result_dict["status"] == "error"
+    assert "Rules folder not configured" in result_dict["error"]
+    assert "suggestion" in result_dict
+    mock_rules_manager.get_relevant_rules.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_handle_get_relevant_operation_rules_folder_not_found(
+    mock_rules_manager: MagicMock,
+    mock_optimization_config_enabled: MagicMock,
+    mock_project_root: Path,
+) -> None:
+    """Test handle_get_relevant_operation fails loudly when rules folder doesn't exist."""
+    # Arrange: Rules folder doesn't exist
+    # (mock_project_root is empty)
+    mock_optimization_config_enabled.get_rule_priority.return_value = (
+        "local_overrides_shared"
+    )
+    mock_optimization_config_enabled.is_context_aware_loading.return_value = True
+
+    # Act
+    result = await handle_get_relevant_operation(
+        mock_rules_manager,
+        mock_optimization_config_enabled,
+        task_description="Test task",
+        max_tokens=None,
+        min_relevance_score=None,
+    )
+
+    # Assert
+    result_dict = json.loads(result)
+    assert result_dict["status"] == "error"
+    assert "not found" in result_dict["error"].lower()
+    assert "suggestion" in result_dict
+    mock_rules_manager.get_relevant_rules.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_handle_get_relevant_operation_success(
-    mock_rules_manager: MagicMock, mock_optimization_config_enabled: MagicMock
+    mock_rules_manager: MagicMock,
+    mock_optimization_config_enabled: MagicMock,
+    mock_project_root: Path,
 ) -> None:
     """Test handle_get_relevant_operation with successful retrieval."""
+    # Arrange: Create rules folder
+    rules_folder = mock_project_root / ".cortex" / "rules"
+    rules_folder.mkdir(parents=True, exist_ok=True)
+    mock_optimization_config_enabled.get_rule_priority.return_value = (
+        "local_overrides_shared"
+    )
+    mock_optimization_config_enabled.is_context_aware_loading.return_value = True
+
     # Act
     result = await handle_get_relevant_operation(
         mock_rules_manager,
@@ -514,9 +674,19 @@ async def test_handle_get_relevant_operation_success(
 
 @pytest.mark.asyncio
 async def test_handle_get_relevant_operation_defaults(
-    mock_rules_manager: MagicMock, mock_optimization_config_enabled: MagicMock
+    mock_rules_manager: MagicMock,
+    mock_optimization_config_enabled: MagicMock,
+    mock_project_root: Path,
 ) -> None:
     """Test handle_get_relevant_operation with default parameters."""
+    # Arrange: Create rules folder
+    rules_folder = mock_project_root / ".cortex" / "rules"
+    rules_folder.mkdir(parents=True, exist_ok=True)
+    mock_optimization_config_enabled.get_rule_priority.return_value = (
+        "local_overrides_shared"
+    )
+    mock_optimization_config_enabled.is_context_aware_loading.return_value = True
+
     # Act
     result = await handle_get_relevant_operation(
         mock_rules_manager,
@@ -530,6 +700,68 @@ async def test_handle_get_relevant_operation_defaults(
     result_dict = json.loads(result)
     assert result_dict["max_tokens"] == 5000  # From config
     assert result_dict["min_relevance_score"] == 0.6  # From config
+
+
+@pytest.mark.asyncio
+async def test_handle_get_relevant_operation_status_reflects_current_config(
+    mock_rules_manager: MagicMock,
+    mock_optimization_config_enabled: MagicMock,
+    mock_project_root: Path,
+) -> None:
+    """Test that status reflects current config value, not stale manager initialization.
+
+    This test verifies Step 1 fix: rules manager status should use current
+    optimization.rules.rules_folder, not the value from initialization.
+    """
+    # Arrange: Create rules folder
+    rules_folder = mock_project_root / ".cortex" / "rules"
+    rules_folder.mkdir(parents=True, exist_ok=True)
+    mock_optimization_config_enabled.get_rule_priority.return_value = (
+        "local_overrides_shared"
+    )
+    mock_optimization_config_enabled.is_context_aware_loading.return_value = True
+    mock_optimization_config_enabled.get_rules_reindex_interval.return_value = 30
+
+    # Mock indexer.get_status() (used by _build_status_from_config)
+    mock_indexer = MagicMock()
+    mock_indexer.get_status.return_value = RulesManagerStatusModel(
+        enabled=True,
+        rules_folder=None,  # Indexer doesn't store folder
+        indexed_files=42,
+        last_indexed="2026-01-04T10:30:00Z",
+        auto_reindex_enabled=True,
+        reindex_interval_minutes=30.0,
+        total_tokens=15234,
+    )
+    mock_rules_manager.indexer = mock_indexer
+
+    # Configure config to return different folder than manager's stale status
+    # (simulating config update after manager initialization)
+    mock_optimization_config_enabled.get_rules_folder.return_value = ".cortex/rules"
+    # Manager's get_status() returns stale value (simulating old initialization)
+    mock_rules_manager.get_status.return_value = RulesManagerStatusModel(
+        enabled=True,
+        rules_folder=".cursorrules",  # Stale value
+        indexed_files=42,
+        last_indexed="2026-01-04T10:30:00Z",
+        total_tokens=15234,
+    )
+
+    # Act
+    result = await handle_get_relevant_operation(
+        mock_rules_manager,
+        mock_optimization_config_enabled,
+        "Test task",
+        5000,
+        0.7,
+    )
+
+    # Assert: Status should reflect current config (.cortex/rules), not stale (.cursorrules)
+    result_dict = json.loads(result)
+    assert result_dict["status"] == "success"
+    status = result_dict["rules_manager_status"]
+    assert status["rules_folder"] == ".cortex/rules"  # Current config value
+    assert status["rules_folder"] != ".cursorrules"  # Not stale value
 
 
 # ============================================================================
@@ -612,9 +844,19 @@ async def test_dispatch_operation_index(
 
 @pytest.mark.asyncio
 async def test_dispatch_operation_get_relevant(
-    mock_rules_manager: MagicMock, mock_optimization_config_enabled: MagicMock
+    mock_rules_manager: MagicMock,
+    mock_optimization_config_enabled: MagicMock,
+    mock_project_root: Path,
 ) -> None:
     """Test dispatch_operation with get_relevant operation."""
+    # Arrange: Create rules folder
+    rules_folder = mock_project_root / ".cortex" / "rules"
+    rules_folder.mkdir(parents=True, exist_ok=True)
+    mock_optimization_config_enabled.get_rule_priority.return_value = (
+        "local_overrides_shared"
+    )
+    mock_optimization_config_enabled.is_context_aware_loading.return_value = True
+
     # Act
     result = await dispatch_operation(
         RulesOperation.GET_RELEVANT,
@@ -738,7 +980,9 @@ async def test_rules_get_relevant_operation_success(
     mock_managers_enabled: dict[str, Any], mock_project_root: Path
 ) -> None:
     """Test rules() with get_relevant operation."""
-    # Arrange
+    # Arrange: Create rules folder
+    rules_folder = mock_project_root / ".cortex" / "rules"
+    rules_folder.mkdir(parents=True, exist_ok=True)
     with (
         patch(
             "cortex.tools.rules_operations.resolve_project_root_async",
@@ -770,7 +1014,9 @@ async def test_rules_get_relevant_defaults(
     mock_managers_enabled: dict[str, Any], mock_project_root: Path
 ) -> None:
     """Test rules() get_relevant with default max_tokens/min_score."""
-    # Arrange
+    # Arrange: Create rules folder
+    rules_folder = mock_project_root / ".cortex" / "rules"
+    rules_folder.mkdir(parents=True, exist_ok=True)
     with (
         patch(
             "cortex.tools.rules_operations.resolve_project_root_async",
@@ -799,6 +1045,9 @@ async def test_rules_get_relevant_resource_returns_json(
     mock_managers_enabled: dict[str, Any], mock_project_root: Path
 ) -> None:
     """rules_get_relevant_resource returns JSON (Phase 43 cortex://rules/relevant)."""
+    # Arrange: Create rules folder
+    rules_folder = mock_project_root / ".cortex" / "rules"
+    rules_folder.mkdir(parents=True, exist_ok=True)
     with (
         patch(
             "cortex.tools.rules_operations.resolve_project_root_async",

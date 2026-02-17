@@ -75,6 +75,32 @@ def _save_statistics(stats_path: Path, stats: ContextUsageStatistics) -> None:
         json.dump(stats.model_dump(mode="json"), f, indent=2)
 
 
+def _is_non_trivial_task(task_description: str) -> bool:
+    """Check if task description indicates a non-trivial task requiring context.
+
+    Non-trivial tasks are those that require project context to complete correctly:
+    - refactor, fix, debug, implement, add, create tasks
+    - These tasks MUST use non-zero token budgets for proper context loading.
+
+    Args:
+        task_description: Task description to check
+
+    Returns:
+        True if task is non-trivial and requires context
+    """
+    task_lower = task_description.lower()
+    non_trivial_keywords = [
+        "refactor",
+        "fix",
+        "bug",
+        "debug",
+        "implement",
+        "add",
+        "create",
+    ]
+    return any(keyword in task_lower for keyword in non_trivial_keywords)
+
+
 def _extract_task_pattern(task_description: str) -> str:
     """Extract a simplified pattern from task description."""
     # Extract key action words
@@ -323,6 +349,38 @@ def _get_task_type_pattern(entries: list[ContextUsageEntry]) -> str | None:
     return f"Most common task type: '{top_task}' ({task_counts[top_task]} calls)"
 
 
+def _get_zero_budget_warning(entries: list[ContextUsageEntry]) -> str | None:
+    """Generate warning for zero-budget/zero-files load_context calls."""
+    zero_budget = any(e.token_budget == 0 for e in entries)
+    zero_files = any(e.files_selected == 0 for e in entries)
+    if not (zero_budget or zero_files):
+        return None
+
+    # Check if any zero-budget/zero-files calls are for non-trivial tasks
+    non_trivial_tasks = [
+        e
+        for e in entries
+        if (e.token_budget == 0 or e.files_selected == 0)
+        and _is_non_trivial_task(e.task_description)
+    ]
+    if non_trivial_tasks:
+        return (
+            "⚠️ CRITICAL: At least one load_context call had token_budget=0 "
+            "or files_selected=0 for a non-trivial task (refactor/fix/debug/implement). "
+            "This is a configuration error - these tasks MUST use a non-zero token budget "
+            "(typically 10k-15k for fix/debug, 20k-30k for implement/add). "
+            "Re-run load_context with an appropriate budget to ensure proper context loading. "
+            "Zero-budget/zero-files calls for non-trivial tasks indicate the agent ran without "
+            "memory-bank guidance, which violates the documented workflow."
+        )
+    return (
+        "Warning: at least one load_context call had token_budget=0 or "
+        "no selected files. For non-trivial tasks (refactor/fix/debug/implement), "
+        "this is a configuration error - use a non-zero token budget "
+        "(typically 10k-15k for fix/debug, 20k-30k for implement/add)."
+    )
+
+
 def _generate_learned_patterns(entries: list[ContextUsageEntry]) -> list[str]:
     """Generate human-readable learned patterns from data."""
     if not entries:
@@ -347,16 +405,9 @@ def _generate_learned_patterns(entries: list[ContextUsageEntry]) -> list[str]:
     if task_pattern:
         patterns.append(task_pattern)
 
-    zero_budget = any(e.token_budget == 0 for e in entries)
-    zero_files = any(e.files_selected == 0 for e in entries)
-    if zero_budget or zero_files:
-        warning = (
-            "Warning: at least one load_context call had token_budget=0 or "
-            "no selected files. Treat this as a configuration or "
-            "instrumentation issue for non-trivial tasks (especially "
-            "refactor/fix/debug)."
-        )
-        patterns.append(warning)
+    zero_budget_warning = _get_zero_budget_warning(entries)
+    if zero_budget_warning:
+        patterns.append(zero_budget_warning)
 
     return patterns
 

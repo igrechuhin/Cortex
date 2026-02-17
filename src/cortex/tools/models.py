@@ -22,6 +22,8 @@ Design principles:
 - Documentation: All fields have descriptions for schema generation
 """
 
+from __future__ import annotations
+
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -2892,6 +2894,17 @@ class SessionHandoff(StrictBaseModel):
     )
 
 
+class ConcurrentSession(StrictBaseModel):
+    """Information about a concurrent agent session."""
+
+    agent_role: str | None = Field(
+        None, description="Agent role (feature, quality, testing, etc.)"
+    )
+    task: str = Field(description="Task title being worked on")
+    started: str = Field(description="ISO format datetime when session started")
+    session_id: str = Field(description="Unique session identifier")
+
+
 class SessionBrief(StrictBaseModel):
     """Session brief with orientation information."""
 
@@ -2919,6 +2932,14 @@ class SessionBrief(StrictBaseModel):
     last_handoff: SessionHandoff | None = Field(
         None,
         description="Last session handoff from compact_session (if available)",
+    )
+    concurrent_sessions: list[ConcurrentSession] = Field(  # type: ignore[reportUnknownVariableType]
+        default_factory=list,
+        description="List of concurrent agent sessions (excluding current session)",
+    )
+    locked_tasks: list[str] = Field(
+        default_factory=list,
+        description="List of task titles currently locked by other sessions",
     )
 
 
@@ -3003,3 +3024,16 @@ class CheckTaskAvailableResult(StrictBaseModel):
     lock: TaskLock | None = Field(
         None, description="Lock data if task is locked, None if available"
     )
+
+
+# ============================================================================
+# Session Registry Models (Phase 58 Step 4)
+# ============================================================================
+
+
+class SessionRegistryResult(StrictBaseModel):
+    """Result of session registry operations."""
+
+    status: Literal["success", "error"] = Field(description="Operation status")
+    message: str = Field(description="Success or error message")
+    error: str | None = Field(None, description="Error message if status is error")

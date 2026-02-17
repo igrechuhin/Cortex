@@ -24,6 +24,7 @@ from cortex.core.models import ModelDict
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers.initialization import get_managers
 from cortex.managers.manager_utils import get_manager
+from cortex.optimization.models import RulesManagerStatusModel
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.rules_manager import RulesManager
 from cortex.server import mcp
@@ -67,18 +68,48 @@ async def check_rules_enabled(
     return None
 
 
-async def handle_index_operation(rules_manager: RulesManager, force: bool) -> str:
+async def handle_index_operation(
+    rules_manager: RulesManager,
+    optimization_config: OptimizationConfig,
+    force: bool,
+) -> str:
     """Handle index operation.
 
     Args:
         rules_manager: Rules manager instance
+        optimization_config: Optimization configuration
         force: Force reindexing even if recently indexed
 
     Returns:
         JSON string with index result
     """
+    # Validate rules folder configuration before proceeding
+    rules_folder, config_error = _validate_rules_folder_config(optimization_config)
+    if config_error:
+        return config_error
+
     result = await rules_manager.index_rules(force=force)
     result_payload: ModelDict = result
+
+    # Check if indexing returned an error
+    if result_payload.get("status") == "error":
+        from cortex.tools.tool_error_formatters import format_tool_error
+
+        error_msg = result_payload.get("error", "Unknown error")
+        return format_tool_error(
+            FileNotFoundError(str(error_msg)),
+            suggestion=(
+                "Create the rules folder at the configured path or update "
+                "rules.rules_folder in .cortex/config/optimization.json "
+                "to point to an existing directory."
+            ),
+            example={"rules": {"enabled": True, "rules_folder": ".cortex/rules"}},
+            context={
+                "configured_path": rules_folder,
+                "config_path": ".cortex/config/optimization.json",
+            },
+        )
+
     return json.dumps(
         {"status": "success", "operation": "index", "result": result_payload},
         indent=2,
@@ -105,6 +136,174 @@ async def validate_get_relevant_params(task_description: str | None) -> str | No
     return None
 
 
+def _validate_rules_folder_config(
+    optimization_config: OptimizationConfig,
+) -> tuple[str | None, str | None]:
+    """Validate rules folder configuration.
+
+    Args:
+        optimization_config: Optimization configuration
+
+    Returns:
+        Tuple of (rules_folder, error_message). If error_message is not None,
+        rules_folder is None and error_message contains the formatted error.
+    """
+    rules_folder = optimization_config.get_rules_folder()
+    if not rules_folder:
+        from cortex.tools.tool_error_formatters import format_tool_error
+
+        error = format_tool_error(
+            ValueError("Rules folder not configured"),
+            suggestion=(
+                "Configure rules_folder in .cortex/config/optimization.json "
+                "under 'rules.rules_folder'. Example: '.cortex/rules'"
+            ),
+            example={"rules": {"enabled": True, "rules_folder": ".cortex/rules"}},
+            context={"config_path": ".cortex/config/optimization.json"},
+        )
+        return None, error
+    return rules_folder, None
+
+
+def _validate_rules_folder_exists(
+    rules_manager: RulesManager, rules_folder: str
+) -> str | None:
+    """Validate that rules folder exists on filesystem.
+
+    Args:
+        rules_manager: Rules manager instance
+        rules_folder: Rules folder path from config
+
+    Returns:
+        Error message if folder doesn't exist, None if valid
+    """
+    project_root = rules_manager.project_root
+    rules_path = project_root / rules_folder
+    if not rules_path.exists():
+        from cortex.tools.tool_error_formatters import format_tool_error
+
+        return format_tool_error(
+            FileNotFoundError(f"Rules folder not found: {rules_folder}"),
+            suggestion=(
+                f"Create the rules folder at '{rules_path}' or update "
+                f"rules.rules_folder in .cortex/config/optimization.json "
+                f"to point to an existing directory."
+            ),
+            example={"rules": {"enabled": True, "rules_folder": ".cortex/rules"}},
+            context={
+                "configured_path": rules_folder,
+                "absolute_path": str(rules_path),
+                "config_path": ".cortex/config/optimization.json",
+            },
+        )
+    return None
+
+
+async def _fetch_relevant_rules(
+    rules_manager: RulesManager,
+    optimization_config: OptimizationConfig,
+    task_description: str,
+    resolved_max_tokens: int,
+    resolved_min_score: float,
+) -> ModelDict:
+    """Fetch relevant rules from rules manager.
+
+    Args:
+        rules_manager: Rules manager instance
+        optimization_config: Optimization configuration
+        task_description: Description of the task
+        resolved_max_tokens: Resolved max tokens
+        resolved_min_score: Resolved min relevance score
+
+    Returns:
+        Relevant rules dictionary
+    """
+    rule_priority = optimization_config.get_rule_priority()
+    context_aware = optimization_config.is_context_aware_loading()
+
+    relevant_rules = await rules_manager.get_relevant_rules(
+        task_description=task_description,
+        max_tokens=resolved_max_tokens,
+        min_relevance_score=resolved_min_score,
+        rule_priority=rule_priority,
+        context_aware=context_aware,
+    )
+    return relevant_rules
+
+
+async def _execute_get_relevant(
+    rules_manager: RulesManager,
+    optimization_config: OptimizationConfig,
+    task_description: str,
+    max_tokens: int | None,
+    min_relevance_score: float | None,
+    rules_folder: str,
+) -> str:
+    """Execute get_relevant operation after validation.
+
+    Args:
+        rules_manager: Rules manager instance
+        optimization_config: Optimization configuration
+        task_description: Description of the task
+        max_tokens: Maximum tokens for rules (optional)
+        min_relevance_score: Minimum relevance score (optional)
+        rules_folder: Validated rules folder path
+
+    Returns:
+        JSON string with relevant rules result
+    """
+    resolved_max_tokens, resolved_min_score = resolve_config_defaults(
+        optimization_config, max_tokens, min_relevance_score
+    )
+    relevant_rules_dict = await _fetch_relevant_rules(
+        rules_manager,
+        optimization_config,
+        task_description,
+        resolved_max_tokens,
+        resolved_min_score,
+    )
+    all_rules = extract_all_rules(relevant_rules_dict)
+    total_tokens = calculate_total_tokens(relevant_rules_dict, all_rules)
+    status = _build_status_from_config(rules_manager, optimization_config, rules_folder)
+    return build_get_relevant_response(
+        task_description,
+        resolved_max_tokens,
+        resolved_min_score,
+        all_rules,
+        total_tokens,
+        status,
+        relevant_rules_dict,
+    )
+
+
+def _build_status_from_config(
+    rules_manager: RulesManager,
+    optimization_config: OptimizationConfig,
+    rules_folder: str | None,
+) -> RulesManagerStatusModel:
+    """Build status from current optimization config to ensure accuracy.
+
+    Args:
+        rules_manager: Rules manager instance (for indexer status)
+        optimization_config: Current optimization configuration
+        rules_folder: Current rules folder path from config (may be None)
+
+    Returns:
+        RulesManagerStatusModel with current status
+    """
+    indexer_status = rules_manager.indexer.get_status()
+
+    return RulesManagerStatusModel(
+        enabled=rules_folder is not None,
+        rules_folder=rules_folder,  # Use current config value, not stale initialization
+        indexed_files=indexer_status.indexed_files,
+        last_indexed=indexer_status.last_indexed,
+        auto_reindex_enabled=indexer_status.auto_reindex_enabled,
+        reindex_interval_minutes=optimization_config.get_rules_reindex_interval(),
+        total_tokens=indexer_status.total_tokens,
+    )
+
+
 async def handle_get_relevant_operation(
     rules_manager: RulesManager,
     optimization_config: OptimizationConfig,
@@ -124,34 +323,24 @@ async def handle_get_relevant_operation(
     Returns:
         JSON string with relevant rules result
     """
-    resolved_max_tokens, resolved_min_score = resolve_config_defaults(
-        optimization_config, max_tokens, min_relevance_score
-    )
+    # Validate rules folder configuration before proceeding
+    rules_folder, config_error = _validate_rules_folder_config(optimization_config)
+    if config_error:
+        return config_error
+    assert rules_folder is not None  # Validated above
 
-    # Use config defaults for rule_priority and context_aware
-    rule_priority = optimization_config.get_rule_priority()
-    context_aware = optimization_config.is_context_aware_loading()
+    # Check if rules folder exists
+    folder_error = _validate_rules_folder_exists(rules_manager, rules_folder)
+    if folder_error:
+        return folder_error
 
-    relevant_rules = await rules_manager.get_relevant_rules(
-        task_description=task_description,
-        max_tokens=resolved_max_tokens,
-        min_relevance_score=resolved_min_score,
-        rule_priority=rule_priority,
-        context_aware=context_aware,
-    )
-    relevant_rules_dict: ModelDict = relevant_rules
-
-    all_rules = extract_all_rules(relevant_rules_dict)
-    total_tokens = calculate_total_tokens(relevant_rules_dict, all_rules)
-
-    return build_get_relevant_response(
+    return await _execute_get_relevant(
+        rules_manager,
+        optimization_config,
         task_description,
-        resolved_max_tokens,
-        resolved_min_score,
-        all_rules,
-        total_tokens,
-        rules_manager.get_status(),
-        relevant_rules_dict,
+        max_tokens,
+        min_relevance_score,
+        rules_folder,
     )
 
 
@@ -179,7 +368,7 @@ async def dispatch_operation(
         JSON string with operation result
     """
     if operation == RulesOperation.INDEX:
-        return await handle_index_operation(rules_manager, force)
+        return await handle_index_operation(rules_manager, optimization_config, force)
     if operation == RulesOperation.GET_RELEVANT:
         if error_msg := await validate_get_relevant_params(task_description):
             return error_msg

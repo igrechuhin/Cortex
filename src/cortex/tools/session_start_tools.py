@@ -36,13 +36,17 @@ from cortex.server import mcp
 from cortex.tools.compaction_operations import read_handoff
 from cortex.tools.file_section_helpers import extract_section_from_content
 from cortex.tools.models import (
+    ConcurrentSession,
     GitStatusSummary,
     SessionBrief,
+    SessionHandoff,
     SessionHealthSummary,
     SessionStartErrorResult,
     SessionStartResult,
     SessionStartResultUnion,
 )
+from cortex.tools.session_registry import list_concurrent_sessions
+from cortex.tools.task_locking import list_active_locks
 
 logger = logging.getLogger(__name__)
 
@@ -394,10 +398,33 @@ async def _calculate_health_summary(
     )
 
 
+def _add_concurrency_suggestions(
+    suggestions: list[str],
+    locked_tasks: list[str] | None,
+    concurrent_sessions: list[ConcurrentSession] | None,
+) -> None:
+    """Add suggestions about concurrent sessions and locked tasks."""
+    if concurrent_sessions:
+        session_count = len(concurrent_sessions)
+        suggestions.append(
+            f"{session_count} concurrent session(s) active — check locked_tasks to avoid duplicate work"
+        )
+
+    if locked_tasks:
+        if len(locked_tasks) == 1:
+            suggestions.append(f"Task locked by another session: {locked_tasks[0]}")
+        else:
+            suggestions.append(
+                f"{len(locked_tasks)} tasks locked by other sessions — see locked_tasks field"
+            )
+
+
 def _generate_session_suggestions(
     health: SessionHealthSummary,
     git_status: GitStatusSummary | None,
     next_work_item: str | None,
+    locked_tasks: list[str] | None = None,
+    concurrent_sessions: list[ConcurrentSession] | None = None,
 ) -> list[str]:
     """Generate actionable suggestions for the session.
 
@@ -405,6 +432,8 @@ def _generate_session_suggestions(
         health: Health summary
         git_status: Git status summary (optional)
         next_work_item: Next work item (optional)
+        locked_tasks: List of locked task titles (optional)
+        concurrent_sessions: List of concurrent sessions (optional)
 
     Returns:
         List of suggestion strings
@@ -431,6 +460,8 @@ def _generate_session_suggestions(
         suggestions.append(
             f"Missing required files: {', '.join(health.missing_files)} — run initialization"
         )
+
+    _add_concurrency_suggestions(suggestions, locked_tasks, concurrent_sessions)
 
     if next_work_item:
         suggestions.append(f"Next roadmap item: {next_work_item}")
@@ -480,6 +511,96 @@ async def _extract_project_name(fs_manager: FileSystemManager) -> str:
     return project_name
 
 
+async def _load_concurrent_sessions_safe(
+    project_root: Path,
+) -> list[ConcurrentSession]:
+    """Load concurrent sessions, returning empty list on error."""
+    try:
+        return await list_concurrent_sessions(project_root, exclude_current=True)
+    except Exception as e:
+        logger.debug("Failed to load concurrent sessions: %s", e)
+        return []
+
+
+async def _load_locked_tasks_safe(project_root: Path) -> list[str]:
+    """Load locked task titles, returning empty list on error."""
+    try:
+        locks = await list_active_locks(project_root)
+        return [lock.task_title for lock in locks]
+    except Exception as e:
+        logger.debug("Failed to load locked tasks: %s", e)
+        return []
+
+
+async def _load_concurrency_info(
+    project_root: Path,
+) -> tuple[list[ConcurrentSession], list[str]]:
+    """Load concurrent sessions and locked tasks."""
+    concurrent_sessions = await _load_concurrent_sessions_safe(project_root)
+    locked_tasks = await _load_locked_tasks_safe(project_root)
+    return concurrent_sessions, locked_tasks
+
+
+def _create_session_brief(
+    project_name: str,
+    current_focus: str,
+    recent_completed: list[str],
+    next_work_item: str | None,
+    next_work_plan_path: str | None,
+    health: SessionHealthSummary,
+    git_status: GitStatusSummary | None,
+    session_suggestions: list[str],
+    last_handoff: SessionHandoff | None,
+    concurrent_sessions: list[ConcurrentSession],
+    locked_tasks: list[str],
+) -> SessionBrief:
+    """Create SessionBrief from components."""
+    return SessionBrief(
+        project_name=project_name,
+        current_focus=current_focus,
+        recent_completed=recent_completed,
+        next_work_item=next_work_item,
+        next_work_plan_path=next_work_plan_path,
+        health=health,
+        git_status=git_status,
+        session_suggestions=session_suggestions,
+        last_handoff=last_handoff,
+        concurrent_sessions=concurrent_sessions,
+        locked_tasks=locked_tasks,
+    )
+
+
+def _assemble_session_brief(
+    project_name: str,
+    current_focus: str,
+    recent_completed: list[str],
+    next_work_item: str | None,
+    next_work_plan_path: str | None,
+    health: SessionHealthSummary,
+    git_status: GitStatusSummary | None,
+    last_handoff: SessionHandoff | None,
+    concurrent_sessions: list[ConcurrentSession],
+    locked_tasks: list[str],
+) -> SessionBrief:
+    """Assemble session brief from collected components."""
+    session_suggestions = _generate_session_suggestions(
+        health, git_status, next_work_item, locked_tasks, concurrent_sessions
+    )
+    return _create_session_brief(
+        project_name,
+        current_focus,
+        recent_completed,
+        next_work_item,
+        next_work_plan_path,
+        health,
+        git_status,
+        session_suggestions,
+        last_handoff,
+        concurrent_sessions,
+        locked_tasks,
+    )
+
+
 async def _build_session_brief(
     active_context_content: str,
     roadmap_content: str,
@@ -495,22 +616,20 @@ async def _build_session_brief(
     )
     health = await _calculate_health_summary(managers, project_root)
     git_status = await _get_git_status(project_root)
-    session_suggestions = _generate_session_suggestions(
-        health, git_status, next_work_item
-    )
     project_name = await _extract_project_name(fs_manager)
     last_handoff = await read_handoff(project_root, fs_manager)
-
-    return SessionBrief(
-        project_name=project_name,
-        current_focus=current_focus,
-        recent_completed=recent_completed,
-        next_work_item=next_work_item,
-        next_work_plan_path=next_work_plan_path,
-        health=health,
-        git_status=git_status,
-        session_suggestions=session_suggestions,
-        last_handoff=last_handoff,
+    concurrent_sessions, locked_tasks = await _load_concurrency_info(project_root)
+    return _assemble_session_brief(
+        project_name,
+        current_focus,
+        recent_completed,
+        next_work_item,
+        next_work_plan_path,
+        health,
+        git_status,
+        last_handoff,
+        concurrent_sessions,
+        locked_tasks,
     )
 
 

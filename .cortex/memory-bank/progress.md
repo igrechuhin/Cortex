@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026
+
+- **Session Optimization: Rules and Context Loading Follow-Ups (2026-02-12)** - COMPLETE. Fixed rules manager status to use current optimization config (not stale initialization), enhanced zero-budget/zero-files warnings with memory-bank guidance violation messaging, extracted validation helpers to maintain function-length limits. All 5 implementation steps completed with tests.
+
 ## 2026-02-17
 
 - **Commit (quality, docs, python_adapter, tests)** - Pre-commit: fix_errors, format, markdown lint (1 file fixed, 0 errors), type_check, quality, tests 4135 passed, 92.59% coverage. Updated quality.yml, commit-pipeline-phases.md, troubleshooting.md, python_adapter.py, test_analysis_operations.py; session review file included.
@@ -17,6 +21,10 @@
 - - **Commit (function length violations: phase4_context_operations, roadmap_operations)** - Fixed function length violations in phase4_context_operations.py (3 violations) and roadmap_operations.py (1 violation) by extracting helper functions and refactoring dispatch logic. Extracted_finalize_hybrid_metadata_context,_prepare_roadmap_for_removal,_find_and_validate_removal_line, _perform_roadmap_removal,_dispatch_by_depth, _unpack_loading_data,_dispatch_metadata_only_loading, and_dispatch_full_or_summary_loading. All quality checks pass; 4189 tests, 92.44% coverage.
 - **Commit (fix errors, type fixes, quality violations)** - Fixed E402 lint errors (added noqa comments for circular dependency imports), fixed type errors in tests (added @pytest.mark.asyncio and await to async test functions), fixed function length violations (extracted helpers in compaction_operations, plan_completion, task_locking, file_lock_guard, session_start_tools, file_operations), fixed file size violation (reduced file_operations.py from 420 to 400 lines). Pre-commit: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4189 passed, 92.04% coverage.
 - **Commit (quality: file size, function length; test type fix)** - COMPLETE. Fixed file_operations.py size (moved validate_write_request, run_validate_prepare_then_execute to helpers),_handle_write_operation and _run_and_finalize length (compact + fmt: off). Test: validate_write_request from file_operation_helpers, type annotations. 4189 tests, 92% coverage.
+- **Phase 58 Step 3: Task Locking Mechanism** - COMPLETE. Implemented task locking system with TaskLock model, lock operations (claim_task, release_task, list_active_locks, check_task_available), auto-expiry (2 hours), MCP tools (claim_task_lock, release_task_lock, list_active_tasks, check_task_available_lock), and comprehensive unit tests (95%+ coverage).
+- **Phase 58 Step 4: Concurrent Session Visibility** - COMPLETE. Implemented session registry system with session_register/session_deregister MCP tools, extended SessionBrief to include concurrent_sessions and locked_tasks, updated session_start to load and display active locks and concurrent sessions. Added comprehensive unit tests (95%+ coverage). All tests pass.
+- **Session Optimization: Path Resolver and Context Loading (2026-02-11)** - COMPLETE. Added path resolver rule to python-testing-standards.mdc requiring use of get_cortex_path() for all .cortex paths in tests; updated implement prompt to include roadmap/activeContext guidance for session/commit-pipeline tasks in context loading section.
+- **Commit (type fix, function length violation)** - Fixed type error in `models.py` (`concurrent_sessions` Pyright limitation with `# type: ignore[reportUnknownVariableType]`), fixed function length violation in `session_start_tools.py` (extracted `_assemble_session_brief` helper). Pre-commit: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4222 passed, 91.89% coverage.
 
 ## 2026-02-16
 

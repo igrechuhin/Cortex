@@ -1,5 +1,7 @@
 # Tech Context: Cortex
 
+**Schema Extension Note**: This file has schema validation with required sections (`## Technologies Used`, `## Dependencies`, `## Development Setup`). When adding new content, maintain proper heading hierarchy (H2 → H3 → H4, max 3 levels) and do not skip heading levels. See `memory-bank-workflow.mdc` for detailed extension guidance.
+
 ## Technologies Used
 
 - **Python 3.13 - Modern Python with built-in types (list[str], dict[str, int], etc.)
@@ -47,6 +49,10 @@ pip install -e ".dev]"
 - **Async Only**: All I/O operations must be async
 - **No Global State**: All dependencies injected via constructors
 - **One Public Type Per File**: Single public class/type per module
+
+## Coding Standards
+
+**Pydantic 2 Standards**: Pydantic 2 standards are owned by Synapse and defined in `python-pydantic-standards.mdc` (Synapse rules directory). For Pydantic 2 guidance, use `rules(operation="get_relevant", task_description="Pydantic 2 standards")` or `get_synapse_rules(task_description="Pydantic 2")` to load the canonical Synapse rule. Do not duplicate Pydantic guidance in this file.
 
 ## Dependencies
 

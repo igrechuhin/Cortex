@@ -1,0 +1,306 @@
+"""Tests for session registry functionality (Phase 58 Step 4)."""
+
+import os
+from pathlib import Path
+
+import pytest
+
+from cortex.core.cache_json_access import read_cache_json
+from cortex.optimization.agent_roles import AgentRole
+from cortex.tools.session_registry import (
+    deregister_session,
+    list_concurrent_sessions,
+    register_session,
+)
+
+
+class TestRegisterSession:
+    """Tests for registering sessions."""
+
+    @pytest.mark.asyncio
+    async def test_register_session_success(self, tmp_path: Path) -> None:
+        """Test successfully registering a session."""
+        # Arrange
+        task_title = "Phase 58: Multi-Agent Specialization"
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "test_session_123"
+
+        try:
+            # Act
+            session_result = await register_session(tmp_path, task_title)
+
+            # Assert
+            assert session_result.task == task_title
+            assert session_result.session_id == "test_session_123"
+            assert session_result.agent_role is None  # No role specified
+            assert session_result.started is not None
+
+            # Verify session is persisted
+            data = await read_cache_json(tmp_path, "sessions/active.json")
+            assert data is not None
+            assert isinstance(data, dict)
+            assert "test_session_123" in data
+            session_data = data["test_session_123"]
+            assert isinstance(session_data, dict)
+            assert session_data["task"] == task_title
+
+        finally:
+            if original is None:
+                _ = os.environ.pop(env_key, None)
+            else:
+                os.environ[env_key] = original
+
+    @pytest.mark.asyncio
+    async def test_register_session_with_role(self, tmp_path: Path) -> None:
+        """Test registering a session with agent role."""
+        # Arrange
+        task_title = "Fix lint errors"
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "test_session_456"
+
+        try:
+            # Act
+            session_result = await register_session(
+                tmp_path, task_title, agent_role=AgentRole.QUALITY
+            )
+
+            # Assert
+            assert session_result.task == task_title
+            assert session_result.session_id == "test_session_456"
+            assert session_result.agent_role == "quality"
+
+        finally:
+            if original is None:
+                _ = os.environ.pop(env_key, None)
+            else:
+                os.environ[env_key] = original
+
+    @pytest.mark.asyncio
+    async def test_register_multiple_sessions(self, tmp_path: Path) -> None:
+        """Test registering multiple sessions."""
+        # Arrange
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+
+        try:
+            # Act - Register first session
+            os.environ[env_key] = "session_1"
+            session1 = await register_session(
+                tmp_path, "Task 1", agent_role=AgentRole.FEATURE
+            )
+
+            # Register second session
+            os.environ[env_key] = "session_2"
+            session2 = await register_session(
+                tmp_path, "Task 2", agent_role=AgentRole.QUALITY
+            )
+
+            # Assert
+            assert session1.session_id == "session_1"
+            assert session2.session_id == "session_2"
+
+            # Verify both sessions are persisted
+            data = await read_cache_json(tmp_path, "sessions/active.json")
+            assert data is not None
+            assert "session_1" in data
+            assert "session_2" in data
+            assert len(data) == 2
+
+        finally:
+            if original is None:
+                _ = os.environ.pop(env_key, None)
+            else:
+                os.environ[env_key] = original
+
+
+class TestDeregisterSession:
+    """Tests for deregistering sessions."""
+
+    @pytest.mark.asyncio
+    async def test_deregister_session_success(self, tmp_path: Path) -> None:
+        """Test successfully deregistering a session."""
+        # Arrange
+        task_title = "Phase 58: Multi-Agent Specialization"
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "test_session_789"
+
+        try:
+            # Register session first
+            _ = await register_session(tmp_path, task_title)
+
+            # Act
+            result = await deregister_session(tmp_path)
+
+            # Assert
+            assert result is True
+
+            # Verify session is removed
+            data = await read_cache_json(tmp_path, "sessions/active.json")
+            assert data is None or "test_session_789" not in data
+
+        finally:
+            if original is None:
+                _ = os.environ.pop(env_key, None)
+            else:
+                os.environ[env_key] = original
+
+    @pytest.mark.asyncio
+    async def test_deregister_nonexistent_session(self, tmp_path: Path) -> None:
+        """Test deregistering a session that doesn't exist."""
+        # Arrange
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+        os.environ[env_key] = "nonexistent_session"
+
+        try:
+            # Act
+            result = await deregister_session(tmp_path)
+
+            # Assert
+            assert result is False
+
+        finally:
+            if original is None:
+                _ = os.environ.pop(env_key, None)
+            else:
+                os.environ[env_key] = original
+
+    @pytest.mark.asyncio
+    async def test_deregister_only_current_session(self, tmp_path: Path) -> None:
+        """Test that deregistering only removes current session."""
+        # Arrange
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+
+        try:
+            # Register two sessions
+            os.environ[env_key] = "session_a"
+            _ = await register_session(tmp_path, "Task A")
+
+            os.environ[env_key] = "session_b"
+            _ = await register_session(tmp_path, "Task B")
+
+            # Act - Deregister session_b
+            result = await deregister_session(tmp_path)
+
+            # Assert
+            assert result is True
+
+            # Verify session_b is removed but session_a remains
+            data = await read_cache_json(tmp_path, "sessions/active.json")
+            assert data is not None
+            assert "session_a" in data
+            assert "session_b" not in data
+
+        finally:
+            if original is None:
+                _ = os.environ.pop(env_key, None)
+            else:
+                os.environ[env_key] = original
+
+
+class TestListConcurrentSessions:
+    """Tests for listing concurrent sessions."""
+
+    @pytest.mark.asyncio
+    async def test_list_empty_registry(self, tmp_path: Path) -> None:
+        """Test listing sessions when registry is empty."""
+        # Act
+        sessions = await list_concurrent_sessions(tmp_path)
+
+        # Assert
+        assert sessions == []
+
+    @pytest.mark.asyncio
+    async def test_list_excludes_current_session(self, tmp_path: Path) -> None:
+        """Test that current session is excluded from results."""
+        # Arrange
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+
+        try:
+            # Register current session
+            os.environ[env_key] = "current_session"
+            _ = await register_session(tmp_path, "Current Task")
+
+            # Register another session
+            os.environ[env_key] = "other_session"
+            _ = await register_session(tmp_path, "Other Task")
+
+            # Act - List from current_session perspective
+            os.environ[env_key] = "current_session"
+            sessions = await list_concurrent_sessions(tmp_path, exclude_current=True)
+
+            # Assert
+            assert len(sessions) == 1
+            assert sessions[0].session_id == "other_session"
+            assert sessions[0].task == "Other Task"
+
+        finally:
+            if original is None:
+                _ = os.environ.pop(env_key, None)
+            else:
+                os.environ[env_key] = original
+
+    @pytest.mark.asyncio
+    async def test_list_includes_current_session_when_requested(
+        self, tmp_path: Path
+    ) -> None:
+        """Test that current session is included when exclude_current=False."""
+        # Arrange
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+
+        try:
+            # Register current session
+            os.environ[env_key] = "current_session"
+            _ = await register_session(tmp_path, "Current Task")
+
+            # Act
+            sessions = await list_concurrent_sessions(tmp_path, exclude_current=False)
+
+            # Assert
+            assert len(sessions) == 1
+            assert sessions[0].session_id == "current_session"
+
+        finally:
+            if original is None:
+                _ = os.environ.pop(env_key, None)
+            else:
+                os.environ[env_key] = original
+
+    @pytest.mark.asyncio
+    async def test_list_multiple_sessions(self, tmp_path: Path) -> None:
+        """Test listing multiple concurrent sessions."""
+        # Arrange
+        env_key = "CORTEX_SESSION_ID"
+        original = os.environ.get(env_key)
+
+        try:
+            # Register multiple sessions
+            os.environ[env_key] = "session_1"
+            _ = await register_session(tmp_path, "Task 1", agent_role=AgentRole.FEATURE)
+
+            os.environ[env_key] = "session_2"
+            _ = await register_session(tmp_path, "Task 2", agent_role=AgentRole.QUALITY)
+
+            os.environ[env_key] = "session_3"
+            _ = await register_session(tmp_path, "Task 3", agent_role=AgentRole.TESTING)
+
+            # Act - List from session_1 perspective
+            os.environ[env_key] = "session_1"
+            sessions = await list_concurrent_sessions(tmp_path, exclude_current=True)
+
+            # Assert
+            assert len(sessions) == 2
+            session_ids = {s.session_id for s in sessions}
+            assert session_ids == {"session_2", "session_3"}
+
+        finally:
+            if original is None:
+                _ = os.environ.pop(env_key, None)
+            else:
+                os.environ[env_key] = original
