@@ -363,7 +363,7 @@ class TestLongRunningSemaphoreWait:
             return "second", True, None, False
 
         with patch(
-            "cortex.core.mcp_stability.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
+            "cortex.core.mcp_stability_config.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
             1.0,
         ):
             # Start first (holds semaphore), then second (waits then runs)
@@ -412,7 +412,7 @@ class TestLongRunningSemaphoreWait:
                 return "fast", True, None, False
 
             with patch(
-                "cortex.core.mcp_stability.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
+                "cortex.core.mcp_stability_config.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
                 0.15,
             ):
                 with pytest.raises(RuntimeError, match="Another long-running tool"):

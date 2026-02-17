@@ -1,8 +1,10 @@
 """Helper functions for file operations error handling."""
 
 import json
+from collections.abc import Awaitable, Callable
 from enum import Enum
 from pathlib import Path
+from typing import Any
 
 from cortex.core.exceptions import (
     FileConflictError,
@@ -89,6 +91,99 @@ def build_new_file_creation_error(file_name: str, memory_bank_dir: Path) -> str:
         },
         indent=2,
     )
+
+
+async def validate_and_prepare_write_content(
+    file_path: Path,
+    file_name: str,
+    content: str | None,
+    change_description: str | None,
+    schema_validator: Any,
+    project_root: Path | None,
+    validate_request_fn: Callable[[Path, str, str | None], str | None],
+    verify_lock_fn: Callable[..., Awaitable[str | None]],
+    validate_schema_fn: Callable[..., Awaitable[str | None]],
+    prepare_content_fn: Callable[[str, str], str],
+) -> tuple[str | None, str | None]:
+    """Run write validations; return (error_json, None) or (None, prepared_content)."""
+    if err := validate_request_fn(file_path, file_name, content):
+        return (err, None)
+    assert content is not None
+    if err := await verify_lock_fn(
+        project_root, file_name, content, change_description
+    ):
+        return (err, None)
+    content = prepare_content_fn(file_name, content)
+    if err := await validate_schema_fn(schema_validator, file_name, content):
+        return (err, None)
+    return (None, content)
+
+
+async def run_validate_prepare_then_execute(
+    file_path: Path,
+    file_name: str,
+    content: str | None,
+    change_description: str | None,
+    schema_validator: Any,
+    project_root: Path | None,
+    validate_req_fn: Callable[[Path, str, str | None], str | None],
+    verify_lock_fn: Callable[..., Awaitable[str | None]],
+    validate_schema_fn: Callable[..., Awaitable[str | None]],
+    prepare_fn: Callable[[str, str], str],
+    execute_fn: Callable[..., Awaitable[str]],
+    fs_manager: Any,
+    metadata_index: Any,
+    token_counter: Any,
+    version_manager: Any,
+) -> str:
+    """Run validate/prepare then execute write. Returns error JSON or write result."""
+    # fmt: off
+    err, final_content = await validate_and_prepare_write_content(
+        file_path, file_name, content, change_description,
+        schema_validator, project_root,
+        validate_req_fn, verify_lock_fn, validate_schema_fn, prepare_fn,
+    )
+    if err is not None:
+        return err
+    assert final_content is not None
+    return await execute_fn(
+        file_path, file_name, final_content, change_description,
+        fs_manager, metadata_index, token_counter, version_manager,
+    )
+    # fmt: on
+
+
+def validate_write_content(content: str | None) -> str | None:
+    """Validate content for write operation (required, no null bytes)."""
+    if content is None:
+        return json.dumps(
+            {"status": "error", "error": "Content is required for write operation"},
+            indent=2,
+        )
+    if "\x00" in content:
+        return json.dumps(
+            {
+                "status": "error",
+                "error": "Content must not contain null bytes (invalid for text files)",
+                "hint": "Remove binary or control characters and retry.",
+            },
+            indent=2,
+        )
+    return None
+
+
+def validate_write_request(
+    file_path: Path, file_name: str, content: str | None
+) -> str | None:
+    """Validate write request parameters. Returns error JSON or None."""
+    if content is None:
+        return json.dumps(
+            {"status": "error", "error": "Content is required for write operation"},
+            indent=2,
+        )
+    if not file_path.exists():
+        return build_new_file_creation_error(file_name, file_path.parent)
+    return validate_write_content(content)
 
 
 def build_read_error_response(file_name: str, root: Path) -> str:

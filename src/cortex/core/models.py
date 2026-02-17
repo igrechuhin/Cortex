@@ -1093,6 +1093,10 @@ class ConnectionHealth(DictLikeModel):
     utilization_percent: float = Field(
         ge=0.0, le=100.0, description="Resource utilization percentage"
     )
+    long_running_holder: str | None = Field(
+        default=None,
+        description="Name of tool currently holding the long-running semaphore, or None",
+    )
 
 
 # ============================================================================

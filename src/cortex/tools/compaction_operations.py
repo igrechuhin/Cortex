@@ -150,9 +150,13 @@ async def _compact_session_read_and_snapshot(
         )
     active_content, _ = await fs_manager.read_file(active_path)
     progress_content, _ = await fs_manager.read_file(progress_path)
-    snapshot_active = _pre_compact_snapshot_path(project_root, MemoryBankFile.ACTIVE_CONTEXT)
-    snapshot_progress = _pre_compact_snapshot_path(project_root, MemoryBankFile.PROGRESS)
-    await _write_snapshots(snapshot_active, snapshot_progress, active_content, progress_content, fs_manager)
+    snapshot_active, snapshot_progress = (
+        _pre_compact_snapshot_path(project_root, MemoryBankFile.ACTIVE_CONTEXT),
+        _pre_compact_snapshot_path(project_root, MemoryBankFile.PROGRESS),
+    )
+    await _write_snapshots(
+        snapshot_active, snapshot_progress, active_content, progress_content, fs_manager
+    )
     return (
         active_content,
         progress_content,
@@ -233,9 +237,24 @@ async def _compact_session_write_back(
     from cortex.core.constants import MemoryBankFile
 
     try:
-        if err := await _compact_write_active(project_root, compacted_active, fs_manager, metadata_index, token_counter, version_manager):
+        if err := await _compact_write_active(
+            project_root,
+            compacted_active,
+            fs_manager,
+            metadata_index,
+            token_counter,
+            version_manager,
+        ):
             return err
-        return await _compact_write_one(project_root, MemoryBankFile.PROGRESS, compacted_progress, fs_manager, metadata_index, token_counter, version_manager)
+        return await _compact_write_one(
+            project_root,
+            MemoryBankFile.PROGRESS,
+            compacted_progress,
+            fs_manager,
+            metadata_index,
+            token_counter,
+            version_manager,
+        )
     except (FileConflictError, FileLockTimeoutError, GitConflictError) as e:
         return _compact_rollback_error(e)
 

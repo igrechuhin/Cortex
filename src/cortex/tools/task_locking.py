@@ -140,6 +140,25 @@ async def _check_existing_lock(
     return False
 
 
+def _create_task_lock(
+    task_id: str,
+    task_title: str,
+    session_id: str,
+    now: datetime,
+    expires_at: datetime,
+    agent_role: AgentRole | None,
+) -> TaskLock:
+    """Create a TaskLock model."""
+    return TaskLock(
+        task_id=task_id,
+        task_title=task_title,
+        agent_session_id=session_id,
+        locked_at=now.isoformat(),
+        expires_at=expires_at.isoformat(),
+        agent_role=agent_role.value if agent_role else None,
+    )
+
+
 async def claim_task(
     project_root: Path,
     task_title: str,
@@ -168,7 +187,9 @@ async def claim_task(
     locks = await _cleanup_expired_locks(project_root, locks)
     if await _check_existing_lock(locks, task_id, task_title, now):
         return None
-    lock = TaskLock(task_id=task_id, task_title=task_title, agent_session_id=session_id, locked_at=now.isoformat(), expires_at=expires_at.isoformat(), agent_role=agent_role.value if agent_role else None)
+    lock = _create_task_lock(
+        task_id, task_title, session_id, now, expires_at, agent_role
+    )
     locks[task_id] = lock
     await _save_locks_registry(project_root, locks)
 
@@ -179,7 +200,6 @@ async def claim_task(
         session_id,
         expires_at.isoformat(),
     )
-
     return lock
 
 

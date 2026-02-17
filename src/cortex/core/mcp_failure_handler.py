@@ -14,6 +14,7 @@ from cortex.core.constants import MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.exceptions import MemoryBankError
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.managers.initialization import get_project_root
 
 logger = logging.getLogger(__name__)
 
@@ -125,16 +126,14 @@ class MCPToolFailureHandler:
             project_root: Root directory of the project (auto-detected if None)
         """
         if project_root is None:
-            # Auto-detect project root by finding .cortex directory
-            project_root = Path.cwd()
-            while project_root != project_root.parent:
-                if get_cortex_path(
-                    project_root, CortexResourceType.CORTEX_DIR
-                ).exists():
-                    break
-                project_root = project_root.parent
-            else:
-                raise ValueError("Could not find .cortex directory")
+            # Use centralized project root detection for consistency
+            project_root = get_project_root(None)
+            # Verify .cortex exists to provide clear error message
+            cortex_dir = get_cortex_path(project_root, CortexResourceType.CORTEX_DIR)
+            if not cortex_dir.exists():
+                raise ValueError(
+                    f"Could not find .cortex directory at {cortex_dir}. Project root detected as: {project_root}"
+                )
 
         self.project_root: Path = Path(project_root).resolve()
         self.plans_dir: Path = get_cortex_path(

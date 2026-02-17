@@ -21,6 +21,7 @@ from cortex.tools.file_operation_helpers import (
     build_invalid_operation_error,
     build_schema_validation_error_response,
     build_write_error_response,
+    validate_write_content,
 )
 from cortex.tools.file_operations import (
     build_write_response,
@@ -30,7 +31,6 @@ from cortex.tools.file_operations import (
     get_file_resource,
     manage_file,
     update_file_metadata,
-    validate_write_content,
 )
 from cortex.validation.models import ValidationError as ValidationErrorModel
 from cortex.validation.models import ValidationResult as ValidationResultModel
@@ -801,10 +801,8 @@ Final section
         assert "Invalid operation" in response["error"]
 
     def test_validate_write_request_content_none(self):
-        """Test _validate_write_request when content is None (line 619)."""
-        from cortex.tools.file_operations import (
-            _validate_write_request,  # type: ignore[reportPrivateUsage]
-        )
+        """Test validate_write_request when content is None."""
+        from cortex.tools.file_operation_helpers import validate_write_request
 
         # Arrange
         file_path = Path("/tmp/test.md")
@@ -812,13 +810,13 @@ Final section
         content = None
 
         # Act
-        result = _validate_write_request(file_path, file_name, content)
+        result: str | None = validate_write_request(file_path, file_name, content)
 
         # Assert
         assert result is not None
-        error_response = json.loads(result)
-        assert error_response["status"] == "error"
-        assert "Content is required" in error_response["error"]
+        error_response: dict[str, object] = json.loads(result)
+        assert error_response.get("status") == "error"
+        assert "Content is required" in str(error_response.get("error", ""))
 
 
 @pytest.mark.asyncio

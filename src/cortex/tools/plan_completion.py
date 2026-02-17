@@ -387,16 +387,23 @@ async def _append_to_active_and_save(
         active_path, roadmap_line_num
     )
     if error_result or not active_content:
-        return error_result or _append_to_active_error(roadmap_line_num, "Empty activeContext", "Empty content")
-
-    new_active, inserted_line = _create_section_and_append(active_content, date_str, plan_title.strip(), summary)
+        return error_result or _append_to_active_error(
+            roadmap_line_num, "Empty activeContext", "Empty content"
+        )
+    new_active, inserted_line = _create_section_and_append(
+        active_content, date_str, plan_title.strip(), summary
+    )
     if inserted_line is None:
-        return _append_to_active_error(roadmap_line_num, "Failed to append", "Could not find or create Completed Work section")
-
-    active_write_err = await _write_active_context(active_path, new_active, project_root)
-    if active_write_err:
-        return _append_to_active_error(roadmap_line_num, "Failed to write activeContext", active_write_err)
-
+        return _append_to_active_error(
+            roadmap_line_num,
+            "Failed to append",
+            "Could not find or create Completed Work section",
+        )
+    err = await _write_active_context(active_path, new_active, project_root)
+    if err:
+        return _append_to_active_error(
+            roadmap_line_num, "Failed to write activeContext", err
+        )
     return _complete_plan_success(roadmap_line_num, inserted_line)
 
 
