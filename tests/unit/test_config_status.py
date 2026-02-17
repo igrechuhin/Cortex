@@ -5,7 +5,12 @@ Unit tests for config_status module.
 from pathlib import Path
 from unittest.mock import patch
 
-from cortex.core.path_resolver import CursorResourceType, get_cursor_path
+from cortex.core.path_resolver import (
+    CortexResourceType,
+    CursorResourceType,
+    get_cortex_path,
+    get_cursor_path,
+)
 from cortex.tools.config_status import get_project_config_status
 
 
@@ -15,8 +20,7 @@ class TestGetProjectConfigStatus:
     def test_memory_bank_initialized(self, tmp_path: Path):
         """Test memory bank initialized detection."""
         # Arrange
-        cortex_dir = tmp_path / ".cortex"
-        memory_bank_dir = cortex_dir / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         core_files = [
             "projectBrief.md",
@@ -42,8 +46,7 @@ class TestGetProjectConfigStatus:
     def test_memory_bank_not_initialized_missing_files(self, tmp_path: Path):
         """Test memory bank not initialized when files missing."""
         # Arrange
-        cortex_dir = tmp_path / ".cortex"
-        memory_bank_dir = cortex_dir / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         # Only create some files, not all
         _ = (memory_bank_dir / "projectBrief.md").write_text("# Test")
@@ -72,7 +75,7 @@ class TestGetProjectConfigStatus:
     def test_structure_configured(self, tmp_path: Path):
         """Test structure configured detection."""
         # Arrange
-        cortex_dir = tmp_path / ".cortex"
+        cortex_dir = get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR)
         for subdir in ["memory-bank", "rules", "plans", "config"]:
             (cortex_dir / subdir).mkdir(parents=True)
 
@@ -88,7 +91,7 @@ class TestGetProjectConfigStatus:
     def test_structure_not_configured_missing_dirs(self, tmp_path: Path):
         """Test structure not configured when directories missing."""
         # Arrange
-        cortex_dir = tmp_path / ".cortex"
+        cortex_dir = get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR)
         cortex_dir.mkdir()
         # Only create some directories
         (cortex_dir / "memory-bank").mkdir()
@@ -110,7 +113,9 @@ class TestGetProjectConfigStatus:
 
         # Create symlinks
         for symlink_name in ["memory-bank", "synapse", "plans"]:
-            target = tmp_path / ".cortex" / symlink_name
+            target = (
+                get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR) / symlink_name
+            )
             target.mkdir(parents=True, exist_ok=True)
             symlink = cursor_dir / symlink_name
             symlink.symlink_to(f"../.cortex/{symlink_name}")
@@ -208,8 +213,7 @@ class TestGetProjectConfigStatus:
     def test_migration_not_needed_when_initialized(self, tmp_path: Path):
         """Test migration not needed when memory bank is initialized."""
         # Arrange
-        cortex_dir = tmp_path / ".cortex"
-        memory_bank_dir = cortex_dir / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         core_files = [
             "projectBrief.md",
@@ -259,8 +263,8 @@ class TestGetProjectConfigStatus:
     def test_fully_configured_project(self, tmp_path: Path):
         """Test fully configured project returns all True except migration."""
         # Arrange
-        cortex_dir = tmp_path / ".cortex"
-        memory_bank_dir = cortex_dir / "memory-bank"
+        cortex_dir = get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR)
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         cursor_dir = get_cursor_path(tmp_path, CursorResourceType.CURSOR_DIR)
         cursor_dir.mkdir()

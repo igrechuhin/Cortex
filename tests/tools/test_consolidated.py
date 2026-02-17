@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.managers.lazy_manager import LazyManager
 from cortex.tools.analysis_operations import analyze
 from cortex.tools.configuration_operations import configure
@@ -476,7 +477,7 @@ class TestValidate:
         # Setup - create actual files for glob to find
         # Use .cortex/memory-bank/ as that's what get_cortex_path returns
         project_root = temp_memory_bank.parent.parent.parent
-        memory_bank_dir = project_root / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True, exist_ok=True)
         test_file1 = memory_bank_dir / "file1.md"
         test_file2 = memory_bank_dir / "file2.md"

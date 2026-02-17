@@ -7,6 +7,7 @@ from typing import cast
 import pytest
 
 from cortex.core.cache_json_access import read_cache_json
+from cortex.core.cache_utils import get_cache_dir
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.managers.usage_tracker import UsageTracker, generate_usage_event_id
 
@@ -14,7 +15,7 @@ from cortex.managers.usage_tracker import UsageTracker, generate_usage_event_id
 def _make_project_root(tmp_path: Path) -> Path:
     """Create a project root with .cortex/.cache for usage storage."""
     root = tmp_path / "project"
-    (root / ".cortex" / ".cache").mkdir(parents=True)
+    get_cache_dir(root).mkdir(parents=True)
     return root
 
 

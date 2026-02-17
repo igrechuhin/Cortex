@@ -498,7 +498,9 @@ class TestRunSynapseScript:
         """When .venv/bin/python does not exist, run_synapse_script uses python3."""
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
-            scripts_dir = root / ".cortex" / "synapse" / "scripts" / "python"
+            scripts_dir = (
+                get_cortex_path(root, CortexResourceType.SYNAPSE) / "scripts" / "python"
+            )
             scripts_dir.mkdir(parents=True)
             script_path = scripts_dir / "check_formatting_ci_parity.py"
             _ = script_path.write_text(
@@ -527,7 +529,9 @@ class TestRunSynapseScript:
         """When script runs and returns non-zero, returns failure with output."""
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
-            scripts_dir = root / ".cortex" / "synapse" / "scripts" / "python"
+            scripts_dir = (
+                get_cortex_path(root, CortexResourceType.SYNAPSE) / "scripts" / "python"
+            )
             scripts_dir.mkdir(parents=True)
             script_path = scripts_dir / "check_formatting_ci_parity.py"
             _ = script_path.write_text("#!/usr/bin/env python3\n")
@@ -560,7 +564,9 @@ class TestRunSynapseScript:
         """When script returns non-zero with empty output, error shows exit code."""
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
-            scripts_dir = root / ".cortex" / "synapse" / "scripts" / "python"
+            scripts_dir = (
+                get_cortex_path(root, CortexResourceType.SYNAPSE) / "scripts" / "python"
+            )
             scripts_dir.mkdir(parents=True)
             script_path = scripts_dir / "check_formatting_ci_parity.py"
             _ = script_path.write_text("#!/usr/bin/env python3\n")
@@ -594,7 +600,9 @@ class TestRunSynapseScript:
         """When subprocess execution raises, returns failure with exception message."""
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
-            scripts_dir = root / ".cortex" / "synapse" / "scripts" / "python"
+            scripts_dir = (
+                get_cortex_path(root, CortexResourceType.SYNAPSE) / "scripts" / "python"
+            )
             scripts_dir.mkdir(parents=True)
             script_path = scripts_dir / "check_formatting_ci_parity.py"
             _ = script_path.write_text("#!/usr/bin/env python3\n")

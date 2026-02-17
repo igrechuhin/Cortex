@@ -240,6 +240,11 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="End-of-session context analysis",
     ),
+    ToolCategoryEntry(
+        name="compact_session",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale="End-of-session compaction and handoff (Phase 56)",
+    ),
     # ── Deferred low (admin / analytics / rare) ───────────────────────
     ToolCategoryEntry(
         name="analyze_health_check",

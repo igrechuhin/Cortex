@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.discovery.tool_registry import get_known_script_names, get_known_tool_names
 
 
@@ -36,7 +37,9 @@ class TestGetKnownScriptNames:
         self, tmp_path: Path
     ) -> None:
         """Returns script file stems when synapse scripts directory exists."""
-        scripts_dir = tmp_path / ".cortex" / "synapse" / "scripts" / "python"
+        scripts_dir = (
+            get_cortex_path(tmp_path, CortexResourceType.SYNAPSE) / "scripts" / "python"
+        )
         scripts_dir.mkdir(parents=True)
         (scripts_dir / "check_format.py").touch()
         (scripts_dir / "run_tests.py").touch()
@@ -48,7 +51,9 @@ class TestGetKnownScriptNames:
 
     def test_returns_sorted_script_names(self, tmp_path: Path) -> None:
         """Returns script names in sorted order."""
-        scripts_dir = tmp_path / ".cortex" / "synapse" / "scripts" / "python"
+        scripts_dir = (
+            get_cortex_path(tmp_path, CortexResourceType.SYNAPSE) / "scripts" / "python"
+        )
         scripts_dir.mkdir(parents=True)
         # Create scripts in non-alphabetical order
         (scripts_dir / "zebra.py").touch()
@@ -59,7 +64,9 @@ class TestGetKnownScriptNames:
 
     def test_returns_empty_list_when_scripts_dir_empty(self, tmp_path: Path) -> None:
         """Returns empty list when scripts directory exists but is empty."""
-        scripts_dir = tmp_path / ".cortex" / "synapse" / "scripts" / "python"
+        scripts_dir = (
+            get_cortex_path(tmp_path, CortexResourceType.SYNAPSE) / "scripts" / "python"
+        )
         scripts_dir.mkdir(parents=True)
         names = get_known_script_names(tmp_path)
         assert names == []

@@ -13,6 +13,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.core.context_logging import log_client, report_progress_safe
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.file_operations import manage_file
 from cortex.tools.validation_operations import validate
 
@@ -26,7 +27,9 @@ class TestContextLoggingIntegration:
     ) -> None:
         """Test that manage_file logs to Context when ctx is provided."""
         # Arrange
-        memory_bank_dir = temp_project_root / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(
+            temp_project_root, CortexResourceType.MEMORY_BANK
+        )
         memory_bank_dir.mkdir(parents=True, exist_ok=True)
         test_file = memory_bank_dir / "test.md"
         _ = test_file.write_text("# Test\n\nContent")
@@ -74,7 +77,9 @@ class TestContextLoggingIntegration:
     ) -> None:
         """Test that validate logs to Context when ctx is provided."""
         # Arrange
-        memory_bank_dir = temp_project_root / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(
+            temp_project_root, CortexResourceType.MEMORY_BANK
+        )
         memory_bank_dir.mkdir(parents=True, exist_ok=True)
         test_file = memory_bank_dir / "projectBrief.md"
         _ = test_file.write_text("# Project Brief\n\n## Overview\n\nTest")
@@ -115,7 +120,9 @@ class TestContextLoggingIntegration:
     ) -> None:
         """Test that error logging occurs when a tool fails."""
         # Arrange
-        memory_bank_dir = temp_project_root / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(
+            temp_project_root, CortexResourceType.MEMORY_BANK
+        )
         memory_bank_dir.mkdir(parents=True, exist_ok=True)
 
         resolve_mock = AsyncMock(return_value=temp_project_root)

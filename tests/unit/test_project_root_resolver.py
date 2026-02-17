@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 # pyright: reportPrivateUsage=false
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import (
     _file_uri_to_path,
     resolve_project_root_async,
@@ -32,7 +33,7 @@ class TestResolveProjectRootAsync:
     async def test_when_project_root_provided_returns_resolved(
         self, tmp_path: Path
     ) -> None:
-        (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
+        get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
         result = await resolve_project_root_async(str(tmp_path), None)
         assert result == tmp_path.resolve()
 

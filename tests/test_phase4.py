@@ -18,6 +18,7 @@ import pytest
 from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 # Import dependencies
 from cortex.core.token_counter import TokenCounter
@@ -271,7 +272,9 @@ class TestSummarizationEngine:
             with tempfile.TemporaryDirectory() as tmpdir:
                 tmp_path = Path(tmpdir)
                 # Create .cortex directory
-                (tmp_path / ".cortex").mkdir(parents=True, exist_ok=True)
+                get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR).mkdir(
+                    parents=True, exist_ok=True
+                )
                 token_counter = TokenCounter()
                 metadata_index = MetadataIndex(tmp_path)
                 engine = SummarizationEngine(token_counter, metadata_index)

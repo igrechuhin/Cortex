@@ -14,7 +14,12 @@ from unittest.mock import patch
 
 import pytest
 
-from cortex.core.path_resolver import CursorResourceType, get_cursor_path
+from cortex.core.path_resolver import (
+    CortexResourceType,
+    CursorResourceType,
+    get_cortex_path,
+    get_cursor_path,
+)
 from cortex.structure.structure_manager import StructureManager
 
 # ============================================================================
@@ -33,14 +38,16 @@ class TestStructureManagerInitialization:
         # Assert
         assert manager.project_root == tmp_path
         assert manager.structure_config_path == (
-            tmp_path / ".cortex" / "config" / "structure.json"
+            get_cortex_path(tmp_path, CortexResourceType.CONFIG) / "structure.json"
         )
         assert manager.structure_config == StructureManager.DEFAULT_STRUCTURE
 
     def test_init_loads_existing_config(self, tmp_path: Path):
         """Test initialization loads existing config file."""
         # Arrange
-        config_path = tmp_path / ".cortex" / "config" / "structure.json"
+        config_path = (
+            get_cortex_path(tmp_path, CortexResourceType.CONFIG) / "structure.json"
+        )
         config_path.parent.mkdir(parents=True, exist_ok=True)
 
         custom_config = {
@@ -378,8 +385,8 @@ class TestLegacyStructureDetection:
         manager = StructureManager(tmp_path)
 
         # Create standard structure
-        (tmp_path / ".cortex").mkdir()
-        (tmp_path / ".cortex" / "memory-bank").mkdir()
+        get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR).mkdir()
+        get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir()
 
         # Act
         detected = manager.detect_legacy_structure()

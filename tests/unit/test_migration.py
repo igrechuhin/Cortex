@@ -23,6 +23,7 @@ import pytest
 from cortex.core.exceptions import MigrationFailedError
 from cortex.core.migration import MigrationManager
 from cortex.core.models import VerificationResult
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 
 class TestMigrationManagerInitialization:
@@ -33,8 +34,10 @@ class TestMigrationManagerInitialization:
         manager = MigrationManager(tmp_path)
 
         assert manager.project_root == tmp_path
-        assert manager.memory_bank_dir == tmp_path / ".cortex" / "memory-bank"
-        assert manager.index_path == tmp_path / ".cortex" / "index.json"
+        assert manager.memory_bank_dir == get_cortex_path(
+            tmp_path, CortexResourceType.MEMORY_BANK
+        )
+        assert manager.index_path == get_cortex_path(tmp_path, CortexResourceType.INDEX)
 
     def test_initialization_converts_string_path(self, tmp_path: Path) -> None:
         """Test manager converts string path to Path object."""
@@ -235,7 +238,7 @@ class TestRollback:
     async def test_rollback_removes_history_directory(self, tmp_path: Path) -> None:
         """Test rollback removes .cortex/history directory."""
         manager = MigrationManager(tmp_path)
-        history_dir = tmp_path / ".cortex" / "history"
+        history_dir = get_cortex_path(tmp_path, CortexResourceType.HISTORY)
         history_dir.mkdir(parents=True)
         _ = (history_dir / "test.txt").write_text("History")
 
@@ -574,9 +577,13 @@ class TestVerifyMigration:
         manager = MigrationManager(tmp_path)
         manager.index_path.parent.mkdir(parents=True, exist_ok=True)
         manager.index_path.touch()
-        (tmp_path / ".cortex/history").mkdir(parents=True, exist_ok=True)
+        get_cortex_path(tmp_path, CortexResourceType.HISTORY).mkdir(
+            parents=True, exist_ok=True
+        )
 
-        md_files = [tmp_path / ".cortex" / "memory-bank" / "test.md"]
+        md_files = [
+            get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK) / "test.md"
+        ]
 
         # Mock MetadataIndex
         with patch("cortex.core.migration.MetadataIndex") as mock_index_class:
@@ -597,9 +604,13 @@ class TestVerifyMigration:
         manager = MigrationManager(tmp_path)
         manager.index_path.parent.mkdir(parents=True, exist_ok=True)
         manager.index_path.touch()
-        (tmp_path / ".cortex/history").mkdir(parents=True, exist_ok=True)
+        get_cortex_path(tmp_path, CortexResourceType.HISTORY).mkdir(
+            parents=True, exist_ok=True
+        )
 
-        md_files = [tmp_path / ".cortex" / "memory-bank" / "test.md"]
+        md_files = [
+            get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK) / "test.md"
+        ]
 
         # Mock MetadataIndex and VersionManager
         with (
@@ -630,14 +641,20 @@ class TestVerifyMigration:
         manager = MigrationManager(tmp_path)
         manager.index_path.parent.mkdir(parents=True, exist_ok=True)
         manager.index_path.touch()
-        (tmp_path / ".cortex/history").mkdir(parents=True, exist_ok=True)
+        get_cortex_path(tmp_path, CortexResourceType.HISTORY).mkdir(
+            parents=True, exist_ok=True
+        )
 
-        md_files = [tmp_path / ".cortex" / "memory-bank" / "test.md"]
+        md_files = [
+            get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK) / "test.md"
+        ]
 
         # Create snapshot file - use the correct path format
         # VersionManager.get_snapshot_path returns: history_dir /
         # "{base_name}_v{version}.md"
-        snapshot_path = tmp_path / ".cortex/history" / "test_v1.md"
+        snapshot_path = (
+            get_cortex_path(tmp_path, CortexResourceType.HISTORY) / "test_v1.md"
+        )
         snapshot_path.parent.mkdir(parents=True, exist_ok=True)
         _ = snapshot_path.write_text("{}")
 

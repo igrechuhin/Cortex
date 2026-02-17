@@ -150,7 +150,7 @@ class TestExecuteAppendProgress:
     """Tests for _execute_append_progress."""
 
     def test_append_success(self, tmp_path: Path) -> None:
-        mem = tmp_path / ".cortex" / "memory-bank"
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         mem.mkdir(parents=True)
         _ = (mem / "progress.md").write_text(
             "# Progress Log\n\n## 2026-02-09\n\n- **Old** - COMPLETE.\n"
@@ -163,7 +163,7 @@ class TestExecuteAppendProgress:
         assert "**New step**" in (mem / "progress.md").read_text()
 
     def test_append_when_file_missing_returns_error(self, tmp_path: Path) -> None:
-        (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
+        get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
         result = _execute_append_progress(tmp_path, "2026-02-09", "**New** - COMPLETE.")
         assert result.status == "error"
 
@@ -172,7 +172,7 @@ class TestExecuteAppendActiveContext:
     """Tests for _execute_append_active_context."""
 
     def test_append_success(self, tmp_path: Path) -> None:
-        mem = tmp_path / ".cortex" / "memory-bank"
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         mem.mkdir(parents=True)
         _ = (mem / "activeContext.md").write_text(
             "# Active\n\n## Completed Work (2026-02-09)\n\n"
@@ -187,7 +187,7 @@ class TestExecuteAppendActiveContext:
         assert "Summary of work" in text
 
     def test_append_when_file_missing_returns_error(self, tmp_path: Path) -> None:
-        (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
+        get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
         result = _execute_append_active_context(
             tmp_path, "2026-02-09", "Title", "Summary"
         )
@@ -260,7 +260,7 @@ class TestArchivePlanFile:
         assert "single filename" in (err or "").lower()
 
     def test_returns_error_when_file_not_found(self, tmp_path: Path) -> None:
-        (tmp_path / ".cortex" / "plans").mkdir(parents=True)
+        get_cortex_path(tmp_path, CortexResourceType.PLANS).mkdir(parents=True)
         _, err = _archive_plan_file(tmp_path, "session-optimization-missing.md")
         assert err is not None
         assert "not found" in (err or "").lower()
@@ -268,7 +268,7 @@ class TestArchivePlanFile:
     def test_moves_session_optimization_to_archive_and_removes_from_root(
         self, tmp_path: Path
     ) -> None:
-        plans = tmp_path / ".cortex" / "plans"
+        plans = get_cortex_path(tmp_path, CortexResourceType.PLANS)
         plans.mkdir(parents=True)
         plan_name = "session-optimization-foo.md"
         _ = (plans / plan_name).write_text("# Plan\n")
@@ -286,7 +286,7 @@ class TestCompletePlanIntegration:
 
     @pytest.mark.asyncio
     async def test_complete_plan_moves_entry(self, tmp_path: Path) -> None:
-        mem = tmp_path / ".cortex" / "memory-bank"
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         mem.mkdir(parents=True)
         roadmap = mem / "roadmap.md"
         _ = roadmap.write_text(
@@ -319,7 +319,7 @@ class TestCompletePlanIntegration:
 
     @pytest.mark.asyncio
     async def test_complete_plan_not_found_returns_error(self, tmp_path: Path) -> None:
-        mem = tmp_path / ".cortex" / "memory-bank"
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         mem.mkdir(parents=True)
         _ = (mem / "roadmap.md").write_text(
             "# Roadmap\n\n## Pending\n\n- **Other** - PENDING\n"
@@ -349,9 +349,9 @@ class TestCompletePlanIntegration:
         self, tmp_path: Path
     ) -> None:
         """complete_plan with plan_file_name moves plan file to archive and removes from plans root."""
-        mem = tmp_path / ".cortex" / "memory-bank"
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         mem.mkdir(parents=True)
-        plans_dir = tmp_path / ".cortex" / "plans"
+        plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
         plans_dir.mkdir(parents=True)
         plan_basename = "session-optimization-roadmap-full-content-enforcement.md"
         plan_in_root = plans_dir / plan_basename

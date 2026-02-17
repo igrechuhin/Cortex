@@ -235,7 +235,7 @@ async def validate(...):
 - [Phase 52: Consistent Helpful Error Responses](phase-52-consistent-helpful-error-responses.md) — better error messages for tool use
 - [Phase 54: Session Start Initializer Pattern](phase-54-session-start-initializer-pattern.md) — session orientation optimization
 - [Phase 55: Lightweight Think Tool](phase-55-lightweight-think-tool.md) — simplified think tool for reasoning
-- [Phase 56: Session Compaction Workflow](phase-56-session-compaction-workflow.md) — context compaction and handoff
+- [Phase 56: Session Compaction Workflow](archive/Phase56/phase-56-session-compaction-workflow.md) — context compaction and handoff
 - [Phase 57: Evaluation-Driven Tool Improvement](phase-57-evaluation-driven-tool-improvement.md) — systematic tool evaluation framework
 - [Phase 58: Multi-Agent Specialization](phase-58-multi-agent-specialization-task-locking.md) — role-based context and task locking
 

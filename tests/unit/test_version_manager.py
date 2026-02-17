@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from cortex.core.models import ModelDict
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.version_manager import VersionManager
 
 
@@ -20,7 +21,9 @@ class TestVersionManagerInitialization:
 
         # Assert
         assert manager.project_root == tmp_path
-        assert manager.history_dir == tmp_path / ".cortex/history"
+        assert manager.history_dir == get_cortex_path(
+            tmp_path, CortexResourceType.HISTORY
+        )
         assert manager.keep_versions == 10
 
     def test_initializes_with_custom_keep_versions(self, tmp_path: Path) -> None:
@@ -38,7 +41,9 @@ class TestVersionManagerInitialization:
 
         # Assert
         assert manager.history_dir.name == "history"
-        assert manager.history_dir.parent == tmp_path / ".cortex"
+        assert manager.history_dir.parent == get_cortex_path(
+            tmp_path, CortexResourceType.CORTEX_DIR
+        )
 
 
 @pytest.mark.asyncio
@@ -372,11 +377,16 @@ class TestRollbackToVersion:
         manager = VersionManager(tmp_path)
         version_meta = MagicMock()
         version_meta.version = 1
-        version_meta.snapshot_path = str(tmp_path / ".cortex/history/missing_v1.md")
+        version_meta.snapshot_path = str(
+            get_cortex_path(tmp_path, CortexResourceType.HISTORY) / "missing_v1.md"
+        )
         version_meta.model_dump = MagicMock(
             return_value={
                 "version": 1,
-                "snapshot_path": str(tmp_path / ".cortex/history/missing_v1.md"),
+                "snapshot_path": str(
+                    get_cortex_path(tmp_path, CortexResourceType.HISTORY)
+                    / "missing_v1.md"
+                ),
             }
         )
         version_history = [version_meta]
@@ -896,7 +906,9 @@ class TestGetSnapshotPath:
         snapshot_path = manager.get_snapshot_path("test.md", 3)
 
         # Assert
-        expected_path = tmp_path / ".cortex/history" / "test_v3.md"
+        expected_path = (
+            get_cortex_path(tmp_path, CortexResourceType.HISTORY) / "test_v3.md"
+        )
         assert snapshot_path == expected_path
 
     def test_removes_md_extension_from_base_name(self, tmp_path: Path) -> None:

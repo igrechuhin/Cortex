@@ -955,6 +955,37 @@ async def _execute_write_flow(
     return build_write_response(file_name, version_info, token_counter, content)
 
 
+async def execute_memory_bank_write(
+    project_root: Path,
+    file_name: str,
+    content: str,
+    change_description: str | None,
+    fs_manager: FileSystemManager,
+    metadata_index: MetadataIndex,
+    token_counter: TokenCounter,
+    version_manager: VersionManager,
+) -> str:
+    """Write a memory bank file with versioning and metadata.
+
+    For use by compact_session and other internal callers that need the same
+    write flow as manage_file (version snapshot, metadata update).
+    """
+    memory_bank_dir = get_cortex_path(project_root, CortexResourceType.MEMORY_BANK)
+    file_path, err = _validate_file_path(fs_manager, memory_bank_dir, file_name)
+    if file_path is None:
+        return err
+    return await _execute_write_with_error_handling(
+        file_path,
+        file_name,
+        content,
+        change_description,
+        fs_manager,
+        metadata_index,
+        token_counter,
+        version_manager,
+    )
+
+
 def _validate_and_get_path(
     fs_manager: FileSystemManager, root: Path, file_name: str
 ) -> tuple[Path | None, str]:

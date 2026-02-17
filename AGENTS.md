@@ -41,6 +41,24 @@ The commit workflow is organized into phases (see `docs/design/commit-pipeline-p
 - **Zero-errors policy**: Any check with errors blocks commit; no exceptions. Apply fixes (or use the helper commands above) before proceeding.
 - **Doc-only when tooling unavailable**: For documentation-only sessions, if the environment cannot run the quality gate (e.g. ruff/black not in path, type_check certificate failure), the implement prompt may allow proceeding with a "run full pre-commit before commit" note; see [Troubleshooting: Quality gate unavailable](docs/guides/troubleshooting.md#quality-gate-unavailable-in-environment).
 
+## Session Compaction (Phase 56)
+
+**End-of-session compaction**: The `analyze.md` prompt automatically calls `compact_session()` at the end of each session to:
+
+- Reduce `activeContext.md` size by summarizing older Completed Work sections (keeps current date full)
+- Apply progressive summarization to `progress.md` (full entries for 7 days, weekly summaries for 7-30 days, monthly summaries for 30+ days)
+- Create session handoff JSON (`.cortex/.cache/session/last_handoff.json`) for next session continuity
+- Generate pre-compaction snapshots for rollback safety
+
+**Session handoff**: The handoff JSON is automatically loaded by `session_start()` at the beginning of the next session, providing:
+
+- Completed tasks from the previous session
+- In-progress tasks with notes
+- Key decisions made
+- Blockers and next actions
+
+**Manual compaction**: Agents can call `compact_session(summary="...")` directly if needed, but typically this is handled automatically by the analyze prompt.
+
 ## Safety (non-negotiable)
 
 - No destructive git (`reset --hard`, force-push); no commits/pushes without explicit user request.

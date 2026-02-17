@@ -54,8 +54,7 @@ class TestValidateRoadmapSyncEnhancements:
         # Arrange
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            cortex_dir = project_root / ".cortex"
-            plans_dir = cortex_dir / "plans"
+            plans_dir = get_cortex_path(project_root, CortexResourceType.PLANS)
             plans_dir.mkdir(parents=True)
             plan_file = plans_dir / "phase-21-health-check-optimization.md"
             _ = plan_file.write_text("# Plan content\n")
@@ -78,8 +77,7 @@ class TestValidateRoadmapSyncEnhancements:
         # Arrange
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            cortex_dir = project_root / ".cortex"
-            plans_dir = cortex_dir / "plans"
+            plans_dir = get_cortex_path(project_root, CortexResourceType.PLANS)
             plans_dir.mkdir(parents=True)
             plan_file = plans_dir / "phase-68-investigate-fix-quality-issues.md"
             _ = plan_file.write_text("# Phase 68 plan\n")
@@ -128,7 +126,9 @@ class TestValidateRoadmapSyncEnhancements:
         # Arrange
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
-            memory_bank_dir = project_root / ".cortex" / "memory-bank"
+            memory_bank_dir = get_cortex_path(
+                project_root, CortexResourceType.MEMORY_BANK
+            )
             memory_bank_dir.mkdir(parents=True)
             active_context = memory_bank_dir / "activeContext.md"
             _ = active_context.write_text("# Active Context\n")
@@ -177,7 +177,7 @@ class TestValidateRoadmapSyncEnhancements:
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             (project_root / "src").mkdir()
-            plans_dir = project_root / ".cortex" / "plans"
+            plans_dir = get_cortex_path(project_root, CortexResourceType.PLANS)
             plans_dir.mkdir(parents=True)
             _ = (plans_dir / "feature-x.md").write_text("# Feature X\n")
             _ = (plans_dir / "phase-49.md").write_text("# Phase 49\n")

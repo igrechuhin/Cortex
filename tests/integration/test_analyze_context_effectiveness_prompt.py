@@ -12,6 +12,8 @@ from typing import cast
 
 import pytest
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
 
 def _get_prompts_from_manifest(
     manifest_data: dict[str, object],
@@ -39,7 +41,7 @@ def _repo_root() -> Path:
 
 def _prompts_dir() -> Path:
     """Return path to Synapse prompts directory."""
-    return _repo_root() / ".cortex" / "synapse" / "prompts"
+    return get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE) / "prompts"
 
 
 def _analyze_prompt_path() -> Path:

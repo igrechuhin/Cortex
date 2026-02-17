@@ -3,7 +3,12 @@ from typing import cast
 from unittest.mock import patch
 
 from cortex.core.models import ModelDict
-from cortex.core.path_resolver import CursorResourceType, get_cursor_path
+from cortex.core.path_resolver import (
+    CortexResourceType,
+    CursorResourceType,
+    get_cortex_path,
+    get_cursor_path,
+)
 from cortex.structure.structure_migration import StructureMigrationManager
 
 
@@ -26,7 +31,11 @@ def test_migrate_cursor_default_when_cursorrules_exists_copies_to_rules_dir(
     assert isinstance(mappings_raw, list)
     mappings: list[dict[str, object]] = cast(list[dict[str, object]], mappings_raw)
     assert len(mappings) == 1
-    dest = tmp_path / ".cortex" / "rules" / "local" / "main.cursorrules"
+    dest = (
+        get_cortex_path(tmp_path, CortexResourceType.RULES)
+        / "local"
+        / "main.cursorrules"
+    )
     assert dest.exists()
 
 
@@ -183,7 +192,9 @@ def test_detect_legacy_structure_when_none_detected_returns_none(
     tmp_path: Path,
 ) -> None:
     # Arrange
-    (tmp_path / ".cortex").mkdir(parents=True, exist_ok=True)
+    get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR).mkdir(
+        parents=True, exist_ok=True
+    )
     manager = StructureMigrationManager(tmp_path)
 
     # Act

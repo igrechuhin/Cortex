@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.script_detection.models import ScriptCaptureRecord
 from cortex.script_detection.storage import (
     ensure_capture_dir,
@@ -21,13 +22,13 @@ class TestEnsureCaptureDir:
     async def test_creates_script_capture_directory(self, tmp_path: Path) -> None:
         """Creates .cortex/script-capture when missing."""
         result = await ensure_capture_dir(tmp_path)
-        assert result == tmp_path / ".cortex" / "script-capture"
+        assert result == get_cortex_path(tmp_path, CortexResourceType.SCRIPT_CAPTURE)
         assert result.is_dir()
 
     @pytest.mark.asyncio
     async def test_returns_existing_directory(self, tmp_path: Path) -> None:
         """Returns path when directory already exists."""
-        capture_dir = tmp_path / ".cortex" / "script-capture"
+        capture_dir = get_cortex_path(tmp_path, CortexResourceType.SCRIPT_CAPTURE)
         capture_dir.mkdir(parents=True)
         result = await ensure_capture_dir(tmp_path)
         assert result == capture_dir

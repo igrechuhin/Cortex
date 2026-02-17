@@ -15,6 +15,7 @@ from cortex.core.exceptions import (
     GitConflictError,
 )
 from cortex.core.file_system import FileSystemManager
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 
 class TestFileSystemManagerInitialization:
@@ -30,7 +31,9 @@ class TestFileSystemManagerInitialization:
         assert manager.project_root == temp_project_root.resolve()
         assert (
             manager.memory_bank_dir.resolve()
-            == (temp_project_root / ".cortex" / "memory-bank").resolve()
+            == get_cortex_path(
+                temp_project_root, CortexResourceType.MEMORY_BANK
+            ).resolve()
         )
         assert manager.lock_timeout == 5.0
 
@@ -53,7 +56,10 @@ class TestPathValidation:
         """Test validation succeeds for path within project."""
         # Arrange
         manager = FileSystemManager(temp_project_root)
-        valid_path = temp_project_root / ".cortex" / "memory-bank" / "test.md"
+        valid_path = (
+            get_cortex_path(temp_project_root, CortexResourceType.MEMORY_BANK)
+            / "test.md"
+        )
 
         # Act
         result = manager.validate_path(valid_path)
@@ -82,8 +88,8 @@ class TestPathValidation:
         # Try to traverse outside project using ../
         traversal_path = (
             temp_project_root
-            / ".cortex"
-            / "memory-bank"
+            / CortexResourceType.CORTEX_DIR.value
+            / CortexResourceType.MEMORY_BANK.value
             / ".."
             / ".."
             / ".."
@@ -190,7 +196,7 @@ class TestReadFile:
         from unittest.mock import AsyncMock, patch
 
         # Arrange: path under memory-bank so validate_path passes
-        memory_bank = temp_project_root / ".cortex" / "memory-bank"
+        memory_bank = get_cortex_path(temp_project_root, CortexResourceType.MEMORY_BANK)
         memory_bank.mkdir(parents=True, exist_ok=True)
         nonexistent_path = memory_bank / "missing.md"
         manager = FileSystemManager(temp_project_root)
@@ -656,7 +662,9 @@ class TestFileUtilities:
         """Test cleanup_locks removes stale lock files."""
         # Arrange
         manager = FileSystemManager(temp_project_root)
-        memory_bank_dir = temp_project_root / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(
+            temp_project_root, CortexResourceType.MEMORY_BANK
+        )
         memory_bank_dir.mkdir(exist_ok=True)
 
         # Create some lock files

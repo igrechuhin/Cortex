@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.roadmap_corruption import (
     fix_memory_bank_content_if_needed,
     fix_roadmap_content_if_needed,
@@ -34,7 +35,9 @@ class TestFixRoadmapCorruption:
         self, tmp_path: Path
     ) -> None:
         # Arrange
-        roadmap_path = tmp_path / ".cortex" / "memory-bank" / "roadmap.md"
+        roadmap_path = (
+            get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK) / "roadmap.md"
+        )
         roadmap_path.parent.mkdir(parents=True, exist_ok=True)
         original = "Target completion:2026-01-01P\n"
         _ = roadmap_path.write_text(original, encoding="utf-8")
@@ -57,7 +60,9 @@ class TestFixRoadmapCorruption:
         self, tmp_path: Path
     ) -> None:
         # Arrange
-        roadmap_path = tmp_path / ".cortex" / "memory-bank" / "roadmap.md"
+        roadmap_path = (
+            get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK) / "roadmap.md"
+        )
         roadmap_path.parent.mkdir(parents=True, exist_ok=True)
         original = "Target completion:2026-01-01P\n"
         _ = roadmap_path.write_text(original, encoding="utf-8")
@@ -136,7 +141,9 @@ class TestFixRoadmapCorruptionContextLogging:
     ) -> None:
         """When ctx is passed, fix_roadmap_corruption logs start and completion."""
         # Arrange
-        roadmap_path = tmp_path / ".cortex" / "memory-bank" / "roadmap.md"
+        roadmap_path = (
+            get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK) / "roadmap.md"
+        )
         roadmap_path.parent.mkdir(parents=True, exist_ok=True)
         _ = roadmap_path.write_text("# Roadmap\n\n## Section\n", encoding="utf-8")
         mock_ctx = AsyncMock()

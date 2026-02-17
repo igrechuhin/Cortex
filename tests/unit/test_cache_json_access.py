@@ -9,13 +9,14 @@ from cortex.core.cache_json_access import (
     read_modify_write_cache_json,
     write_cache_json,
 )
+from cortex.core.cache_utils import CacheType, get_cache_dir
 from cortex.core.exceptions import FileLockTimeoutError
 
 
 def _project_root(tmp_path: Path) -> Path:
     """Create project root with .cortex/.cache."""
     root = tmp_path / "project"
-    _ = (root / ".cortex" / ".cache").mkdir(parents=True)
+    _ = get_cache_dir(root).mkdir(parents=True)
     return root
 
 
@@ -33,7 +34,7 @@ class TestReadCacheJson:
     async def test_returns_dict_when_valid_object(self, tmp_path: Path) -> None:
         """Read valid JSON object returns dict."""
         root = _project_root(tmp_path)
-        path = root / ".cortex" / ".cache" / "data.json"
+        path = get_cache_dir(root) / "data.json"
         _ = path.parent.mkdir(parents=True, exist_ok=True)
         _ = path.write_text('{"a": 1, "b": "x"}')
         result = await read_cache_json(root, "data.json")
@@ -43,7 +44,7 @@ class TestReadCacheJson:
     async def test_returns_list_when_valid_array(self, tmp_path: Path) -> None:
         """Read valid JSON array returns list."""
         root = _project_root(tmp_path)
-        path = root / ".cortex" / ".cache" / "usage" / "events" / "2026-02-02.json"
+        path = get_cache_dir(root, CacheType.USAGE) / "events" / "2026-02-02.json"
         _ = path.parent.mkdir(parents=True, exist_ok=True)
         _ = path.write_text('[{"tool": "x"}, {"tool": "y"}]')
         result = await read_cache_json(root, "usage/events/2026-02-02.json")
@@ -53,7 +54,7 @@ class TestReadCacheJson:
     async def test_returns_none_when_invalid_json(self, tmp_path: Path) -> None:
         """Read invalid JSON returns None."""
         root = _project_root(tmp_path)
-        path = root / ".cortex" / ".cache" / "bad.json"
+        path = get_cache_dir(root) / "bad.json"
         _ = path.parent.mkdir(parents=True, exist_ok=True)
         _ = path.write_text("not json {")
         result = await read_cache_json(root, "bad.json")
@@ -119,7 +120,7 @@ class TestReadModifyWriteCacheJson:
     async def test_append_to_existing(self, tmp_path: Path) -> None:
         """Append to existing list file."""
         root = _project_root(tmp_path)
-        path = root / ".cortex" / ".cache" / "usage" / "events" / "2026-02-02.json"
+        path = get_cache_dir(root, CacheType.USAGE) / "events" / "2026-02-02.json"
         _ = path.parent.mkdir(parents=True, exist_ok=True)
         _ = path.write_text('[{"a": 1}]')
 
@@ -146,7 +147,7 @@ class TestLockTimeout:
     ) -> None:
         """Read raises FileLockTimeoutError when lock is held and timeout is short."""
         root = _project_root(tmp_path)
-        path = root / ".cortex" / ".cache" / "locked.json"
+        path = get_cache_dir(root) / "locked.json"
         lock_path = path.with_suffix(path.suffix + ".lock")
         _ = path.parent.mkdir(parents=True, exist_ok=True)
         _ = path.write_text("{}")

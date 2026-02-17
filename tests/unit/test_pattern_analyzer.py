@@ -31,6 +31,7 @@ from cortex.analysis.pattern_types import (
     TaskPatternEntry,
 )
 from cortex.core.models import JsonValue
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 
 class TestPatternAnalyzerInitialization:
@@ -47,7 +48,9 @@ class TestPatternAnalyzerInitialization:
         # Assert
         assert analyzer.project_root == Path(project_root)
         assert (
-            analyzer.access_log_path == Path(project_root) / ".cortex/access-log.json"
+            analyzer.access_log_path
+            == get_cortex_path(Path(project_root), CortexResourceType.CORTEX_DIR)
+            / "access-log.json"
         )
         assert analyzer.access_data.version == "1.0"
         assert analyzer.access_data.accesses == []
@@ -59,7 +62,10 @@ class TestPatternAnalyzerInitialization:
         """Test loads existing access log from disk."""
         # Arrange
         project_root = temp_project_root
-        log_path = Path(project_root) / ".cortex/access-log.json"
+        log_path = (
+            get_cortex_path(Path(project_root), CortexResourceType.CORTEX_DIR)
+            / "access-log.json"
+        )
 
         # Create sample log
         sample_log = {
@@ -106,7 +112,10 @@ class TestPatternAnalyzerInitialization:
         """Test handles corrupted access log gracefully."""
         # Arrange
         project_root = temp_project_root
-        log_path = Path(project_root) / ".cortex/access-log.json"
+        log_path = (
+            get_cortex_path(Path(project_root), CortexResourceType.CORTEX_DIR)
+            / "access-log.json"
+        )
 
         # Create corrupted log
         with open(log_path, "w") as f:
@@ -119,7 +128,10 @@ class TestPatternAnalyzerInitialization:
         assert analyzer.access_data.version == "1.0"
         assert analyzer.access_data.accesses == []
         # Backup should exist
-        backup_path = Path(project_root) / ".cortex/access-log.json.backup"
+        backup_path = (
+            get_cortex_path(Path(project_root), CortexResourceType.CORTEX_DIR)
+            / "access-log.json.backup"
+        )
         assert backup_path.exists()
 
 
@@ -246,7 +258,10 @@ class TestAccessRecording:
         await analyzer.record_access(file_path)
 
         # Assert
-        log_path = Path(temp_project_root) / ".cortex/access-log.json"
+        log_path = (
+            get_cortex_path(Path(temp_project_root), CortexResourceType.CORTEX_DIR)
+            / "access-log.json"
+        )
         assert log_path.exists()
 
         with open(log_path) as f:

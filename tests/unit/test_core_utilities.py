@@ -19,6 +19,7 @@ import pytest
 
 from cortex.core.manager_registry import ManagerRegistry
 from cortex.core.models import ErrorContext, JsonDict, ModelDict, SuccessResponseData
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.responses import error_response, success_response
 from tests.helpers.managers import make_test_managers
 
@@ -254,7 +255,7 @@ class TestMCPToolValidator:
         # Arrange
         response: ModelDict = {"status": "success", "data": "test"}
         # Create .cortex directory for project detection
-        (tmp_path / ".cortex").mkdir()
+        get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR).mkdir()
 
         # Act - no exception means success
         await validate_mcp_tool_response(

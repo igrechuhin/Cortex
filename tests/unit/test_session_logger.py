@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.session_logger import (
     get_session_id,
     get_session_log_path,
@@ -94,7 +95,8 @@ class TestGetSessionLogPath:
 
             # Assert
             expected = (
-                tmp_path / ".cortex" / ".session" / "context-session-path_test_123.json"
+                get_cortex_path(tmp_path, CortexResourceType.SESSION)
+                / "context-session-path_test_123.json"
             )
             assert log_path == expected
         finally:
@@ -236,7 +238,7 @@ class TestListSessionLogs:
     def test_returns_log_files(self, tmp_path: Path) -> None:
         """Test that log files are returned."""
         # Arrange
-        session_dir = tmp_path / ".cortex" / ".session"
+        session_dir = get_cortex_path(tmp_path, CortexResourceType.SESSION)
         _ = session_dir.mkdir(parents=True)
         _ = (session_dir / "context-session-abc123.json").write_text("{}")
         _ = (session_dir / "context-session-def456.json").write_text("{}")

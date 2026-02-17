@@ -20,6 +20,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from cortex.core.models import ModelDict
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools import synapse_prompts
 
 # ============================================================================
@@ -32,14 +33,16 @@ def temp_project_root(tmp_path: Path) -> Path:
     """Create temporary project root with .cortex structure."""
     project_root = tmp_path / "project"
     project_root.mkdir()
-    (project_root / ".cortex" / "synapse" / "prompts").mkdir(parents=True)
+    (get_cortex_path(project_root, CortexResourceType.SYNAPSE) / "prompts").mkdir(
+        parents=True
+    )
     return project_root
 
 
 @pytest.fixture
 def prompts_dir(temp_project_root: Path) -> Path:
     """Get prompts directory path."""
-    return temp_project_root / ".cortex" / "synapse" / "prompts"
+    return get_cortex_path(temp_project_root, CortexResourceType.SYNAPSE) / "prompts"
 
 
 @pytest.fixture
@@ -483,9 +486,12 @@ class TestRegisterSynapsePrompts:
     ):
         """Test successfully registering prompts."""
         # Arrange
+        prompts_dir = (
+            get_cortex_path(temp_project_root, CortexResourceType.SYNAPSE) / "prompts"
+        )
         with patch(
             "cortex.tools.synapse_prompts.get_synapse_prompts_path",
-            return_value=temp_project_root / ".cortex" / "synapse" / "prompts",
+            return_value=prompts_dir,
         ):
             # Clear any existing registrations
             for key in list(synapse_prompts.__dict__.keys()):

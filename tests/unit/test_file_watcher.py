@@ -14,6 +14,7 @@ import pytest
 from watchdog.events import FileCreatedEvent, FileDeletedEvent, FileModifiedEvent
 
 from cortex.core.file_watcher import FileWatcherManager, MemoryBankWatcher
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 
 @runtime_checkable
@@ -159,7 +160,7 @@ class TestMemoryBankWatcherEventFiltering:
         watcher.loop = loop
 
         # Create metadata index event
-        index_file = tmp_path / ".cortex" / "index.json"
+        index_file = get_cortex_path(tmp_path, CortexResourceType.INDEX)
         event = FileModifiedEvent(str(index_file))
 
         with patch.object(watcher, "schedule_update") as mock_schedule:

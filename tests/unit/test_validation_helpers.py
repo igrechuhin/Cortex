@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.validation_helpers import (
     ValidationCheckType,
     create_invalid_check_type_error,
@@ -16,7 +17,7 @@ from cortex.tools.validation_helpers import (
 @pytest.mark.asyncio
 async def test_read_all_memory_bank_files_reads_markdown_files(tmp_path: Path) -> None:
     # Arrange
-    memory_bank_dir = tmp_path / ".cortex" / "memory-bank"
+    memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
     memory_bank_dir.mkdir(parents=True, exist_ok=True)
     md1 = memory_bank_dir / "a.md"
     md2 = memory_bank_dir / "b.md"

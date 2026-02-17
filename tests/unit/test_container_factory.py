@@ -22,6 +22,7 @@ from cortex.core.file_system import FileSystemManager
 from cortex.core.file_watcher import FileWatcherManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.migration import MigrationManager
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 from cortex.linking.link_parser import LinkParser
@@ -184,7 +185,9 @@ class TestCreateRefactoringManagersFromOptimization:
             temp_project_root, foundation_managers
         )
         # Factory uses project_root / ".cortex" / "memory-bank"
-        memory_bank_path = temp_project_root / ".cortex" / "memory-bank"
+        memory_bank_path = get_cortex_path(
+            temp_project_root, CortexResourceType.MEMORY_BANK
+        )
         memory_bank_path.mkdir(parents=True, exist_ok=True)
 
         # Act
@@ -215,7 +218,9 @@ class TestCreateExecutionManagersFromDeps:
             temp_project_root, foundation_managers
         )
         # Factory uses project_root / ".cortex" / "memory-bank"
-        memory_bank_path = temp_project_root / ".cortex" / "memory-bank"
+        memory_bank_path = get_cortex_path(
+            temp_project_root, CortexResourceType.MEMORY_BANK
+        )
         memory_bank_path.mkdir(parents=True, exist_ok=True)
 
         # Act
@@ -252,7 +257,9 @@ class TestCreateAllManagers:
         """Test creating all managers in integration."""
         # Arrange
         # Factory uses project_root / ".cortex" / "memory-bank"
-        memory_bank_path = temp_project_root / ".cortex" / "memory-bank"
+        memory_bank_path = get_cortex_path(
+            temp_project_root, CortexResourceType.MEMORY_BANK
+        )
         memory_bank_path.mkdir(parents=True, exist_ok=True)
 
         # Act
@@ -285,7 +292,9 @@ class TestCreateAllManagers:
     def test_manager_dependency_injection(self, temp_project_root: Path):
         """Test that manager dependencies are correctly injected."""
         # Arrange
-        memory_bank_path = temp_project_root / ".cortex" / "memory-bank"
+        memory_bank_path = get_cortex_path(
+            temp_project_root, CortexResourceType.MEMORY_BANK
+        )
         memory_bank_path.mkdir(parents=True, exist_ok=True)
 
         # Act
@@ -320,7 +329,9 @@ class TestCreateAllManagers:
         """Test error handling when dependencies are invalid."""
         # Arrange
         # Factory uses project_root / ".cortex" / "memory-bank"
-        memory_bank_path = temp_project_root / ".cortex" / "memory-bank"
+        memory_bank_path = get_cortex_path(
+            temp_project_root, CortexResourceType.MEMORY_BANK
+        )
         memory_bank_path.mkdir(parents=True, exist_ok=True)
 
         # Act & Assert - Should not raise errors even with non-existent paths

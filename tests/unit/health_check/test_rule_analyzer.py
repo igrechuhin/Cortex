@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.health_check.rule_analyzer import RuleAnalyzer
 
 
@@ -73,7 +74,7 @@ class TestRuleAnalyzer:
     @pytest.mark.asyncio
     async def test_scan_rules_with_files(self, analyzer: RuleAnalyzer, tmp_path: Path):
         """Test scanning rules when files exist."""
-        rules_dir = tmp_path / ".cortex" / "synapse" / "rules"
+        rules_dir = get_cortex_path(tmp_path, CortexResourceType.SYNAPSE) / "rules"
         python_dir = rules_dir / "python"
         _ = python_dir.mkdir(parents=True)
         test_file = python_dir / "test.mdc"

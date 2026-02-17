@@ -39,16 +39,16 @@ Anthropic also recommends structured JSON over Markdown for progress tracking: "
 
 ### Step 1: Design Compaction Strategy
 
-- [ ] Define compaction rules for activeContext.md:
+- [x] Define compaction rules for activeContext.md:
   - Keep "## Completed Work" for current date only; older dates get summarized
   - Keep "## Current Focus" and "## Next Steps" always
   - Keep "## Recent Changes" with last 5 entries only
-  - Archive older completed work to progress.md with date headers
-- [ ] Define compaction rules for progress.md:
-  - Keep individual entries for last 7 days
-  - Summarize entries older than 7 days into weekly summaries
-  - Summarize entries older than 30 days into monthly summaries
-- [ ] Design structured session handoff format (JSON):
+  - **Design decision**: Summarize older completed work in-place (one summary line per date) rather than archiving to progress.md. This preserves information while reducing tokens. Archiving to progress.md could be added as a future enhancement if needed.
+- [x] Define compaction rules for progress.md:
+  - Keep individual entries for last 7 days (Tier 1: full entries)
+  - Summarize entries older than 7 days into weekly summaries (Tier 2: 7-30 days)
+  - Summarize entries older than 30 days into monthly summaries (Tier 3: 30+ days)
+- [x] Design structured session handoff format (JSON):
 
   ```json
   {
@@ -61,7 +61,11 @@ Anthropic also recommends structured JSON over Markdown for progress tracking: "
   }
   ```
 
-- [ ] Unit tests for compaction rules
+  **Implementation**: `SessionHandoff` Pydantic model defined in `models.py` with all required fields (session_id, completed_tasks, in_progress, decisions_made, blockers, next_actions, schema_version).
+
+- [x] Unit tests for compaction rules
+
+**Status**: COMPLETE. All compaction rules defined in `compaction_constants.py` and implemented in `compaction_helpers.py`. SessionHandoff model implemented. Comprehensive unit tests in `test_compaction_helpers.py` (all pass, 92.3% coverage).
 
 ### Step 2: Implement compact_session Tool
 

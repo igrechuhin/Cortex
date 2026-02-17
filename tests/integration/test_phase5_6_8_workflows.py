@@ -18,6 +18,7 @@ from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import ModelDict
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.refactoring.consolidation_detector import ConsolidationDetector
 from cortex.refactoring.refactoring_engine import RefactoringEngine
 from cortex.refactoring.reorganization_planner import ReorganizationPlanner
@@ -46,7 +47,9 @@ class TestPhase5Integration:
         dep_graph = DependencyGraph()
 
         pattern_analyzer = PatternAnalyzer(temp_project_root)
-        memory_bank_path = temp_project_root / ".cortex" / "memory-bank"
+        memory_bank_path = get_cortex_path(
+            temp_project_root, CortexResourceType.MEMORY_BANK
+        )
         memory_bank_path.mkdir(parents=True, exist_ok=True)
         structure_analyzer = StructureAnalyzer(
             temp_project_root, dep_graph, fs, metadata
@@ -398,7 +401,7 @@ class TestPhase8Integration:
         """Test migrating from legacy structure to standardized layout."""
         # Arrange
         # Remove .cortex directory if it exists (from fixture) to allow detection
-        cortex_dir = temp_project_root / ".cortex"
+        cortex_dir = get_cortex_path(temp_project_root, CortexResourceType.CORTEX_DIR)
         if cortex_dir.exists():
             import shutil
 
@@ -507,7 +510,9 @@ class TestCompleteWorkflow:
         dep_graph = DependencyGraph()
 
         pattern_analyzer = PatternAnalyzer(temp_project_root)
-        memory_bank_path = temp_project_root / ".cortex" / "memory-bank"
+        memory_bank_path = get_cortex_path(
+            temp_project_root, CortexResourceType.MEMORY_BANK
+        )
         memory_bank_path.mkdir(parents=True, exist_ok=True)
         structure_analyzer = StructureAnalyzer(
             temp_project_root, dep_graph, fs, metadata

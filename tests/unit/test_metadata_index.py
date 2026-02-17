@@ -23,6 +23,7 @@ import pytest
 
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import SectionMetadata
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 
 class TestMetadataIndexInitialization:
@@ -37,8 +38,12 @@ class TestMetadataIndexInitialization:
 
         # Assert
         assert index.project_root == temp_project_root
-        assert index.index_path == temp_project_root / ".cortex" / "index.json"
-        assert index.memory_bank_dir == temp_project_root / ".cortex" / "memory-bank"
+        assert index.index_path == get_cortex_path(
+            temp_project_root, CortexResourceType.INDEX
+        )
+        assert index.memory_bank_dir == get_cortex_path(
+            temp_project_root, CortexResourceType.MEMORY_BANK
+        )
         assert index.get_data() is None
 
     def test_schema_version_constant(self):

@@ -45,7 +45,7 @@ class TestClearCache:
     def test_clear_cache_specific_type(self, tmp_path: Path) -> None:
         """Test clearing specific cache type."""
         # Arrange
-        cache_dir = tmp_path / ".cortex" / ".cache" / "summaries"
+        cache_dir = get_cache_dir(tmp_path, CacheType.SUMMARIES)
         _ = cache_dir.mkdir(parents=True, exist_ok=True)
 
         # Create cache files
@@ -65,11 +65,11 @@ class TestClearCache:
     def test_clear_cache_all_types(self, tmp_path: Path) -> None:
         """Test clearing entire cache directory."""
         # Arrange
-        summaries_dir = tmp_path / ".cortex" / ".cache" / "summaries"
+        summaries_dir = get_cache_dir(tmp_path, CacheType.SUMMARIES)
         _ = summaries_dir.mkdir(parents=True, exist_ok=True)
         _ = (summaries_dir / "file1.json").write_text('{"data": "test1"}')
 
-        relevance_dir = tmp_path / ".cortex" / ".cache" / "relevance"
+        relevance_dir = get_cache_dir(tmp_path, CacheType.RELEVANCE)
         _ = relevance_dir.mkdir(parents=True, exist_ok=True)
         _ = (relevance_dir / "file2.json").write_text('{"data": "test2"}')
 
@@ -84,7 +84,7 @@ class TestClearCache:
     def test_clear_cache_preserves_directories(self, tmp_path: Path) -> None:
         """Test that clearing cache preserves directory structure."""
         # Arrange
-        cache_dir = tmp_path / ".cortex" / ".cache" / "summaries"
+        cache_dir = get_cache_dir(tmp_path, CacheType.SUMMARIES)
         _ = cache_dir.mkdir(parents=True, exist_ok=True)
         _ = (cache_dir / "file1.json").write_text('{"data": "test1"}')
 
@@ -110,7 +110,7 @@ class TestGetCacheSize:
     def test_get_cache_size_specific_type(self, tmp_path: Path) -> None:
         """Test getting size of specific cache type."""
         # Arrange
-        cache_dir = tmp_path / ".cortex" / ".cache" / "summaries"
+        cache_dir = get_cache_dir(tmp_path, CacheType.SUMMARIES)
         _ = cache_dir.mkdir(parents=True, exist_ok=True)
 
         content1 = '{"data": "test1"}' * 10  # ~150 bytes
@@ -128,11 +128,11 @@ class TestGetCacheSize:
     def test_get_cache_size_all_types(self, tmp_path: Path) -> None:
         """Test getting size of entire cache directory."""
         # Arrange
-        summaries_dir = tmp_path / ".cortex" / ".cache" / "summaries"
+        summaries_dir = get_cache_dir(tmp_path, CacheType.SUMMARIES)
         _ = summaries_dir.mkdir(parents=True, exist_ok=True)
         _ = (summaries_dir / "file1.json").write_text('{"data": "test1"}')
 
-        relevance_dir = tmp_path / ".cortex" / ".cache" / "relevance"
+        relevance_dir = get_cache_dir(tmp_path, CacheType.RELEVANCE)
         _ = relevance_dir.mkdir(parents=True, exist_ok=True)
         _ = (relevance_dir / "file2.json").write_text('{"data": "test2"}')
 
@@ -157,7 +157,7 @@ class TestListCacheFiles:
     def test_list_cache_files_specific_type(self, tmp_path: Path) -> None:
         """Test listing files in specific cache type."""
         # Arrange
-        cache_dir = tmp_path / ".cortex" / ".cache" / "summaries"
+        cache_dir = get_cache_dir(tmp_path, CacheType.SUMMARIES)
         _ = cache_dir.mkdir(parents=True, exist_ok=True)
 
         file1 = cache_dir / "file1.json"
@@ -176,12 +176,12 @@ class TestListCacheFiles:
     def test_list_cache_files_all_types(self, tmp_path: Path) -> None:
         """Test listing all cache files."""
         # Arrange
-        summaries_dir = tmp_path / ".cortex" / ".cache" / "summaries"
+        summaries_dir = get_cache_dir(tmp_path, CacheType.SUMMARIES)
         _ = summaries_dir.mkdir(parents=True, exist_ok=True)
         file1 = summaries_dir / "file1.json"
         _ = file1.write_text('{"data": "test1"}')
 
-        relevance_dir = tmp_path / ".cortex" / ".cache" / "relevance"
+        relevance_dir = get_cache_dir(tmp_path, CacheType.RELEVANCE)
         _ = relevance_dir.mkdir(parents=True, exist_ok=True)
         file2 = relevance_dir / "file2.json"
         _ = file2.write_text('{"data": "test2"}')
@@ -197,7 +197,7 @@ class TestListCacheFiles:
     def test_list_cache_files_sorted(self, tmp_path: Path) -> None:
         """Test that cache files are returned sorted."""
         # Arrange
-        cache_dir = tmp_path / ".cortex" / ".cache" / "summaries"
+        cache_dir = get_cache_dir(tmp_path, CacheType.SUMMARIES)
         _ = cache_dir.mkdir(parents=True, exist_ok=True)
 
         file_z = cache_dir / "z_file.json"
@@ -219,7 +219,7 @@ class TestListCacheFiles:
     def test_list_cache_files_excludes_directories(self, tmp_path: Path) -> None:
         """Test that directories are excluded from file list."""
         # Arrange
-        cache_dir = tmp_path / ".cortex" / ".cache" / "summaries"
+        cache_dir = get_cache_dir(tmp_path, CacheType.SUMMARIES)
         _ = cache_dir.mkdir(parents=True, exist_ok=True)
 
         file1 = cache_dir / "file1.json"

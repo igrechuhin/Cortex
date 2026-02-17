@@ -10,11 +10,10 @@ from __future__ import annotations
 
 import contextvars
 from pathlib import Path
-from typing import Any
 
 from cortex.core.context_logging import MCPContext
 
-_current_managers: contextvars.ContextVar[dict[str, Any] | None] = (
+_current_managers: contextvars.ContextVar[dict[str, object] | None] = (
     contextvars.ContextVar("current_managers", default=None)
 )
 _current_project_root: contextvars.ContextVar[Path | None] = contextvars.ContextVar(
@@ -22,7 +21,7 @@ _current_project_root: contextvars.ContextVar[Path | None] = contextvars.Context
 )
 
 
-def set_current_managers(managers: dict[str, Any] | None) -> None:
+def set_current_managers(managers: dict[str, object] | None) -> None:
     """Set the current managers dict for this context (e.g. request).
 
     Called by get_managers() when returning so usage recording can read it.
@@ -33,7 +32,7 @@ def set_current_managers(managers: dict[str, Any] | None) -> None:
     _ = _current_managers.set(managers)
 
 
-def get_current_managers() -> dict[str, Any] | None:
+def get_current_managers() -> dict[str, object] | None:
     """Return the current managers dict for this context, or None."""
     return _current_managers.get()
 

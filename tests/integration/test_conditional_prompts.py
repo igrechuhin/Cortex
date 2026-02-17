@@ -9,7 +9,12 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 
-from cortex.core.path_resolver import CursorResourceType, get_cursor_path
+from cortex.core.path_resolver import (
+    CortexResourceType,
+    CursorResourceType,
+    get_cortex_path,
+    get_cursor_path,
+)
 
 
 def _clear_setup_prompts_cache() -> None:
@@ -24,14 +29,14 @@ class TestConditionalPromptRegistration:
     def test_prompts_not_registered_when_configured(self, tmp_path: Path):
         """Test that setup prompts are not registered when project is configured."""
         # Arrange - Create fully configured project
-        cortex_dir = tmp_path / ".cortex"
+        cortex_dir = get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR)
         cortex_dir.mkdir()
-        (cortex_dir / "memory-bank").mkdir()
-        (cortex_dir / "rules").mkdir()
-        (cortex_dir / "plans").mkdir()
-        (cortex_dir / "config").mkdir()
+        get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir()
+        get_cortex_path(tmp_path, CortexResourceType.RULES).mkdir()
+        get_cortex_path(tmp_path, CortexResourceType.PLANS).mkdir()
+        get_cortex_path(tmp_path, CortexResourceType.CONFIG).mkdir()
 
-        memory_bank_dir = cortex_dir / "memory-bank"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         core_files = [
             "projectBrief.md",
             "productContext.md",
@@ -99,9 +104,9 @@ class TestConditionalPromptRegistration:
 
     def test_partial_configuration_registers_partial_prompts(self, tmp_path: Path):
         """Test that partial configuration registers only needed prompts."""
-        cortex_dir = tmp_path / ".cortex"
+        cortex_dir = get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR)
         cortex_dir.mkdir()
-        (cortex_dir / "memory-bank").mkdir()
+        get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir()
 
         memory_bank_dir = cortex_dir / "memory-bank"
         core_files = [

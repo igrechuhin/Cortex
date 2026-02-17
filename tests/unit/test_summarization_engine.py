@@ -16,7 +16,11 @@ import pytest
 
 from cortex.core.cache_utils import CacheType
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.path_resolver import get_cache_path
+from cortex.core.path_resolver import (
+    CortexResourceType,
+    get_cache_path,
+    get_cortex_path,
+)
 from cortex.optimization.summarization_engine import SummarizationEngine
 
 
@@ -32,7 +36,9 @@ class TestSummarizationEngineInitialization:
         """Test initialization with default cache directory."""
         # Arrange
         # Create .cortex directory
-        (tmp_path / ".cortex").mkdir(parents=True, exist_ok=True)
+        get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR).mkdir(
+            parents=True, exist_ok=True
+        )
         # Type ignore for mock assignment
         mock_metadata_index.project_root = str(tmp_path)  # type: ignore[assignment]
 

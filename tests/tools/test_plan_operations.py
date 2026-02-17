@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.plan_operations import (
     CreatePlanResult,
     RegisterPlanResult,
@@ -99,8 +100,9 @@ class TestRegisterPlanInRoadmapRejectsCompleted:
         self, tmp_path: Path
     ) -> None:
         """Calling with status=PENDING proceeds (may fail later for missing roadmap)."""
-        (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
-        roadmap = tmp_path / ".cortex" / "memory-bank" / "roadmap.md"
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True)
+        roadmap = memory_bank_dir / "roadmap.md"
         _ = roadmap.write_text(
             "# Roadmap\n\n## Blockers (ASAP Priority)\nNone\n\n"
             + "## Active Work (in progress)\n\n## Future Enhancements\n\n"
@@ -328,7 +330,7 @@ class TestCreatePlanFile:
         """Test that create_plan_file creates plans directory if needed."""
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
-            plans_dir = root / ".cortex" / "plans"
+            plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
             assert not plans_dir.exists()
 
             path, error = create_plan_file(

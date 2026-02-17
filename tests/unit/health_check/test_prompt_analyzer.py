@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.health_check.prompt_analyzer import PromptAnalyzer
 
 
@@ -104,7 +105,7 @@ class TestPromptAnalyzer:
         self, analyzer: PromptAnalyzer, tmp_path: Path
     ):
         """Test scanning prompts when files exist."""
-        prompts_dir = tmp_path / ".cortex" / "synapse" / "prompts"
+        prompts_dir = get_cortex_path(tmp_path, CortexResourceType.SYNAPSE) / "prompts"
         _ = prompts_dir.mkdir(parents=True)
         test_file = prompts_dir / "test.md"
         _ = test_file.write_text("# Test Prompt\nContent here")

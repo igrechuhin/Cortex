@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.core.cache_utils import get_cache_dir
 from cortex.tools.cache_json_tools import (
     error_response,
     parse_write_content,
@@ -18,7 +19,7 @@ from cortex.tools.cache_json_tools import (
 def _project_root(tmp_path: Path) -> Path:
     """Create project root with .cortex/.cache."""
     root = tmp_path / "project"
-    _ = (root / ".cortex" / ".cache").mkdir(parents=True)
+    _ = get_cache_dir(root).mkdir(parents=True)
     return root
 
 
@@ -47,7 +48,7 @@ class TestReadCacheJsonTool:
     async def test_returns_json_content_when_file_exists(self, tmp_path: Path) -> None:
         """Tool returns file content as JSON when file exists."""
         root = _project_root(tmp_path)
-        path = root / ".cortex" / ".cache" / "data.json"
+        path = get_cache_dir(root) / "data.json"
         _ = path.parent.mkdir(parents=True, exist_ok=True)
         _ = path.write_text('{"key": "value"}')
         with patch.dict(os.environ, {"CORTEX_USE_FALLBACK_ROOT": "1"}):

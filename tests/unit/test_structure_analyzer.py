@@ -20,6 +20,7 @@ from cortex.core.dependency_graph import DependencyGraph
 from cortex.core.exceptions import MemoryBankError
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 
 @pytest.fixture
@@ -120,7 +121,9 @@ class TestFileOrganizationAnalysis:
     ):
         """Test analyzes file organization."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(
+            Path(temp_project_root), CortexResourceType.MEMORY_BANK
+        )
 
         # Create test files with different sizes
         _ = (memory_bank_dir / "small.md").write_text("Small content")
@@ -155,7 +158,9 @@ class TestFileOrganizationAnalysis:
     ):
         """Test identifies large files as an issue."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(
+            Path(temp_project_root), CortexResourceType.MEMORY_BANK
+        )
 
         # Create very large file (>50KB)
         _ = (memory_bank_dir / "huge.md").write_text("X" * 60000)
@@ -184,7 +189,9 @@ class TestFileOrganizationAnalysis:
     ):
         """Test identifies small files as an issue."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(
+            Path(temp_project_root), CortexResourceType.MEMORY_BANK
+        )
 
         # Create very small file (<500 bytes)
         _ = (memory_bank_dir / "tiny.md").write_text("X")
@@ -217,7 +224,9 @@ class TestAntiPatternDetection:
     ):
         """Test detects oversized files."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(
+            Path(temp_project_root), CortexResourceType.MEMORY_BANK
+        )
         # memory_bank_dir already exists
 
         # Create oversized file (>100KB)
@@ -257,7 +266,9 @@ class TestAntiPatternDetection:
     ):
         """Test detects orphaned files."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(
+            Path(temp_project_root), CortexResourceType.MEMORY_BANK
+        )
         # memory_bank_dir already exists
         _ = (memory_bank_dir / "orphan.md").write_text("Content")
 
@@ -295,7 +306,9 @@ class TestAntiPatternDetection:
     ):
         """Test detects files with excessive dependencies."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(
+            Path(temp_project_root), CortexResourceType.MEMORY_BANK
+        )
         # memory_bank_dir already exists
         _ = (memory_bank_dir / "hub.md").write_text("Content")
 
@@ -331,7 +344,9 @@ class TestAntiPatternDetection:
     ):
         """Test detects files with excessive dependents."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(
+            Path(temp_project_root), CortexResourceType.MEMORY_BANK
+        )
         # memory_bank_dir already exists
         _ = (memory_bank_dir / "central.md").write_text("Content")
 
@@ -367,7 +382,9 @@ class TestAntiPatternDetection:
     ):
         """Test detects similar file names."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(
+            Path(temp_project_root), CortexResourceType.MEMORY_BANK
+        )
         # memory_bank_dir already exists
         _ = (memory_bank_dir / "user-guide.md").write_text("Content")
         _ = (memory_bank_dir / "user-guide-advanced.md").write_text("Content")
@@ -404,7 +421,9 @@ class TestAntiPatternDetection:
     ):
         """Test sorts anti-patterns by severity."""
         # Arrange
-        memory_bank_dir = Path(temp_project_root) / ".cortex" / "memory-bank"
+        memory_bank_dir = get_cortex_path(
+            Path(temp_project_root), CortexResourceType.MEMORY_BANK
+        )
         # memory_bank_dir already exists
 
         # Create files that will trigger different severity anti-patterns

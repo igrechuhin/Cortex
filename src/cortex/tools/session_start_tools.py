@@ -33,6 +33,7 @@ from cortex.core.usage_context import (
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
+from cortex.tools.compaction_operations import read_handoff
 from cortex.tools.file_section_helpers import extract_section_from_content
 from cortex.tools.models import (
     GitStatusSummary,
@@ -471,6 +472,7 @@ async def _build_session_brief(
         health, git_status, next_work_item
     )
     project_name = await _extract_project_name(fs_manager)
+    last_handoff = await read_handoff(project_root, fs_manager)
 
     return SessionBrief(
         project_name=project_name,
@@ -481,6 +483,7 @@ async def _build_session_brief(
         health=health,
         git_status=git_status,
         session_suggestions=session_suggestions,
+        last_handoff=last_handoff,
     )
 
 

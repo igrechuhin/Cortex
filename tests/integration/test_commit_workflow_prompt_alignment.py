@@ -10,7 +10,11 @@ from pathlib import Path
 
 import pytest
 
-from cortex.core.path_resolver import ProjectResourceType
+from cortex.core.path_resolver import (
+    CortexResourceType,
+    ProjectResourceType,
+    get_cortex_path,
+)
 from cortex.validation.commit_workflow_model import (
     get_commit_steps_metadata,
     get_parallel_block_step_ids,
@@ -25,7 +29,11 @@ def _repo_root() -> Path:
 
 def _commit_prompt_path() -> Path:
     """Return path to commit prompt under .cortex/synapse/prompts/."""
-    return _repo_root() / ".cortex" / "synapse" / "prompts" / "commit.md"
+    return (
+        get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE)
+        / "prompts"
+        / "commit.md"
+    )
 
 
 class TestCommitWorkflowModelInvariants:

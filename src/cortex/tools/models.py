@@ -2851,6 +2851,37 @@ class GitStatusSummary(StrictBaseModel):
     untracked_files_count: int = Field(ge=0, description="Number of untracked files")
 
 
+class InProgressTask(StrictBaseModel):
+    """In-progress task from session handoff."""
+
+    task: str = Field(..., min_length=1, description="Task name or description")
+    notes: str | None = Field(None, description="Optional notes on progress")
+
+
+class SessionHandoff(StrictBaseModel):
+    """Structured session handoff for next session (JSON-based)."""
+
+    session_id: str = Field(
+        ..., min_length=1, description="Session identifier (e.g. 2026-02-11T21:14)"
+    )
+    completed_tasks: list[str] = Field(
+        default_factory=list, description="Tasks completed this session"
+    )
+    in_progress: InProgressTask | None = Field(
+        None, description="Task in progress with optional notes"
+    )
+    decisions_made: list[str] = Field(
+        default_factory=list, description="Key decisions made"
+    )
+    blockers: list[str] = Field(default_factory=list, description="Current blockers")
+    next_actions: list[str] = Field(
+        default_factory=list, description="Recommended next actions"
+    )
+    schema_version: int = Field(
+        default=1, ge=1, description="Handoff schema version for compatibility"
+    )
+
+
 class SessionBrief(StrictBaseModel):
     """Session brief with orientation information."""
 
@@ -2874,6 +2905,10 @@ class SessionBrief(StrictBaseModel):
     )
     session_suggestions: list[str] = Field(
         default_factory=list, description="Actionable suggestions for the session"
+    )
+    last_handoff: SessionHandoff | None = Field(
+        None,
+        description="Last session handoff from compact_session (if available)",
     )
 
 

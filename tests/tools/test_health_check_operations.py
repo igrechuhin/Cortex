@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.health_check_operations import (
     analyze_health_check,
     analyze_health_check_resource,
@@ -25,8 +26,9 @@ def _temp_project() -> Generator[Path]:
     """Yield a temporary project path with .cortex/synapse layout."""
     with tempfile.TemporaryDirectory() as tmp:
         path: Path = Path(tmp)
-        (path / ".cortex" / "synapse" / "prompts").mkdir(parents=True)
-        (path / ".cortex" / "synapse" / "rules" / "general").mkdir(parents=True)
+        synapse_dir = get_cortex_path(path, CortexResourceType.SYNAPSE)
+        (synapse_dir / "prompts").mkdir(parents=True)
+        (synapse_dir / "rules" / "general").mkdir(parents=True)
         (path / "src" / "cortex" / "tools").mkdir(parents=True)
         yield path
 

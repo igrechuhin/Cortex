@@ -16,6 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.core.models import ModelDict
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.managers.builder_types import ManagersBuilder
 from cortex.managers.types import ManagersDict
 from cortex.refactoring.models import (
@@ -106,7 +107,9 @@ def _patch_get_manager() -> (  # pyright: ignore[reportUnusedFunction]
 def mock_project_root(tmp_path: Path) -> Path:
     """Create mock project root."""
     # Ensure .cortex directory exists to avoid file errors
-    (tmp_path / ".cortex").mkdir(parents=True, exist_ok=True)
+    get_cortex_path(tmp_path, CortexResourceType.CORTEX_DIR).mkdir(
+        parents=True, exist_ok=True
+    )
     return tmp_path
 
 

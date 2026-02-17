@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.file_operations import manage_file
 
 # Import the tool functions directly
@@ -31,7 +32,7 @@ async def _initialize_memory_bank_helper(project_root: str) -> str:
     from pathlib import Path
 
     root = Path(project_root)
-    memory_bank_dir = root / ".cortex" / "memory-bank"
+    memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     memory_bank_dir.mkdir(exist_ok=True, parents=True)
 
     # Create basic files if they don't exist

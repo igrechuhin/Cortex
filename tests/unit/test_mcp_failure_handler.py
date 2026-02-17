@@ -23,6 +23,7 @@ from cortex.core.mcp_tool_validator import (
     validate_mcp_tool_response,
 )
 from cortex.core.models import JsonValue
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from tests.helpers.types import RawJSONDict
 
 
@@ -111,7 +112,7 @@ class TestRoadmapIntegration:
     async def test_add_to_roadmap(self, tmp_path: Path) -> None:
         """Test that investigation plan is added to roadmap."""
         # Create memory bank directory and roadmap
-        memory_bank = tmp_path / ".cortex" / "memory-bank"
+        memory_bank = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank.mkdir(parents=True)
         roadmap = memory_bank / "roadmap.md"
         _ = roadmap.write_text(
@@ -167,7 +168,7 @@ class TestProtocolEnforcement:
     async def test_handle_failure_creates_plan(self, tmp_path: Path) -> None:
         """Test that handle_failure creates investigation plan."""
         # Create memory bank directory and roadmap
-        memory_bank = tmp_path / ".cortex" / "memory-bank"
+        memory_bank = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank.mkdir(parents=True)
         roadmap = memory_bank / "roadmap.md"
         _ = roadmap.write_text(
@@ -181,7 +182,7 @@ class TestProtocolEnforcement:
             await handler.handle_failure("test_tool", error, "test_step")
 
         # Check that plan was created
-        plans_dir = tmp_path / ".cortex" / "plans"
+        plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
         plan_files = list(plans_dir.glob("phase-investigate-test_tool-failure-*.md"))
         assert len(plan_files) == 1
 
@@ -264,7 +265,7 @@ class TestValidatorHelpers:
     async def test_handle_mcp_tool_failure_raises(self, tmp_path: Path) -> None:
         """Test that handle_mcp_tool_failure always raises."""
         # Create memory bank directory and roadmap
-        memory_bank = tmp_path / ".cortex" / "memory-bank"
+        memory_bank = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank.mkdir(parents=True)
         roadmap = memory_bank / "roadmap.md"
         _ = roadmap.write_text(
@@ -321,8 +322,8 @@ class TestMCPToolWrapperIntegration:
 
         from cortex.core.mcp_stability import mcp_tool_wrapper
 
-        (tmp_path / ".cortex" / "plans").mkdir(parents=True)
-        (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
+        get_cortex_path(tmp_path, CortexResourceType.PLANS).mkdir(parents=True)
+        get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
         monkeypatch.chdir(tmp_path)
 
         @mcp_tool_wrapper(timeout=1.0)
@@ -335,6 +336,6 @@ class TestMCPToolWrapperIntegration:
 
         assert exc_info.value.tool_name == "tool_raising_json_error"
         assert "MCP tool execution" in exc_info.value.step_name
-        plans_dir = tmp_path / ".cortex" / "plans"
+        plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
         plan_files = list(plans_dir.glob("phase-investigate-*.md"))
         assert len(plan_files) >= 1

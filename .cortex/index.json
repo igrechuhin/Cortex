@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-12T17:50:54.247548",
+  "last_updated": "2026-02-17T13:25:59.828821",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
@@ -1365,25 +1365,112 @@
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 19260,
-      "token_count": 4344,
+      "size_bytes": 26389,
+      "token_count": 4157,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-11T17:12:19.541640",
-      "content_hash": "sha256:20563d1aff5950005b145b9e92d039231f1add51f7469c7effee3f4651fab3a4",
+      "last_modified": "2026-02-17T13:25:59.826901",
+      "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
       "sections": [
-        "# Progress Log",
-        "## 2026-02-11",
-        "## 2026",
-        "## 2026-02-10",
-        "## 2026-02-09",
-        "## 2026-02-07",
-        "## 2026-02-05",
-        "## What Works",
-        "## What's Left"
+        {
+          "title": "# Progress Log",
+          "level": 1,
+          "line_start": 1,
+          "line_end": 2,
+          "content_hash": "sha256:0081f513e848bf1f74d9a9bad8a88998d2fc2673d9cf6871e0eedbb5b5c638d2",
+          "token_count": 3
+        },
+        {
+          "title": "## 2026-02-17",
+          "level": 2,
+          "line_start": 3,
+          "line_end": 11,
+          "content_hash": "sha256:cefaefb1cbb205d7a5a7e314af58d340fb00afc663bcb702bf138882d394c1fc",
+          "token_count": 340
+        },
+        {
+          "title": "## 2026-02-16",
+          "level": 2,
+          "line_start": 12,
+          "line_end": 25,
+          "content_hash": "sha256:bb3200e943d3cda0878a66df22617fbc124a6246ce0402f4404d53bc117a751a",
+          "token_count": 765
+        },
+        {
+          "title": "## 2026-02-13",
+          "level": 2,
+          "line_start": 26,
+          "line_end": 29,
+          "content_hash": "sha256:2ebff96cc90820a6ed6838cea3cb6a951d52ce041c3952444126c22cead5d8c2",
+          "token_count": 55
+        },
+        {
+          "title": "## 2026-02-12",
+          "level": 2,
+          "line_start": 30,
+          "line_end": 48,
+          "content_hash": "sha256:bb7df1fa1f06def73bead6aac74e957b924d63dfcc02b0918d98e14b74985d5f",
+          "token_count": 720
+        },
+        {
+          "title": "## 2026-02-11",
+          "level": 2,
+          "line_start": 49,
+          "line_end": 71,
+          "content_hash": "sha256:13ba0d67f5bebef241d6eea254781d8455ecdc81aaf9b91592385b53680ecba4",
+          "token_count": 1003
+        },
+        {
+          "title": "## 2026-02-10",
+          "level": 2,
+          "line_start": 72,
+          "line_end": 100,
+          "content_hash": "sha256:60aeb142640100a569a2c83d8b11afe5e394c0f896a73e46171983560d993e2e",
+          "token_count": 1170
+        },
+        {
+          "title": "## 2026-02-09",
+          "level": 2,
+          "line_start": 101,
+          "line_end": 103,
+          "content_hash": "sha256:979a3e3a3c51ef4e252af88d0cb237f0970c365b80154e6ac5fdcf7269125c91",
+          "token_count": 13
+        },
+        {
+          "title": "## 2026-02-07",
+          "level": 2,
+          "line_start": 104,
+          "line_end": 106,
+          "content_hash": "sha256:0479d2b60f37da69118a77177decf72ec13a961ee2bd42365ba5952ac6b32751",
+          "token_count": 13
+        },
+        {
+          "title": "## 2026-02-05",
+          "level": 2,
+          "line_start": 107,
+          "line_end": 109,
+          "content_hash": "sha256:98373d17605cdfee6d238dc0fa7fff18ed5b8d1c11b364e8de3e570acc5d66e2",
+          "token_count": 13
+        },
+        {
+          "title": "## What Works",
+          "level": 2,
+          "line_start": 110,
+          "line_end": 113,
+          "content_hash": "sha256:3b086fceb97a0cc91c3f7d1589d686ccf624174efd5b0b97d33d8d9bc801a286",
+          "token_count": 52
+        },
+        {
+          "title": "## What's Left",
+          "level": 2,
+          "line_start": 114,
+          "line_end": 117,
+          "content_hash": "sha256:bd698cf51d2d59c2ce4333a538cddf8a4f5931df5ec383aeff37ff9c6c018f8b",
+          "token_count": 6
+        }
       ],
       "read_count": 2,
-      "write_count": 152,
-      "last_read": "2026-02-10T14:32:26.039739",
+      "write_count": 198,
+      "last_read": "2026-02-17T13:25:59.826901",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -3058,31 +3145,632 @@
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
           "change_description": "Log 2026-02-10 commit pipeline run (3759 tests, 90.16% coverage) in progress.md"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:13:39.780552",
+          "content_hash": "sha256:f179a9cebf4eedf43ec1fe09aa4697f7ad2e605549be14ce79821f3506e94c1e",
+          "size_bytes": 26391,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:13:44.598629",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:13:44.645187",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:13:44.666719",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:14:00.993729",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:14:01.039017",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:14:01.061624",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:25:04.087128",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:25:09.691382",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:25:44.527340",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:25:44.546076",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:25:44.574992",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:27:47.663200",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:27:47.710186",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:27:47.738393",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:28:13.001139",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:28:24.556534",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:28:38.842989",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:28:47.277326",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:28:54.337340",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:29:10.638635",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:29:19.578910",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:29:35.505965",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:29:48.322729",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:29:48.368743",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:29:48.391986",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:30:00.310117",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:30:08.971034",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:30:08.990925",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:30:09.010436",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:30:22.367877",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:30:28.337386",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:30:28.386961",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:30:28.417656",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:31:01.668416",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:31:01.689634",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:31:01.708965",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:31:14.808408",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:31:14.832837",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:31:14.857001",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T13:23:57.689080",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T13:23:57.715990",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T13:23:57.744027",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T13:25:59.763124",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T13:25:59.793419",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T13:25:59.826061",
+          "content_hash": "sha256:772566dafa5c5496e311b21b4ab51b358b423b818453d9a17877cf48be650f02",
+          "size_bytes": 26389,
+          "token_count": 4157,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
         }
       ]
     },
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 21557,
-      "token_count": 4971,
+      "size_bytes": 2890,
+      "token_count": 473,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-11T17:12:19.537039",
-      "content_hash": "sha256:b23e9c108bad137e23a882c77327865d03c621a92513d1845af143cd5d8a8de2",
+      "last_modified": "2026-02-17T13:25:59.817762",
+      "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
       "sections": [
-        "# Active Context: Cortex",
-        "## Completed Work (2026-02-11)",
-        "## Completed Work (2026)",
-        "## Completed Work (2026-02-10)",
-        "## Completed Work (2026-02-09)",
-        "## Completed Work (2026-02-07)",
-        "## Current Focus",
-        "## Recent Changes",
-        "## Next Steps"
+        {
+          "title": "# Active Context: Cortex",
+          "level": 1,
+          "line_start": 1,
+          "line_end": 4,
+          "content_hash": "sha256:26df705891df9dd1e157137df8dc87a24a4f3e426602cc95b5ae7f2a3bfcd2f2",
+          "token_count": 23
+        },
+        {
+          "title": "## Completed Work (2026-02-17)",
+          "level": 2,
+          "line_start": 5,
+          "line_end": 14,
+          "content_hash": "sha256:2ed9fa772d2c56e9faaad09e14225d7ce630e2142f374fcc87339a099eba43f3",
+          "token_count": 271
+        },
+        {
+          "title": "## Completed Work (2026-02-16)",
+          "level": 2,
+          "line_start": 15,
+          "line_end": 17,
+          "content_hash": "sha256:c82826cc66234e529fa45017b609cd7aa8444fa7a90ea1a83c957aaa77fe21a5",
+          "token_count": 14
+        },
+        {
+          "title": "## Completed Work (2026-02-13)",
+          "level": 2,
+          "line_start": 18,
+          "line_end": 20,
+          "content_hash": "sha256:7f4454376186a177c29fc3d0b3b82c38406ad0bc769e59bdcee3ed2326ac37fb",
+          "token_count": 14
+        },
+        {
+          "title": "## Completed Work (2026-01-14)",
+          "level": 2,
+          "line_start": 21,
+          "line_end": 23,
+          "content_hash": "sha256:55bf58221ab27a9f982384a08897701b030de8ee252ebf0c65315329ed5a930c",
+          "token_count": 14
+        },
+        {
+          "title": "## Completed Work (2026-02-12)",
+          "level": 2,
+          "line_start": 24,
+          "line_end": 26,
+          "content_hash": "sha256:4c4b6471ce1e6b52e689316226282898a5531e999785971ba999d0ba2540c3c6",
+          "token_count": 14
+        },
+        {
+          "title": "## Completed Work (2026-02-11)",
+          "level": 2,
+          "line_start": 27,
+          "line_end": 29,
+          "content_hash": "sha256:da5f0ef50469a0de5c33dce1fc76992ce8366c83bc1e7605fa59f7343af2fde4",
+          "token_count": 14
+        },
+        {
+          "title": "## Completed Work (2026-02-10)",
+          "level": 2,
+          "line_start": 30,
+          "line_end": 32,
+          "content_hash": "sha256:abb2b7bd4dd8d65b9196ad97f2f63542b06fd80db74f801cbd38b827f7ed95c2",
+          "token_count": 14
+        },
+        {
+          "title": "## Completed Work (2026-02-09)",
+          "level": 2,
+          "line_start": 33,
+          "line_end": 35,
+          "content_hash": "sha256:a9bf04bd211df8f20ce113468973eb8b1f88b52fa82f22eefa76258a7ecaa1d3",
+          "token_count": 14
+        },
+        {
+          "title": "## Completed Work (2026-02-07)",
+          "level": 2,
+          "line_start": 36,
+          "line_end": 38,
+          "content_hash": "sha256:9a9a4f713edd0be6fb251a5548a7993a162b484ca3f2ea0cb927c6e567a36a9a",
+          "token_count": 14
+        },
+        {
+          "title": "## Current Focus",
+          "level": 2,
+          "line_start": 39,
+          "line_end": 42,
+          "content_hash": "sha256:590aa5bb5ab49256df65b54042e184286214768af00290735bec5e937d3011b8",
+          "token_count": 11
+        },
+        {
+          "title": "## Recent Changes",
+          "level": 2,
+          "line_start": 43,
+          "line_end": 46,
+          "content_hash": "sha256:a836bd8f2f1eaade91e4dc9b2bb4914bb15b9d10cc3e2b6012d3431d79072ff1",
+          "token_count": 45
+        },
+        {
+          "title": "## Next Steps",
+          "level": 2,
+          "line_start": 47,
+          "line_end": 50,
+          "content_hash": "sha256:2d95f981e9a718ee86bfe827cfd59f487d120d7f0c947e404a34fb8bca1496c1",
+          "token_count": 6
+        }
       ],
       "read_count": 2,
-      "write_count": 123,
-      "last_read": "2026-02-09T08:08:16.427142",
+      "write_count": 169,
+      "last_read": "2026-02-17T13:25:59.817762",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -4438,6 +5126,512 @@
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
           "change_description": "Add completed work 2026-02-09 (commit test fixes)"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:13:39.773664",
+          "content_hash": "sha256:3dff1276354dd7dd1ad771adbc42c4d4c1fd01bc914c10a745457499a272e3fb",
+          "size_bytes": 2893,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:13:44.592007",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:13:44.639001",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:13:44.660693",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:14:00.987685",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:14:01.031882",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:14:01.055453",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:25:04.073102",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:25:09.675956",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:25:44.521550",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:25:44.540919",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:25:44.560173",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:27:47.655593",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:27:47.703462",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:27:47.731914",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:28:12.994675",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:28:24.550877",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:28:38.836233",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:28:47.270647",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:28:54.331244",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:29:10.632903",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:29:19.572765",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:29:35.499321",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:29:48.316557",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:29:48.362686",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:29:48.385774",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:30:00.303257",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:30:08.965159",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:30:08.985351",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:30:09.004143",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:30:22.361573",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:30:28.329732",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:30:28.379882",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:30:28.410407",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:31:01.662291",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:31:01.684300",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:31:01.702726",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:31:14.801554",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:31:14.826301",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T12:31:14.850156",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T13:23:57.680319",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T13:23:57.708566",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T13:23:57.736293",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T13:25:59.755392",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T13:25:59.784296",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-17T13:25:59.816773",
+          "content_hash": "sha256:edb51215e7d2925e8f14ecb10c7a7c44270c051952f60e0d17f1d3375161915a",
+          "size_bytes": 2890,
+          "token_count": 473,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
         }
       ]
     },
@@ -6689,8 +7883,8 @@
   },
   "totals": {
     "total_files": 10,
-    "total_size_bytes": 77419,
-    "total_tokens": 17402,
-    "last_full_scan": "2026-02-12T17:50:54.243544"
+    "total_size_bytes": 65881,
+    "total_tokens": 12717,
+    "last_full_scan": "2026-02-17T13:25:59.826939"
   }
 }

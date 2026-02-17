@@ -29,14 +29,16 @@ Modules:
 - plan_operations: Structured plan creation and roadmap registration (2 tools)
 - plan_completion: Complete plan (move from roadmap to activeContext) (1 tool)
 - sequential_thinking: Sequential thinking for stepwise reasoning (1 tool)
+- compaction_operations: Session compaction and handoff (1 tool) - Phase 56
 
-Total: 70 tools + 7 prompts
+Total: 71 tools + 7 prompts
 """
 
 # Import all tool modules to register their decorators
 from . import (
     analysis_operations,  # noqa: F401
     cache_json_tools,  # noqa: F401
+    compaction_operations,  # noqa: F401
     configuration_hybrid,  # noqa: F401
     configuration_operations,  # noqa: F401
     connection_health,  # noqa: F401
@@ -81,6 +83,7 @@ _ = synapse_prompts
 __all__ = [
     "analysis_operations",
     "cache_json_tools",
+    "compaction_operations",
     "configuration_hybrid",
     "configuration_operations",
     "connection_health",

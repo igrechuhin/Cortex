@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.roadmap_operations import (  # type: ignore[import-not-found]
     RoadmapSection,
     _entry_text_looks_completed,  # type: ignore[name-defined]
@@ -61,8 +62,9 @@ class TestExecuteRoadmapInsertionRejectsCompleted:
 
     def test_insertion_rejects_completed_entry(self, tmp_path: Path) -> None:
         """Adding a COMPLETED entry returns error result."""
-        (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
-        _ = (tmp_path / ".cortex" / "memory-bank" / "roadmap.md").write_text(
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True)
+        _ = (memory_bank_dir / "roadmap.md").write_text(
             "# Roadmap\n\n## Blockers (ASAP Priority)\nNone\n\n"
             + "## Active Work (in progress)\n\n## Future Enhancements\n\n"
             + "## Pending plans (from .cortex/plans)\n- **Other** - PENDING\n"
@@ -78,8 +80,9 @@ class TestExecuteRoadmapInsertionRejectsCompleted:
 
     def test_insertion_accepts_pending_entry(self, tmp_path: Path) -> None:
         """Adding a PENDING entry succeeds."""
-        (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
-        _ = (tmp_path / ".cortex" / "memory-bank" / "roadmap.md").write_text(
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True)
+        _ = (memory_bank_dir / "roadmap.md").write_text(
             "# Roadmap\n\n## Blockers (ASAP Priority)\nNone\n\n"
             + "## Active Work (in progress)\n\n## Future Enhancements\n\n"
             + "## Pending plans (from .cortex/plans)\n- **Other** - PENDING\n"
@@ -131,21 +134,20 @@ class TestExecuteRoadmapRemoval:
     """Tests for _execute_roadmap_removal."""
 
     def test_removal_success(self, tmp_path: Path) -> None:
-        (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True)
         content = "# Roadmap\n\n## Pending\n\n- **Phase 50** - PENDING - Plan: x.\n"
-        _ = (tmp_path / ".cortex" / "memory-bank" / "roadmap.md").write_text(content)
+        _ = (memory_bank_dir / "roadmap.md").write_text(content)
         result = _execute_roadmap_removal(tmp_path, "Phase 50")
         assert result.status == "success"
         assert result.line_removed is not None
         assert result.line_removed >= 1
-        assert (
-            "Phase 50"
-            not in (tmp_path / ".cortex" / "memory-bank" / "roadmap.md").read_text()
-        )
+        assert "Phase 50" not in (memory_bank_dir / "roadmap.md").read_text()
 
     def test_removal_not_found_returns_error(self, tmp_path: Path) -> None:
-        (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
-        _ = (tmp_path / ".cortex" / "memory-bank" / "roadmap.md").write_text(
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True)
+        _ = (memory_bank_dir / "roadmap.md").write_text(
             "# Roadmap\n\n## Pending\n\n- **Other** - PENDING\n"
         )
         result = _execute_roadmap_removal(tmp_path, "Phase 50")
@@ -153,7 +155,7 @@ class TestExecuteRoadmapRemoval:
         assert result.line_removed is None
 
     def test_removal_file_not_found_returns_error(self, tmp_path: Path) -> None:
-        (tmp_path / ".cortex" / "memory-bank").mkdir(parents=True)
+        get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
         result = _execute_roadmap_removal(tmp_path, "Phase 50")
         assert result.status == "error"
         assert "not found" in (result.error or "").lower()
