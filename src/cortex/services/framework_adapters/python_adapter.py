@@ -125,9 +125,12 @@ class PythonAdapter(FrameworkAdapter):
     def _has_pytest_xdist(self) -> bool:
         """Return True if pytest-xdist is installed so we can use -n auto."""
         try:
+            python_exe = self._get_command("python")
             result = subprocess.run(
                 [
-                    self._get_command("pytest"),
+                    python_exe,
+                    "-m",
+                    "pytest",
                     "tests/",
                     "-n",
                     "auto",
@@ -153,9 +156,15 @@ class PythonAdapter(FrameworkAdapter):
         max_failures: int | None,
         include_slow_tests: bool = False,
     ) -> list[str]:
-        """Build pytest command with options (matches CI when include_slow_tests)."""
+        """Build pytest command with options (matches CI when include_slow_tests).
+
+        Uses python -m pytest so invocation matches CI (uv run python -m pytest).
+        """
+        python_exe = self._get_command("python")
         cmd = [
-            self._get_command("pytest"),
+            python_exe,
+            "-m",
+            "pytest",
             "tests/",  # Match CI: tests/
             "-v",
             "--cov=src/cortex",  # Match CI: --cov=src/cortex
@@ -165,7 +174,7 @@ class PythonAdapter(FrameworkAdapter):
             # --cov-fail-under=90
         ]
         if self._pytest_parallel_requested() and self._has_pytest_xdist():
-            cmd.extend(["-n", "auto"])  # Parallel workers for faster runs
+            cmd.extend(["-n", "auto"])
         if not include_slow_tests:
             cmd.extend(["-m", "not slow"])
         if max_failures:
@@ -174,8 +183,11 @@ class PythonAdapter(FrameworkAdapter):
 
     def _collect_test_count(self, include_slow_tests: bool = False) -> int | None:
         """Run pytest --collect-only -q and return total test count."""
+        python_exe = self._get_command("python")
         collect_cmd = [
-            self._get_command("pytest"),
+            python_exe,
+            "-m",
+            "pytest",
             "tests/",
             "--collect-only",
             "-q",

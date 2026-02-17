@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-02-17
+
+- **Commit (quality, docs, python_adapter, tests)** - Pre-commit: fix_errors, format, markdown lint (1 file fixed, 0 errors), type_check, quality, tests 4135 passed, 92.59% coverage. Updated quality.yml, commit-pipeline-phases.md, troubleshooting.md, python_adapter.py, test_analysis_operations.py; session review file included.
+- **Commit (mcp_stability quality: file size, function length)** - Fixed file size (420→400) and function length in mcp_stability.py: extracted config/helpers to mcp_stability_config.py (TrackedSemaphore, semaphore getters, tool sets, connection_error_fallback, to_timeout_value, record_usage_*); refactored_run_with_retry_and_record via _run_and_finalize; updated test to patch get_semaphore. Phase A and markdown lint passed; 4135 tests, 92.6% coverage.
+
 ## 2026-02-16
 
 - **Commit (type fixes test_query_memory_bank_operations)** - COMPLETE. Fixed type errors in `tests/tools/test_query_memory_bank_operations.py`: added type annotations (`QueryMemoryBankParams`, `MCPContext | None`) to mock handler functions, added `# type: ignore[reportPrivateUsage]` comments for private `_MEMORY_BANK_HANDLERS` access in tests, removed unused imports (`Awaitable`, `Callable`). All 3985 tests pass; 90.11% coverage.

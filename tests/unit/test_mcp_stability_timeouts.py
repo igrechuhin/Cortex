@@ -456,9 +456,9 @@ class TestResourceReadsUseSeparateSemaphore:
             new_callable=AsyncMock,
             return_value=health,
         ):
-            # If resource path used tool semaphore, patching _get_semaphore to raise would fail.
+            # If resource path used tool semaphore, patching get_semaphore to raise would fail.
             with patch(
-                "cortex.core.mcp_stability._get_semaphore",
+                "cortex.core.mcp_stability.get_semaphore",
                 side_effect=RuntimeError(
                     "tool semaphore must not be used for resources"
                 ),

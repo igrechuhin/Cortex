@@ -15,7 +15,9 @@ from cortex.analysis.models import (
     SummaryModel,
 )
 from cortex.core.models import DependencyGraphDict, FileOrganizationResult
-from cortex.refactoring.consolidation_detector import ConsolidationOpportunity
+from cortex.refactoring.consolidation_detector import (
+    ConsolidationOpportunity,
+)
 from cortex.refactoring.models import (
     RefactoringSuggestionType,
     ReorganizationImpactModel,
@@ -1241,30 +1243,37 @@ class TestSuggestRefactoringHandler:
     @pytest.mark.asyncio
     async def test_suggest_refactoring_consolidation(self, tmp_path: Path) -> None:
         """Test suggesting consolidation refactorings."""
-        # Arrange
+        # Arrange: patch get_managers where it is used (refactoring_operation_helpers)
+        # so the real ConsolidationDetector is not used (avoids slow SequenceMatcher in CI).
+        # get_manager() returns dict values as-is when they are not LazyManager, so the
+        # consolidation_detector entry must implement detect_opportunities directly.
+        sample_opportunity = ConsolidationOpportunity(
+            opportunity_id="opp1",
+            opportunity_type="similar_content",
+            affected_files=["a.md", "b.md"],
+            common_content="shared",
+            similarity_score=0.85,
+            token_savings=10,
+            suggested_action="Extract",
+            extraction_target="shared.md",
+            transclusion_syntax=["{{include:shared.md}}"],
+        )
+        mock_detector_mgr = MagicMock()
+        mock_detector_mgr.detect_opportunities = AsyncMock(
+            return_value=[sample_opportunity]
+        )
+        mock_split_mgr = MagicMock()
+        mock_reorg_mgr = MagicMock()
+        mock_managers = {
+            "consolidation_detector": mock_detector_mgr,
+            "split_recommender": mock_split_mgr,
+            "reorganization_planner": mock_reorg_mgr,
+        }
         with patch(
-            "cortex.tools.analysis_operations.get_managers"
+            "cortex.tools.refactoring_operation_helpers.get_managers",
+            new_callable=AsyncMock,
         ) as mock_get_managers:
-            mock_detector = MagicMock()
-            mock_detector.detect_opportunities = AsyncMock(
-                return_value=[{"id": "opp1", "similarity": 0.85}]
-            )
-
-            mock_detector_mgr = MagicMock()
-            mock_detector_mgr.get = AsyncMock(return_value=mock_detector)
-
-            mock_split_mgr = MagicMock()
-            mock_split_mgr.get = AsyncMock(return_value=MagicMock())
-
-            mock_reorg_mgr = MagicMock()
-            mock_reorg_mgr.get = AsyncMock(return_value=MagicMock())
-
-            mock_get_managers.return_value = {
-                "consolidation_detector": mock_detector_mgr,
-                "split_recommender": mock_split_mgr,
-                "reorganization_planner": mock_reorg_mgr,
-            }
-
+            mock_get_managers.return_value = mock_managers
             # Act
             result = await suggest_refactoring(
                 type="consolidation",

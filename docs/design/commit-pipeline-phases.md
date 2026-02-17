@@ -173,9 +173,15 @@ during Phase B (documentation updates, new files, code changes):
   from the beginning. Any code change during Step 12 requires re-running
   format and quality checks.
 - **Step 12 is MANDATORY**: Cannot be skipped, bypassed, or assumed
-  to have passed.
+  to have passed. Step 12.7 (tests with coverage) has no fallback—if
+  it fails (e.g. MCP connection closed), commit must be blocked; Phase A
+  results are not sufficient.
 - **Zero-errors policy applies**: All checks in Step 12 use the same
   zero-errors tolerance as Phase A.
+- **CI parity**: Step 12.7 runs the same test scope and coverage
+  threshold as the Code Quality workflow (`.github/workflows/quality.yml`).
+  Requiring that workflow as a status check for merge prevents pushes that
+  fail the quality gate from being merged.
 
 ### Phase C — Execution Order
 
@@ -190,6 +196,8 @@ Before `git add`, `git commit`, or `git push`:
 1. User explicitly requested commit (via `/cortex/commit`).
 2. All validation gates (Steps 0-12) passed.
 3. Step 12.2 type check was executed and returned success with 0 errors.
+4. Step 12.7 (tests with coverage) was executed and passed in this run
+   (not assumed from Phase A). See [Quality gate failed on push](../../guides/troubleshooting.md#quality-gate-failed-on-push-tests-or-coverage) if CI fails after push.
 
 ---
 

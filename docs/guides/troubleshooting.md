@@ -806,6 +806,31 @@ When the implement step or commit pipeline runs the quality gate (`execute_pre_c
 
 See also [Git and SSL certificate issues](#git-and-ssl-certificate-issues) for certificate configuration.
 
+#### Quality gate failed on push (tests or coverage)
+
+When the GitHub Actions "Code Quality" workflow fails on push (e.g. [run #244](https://github.com/igrechuhin/Cortex/actions)) with "Test suite failed" or "One or more quality checks failed", the commit passed local pre-commit but CI failed.
+
+**Symptoms**:
+
+- Push succeeds; GitHub Actions "Code Quality" job fails
+- Annotations mention tests step or coverage (e.g. "All tests must pass with at least 90% coverage")
+
+**What to do**:
+
+1. **Run the exact CI test command locally** (from repo root, with same Python/uv as CI):
+
+   ```bash
+   uv run python -m pytest tests/ -m "not slow" -n auto -v --cov=src/cortex --cov-report=xml --cov-report=term --cov-fail-under=90
+   ```
+
+   Fix any test failures or coverage shortfall before pushing again. The commit pipeline uses the same scope (`-m "not slow"`) and coverage threshold (90%); the Python adapter runs `python -m pytest` for CI parity.
+
+2. **Ensure Step 12 (Final Validation Gate) ran before commit.** If the agent skipped Step 12.7 (tests) due to a connection error or assumed Phase A was enough, that can cause "passed locally, failed in CI". Never commit without Step 12.7 having passed in that run.
+
+3. **Require status checks for merge.** In GitHub: **Settings → Branches → Branch protection** for `main` (and `develop` if used), add a rule that requires the "Code Quality" (or "quality") status check to pass before merging. That prevents merging pushes that failed the quality gate.
+
+**Reference**: The single source of truth for the CI test command is the "Run tests" step in [.github/workflows/quality.yml](../../.github/workflows/quality.yml); the workflow comment at the top of that file repeats the command for local parity.
+
 #### markdownlint-cli2 and npm (fix_markdown_lint)
 
 The `fix_markdown_lint` MCP tool and the commit pipeline require `markdownlint-cli2`. The tool looks for it in this order: (1) local `node_modules/.bin/markdownlint-cli2` (if present), (2) `markdownlint-cli2` in PATH, (3) `npx --yes markdownlint-cli2`.

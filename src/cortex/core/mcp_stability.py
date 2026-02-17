@@ -13,7 +13,6 @@ import time
 from collections.abc import Awaitable, Callable
 from inspect import Signature
 from pathlib import Path
-from types import TracebackType
 from typing import Any, Literal, Protocol, cast
 
 import anyio
@@ -21,7 +20,6 @@ import anyio
 from cortex.core.constants import (
     MCP_CONNECTION_RETRY_ATTEMPTS,
     MCP_CONNECTION_RETRY_DELAY_SECONDS,
-    MCP_MAX_CONCURRENT_RESOURCES,
     MCP_MAX_CONCURRENT_TOOLS,
     MCP_TOOL_TIMEOUT_SECONDS,
     PROGRESS_REPORT_INTERVAL_LONG_RUNNING_SECONDS,
@@ -32,34 +30,23 @@ from cortex.core.constants import (
 from cortex.core.context_logging import MCPContext
 from cortex.core.mcp_async_utils import cancel_and_drain_progress_task
 from cortex.core.mcp_failure_handler import MCPToolFailureHandler
+from cortex.core.mcp_stability_config import (
+    TrackedSemaphore,
+    connection_error_fallback,
+    get_long_running_semaphore,
+    get_resource_semaphore,
+    get_semaphore,
+    get_usage_context_init_lock,
+    long_running_tools_serialized,
+    record_usage_finish,
+    to_timeout_value,
+    tools_needing_frequent_progress,
+    tools_with_own_progress,
+)
 from cortex.core.models import ConnectionHealth, JsonValue, MCPToolArguments
 from cortex.core.usage_context import get_current_managers, set_current_managers
 
 logger = logging.getLogger(__name__)
-# Tools that report their own progress (file/step-based); skip wrapper time-based progress.
-# execute_pre_commit_checks removed: it only reports during tests, not setup; generic progress keeps connection alive.
-_TOOLS_WITH_OWN_PROGRESS = frozenset(
-    {
-        "fix_quality_issues",
-    }
-)
-# Tools that need more frequent progress reporting to prevent client idle timeout (-32000).
-# Wrapper sends progress every 2s; fix_markdown_lint also has its own heartbeat for double keep-alive.
-_TOOLS_NEEDING_FREQUENT_PROGRESS = frozenset(
-    {
-        "execute_pre_commit_checks",
-        "fix_markdown_lint",
-    }
-)
-# Serialize first-tool context setup so concurrent tool calls do not each run full init.
-_usage_context_init_lock: asyncio.Lock | None = None
-
-
-def _get_usage_context_init_lock() -> asyncio.Lock:
-    """Return the shared lock for usage context init (lazy-create for tests)."""
-    global _usage_context_init_lock
-    _usage_context_init_lock = _usage_context_init_lock or asyncio.Lock()
-    return _usage_context_init_lock
 
 
 async def _resolve_root_and_managers(
@@ -134,7 +121,7 @@ def ensure_usage_context[T](
     ) -> T:
         if get_current_managers() is not None:
             return await func(*args, **kwargs)
-        lock = _get_usage_context_init_lock()
+        lock = get_usage_context_init_lock()
         async with lock:
             if get_current_managers() is not None:
                 return await func(*args, **kwargs)
@@ -152,77 +139,9 @@ class _SignatureAware(Protocol):
     __signature__: Signature
 
 
-class TrackedSemaphore:
-    """Semaphore wrapper that tracks available count without accessing private attributes."""
-
-    def __init__(self, value: int) -> None:
-        """Initialize semaphore with initial value.
-
-        Args:
-            value: Initial semaphore value
-        """
-        self._semaphore = asyncio.Semaphore(value)
-        self._max_value = value
-        self._current_count = value
-
-    async def acquire(self) -> None:
-        """Acquire semaphore, decrementing available count."""
-        _ = await self._semaphore.acquire()
-        self._current_count -= 1
-
-    def release(self) -> None:
-        """Release semaphore, incrementing available count."""
-        self._semaphore.release()
-        self._current_count += 1
-
-    async def __aenter__(self) -> "TrackedSemaphore":
-        """Async context manager entry."""
-        await self.acquire()
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        """Async context manager exit."""
-        self.release()
-
-    @property
-    def available(self) -> int:
-        """Get available semaphore slots."""
-        return max(0, self._current_count)
-
-    @property
-    def current(self) -> int:
-        """Get current concurrent operations."""
-        return self._max_value - self.available
-
-
-# Global semaphore for limiting concurrent tool executions
-_concurrent_tools_semaphore: TrackedSemaphore | None = None
-# Semaphore for resource reads (Phase 69: separate from tools to avoid -32001 queueing)
-_concurrent_resources_semaphore: TrackedSemaphore | None = None
 # Connection state for diagnostics (Phase 32)
 _connection_closure_count: int = 0
 _connection_recovery_count: int = 0
-
-
-def _get_semaphore() -> TrackedSemaphore:
-    """Get or create the global semaphore for concurrent tool limits."""
-    global _concurrent_tools_semaphore
-    if _concurrent_tools_semaphore is None:
-        _concurrent_tools_semaphore = TrackedSemaphore(MCP_MAX_CONCURRENT_TOOLS)
-    return _concurrent_tools_semaphore
-
-
-def _get_resource_semaphore() -> TrackedSemaphore:
-    """Get or create the semaphore for concurrent resource read limits (Phase 69)."""
-    global _concurrent_resources_semaphore
-    if _concurrent_resources_semaphore is None:
-        _concurrent_resources_semaphore = TrackedSemaphore(MCP_MAX_CONCURRENT_RESOURCES)
-    return _concurrent_resources_semaphore
 
 
 async def _handle_timeout_error(
@@ -281,10 +200,10 @@ async def _handle_connection_error(
         + f"(attempt {attempt}/{MCP_CONNECTION_RETRY_ATTEMPTS}): {e}"
     )
     if attempt == MCP_CONNECTION_RETRY_ATTEMPTS:
+        fallback = connection_error_fallback.get(func_name, "")
+        base_msg = f"MCP tool {func_name} failed after {attempt} attempts (connection)."
         error: RuntimeError | ConnectionError = (
-            ConnectionError(
-                f"MCP tool {func_name} failed after {attempt} attempts (connection)"
-            )
+            ConnectionError(base_msg + fallback)
             if _is_connection_error(e)
             else RuntimeError(
                 f"MCP connection failed for {func_name} after {attempt} attempts"
@@ -367,11 +286,16 @@ async def _retry_path_health_and_recovery(
 
 
 def _raise_final_error(func_name: str, last_exception: Exception | None) -> None:
-    """Raise ConnectionError or RuntimeError after retries exhausted."""
+    """Raise ConnectionError or RuntimeError after retries exhausted.
+
+    Connection errors include fallback steps so the user can resolve without the tool.
+    """
     if last_exception and _is_connection_error(last_exception):
+        fallback = connection_error_fallback.get(func_name, "")
         raise ConnectionError(
             f"MCP tool {func_name} failed after "
-            + f"{MCP_CONNECTION_RETRY_ATTEMPTS} attempts (connection)"
+            + f"{MCP_CONNECTION_RETRY_ATTEMPTS} attempts (connection)."
+            + fallback
         ) from last_exception
     raise RuntimeError(
         f"MCP tool {func_name} failed after "
@@ -454,26 +378,6 @@ async def _execute_with_retry[T](
     raise RuntimeError(f"MCP tool {func_name} failed unexpectedly")
 
 
-def _to_timeout_value(value: JsonValue | None) -> float | None:
-    """Convert JsonValue to a valid timeout value.
-
-    Ensures we only accept float-compatible values and ignore invalid ones.
-    """
-    if value is None:
-        return None
-    # Recursive JsonValue narrows incorrectly in pyright/basedpyright
-    if isinstance(value, (int, float)):  # pyright: ignore[reportUnnecessaryIsInstance]
-        return float(value)
-    if isinstance(value, str):  # pyright: ignore[reportUnnecessaryIsInstance]
-        try:
-            return float(value)
-        except ValueError:
-            logger.warning("Invalid timeout value %r, falling back to defaults", value)
-            return None
-    logger.warning("Unsupported timeout type %s, falling back to defaults", type(value))
-    return None
-
-
 async def _progress_report_loop(
     ctx: JsonValue,
     timeout_sec: float,
@@ -487,7 +391,7 @@ async def _progress_report_loop(
     Handles cancellation gracefully: if the request is cancelled, the loop
     stops immediately without trying to send more progress updates.
     """
-    if _tool_name in _TOOLS_NEEDING_FREQUENT_PROGRESS:
+    if _tool_name in tools_needing_frequent_progress:
         interval = PROGRESS_REPORT_INTERVAL_VERY_FREQUENT_SECONDS
     elif timeout_sec >= 300:
         interval = PROGRESS_REPORT_INTERVAL_LONG_RUNNING_SECONDS
@@ -551,43 +455,6 @@ async def _progress_report_step(
         return False
 
 
-async def _record_usage_if_available(
-    tool_name: str,
-    duration_ms: float,
-    success: bool,
-    error_type: str | None,
-    kind: Literal["tool", "resource"] = "tool",
-) -> None:
-    """Record tool or resource usage if UsageTracker is available (Phase 29/43).
-
-    All tool and resource requests are tracked automatically to
-    .cortex/.cache/usage/events/{date}.json via UsageTracker, which uses
-    cache_json_access (read_modify_write_cache_json) for concurrent-safe writes.
-    """
-    try:
-        from cortex.managers.lazy_manager import LazyManager
-        from cortex.managers.usage_tracker import UsageTracker
-
-        managers = get_current_managers()
-        raw = managers.get("usage_tracker") if managers else None
-        if raw is None:
-            return
-        tracker = cast(
-            object,
-            await raw.get() if isinstance(raw, LazyManager) else raw,
-        )
-        if isinstance(tracker, UsageTracker):
-            await tracker.record_tool_usage(
-                tool_name=tool_name,
-                duration_ms=duration_ms,
-                success=success,
-                error_type=error_type,
-                handler_kind=kind,
-            )
-    except Exception as e:
-        logger.debug("Usage recording skipped or failed: %s (%s)", type(e).__name__, e)
-
-
 def _stability_params(
     timeout: JsonValue | None,
     stability_timeout: JsonValue | None,
@@ -600,8 +467,8 @@ def _stability_params(
         ctx is extracted separately because it's an MCPContext object that
         cannot be serialized through Pydantic's model_dump().
     """
-    st = _to_timeout_value(stability_timeout)
-    tv = _to_timeout_value(timeout)
+    st = to_timeout_value(stability_timeout)
+    tv = to_timeout_value(timeout)
     effective = st or tv or float(MCP_TOOL_TIMEOUT_SECONDS)
     # Extract ctx separately - it's an MCPContext object, not JSON-serializable
     ctx = kwargs.get("ctx")
@@ -627,7 +494,7 @@ def _create_progress_task_if_needed(
     fix_markdown_lint gets both wrapper progress (2s keep-alive) and its own file progress.
     """
     # Never create time-based progress for tools that report their own progress
-    if tool_name in _TOOLS_WITH_OWN_PROGRESS:
+    if tool_name in tools_with_own_progress:
         return None
 
     if (
@@ -656,7 +523,7 @@ async def _cancel_progress_and_report_done(
     if progress_task is None:
         return
     await cancel_and_drain_progress_task(progress_task)
-    if tool_name is not None and tool_name in _TOOLS_WITH_OWN_PROGRESS:
+    if tool_name is not None and tool_name in tools_with_own_progress:
         return
     mcp_ctx = cast(MCPContext | None, ctx)
     try:
@@ -676,20 +543,6 @@ async def _cancel_progress_and_report_done(
             tool_name or "<unknown>",
             e,
         )
-
-
-async def _record_usage_finish(
-    tool_name: str,
-    start_ns: int,
-    success: bool,
-    error_type: str | None,
-    kind: Literal["tool", "resource"],
-) -> None:
-    """Record usage after tool run (duration and outcome)."""
-    duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000.0
-    await _record_usage_if_available(
-        tool_name, duration_ms, success, error_type, kind=kind
-    )
 
 
 def _prepare_execution_context(
@@ -712,7 +565,7 @@ def _prepare_execution_context(
     Returns:
         Tuple of (semaphore, effective_timeout, kwargs_model, ctx, progress_task, start_ns)
     """
-    semaphore = _get_resource_semaphore() if kind == "resource" else _get_semaphore()
+    semaphore = get_resource_semaphore() if kind == "resource" else get_semaphore()
     effective_timeout, kwargs_model, ctx = _stability_params(
         timeout, stability_timeout, kwargs
     )
@@ -735,7 +588,7 @@ async def _finalize_execution(
 ) -> None:  # Finalize execution: cancel progress and record usage.
     if not was_cancelled:
         await _cancel_progress_and_report_done(progress_task, ctx, func_name)
-    await _record_usage_finish(func_name, start_ns, success, error_type, kind=kind)
+    await record_usage_finish(func_name, start_ns, success, error_type, kind=kind)
 
 
 async def _handle_cancellation(
@@ -782,6 +635,30 @@ async def _execute_with_error_handling[T](
         raise
 
 
+async def _run_and_finalize[T](
+    execute_fn: Callable[[], Awaitable[tuple[T, bool, str | None, bool]]],
+    progress_task: asyncio.Task[None] | None,
+    ctx: JsonValue | None,
+    func_name: str,
+    start_ns: int,
+    kind: Literal["tool", "resource"],
+    use_serial_semaphore: bool = False,
+) -> T:
+    """Run execute_fn and finalize (cancel progress, record usage)."""
+
+    async def _do() -> T:
+        result, s, et, wc = await execute_fn()
+        await _finalize_execution(
+            progress_task, ctx, func_name, start_ns, wc, s, et, kind
+        )
+        return result
+
+    if use_serial_semaphore:
+        async with get_long_running_semaphore():
+            return await _do()
+    return await _do()
+
+
 async def _run_with_retry_and_record[T](
     func: Callable[..., Awaitable[T]],
     args: tuple[JsonValue, ...],
@@ -791,34 +668,29 @@ async def _run_with_retry_and_record[T](
     kind: Literal["tool", "resource"] = "tool",
     enable_progress: bool = False,
 ) -> T:
-    """Run func with retry and record usage (used by with_mcp_stability).
-
-    Handles cancellation gracefully: if the request is cancelled, we cancel
-    the progress task immediately and re-raise without trying to send final
-    progress updates, preventing connection errors.
-    """
+    """Run func with retry and record usage. Long-running tools are serialized."""
     semaphore, effective_timeout, kwargs_model, ctx, progress_task, start_ns = (
         _prepare_execution_context(
             timeout, stability_timeout, kwargs, kind, enable_progress, func.__name__
         )
     )
-    success, error_type, was_cancelled = True, None, False
-    try:
-        result, success, error_type, was_cancelled = await _execute_with_error_handling(
+
+    async def _execute_and_finalize() -> tuple[T, bool, str | None, bool]:
+        return await _execute_with_error_handling(
             func, semaphore, effective_timeout, args, kwargs_model, ctx, progress_task
         )
-        return result
-    finally:
-        await _finalize_execution(
-            progress_task,
-            ctx,
-            func.__name__,
-            start_ns,
-            was_cancelled,
-            success,
-            error_type,
-            kind,
-        )
+
+    return await _run_and_finalize(
+        _execute_and_finalize,
+        progress_task,
+        ctx,
+        func.__name__,
+        start_ns,
+        kind,
+        use_serial_semaphore=(
+            kind == "tool" and func.__name__ in long_running_tools_serialized
+        ),
+    )
 
 
 async def with_mcp_stability[T](
@@ -1056,7 +928,7 @@ async def check_connection_health() -> ConnectionHealth:
     Returns:
         Connection health metrics
     """
-    semaphore = _get_semaphore()
+    semaphore = get_semaphore()
     available = semaphore.available
     current = semaphore.current
 

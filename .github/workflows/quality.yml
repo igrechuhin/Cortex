@@ -3,6 +3,10 @@ name: Code Quality
 # Option A (quality-issues-missed-investigation): (1) Ruff uses pyproject.toml
 # rule set only—do NOT add --select F,E,W. (2) Quality includes type_check—
 # this job runs format, lint, type_check, file sizes, function lengths, tests.
+#
+# Single source of truth for test command (must match pre-commit / Python adapter):
+#   uv run python -m pytest tests/ -m "not slow" -n auto -v --cov=src/cortex --cov-report=xml --cov-report=term --cov-fail-under=90
+# If quality gate fails on push, run this exact command locally before pushing again.
 
 on:
   push:
@@ -277,7 +281,7 @@ jobs:
         id: tests
         run: |
           echo "::group::Running test suite (excluding slow integration tests)"
-          # Exclude slow tests (-m "not slow") so the job finishes in minutes; matches commit pipeline.
+          echo "To reproduce locally (CI parity): uv run python -m pytest tests/ -m \"not slow\" -n auto -v --cov=src/cortex --cov-report=xml --cov-report=term --cov-fail-under=90"
           if ! uv run python -m pytest tests/ -m "not slow" -n auto -v --cov=src/cortex --cov-report=xml --cov-report=term --cov-fail-under=90; then
             echo "::error::Test suite failed. All tests must pass with at least 90% coverage."
             exit 1
