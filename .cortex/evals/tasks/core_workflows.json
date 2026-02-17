@@ -1,0 +1,171 @@
+[
+  {
+    "id": "context-bugfix-validation-module",
+    "name": "Load context for a bug fix in the validation module",
+    "description": "Agent needs to load sufficient context to diagnose and fix a bug in validation helpers or operations without overloading tokens.",
+    "category": "context",
+    "expected_tools": ["load_context", "validate"],
+    "expected_outcome": "Relevant validation files are loaded with high precision and minimal unused context.",
+    "token_budget_baseline": 10000,
+    "common_failure_modes": [
+      "Irrelevant memory bank files loaded",
+      "Missing validation_schema or validation_operations sections"
+    ],
+    "usage_query": "validation"
+  },
+  {
+    "id": "context-add-new-mcp-tool",
+    "name": "Load context for adding a new MCP tool",
+    "description": "Agent prepares to add a new MCP tool and needs patterns from existing tools, managers, and path resolver utilities.",
+    "category": "context",
+    "expected_tools": ["load_context", "query_memory_bank"],
+    "expected_outcome": "Existing tool implementations and path resolver patterns are loaded without unrelated docs.",
+    "token_budget_baseline": 15000,
+    "common_failure_modes": [
+      "Does not include path_resolver or cache_utils patterns",
+      "Loads too many unrelated plans"
+    ],
+    "usage_query": "mcp.tool"
+  },
+  {
+    "id": "context-architecture-review-tool-registration",
+    "name": "Load context for architectural review of the tool registration system",
+    "description": "Agent reviews how tools are registered and categorized (tool_categories, __init__, prompts) to propose improvements.",
+    "category": "context",
+    "expected_tools": ["load_context", "query_memory_bank"],
+    "expected_outcome": "Tool registration and categorization modules are loaded with minimal noise.",
+    "token_budget_baseline": 20000,
+    "common_failure_modes": [
+      "Misses tool_categories definitions",
+      "Loads too many unrelated tests instead of core modules"
+    ],
+    "usage_query": "tool_categories"
+  },
+  {
+    "id": "precommit-after-new-python-module",
+    "name": "Run pre-commit checks after adding a new Python module with tests",
+    "description": "Agent runs the quality gate after new Python code and tests are added.",
+    "category": "pre_commit",
+    "expected_tools": ["execute_pre_commit_checks"],
+    "expected_outcome": "execute_pre_commit_checks completes successfully without quality or type errors.",
+    "token_budget_baseline": 0,
+    "common_failure_modes": [
+      "Type-check failures not fixed before rerun",
+      "Quality violations (function length, file size) left unresolved"
+    ],
+    "usage_query": "execute_pre_commit_checks"
+  },
+  {
+    "id": "precommit-quality-fixes-multi-file",
+    "name": "Run quality fixes after modifying multiple files",
+    "description": "Agent applies automatic quality fixes across several modules, then verifies with the quality gate.",
+    "category": "pre_commit",
+    "expected_tools": ["fix_quality_issues", "execute_pre_commit_checks"],
+    "expected_outcome": "All lint/format/type issues are fixed and the quality gate passes.",
+    "token_budget_baseline": 0,
+    "common_failure_modes": [
+      "fix_quality_issues fails due to connection issues and is not retried",
+      "execute_pre_commit_checks reports persistent type errors"
+    ],
+    "usage_query": "fix_quality_issues"
+  },
+  {
+    "id": "precommit-full-commit-pipeline-feature",
+    "name": "Execute full commit pipeline for a feature addition",
+    "description": "Agent runs the full pre-commit Phase A/B helpers before a feature commit.",
+    "category": "pre_commit",
+    "expected_tools": ["execute_pre_commit_checks", "run_preflight_checks"],
+    "expected_outcome": "Preflight and quality gate complete with no blocking errors.",
+    "token_budget_baseline": 0,
+    "common_failure_modes": [
+      "Phase A preflight not run before quality gate",
+      "Tests timing out due to missing timeouts"
+    ],
+    "usage_query": "run_preflight_checks"
+  },
+  {
+    "id": "plan-create-dark-mode-plan",
+    "name": "Create a plan for adding dark mode support",
+    "description": "Agent creates a structured plan and registers it in the roadmap for a dark mode feature.",
+    "category": "plan",
+    "expected_tools": ["create_plan", "register_plan_in_roadmap", "add_roadmap_entry"],
+    "expected_outcome": "Plan file is created under plans/, registered in roadmap, and ready for implement.",
+    "token_budget_baseline": 0,
+    "common_failure_modes": [
+      "Plan not registered in roadmap",
+      "Roadmap entry missing plan path"
+    ],
+    "usage_query": "create_plan"
+  },
+  {
+    "id": "plan-register-completed-plan",
+    "name": "Register a completed plan and update roadmap",
+    "description": "Agent uses complete_plan to move a finished plan from roadmap to activeContext and archive.",
+    "category": "plan",
+    "expected_tools": ["complete_plan", "append_progress_entry", "append_active_context_entry"],
+    "expected_outcome": "Roadmap no longer lists the completed plan, activeContext and progress are updated, and the plan file is archived.",
+    "token_budget_baseline": 0,
+    "common_failure_modes": [
+      "Roadmap entry removed without updating activeContext",
+      "Plan file left in root plans directory instead of archive"
+    ],
+    "usage_query": "complete_plan"
+  },
+  {
+    "id": "plan-find-and-implement-next-roadmap-item",
+    "name": "Find and implement the next pending roadmap item",
+    "description": "Agent uses roadmap and implement workflow to pick and execute the next pending work item.",
+    "category": "plan",
+    "expected_tools": ["manage_file", "load_context"],
+    "expected_outcome": "Correct next roadmap item is selected and its implementation is started with appropriate context.",
+    "token_budget_baseline": 10000,
+    "common_failure_modes": [
+      "Skipping blockers section",
+      "Not loading roadmap.md before implement"
+    ],
+    "usage_query": "roadmap"
+  },
+  {
+    "id": "memory-update-active-context",
+    "name": "Read activeContext and update completed work",
+    "description": "Agent reads activeContext, records newly completed work, and adds next steps.",
+    "category": "memory_bank",
+    "expected_tools": ["manage_file", "append_active_context_entry"],
+    "expected_outcome": "Newly completed work is recorded under the correct date with clear summaries.",
+    "token_budget_baseline": 0,
+    "common_failure_modes": [
+      "Directly overwriting activeContext.md instead of using append tool",
+      "Incorrect date formats in entries"
+    ],
+    "usage_query": "activeContext"
+  },
+  {
+    "id": "memory-validate-memory-bank-files",
+    "name": "Validate all memory bank files and fix issues",
+    "description": "Agent validates schema, duplication, timestamps, and roadmap sync for memory bank files.",
+    "category": "memory_bank",
+    "expected_tools": ["validate"],
+    "expected_outcome": "Schema, duplication, timestamps, and roadmap_sync checks all pass for memory bank.",
+    "token_budget_baseline": 0,
+    "common_failure_modes": [
+      "Running validate without roadmap_sync check",
+      "Ignoring timestamp format violations"
+    ],
+    "usage_query": "roadmap_sync"
+  },
+  {
+    "id": "memory-search-load-context-history",
+    "name": "Search usage history for recent load_context calls",
+    "description": "Agent inspects recent load_context calls using usage analytics to understand context effectiveness.",
+    "category": "memory_bank",
+    "expected_tools": ["query_usage"],
+    "expected_outcome": "Recent load_context usage is summarized for follow-up analysis.",
+    "token_budget_baseline": 0,
+    "common_failure_modes": [
+      "Using low-level usage tools instead of consolidated query_usage",
+      "Not filtering by load_context tool name"
+    ],
+    "usage_query": "load_context"
+  }
+]
+

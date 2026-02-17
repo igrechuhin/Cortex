@@ -416,11 +416,9 @@ async def _validate_markdown_prerequisites(
 
 
 async def _get_markdown_files_to_process(
-    root_path: Path, check_all_files: bool, include_untracked_markdown: bool
+    root_path: Path, include_untracked_markdown: bool
 ) -> list[Path]:
-    """Get list of markdown files to process."""
-    if check_all_files:
-        return await _get_all_markdown_files(root_path)
+    """Get git-modified (and optionally untracked) markdown files to process."""
     return await _get_modified_markdown_files(root_path, include_untracked_markdown)
 
 
@@ -774,10 +772,13 @@ async def _fix_markdown_lint_impl(
     root_path: Path,
     include_untracked_markdown: bool,
     dry_run: bool,
-    check_all_files: bool,
     ctx: MCPContext | None = None,
 ) -> str:
-    """Core implementation for fix_markdown_lint MCP tool."""
+    """Core implementation for fix_markdown_lint MCP tool.
+
+    Always scopes to git-modified (+ optionally untracked) markdown files.
+    For full-repo lint, use ``markdownlint-cli2 --fix`` directly from the shell.
+    """
     validation_error, markdownlint_cmd, config_path = (
         await _validate_markdown_prerequisites(root_path)
     )
@@ -785,12 +786,10 @@ async def _fix_markdown_lint_impl(
         return _apply_validation_error_hint(validation_error)
     assert markdownlint_cmd is not None
     files = await _get_markdown_files_to_process(
-        root_path, check_all_files, include_untracked_markdown
+        root_path, include_untracked_markdown
     )
     if not files:
         return create_empty_success_response()
-    if check_all_files and len(files) > MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL:
-        files = files[:MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL]
     return await _run_markdownlint_with_cache(
         root_path, files, markdownlint_cmd, config_path, dry_run, ctx
     )
@@ -864,7 +863,6 @@ async def _fix_markdown_lint_run_or_error(
     root_path: Path,
     include_untracked_markdown: bool,
     dry_run: bool,
-    check_all_files: bool,
 ) -> tuple[str, bool]:
     """Run fix_markdown_lint impl; return (result_json, success)."""
     try:
@@ -872,7 +870,6 @@ async def _fix_markdown_lint_run_or_error(
             root_path,
             include_untracked_markdown,
             dry_run,
-            check_all_files,
             ctx,
         )
         return (result, True)
