@@ -877,6 +877,10 @@ class LoadContextResult(ToolResultBase):
     utilization: float
     excluded_files: list[str] = Field(default_factory=list)
     relevance_scores: dict[str, float] = Field(default_factory=dict)
+    role: str | None = Field(
+        default=None,
+        description="Agent role used for this context load (e.g. feature, quality).",
+    )
 
 
 class LoadContextErrorResult(ErrorResultBase):
@@ -885,6 +889,7 @@ class LoadContextErrorResult(ErrorResultBase):
     task_description: str | None = None
     token_budget: int | None = None
     strategy: str | None = None
+    role: str | None = None
 
 
 # Union type for load_context return

@@ -5,53 +5,115 @@ Helper functions for building metadata structures for context loading.
 """
 
 from cortex.core.models import JsonValue, ModelDict
+from cortex.optimization.agent_roles import AgentRole, get_role_profile
 
 
 def calculate_metadata_relevance_scores(
-    task_description: str, files_metadata: dict[str, ModelDict]
+    task_description: str,
+    files_metadata: dict[str, ModelDict],
+    agent_role: AgentRole | None = None,
 ) -> dict[str, float]:
     """Calculate relevance scores for files using metadata only.
 
     Args:
         task_description: Task description
         files_metadata: File metadata dictionary
+        agent_role: Optional agent role for role-based scoring adjustments
 
     Returns:
         Dictionary mapping file names to relevance scores
     """
+    task_keywords = _extract_task_keywords(task_description)
+    relevance_scores = _calculate_base_scores(task_keywords, files_metadata)
+
+    # Apply role-based adjustments if agent_role is provided
+    if agent_role is not None:
+        relevance_scores = _apply_role_based_adjustments(relevance_scores, agent_role)
+
+    return relevance_scores
+
+
+def _extract_task_keywords(task_description: str) -> list[str]:
+    """Extract keywords from task description."""
     import re
 
-    task_keywords = [
+    return [
         w.lower()
         for w in re.findall(r"\b[a-z0-9][-a-z0-9]*\b", task_description.lower())
         if len(w) > 2
     ]
 
+
+def _calculate_base_scores(
+    task_keywords: list[str], files_metadata: dict[str, ModelDict]
+) -> dict[str, float]:
+    """Calculate base relevance scores before role adjustments."""
     relevance_scores: dict[str, float] = {}
     for file_name, metadata in files_metadata.items():
-        score = 0.0
-        file_name_lower = file_name.lower()
-        for keyword in task_keywords:
-            if keyword in file_name_lower:
-                score += 0.3
-                break
-
-        sections_list = metadata.get("sections", [])
-        if isinstance(sections_list, list):
-            for section in sections_list[:5]:
-                if isinstance(section, dict):
-                    heading = str(section.get("heading", "")).lower()
-                    for keyword in task_keywords:
-                        if keyword in heading:
-                            score += 0.2
-                            break
-
-        if metadata.get("last_modified"):
-            score += 0.1
-
+        score = _score_file(file_name, metadata, task_keywords)
         relevance_scores[file_name] = min(score, 1.0)
-
     return relevance_scores
+
+
+def _score_file(file_name: str, metadata: ModelDict, task_keywords: list[str]) -> float:
+    """Score a single file's metadata for relevance."""
+    score = 0.0
+    file_name_lower = file_name.lower()
+
+    # Filename keyword match
+    for keyword in task_keywords:
+        if keyword in file_name_lower:
+            score += 0.3
+            break
+
+    # Section heading keyword match
+    sections_list = metadata.get("sections", [])
+    if isinstance(sections_list, list):
+        for section in sections_list[:5]:
+            if isinstance(section, dict):
+                heading = str(section.get("heading", "")).lower()
+                for keyword in task_keywords:
+                    if keyword in heading:
+                        score += 0.2
+                        break
+
+    # Recency bonus
+    if metadata.get("last_modified"):
+        score += 0.1
+
+    return score
+
+
+def _apply_role_based_adjustments(
+    relevance_scores: dict[str, float], agent_role: AgentRole
+) -> dict[str, float]:
+    """Apply role-based adjustments to relevance scores.
+
+    Files in the role's context_focus get a boost, while files not
+    in the focus get a slight penalty. This helps prioritize the most
+    relevant files for each agent role.
+
+    Args:
+        relevance_scores: Base relevance scores
+        agent_role: Agent role to use for adjustments
+
+    Returns:
+        Adjusted relevance scores
+    """
+    profile = get_role_profile(agent_role)
+    adjusted_scores = relevance_scores.copy()
+
+    # Boost scores for files in the role's context focus
+    for file_name in adjusted_scores:
+        if file_name in profile.context_focus:
+            # Boost by 0.3, capped at 1.0
+            adjusted_scores[file_name] = min(adjusted_scores[file_name] + 0.3, 1.0)
+        elif adjusted_scores[file_name] > 0.0:
+            # Apply slight penalty to files not in focus (0.9x multiplier)
+            # but only if they have some relevance already
+            adjusted_scores[file_name] *= 0.9
+
+    return adjusted_scores
 
 
 def extract_sections_from_metadata(

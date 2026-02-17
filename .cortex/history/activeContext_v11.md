@@ -22,6 +22,10 @@
 
 - ✅ **Phase 57: Evaluation-Driven Tool Improvement** - COMPLETE (2026-02-17) - First iteration of Phase 57 delivered the evaluation framework (EvalTask, EvalSuiteResult, EvalAnalysis, ToolEvaluationHarness), run_tool_evaluation MCP tool, a seeded core_workflows.json suite, and a new analyze_error_patterns MCP tool that caches top error patterns to evals/error_patterns.json; automated description optimization, A/B testing, and evaluation dashboards remain for future work.
 
+- ✅ **Phase 58: Agent role detection for load_context** - COMPLETE (2026-02-17) - Implemented AgentRole enum and role profiles module, added keyword-based role detection and normalization helpers, and extended load_context tool to accept an optional role parameter with automatic role inference and structured output including the inferred role. Added tests for agent role heuristics and load_context role field, and ensured quality gate, type checks, and full test suite pass (4185 tests, 92.56% coverage).
+
+- ✅ **Commit (function length violations: phase4_context_operations, roadmap_operations)** - COMPLETE (2026-02-17) - Fixed function length violations in phase4_context_operations.py (3 violations) and roadmap_operations.py (1 violation) by extracting helper functions and refactoring dispatch logic. Extracted_finalize_hybrid_metadata_context,_prepare_roadmap_for_removal,_find_and_validate_removal_line, _perform_roadmap_removal,_dispatch_by_depth, _unpack_loading_data,_dispatch_metadata_only_loading, and_dispatch_full_or_summary_loading. All quality checks pass; 4189 tests, 92.44% coverage.
+
 ## Completed Work (2026-02-16)
 
 - **Summary (2026-02-16)** - 1 entries archived.

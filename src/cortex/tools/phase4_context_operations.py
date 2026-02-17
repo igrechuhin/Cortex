@@ -16,6 +16,7 @@ from cortex.core.session_logger import log_load_context_call
 from cortex.core.token_counter import TokenCounter
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
+from cortex.optimization.agent_roles import AgentRole
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.optimization.optimization_strategies import OptimizationResult
@@ -158,6 +159,7 @@ async def _handle_metadata_only_depth(
     project_root: Path | None,
     optimization_config: OptimizationConfig,
     fs_manager: FileSystemManager,
+    agent_role: AgentRole | None = None,
 ) -> str:
     """Handle metadata_only depth with hybrid retrieval strategy.
 
@@ -169,6 +171,7 @@ async def _handle_metadata_only_depth(
         project_root: Project root for logging
         optimization_config: Optimization configuration
         fs_manager: File system manager
+        agent_role: Optional agent role for role-based context selection
 
     Returns:
         JSON string with metadata-only context map
@@ -181,6 +184,7 @@ async def _handle_metadata_only_depth(
         project_root,
         optimization_config,
         fs_manager,
+        agent_role,
     )
 
 
@@ -193,6 +197,7 @@ async def _handle_full_or_summary_depth(
     strategy: str,
     depth: str,
     project_root: Path | None,
+    agent_role: AgentRole | None = None,
 ) -> str:
     """Handle full or summary depth loading.
 
@@ -205,10 +210,14 @@ async def _handle_full_or_summary_depth(
         strategy: Loading strategy
         depth: Content depth level (summary or full)
         project_root: Project root for logging
+        agent_role: Optional agent role for role-based context selection
 
     Returns:
         JSON string with loaded context results
     """
+    # Note: agent_role is accepted here for API consistency but not yet
+    # used in full/summary depth loading. Role-based selection is currently
+    # only implemented for metadata_only depth.
     result = await _load_context_with_content(
         context_optimizer,
         metadata_index,
@@ -223,28 +232,100 @@ async def _handle_full_or_summary_depth(
     )
 
 
-async def _dispatch_load_context_by_depth(
-    context_optimizer: ContextOptimizer,
-    metadata_index: MetadataIndex,
-    fs_manager: FileSystemManager,
+async def load_context_impl(
+    mgrs: ManagersDict,
     task_description: str,
-    effective_budget: int,
+    token_budget: int | None,
+    strategy: str,
+    depth: str = "full",
+    project_root: Path | None = None,
+    agent_role: AgentRole | None = None,
+) -> str:
+    """Implementation logic for load_context tool.
+
+    Args:
+        mgrs: Dictionary of managers
+        task_description: Task description
+        token_budget: Token budget
+        strategy: Loading strategy
+        depth: Content depth level
+        project_root: Project root path
+        agent_role: Optional agent role for role-based context selection
+
+    Returns:
+        JSON string with loaded context
+    """
+    loading_data = await _prepare_context_loading(mgrs, token_budget)
+    return await _dispatch_by_depth(
+        loading_data, task_description, strategy, depth, project_root, agent_role
+    )
+
+
+async def _dispatch_by_depth(
+    loading_data: tuple[
+        int, OptimizationConfig, ContextOptimizer, MetadataIndex, FileSystemManager
+    ],
+    task_description: str,
     strategy: str,
     depth: str,
     project_root: Path | None,
-    optimization_config: OptimizationConfig,
+    agent_role: AgentRole | None,
 ) -> str:
-    """Dispatch load_context based on depth parameter."""
+    """Dispatch context loading based on depth parameter."""
+    components = _unpack_loading_data(loading_data)
     if depth == "metadata_only":
-        return await _handle_metadata_only_depth(
-            metadata_index,
-            task_description,
-            effective_budget,
-            strategy,
-            project_root,
-            optimization_config,
-            fs_manager,
+        return await _dispatch_metadata_only_loading(
+            components, task_description, strategy, project_root, agent_role
         )
+    return await _dispatch_full_or_summary_loading(
+        components, task_description, strategy, depth, project_root, agent_role
+    )
+
+
+def _unpack_loading_data(
+    loading_data: tuple[
+        int, OptimizationConfig, ContextOptimizer, MetadataIndex, FileSystemManager
+    ],
+) -> tuple[int, OptimizationConfig, ContextOptimizer, MetadataIndex, FileSystemManager]:
+    """Unpack loading data tuple."""
+    return loading_data
+
+
+async def _dispatch_metadata_only_loading(
+    components: tuple[
+        int, OptimizationConfig, ContextOptimizer, MetadataIndex, FileSystemManager
+    ],
+    task_description: str,
+    strategy: str,
+    project_root: Path | None,
+    agent_role: AgentRole | None,
+) -> str:
+    """Dispatch metadata_only depth loading."""
+    effective_budget, optimization_config, _, metadata_index, fs_manager = components
+    return await _handle_metadata_only_depth(
+        metadata_index,
+        task_description,
+        effective_budget,
+        strategy,
+        project_root,
+        optimization_config,
+        fs_manager,
+        agent_role,
+    )
+
+
+async def _dispatch_full_or_summary_loading(
+    components: tuple[
+        int, OptimizationConfig, ContextOptimizer, MetadataIndex, FileSystemManager
+    ],
+    task_description: str,
+    strategy: str,
+    depth: str,
+    project_root: Path | None,
+    agent_role: AgentRole | None,
+) -> str:
+    """Dispatch full or summary depth loading."""
+    effective_budget, _, context_optimizer, metadata_index, fs_manager = components
     return await _handle_full_or_summary_depth(
         context_optimizer,
         metadata_index,
@@ -254,35 +335,7 @@ async def _dispatch_load_context_by_depth(
         strategy,
         depth,
         project_root,
-    )
-
-
-async def load_context_impl(
-    mgrs: ManagersDict,
-    task_description: str,
-    token_budget: int | None,
-    strategy: str,
-    depth: str = "full",
-    project_root: Path | None = None,
-) -> str:
-    """Implementation logic for load_context tool."""
-    (
-        effective_budget,
-        optimization_config,
-        context_optimizer,
-        metadata_index,
-        fs_manager,
-    ) = await _prepare_context_loading(mgrs, token_budget)
-    return await _dispatch_load_context_by_depth(
-        context_optimizer,
-        metadata_index,
-        fs_manager,
-        task_description,
-        effective_budget,
-        strategy,
-        depth,
-        project_root,
-        optimization_config,
+        agent_role,
     )
 
 
@@ -456,11 +509,21 @@ def _build_hybrid_metadata_response(
 async def _prepare_metadata_and_relevance(
     metadata_index: MetadataIndex,
     task_description: str,
+    agent_role: AgentRole | None = None,
 ) -> tuple[dict[str, ModelDict], dict[str, float]]:
-    """Prepare files metadata and calculate relevance scores."""
+    """Prepare files metadata and calculate relevance scores.
+
+    Args:
+        metadata_index: Metadata index
+        task_description: Task description
+        agent_role: Optional agent role for role-based scoring
+
+    Returns:
+        Tuple of files metadata and relevance scores
+    """
     files_metadata = await _collect_files_metadata(metadata_index)
     relevance_scores = calculate_metadata_relevance_scores(
-        task_description, files_metadata
+        task_description, files_metadata, agent_role
     )
     return files_metadata, relevance_scores
 
@@ -498,15 +561,16 @@ async def _load_always_loaded_and_metadata(
     metadata_index: MetadataIndex,
     fs_manager: FileSystemManager,
     task_description: str,
+    agent_role: AgentRole | None = None,
 ) -> tuple[dict[str, str], int, dict[str, ModelDict], dict[str, float]]:
-    """Load always-loaded content and prepare metadata."""
+    """Load always-loaded content and prepare metadata with role-based scoring."""
     always_loaded_content, always_loaded_tokens = (
         await _load_and_calculate_always_loaded(
             always_load_sections, metadata_index, fs_manager
         )
     )
     files_metadata, relevance_scores = await _prepare_metadata_and_relevance(
-        metadata_index, task_description
+        metadata_index, task_description, agent_role
     )
     return always_loaded_content, always_loaded_tokens, files_metadata, relevance_scores
 
@@ -516,6 +580,7 @@ async def _prepare_hybrid_metadata_context(
     task_description: str,
     always_load_sections: dict[str, list[str]],
     fs_manager: FileSystemManager,
+    agent_role: AgentRole | None = None,
 ) -> tuple[
     dict[str, str],
     int,
@@ -524,11 +589,31 @@ async def _prepare_hybrid_metadata_context(
     list[dict[str, object]],
     int,
 ]:
-    """Prepare hybrid metadata context."""
+    """Prepare hybrid metadata context with role-based scoring."""
+    loaded_data = await _load_always_loaded_and_metadata(
+        always_load_sections,
+        metadata_index,
+        fs_manager,
+        task_description,
+        agent_role,
+    )
+    return _finalize_hybrid_metadata_context(loaded_data, always_load_sections)
+
+
+def _finalize_hybrid_metadata_context(
+    loaded_data: tuple[dict[str, str], int, dict[str, ModelDict], dict[str, float]],
+    always_load_sections: dict[str, list[str]],
+) -> tuple[
+    dict[str, str],
+    int,
+    dict[str, ModelDict],
+    dict[str, float],
+    list[dict[str, object]],
+    int,
+]:
+    """Finalize hybrid metadata context from loaded data."""
     always_loaded_content, always_loaded_tokens, files_metadata, relevance_scores = (
-        await _load_always_loaded_and_metadata(
-            always_load_sections, metadata_index, fs_manager, task_description
-        )
+        loaded_data
     )
     files_map, total_tokens_available = _build_filtered_files_map(
         files_metadata, relevance_scores, always_load_sections
@@ -577,21 +662,9 @@ async def _load_context_metadata_only(
     project_root: Path | None,
     optimization_config: OptimizationConfig,
     fs_manager: FileSystemManager,
+    agent_role: AgentRole | None = None,
 ) -> str:
-    """Load context map with hybrid retrieval (always-load sections + metadata).
-
-    Args:
-        metadata_index: Metadata index manager
-        task_description: Task description
-        token_budget: Token budget (used for logging)
-        strategy: Strategy used
-        project_root: Project root for logging
-        optimization_config: Optimization configuration
-        fs_manager: File system manager
-
-    Returns:
-        JSON string with context map (metadata only) plus always-loaded sections
-    """
+    """Load context map with hybrid retrieval and role-based scoring."""
     always_load_sections = optimization_config.get_always_load_sections()
     (
         always_loaded_content,
@@ -601,7 +674,7 @@ async def _load_context_metadata_only(
         files_map,
         total_tokens_available,
     ) = await _prepare_hybrid_metadata_context(
-        metadata_index, task_description, always_load_sections, fs_manager
+        metadata_index, task_description, always_load_sections, fs_manager, agent_role
     )
     return _build_hybrid_metadata_response(
         task_description,

@@ -218,6 +218,74 @@ class TestLoadContext:
             assert "selected_files" in result
             assert "total_tokens" in result
 
+    async def test_load_context_sets_role_in_concise_response(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """load_context should include an inferred role in concise responses."""
+        # Arrange
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_context_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            # Act
+            result_str = await load_context(
+                task_description="Fix failing tests for feature X",
+                token_budget=5000,
+                response_format="concise",
+            )
+            result = json.loads(result_str)
+
+            # Assert
+            assert result["status"] == "success"
+            # Keywords "fix" and "tests" should map to either debugging or
+            # testing roles; we verify that some role string is present.
+            assert "role" in result
+            assert isinstance(result["role"], str)
+
+    async def test_load_context_with_explicit_role(
+        self, mock_project_root: Path, mock_managers: dict[str, Any]
+    ) -> None:
+        """load_context should accept and use explicit role parameter."""
+        # Arrange
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_context_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            # Act
+            result_str = await load_context(
+                task_description="Some generic task",
+                token_budget=5000,
+                response_format="concise",
+                role="quality",
+            )
+            result = json.loads(result_str)
+
+            # Assert
+            assert result["status"] == "success"
+            assert result["role"] == "quality"
+
     async def test_load_context_default_budget(
         self, mock_project_root: Path, mock_managers: dict[str, object]
     ) -> None:

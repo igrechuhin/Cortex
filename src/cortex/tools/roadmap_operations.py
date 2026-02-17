@@ -221,6 +221,91 @@ def _remove_line_at(content: str, one_based_line: int) -> str:
     return "\n".join(new_lines)
 
 
+def _extract_plan_path_from_bullet(line: str) -> str | None:
+    """Extract a plan path from a roadmap bullet, if present.
+
+    Expected patterns (examples):
+    - \"Plan: .cortex/plans/phase-58-...md.\"
+    - \"Plan: plans/phase-58-...md\"
+
+    Returns:
+        The raw plan path string (without surrounding punctuation) or None
+        if no plan reference is found.
+    """
+    # Simple, conservative heuristic: look for \"Plan:\" followed by a path-like token.
+    match = re.search(r"Plan:\s*([^\\s]+)", line)
+    if not match:
+        return None
+    # Strip common trailing punctuation like '.' or ',' from the captured path.
+    raw = match.group(1).strip()
+    return raw.rstrip(".,")
+
+
+def _is_plan_marked_complete(plan_path: Path) -> bool:
+    """Return True if the plan file exists and its Status line indicates completion.
+
+    A plan is treated as complete when its Status line contains the word
+    \"COMPLETE\" or \"COMPLETED\" (case-insensitive). Missing or unreadable
+    plans are treated as *not* complete so that removal is conservative.
+    """
+    if not plan_path.exists():
+        return False
+    try:
+        text = plan_path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    status_match = re.search(
+        r"^\\*\\*Status:\\*\\*\\s*(.+)$", text, flags=re.IGNORECASE | re.MULTILINE
+    )
+    if not status_match:
+        return False
+    status_value = status_match.group(1).strip().upper()
+    return "COMPLETE" in status_value
+
+
+def _validate_plan_status_before_removal(
+    root_path: Path, roadmap_content: str, one_based_line: int
+) -> str | None:
+    """Enforce guardrail: do not remove roadmap entries for PENDING/IN PROGRESS plans.
+
+    If the target bullet references a plan file under the plans directory and that
+    plan is not marked COMPLETE/COMPLETED, return an error message explaining why
+    removal is blocked. Returns None when it is safe to proceed.
+    """
+    lines = roadmap_content.split("\\n")
+    idx = one_based_line - 1
+    if idx < 0 or idx >= len(lines):
+        return None
+    line = lines[idx]
+    plan_ref = _extract_plan_path_from_bullet(line)
+    if not plan_ref:
+        return None
+
+    plans_root = get_cortex_path(root_path, CortexResourceType.PLANS)
+    # Normalize common plan path styles against the plans root.
+    if plan_ref.startswith(".cortex/plans/"):
+        plan_rel = plan_ref[len(".cortex/plans/") :]
+        candidate = plans_root / plan_rel
+    elif plan_ref.startswith("plans/"):
+        plan_rel = plan_ref[len("plans/") :]
+        candidate = plans_root / plan_rel
+    elif plan_ref.startswith("cortex/plans/"):
+        plan_rel = plan_ref[len("cortex/plans/") :]
+        candidate = plans_root / plan_rel
+    else:
+        # If it's not clearly a plan path, do not block.
+        return None
+
+    if not _is_plan_marked_complete(candidate):
+        return (
+            "Refusing to remove roadmap entry for a plan that is not marked "
+            "COMPLETE. Update the plan's **Status:** to COMPLETE/COMPLETED and "
+            "use complete_plan(), or leave the roadmap entry in place for "
+            "PENDING/IN PROGRESS work."
+        )
+    return None
+
+
 def _removal_error(message: str, error: str) -> RemoveRoadmapEntryResult:
     """Build error result for roadmap removal."""
     return RemoveRoadmapEntryResult(
@@ -236,22 +321,62 @@ def _execute_roadmap_removal(
     root_path: Path, entry_contains: str
 ) -> RemoveRoadmapEntryResult:
     """Remove first roadmap bullet line containing entry_contains. Returns result."""
-    memory_bank_root = get_cortex_path(root_path, CortexResourceType.MEMORY_BANK)
-    roadmap_path = memory_bank_root / "roadmap.md"
-    current_content, read_error = _read_roadmap_file(roadmap_path)
+    roadmap_path, current_content, read_error = _prepare_roadmap_for_removal(root_path)
     if read_error:
         return _removal_error("Failed to read roadmap", read_error)
     assert current_content is not None
+
+    line_num, find_error = _find_and_validate_removal_line(
+        root_path, current_content, entry_contains
+    )
+    if find_error:
+        return find_error
+    assert line_num is not None
+
+    return _perform_roadmap_removal(roadmap_path, current_content, line_num)
+
+
+def _prepare_roadmap_for_removal(
+    root_path: Path,
+) -> tuple[Path, str | None, str | None]:
+    """Prepare roadmap file for removal operation."""
+    memory_bank_root = get_cortex_path(root_path, CortexResourceType.MEMORY_BANK)
+    roadmap_path = memory_bank_root / "roadmap.md"
+    current_content, read_error = _read_roadmap_file(roadmap_path)
+    return roadmap_path, current_content, read_error
+
+
+def _find_and_validate_removal_line(
+    root_path: Path, current_content: str, entry_contains: str
+) -> tuple[int | None, RemoveRoadmapEntryResult | None]:
+    """Find and validate the line to remove."""
     line_num = _find_bullet_line_containing(current_content, entry_contains)
     if line_num is None:
-        return _removal_error(
+        return None, _removal_error(
             "No matching bullet found",
             "No bullet line containing given text found in roadmap",
         )
+
+    guardrail_error = _validate_plan_status_before_removal(
+        root_path, current_content, line_num
+    )
+    if guardrail_error is not None:
+        return None, _removal_error(
+            "Refused to remove roadmap entry for non-complete plan", guardrail_error
+        )
+
+    return line_num, None
+
+
+def _perform_roadmap_removal(
+    roadmap_path: Path, current_content: str, line_num: int
+) -> RemoveRoadmapEntryResult:
+    """Perform the actual roadmap removal and write."""
     updated = _remove_line_at(current_content, line_num)
     write_error = _write_roadmap_file(roadmap_path, updated)
     if write_error:
         return _removal_error("Failed to write roadmap", write_error)
+
     return RemoveRoadmapEntryResult(
         status="success",
         file_name="roadmap.md",

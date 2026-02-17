@@ -34,6 +34,11 @@ from cortex.core.mcp_stability import (
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
+from cortex.optimization.agent_roles import (
+    AgentRole,
+    detect_agent_role,
+    normalize_role_name,
+)
 from cortex.optimization.optimization_config import OptimizationConfig
 from cortex.server import mcp
 from cortex.tools.phase4_context_operations import load_context_impl
@@ -85,6 +90,7 @@ async def _load_context_execute(
     loading_strategy: str | None,
     effective_depth: str,
     root: Path,
+    agent_role: AgentRole | None = None,
 ) -> str:
     """Execute context loading with appropriate strategy.
 
@@ -96,6 +102,7 @@ async def _load_context_execute(
         loading_strategy: Progressive loading strategy
         effective_depth: Effective depth level
         root: Project root path
+        agent_role: Optional agent role for role-based context selection
 
     Returns:
         JSON string with loaded context
@@ -112,6 +119,7 @@ async def _load_context_execute(
         strategy,
         depth=effective_depth,
         project_root=root,
+        agent_role=agent_role,
     )
 
 
@@ -123,6 +131,7 @@ async def _load_context_with_error_handling(
     loading_strategy: str | None,
     effective_depth: str,
     root: Path,
+    agent_role: AgentRole | None = None,
 ) -> str:
     """Execute context loading with error handling.
 
@@ -134,6 +143,7 @@ async def _load_context_with_error_handling(
         loading_strategy: Progressive loading strategy
         effective_depth: Effective depth level
         root: Project root path
+        agent_role: Optional agent role for role-based context selection
 
     Returns:
         JSON string with loaded context or error
@@ -147,6 +157,7 @@ async def _load_context_with_error_handling(
             loading_strategy,
             effective_depth,
             root,
+            agent_role,
         )
     except Exception as e:
         return json.dumps(
@@ -179,6 +190,7 @@ async def _execute_load_context(
     loading_strategy: str | None,
     depth: Literal["metadata_only", "summary", "full"] | None,
     response_format: Literal["concise", "detailed"],
+    role: str | None,
     ctx: MCPContext | None,
 ) -> str:
     """Execute load_context with initialization and error handling.
@@ -199,6 +211,11 @@ async def _execute_load_context(
     if enabled_error:
         return enabled_error
 
+    # Determine effective role: explicit parameter wins, otherwise
+    # fall back to keyword-based detection from task_description.
+    explicit_role = normalize_role_name(role) if role is not None else None
+    agent_role: AgentRole = explicit_role or detect_agent_role(task_description)
+
     effective_depth = _determine_depth_from_budget(depth, token_budget)
     out = await _load_context_with_error_handling(
         mgrs,
@@ -208,8 +225,9 @@ async def _execute_load_context(
         loading_strategy,
         effective_depth,
         root,
+        agent_role,
     )
-    return _format_load_context_response(out, response_format)
+    return _format_load_context_response(out, response_format, agent_role.value)
 
 
 @mcp.tool(annotations=read_only_annotations("Load Context"))
@@ -222,6 +240,7 @@ async def load_context(
     loading_strategy: str | None = None,
     depth: Literal["metadata_only", "summary", "full"] | None = None,
     response_format: Literal["concise", "detailed"] = "concise",
+    role: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
     """Load relevant context for a task within token budget.
@@ -250,6 +269,7 @@ async def load_context(
             loading_strategy,
             depth,
             response_format,
+            role,
             ctx,
         )
         await log_client(ctx, "info", "load_context: completed", logger_name=__name__)
@@ -302,20 +322,26 @@ async def _load_context_progressive(
     )
 
 
-def _format_load_context_response(
-    out: str, response_format: Literal["concise", "detailed"]
-) -> str:
-    """Format load_context response payload based on response_format."""
-    if response_format != "concise":
+def _format_detailed_load_context_response(out: str, role: str | None) -> str:
+    """Return detailed response JSON, injecting role when available."""
+    if role is None:
         return out
-
     try:
         data = json.loads(out)
     except json.JSONDecodeError:
         return out
+    if not isinstance(data, dict):
+        return out
+    typed = cast(dict[str, object], data)
+    if "role" not in typed:
+        typed["role"] = role
+    return json.dumps(typed, indent=2)
 
-    file_names: list[str] = []
+
+def _build_concise_payload(data: dict[str, object], role: str | None) -> str:
+    """Build concise response payload from detailed JSON data."""
     selected_files_raw = data.get("selected_files")
+    file_names: list[str] = []
     if isinstance(selected_files_raw, dict):
         selected_files_typed = cast(dict[str, object], selected_files_raw)
         file_names = sorted(selected_files_typed.keys())
@@ -328,7 +354,28 @@ def _format_load_context_response(
         "total_tokens": data.get("total_tokens"),
         "utilization": data.get("utilization"),
     }
+    if role is not None:
+        concise_payload["role"] = role
     return json.dumps(concise_payload, indent=2)
+
+
+def _format_load_context_response(
+    out: str,
+    response_format: Literal["concise", "detailed"],
+    role: str | None = None,
+) -> str:
+    """Format load_context response payload based on response_format."""
+    if response_format != "concise":
+        return _format_detailed_load_context_response(out, role)
+
+    try:
+        data = json.loads(out)
+    except json.JSONDecodeError:
+        return out
+    if not isinstance(data, dict):
+        return out
+    typed = cast(dict[str, object], data)
+    return _build_concise_payload(typed, role)
 
 
 @mcp.tool(annotations=read_only_annotations("Summarize Content"))
