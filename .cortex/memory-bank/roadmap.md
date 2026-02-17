@@ -12,8 +12,6 @@
 
 ## Future Enhancements
 
-- **Session Optimization: Analysis-Only Context and Rules Indexing** - PENDING - Document analysis-only no_data behavior, rules indexing fallback, and verify manage_file read behavior from 2026-02-16 session analysis.
-
 ## Pending plans (from .cortex/plans)
 
 ### Investigation Plans (Archive / Reference)
@@ -43,3 +41,34 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Session Optimization: fix_markdown_lint Opaque Errors and Commit Fallback** - PENDING - Improve fix_markdown_lint error reporting when batch fails; document commit fallback when tool returns no rule codes. Plan: .cortex/plans/session-optimization-fix-markdown-lint-opaque-errors.md.
 - **Fix Broken Progress Entry: Phase 54 Title Corruption** - PENDING - Fix corrupted entry in progress.md line 66 ("Phase 54lizer Pattern" → "Phase 54: Session Start Initializer Pattern") and extend corruption detection to catch truncation patterns. Plan: .cortex/plans/fix-progress-phase-54-corruption.md.
 - **Session Optimization: pytest.ini and IDE test discovery documentation** - PENDING - Document pytest.ini design (no coverage in addopts for IDE discovery); optional implement/commit reminder for explicit --cov in full runs.
+- **Plans README** - Reference. Plan: .cortex/plans/README.md
+- **Add roadmap entry MCP tool** - PENDING - Reference. Plan: .cortex/plans/add-roadmap-entry-mcp-tool.md
+- **Compound engineering alignment (Cortex)** - PENDING - Reference. Plan: .cortex/plans/compound-engineering-alignment-cortex.md
+- **Enrich memory bank write tools with validations** - PENDING - Reference. Plan: .cortex/plans/enrich-memory-bank-write-tools-with-validations.md
+- **Investigate FastMCP blocking before tool handlers** - PENDING - Reference. Plan: .cortex/plans/investigate-fastmcp-blocking-before-tool-handlers-2026-02-09.md
+- **Phase 45: Add MCP annotations** - PENDING - Reference. Plan: .cortex/plans/phase-45-add-mcp-annotations.md
+- **Phase 53: Investigate manage_file conflict index stale** - PENDING - Reference. Plan: .cortex/plans/phase-53-investigate-manage-file-conflict-index-stale.md
+- **Phase 68: Investigate fix_quality_issues MCP connection closed** - PENDING - Reference. Plan: .cortex/plans/phase-68-investigate-fix-quality-issues-mcp-connection-closed.md
+- **Phase 9: Excellence 9.8+** - PENDING - Reference. Plan: .cortex/plans/phase-9-excellence-98.md
+- **Phase: Investigate commit pipeline quality gate miss** - PENDING - Reference. Plan: .cortex/plans/phase-investigate-commit-pipeline-quality-gate-miss-2026-02-07.md
+- **Phase: Investigate execute_pre_commit_checks failure (20260205)** - PENDING - Reference. Plan: .cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260205-222815.md
+- **Phase: Investigate execute_pre_commit_checks failure (20260209)** - PENDING - Reference. Plan: .cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260209-203054.md
+- **Phase: Investigate promote_session_script failure** - PENDING - Reference. Plan: .cortex/plans/phase-investigate-promote_session_script-failure-20260211-184849.md
+- **Phase: Investigate roadmap sync validator ghost references** - PENDING - Reference. Plan: .cortex/plans/phase-investigate-roadmap-sync-validator-ghost-references.md
+- **Session Optimization: Commit pipeline context loading and helper module** - PENDING - Reference. Plan: .cortex/plans/session-optimization-commit-pipeline-context-loading-and-helper-module-pattern.md
+- **Session Optimization: Context usage analytics followups (2026-02-11)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-context-usage-analytics-followups-2026-02-11.md
+- **Session Optimization: Load context on problem fix path (2026-02-09)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-load-context-on-problem-fix-path-2026-02-09.md
+- **Session Optimization: Path resolver and context loading (2026-02-11)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-path-resolver-context-loading-2026-02-11.md
+- **Session Optimization: Pydantic rule visibility and rule discovery (2026-02-12 Analysis)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-pydantic-rule-visibility-and-rule-discovery-2026-02-12-analysis.md
+- **Session Optimization: Quality gate skip documentation when environment unavailable** - PENDING - Reference. Plan: .cortex/plans/session-optimization-quality-gate-skip-documentation-when-environment-unavailable.md
+- **Session Optimization: Roadmap completed section cleanup (2026-02-10)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-roadmap-completed-section-cleanup-2026-02-10.md
+- **Session Optimization: Roadmap section removal and sync** - PENDING - Reference. Plan: .cortex/plans/session-optimization-roadmap-section-removal-and-sync.md
+- **Session Optimization: Roadmap sync cleanup (2026-02-09)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-roadmap-sync-cleanup-2026-02-09.md
+- **Session Optimization: Rules and context loading follow-ups (2026-02-12 Analysis)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-rules-and-context-loading-follow-ups-2026-02-12-analysis.md
+- **Session Optimization: Rules context followups (2026-02-12)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-rules-context-followups-2026-02-12.md
+- **Session Optimization: Sequential plan steps** - PENDING - Reference. Plan: .cortex/plans/session-optimization-sequential-plan-steps.md
+- **Session Optimization: Test coverage and development workflow improvements** - PENDING - Reference. Plan: .cortex/plans/session-optimization-test-coverage-and-development-workflow-improvements.md
+- **Session Optimization: Testing coverage documentation and planning (2026-02-16 Analysis)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-testing-coverage-documentation-and-planning-2026-02-16-analysis.md
+- **Structured planning Cortex MCP tools** - PENDING - Reference. Plan: .cortex/plans/structured-planning-cortex-mcp-tools.md
+- **Test fixture validation and maintenance** - PENDING - Reference. Plan: .cortex/plans/test-fixture-validation-maintenance.md
+- **Type cleanup inventory** - PENDING - Reference. Plan: .cortex/plans/type-cleanup-inventory.md

@@ -29,6 +29,15 @@ class TrackedSemaphore:
         _ = await self._semaphore.acquire()
         self._current_count -= 1
 
+    async def try_acquire(self, timeout: float = 0.0) -> bool:
+        """Acquire if available within timeout (seconds). Return True if acquired."""
+        try:
+            _ = await asyncio.wait_for(self._semaphore.acquire(), timeout=timeout)
+            self._current_count -= 1
+            return True
+        except TimeoutError:
+            return False
+
     def release(self) -> None:
         self._semaphore.release()
         self._current_count += 1
@@ -93,6 +102,11 @@ _TOOLS_NEEDING_FREQUENT_PROGRESS = frozenset(
 _LONG_RUNNING_TOOLS_SERIALIZED = frozenset(
     {"execute_pre_commit_checks", "fix_markdown_lint", "fix_quality_issues"}
 )
+# Max seconds a second long-running tool call will wait for the first to finish
+# before failing with RuntimeError (reduces commit-blocking when calls are sequential).
+# Must be >= default test_timeout for execute_pre_commit_checks (300s) so sequential
+# commit-pipeline calls succeed when the first run includes tests.
+LONG_RUNNING_SEMAPHORE_WAIT_SECONDS = 330.0
 # Fallback steps in connection-error messages so the user can resolve without the tool.
 _CONNECTION_ERROR_FALLBACK: dict[str, str] = {
     "execute_pre_commit_checks": (
@@ -203,6 +217,7 @@ __all__ = [
     "TrackedSemaphore",
     "connection_error_fallback",
     "get_long_running_semaphore",
+    "LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
     "get_resource_semaphore",
     "get_semaphore",
     "get_usage_context_init_lock",

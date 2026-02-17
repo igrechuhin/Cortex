@@ -2,6 +2,14 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-02-17)
+
+- ✅ **Phase: Investigate fix_markdown_lint MCP Tool Failure** - COMPLETE (2026-02-17) - Root cause: second long-running tool (e.g. fix_markdown_lint) was failing immediately when invoked while execute_pre_commit_checks was still running. Fix: added LONG_RUNNING_SEMAPHORE_WAIT_SECONDS (90s) so the second call waits for the first to finish instead of raising immediately; commit pipeline can now proceed when sequential calls arrive. Tests and troubleshooting docs updated.
+
+- ✅ **Session Optimization: Analysis-Only Context and Rules Indexing** - COMPLETE (2026-02-17) - Documented analysis-only no_data in Analyze prompt and troubleshooting; added rules indexing fallback (Synapse/AGENTS) in troubleshooting; verified manage_file full-file read (no bug). Fixed pre-existing type-check errors in test_mcp_stability_timeouts.py so quality gate passes.
+
+- ✅ **Phase: Investigate execute_pre_commit_checks MCP Tool Failure** - COMPLETE (2026-02-17) - Root cause: long-running semaphore wait (90s) was shorter than execute_pre_commit_checks default test_timeout (300s), so a second call failed with RuntimeError before the first finished. Fix: increased LONG_RUNNING_SEMAPHORE_WAIT_SECONDS to 330s so sequential commit-pipeline calls succeed. Updated error message and troubleshooting docs; added invariant test.
+
 ## Completed Work (2026-02-16)
 
 - ✅ **Phase 50 Step 6: Testing and Validation** - COMPLETE (2026-02-16) - Completed comprehensive testing for Phase 50 consolidated tools. Added unit tests covering all query types, response_format parameter (concise/detailed), and error cases. Coverage: query_usage_operations 100%, query_memory_bank_operations 80.26% (average 90.13%). Verified no tests for removed tools. All 3994 tests pass. Updated plan with metrics.

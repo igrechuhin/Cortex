@@ -6,10 +6,14 @@ Tests verify that:
 - Timeout errors are clear and actionable
 - Different timeout categories work correctly
 - All MCP tools have timeout wrapper (Phase 34 verification)
+- Long-running semaphore wait allows second call to succeed after first completes
 """
+
+# pyright: reportPrivateUsage=false
 
 import asyncio
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -280,6 +284,149 @@ class TestProgressHelpers:
 
         with pytest.raises(TimeoutError):
             _ = await with_mcp_stability(operation_that_raises, timeout=timeout)
+
+    @pytest.mark.asyncio
+    async def test_progress_task_cancelled_on_tool_error(self) -> None:
+        """Progress task must be cancelled when tool raises, preventing orphaned notifications.
+
+        Reproduces the bug where execute_pre_commit_checks returned early with an
+        error but the progress loop kept sending notifications for a resolved
+        progressToken, causing "unknown token" errors that killed the connection.
+        """
+        progress_loop_running = asyncio.Event()
+
+        async def fake_progress_loop() -> None:
+            progress_loop_running.set()
+            while True:
+                await asyncio.sleep(0.05)
+
+        async def tool_that_fails() -> str:
+            raise RuntimeError("Tool failed early")
+
+        from cortex.core.mcp_stability import _run_and_finalize
+        from cortex.core.mcp_stability_config import get_semaphore
+
+        progress_task = asyncio.create_task(fake_progress_loop())
+        _ = await progress_loop_running.wait()
+        assert not progress_task.done(), "Progress task should be running"
+
+        semaphore = get_semaphore()
+
+        async def execute_fn() -> tuple[str, bool, str | None, bool]:
+            async with semaphore:
+                result = await tool_that_fails()
+            return result, True, None, False
+
+        with pytest.raises(RuntimeError, match="Tool failed early"):
+            _ = await _run_and_finalize(
+                execute_fn,
+                progress_task,
+                None,
+                "test_tool",
+                0,
+                "tool",
+            )
+
+        assert progress_task.done(), "Progress task must be cancelled after tool error"
+
+
+class TestLongRunningSemaphoreWait:
+    """Tests for long-running tool serialization with configurable wait."""
+
+    def test_long_running_wait_at_least_default_test_timeout(self) -> None:
+        """Wait must be >= execute_pre_commit_checks default test_timeout so sequential calls succeed."""
+        from cortex.core.mcp_stability_config import LONG_RUNNING_SEMAPHORE_WAIT_SECONDS
+
+        # execute_pre_commit_checks default test_timeout is 300s; second call must wait that long.
+        assert LONG_RUNNING_SEMAPHORE_WAIT_SECONDS >= 300.0, (
+            "LONG_RUNNING_SEMAPHORE_WAIT_SECONDS must be >= 300 so a second long-running tool "
+            "can wait for execute_pre_commit_checks (with default test_timeout) to finish."
+        )
+
+    @pytest.mark.asyncio
+    async def test_second_long_running_waits_then_succeeds(self) -> None:
+        """Second long-running call waits for first to finish then runs (reduces commit blocking)."""
+        import cortex.core.mcp_stability_config as config_mod
+        from cortex.core.mcp_stability import _run_and_finalize
+        from cortex.core.mcp_stability_config import get_long_running_semaphore
+
+        config_mod._long_running_tools_semaphore = None
+        _ = get_long_running_semaphore()
+        first_done: asyncio.Event = asyncio.Event()
+
+        async def first_execute() -> tuple[str, bool, str | None, bool]:
+            await asyncio.sleep(0.15)
+            first_done.set()
+            return "first", True, None, False
+
+        async def second_execute() -> tuple[str, bool, str | None, bool]:
+            return "second", True, None, False
+
+        with patch(
+            "cortex.core.mcp_stability.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
+            1.0,
+        ):
+            # Start first (holds semaphore), then second (waits then runs)
+            first_task = asyncio.create_task(
+                _run_and_finalize(
+                    first_execute,
+                    None,
+                    None,
+                    "first_tool",
+                    0,
+                    "tool",
+                    use_serial_semaphore=True,
+                )
+            )
+            await asyncio.sleep(0.05)
+            second_task = asyncio.create_task(
+                _run_and_finalize(
+                    second_execute,
+                    None,
+                    None,
+                    "second_tool",
+                    0,
+                    "tool",
+                    use_serial_semaphore=True,
+                )
+            )
+            first_result = await first_task
+            second_result = await second_task
+        assert first_result == "first"
+        assert second_result == "second"
+        _ = first_done.wait()
+
+    @pytest.mark.asyncio
+    async def test_second_long_running_fails_after_wait_timeout(self) -> None:
+        """Second long-running call raises RuntimeError if first runs longer than wait."""
+        import cortex.core.mcp_stability_config as config_mod
+        from cortex.core.mcp_stability import _run_and_finalize
+        from cortex.core.mcp_stability_config import get_long_running_semaphore
+
+        config_mod._long_running_tools_semaphore = None
+        sem = get_long_running_semaphore()
+        await sem.acquire()
+        try:
+
+            async def fast_execute() -> tuple[str, bool, str | None, bool]:
+                return "fast", True, None, False
+
+            with patch(
+                "cortex.core.mcp_stability.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
+                0.15,
+            ):
+                with pytest.raises(RuntimeError, match="Another long-running tool"):
+                    _ = await _run_and_finalize(
+                        fast_execute,
+                        None,
+                        None,
+                        "second_tool",
+                        0,
+                        "tool",
+                        use_serial_semaphore=True,
+                    )
+        finally:
+            _ = sem.release()
 
 
 def _tools_dir() -> Path:

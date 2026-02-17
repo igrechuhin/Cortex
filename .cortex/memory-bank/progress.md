@@ -4,6 +4,9 @@
 
 - **Commit (quality, docs, python_adapter, tests)** - Pre-commit: fix_errors, format, markdown lint (1 file fixed, 0 errors), type_check, quality, tests 4135 passed, 92.59% coverage. Updated quality.yml, commit-pipeline-phases.md, troubleshooting.md, python_adapter.py, test_analysis_operations.py; session review file included.
 - **Commit (mcp_stability quality: file size, function length)** - Fixed file size (420→400) and function length in mcp_stability.py: extracted config/helpers to mcp_stability_config.py (TrackedSemaphore, semaphore getters, tool sets, connection_error_fallback, to_timeout_value, record_usage_*); refactored_run_with_retry_and_record via _run_and_finalize; updated test to patch get_semaphore. Phase A and markdown lint passed; 4135 tests, 92.6% coverage.
+- **Investigate fix_markdown_lint MCP Tool Failure** - COMPLETE. Added 90 wait for long-running semaphore so second call (e.g. fix_markdown_lint after execute_pre_commit_checks) waits instead of failing; unblocks commit procedure.
+- **Session Optimization: Analysis-Only Context and Rules Indexing** - COMPLETE. Documented analysis-only no_data behavior and optional session_start/load_context in analyze.md and troubleshooting; added rules indexing empty/fallback section in troubleshooting; verified manage_file read returns content (expected behavior). Type-check fixes in test_mcp_stability_timeouts.py.
+- **Phase: Investigate execute_pre_commit_checks MCP Tool Failure** - COMPLETE. Increased long-running semaphore wait from 90s to 330 second call can wait for execute_pre_commit_checks (test_timeout=300s) to finish; unblocks commit procedure. Error message and troubleshooting updated; invariant test added.
 
 ## 2026-02-16
 

@@ -31,6 +31,7 @@ from cortex.core.context_logging import MCPContext
 from cortex.core.mcp_async_utils import cancel_and_drain_progress_task
 from cortex.core.mcp_failure_handler import MCPToolFailureHandler
 from cortex.core.mcp_stability_config import (
+    LONG_RUNNING_SEMAPHORE_WAIT_SECONDS,
     TrackedSemaphore,
     connection_error_fallback,
     get_long_running_semaphore,
@@ -635,6 +636,14 @@ async def _execute_with_error_handling[T](
         raise
 
 
+# Error message when another long-running tool is in progress (fail-fast to avoid
+# client timeout and "Connection closed" / "duplicate response suppressed").
+_LONG_RUNNING_BUSY_MSG = (
+    "Another long-running tool is in progress (e.g. execute_pre_commit_checks or "
+    "fix_markdown_lint). Please wait for it to finish (up to 5–6 minutes) and retry."
+)
+
+
 async def _run_and_finalize[T](
     execute_fn: Callable[[], Awaitable[tuple[T, bool, str | None, bool]]],
     progress_task: asyncio.Task[None] | None,
@@ -644,7 +653,21 @@ async def _run_and_finalize[T](
     kind: Literal["tool", "resource"],
     use_serial_semaphore: bool = False,
 ) -> T:
-    """Run execute_fn and finalize (cancel progress, record usage)."""
+    """Run execute_fn and finalize (cancel progress, record usage).
+
+    When use_serial_semaphore is True, long-running tools are serialized. We
+    try to acquire the long-running semaphore, waiting up to
+    LONG_RUNNING_SEMAPHORE_WAIT_SECONDS; if still held after that, we raise
+    so the client gets a clear error and can retry later. The wait allows
+    sequential commit-pipeline calls (e.g. execute_pre_commit_checks then
+    fix_markdown_lint) to succeed when the second call arrives before the
+    first has returned.
+
+    The outer try/finally ensures the progress task is always cancelled, even
+    when execute_fn raises (which skips _finalize_execution). Without this,
+    orphaned progress tasks keep sending notifications for an already-resolved
+    progressToken, causing "unknown token" errors that kill the connection.
+    """
 
     async def _do() -> T:
         result, s, et, wc = await execute_fn()
@@ -653,10 +676,25 @@ async def _run_and_finalize[T](
         )
         return result
 
-    if use_serial_semaphore:
-        async with get_long_running_semaphore():
-            return await _do()
-    return await _do()
+    try:
+        if use_serial_semaphore:
+            sem = get_long_running_semaphore()
+            if not await sem.try_acquire(timeout=LONG_RUNNING_SEMAPHORE_WAIT_SECONDS):
+                raise RuntimeError(_LONG_RUNNING_BUSY_MSG)
+            try:
+                return await _do()
+            finally:
+                sem.release()
+        return await _do()
+    except BaseException:
+        # Safety net: cancel progress task if still running after an error.
+        # In the normal path, _finalize_execution handles cancellation.
+        # This catches the case where execute_fn() raises before
+        # _finalize_execution is reached, preventing orphaned progress
+        # tasks from sending notifications on a dead progressToken.
+        if progress_task is not None and not progress_task.done():
+            await cancel_and_drain_progress_task(progress_task)
+        raise
 
 
 async def _run_with_retry_and_record[T](

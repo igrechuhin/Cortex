@@ -138,6 +138,22 @@ HTTP/SSE or a stdio–HTTP bridge is not a supported workaround for this issue (
 - Progress and heartbeat for long tools (e.g. 2 s heartbeat and wrapper progress for `fix_markdown_lint`, frequent progress for `execute_pre_commit_checks`).
 - Automatic retry for connection errors in the tool wrapper (one retry).
 - Batched markdown lint to reduce total duration.
+- **Serialization with wait for long-running tools**: Only one of `execute_pre_commit_checks`, `fix_markdown_lint`, or `fix_quality_issues` can run at a time. If you call a second long-running tool while the first is still running, the second call **waits up to 330 seconds (5–6 minutes)** for the first to finish; if the first is still running after that, the server returns an error. This allows sequential commit-pipeline calls (e.g. `execute_pre_commit_checks` then `fix_markdown_lint`) to succeed when the second request arrives before the first has returned. See [Another long-running tool is in progress](#issue-another-long-running-tool-in-progress).
+
+#### Issue: Another long-running tool is in progress {#issue-another-long-running-tool-in-progress}
+
+**Symptoms**:
+
+- Tool call returns a `RuntimeError`: "Another long-running tool is in progress (e.g. execute_pre_commit_checks or fix_markdown_lint). Please wait for it to finish (up to 5–6 minutes) and retry."
+
+**Cause**:
+
+Only one of `execute_pre_commit_checks`, `fix_markdown_lint`, or `fix_quality_issues` can run at a time. If the client (or agent) invokes a second long-running tool while the first is still running, the second call **waits up to 330 seconds (5–6 minutes)** for the first to finish. If the first is still running after that, the server returns this error.
+
+**Fix (what to do)**:
+
+1. If you see this error, the first long-running tool took longer than 330 seconds (5–6 minutes). Wait for it to finish, then retry the tool you wanted to run.
+2. Prefer running long-running tools one after another and wait for each to complete before starting the next (e.g. run `fix_markdown_lint` only after `execute_pre_commit_checks` has completed, or vice versa). Sequential calls that arrive while the first is still running will wait automatically.
 
 ### Development and Testing
 
@@ -602,6 +618,46 @@ Error: Section 'NonExistent' not found in shared.md
      }
    }
    ```
+
+#### Issue: Context effectiveness shows no_data in analysis-only sessions
+
+**Symptoms**:
+
+- End-of-session Analyze report shows "No session logs found" or "Calls Analyzed: 0"
+- `analyze_context_effectiveness()` returns `"status": "no_data"`
+
+**Cause**:
+
+When the only action in the session is running the Analyze (End of Session) prompt, no `load_context` calls were made, so there is no context-effectiveness data for the current session. This is **expected behavior**, not an error.
+
+**Solution**:
+
+- No action required. Report the manual summary (e.g. files used from Pre-Analysis Checklist) in the Context Effectiveness Analysis section.
+- **Optional**: To record one call for metrics, run `session_start()` or `load_context(task_description="end-of-session analysis", token_budget=5000)` before running the analysis steps.
+
+#### Issue: Rules indexing returns no rules (get_relevant)
+
+**Symptoms**:
+
+- `rules(operation="get_relevant", task_description="...")` returns `rules_count: 0` and `indexed_files: 0`
+- Coding standards or project rules do not appear in context
+
+**Causes**:
+
+- Rules directory (e.g. `.cortex/rules`) is empty or not populated
+- Indexing has not run (e.g. `rules(operation="index")` not called)
+- Rules are only in Synapse or in AGENTS.md/CLAUDE.md, not in the indexed rules folder
+
+**Solution**:
+
+1. Ensure the rules directory exists and contains rule files (e.g. `.mdc`, `.md`).
+2. Run indexing: `rules(operation="index")` (or `rules(operation="index", force=True)` to reindex).
+3. **Fallback**: When the rules index is empty or returns no rules, use one or more of:
+   - `get_synapse_rules(task_description="...")` for shared Synapse rules
+   - Read key rules from the rules directory path (from `get_structure_info()` → `structure_info.paths.rules`) using the Read tool
+   - Use AGENTS.md and CLAUDE.md for coding standards and memory bank access
+
+Prompts (e.g. implement, commit, analyze) already instruct agents to use this fallback when `rules()` returns `status: "disabled"` or no rules; the same applies when `indexed_files` is 0.
 
 ### Shared Rules Issues
 
