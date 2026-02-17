@@ -13,12 +13,14 @@ import pytest
 
 from cortex.managers.usage_models import ToolUsageEvent
 from cortex.tools.phase5_evaluation import (
+    ErrorPattern,
     EvalAnalysis,
     EvalSuiteResult,
     EvalTask,
     EvalTaskResult,
     ToolEvaluationHarness,
     _load_eval_tasks,
+    analyze_error_patterns,
     run_tool_evaluation,
 )
 
@@ -237,6 +239,101 @@ async def test_run_tool_evaluation_uses_harness_and_writes_cache() -> None:
     args, _ = mock_write_cache.call_args
     # Second positional argument is the relative cache key.
     assert args[1] == "evals/last_suite.json"
+
+
+@pytest.mark.asyncio
+async def test_analyze_error_patterns_persists_error_cache() -> None:
+    """analyze_error_patterns writes a compact error_patterns cache file."""
+    project_root = Path("/project")
+
+    fake_tasks = [
+        EvalTask(
+            id="t1",
+            name="Task 1",
+            description="Test task 1",
+            category="context",
+            expected_tools=["load_context"],
+            expected_outcome="ok",
+        )
+    ]
+
+    suite = EvalSuiteResult(
+        generated_at="2026-02-17T00:00:00Z",
+        tasks=[
+            EvalTaskResult(
+                task_id="t1",
+                task_name="Task 1",
+                category="context",
+                status="mixed",
+                total_calls=2,
+                successful_calls=1,
+                failed_calls=1,
+                success_rate=0.5,
+                avg_duration_ms=10.0,
+                total_duration_ms=20.0,
+                error_types={"ValueError": 1},
+                evaluated_tools=["load_context"],
+            )
+        ],
+    )
+    analysis = EvalAnalysis(
+        overall_success_rate=0.5,
+        total_tasks=1,
+        tasks_with_no_data=0,
+        tasks_unavailable=0,
+        average_calls_per_task=2.0,
+        top_error_patterns=[
+            ErrorPattern(
+                error_type="ValueError",
+                count=1,
+                affected_tools=["load_context"],
+            )
+        ],
+        success_rate_by_category={"context": 0.5},
+    )
+
+    with (
+        patch(
+            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=project_root,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._get_usage_tracker",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._load_eval_tasks",
+            new_callable=AsyncMock,
+            return_value=fake_tasks,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.run_suite",
+            new_callable=AsyncMock,
+            return_value=suite,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.analyze_results",
+            new=MagicMock(return_value=analysis),
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation.write_cache_json",
+            new_callable=AsyncMock,
+        ) as mock_write_cache,
+    ):
+        raw = await analyze_error_patterns(task_ids=None, ctx=None)
+
+    data = json.loads(raw)
+    assert data["status"] == "success"
+    assert data["tasks_loaded"] == len(fake_tasks)
+    assert data["generated_at"] == suite.generated_at
+    assert data["total_patterns"] == 1
+
+    # The error patterns cache should be written once to the expected key.
+    _ = mock_write_cache.assert_awaited_once()
+    args, _ = mock_write_cache.call_args
+    assert args[1] == "evals/error_patterns.json"
 
 
 @pytest.mark.asyncio

@@ -85,6 +85,7 @@ def compact_active_context_completed_work(content: str, current_date_str: str) -
             # Count bullet entries (lines starting with -)
             bullets = sum(1 for ln in section_lines[1:] if ln.strip().startswith("-"))
             new_sections_lines.append(section_lines[0])  # heading
+            new_sections_lines.append("")  # MD022: blank line after heading
             new_sections_lines.append(
                 f"- **Summary ({date_str})** - {bullets} entries archived."
             )
@@ -166,7 +167,7 @@ def _progress_section_to_lines(
     else:
         label = f"Month containing {date_str}"
     summary = summarize_entries_as_line(section_lines[1:], label)
-    return [section_lines[0], summary, ""]
+    return [section_lines[0], "", summary, ""]
 
 
 def apply_progress_tiers(

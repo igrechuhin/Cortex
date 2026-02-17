@@ -18,28 +18,40 @@
 
 - ✅ **Commit (dead code cleanup, type fix, preflight)** - COMPLETE (2026-02-17) - Removed dead _get_all_markdown_files and _collect_markdown_files_sync from markdown_operations.py (unused since fix_markdown_lint scopes to git-modified files); cleaned up test_fix_markdown_lint.py (removed dead-code tests, unused imports). Pre-commit: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4170 passed, 92.56% coverage.
 
+- ✅ **Phase 57: Evaluation-Driven Tool Improvement - Error pattern analysis tool** - COMPLETE (2026-02-17) - Implemented a new analyze_error_patterns MCP tool backed by the existing ToolEvaluationHarness, which runs the evaluation suite, aggregates top error patterns across tasks, and persists a compact error_patterns.json cache under evals/. Added unit tests for the tool and ensured the full test suite and quality gate pass.
+
+- ✅ **Phase 57: Evaluation-Driven Tool Improvement** - COMPLETE (2026-02-17) - First iteration of Phase 57 delivered the evaluation framework (EvalTask, EvalSuiteResult, EvalAnalysis, ToolEvaluationHarness), run_tool_evaluation MCP tool, a seeded core_workflows.json suite, and a new analyze_error_patterns MCP tool that caches top error patterns to evals/error_patterns.json; automated description optimization, A/B testing, and evaluation dashboards remain for future work.
+
 ## Completed Work (2026-02-16)
+
 - **Summary (2026-02-16)** - 1 entries archived.
 
 ## Completed Work (2026-02-13)
+
 - **Summary (2026-02-13)** - 1 entries archived.
 
 ## Completed Work (2026-01-14)
+
 - **Summary (2026-01-14)** - 1 entries archived.
 
 ## Completed Work (2026-02-12)
+
 - **Summary (2026-02-12)** - 1 entries archived.
 
 ## Completed Work (2026-02-11)
+
 - **Summary (2026-02-11)** - 1 entries archived.
 
 ## Completed Work (2026-02-10)
+
 - **Summary (2026-02-10)** - 1 entries archived.
 
 ## Completed Work (2026-02-09)
+
 - **Summary (2026-02-09)** - 1 entries archived.
 
 ## Completed Work (2026-02-07)
+
 - **Summary (2026-02-07)** - 1 entries archived.
 
 ## Current Focus

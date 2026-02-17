@@ -11,6 +11,8 @@
 - **Session Optimization: Commit Submodule and Roadmap Deduplication (2026-02-17 Analysis)** - COMPLETE. Commit prompt now clarifies that Synapse submodule push failures are non-blocking for the parent commit, MCP tool failure handler deduplicates roadmap blockers for the same investigation plan path, and plan-archiver guidance ensures investigation plans are marked COMPLETE before archiving.
 - **Phase 57: Evaluation-Driven Tool Improvement** - IN PROGRESS. Added initial evaluation framework: new `phase5_evaluation` tool module with `run_tool_evaluation` MCP tool, Pydantic models for EvalTask/EvalTaskResult/EvalSuiteResult/EvalAnalysis, seeded `.cortex/evals/tasks/core_workflows.json` with core workflows, and wired tests + quality gate and full test suite (coverage ~92.4%).
 - **Commit (dead code cleanup, type fix, preflight)** - Removed dead `_get_all_markdown_files` and `_collect_markdown_files_sync` from `markdown_operations.py` (unused since fix_markdown_lint scopes to git-modified files); cleaned up `test_fix_markdown_lint.py`. Pre-commit: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4170 passed, 92.56% coverage.
+- **Phase 57: Evaluation-Driven Tool Improvement - Error pattern analysis tool** - COMPLETE. Added an analyze_error_patterns MCP tool that runs the Phase 57 evaluation harness to compute top error patterns, writes a dedicated evals/error_patterns.json cache, and wired in tests so the evaluation framework remains fully covered and the quality gate passes.
+- **Phase 57: Evaluation-Driven Tool Improvement (initial framework + error analysis)** - PARTIAL. Implemented the core evaluation harness and MCP tools (run_tool_evaluation, analyze_error_patterns), seeded core_workflows.json with multi-category tasks, and wired tests and quality gate; left follow-up work for automated tool description optimization, A/B testing, and evaluation dashboards.
 
 ## 2026-02-16
 
@@ -102,12 +104,15 @@
 - **Session Optimization: Commit Pipeline Step 5 (Slim and centralize rules)** - COMPLETE. Added Synapse rule general/commit-pipeline.mdc; slimmed commit.md (Pre-Step Load Rules, Verify code conformance); added review.md reference to AGENTS phase-based commit for type/quality checks.
 
 ## 2026-02-09
+
 - **Week containing 2026-02-09** - 1 entries summarized.
 
 ## 2026-02-07
+
 - **Week containing 2026-02-07** - 1 entries summarized.
 
 ## 2026-02-05
+
 - **Week containing 2026-02-05** - 1 entries summarized.
 
 ## What Works

@@ -1,13 +1,13 @@
 {
-  "last_updated": "2026-02-16T22:17",
-  "total_sessions_analyzed": 182,
-  "total_load_context_calls": 219,
-  "avg_token_utilization": 0.493,
-  "avg_files_selected": 6.22,
-  "avg_relevance_score": 0.615,
+  "last_updated": "2026-02-17T16:41",
+  "total_sessions_analyzed": 183,
+  "total_load_context_calls": 220,
+  "avg_token_utilization": 0.49,
+  "avg_files_selected": 6.19,
+  "avg_relevance_score": 0.614,
   "common_task_patterns": {
     "fix/debug": 29,
-    "other": 41,
+    "other": 42,
     "implement/add": 58,
     "update/modify": 9,
     "testing": 51,
@@ -33,7 +33,7 @@
         "notes": "Adequate performance"
       },
       "other": {
-        "calls_count": 41,
+        "calls_count": 42,
         "recommended_budget": 10000,
         "essential_files": [
           "activeContext.md",
@@ -42,8 +42,8 @@
           "projectBrief.md",
           "progress.md"
         ],
-        "avg_utilization": 0.477,
-        "avg_relevance": 0.573,
+        "avg_utilization": 0.466,
+        "avg_relevance": 0.565,
         "notes": "Moderate utilization - some budget optimization possible"
       },
       "implement/add": {
@@ -146,15 +146,15 @@
         "times_selected": 145,
         "avg_relevance": 0.777,
         "task_types_used": [
-          "other",
-          "review",
-          "implement/add",
-          "update/modify",
           "refactor",
-          "fix/debug",
           "documentation",
+          "other",
+          "fix/debug",
+          "review",
+          "update/modify",
+          "optimization",
           "testing",
-          "optimization"
+          "implement/add"
         ],
         "recommendation": "High value - prioritize for loading"
       },
@@ -162,15 +162,15 @@
         "times_selected": 201,
         "avg_relevance": 0.608,
         "task_types_used": [
-          "other",
-          "review",
-          "implement/add",
-          "update/modify",
           "refactor",
-          "fix/debug",
           "documentation",
+          "other",
+          "fix/debug",
+          "review",
+          "update/modify",
+          "optimization",
           "testing",
-          "optimization"
+          "implement/add"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -178,15 +178,15 @@
         "times_selected": 163,
         "avg_relevance": 0.601,
         "task_types_used": [
-          "other",
-          "review",
-          "implement/add",
-          "update/modify",
           "refactor",
-          "fix/debug",
           "documentation",
+          "other",
+          "fix/debug",
+          "review",
+          "update/modify",
+          "optimization",
           "testing",
-          "optimization"
+          "implement/add"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -194,15 +194,15 @@
         "times_selected": 108,
         "avg_relevance": 0.289,
         "task_types_used": [
-          "other",
-          "review",
-          "implement/add",
-          "update/modify",
           "refactor",
-          "fix/debug",
           "documentation",
+          "other",
+          "fix/debug",
+          "review",
+          "update/modify",
+          "optimization",
           "testing",
-          "optimization"
+          "implement/add"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -210,15 +210,15 @@
         "times_selected": 201,
         "avg_relevance": 0.515,
         "task_types_used": [
-          "other",
-          "review",
-          "implement/add",
-          "update/modify",
           "refactor",
-          "fix/debug",
           "documentation",
+          "other",
+          "fix/debug",
+          "review",
+          "update/modify",
+          "optimization",
           "testing",
-          "optimization"
+          "implement/add"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -226,8 +226,8 @@
         "times_selected": 3,
         "avg_relevance": 0.621,
         "task_types_used": [
-          "other",
-          "fix/debug"
+          "fix/debug",
+          "other"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -235,8 +235,8 @@
         "times_selected": 3,
         "avg_relevance": 0.24,
         "task_types_used": [
-          "other",
-          "fix/debug"
+          "fix/debug",
+          "other"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
@@ -244,15 +244,15 @@
         "times_selected": 131,
         "avg_relevance": 0.589,
         "task_types_used": [
-          "other",
-          "review",
-          "implement/add",
-          "update/modify",
           "refactor",
-          "fix/debug",
           "documentation",
+          "other",
+          "fix/debug",
+          "review",
+          "update/modify",
+          "optimization",
           "testing",
-          "optimization"
+          "implement/add"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -260,15 +260,15 @@
         "times_selected": 198,
         "avg_relevance": 0.587,
         "task_types_used": [
-          "other",
-          "review",
-          "implement/add",
-          "update/modify",
           "refactor",
-          "fix/debug",
           "documentation",
+          "other",
+          "fix/debug",
+          "review",
+          "update/modify",
+          "optimization",
           "testing",
-          "optimization"
+          "implement/add"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -276,15 +276,15 @@
         "times_selected": 199,
         "avg_relevance": 0.579,
         "task_types_used": [
-          "other",
-          "review",
-          "implement/add",
-          "update/modify",
           "refactor",
-          "fix/debug",
           "documentation",
+          "other",
+          "fix/debug",
+          "review",
+          "update/modify",
+          "optimization",
           "testing",
-          "optimization"
+          "implement/add"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -307,7 +307,7 @@
     },
     "learned_patterns": [
       "Average 49% budget utilization - ~9k tokens unused per call",
-      "'techContext.md' is most frequently loaded (201/219 calls)",
+      "'techContext.md' is most frequently loaded (201/220 calls)",
       "Most common task type: 'implement/add' (58 calls)",
       "Warning: at least one load_context call had token_budget=0 or no selected files. Treat this as a configuration or instrumentation issue for non-trivial tasks (especially refactor/fix/debug)."
     ],
@@ -6664,6 +6664,29 @@
         "techContext.md": 0.484,
         "productContext.md": 0.482,
         "systemPatterns.md": 0.546
+      }
+    },
+    {
+      "session_id": "5c746fb881f8",
+      "timestamp": "2026-02-17T16:08",
+      "task_description": "End-of-session analysis: evaluate load_context effectiveness and session optimization after commit improving MCP failure handling and Phase 57 evaluation tools.",
+      "token_budget": 0,
+      "total_tokens": 0,
+      "utilization": 0.0,
+      "files_selected": 0,
+      "files_excluded": 7,
+      "avg_relevance_score": 0.236,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 7,
+      "selected_file_names": [],
+      "relevance_by_file": {
+        "roadmap.md": 0.25,
+        "progress.md": 0.25,
+        "activeContext.md": 0.25,
+        "projectBrief.md": 0.228,
+        "techContext.md": 0.225,
+        "productContext.md": 0.225,
+        "systemPatterns.md": 0.225
       }
     }
   ]

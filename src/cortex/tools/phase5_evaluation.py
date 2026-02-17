@@ -521,3 +521,71 @@ def _build_evaluation_payload(
         "suite": suite.model_dump(mode="json"),
         "analysis": analysis.model_dump(mode="json"),
     }
+
+
+async def _persist_error_patterns(root: Path, analysis: EvalAnalysis) -> None:
+    """Persist top error patterns to a dedicated cache file.
+
+    This complements the full suite payload by providing a lightweight view
+    that other tools (or external dashboards) can consume without loading the
+    entire evaluation result.
+    """
+    cache_key = "evals/error_patterns.json"
+    await write_cache_json(
+        root,
+        cache_key,
+        {
+            "generated_at": datetime.now(UTC).isoformat(),
+            "total_patterns": len(analysis.top_error_patterns),
+            "patterns": [
+                pattern.model_dump(mode="json")
+                for pattern in analysis.top_error_patterns
+            ],
+        },
+    )
+
+
+@mcp.tool(annotations=read_only_annotations("Tool Error Pattern Analysis"))
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
+async def analyze_error_patterns(
+    task_ids: list[str] | None = None,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Analyze error patterns across evaluation tasks and cache the results.
+
+    This tool runs the same evaluation harness as ``run_tool_evaluation`` but
+    focuses on the aggregated error patterns. It writes a compact JSON payload
+    to ``.cortex/.cache/evals/error_patterns.json`` and returns a summary
+    payload including the top patterns.
+    """
+    root = await resolve_project_root_async(None, ctx)
+    if ctx is not None:
+        await log_client(
+            ctx,
+            "info",
+            "analyze_error_patterns: starting",
+            logger_name=__name__,
+        )
+
+    tracker = await _get_usage_tracker(root)
+    tasks = await _load_eval_tasks(root, task_ids)
+
+    harness = ToolEvaluationHarness(project_root=root, tracker=tracker)
+    suite = await harness.run_suite(tasks)
+    analysis = harness.analyze_results(suite)
+
+    await _persist_error_patterns(root, analysis)
+    cache_path = get_cache_path(root, "evals") / "error_patterns.json"
+    payload = {
+        "status": "success",
+        "project_root": str(root),
+        "tasks_loaded": len(tasks),
+        "generated_at": suite.generated_at,
+        "cache_file": str(cache_path),
+        "total_patterns": len(analysis.top_error_patterns),
+        "error_patterns": [
+            pattern.model_dump(mode="json") for pattern in analysis.top_error_patterns
+        ],
+    }
+    return json.dumps(payload, indent=2)

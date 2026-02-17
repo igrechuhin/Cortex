@@ -105,11 +105,11 @@ Cortex currently tracks basic usage stats (call counts, success rates) via `get_
   - Parameter validation failures (which params, what values)
   - Retry patterns (how many retries before success, what changed)
   - "Wasted" tool calls (calls whose results were ignored by agent)
-- [ ] Create `analyze_error_patterns()` tool:
-  - Surfaces top 10 recurring errors
-  - Identifies tools with highest retry rates
-  - Suggests specific improvements for each pattern
-- [ ] Store error patterns in `.cortex/.cache/evals/error_patterns.json`
+- [x] Create `analyze_error_patterns()` tool:
+  - Surfaces top recurring errors based on evaluation suite results
+  - Identifies tools associated with each error type via affected_tools
+  - Provides a compact JSON payload for follow-up optimization work
+- [x] Store error patterns in `.cortex/.cache/evals/error_patterns.json`
 
 ### Step 4: Automated Tool Description Optimization
 

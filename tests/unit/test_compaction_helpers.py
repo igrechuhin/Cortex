@@ -86,6 +86,8 @@ class TestCompactActiveContextCompletedWork:
         assert "2 entries archived" in result
         assert "Task B" not in result
         assert "Task C" not in result
+        # MD022: blank line between heading and list (markdownlint compliance)
+        assert "## Completed Work (2026-02-16)\n\n-" in result
 
     def test_invalid_date_unchanged(self) -> None:
         content = """## Completed Work (2026-02-17)
@@ -187,6 +189,8 @@ class TestApplyProgressTiers:
         assert "Old entry 1" not in result
         assert "Summary" in result or "summarized" in result.lower()
         assert "2 entries" in result or "entries" in result
+        # MD022: blank line between heading and list (markdownlint compliance)
+        assert "## 2026-01-01\n\n-" in result
 
 
 class TestSummarizeEntriesAsLine:
