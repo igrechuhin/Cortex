@@ -22,13 +22,13 @@ load_context(task_description="<your goal>", token_budget=<appropriate>)
 
 **Pattern**: `session_start()` → review brief → `load_context(task_description=brief.next_work_item, ...)` → work
 
-Token budget guide: 10k (small update), 15k (fix/debug), 20-30k (feature), 40-50k (architecture).
+Token budget guidance comes from `load_context` tool documentation and context-effectiveness analysis. Use task-appropriate budgets; see implement prompt for defaults.
 
 **For thinking and reasoning:** Use the `think` tool for quick deliberation moments (analyzing tool outputs, checking policy compliance, planning multi-step operations). For formal multi-step reasoning with revisions and branches, use `sequentialthinking`.
 
-**For rules and standards:** Use Cortex rules/validation tools — do not read `.cortex/rules/` or `.cortex/synapse/` directly.
+**For rules and standards:** Use Cortex rules/validation tools — do not read `.cortex/rules/` or `.cortex/synapse/` directly. Get structured data standards via `get_synapse_rules(task_description="[language] models, structured data")` or `rules(operation="get_relevant", task_description="structured data, tool parameters")`.
 
-**For quality and tests:** Use `fix_quality_issues` and `execute_pre_commit_checks` — do not run formatters/linters/pytest directly.
+**For quality and tests:** Use `fix_quality_issues` and `execute_pre_commit_checks` — do not run language-specific formatters/linters/test runners directly (get standards via `get_synapse_rules`).
 
 **For memory bank, plans, reviews:** Use dedicated Cortex MCP helpers — do not edit `.cortex/` files directly.
 

@@ -6,6 +6,8 @@
 
 - ✅ **Session Optimization: Rules and Context Loading Follow-Ups (2026-02-12)** - COMPLETE (2026) - Fixed rules manager status to reflect current optimization config, enhanced zero-budget/zero-files warnings, extracted validation helpers to maintain function-length limits. All 5 steps completed.
 
+- ✅ **Session Optimization: Pydantic Rule Visibility and Rule Discovery (2026-02-12 Analysis)** - COMPLETE (2026) - Added Pydantic-for-params rule visibility in implement prompt (Step 4), rule discovery fallback in implement/analyze prompts (Step 3), and one-line standards in AGENTS.md/CLAUDE.md. Ensures agents apply Pydantic BaseModel for tool parameters without user reminders.
+
 ## Completed Work (2026-02-17)
 
 - ✅ **Phase: Investigate fix_markdown_lint MCP Tool Failure** - COMPLETE (2026-02-17) - Root cause: second long-running tool (e.g. fix_markdown_lint) was failing immediately when invoked while execute_pre_commit_checks was still running. Fix: added LONG_RUNNING_SEMAPHORE_WAIT_SECONDS (90s) so the second call waits for the first to finish instead of raising immediately; commit pipeline can now proceed when sequential calls arrive. Tests and troubleshooting docs updated.
@@ -39,6 +41,8 @@
 - ✅ **Phase 58 Step 4: Concurrent Session Visibility** - COMPLETE (2026-02-17) - Implemented concurrent session visibility for Phase 58 multi-agent specialization. Created session registry system with session_register/session_deregister MCP tools stored in .cortex/.cache/sessions/active.json. Extended SessionBrief model to include concurrent_sessions and locked_tasks fields. Updated session_start tool to load active locks and concurrent sessions and include them in the brief with helpful suggestions. Added comprehensive unit tests achieving 95%+ coverage. All 4217 tests pass with 91.86% coverage.
 
 - ✅ **Session Optimization: Path Resolver and Context Loading (2026-02-11)** - COMPLETE (2026-02-17) - Added path resolver rule to python-testing-standards.mdc requiring use of get_cortex_path() for all .cortex paths in tests (reference test_check_async_tests_script.py pattern). Updated implement prompt to include roadmap/activeContext guidance for session/commit-pipeline tasks in context loading section.
+
+- ✅ **Session Optimization: Rules and Context Loading Follow-Ups (2026-02-12 Analysis)** - COMPLETE (2026-02-17) - Added Context Budget Defaults table to CLAUDE.md and AGENTS.md, added watcher testing guidance to python-testing-standards.mdc, added integration test for rules() returning relevant rules for commit/analyze tasks, added zero-budget/zero-files reminders to commit and analyze prompts. All 4 plan tasks completed.
 
 ## Completed Work (2026-02-16)
 

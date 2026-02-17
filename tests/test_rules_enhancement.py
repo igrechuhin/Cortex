@@ -307,6 +307,76 @@ class TestRulesIntegration:
         assert isinstance(indexed_files, (int, float))
         assert indexed_files > 0
 
+    @pytest.mark.asyncio
+    async def test_rules_returns_relevant_rules_for_commit_analyze_tasks(
+        self, full_setup: FullSetup
+    ) -> None:
+        """Test that rules() returns at least one rule for commit/analyze task descriptions.
+
+        This ensures rules indexing is effective for commit and analyze workflows.
+        """
+        rules_manager = full_setup.rules_manager
+
+        # Ensure rules are indexed
+        index_result = await rules_manager.index_rules(force=True)
+        assert index_result["status"] == "success"
+
+        # Verify rules were actually indexed
+        status = rules_manager.get_status()
+        indexed_files = status.indexed_files
+        assert isinstance(indexed_files, (int, float))
+        assert indexed_files > 0, "Rules should be indexed for this test"
+
+        # Test commit pipeline task description with low threshold to ensure results
+        commit_result = await rules_manager.get_relevant_rules(
+            task_description="Commit pipeline, test coverage",
+            max_tokens=5000,
+            min_relevance_score=0.1,  # Lower threshold to ensure results
+        )
+
+        assert isinstance(commit_result, dict)
+        local_rules_raw = commit_result.get("local_rules", [])
+        generic_rules_raw = commit_result.get("generic_rules", [])
+        language_rules_raw = commit_result.get("language_rules", [])
+        assert isinstance(local_rules_raw, list)
+        assert isinstance(generic_rules_raw, list)
+        assert isinstance(language_rules_raw, list)
+        local_rules = cast(list[dict[str, object]], local_rules_raw)
+        generic_rules = cast(list[dict[str, object]], generic_rules_raw)
+        language_rules = cast(list[dict[str, object]], language_rules_raw)
+        all_rules: list[dict[str, object]] = (
+            local_rules + generic_rules + language_rules
+        )
+        # Assert at least one rule is returned when rules are indexed and threshold is low
+        assert (
+            len(all_rules) > 0
+        ), "rules() should return at least one rule for commit pipeline tasks when rules are indexed and min_relevance_score is low"
+
+        # Test analyze task description with low threshold
+        analyze_result = await rules_manager.get_relevant_rules(
+            task_description="End-of-session analysis, context effectiveness",
+            max_tokens=5000,
+            min_relevance_score=0.1,  # Lower threshold to ensure results
+        )
+
+        assert isinstance(analyze_result, dict)
+        analyze_local = cast(
+            list[dict[str, object]], analyze_result.get("local_rules", [])
+        )
+        analyze_generic = cast(
+            list[dict[str, object]], analyze_result.get("generic_rules", [])
+        )
+        analyze_language = cast(
+            list[dict[str, object]], analyze_result.get("language_rules", [])
+        )
+        analyze_all: list[dict[str, object]] = (
+            analyze_local + analyze_generic + analyze_language
+        )
+        # Assert at least one rule is returned when rules are indexed and threshold is low
+        assert (
+            len(analyze_all) > 0
+        ), "rules() should return at least one rule for analyze tasks when rules are indexed and min_relevance_score is low"
+
 
 def run_tests():
     """Run all rules enhancement tests."""

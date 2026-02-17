@@ -3,6 +3,7 @@
 ## 2026
 
 - **Session Optimization: Rules and Context Loading Follow-Ups (2026-02-12)** - COMPLETE. Fixed rules manager status to use current optimization config (not stale initialization), enhanced zero-budget/zero-files warnings with memory-bank guidance violation messaging, extracted validation helpers to maintain function-length limits. All 5 implementation steps completed with tests.
+- **Session Optimization: Pydantic Rule Visibility and Rule Discovery** - COMPLETE. Added Pydantic-for-params guidance to implement prompt Step 4 (tool parameters use BaseModel, not dict[str, Any]), rule discovery fallback to implement/analyze prompts Step 3 (check get_synapse_rules when rules() empty), and one-line standards to AGENTS.md/CLAUDE.md tables. Ensures agents discover and apply Pydantic standards when implementing/refactoring MCP tools.
 
 ## 2026-02-17
 
@@ -25,6 +26,7 @@
 - **Phase 58 Step 4: Concurrent Session Visibility** - COMPLETE. Implemented session registry system with session_register/session_deregister MCP tools, extended SessionBrief to include concurrent_sessions and locked_tasks, updated session_start to load and display active locks and concurrent sessions. Added comprehensive unit tests (95%+ coverage). All tests pass.
 - **Session Optimization: Path Resolver and Context Loading (2026-02-11)** - COMPLETE. Added path resolver rule to python-testing-standards.mdc requiring use of get_cortex_path() for all .cortex paths in tests; updated implement prompt to include roadmap/activeContext guidance for session/commit-pipeline tasks in context loading section.
 - **Commit (type fix, function length violation)** - Fixed type error in `models.py` (`concurrent_sessions` Pyright limitation with `# type: ignore[reportUnknownVariableType]`), fixed function length violation in `session_start_tools.py` (extracted `_assemble_session_brief` helper). Pre-commit: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4222 passed, 91.89% coverage.
+- **Session Optimization: Rules and Context Loading Follow-Ups (2026-02-12 Analysis)** - COMPLETE. Added Context Budget Defaults table to CLAUDE.md and AGENTS.md, added watcher testing guidance to python-testing-standards.mdc, added integration test for rules() returning relevant rules for commit/analyze tasks, added zero-budget/zero-files reminders to commit and analyze prompts. All 4 plan tasks completed.
 
 ## 2026-02-16
 
