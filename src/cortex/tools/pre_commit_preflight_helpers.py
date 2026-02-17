@@ -156,7 +156,6 @@ async def _run_markdown_phase(
     markdown_json = await fix_markdown_lint(
         include_untracked_markdown=include_untracked_markdown,
         dry_run=False,
-        check_all_files=False,
         ctx=ctx,
     )
     try:

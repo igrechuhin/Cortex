@@ -128,7 +128,6 @@ MARKDOWN_LINT_BATCH_SIZE = 25
 RATE_LIMIT_OPS_PER_SECOND = 100  # Rate limit for file operations
 BATCH_SIZE_DEFAULT = 50  # Default batch size for bulk operations
 MAX_CONCURRENT_OPERATIONS = 10  # Maximum concurrent async operations
-MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL = 500  # Cap when check_all_files=True
 
 # =============================================================================
 # Dependency Analysis

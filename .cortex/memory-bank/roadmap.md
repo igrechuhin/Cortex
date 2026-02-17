@@ -6,8 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- [Phase: Investigate fix_markdown_lint MCP Tool Failure](.cortex/plans/phase-investigate-fix_markdown_lint-failure-20260216-204350.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `fix_markdown_lint`, Error: TypeError - Impact: Commit procedure blocked - Target completion: 2026-02-16
-
 ## Active Work (in progress)
 
 ## Future Enhancements

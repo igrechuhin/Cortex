@@ -114,7 +114,8 @@ _CONNECTION_ERROR_FALLBACK: dict[str, str] = {
         "See commit prompt Step 12 and docs/guides/troubleshooting.md."
     ),
     "fix_markdown_lint": (
-        " Retry once. If still failing: run markdown lint locally (npx markdownlint-cli2 ... or npm script). "
+        " Retry once. If still failing: run markdown lint locally "
+        "(node_modules/.bin/markdownlint-cli2 --fix '**/*.md' '**/*.mdc'). "
         "See commit prompt Step 12.5 fallback and docs/guides/troubleshooting.md."
     ),
     "fix_quality_issues": (

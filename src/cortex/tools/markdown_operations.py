@@ -13,7 +13,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from cortex.core.constants import (
     GIT_OPERATION_TIMEOUT_SECONDS,
     MARKDOWN_LINT_BATCH_SIZE,
-    MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL,
     MARKDOWN_LINT_PROGRESS_HEARTBEAT_SECONDS,
     MCP_TOOL_TIMEOUT_VERY_COMPLEX,
 )
@@ -21,7 +20,6 @@ from cortex.core.context_logging import MCPContext, log_client, report_progress_
 from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import GitCommandResult
-from cortex.core.path_resolver import CortexResourceType, ProjectResourceType
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.markdown_lint_cache import (
@@ -138,67 +136,6 @@ def _parse_untracked_files(stdout: str, project_root: Path, files: list[Path]) -
             file_path = project_root / line[3:].strip()
             if file_path.suffix in (".md", ".mdc") and file_path not in files:
                 files.append(file_path)
-
-
-def _collect_markdown_files_sync(project_root: Path) -> list[Path]:
-    """Synchronous file discovery for markdown files (run off event loop).
-
-    Args:
-        project_root: Root directory of the project
-
-    Returns:
-        List of all markdown file paths
-    """
-    files: list[Path] = []
-    venv_part = f"/{ProjectResourceType.VENV.value}/"
-    cortex = CortexResourceType.CORTEX_DIR.value
-    exclude_parts = [
-        "/.git/",
-        "/node_modules/",
-        venv_part,
-        "/venv/",
-        "/__pycache__/",
-        "/.pytest_cache/",
-        "/htmlcov/",
-        "/.coverage",
-        f"/{cortex}/{CortexResourceType.HISTORY.value}/",  # Version history files
-        f"/{cortex}/snapshots/",  # Snapshot files (no enum)
-        f"/{cortex}/{CortexResourceType.PLANS_ARCHIVE.value}/",  # Archived plans (matches CI)
-        f"{cortex}/{CortexResourceType.PLANS_ARCHIVE.value}/",  # Also match relative paths
-        "/.memory-bank-history/",  # Memory bank version history
-        ".memory-bank-history/",  # Also match relative paths
-        "/benchmark_results/",  # Benchmark output files
-        "benchmark_results/",  # Also match relative paths
-    ]
-    for pattern in ("**/*.md", "**/*.mdc"):
-        for file_path in project_root.rglob(pattern):
-            file_str = str(file_path)
-            if any(part in file_str for part in exclude_parts):
-                continue
-            if file_path.is_file() and file_path not in files:
-                files.append(file_path)
-    return sorted(set(files))
-
-
-async def _get_all_markdown_files(project_root: Path) -> list[Path]:
-    """Get all markdown files in the project (non-blocking).
-
-    Runs synchronous rglob in a thread so the event loop stays responsive
-    and the MCP tool timeout can cancel the operation if needed.
-
-    Catches exceptions from thread execution to prevent server crashes.
-    """
-    try:
-        return await asyncio.to_thread(_collect_markdown_files_sync, project_root)
-    except Exception as e:
-        # Log error and return empty list - file discovery failures should not crash server
-        await log_client(
-            None,
-            "error",
-            f"Failed to collect markdown files: {e}",
-            logger_name=__name__,
-        )
-        return []
 
 
 async def _calculate_file_hash(file_path: Path) -> str | None:
@@ -785,9 +722,7 @@ async def _fix_markdown_lint_impl(
     if validation_error:
         return _apply_validation_error_hint(validation_error)
     assert markdownlint_cmd is not None
-    files = await _get_markdown_files_to_process(
-        root_path, include_untracked_markdown
-    )
+    files = await _get_markdown_files_to_process(root_path, include_untracked_markdown)
     if not files:
         return create_empty_success_response()
     return await _run_markdownlint_with_cache(
@@ -915,7 +850,14 @@ async def fix_markdown_lint(
     The return value is a JSON string encoded from `FixMarkdownLintResult`
     with aggregate counts and per-file `FileResult` entries. Project root
     is resolved by the server (MCP roots or cwd/script detection).
+
+    **Scope**: Always scopes to git-modified and (optionally) untracked
+    markdown files. The ``check_all_files`` parameter is accepted for
+    backward compatibility but **ignored** — it has no effect. For
+    full-repo lint, run ``node_modules/.bin/markdownlint-cli2 --fix``
+    directly from the shell.
     """
+    _ = check_all_files  # Accepted for backward compat, always scoped to git-modified
     await log_client(ctx, "info", "fix_markdown_lint: starting", logger_name=__name__)
     root_path = await resolve_project_root_async(None, ctx)
     result, ok = await _fix_markdown_lint_run_or_error(
@@ -923,7 +865,6 @@ async def fix_markdown_lint(
         root_path,
         include_untracked_markdown,
         dry_run,
-        check_all_files,
     )
     if ok:
         await log_client(

@@ -272,7 +272,7 @@ MCP tool <tool_name> exceeded timeout of <timeout>s
 
 ## Client connection closed during long tools
 
-Long-running MCP tools (e.g. `fix_markdown_lint(check_all_files=True)` with many files) may complete on the server after the client has already closed the connection. In that case the transport can raise an error (e.g. `anyio.ClosedResourceError`) and the client may see a message like `{"error":"MCP error -32000: Connection closed"}`.
+Long-running MCP tools may complete on the server after the client has already closed the connection. In that case the transport can raise an error (e.g. `anyio.ClosedResourceError`) and the client may see a message like `{"error":"MCP error -32000: Connection closed"}`. Note: `fix_markdown_lint` now always scopes to git-modified + untracked files (not full-repo), which greatly reduces runtime and the chance of hitting this issue.
 
 - **Meaning**: "Connection closed" in this context usually indicates the client disconnected or timed out, not that the tool failed. The tool may have completed successfully on the server.
 - **Server-side mitigations**: To reduce the chance of client idle timeout, the server (1) sends progress more frequently (every 5s instead of 10s) for tools with timeout ≥ 300s, and (2) for `fix_markdown_lint`, reports progress after every file (and after every batch), runs a 5s heartbeat, and processes files in batches of 25 to reduce total duration.

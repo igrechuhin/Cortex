@@ -147,12 +147,12 @@ during Phase B (documentation updates, new files, code changes):
 
 | Sub-step | Check | Tool Call |
 |----------|-------|-----------|
-| 12.0 | Markdown re-validation | `fix_markdown_lint(check_all_files=True)` |
+| 12.0 | Markdown re-validation | `fix_markdown_lint(include_untracked_markdown=True)` |
 | 12.1 | Format fix + check + CI parity | `execute_pre_commit_checks(checks=["format"])` then `checks=["format_ci_parity"]` |
 | 12.2 | Type check | `execute_pre_commit_checks(checks=["type_check"])` |
 | 12.3 | Quality (lint + type_check) | `execute_pre_commit_checks(checks=["quality"])` |
 | 12.4 | Test naming | `execute_pre_commit_checks(checks=["test_naming"])` |
-| 12.5 | Markdown lint (all files) | `fix_markdown_lint(check_all_files=True)` |
+| 12.5 | Markdown lint | `fix_markdown_lint(include_untracked_markdown=True)` |
 | 12.6 | Quality re-check (sizes, lengths) | `execute_pre_commit_checks(checks=["quality"])` |
 | 12.7 | Tests with coverage | `execute_pre_commit_checks(checks=["tests"])` |
 

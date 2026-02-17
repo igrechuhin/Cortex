@@ -12,11 +12,8 @@ import pytest
 
 # pyright: reportPrivateUsage=false
 from cortex.core.models import GitCommandResult
-from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.tools.markdown_lint_responses import create_empty_success_response
 from cortex.tools.markdown_operations import (
     _find_markdownlint_command,
-    _get_all_markdown_files,  # type: ignore[reportPrivateUsage]
     _get_modified_markdown_files,
     _run_command,
     _run_markdownlint_fix,
@@ -736,31 +733,9 @@ class TestFixMarkdownLintTool:
             assert "Test error" in result["error_message"]
 
     @pytest.mark.asyncio
-    async def test_fix_markdown_lint_check_all_files_caps_list(self, tmp_path: Path):
-        """Test that check_all_files=True caps files at MARKDOWN_LINT_MAX_FILES."""
-        # Arrange
-        from cortex.core.constants import MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL
+    async def test_fix_markdown_lint_check_all_files_ignored(self, tmp_path: Path):
+        """Test that check_all_files is accepted for backward compat but ignored."""
         from cortex.tools.markdown_operations import fix_markdown_lint
-
-        excess = 100
-        many_files = [
-            tmp_path / f"f{i}.md"
-            for i in range(MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL + excess)
-        ]
-        for p in many_files:
-            _ = p.write_text("# x\n")
-        run_markdownlint_with_cache_called_with: list[list[Path]] = []
-
-        async def capture_run_markdownlint_with_cache(
-            root_path: Path,
-            files: list[Path],
-            markdownlint_cmd: list[str],
-            config_path: Path | None,
-            dry_run: bool,
-            ctx: object = None,
-        ) -> str:
-            run_markdownlint_with_cache_called_with.append(files)
-            return create_empty_success_response()
 
         with (
             patch(
@@ -776,22 +751,20 @@ class TestFixMarkdownLintTool:
             patch(
                 "cortex.tools.markdown_operations._get_markdown_files_to_process",
                 new_callable=AsyncMock,
-                return_value=many_files,
-            ),
+                return_value=[],
+            ) as mock_get_files,
             patch(
                 "cortex.tools.markdown_operations._run_markdownlint_with_cache",
-                side_effect=capture_run_markdownlint_with_cache,
             ),
         ):
-            # Act
+            # Act — pass check_all_files=True but it should be ignored
             result_str = await fix_markdown_lint(check_all_files=True)
             result = json.loads(result_str)
 
-            # Assert
+            # Assert — tool succeeds and _get_markdown_files_to_process
+            # is called without check_all_files
             assert result["success"] is True
-            assert len(run_markdownlint_with_cache_called_with) == 1
-            passed_files = run_markdownlint_with_cache_called_with[0]
-            assert len(passed_files) == MARKDOWN_LINT_MAX_FILES_WHEN_CHECK_ALL
+            mock_get_files.assert_called_once_with(tmp_path, False)
 
 
 class TestFixMarkdownLintContextLogging:
@@ -921,37 +894,6 @@ class TestHelperFunctions:
 
 class TestFixMarkdownLintErrorHandling:
     """Test error handling improvements for Phase 59 (connection closed fix)."""
-
-    @pytest.mark.asyncio
-    async def test_get_all_markdown_files_handles_thread_exception(
-        self, tmp_path: Path
-    ):
-        """Test that _get_all_markdown_files handles exceptions from thread execution."""
-        from cortex.tools.markdown_operations import (
-            _get_all_markdown_files,  # type: ignore[reportPrivateUsage]
-        )
-
-        with (
-            patch(
-                "cortex.tools.markdown_operations.asyncio.to_thread",
-                new_callable=AsyncMock,
-                side_effect=OSError("File system error"),
-            ) as mock_thread,
-            patch(
-                "cortex.tools.markdown_operations.log_client",
-                new_callable=AsyncMock,
-            ) as mock_log,
-        ):
-            # Act
-            result = await _get_all_markdown_files(tmp_path)
-
-            # Assert
-            assert result == []
-            mock_thread.assert_called_once()
-            mock_log.assert_called_once()
-            call_args = mock_log.call_args[0]
-            assert call_args[1] == "error"
-            assert "Failed to collect markdown files" in call_args[2]
 
     @pytest.mark.asyncio
     async def test_save_markdown_lint_index_handles_cache_write_failure(
@@ -1155,39 +1097,8 @@ class TestFixMarkdownLintErrorHandling:
         assert hashes["a.md"] != hashes["b.md"]
 
 
-class TestGetAllMarkdownFiles:
-    """Tests for _get_all_markdown_files helper."""
-
-    @pytest.mark.asyncio
-    async def test_get_all_markdown_files_excludes_archived_plans(
-        self, tmp_path: Path
-    ) -> None:
-        """Ensure archived plans are excluded from all-files scan.
-
-        This matches CI behavior and prevents timeouts when many archived
-        plan files exist.
-        """
-        # Arrange
-        project_root = tmp_path
-        docs_dir = project_root / "docs"
-        plans_archive_dir = get_cortex_path(
-            project_root, CortexResourceType.PLANS_ARCHIVE
-        )
-        docs_dir.mkdir(parents=True)
-        plans_archive_dir.mkdir(parents=True)
-
-        kept_file = docs_dir / "kept.md"
-        archived_file = plans_archive_dir / "archived.md"
-        _ = kept_file.write_text("# Kept\n", encoding="utf-8")
-        _ = archived_file.write_text("# Archived\n", encoding="utf-8")
-
-        # Act
-        files = await _get_all_markdown_files(project_root)
-
-        # Assert
-        file_strs = {str(p) for p in files}
-        assert str(kept_file) in file_strs
-        assert str(archived_file) not in file_strs
+class TestMarkdownLintHelpers:
+    """Tests for markdown lint helper functions."""
 
     def test_calculate_statistics(self):
         """Test _calculate_statistics helper."""
