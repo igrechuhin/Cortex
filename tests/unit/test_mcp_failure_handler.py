@@ -131,6 +131,34 @@ class TestRoadmapIntegration:
         assert "ASAP (PLANNING)" in content
         assert "Investigate and fix MCP tool failure" in content
 
+    async def test_add_to_roadmap_deduplicates_same_plan(self, tmp_path: Path) -> None:
+        """Test that duplicate roadmap entries for the same investigation plan are not added."""
+        # Create memory bank directory and roadmap with blockers section
+        memory_bank = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        memory_bank.mkdir(parents=True)
+        roadmap = memory_bank / "roadmap.md"
+        _ = roadmap.write_text(
+            "# Roadmap\n\n## Blockers (ASAP Priority)\n\n", encoding="utf-8"
+        )
+
+        handler = MCPToolFailureHandler(tmp_path)
+        error = json.JSONDecodeError("Expecting value", "", 0)
+
+        # Create a single investigation plan, then attempt to add it twice
+        plan_path = await handler.create_investigation_plan(
+            "test_tool", error, "test_step"
+        )
+
+        await handler.add_to_roadmap(plan_path, "test_tool", error)
+        await handler.add_to_roadmap(plan_path, "test_tool", error)
+
+        content = roadmap.read_text(encoding="utf-8")
+        relative_plan_path = plan_path.relative_to(tmp_path)
+
+        # Only one entry referencing this plan path should exist
+        assert str(relative_plan_path) in content
+        assert content.count(str(relative_plan_path)) == 1
+
     async def test_add_to_roadmap_creates_section(self, tmp_path: Path) -> None:
         """Test that roadmap section is created if it doesn't exist."""
         # Create memory bank directory and roadmap without blockers section

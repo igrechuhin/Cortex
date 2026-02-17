@@ -466,9 +466,35 @@ class MCPToolFailureHandler:
             plan_entry: Plan entry text to insert
 
         Returns:
-            Updated roadmap content with plan entry inserted
+            Updated roadmap content with plan entry inserted.
+
+        Deduplicates entries that reference the same investigation plan path
+        to avoid accumulating many identical blockers for the same plan.
         """
         blockers_section = "## Blockers (ASAP Priority)"
+
+        # Extract the plan path fragment from the markdown link, if present.
+        # Example entry:
+        # - [Phase: Investigate foo MCP Tool Failure](.cortex/plans/phase-investigate-foo-failure-20260217-123456.md) - ASAP ...
+        link_start = plan_entry.find("](")
+        link_end = plan_entry.find(")", link_start + 2) if link_start != -1 else -1
+        if link_start != -1 and link_end != -1:
+            plan_path_fragment = plan_entry[link_start + 2 : link_end].strip()
+            if plan_path_fragment:
+                # If any existing blocker line already references this plan path,
+                # treat the new entry as a duplicate and skip insertion.
+                for line in content.split("\n"):
+                    stripped = line.strip()
+                    if (
+                        stripped.startswith("- [Phase: Investigate ")
+                        and plan_path_fragment in stripped
+                    ):
+                        return content
+
+        # As an extra safety guard, avoid inserting an exact duplicate line.
+        if plan_entry.strip() in content:
+            return content
+
         insert_pos = content.find(blockers_section) + len(blockers_section)
         return content[:insert_pos] + "\n" + plan_entry + content[insert_pos:]
 

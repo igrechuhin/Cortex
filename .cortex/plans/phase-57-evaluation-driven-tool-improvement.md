@@ -1,6 +1,6 @@
 # Phase 57: Evaluation-Driven Tool Improvement
 
-**Status:** PENDING
+**Status:** IN PROGRESS
 **Created:** 2026-02-11
 **Priority:** HIGH
 **Estimated Effort:** 3 sprints
@@ -69,7 +69,7 @@ Cortex currently tracks basic usage stats (call counts, success rates) via `get_
   - Expected outcome (success criteria)
   - Token budget baseline (expected token consumption)
   - Common failure modes
-- [ ] Store tasks in `.cortex/evals/tasks/` as JSON
+- [x] Store tasks in `.cortex/evals/tasks/` as JSON (initial `core_workflows.json` seeded; extend with additional tasks in follow-up work)
 
 ### Step 2: Build Evaluation Harness
 

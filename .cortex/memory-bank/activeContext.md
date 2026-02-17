@@ -12,6 +12,10 @@
 
 - ✅ **Phase 56 Step 1: Design Compaction Strategy** - COMPLETE (2026-02-17) - Defined compaction rules for activeContext.md and progress.md, designed SessionHandoff JSON format, implemented Pydantic model, and added comprehensive unit tests (92.3% coverage). Design decision: summarize older entries in-place rather than archiving to progress.md.
 
+- ✅ **Session Optimization: Commit Submodule and Roadmap Deduplication (2026-02-17 Analysis)** - COMPLETE (2026-02-17) - Implemented the 2026-02-17 session optimization outcomes by documenting submodule push fallback behavior in the commit pipeline, adding roadmap blocker deduplication for repeated investigation plans, and updating plan-archiver guidance so investigation plans are marked COMPLETE in their plan files when completed.
+
+- ✅ **Phase 57: Evaluation-Driven Tool Improvement (initial framework)** - COMPLETE (2026-02-17) - Implemented first iteration of the tool evaluation framework by adding `run_tool_evaluation` MCP tool and supporting models in `phase5_evaluation`, seeding a core evaluation task suite under `.cortex/evals/tasks/core_workflows.json`, and validating with full quality gate and tests. Phase 57 remains IN PROGRESS for future work on automated description optimization and A/B testing.
+
 ## Completed Work (2026-02-16)
 - **Summary (2026-02-16)** - 1 entries archived.
 
