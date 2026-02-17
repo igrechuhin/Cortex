@@ -241,12 +241,14 @@ class CacheWarmer:
             List of keys to warm
         """
         # Common mandatory files in memory bank
+        from cortex.core.constants import MemoryBankFile
+
         mandatory_files = [
             "memorybankinstructions.md",
-            "projectBrief.md",
-            "activeContext.md",
-            "systemPatterns.md",
-            "techContext.md",
+            MemoryBankFile.PROJECT_BRIEF,
+            MemoryBankFile.ACTIVE_CONTEXT,
+            MemoryBankFile.SYSTEM_PATTERNS,
+            MemoryBankFile.TECH_CONTEXT,
         ]
 
         return mandatory_files[:max_items]

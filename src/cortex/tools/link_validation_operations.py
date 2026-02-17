@@ -128,7 +128,7 @@ async def validate_links(
           ],
           "validation_warnings": [
             {
-              "file": "productContext.md",
+              "file": MemoryBankFile.PRODUCT_CONTEXT,
               "line": 12,
               "link_type": "markdown",
               "target": "external-link.md",

@@ -38,7 +38,9 @@ class ProgressiveLoaderProtocol(Protocol):
                 priority_order: list[str] | None = None,
                 token_budget: int | None = None,
             ) -> ProgressiveLoadResult:
-                priority = priority_order or ["projectBrief.md", "activeContext.md"]
+                from cortex.core.constants import MemoryBankFile
+
+                priority = priority_order or [MemoryBankFile.PROJECT_BRIEF, MemoryBankFile.ACTIVE_CONTEXT]
                 loaded = {}
                 total_tokens = 0
                 loading_order = []

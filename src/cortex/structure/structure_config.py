@@ -54,14 +54,16 @@ DEFAULT_STRUCTURE: ModelDict = {
 }
 
 # Standard memory bank files
+from cortex.core.constants import MemoryBankFile  # noqa: E402
+
 STANDARD_MEMORY_BANK_FILES: list[str] = [
-    "projectBrief.md",
-    "productContext.md",
-    "activeContext.md",
-    "systemPatterns.md",
-    "techContext.md",
-    "progress.md",
-    "roadmap.md",
+    MemoryBankFile.PROJECT_BRIEF,
+    MemoryBankFile.PRODUCT_CONTEXT,
+    MemoryBankFile.ACTIVE_CONTEXT,
+    MemoryBankFile.SYSTEM_PATTERNS,
+    MemoryBankFile.TECH_CONTEXT,
+    MemoryBankFile.PROGRESS,
+    MemoryBankFile.ROADMAP,
 ]
 
 # Plan templates

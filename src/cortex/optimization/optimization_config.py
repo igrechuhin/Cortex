@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import cast
 
 from cortex.core.async_file_utils import open_async_text_file
+from cortex.core.constants import MemoryBankFile
 from cortex.core.models import JsonValue, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.optimization.models import OptimizationConfigModel
@@ -27,16 +28,16 @@ DEFAULT_OPTIMIZATION_CONFIG = {
         "mandatory_files": ["memorybankinstructions.md"],
         "priority_order": [
             "memorybankinstructions.md",
-            "projectBrief.md",
-            "activeContext.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-            "progress.md",
+            MemoryBankFile.PROJECT_BRIEF,
+            MemoryBankFile.ACTIVE_CONTEXT,
+            MemoryBankFile.SYSTEM_PATTERNS,
+            MemoryBankFile.TECH_CONTEXT,
+            MemoryBankFile.PRODUCT_CONTEXT,
+            MemoryBankFile.PROGRESS,
         ],
         "always_load_sections": {
-            "projectBrief.md": [],
-            "activeContext.md": ["## Current Focus", "## Next Steps"],
+            MemoryBankFile.PROJECT_BRIEF: [],
+            MemoryBankFile.ACTIVE_CONTEXT: ["## Current Focus", "## Next Steps"],
         },
     },
     "summarization": {
@@ -347,14 +348,14 @@ class OptimizationConfig:
         value = self.get(
             "loading_strategy.always_load_sections",
             {
-                "projectBrief.md": [],
-                "activeContext.md": ["## Current Focus", "## Next Steps"],
+                MemoryBankFile.PROJECT_BRIEF: [],
+                MemoryBankFile.ACTIVE_CONTEXT: ["## Current Focus", "## Next Steps"],
             },
         )
         if not isinstance(value, dict):
             return {
-                "projectBrief.md": [],
-                "activeContext.md": ["## Current Focus", "## Next Steps"],
+                MemoryBankFile.PROJECT_BRIEF: [],
+                MemoryBankFile.ACTIVE_CONTEXT: ["## Current Focus", "## Next Steps"],
             }
 
         result: dict[str, list[str]] = {}

@@ -217,13 +217,17 @@ def _generate_projectBrief_file(
     errors_list: list[str],
 ) -> None:
     """Generate projectBrief.md file."""
+    from cortex.core.constants import MemoryBankFile
+
     try:
-        content = customize_template(templates.get("projectBrief.md", ""), project_info)
-        file_path = knowledge_dir / "projectBrief.md"
+        content = customize_template(
+            templates.get(MemoryBankFile.PROJECT_BRIEF, ""), project_info
+        )
+        file_path = knowledge_dir / MemoryBankFile.PROJECT_BRIEF
         _ = file_path.write_text(content, encoding="utf-8")
         generated_list.append(str(file_path))
     except Exception as e:
-        errors_list.append(f"Failed to generate projectBrief.md: {e}")
+        errors_list.append(f"Failed to generate {MemoryBankFile.PROJECT_BRIEF}: {e}")
 
 
 def _generate_tech_context_file(
@@ -233,13 +237,15 @@ def _generate_tech_context_file(
     errors_list: list[str],
 ) -> None:
     """Generate techContext.md file."""
+    from cortex.core.constants import MemoryBankFile
+
     try:
         content = generate_tech_context(project_info)
-        file_path = knowledge_dir / "techContext.md"
+        file_path = knowledge_dir / MemoryBankFile.TECH_CONTEXT
         _ = file_path.write_text(content, encoding="utf-8")
         generated_list.append(str(file_path))
     except Exception as e:
-        errors_list.append(f"Failed to generate techContext.md: {e}")
+        errors_list.append(f"Failed to generate {MemoryBankFile.TECH_CONTEXT}: {e}")
 
 
 def _generate_instructions_file(

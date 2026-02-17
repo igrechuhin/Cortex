@@ -9,6 +9,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from cortex.core.constants import MemoryBankFile
 from cortex.core.models import DictLikeModel, JsonValue
 
 # ============================================================================
@@ -603,19 +604,19 @@ class LoadingStrategyConfigModel(OptimizationBaseModel):
     priority_order: list[str] = Field(
         default_factory=lambda: [
             "memorybankinstructions.md",
-            "projectBrief.md",
-            "activeContext.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-            "progress.md",
+            MemoryBankFile.PROJECT_BRIEF,
+            MemoryBankFile.ACTIVE_CONTEXT,
+            MemoryBankFile.SYSTEM_PATTERNS,
+            MemoryBankFile.TECH_CONTEXT,
+            MemoryBankFile.PRODUCT_CONTEXT,
+            MemoryBankFile.PROGRESS,
         ],
         description="File loading priority order",
     )
     always_load_sections: dict[str, list[str]] = Field(
         default_factory=lambda: {
-            "projectBrief.md": [],
-            "activeContext.md": ["## Current Focus", "## Next Steps"],
+            MemoryBankFile.PROJECT_BRIEF: [],
+            MemoryBankFile.ACTIVE_CONTEXT: ["## Current Focus", "## Next Steps"],
         },
         description=(
             "Sections that must always be loaded in full even when depth=metadata_only. "

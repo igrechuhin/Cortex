@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 from typing import Literal, cast
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM, MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.exceptions import (
     FileConflictError,
@@ -66,14 +66,18 @@ logger = logging.getLogger(__name__)
 ManageFileOperationName = Literal["read", "write", "metadata"]
 
 MANAGE_FILE_INPUT_EXAMPLES: list[dict[str, object]] = [
-    {"file_name": "projectBrief.md", "operation": "read", "include_metadata": True},
     {
-        "file_name": "activeContext.md",
+        "file_name": MemoryBankFile.PROJECT_BRIEF,
+        "operation": "read",
+        "include_metadata": True,
+    },
+    {
+        "file_name": MemoryBankFile.ACTIVE_CONTEXT,
         "operation": "write",
         "content": "# Active Context\n\n## Current Work\n\n...",
         "change_description": "Updated current work focus",
     },
-    {"file_name": "roadmap.md", "operation": "metadata"},
+    {"file_name": MemoryBankFile.ROADMAP, "operation": "metadata"},
 ]
 
 
@@ -619,6 +623,36 @@ def _validate_write_request(
     return validate_write_content(content)
 
 
+async def _verify_write_lock(
+    project_root: Path | None,
+    file_name: str,
+    content: str,
+    change_description: str | None,
+) -> str | None:
+    """Verify lock for write operation. Returns error JSON or None."""
+    if project_root is None:
+        return None
+    from cortex.tools.file_lock_guard import verify_lock_for_file_operation
+
+    is_allowed, lock_error = await verify_lock_for_file_operation(
+        project_root=project_root,
+        file_name=file_name,
+        content=content,
+        change_description=change_description,
+    )
+    if not is_allowed:
+        assert lock_error is not None
+        return json.dumps(
+            {
+                "status": "error",
+                "error": f"Lock verification failed: {lock_error}",
+                "file_name": file_name,
+            },
+            indent=2,
+        )
+    return None
+
+
 async def _handle_write_operation(
     file_path: Path,
     file_name: str,
@@ -629,27 +663,25 @@ async def _handle_write_operation(
     token_counter: TokenCounter,
     version_manager: VersionManager,
     schema_validator: SchemaValidator | None,
+    project_root: Path | None = None,
 ) -> str:
     """Handle write operation with pre-write schema and content validation."""
     if validation_error := _validate_write_request(file_path, file_name, content):
         return validation_error
     assert content is not None
-    if file_name in ("roadmap.md", "progress.md"):
+
+    if lock_error := await _verify_write_lock(
+        project_root, file_name, content, change_description
+    ):
+        return lock_error
+
+    if file_name in (MemoryBankFile.ROADMAP, MemoryBankFile.PROGRESS):
         content = fix_memory_bank_content_if_needed(content, file_name)
     if schema_validator is not None and schema_validator.get_schema(file_name):
         result = await schema_validator.validate_file(file_name, content)
         if not result.valid:
             return build_schema_validation_error_response(file_name, result)
-    return await _execute_write_with_error_handling(
-        file_path,
-        file_name,
-        content,
-        change_description,
-        fs_manager,
-        metadata_index,
-        token_counter,
-        version_manager,
-    )
+    return await _execute_write_with_error_handling(file_path, file_name, content, change_description, fs_manager, metadata_index, token_counter, version_manager)
 
 
 async def _execute_write_with_error_handling(
@@ -986,9 +1018,7 @@ async def execute_memory_bank_write(
     )
 
 
-def _validate_and_get_path(
-    fs_manager: FileSystemManager, root: Path, file_name: str
-) -> tuple[Path | None, str]:
+def _validate_and_get_path(fs_manager: FileSystemManager, root: Path, file_name: str) -> tuple[Path | None, str]:
     """Validate file name and get safe file path."""
     memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     return _validate_file_path(fs_manager, memory_bank_dir, file_name)
@@ -1007,13 +1037,9 @@ async def _dispatch_operation(
 ) -> str:
     """Dispatch operation to appropriate handler."""
     if operation == FileOperation.READ:
-        return await _dispatch_read_operation(
-            file_path, file_name, root, managers, include_metadata, sections
-        )
+        return await _dispatch_read_operation(file_path, file_name, root, managers, include_metadata, sections)
     if operation == FileOperation.WRITE:
-        return await _dispatch_write_operation(
-            file_path, file_name, content, change_description, managers
-        )
+        return await _dispatch_write_operation(file_path, file_name, content, change_description, managers, root)
     if operation == FileOperation.METADATA:
         return await _dispatch_metadata_operation(file_path, file_name, managers)
     return build_invalid_operation_error(operation.value)
@@ -1028,20 +1054,10 @@ async def _dispatch_read_operation(
     sections: list[str] | None,
 ) -> str:
     """Dispatch read operation."""
-    return await _handle_read_operation(
-        file_path,
-        file_name,
-        root,
-        managers.fs,
-        managers.index,
-        include_metadata,
-        sections,
-    )
+    return await _handle_read_operation(file_path, file_name, root, managers.fs, managers.index, include_metadata, sections)
 
 
-async def _resolve_schema_validator(
-    managers: ManagersDict,
-) -> SchemaValidator | None:
+async def _resolve_schema_validator(managers: ManagersDict) -> SchemaValidator | None:
     """Resolve schema validator from managers if available."""
     try:
         return await get_manager(managers, "schema_validator", SchemaValidator)
@@ -1055,32 +1071,15 @@ async def _dispatch_write_operation(
     content: str | None,
     change_description: str | None,
     managers: ManagersDict,
+    root: Path,
 ) -> str:
     """Dispatch write operation."""
     if content is None:
-        return json.dumps(
-            {
-                "status": "error",
-                "error": "Content is required for write operation",
-            },
-            indent=2,
-        )
+        return json.dumps({"status": "error", "error": "Content is required for write operation"}, indent=2)
     schema_validator = await _resolve_schema_validator(managers)
-    return await _handle_write_operation(
-        file_path,
-        file_name,
-        content,
-        change_description,
-        managers.fs,
-        managers.index,
-        managers.tokens,
-        managers.versions,
-        schema_validator,
-    )
+    return await _handle_write_operation(file_path, file_name, content, change_description, managers.fs, managers.index, managers.tokens, managers.versions, schema_validator, project_root=root)
 
 
-async def _dispatch_metadata_operation(
-    file_path: Path, file_name: str, managers: ManagersDict
-) -> str:
+async def _dispatch_metadata_operation(file_path: Path, file_name: str, managers: ManagersDict) -> str:
     """Dispatch metadata operation."""
     return await _handle_metadata_operation(file_path, file_name, managers.index)

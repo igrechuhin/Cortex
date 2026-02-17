@@ -211,8 +211,8 @@ async def analyze(
                     }
                 ],
                 "task_patterns": {
-                    "refactoring": ["systemPatterns.md", "techContext.md"],
-                    "feature_development": ["activeContext.md", "progress.md"]
+                    "refactoring": [MemoryBankFile.SYSTEM_PATTERNS, MemoryBankFile.TECH_CONTEXT],
+                    "feature_development": [MemoryBankFile.ACTIVE_CONTEXT, MemoryBankFile.PROGRESS]
                 },
                 "unused_files": ["old_file.md", "deprecated.md"]
             }
@@ -269,7 +269,7 @@ async def analyze(
                         "recommendation": (
                             "Consolidate shared content using transclusion"
                         ),
-                        "affected_files": ["productContext.md", "activeContext.md"]
+                        "affected_files": [MemoryBankFile.PRODUCT_CONTEXT, MemoryBankFile.ACTIVE_CONTEXT]
                     }
                 ],
                 "medium_impact": [
@@ -283,7 +283,7 @@ async def analyze(
                         "recommendation": (
                             "Split into architecture.md and patterns.md"
                         ),
-                        "affected_files": ["systemPatterns.md"]
+                        "affected_files": [MemoryBankFile.SYSTEM_PATTERNS]
                     }
                 ],
                 "low_impact": []
@@ -311,29 +311,29 @@ async def analyze(
                 "time_window_days": 60,
                 "patterns": {
                     "access_frequency": {
-                        "projectBrief.md": 124,
-                        "activeContext.md": 98,
-                        "systemPatterns.md": 67,
-                        "techContext.md": 45,
-                        "productContext.md": 23,
-                        "progress.md": 12
+                        MemoryBankFile.PROJECT_BRIEF: 124,
+                        MemoryBankFile.ACTIVE_CONTEXT: 98,
+                        MemoryBankFile.SYSTEM_PATTERNS: 67,
+                        MemoryBankFile.TECH_CONTEXT: 45,
+                        MemoryBankFile.PRODUCT_CONTEXT: 23,
+                        MemoryBankFile.PROGRESS: 12
                     },
                     "co_access_patterns": [
                         {
-                            "files": ["activeContext.md", "progress.md"],
+                            "files": [MemoryBankFile.ACTIVE_CONTEXT, MemoryBankFile.PROGRESS],
                             "co_access_count": 34,
                             "confidence": 0.92
                         },
                         {
-                            "files": ["systemPatterns.md", "techContext.md"],
+                            "files": [MemoryBankFile.SYSTEM_PATTERNS, MemoryBankFile.TECH_CONTEXT],
                             "co_access_count": 28,
                             "confidence": 0.87
                         }
                     ],
                     "task_patterns": {
-                        "feature_planning": ["productContext.md", "activeContext.md"],
-                        "architecture_review": ["systemPatterns.md", "techContext.md"],
-                        "progress_tracking": ["progress.md", "activeContext.md"]
+                        "feature_planning": [MemoryBankFile.PRODUCT_CONTEXT, MemoryBankFile.ACTIVE_CONTEXT],
+                        "architecture_review": [MemoryBankFile.SYSTEM_PATTERNS, MemoryBankFile.TECH_CONTEXT],
+                        "progress_tracking": [MemoryBankFile.PROGRESS, MemoryBankFile.ACTIVE_CONTEXT]
                     },
                     "unused_files": ["old_design.md", "deprecated_api.md"]
                 }
@@ -371,7 +371,7 @@ async def analyze(
                             "path": "product_context.md",
                             "severity": "low",
                             "recommendation": (
-                                "Rename to productContext.md for consistency"
+                                f"Rename to {MemoryBankFile.PRODUCT_CONTEXT} for consistency"
                             )
                         }
                     ],

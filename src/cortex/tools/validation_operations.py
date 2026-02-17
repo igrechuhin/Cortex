@@ -10,7 +10,7 @@ Total: 1 tool
 import json
 from typing import Literal, cast
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
+from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX, MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import read_only_annotations
 from cortex.core.mcp_stability import (
@@ -42,7 +42,7 @@ ValidateCheckTypeName = Literal[
 ]
 
 VALIDATE_INPUT_EXAMPLES: list[dict[str, object]] = [
-    {"check_type": "schema", "file_name": "projectBrief.md"},
+    {"check_type": "schema", "file_name": MemoryBankFile.PROJECT_BRIEF},
     {"check_type": "duplications", "similarity_threshold": 0.8},
     {"check_type": "roadmap_sync"},
 ]
@@ -183,21 +183,21 @@ async def validate(
           "exact_duplicates": [
             {
               "content": "## Architecture Overview\nThe system uses...",
-              "files": ["systemPatterns.md", "techContext.md"],
-              "locations": [{"file": "systemPatterns.md", "line": 15},
-              {"file": "techContext.md", "line": 42}]
+              "files": [MemoryBankFile.SYSTEM_PATTERNS, MemoryBankFile.TECH_CONTEXT],
+              "locations": [{"file": MemoryBankFile.SYSTEM_PATTERNS, "line": 15},
+              {"file": MemoryBankFile.TECH_CONTEXT, "line": 42}]
             }
           ],
           "similar_content": [
             {
               "similarity": 0.92,
-              "files": ["productContext.md", "projectBrief.md"],
+              "files": [MemoryBankFile.PRODUCT_CONTEXT, MemoryBankFile.PROJECT_BRIEF],
               "content_preview": "The project aims to build..."
             }
           ],
           "suggested_fixes": [
             {
-              "files": ["systemPatterns.md", "techContext.md"],
+              "files": [MemoryBankFile.SYSTEM_PATTERNS, MemoryBankFile.TECH_CONTEXT],
               "suggestion": (
                   "Consider using transclusion: "
                   "{{include:shared-content.md}}"
@@ -234,7 +234,7 @@ async def validate(
           "file_scores": {
             "projectBrief.md": 85,
             "activeContext.md": 72,
-            "systemPatterns.md": 80
+            MemoryBankFile.SYSTEM_PATTERNS: 80
           },
           "metrics": {
             "total_files": 6,
@@ -282,9 +282,9 @@ async def validate(
              "exact_duplicates": [
                {
                  "content": "## Development Setup\nRequires Python 3.11+...",
-                 "files": ["techContext.md", "README.md"],
+                 "files": [MemoryBankFile.TECH_CONTEXT, "README.md"],
                  "locations": [
-                   {"file": "techContext.md", "line": 28},
+                   {"file": MemoryBankFile.TECH_CONTEXT, "line": 28},
                    {"file": "README.md", "line": 15}
                  ]
                }
@@ -292,13 +292,13 @@ async def validate(
              "similar_content": [
                {
                  "similarity": 0.89,
-                 "files": ["systemPatterns.md", "activeContext.md"],
+                 "files": [MemoryBankFile.SYSTEM_PATTERNS, MemoryBankFile.ACTIVE_CONTEXT],
                  "content_preview": "The authentication system uses JWT tokens..."
                }
              ],
              "suggested_fixes": [
                {
-                 "files": ["techContext.md", "README.md"],
+                 "files": [MemoryBankFile.TECH_CONTEXT, "README.md"],
                  "suggestion": (
                   "Consider using transclusion: "
                   "{{include:shared-content.md}}"
@@ -321,12 +321,12 @@ async def validate(
              "overall_score": 82,
              "health_status": "good",
              "file_scores": {
-               "projectBrief.md": 88,
-               "productContext.md": 85,
-               "activeContext.md": 78,
-               "systemPatterns.md": 80,
-               "techContext.md": 82,
-               "progress.md": 75
+               MemoryBankFile.PROJECT_BRIEF: 88,
+               MemoryBankFile.PRODUCT_CONTEXT: 85,
+               MemoryBankFile.ACTIVE_CONTEXT: 78,
+               MemoryBankFile.SYSTEM_PATTERNS: 80,
+               MemoryBankFile.TECH_CONTEXT: 82,
+               MemoryBankFile.PROGRESS: 75
              },
              "metrics": {
                "total_files": 6,
@@ -380,7 +380,7 @@ async def validate(
              "total_invalid_with_time": 2,
              "files_valid": false,
              "results": {
-               "progress.md": {
+               MemoryBankFile.PROGRESS: {
                  "valid_count": 12,
                  "invalid_format_count": 0,
                  "invalid_with_time_count": 2,
@@ -400,7 +400,7 @@ async def validate(
                  ],
                  "valid": false
                },
-               "roadmap.md": {
+               MemoryBankFile.ROADMAP: {
                  "valid_count": 8,
                  "invalid_format_count": 0,
                  "invalid_with_time_count": 0,

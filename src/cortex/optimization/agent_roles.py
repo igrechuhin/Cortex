@@ -24,6 +24,8 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum
 
+from cortex.core.constants import MemoryBankFile
+
 
 class AgentRole(str, Enum):
     """Supported agent roles for multi-agent specialization.
@@ -93,10 +95,10 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
             "fix_quality_issues",
         ],
         context_focus=[
-            "projectBrief.md",
-            "systemPatterns.md",
-            "activeContext.md",
-            "techContext.md",
+            MemoryBankFile.PROJECT_BRIEF,
+            MemoryBankFile.SYSTEM_PATTERNS,
+            MemoryBankFile.ACTIVE_CONTEXT,
+            MemoryBankFile.TECH_CONTEXT,
         ],
         # Small feature / implementation work typically needs broader
         # context; align with 20k–30k guidance.
@@ -113,8 +115,8 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
             "suggest_refactoring",
         ],
         context_focus=[
-            "techContext.md",
-            "systemPatterns.md",
+            MemoryBankFile.TECH_CONTEXT,
+            MemoryBankFile.SYSTEM_PATTERNS,
         ],
         # Fix/debug or quality passes tend to use medium budgets.
         default_token_budget=15000,
@@ -127,9 +129,9 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
             "fix_markdown_lint",
         ],
         context_focus=[
-            "techContext.md",
-            "systemPatterns.md",
-            "progress.md",
+            MemoryBankFile.TECH_CONTEXT,
+            MemoryBankFile.SYSTEM_PATTERNS,
+            MemoryBankFile.PROGRESS,
         ],
         default_token_budget=15000,
     ),
@@ -143,9 +145,9 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
             "fix_quality_issues",
         ],
         context_focus=[
-            "projectBrief.md",
-            "productContext.md",
-            "activeContext.md",
+            MemoryBankFile.PROJECT_BRIEF,
+            MemoryBankFile.PRODUCT_CONTEXT,
+            MemoryBankFile.ACTIVE_CONTEXT,
         ],
         # Documentation changes are usually lighter on token usage.
         default_token_budget=10000,
@@ -161,9 +163,9 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
             "execute_pre_commit_checks",
         ],
         context_focus=[
-            "roadmap.md",
-            "activeContext.md",
-            "projectBrief.md",
+            MemoryBankFile.ROADMAP,
+            MemoryBankFile.ACTIVE_CONTEXT,
+            MemoryBankFile.PROJECT_BRIEF,
         ],
         default_token_budget=20000,
     ),
@@ -176,9 +178,9 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
             "create_plan",
         ],
         context_focus=[
-            "activeContext.md",
-            "systemPatterns.md",
-            "techContext.md",
+            MemoryBankFile.ACTIVE_CONTEXT,
+            MemoryBankFile.SYSTEM_PATTERNS,
+            MemoryBankFile.TECH_CONTEXT,
         ],
         default_token_budget=15000,
     ),
@@ -192,9 +194,9 @@ ROLE_PROFILES: dict[AgentRole, AgentRoleProfile] = {
             "fix_quality_issues",
         ],
         context_focus=[
-            "activeContext.md",
-            "roadmap.md",
-            "projectBrief.md",
+            MemoryBankFile.ACTIVE_CONTEXT,
+            MemoryBankFile.ROADMAP,
+            MemoryBankFile.PROJECT_BRIEF,
         ],
         default_token_budget=15000,
     ),
@@ -334,6 +336,6 @@ def get_role_profile(role: AgentRole) -> AgentRoleProfile:
     return _make_profile(
         priority_tools=("load_context",),
         deprioritized_tools=(),
-        context_focus=("projectBrief.md",),
+        context_focus=(MemoryBankFile.PROJECT_BRIEF,),
         default_token_budget=15000,
     )

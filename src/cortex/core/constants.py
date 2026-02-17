@@ -9,6 +9,8 @@ and reduce magic numbers. When modifying these values, consider the impact
 on existing behavior and run the full test suite.
 """
 
+from enum import StrEnum
+
 # =============================================================================
 # File Size Limits
 # =============================================================================
@@ -175,16 +177,37 @@ SNAPSHOT_CLEANUP_THRESHOLD = 100  # Clean up when snapshot count exceeds this
 VERSION_HISTORY_MAX_ENTRIES = 100  # Maximum version history entries to return
 
 # =============================================================================
+# Memory Bank File Names
+# =============================================================================
+
+
+class MemoryBankFile(StrEnum):
+    """Enumeration of memory bank file names.
+
+    Use this enum instead of hardcoded strings throughout the codebase
+    to ensure consistency and enable refactoring.
+    """
+
+    PROJECT_BRIEF = "projectBrief.md"
+    PRODUCT_CONTEXT = "productContext.md"
+    ACTIVE_CONTEXT = "activeContext.md"
+    SYSTEM_PATTERNS = "systemPatterns.md"
+    TECH_CONTEXT = "techContext.md"
+    PROGRESS = "progress.md"
+    ROADMAP = "roadmap.md"
+
+
+# =============================================================================
 # Validation Rules
 # =============================================================================
 
 MIN_SECTION_LENGTH_CHARS = 50  # Minimum characters for section to be valid
 MAX_SECTION_LENGTH_CHARS = 50_000  # Maximum characters per section
-REQUIRED_SECTIONS_CORE = [
-    "projectBrief.md",
-    "productContext.md",
-    "systemPatterns.md",
-    "techContext.md",
-    "activeContext.md",
-    "progress.md",
+REQUIRED_SECTIONS_CORE: list[str] = [
+    MemoryBankFile.PROJECT_BRIEF,
+    MemoryBankFile.PRODUCT_CONTEXT,
+    MemoryBankFile.SYSTEM_PATTERNS,
+    MemoryBankFile.TECH_CONTEXT,
+    MemoryBankFile.ACTIVE_CONTEXT,
+    MemoryBankFile.PROGRESS,
 ]  # Core memory bank files that must exist

@@ -12,6 +12,7 @@ from typing import cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.constants import MemoryBankFile
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import JsonValue, ModelDict
@@ -376,12 +377,12 @@ class ProgressiveLoader:
         """
         return [
             "memorybankinstructions.md",
-            "projectBrief.md",
-            "activeContext.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "productContext.md",
-            "progress.md",
+            MemoryBankFile.PROJECT_BRIEF,
+            MemoryBankFile.ACTIVE_CONTEXT,
+            MemoryBankFile.SYSTEM_PATTERNS,
+            MemoryBankFile.TECH_CONTEXT,
+            MemoryBankFile.PRODUCT_CONTEXT,
+            MemoryBankFile.PROGRESS,
         ]
 
     async def stream_by_priority(

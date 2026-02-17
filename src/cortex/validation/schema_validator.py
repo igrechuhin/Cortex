@@ -10,6 +10,7 @@ import re
 from pathlib import Path
 from typing import cast
 
+from cortex.core.constants import MemoryBankFile
 from cortex.core.models import JsonValue
 from cortex.validation.models import FileSchemaModel, ValidationError, ValidationResult
 
@@ -24,7 +25,7 @@ DEFAULT_SCHEMAS: dict[str, SchemaDict] = {
         "heading_level": 2,
         "max_nesting": 3,
     },
-    "projectBrief.md": {
+    MemoryBankFile.PROJECT_BRIEF: {
         "required_sections": [
             "Project Overview",
             "Goals",
@@ -35,13 +36,13 @@ DEFAULT_SCHEMAS: dict[str, SchemaDict] = {
         "heading_level": 2,
         "max_nesting": 3,
     },
-    "productContext.md": {
+    MemoryBankFile.PRODUCT_CONTEXT: {
         "required_sections": ["Product Overview", "Target Users", "Key Features"],
         "recommended_sections": ["User Stories", "Market Context"],
         "heading_level": 2,
         "max_nesting": 3,
     },
-    "activeContext.md": {
+    MemoryBankFile.ACTIVE_CONTEXT: {
         "required_sections": ["Current Focus", "Recent Changes", "Next Steps"],
         "recommended_sections": [
             "Completed Work",
@@ -51,7 +52,7 @@ DEFAULT_SCHEMAS: dict[str, SchemaDict] = {
         "heading_level": 2,
         "max_nesting": 3,
     },
-    "systemPatterns.md": {
+    MemoryBankFile.SYSTEM_PATTERNS: {
         "required_sections": [
             "Architecture",
             "Design Patterns",
@@ -61,19 +62,19 @@ DEFAULT_SCHEMAS: dict[str, SchemaDict] = {
         "heading_level": 2,
         "max_nesting": 3,
     },
-    "techContext.md": {
+    MemoryBankFile.TECH_CONTEXT: {
         "required_sections": ["Technology Stack", "Dependencies", "Development Setup"],
         "recommended_sections": ["Build Process", "Testing Strategy"],
         "heading_level": 2,
         "max_nesting": 3,
     },
-    "progress.md": {
+    MemoryBankFile.PROGRESS: {
         "required_sections": ["What Works", "What's Left"],
         "recommended_sections": ["Known Issues", "Recent Milestones"],
         "heading_level": 2,
         "max_nesting": 3,
     },
-    "roadmap.md": {
+    MemoryBankFile.ROADMAP: {
         "required_sections": [
             "Blockers (ASAP Priority)",
             "Active Work (in progress)",

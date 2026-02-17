@@ -15,7 +15,7 @@ import re
 from pathlib import Path
 from typing import Literal, cast
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
+from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST, MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
 from cortex.core.mcp_annotations import read_only_annotations
@@ -190,11 +190,54 @@ def _extract_recent_completed(
     return completed_items
 
 
-def _extract_next_work_item(roadmap_content: str) -> tuple[str | None, str | None]:
-    """Extract next PENDING work item from roadmap.
+async def _check_task_available_safe(project_root: Path | None, title: str) -> bool:
+    """Check if task is available, returning True on error (don't block)."""
+    if project_root is None:
+        return True
+    from cortex.tools.task_locking import check_task_available
+
+    try:
+        return await check_task_available(project_root, title)
+    except Exception:
+        logger.debug("Lock check failed for %s, continuing anyway", title)
+        return True
+
+
+async def _process_pending_line(
+    line: str, project_root: Path | None
+) -> tuple[str | None, str | None]:
+    """Process a PENDING line and return (work_item, plan_path) or (None, None)."""
+    match = re.match(
+        r"^-\s*\*\*(.+?)\*\*\s*-\s*PENDING\s*-\s*(.+?)(?:\.\s*Plan:\s*(.+?))?\.?$", line
+    )
+    if match:
+        title = match.group(1).strip()
+        description = match.group(2).strip()
+        plan_path = match.group(3).strip() if match.group(3) else None
+        work_item = f"{title} - {description}"
+        if await _check_task_available_safe(project_root, title):
+            return (work_item, plan_path)
+        logger.debug("Skipping locked task: %s (locked by another session)", title)
+        return (None, None)
+
+    title_match = re.match(r"^-\s*\*\*(.+?)\*\*", line)
+    if title_match:
+        title = title_match.group(1).strip()
+        if await _check_task_available_safe(project_root, title):
+            return (title, None)
+        logger.debug("Skipping locked task: %s (locked by another session)", title)
+    return (None, None)
+
+
+async def _extract_next_work_item(
+    roadmap_content: str, project_root: Path | None = None
+) -> tuple[str | None, str | None]:
+    """Extract next PENDING work item from roadmap, skipping locked tasks.
 
     Args:
         roadmap_content: Full content of roadmap.md
+        project_root: Optional project root directory for lock checking.
+            If None, lock checking is skipped (useful for tests).
 
     Returns:
         Tuple of (next_work_item_description, plan_path) or (None, None)
@@ -202,36 +245,18 @@ def _extract_next_work_item(roadmap_content: str) -> tuple[str | None, str | Non
     sections = _parse_roadmap_sections(roadmap_content)
     lines = roadmap_content.split("\n")
 
-    # Check sections in priority order: blockers -> active_work -> future -> pending
     for section_id in ["blockers", "active_work", "future", "pending"]:
         if section_id not in sections:
             continue
-
         section_start, section_end = sections[section_id]
         for i in range(section_start + 1, section_end + 1):
             if i >= len(lines):
                 break
             line = lines[i].strip()
-
-            # Look for PENDING items (format: "- **Title** - PENDING - Description")
             if line.startswith("- **") and "PENDING" in line:
-                # Extract title and plan path
-                # Format: "- **Title** - PENDING - Description. Plan: .cortex/plans/..."
-                match = re.match(
-                    r"^-\s*\*\*(.+?)\*\*\s*-\s*PENDING\s*-\s*(.+?)(?:\.\s*Plan:\s*(.+?))?\.?$",
-                    line,
-                )
-                if match:
-                    title = match.group(1).strip()
-                    description = match.group(2).strip()
-                    plan_path = match.group(3).strip() if match.group(3) else None
-                    work_item = f"{title} - {description}"
+                work_item, plan_path = await _process_pending_line(line, project_root)
+                if work_item:
                     return (work_item, plan_path)
-
-                # Fallback: extract just the title
-                title_match = re.match(r"^-\s*\*\*(.+?)\*\*", line)
-                if title_match:
-                    return (title_match.group(1).strip(), None)
 
     return (None, None)
 
@@ -323,13 +348,13 @@ async def _check_file_and_count_tokens(
 
 
 _REQUIRED_FILES = [
-    "projectBrief.md",
-    "activeContext.md",
-    "roadmap.md",
-    "progress.md",
-    "systemPatterns.md",
-    "techContext.md",
-    "productContext.md",
+    MemoryBankFile.PROJECT_BRIEF,
+    MemoryBankFile.ACTIVE_CONTEXT,
+    MemoryBankFile.ROADMAP,
+    MemoryBankFile.PROGRESS,
+    MemoryBankFile.SYSTEM_PATTERNS,
+    MemoryBankFile.TECH_CONTEXT,
+    MemoryBankFile.PRODUCT_CONTEXT,
 ]
 
 
@@ -443,7 +468,7 @@ async def _extract_project_name(fs_manager: FileSystemManager) -> str:
         Project name
     """
     project_name: str = "Cortex"
-    project_brief_path: Path = fs_manager.memory_bank_dir / "projectBrief.md"
+    project_brief_path: Path = fs_manager.memory_bank_dir / MemoryBankFile.PROJECT_BRIEF
     if project_brief_path.exists():
         project_brief_content: str
         project_brief_content, _ = await fs_manager.read_file(project_brief_path)
@@ -465,7 +490,9 @@ async def _build_session_brief(
     """Build session brief from extracted information."""
     current_focus = _extract_current_focus(active_context_content)
     recent_completed = _extract_recent_completed(active_context_content)
-    next_work_item, next_work_plan_path = _extract_next_work_item(roadmap_content)
+    next_work_item, next_work_plan_path = await _extract_next_work_item(
+        roadmap_content, project_root
+    )
     health = await _calculate_health_summary(managers, project_root)
     git_status = await _get_git_status(project_root)
     session_suggestions = _generate_session_suggestions(
@@ -496,12 +523,14 @@ async def _load_memory_bank_files(
         Tuple of (active_context_content, roadmap_content) or error result
     """
     active_context_content, error = await _read_memory_bank_file(
-        fs_manager, "activeContext.md"
+        fs_manager, MemoryBankFile.ACTIVE_CONTEXT
     )
     if error:
         return SessionStartErrorResult(status="error", error=error)
 
-    roadmap_content, error = await _read_memory_bank_file(fs_manager, "roadmap.md")
+    roadmap_content, error = await _read_memory_bank_file(
+        fs_manager, MemoryBankFile.ROADMAP
+    )
     if error:
         return SessionStartErrorResult(status="error", error=error)
 

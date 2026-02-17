@@ -26,6 +26,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.constants import MemoryBankFile
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.models import DictLikeModel, HealthMetrics, IndexStats, JsonDict
@@ -2801,7 +2802,9 @@ class AppendProgressEntryResult(StrictBaseModel):
     """Result of appending a single entry to progress.md."""
 
     status: Literal["success", "error"] = Field(description="Operation status")
-    file_name: str = Field(description="File that was modified (progress.md)")
+    file_name: str = Field(
+        description=f"File that was modified ({MemoryBankFile.PROGRESS})"
+    )
     message: str = Field(description="Success or error message")
     line_inserted: int | None = Field(
         None, ge=1, description="1-based line number where entry was inserted"
@@ -2815,7 +2818,9 @@ class AppendActiveContextEntryResult(StrictBaseModel):
     """Result of appending a single completed entry to activeContext.md."""
 
     status: Literal["success", "error"] = Field(description="Operation status")
-    file_name: str = Field(description="File that was modified (activeContext.md)")
+    file_name: str = Field(
+        description=f"File that was modified ({MemoryBankFile.ACTIVE_CONTEXT})"
+    )
     message: str = Field(description="Success or error message")
     line_inserted: int | None = Field(
         None, ge=1, description="1-based line number where entry was inserted"
@@ -2931,3 +2936,70 @@ class SessionStartErrorResult(ErrorResultBase):
 
 # Union type for session_start return
 SessionStartResultUnion = SessionStartResult | SessionStartErrorResult
+
+
+# ============================================================================
+# Task Locking Models (Phase 58)
+# ============================================================================
+
+
+class TaskLock(StrictBaseModel):
+    """Task lock information."""
+
+    task_id: str = Field(..., min_length=1, description="Unique task identifier")
+    task_title: str = Field(..., min_length=1, description="Roadmap entry title")
+    agent_session_id: str = Field(
+        ..., min_length=1, description="Session ID that holds the lock"
+    )
+    locked_at: str = Field(
+        ..., description="ISO format datetime when lock was acquired"
+    )
+    expires_at: str = Field(..., description="ISO format datetime when lock expires")
+    agent_role: str | None = Field(
+        None, description="Agent role (feature, quality, testing, etc.)"
+    )
+
+
+class ClaimTaskResult(StrictBaseModel):
+    """Result of claiming a task lock (success)."""
+
+    status: Literal["success"] = Field(default="success")
+    lock: TaskLock = Field(description="Lock data for the claimed task")
+    message: str = Field(description="Success message")
+
+
+class ClaimTaskErrorResult(ErrorResultBase):
+    """Error result for claim_task operations."""
+
+    task_title: str | None = Field(None, description="Task title that failed to lock")
+
+
+class ReleaseTaskResult(StrictBaseModel):
+    """Result of releasing a task lock."""
+
+    status: Literal["success", "error"] = Field(description="Operation status")
+    task_title: str = Field(description="Task title that was released")
+    released: bool = Field(description="Whether lock was successfully released")
+    message: str = Field(description="Success or error message")
+    error: str | None = Field(None, description="Error message if status is error")
+
+
+class ListActiveTasksResult(StrictBaseModel):
+    """Result of listing active task locks."""
+
+    status: Literal["success"] = Field(default="success")
+    locks: list[TaskLock] = Field(
+        default_factory=lambda: [], description="List of active task locks"
+    )
+    count: int = Field(ge=0, description="Number of active locks")
+
+
+class CheckTaskAvailableResult(StrictBaseModel):
+    """Result of checking if a task is available."""
+
+    status: Literal["success"] = Field(default="success")
+    task_title: str = Field(description="Task title that was checked")
+    available: bool = Field(description="Whether task is available (not locked)")
+    lock: TaskLock | None = Field(
+        None, description="Lock data if task is locked, None if available"
+    )

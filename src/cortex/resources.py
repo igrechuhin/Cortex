@@ -1,5 +1,6 @@
 """Resources (templates and guides) for MCP Memory Bank."""
 
+from cortex.core.constants import MemoryBankFile
 from cortex.guides.benefits import GUIDE as BENEFITS_GUIDE
 from cortex.guides.setup import GUIDE as SETUP_GUIDE
 from cortex.guides.structure import GUIDE as STRUCTURE_GUIDE
@@ -20,12 +21,12 @@ from cortex.templates.tech_context import TEMPLATE as TECH_CONTEXT_TEMPLATE
 
 TEMPLATES = {
     "memorybankinstructions.md": MEMORY_BANK_INSTRUCTIONS_TEMPLATE,
-    "projectBrief.md": PROJECTBRIEF_TEMPLATE,
-    "productContext.md": PRODUCT_CONTEXT_TEMPLATE,
-    "activeContext.md": ACTIVE_CONTEXT_TEMPLATE,
-    "systemPatterns.md": SYSTEM_PATTERNS_TEMPLATE,
-    "techContext.md": TECH_CONTEXT_TEMPLATE,
-    "progress.md": PROGRESS_TEMPLATE,
+    MemoryBankFile.PROJECT_BRIEF: PROJECTBRIEF_TEMPLATE,
+    MemoryBankFile.PRODUCT_CONTEXT: PRODUCT_CONTEXT_TEMPLATE,
+    MemoryBankFile.ACTIVE_CONTEXT: ACTIVE_CONTEXT_TEMPLATE,
+    MemoryBankFile.SYSTEM_PATTERNS: SYSTEM_PATTERNS_TEMPLATE,
+    MemoryBankFile.TECH_CONTEXT: TECH_CONTEXT_TEMPLATE,
+    MemoryBankFile.PROGRESS: PROGRESS_TEMPLATE,
 }
 
 GUIDES = {

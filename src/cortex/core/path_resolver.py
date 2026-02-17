@@ -165,14 +165,17 @@ def has_memory_bank(project_root: Path) -> bool:
 
 # Core Memory Bank files; kept in sync with the canonical spec
 # in the Memory Bank workflow rule (memory-bank-workflow.mdc).
+# Import here to avoid circular dependency (constants imports from path_resolver)
+from cortex.core.constants import MemoryBankFile  # noqa: E402
+
 _MEMORY_BANK_CORE_FILES = (
-    "projectBrief.md",
-    "productContext.md",
-    "activeContext.md",
-    "systemPatterns.md",
-    "techContext.md",
-    "progress.md",
-    "roadmap.md",
+    MemoryBankFile.PROJECT_BRIEF,
+    MemoryBankFile.PRODUCT_CONTEXT,
+    MemoryBankFile.ACTIVE_CONTEXT,
+    MemoryBankFile.SYSTEM_PATTERNS,
+    MemoryBankFile.TECH_CONTEXT,
+    MemoryBankFile.PROGRESS,
+    MemoryBankFile.ROADMAP,
 )
 
 

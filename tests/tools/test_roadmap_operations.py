@@ -60,7 +60,8 @@ class TestEntryTextLooksCompleted:
 class TestExecuteRoadmapInsertionRejectsCompleted:
     """_execute_roadmap_insertion rejects completed-looking entry_text."""
 
-    def test_insertion_rejects_completed_entry(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_insertion_rejects_completed_entry(self, tmp_path: Path) -> None:
         """Adding a COMPLETED entry returns error result."""
         memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
@@ -69,7 +70,7 @@ class TestExecuteRoadmapInsertionRejectsCompleted:
             + "## Active Work (in progress)\n\n## Future Enhancements\n\n"
             + "## Pending plans (from .cortex/plans)\n- **Other** - PENDING\n"
         )
-        result = _execute_roadmap_insertion(
+        result = await _execute_roadmap_insertion(
             tmp_path,
             section="pending",
             entry_text="- **Phase 51** - COMPLETED - Summary",
@@ -78,7 +79,8 @@ class TestExecuteRoadmapInsertionRejectsCompleted:
         assert result.status == "error"
         assert "activeContext" in (result.error or "")
 
-    def test_insertion_accepts_pending_entry(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_insertion_accepts_pending_entry(self, tmp_path: Path) -> None:
         """Adding a PENDING entry succeeds."""
         memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
@@ -87,7 +89,7 @@ class TestExecuteRoadmapInsertionRejectsCompleted:
             + "## Active Work (in progress)\n\n## Future Enhancements\n\n"
             + "## Pending plans (from .cortex/plans)\n- **Other** - PENDING\n"
         )
-        result = _execute_roadmap_insertion(
+        result = await _execute_roadmap_insertion(
             tmp_path,
             section="pending",
             entry_text="- **New plan** - PENDING - Plan: x",
@@ -133,30 +135,33 @@ class TestRemoveLineAtRoadmap:
 class TestExecuteRoadmapRemoval:
     """Tests for _execute_roadmap_removal."""
 
-    def test_removal_success(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_removal_success(self, tmp_path: Path) -> None:
         memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         content = "# Roadmap\n\n## Pending\n\n- **Phase 50** - PENDING - Plan: x.\n"
         _ = (memory_bank_dir / "roadmap.md").write_text(content)
-        result = _execute_roadmap_removal(tmp_path, "Phase 50")
+        result = await _execute_roadmap_removal(tmp_path, "Phase 50")
         assert result.status == "success"
         assert result.line_removed is not None
         assert result.line_removed >= 1
         assert "Phase 50" not in (memory_bank_dir / "roadmap.md").read_text()
 
-    def test_removal_not_found_returns_error(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_removal_not_found_returns_error(self, tmp_path: Path) -> None:
         memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         memory_bank_dir.mkdir(parents=True)
         _ = (memory_bank_dir / "roadmap.md").write_text(
             "# Roadmap\n\n## Pending\n\n- **Other** - PENDING\n"
         )
-        result = _execute_roadmap_removal(tmp_path, "Phase 50")
+        result = await _execute_roadmap_removal(tmp_path, "Phase 50")
         assert result.status == "error"
         assert result.line_removed is None
 
-    def test_removal_file_not_found_returns_error(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_removal_file_not_found_returns_error(self, tmp_path: Path) -> None:
         get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
-        result = _execute_roadmap_removal(tmp_path, "Phase 50")
+        result = await _execute_roadmap_removal(tmp_path, "Phase 50")
         assert result.status == "error"
         assert "not found" in (result.error or "").lower()
 

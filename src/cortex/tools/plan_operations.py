@@ -14,7 +14,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM, MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.exceptions import FileConflictError, FileLockTimeoutError
 from cortex.core.mcp_annotations import safe_write_annotations
@@ -44,7 +44,9 @@ class RegisterPlanResult(BaseModel):
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
     status: str = Field(description="Operation status: 'success' or 'error'")
-    file_name: str = Field(description="File that was modified (roadmap.md)")
+    file_name: str = Field(
+        description=f"File that was modified ({MemoryBankFile.ROADMAP})"
+    )
     message: str = Field(description="Success or error message")
     line_inserted: int | None = Field(
         None, ge=1, description="Line number where entry was inserted"
@@ -328,7 +330,7 @@ def _validate_registration_section(section: str) -> tuple[str | None, str | None
 def _read_roadmap_file(roadmap_path: Path) -> tuple[str | None, str | None]:
     """Read roadmap file. Returns (content, error_message)."""
     if not roadmap_path.exists():
-        return (None, f"roadmap.md not found at {roadmap_path}")
+        return (None, f"{MemoryBankFile.ROADMAP} not found at {roadmap_path}")
 
     try:
         content = roadmap_path.read_text(encoding="utf-8")
@@ -337,8 +339,24 @@ def _read_roadmap_file(roadmap_path: Path) -> tuple[str | None, str | None]:
         return (None, str(e))
 
 
-def _write_roadmap_file(roadmap_path: Path, content: str) -> str | None:
-    """Write updated roadmap. Returns error_message if failed."""
+async def _write_roadmap_file(
+    roadmap_path: Path, content: str, project_root: Path | None = None
+) -> str | None:
+    """Write updated roadmap with lock-guarding. Returns error_message if failed."""
+    # Lock-guarding: verify lock before writing
+    if project_root is not None:
+        from cortex.tools.file_lock_guard import verify_lock_for_file_operation
+
+        is_allowed, lock_error = await verify_lock_for_file_operation(
+            project_root=project_root,
+            file_name=MemoryBankFile.ROADMAP,
+            content=content,
+            change_description=None,
+        )
+        if not is_allowed:
+            assert lock_error is not None
+            return f"Lock verification failed: {lock_error}"
+
     try:
         fixed_content = fix_roadmap_content_if_needed(content)
         _ = roadmap_path.write_text(fixed_content, encoding="utf-8")
@@ -353,7 +371,7 @@ def _create_register_error_result(error: str) -> RegisterPlanResult:
     """Create an error result for plan registration."""
     return RegisterPlanResult(
         status="error",
-        file_name="roadmap.md",
+        file_name=MemoryBankFile.ROADMAP,
         message="Failed to register plan",
         line_inserted=None,
         section=None,
@@ -368,7 +386,7 @@ def _create_register_success_result(
     """Create a success result for plan registration."""
     return RegisterPlanResult(
         status="success",
-        file_name="roadmap.md",
+        file_name=MemoryBankFile.ROADMAP,
         message=f"Plan registered in '{section_id}' section at line {line_inserted}",
         line_inserted=line_inserted,
         section=section_id,
@@ -398,9 +416,10 @@ async def _handle_roadmap_write(
     updated_content: str,
     section_id: str,
     ctx: MCPContext | None,
+    project_root: Path | None = None,
 ) -> str | None:
     """Write roadmap or return error JSON. Returns error JSON or None."""
-    write_error = _write_roadmap_file(roadmap_path, updated_content)
+    write_error = await _write_roadmap_file(roadmap_path, updated_content, project_root)
     if write_error:
         await log_client(
             ctx,
@@ -470,7 +489,7 @@ async def _execute_register_plan(
 ) -> str:
     """Execute plan registration. Returns JSON result."""
     memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
-    roadmap_path = memory_bank_dir / "roadmap.md"
+    roadmap_path = memory_bank_dir / MemoryBankFile.ROADMAP
 
     # Read roadmap
     read_result = await _handle_roadmap_read(roadmap_path, ctx)
@@ -489,7 +508,7 @@ async def _execute_register_plan(
 
     # Write roadmap
     write_result = await _handle_roadmap_write(
-        roadmap_path, updated_content, section_id, ctx
+        roadmap_path, updated_content, section_id, ctx, root
     )
     return write_result or await _handle_entry_success(ctx, section_id, line_inserted)
 
@@ -556,7 +575,7 @@ async def _register_plan_impl(
         )
         return RegisterPlanResult(
             status="error",
-            file_name="roadmap.md",
+            file_name=MemoryBankFile.ROADMAP,
             message="Unexpected error",
             line_inserted=None,
             section=None,

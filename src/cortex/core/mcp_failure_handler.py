@@ -10,6 +10,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
+from cortex.core.constants import MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.exceptions import MemoryBankError
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -400,7 +401,7 @@ class MCPToolFailureHandler:
         """
         roadmap_path = (
             get_cortex_path(self.project_root, CortexResourceType.MEMORY_BANK)
-            / "roadmap.md"
+            / MemoryBankFile.ROADMAP
         )
         if not roadmap_path.exists():
             # Server-side logging only (file system issue)

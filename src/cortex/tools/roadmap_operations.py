@@ -10,7 +10,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM, MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.exceptions import FileConflictError, FileLockTimeoutError
 from cortex.core.mcp_annotations import safe_write_annotations
@@ -178,7 +178,7 @@ def _validate_section_id(section: str) -> tuple[str | None, str | None]:
 def _read_roadmap_file(roadmap_path: Path) -> tuple[str | None, str | None]:
     """Read roadmap file. Returns (content, error_message)."""
     if not roadmap_path.exists():
-        return (None, f"roadmap.md not found at {roadmap_path}")
+        return (None, f"{MemoryBankFile.ROADMAP} not found at {roadmap_path}")
 
     try:
         content = roadmap_path.read_text(encoding="utf-8")
@@ -187,8 +187,24 @@ def _read_roadmap_file(roadmap_path: Path) -> tuple[str | None, str | None]:
         return (None, str(e))
 
 
-def _write_roadmap_file(roadmap_path: Path, content: str) -> str | None:
-    """Write updated roadmap. Returns error_message if failed."""
+async def _write_roadmap_file(
+    roadmap_path: Path, content: str, project_root: Path | None = None
+) -> str | None:
+    """Write updated roadmap with lock-guarding. Returns error_message if failed."""
+    # Lock-guarding: verify lock before writing
+    if project_root is not None:
+        from cortex.tools.file_lock_guard import verify_lock_for_file_operation
+
+        is_allowed, lock_error = await verify_lock_for_file_operation(
+            project_root=project_root,
+            file_name=MemoryBankFile.ROADMAP,
+            content=content,
+            change_description=None,
+        )
+        if not is_allowed:
+            assert lock_error is not None
+            return f"Lock verification failed: {lock_error}"
+
     try:
         fixed_content = fix_roadmap_content_if_needed(content)
         _ = roadmap_path.write_text(fixed_content, encoding="utf-8")
@@ -310,14 +326,14 @@ def _removal_error(message: str, error: str) -> RemoveRoadmapEntryResult:
     """Build error result for roadmap removal."""
     return RemoveRoadmapEntryResult(
         status="error",
-        file_name="roadmap.md",
+        file_name=MemoryBankFile.ROADMAP,
         message=message,
         line_removed=None,
         error=error,
     )
 
 
-def _execute_roadmap_removal(
+async def _execute_roadmap_removal(
     root_path: Path, entry_contains: str
 ) -> RemoveRoadmapEntryResult:
     """Remove first roadmap bullet line containing entry_contains. Returns result."""
@@ -333,7 +349,9 @@ def _execute_roadmap_removal(
         return find_error
     assert line_num is not None
 
-    return _perform_roadmap_removal(roadmap_path, current_content, line_num)
+    return await _perform_roadmap_removal(
+        roadmap_path, current_content, line_num, root_path
+    )
 
 
 def _prepare_roadmap_for_removal(
@@ -341,7 +359,7 @@ def _prepare_roadmap_for_removal(
 ) -> tuple[Path, str | None, str | None]:
     """Prepare roadmap file for removal operation."""
     memory_bank_root = get_cortex_path(root_path, CortexResourceType.MEMORY_BANK)
-    roadmap_path = memory_bank_root / "roadmap.md"
+    roadmap_path = memory_bank_root / MemoryBankFile.ROADMAP
     current_content, read_error = _read_roadmap_file(roadmap_path)
     return roadmap_path, current_content, read_error
 
@@ -368,18 +386,21 @@ def _find_and_validate_removal_line(
     return line_num, None
 
 
-def _perform_roadmap_removal(
-    roadmap_path: Path, current_content: str, line_num: int
+async def _perform_roadmap_removal(
+    roadmap_path: Path,
+    current_content: str,
+    line_num: int,
+    project_root: Path | None = None,
 ) -> RemoveRoadmapEntryResult:
     """Perform the actual roadmap removal and write."""
     updated = _remove_line_at(current_content, line_num)
-    write_error = _write_roadmap_file(roadmap_path, updated)
+    write_error = await _write_roadmap_file(roadmap_path, updated, project_root)
     if write_error:
         return _removal_error("Failed to write roadmap", write_error)
 
     return RemoveRoadmapEntryResult(
         status="success",
-        file_name="roadmap.md",
+        file_name=MemoryBankFile.ROADMAP,
         message=f"Removed roadmap entry at line {line_num}",
         line_removed=line_num,
         error=None,
@@ -392,7 +413,7 @@ def _handle_read_error(
     """Handle read errors. Returns error result."""
     return AddRoadmapEntryResult(
         status="error",
-        file_name="roadmap.md",
+        file_name=MemoryBankFile.ROADMAP,
         message="Failed to read roadmap",
         line_inserted=None,
         section=None,
@@ -406,7 +427,7 @@ def _handle_insert_failure(
     """Handle insert failures. Returns error result."""
     return AddRoadmapEntryResult(
         status="error",
-        file_name="roadmap.md",
+        file_name=MemoryBankFile.ROADMAP,
         message="Failed to insert entry",
         line_inserted=None,
         section=section_id,
@@ -418,7 +439,7 @@ def _handle_write_error(section_id: str, write_error: str) -> AddRoadmapEntryRes
     """Handle write errors. Returns error result."""
     return AddRoadmapEntryResult(
         status="error",
-        file_name="roadmap.md",
+        file_name=MemoryBankFile.ROADMAP,
         message="Conflict or lock timeout",
         line_inserted=None,
         section=section_id,
@@ -432,7 +453,7 @@ def _make_insert_success_result(
     """Build success result for roadmap insertion."""
     return AddRoadmapEntryResult(
         status="success",
-        file_name="roadmap.md",
+        file_name=MemoryBankFile.ROADMAP,
         message=f"Entry added to '{section_id}' section at line {line_inserted}",
         line_inserted=line_inserted,
         section=section_id,
@@ -446,7 +467,7 @@ def _handle_section_validation_error(
     """Handle section validation errors."""
     return AddRoadmapEntryResult(
         status="error",
-        file_name="roadmap.md",
+        file_name=MemoryBankFile.ROADMAP,
         message=f"Unknown section: {section}",
         line_inserted=None,
         section=None,
@@ -458,7 +479,7 @@ def _handle_completed_entry_rejected() -> AddRoadmapEntryResult:
     """Return error result when entry looks like completed work."""
     return AddRoadmapEntryResult(
         status="error",
-        file_name="roadmap.md",
+        file_name=MemoryBankFile.ROADMAP,
         message="Completed entries not allowed in roadmap",
         line_inserted=None,
         section=None,
@@ -466,7 +487,7 @@ def _handle_completed_entry_rejected() -> AddRoadmapEntryResult:
     )
 
 
-def _execute_roadmap_insertion(
+async def _execute_roadmap_insertion(
     root_path: Path,
     section: str,
     entry_text: str,
@@ -481,7 +502,7 @@ def _execute_roadmap_insertion(
         return _handle_section_validation_error(section, section_error)
 
     memory_bank_root = get_cortex_path(root_path, CortexResourceType.MEMORY_BANK)
-    roadmap_path = memory_bank_root / "roadmap.md"
+    roadmap_path = memory_bank_root / MemoryBankFile.ROADMAP
     current_content, read_error = _read_roadmap_file(roadmap_path)
     if read_error:
         return _handle_read_error(section_id, read_error)
@@ -496,7 +517,7 @@ def _execute_roadmap_insertion(
     if line_inserted is None:
         return _handle_insert_failure(section_id)
 
-    write_error = _write_roadmap_file(roadmap_path, updated_content)
+    write_error = await _write_roadmap_file(roadmap_path, updated_content, root_path)
     if write_error:
         return _handle_write_error(section_id, write_error)
 
@@ -513,7 +534,7 @@ async def _add_roadmap_entry_impl(
     await log_client(ctx, "info", "add_roadmap_entry: starting", logger_name=__name__)
 
     root = await resolve_project_root_async(None, ctx)
-    result = _execute_roadmap_insertion(root, section, entry_text, position)
+    result = await _execute_roadmap_insertion(root, section, entry_text, position)
 
     await log_client(
         ctx,
@@ -554,7 +575,7 @@ async def add_roadmap_entry(
         )
         error_result = AddRoadmapEntryResult(
             status="error",
-            file_name="roadmap.md",
+            file_name=MemoryBankFile.ROADMAP,
             message="Unexpected error",
             line_inserted=None,
             section=None,
@@ -572,7 +593,7 @@ async def _remove_roadmap_entry_impl(
         ctx, "info", "remove_roadmap_entry: starting", logger_name=__name__
     )
     root = await resolve_project_root_async(None, ctx)
-    result = _execute_roadmap_removal(root, entry_contains)
+    result = await _execute_roadmap_removal(root, entry_contains)
     await log_client(
         ctx,
         "info" if result.status == "success" else "warning",
@@ -607,7 +628,7 @@ async def remove_roadmap_entry(
         )
         error_result = RemoveRoadmapEntryResult(
             status="error",
-            file_name="roadmap.md",
+            file_name=MemoryBankFile.ROADMAP,
             message="Unexpected error",
             line_removed=None,
             error=str(e),

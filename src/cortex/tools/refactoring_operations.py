@@ -181,7 +181,7 @@ async def suggest_refactoring(
             "opportunities": [
                 {
                     "id": "consolidation_001",
-                    "files": ["productContext.md", "activeContext.md"],
+                    "files": [MemoryBankFile.PRODUCT_CONTEXT, MemoryBankFile.ACTIVE_CONTEXT],
                     "similarity": 0.87,
                     "shared_content_tokens": 450,
                     "potential_savings_tokens": 420,
@@ -203,7 +203,7 @@ async def suggest_refactoring(
             "recommendations": [
                 {
                     "id": "split_001",
-                    "file": "systemPatterns.md",
+                    "file": MemoryBankFile.SYSTEM_PATTERNS,
                     "current_size_tokens": 12500,
                     "current_size_bytes": 50000,
                     "reason": "File exceeds recommended size for context loading",
@@ -259,17 +259,17 @@ async def suggest_refactoring(
                 ],
                 "new_structure": {
                     "root": [
-                        "projectBrief.md",
-                        "productContext.md",
-                        "activeContext.md"
+                        MemoryBankFile.PROJECT_BRIEF,
+                        MemoryBankFile.PRODUCT_CONTEXT,
+                        MemoryBankFile.ACTIVE_CONTEXT
                     ],
                     "architecture": [
-                        "systemPatterns.md",
-                        "techContext.md"
+                        MemoryBankFile.SYSTEM_PATTERNS,
+                        MemoryBankFile.TECH_CONTEXT
                     ],
                     "tracking": [
-                        "progress.md",
-                        "roadmap.md"
+                        MemoryBankFile.PROGRESS,
+                        MemoryBankFile.ROADMAP
                     ]
                 },
                 "estimated_improvement": {
@@ -311,7 +311,7 @@ async def suggest_refactoring(
                 "opportunities": [
                     {
                         "id": "consolidation_001",
-                        "files": ["systemPatterns.md", "techContext.md"],
+                        "files": [MemoryBankFile.SYSTEM_PATTERNS, MemoryBankFile.TECH_CONTEXT],
                         "similarity": 0.89,
                         "shared_content_tokens": 780,
                         "potential_savings_tokens": 730,
@@ -324,7 +324,7 @@ async def suggest_refactoring(
                     },
                     {
                         "id": "consolidation_002",
-                        "files": ["activeContext.md", "progress.md"],
+                        "files": [MemoryBankFile.ACTIVE_CONTEXT, MemoryBankFile.PROGRESS],
                         "similarity": 0.87,
                         "shared_content_tokens": 520,
                         "potential_savings_tokens": 485,
@@ -353,7 +353,7 @@ async def suggest_refactoring(
                 "recommendations": [
                     {
                         "id": "split_001",
-                        "file": "systemPatterns.md",
+                        "file": MemoryBankFile.SYSTEM_PATTERNS,
                         "current_size_tokens": 11200,
                         "current_size_bytes": 44800,
                         "reason": (
@@ -396,7 +396,7 @@ async def suggest_refactoring(
                     },
                     {
                         "id": "split_002",
-                        "file": "productContext.md",
+                        "file": MemoryBankFile.PRODUCT_CONTEXT,
                         "current_size_tokens": 9100,
                         "current_size_bytes": 36400,
                         "reason": (
@@ -470,22 +470,22 @@ async def suggest_refactoring(
                     ],
                     "new_structure": {
                         "root": [
-                            "projectBrief.md",
-                            "activeContext.md"
+                            MemoryBankFile.PROJECT_BRIEF,
+                            MemoryBankFile.ACTIVE_CONTEXT
                         ],
                         "product": [
-                            "productContext.md",
+                            MemoryBankFile.PRODUCT_CONTEXT,
                             "vision.md",
                             "requirements.md"
                         ],
                         "technical": [
-                            "systemPatterns.md",
-                            "techContext.md",
+                            MemoryBankFile.SYSTEM_PATTERNS,
+                            MemoryBankFile.TECH_CONTEXT,
                             "architecture.md"
                         ],
                         "tracking": [
-                            "progress.md",
-                            "roadmap.md"
+                            MemoryBankFile.PROGRESS,
+                            MemoryBankFile.ROADMAP
                         ]
                     },
                     "estimated_improvement": {

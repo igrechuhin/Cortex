@@ -149,35 +149,40 @@ class TestAppendProgressEntryContent:
 class TestExecuteAppendProgress:
     """Tests for _execute_append_progress."""
 
-    def test_append_success(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_append_success(self, tmp_path: Path) -> None:
         mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         mem.mkdir(parents=True)
         _ = (mem / "progress.md").write_text(
             "# Progress Log\n\n## 2026-02-09\n\n- **Old** - COMPLETE.\n"
         )
-        result = _execute_append_progress(
+        result = await _execute_append_progress(
             tmp_path, "2026-02-09", "**New step** - COMPLETE. Done."
         )
         assert result.status == "success"
         assert result.line_inserted is not None
         assert "**New step**" in (mem / "progress.md").read_text()
 
-    def test_append_when_file_missing_returns_error(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_append_when_file_missing_returns_error(self, tmp_path: Path) -> None:
         get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
-        result = _execute_append_progress(tmp_path, "2026-02-09", "**New** - COMPLETE.")
+        result = await _execute_append_progress(
+            tmp_path, "2026-02-09", "**New** - COMPLETE."
+        )
         assert result.status == "error"
 
 
 class TestExecuteAppendActiveContext:
     """Tests for _execute_append_active_context."""
 
-    def test_append_success(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_append_success(self, tmp_path: Path) -> None:
         mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         mem.mkdir(parents=True)
         _ = (mem / "activeContext.md").write_text(
             "# Active\n\n## Completed Work (2026-02-09)\n\n"
         )
-        result = _execute_append_active_context(
+        result = await _execute_append_active_context(
             tmp_path, "2026-02-09", "New step", "Summary of work."
         )
         assert result.status == "success"
@@ -186,9 +191,10 @@ class TestExecuteAppendActiveContext:
         assert "New step" in text
         assert "Summary of work" in text
 
-    def test_append_when_file_missing_returns_error(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_append_when_file_missing_returns_error(self, tmp_path: Path) -> None:
         get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
-        result = _execute_append_active_context(
+        result = await _execute_append_active_context(
             tmp_path, "2026-02-09", "Title", "Summary"
         )
         assert result.status == "error"

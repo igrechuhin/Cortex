@@ -4,6 +4,7 @@ import json
 import logging
 from pathlib import Path
 
+from cortex.core.constants import MemoryBankFile
 from cortex.core.file_system import FileSystemManager
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.validation.roadmap_sync import (
@@ -143,7 +144,7 @@ async def handle_roadmap_sync_validation(
         JSON string with roadmap sync validation results
     """
     memory_bank_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
-    roadmap_path = memory_bank_dir / "roadmap.md"
+    roadmap_path = memory_bank_dir / MemoryBankFile.ROADMAP
 
     if not roadmap_path.exists():
         return _build_roadmap_sync_error_response()

@@ -11,7 +11,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM, MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import destructive_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
@@ -416,9 +416,9 @@ def fix_memory_bank_content_if_needed(content: str, file_name: str) -> str:
     corruption fix for plans is out of scope (rely on MD037 rule and
     verify-code-symbols guidance in memory-bank-workflow and agents).
     """
-    if file_name == "roadmap.md":
+    if file_name == MemoryBankFile.ROADMAP:
         return fix_roadmap_content_if_needed(content)
-    if file_name == "progress.md":
+    if file_name == MemoryBankFile.PROGRESS:
         matches = _detect_phrase_corruption(content)
         return _apply_roadmap_fixes(content, matches) if matches else content
     return content
@@ -466,7 +466,7 @@ def _create_roadmap_error_response(error_msg: str) -> str:
     """Create error response for roadmap corruption."""
     result = FixRoadmapCorruptionResult(
         success=False,
-        file_name="roadmap.md",
+        file_name=MemoryBankFile.ROADMAP,
         corruption_count=0,
         fixes_applied=[],
         error_message=error_msg,
@@ -478,7 +478,7 @@ def _create_roadmap_success_response(matches: list[CorruptionMatch]) -> str:
     """Create success response for roadmap corruption."""
     result = FixRoadmapCorruptionResult(
         success=True,
-        file_name="roadmap.md",
+        file_name=MemoryBankFile.ROADMAP,
         corruption_count=len(matches),
         fixes_applied=matches,
         error_message=None,
@@ -489,10 +489,12 @@ def _create_roadmap_success_response(matches: list[CorruptionMatch]) -> str:
 def _fix_roadmap_corruption_run(root_path: Path, dry_run: bool) -> tuple[str, bool]:
     """Run roadmap fix: path check, read, detect, apply. Return (response, ok)."""
     memory_bank_root = get_cortex_path(root_path, CortexResourceType.MEMORY_BANK)
-    roadmap_path = memory_bank_root / "roadmap.md"
+    roadmap_path = memory_bank_root / MemoryBankFile.ROADMAP
     if not roadmap_path.exists():
         return (
-            _create_roadmap_error_response(f"roadmap.md not found at {roadmap_path}"),
+            _create_roadmap_error_response(
+                f"{MemoryBankFile.ROADMAP} not found at {roadmap_path}"
+            ),
             False,
         )
     content = roadmap_path.read_text(encoding="utf-8")

@@ -121,9 +121,9 @@ async def get_link_graph(
           ],
           "cycles": [
             [
-              "productContext.md",
-              "activeContext.md",
-              "productContext.md"
+              MemoryBankFile.PRODUCT_CONTEXT,
+              MemoryBankFile.ACTIVE_CONTEXT,
+              MemoryBankFile.PRODUCT_CONTEXT
             ]
           ],
           "summary": {

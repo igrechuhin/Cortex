@@ -12,6 +12,7 @@ import re
 from cortex.core.constants import (
     MIN_SECTION_LENGTH_CHARS,
     SIMILARITY_THRESHOLD_DUPLICATE,
+    MemoryBankFile,
 )
 from cortex.validation.models import (
     DuplicateEntry,
@@ -442,12 +443,12 @@ class DuplicationDetector:
         # Prefer files that appear earlier in typical hierarchy
         hierarchy = [
             "memorybankinstructions.md",
-            "projectBrief.md",
-            "productContext.md",
-            "systemPatterns.md",
-            "techContext.md",
-            "activeContext.md",
-            "progress.md",
+            MemoryBankFile.PROJECT_BRIEF,
+            MemoryBankFile.PRODUCT_CONTEXT,
+            MemoryBankFile.SYSTEM_PATTERNS,
+            MemoryBankFile.TECH_CONTEXT,
+            MemoryBankFile.ACTIVE_CONTEXT,
+            MemoryBankFile.PROGRESS,
         ]
 
         source_file = file1

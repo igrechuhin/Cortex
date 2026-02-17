@@ -14,7 +14,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
+from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM, MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.exceptions import FileConflictError, FileLockTimeoutError
 from cortex.core.mcp_annotations import destructive_annotations, safe_write_annotations
@@ -209,8 +209,24 @@ def _read_file(path: Path) -> tuple[str | None, str | None]:
         return (None, str(e))
 
 
-def _write_progress(path: Path, content: str) -> str | None:
-    """Write progress.md. Returns error_message if failed."""
+async def _write_progress(
+    path: Path, content: str, project_root: Path | None = None
+) -> str | None:
+    """Write progress.md with lock-guarding. Returns error_message if failed."""
+    # Lock-guarding: verify lock before writing
+    if project_root is not None:
+        from cortex.tools.file_lock_guard import verify_lock_for_file_operation
+
+        is_allowed, lock_error = await verify_lock_for_file_operation(
+            project_root=project_root,
+            file_name=MemoryBankFile.PROGRESS,
+            content=content,
+            change_description=None,
+        )
+        if not is_allowed:
+            assert lock_error is not None
+            return f"Lock verification failed: {lock_error}"
+
     try:
         _ = path.write_text(content, encoding="utf-8")
         return None
@@ -220,8 +236,24 @@ def _write_progress(path: Path, content: str) -> str | None:
         return str(e)
 
 
-def _write_roadmap(path: Path, content: str) -> str | None:
-    """Write roadmap file. Returns error_message if failed."""
+async def _write_roadmap(
+    path: Path, content: str, project_root: Path | None = None
+) -> str | None:
+    """Write roadmap file with lock-guarding. Returns error_message if failed."""
+    # Lock-guarding: verify lock before writing
+    if project_root is not None:
+        from cortex.tools.file_lock_guard import verify_lock_for_file_operation
+
+        is_allowed, lock_error = await verify_lock_for_file_operation(
+            project_root=project_root,
+            file_name=MemoryBankFile.ROADMAP,
+            content=content,
+            change_description=None,
+        )
+        if not is_allowed:
+            assert lock_error is not None
+            return f"Lock verification failed: {lock_error}"
+
     try:
         fixed = fix_roadmap_content_if_needed(content)
         _ = path.write_text(fixed, encoding="utf-8")
@@ -232,8 +264,24 @@ def _write_roadmap(path: Path, content: str) -> str | None:
         return str(e)
 
 
-def _write_active_context(path: Path, content: str) -> str | None:
-    """Write activeContext file. Returns error_message if failed."""
+async def _write_active_context(
+    path: Path, content: str, project_root: Path | None = None
+) -> str | None:
+    """Write activeContext file with lock-guarding. Returns error_message if failed."""
+    # Lock-guarding: verify lock before writing
+    if project_root is not None:
+        from cortex.tools.file_lock_guard import verify_lock_for_file_operation
+
+        is_allowed, lock_error = await verify_lock_for_file_operation(
+            project_root=project_root,
+            file_name=MemoryBankFile.ACTIVE_CONTEXT,
+            content=content,
+            change_description=None,
+        )
+        if not is_allowed:
+            assert lock_error is not None
+            return f"Lock verification failed: {lock_error}"
+
     try:
         _ = path.write_text(content, encoding="utf-8")
         return None
@@ -309,44 +357,50 @@ def _append_to_active_error(
     return _complete_plan_error(message, roadmap_line_num, None, error)
 
 
-def _append_to_active_and_save(
+def _read_and_validate_active(
+    active_path: Path, roadmap_line_num: int
+) -> tuple[str | None, CompletePlanResult | None]:
+    """Read activeContext and validate. Returns (content, error_result)."""
+    active_content, active_read_err = _read_file(active_path)
+    if active_read_err or not active_content:
+        return (
+            None,
+            _append_to_active_error(
+                roadmap_line_num,
+                "Removed from roadmap but failed to read activeContext",
+                active_read_err or "Empty activeContext",
+            ),
+        )
+    return (active_content, None)
+
+
+async def _append_to_active_and_save(
     active_path: Path,
     date_str: str,
     plan_title: str,
     summary: str,
     roadmap_line_num: int,
+    project_root: Path | None = None,
 ) -> CompletePlanResult:
     """Read activeContext, append completed entry, write. Returns result."""
-    active_content, active_read_err = _read_file(active_path)
-    if active_read_err or not active_content:
-        return _append_to_active_error(
-            roadmap_line_num,
-            "Removed from roadmap but failed to read activeContext",
-            active_read_err or "Empty activeContext",
-        )
-
-    new_active, inserted_line = _create_section_and_append(
-        active_content, date_str, plan_title.strip(), summary
+    active_content, error_result = _read_and_validate_active(
+        active_path, roadmap_line_num
     )
-    if inserted_line is None:
-        return _append_to_active_error(
-            roadmap_line_num,
-            "Removed from roadmap but failed to append to activeContext",
-            "Could not find or create Completed Work section",
-        )
+    if error_result or not active_content:
+        return error_result or _append_to_active_error(roadmap_line_num, "Empty activeContext", "Empty content")
 
-    active_write_err = _write_active_context(active_path, new_active)
+    new_active, inserted_line = _create_section_and_append(active_content, date_str, plan_title.strip(), summary)
+    if inserted_line is None:
+        return _append_to_active_error(roadmap_line_num, "Failed to append", "Could not find or create Completed Work section")
+
+    active_write_err = await _write_active_context(active_path, new_active, project_root)
     if active_write_err:
-        return _append_to_active_error(
-            roadmap_line_num,
-            "Removed from roadmap but failed to write activeContext",
-            active_write_err,
-        )
+        return _append_to_active_error(roadmap_line_num, "Failed to write activeContext", active_write_err)
 
     return _complete_plan_success(roadmap_line_num, inserted_line)
 
 
-def _do_complete_plan(
+async def _do_complete_plan(
     root: Path,
     plan_title: str,
     summary: str,
@@ -354,8 +408,8 @@ def _do_complete_plan(
 ) -> CompletePlanResult:
     """Remove plan from roadmap and add completed entry to activeContext."""
     mem_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
-    roadmap_path = mem_dir / "roadmap.md"
-    active_path = mem_dir / "activeContext.md"
+    roadmap_path = mem_dir / MemoryBankFile.ROADMAP
+    active_path = mem_dir / MemoryBankFile.ACTIVE_CONTEXT
 
     roadmap_content, line_num, err = _read_roadmap_and_find_line(
         roadmap_path, plan_title
@@ -365,12 +419,12 @@ def _do_complete_plan(
     assert roadmap_content is not None and line_num is not None
 
     new_roadmap = _remove_line_at(roadmap_content, line_num)
-    write_err = _write_roadmap(roadmap_path, new_roadmap)
+    write_err = await _write_roadmap(roadmap_path, new_roadmap, root)
     if write_err:
         return _complete_plan_error("Failed to update roadmap", None, None, write_err)
 
-    return _append_to_active_and_save(
-        active_path, date_str, plan_title, summary, line_num
+    return await _append_to_active_and_save(
+        active_path, date_str, plan_title, summary, line_num, root
     )
 
 
@@ -426,19 +480,19 @@ def _progress_error(message: str, error: str) -> AppendProgressEntryResult:
     """Build error result for progress operations."""
     return AppendProgressEntryResult(
         status="error",
-        file_name="progress.md",
+        file_name=MemoryBankFile.PROGRESS,
         message=message,
         line_inserted=None,
         error=error,
     )
 
 
-def _execute_append_progress(
+async def _execute_append_progress(
     root: Path, date_str: str, entry_text: str
 ) -> AppendProgressEntryResult:
     """Append one entry to progress.md under ## date_str. Returns result."""
     mem_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
-    progress_path = mem_dir / "progress.md"
+    progress_path = mem_dir / MemoryBankFile.PROGRESS
     content, read_err = _read_file(progress_path)
     if read_err or not content:
         return _progress_error("Failed to read progress", read_err or "Empty file")
@@ -449,12 +503,12 @@ def _execute_append_progress(
         return _progress_error(
             "Failed to append entry", "Could not find or create date section"
         )
-    write_err = _write_progress(progress_path, new_content)
+    write_err = await _write_progress(progress_path, new_content, root)
     if write_err:
         return _progress_error("Failed to write progress", write_err)
     return AppendProgressEntryResult(
         status="success",
-        file_name="progress.md",
+        file_name=MemoryBankFile.PROGRESS,
         message=f"Appended entry at line {line_inserted}",
         line_inserted=line_inserted,
         error=None,
@@ -465,19 +519,19 @@ def _active_context_error(message: str, error: str) -> AppendActiveContextEntryR
     """Build error result for activeContext operations."""
     return AppendActiveContextEntryResult(
         status="error",
-        file_name="activeContext.md",
+        file_name=MemoryBankFile.ACTIVE_CONTEXT,
         message=message,
         line_inserted=None,
         error=error,
     )
 
 
-def _execute_append_active_context(
+async def _execute_append_active_context(
     root: Path, date_str: str, title: str, summary: str
 ) -> AppendActiveContextEntryResult:
     """Append one completed entry to activeContext.md. Returns result."""
     mem_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
-    active_path = mem_dir / "activeContext.md"
+    active_path = mem_dir / MemoryBankFile.ACTIVE_CONTEXT
     content, read_err = _read_file(active_path)
     if read_err or not content:
         return _active_context_error(
@@ -491,19 +545,19 @@ def _execute_append_active_context(
             "Failed to append entry",
             "Could not find or create Completed Work section",
         )
-    write_err = _write_active_context(active_path, new_content)
+    write_err = await _write_active_context(active_path, new_content, root)
     if write_err:
         return _active_context_error("Failed to write activeContext", write_err)
     return AppendActiveContextEntryResult(
         status="success",
-        file_name="activeContext.md",
+        file_name=MemoryBankFile.ACTIVE_CONTEXT,
         message=f"Appended entry at line {line_inserted}",
         line_inserted=line_inserted,
         error=None,
     )
 
 
-def _apply_progress_and_archive(
+async def _apply_progress_and_archive(
     root: Path,
     date_str: str,
     progress_entry: str | None,
@@ -512,7 +566,7 @@ def _apply_progress_and_archive(
 ) -> None:
     """Apply optional progress append and plan file archive; mutate result."""
     if progress_entry:
-        progress_result = _execute_append_progress(root, date_str, progress_entry)
+        progress_result = await _execute_append_progress(root, date_str, progress_entry)
         if progress_result.status == "success" and progress_result.line_inserted:
             result.progress_line_inserted = progress_result.line_inserted
     if plan_file_name:
@@ -539,13 +593,15 @@ async def _complete_plan_impl(
     await log_client(ctx, "info", "complete_plan: starting", logger_name=__name__)
     date_str = (completion_date or _today_iso()).strip()
     root = await resolve_project_root_async(None, ctx)
-    result = _do_complete_plan(root, plan_title, summary, date_str)
+    result = await _do_complete_plan(root, plan_title, summary, date_str)
     if result.status != "success":
         await log_client(
             ctx, "warning", f"complete_plan: {result.status}", logger_name=__name__
         )
         return result.model_dump_json()
-    _apply_progress_and_archive(root, date_str, progress_entry, plan_file_name, result)
+    await _apply_progress_and_archive(
+        root, date_str, progress_entry, plan_file_name, result
+    )
     await log_client(
         ctx, "info", f"complete_plan: {result.status}", logger_name=__name__
     )
@@ -612,7 +668,7 @@ async def _append_progress_entry_impl(
         ctx, "info", "append_progress_entry: starting", logger_name=__name__
     )
     root = await resolve_project_root_async(None, ctx)
-    result = _execute_append_progress(root, date_str, entry_text)
+    result = await _execute_append_progress(root, date_str, entry_text)
     await log_client(
         ctx,
         "info" if result.status == "success" else "warning",
@@ -646,7 +702,7 @@ async def append_progress_entry(
         )
         return AppendProgressEntryResult(
             status="error",
-            file_name="progress.md",
+            file_name=MemoryBankFile.PROGRESS,
             message="Unexpected error",
             line_inserted=None,
             error=str(e),
@@ -664,7 +720,7 @@ async def _append_active_context_entry_impl(
         ctx, "info", "append_active_context_entry: starting", logger_name=__name__
     )
     root = await resolve_project_root_async(None, ctx)
-    result = _execute_append_active_context(root, date_str, title, summary)
+    result = await _execute_append_active_context(root, date_str, title, summary)
     await log_client(
         ctx,
         "info" if result.status == "success" else "warning",
@@ -702,7 +758,7 @@ async def append_active_context_entry(
         )
         return AppendActiveContextEntryResult(
             status="error",
-            file_name="activeContext.md",
+            file_name=MemoryBankFile.ACTIVE_CONTEXT,
             message="Unexpected error",
             line_inserted=None,
             error=str(e),

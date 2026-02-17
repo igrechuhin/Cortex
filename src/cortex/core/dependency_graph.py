@@ -6,6 +6,7 @@ from typing import cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from cortex.core.constants import MemoryBankFile
 from cortex.core.models import ModelDict
 from cortex.linking.link_parser import LinkParser
 
@@ -46,33 +47,37 @@ STATIC_DEPENDENCIES: dict[str, FileDependencyInfo] = {
         priority=0,  # Always load first
         category="meta",
     ),
-    "projectBrief.md": FileDependencyInfo(
+    MemoryBankFile.PROJECT_BRIEF: FileDependencyInfo(
         depends_on=[],
         priority=1,  # Foundation
         category="foundation",
     ),
-    "productContext.md": FileDependencyInfo(
-        depends_on=["projectBrief.md"],
+    MemoryBankFile.PRODUCT_CONTEXT: FileDependencyInfo(
+        depends_on=[MemoryBankFile.PROJECT_BRIEF],
         priority=2,  # Context layer
         category="context",
     ),
-    "systemPatterns.md": FileDependencyInfo(
-        depends_on=["projectBrief.md"],
+    MemoryBankFile.SYSTEM_PATTERNS: FileDependencyInfo(
+        depends_on=[MemoryBankFile.PROJECT_BRIEF],
         priority=2,
         category="context",
     ),
-    "techContext.md": FileDependencyInfo(
-        depends_on=["projectBrief.md"],
+    MemoryBankFile.TECH_CONTEXT: FileDependencyInfo(
+        depends_on=[MemoryBankFile.PROJECT_BRIEF],
         priority=2,
         category="context",
     ),
-    "activeContext.md": FileDependencyInfo(
-        depends_on=["productContext.md", "systemPatterns.md", "techContext.md"],
+    MemoryBankFile.ACTIVE_CONTEXT: FileDependencyInfo(
+        depends_on=[
+            MemoryBankFile.PRODUCT_CONTEXT,
+            MemoryBankFile.SYSTEM_PATTERNS,
+            MemoryBankFile.TECH_CONTEXT,
+        ],
         priority=3,  # Active work
         category="active",
     ),
-    "progress.md": FileDependencyInfo(
-        depends_on=["activeContext.md"],
+    MemoryBankFile.PROGRESS: FileDependencyInfo(
+        depends_on=[MemoryBankFile.ACTIVE_CONTEXT],
         priority=4,  # Status
         category="status",
     ),

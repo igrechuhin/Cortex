@@ -30,7 +30,6 @@ Modules:
 - plan_completion: Complete plan (move from roadmap to activeContext) (1 tool)
 - sequential_thinking: Sequential thinking for stepwise reasoning (1 tool)
 - compaction_operations: Session compaction and handoff (1 tool) - Phase 56
-
 Total: 71 tools + 7 prompts
 """
 

@@ -74,7 +74,9 @@ class StructureMigrationManager:
             return "doc-mcp-style"
 
         # Check for scattered files
-        scattered_files = list(self.project_root.rglob("projectBrief.md"))
+        from cortex.core.constants import MemoryBankFile
+
+        scattered_files = list(self.project_root.rglob(MemoryBankFile.PROJECT_BRIEF))
         if (
             scattered_files
             and not get_cortex_path(

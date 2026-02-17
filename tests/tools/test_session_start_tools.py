@@ -182,7 +182,8 @@ class TestExtractRecentCompleted:
 class TestExtractNextWorkItem:
     """Tests for _extract_next_work_item helper."""
 
-    def test_extract_next_work_item_pending(self) -> None:
+    @pytest.mark.asyncio
+    async def test_extract_next_work_item_pending(self) -> None:
         """Test extracting next PENDING work item."""
         content = """# Roadmap
 
@@ -196,12 +197,13 @@ class TestExtractNextWorkItem:
 
 - **Phase 54** - PENDING - Description here
 """
-        work_item, plan_path = _extract_next_work_item(content)
+        work_item, plan_path = await _extract_next_work_item(content, project_root=None)
         assert work_item is not None
         assert "Phase 54" in work_item
         assert plan_path is None
 
-    def test_extract_next_work_item_with_plan_path(self) -> None:
+    @pytest.mark.asyncio
+    async def test_extract_next_work_item_with_plan_path(self) -> None:
         """Test extracting next work item with plan path."""
         content = """# Roadmap
 
@@ -209,11 +211,12 @@ class TestExtractNextWorkItem:
 
 - **Phase 54** - PENDING - Description. Plan: .cortex/plans/phase-54.md
 """
-        work_item, plan_path = _extract_next_work_item(content)
+        work_item, plan_path = await _extract_next_work_item(content, project_root=None)
         assert work_item is not None
         assert plan_path == ".cortex/plans/phase-54.md"
 
-    def test_extract_next_work_item_not_found(self) -> None:
+    @pytest.mark.asyncio
+    async def test_extract_next_work_item_not_found(self) -> None:
         """Test extracting next work item when none exists."""
         content = """# Roadmap
 
@@ -221,11 +224,12 @@ class TestExtractNextWorkItem:
 
 - **Phase 54** - IN PROGRESS - Description
 """
-        work_item, plan_path = _extract_next_work_item(content)
+        work_item, plan_path = await _extract_next_work_item(content, project_root=None)
         assert work_item is None
         assert plan_path is None
 
-    def test_extract_next_work_item_priority_order(self) -> None:
+    @pytest.mark.asyncio
+    async def test_extract_next_work_item_priority_order(self) -> None:
         """Test that blockers are checked before pending."""
         content = """# Roadmap
 
@@ -237,7 +241,7 @@ class TestExtractNextWorkItem:
 
 - **Phase 54** - PENDING - Description
 """
-        work_item, _ = _extract_next_work_item(content)
+        work_item, _ = await _extract_next_work_item(content, project_root=None)
         assert work_item is not None
         assert "Blocker" in work_item
 
