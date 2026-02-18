@@ -16,6 +16,18 @@
 
 - ✅ **Phase 68: Investigate fix_quality_issues MCP connection closed** - COMPLETE (2026) - Completed fix for fix_quality_issues timeout mismatch. Changed timeout from 60s to 960s (MCP_TOOL_TIMEOUT_VERY_COMPLEX) and enabled progress reporting. All tests pass (4244 tests, 91.8% coverage), quality gate passes.
 
+- ✅ **Phase: Investigate commit pipeline quality gate miss** - COMPLETE (2026) - Investigation complete: Root cause identified (type-check scope mismatch between CI and commit pipeline). Fix implemented - PythonAdapter.type_check() now uses check_types.py script when available to match CI scope (src + tests + synapse scripts), with fallback to pyright src/ tests/ when script missing.
+
+- ✅ **Phase: Investigate execute_pre_commit_checks MCP Tool Failure** - COMPLETE (2026) - Issue already fixed in commit 400b96d. The test's run_sync function was updated to use *args instead of specific parameters, allowing it to handle dynamic arguments from asyncio.to_thread correctly. All 4244 tests now pass.
+
+- ✅ **Phase: Investigate execute_pre_commit_checks MCP Tool Failure** - COMPLETE (2026) - Issue already fixed in commit 400b96d. The test's run_sync function was updated to use *args instead of specific parameters, allowing it to handle dynamic arguments from asyncio.to_thread correctly. All 4244 tests now pass.
+
+- ✅ **Phase: Investigate execute_pre_commit_checks MCP Tool Failure** - COMPLETE (2026) - Issue already fixed in commit 400b96d. The test's run_sync function was updated to use *args instead of specific parameters, allowing it to handle dynamic arguments from asyncio.to_thread correctly. All 4244 tests now pass.
+
+- ✅ **Phase: Investigate execute_pre_commit_checks MCP Tool Failure** - COMPLETE (2026) - Issue already fixed in commit 400b96d. The test's run_sync function was updated to use *args instead of specific parameters, allowing it to handle dynamic arguments from asyncio.to_thread correctly. All 4244 tests now pass.
+
+- ✅ **Phase: Investigate execute_pre_commit_checks failure (20260205)** - COMPLETE (2026) - Investigation already completed - issue fixed in commit 400b96d. The test's run_sync function was updated to use *args instead of specific parameters, allowing it to handle dynamic arguments from asyncio.to_thread correctly.
+
 ## Completed Work (2026-02-18)
 
 - ✅ **Commit: session_start_tools function length compliance** - COMPLETE (2026-02-18) - Fixed quality gate function-length violations in session_start_tools.py by extracting _create_brief_with_suggestions and _session_start_success_result; _compute_suggestions_and_create_brief and_load_brief_and_return_result now ≤30 lines. All pre-commit checks pass; 4229 tests, 91.83% coverage.
@@ -35,6 +47,8 @@
 - ✅ **Investigate FastMCP blocking before tool handlers - Fixes Implemented** - COMPLETE (2026-02-18) - Implemented two blocking fixes from investigation plan: (1) Wrapped `_fallback_root()` in `asyncio.to_thread()` to prevent event loop blocking during project root fallback; (2) Added 25s timeout to usage context init lock acquisition with proper error handling. Both fixes prevent indefinite hangs. Added comprehensive tests, quality gate passed.
 
 - ✅ **Investigate FastMCP blocking before tool handlers** - COMPLETE (2026-02-18) - Verified investigation complete - both fixes implemented (blocking event loop fix and usage context lock timeout). Removed reference entry from roadmap.
+
+- ✅ **Phase 9.1.1: Split consolidated.py - Already Complete** - COMPLETE (2026-02-18) - Verified that Phase 9.1.1 (split consolidated.py) was already completed in a previous session. The consolidated.py file was split into 5 modules, all under 400 lines. Quality gate passes with no violations. Phase 9 roadmap entry is marked as Reference (documentation plan), not an active implementation task.
 
 ## Completed Work (2026-02-17)
 

@@ -6,14 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- [Phase: Investigate execute_pre_commit_checks MCP Tool Failure](.cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260218-171353.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `execute_pre_commit_checks`, Error: TypeError - Impact: Commit procedure blocked - Target completion: 2026-02-18
-
-- [Phase: Investigate execute_pre_commit_checks MCP Tool Failure](.cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260218-165258.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `execute_pre_commit_checks`, Error: TypeError - Impact: Commit procedure blocked - Target completion: 2026-02-18
-
-- [Phase: Investigate execute_pre_commit_checks MCP Tool Failure](.cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260218-165232.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `execute_pre_commit_checks`, Error: TypeError - Impact: Commit procedure blocked - Target completion: 2026-02-18
-
-- [Phase: Investigate execute_pre_commit_checks MCP Tool Failure](.cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260218-165206.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `execute_pre_commit_checks`, Error: TypeError - Impact: Commit procedure blocked - Target completion: 2026-02-18
-
 ## Active Work (in progress)
 
 ## Future Enhancements
@@ -36,9 +28,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
 - **Plans README** - Reference. Plan: .cortex/plans/README.md
-- **Phase 9: Excellence 9.8+** - PENDING - Reference. Plan: .cortex/plans/phase-9-excellence-98.md
-- **Phase: Investigate commit pipeline quality gate miss** - PENDING - Reference. Plan: .cortex/plans/phase-investigate-commit-pipeline-quality-gate-miss-2026-02-07.md
-- **Phase: Investigate execute_pre_commit_checks failure (20260205)** - PENDING - Reference. Plan: .cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260205-222815.md
 - **Phase: Investigate execute_pre_commit_checks failure (20260209)** - PENDING - Reference. Plan: .cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260209-203054.md
 - **Phase: Investigate promote_session_script failure** - PENDING - Reference. Plan: .cortex/plans/phase-investigate-promote_session_script-failure-20260211-184849.md
 - **Phase: Investigate roadmap sync validator ghost references** - PENDING - Reference. Plan: .cortex/plans/phase-investigate-roadmap-sync-validator-ghost-references.md

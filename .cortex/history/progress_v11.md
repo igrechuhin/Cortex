@@ -8,6 +8,12 @@
 - **Phase 45: Add MCP annotations** - COMPLETE. Added MCP annotations to all 53+ tools, verified with test suite (4244 tests, 100% pass rate, 91.8% coverage), and updated documentation (docs/api/tools.md and docs/guides/advanced/extension-development.md) with annotation patterns, decision tree, and examples.
 - **Phase 53: Investigate manage_file conflict index stale** - COMPLETE. Implemented update_index cleanup action in check_structure_health to refresh metadata index for memory bank files, fixing stale index issues that blocked manage_file(write) operations. Added comprehensive tests covering dry-run, execution, edge cases, and multiple files.
 - **Phase 68: Investigate fix_quality_issues MCP connection closed** - COMPLETE. Fixed timeout mismatch by changing timeout from 60s to 960s (MCP_TOOL_TIMEOUT_VERY_COMPLEX) and enabling progress reporting. All tests pass (4244 tests, 91.8% coverage), quality gate passes.
+- **Phase: Investigate commit pipeline quality gate miss** - COMPLETE. Root cause: Type-check scope mismatch (CI checks src + tests + synapse scripts via check_types.py, commit pipeline only checked src + tests). Fix: PythonAdapter.type_check() now uses check_types.py when available to match CI scope, with fallback when script missing.
+- **Phase: Investigate execute_pre_commit_checks MCP Tool Failure** - COMPLETE. Issue already fixed in commit 400b96d - test's run_sync function updated to use *args for dynamic arguments. All tests pass.
+- **Phase: Investigate execute_pre_commit_checks MCP Tool Failure (duplicate)** - COMPLETE. Issue already fixed in commit 400b96d - test's run_sync function updated to use *args for dynamic arguments. All tests pass.
+- **Phase: Investigate execute_pre_commit_checks MCP Tool Failure (duplicate)** - COMPLETE. Issue already fixed in commit 400b96d - test's run_sync function updated to use *args for dynamic arguments. All tests pass.
+- **Phase: Investigate execute_pre_commit_checks MCP Tool Failure (duplicate)** - COMPLETE. Issue already fixed in commit 400b96d - test's run_sync function updated to use *args for dynamic arguments. All tests pass.
+- **Phase: Investigate execute_pre_commit_checks failure (2260205E. Investigation already completed - issue fixed in commit 400b96d. Test's run_sync function updated to use *args for dynamic arguments from asyncio.to_thread.
 
 ## 2026-02-18
 
@@ -21,6 +27,7 @@
 - **Investigate FastMCP blocking before tool handlers** - COMPLETE. Implemented two fixes documented in investigation plan: (1) Wrapped `_fallback_root()` in `asyncio.to_thread()` to prevent blocking event loop during project root resolution; (2) Added 25s timeout to usage context init lock acquisition to prevent indefinite hangs. Added tests, quality gate passed.
 - **Commit: Fix test failures in pre_commit_tools and markdown lint errors** - Fixed two test failures in `test_pre_commit_tools.py`: (1) `test_runs_adapter_checks_off_event_loop_via_to_thread` - updated assertion to check for `_execute_all_checks` call via `to_thread` (accounting for `get_or_resolve_project_root` also calling `to_thread`); (2) `test_execute_pre_commit_checks_calls_log_client_when_ctx_passed` - fixed mock function to accept `*args` and handle both `_execute_all_checks` and other function calls. Fixed MD033 markdown lint errors in 4 plan files by escaping `<locals>` as `&lt;locals&gt;`. All tests pass (4244/4244, 91.79% coverage).
 - **Investigate FastMCP blocking before tool handlers** - COMPLETE. Verified fixes implemented: blocking event loop in project root fallback (asyncio.to_thread wrapper) and unbounded wait on usage context init lock (25s timeout). Investigation complete, roadmap reference cleaned up.
+- **Phase 9.1.1: Split consolidated.py** - COMPLETE. Phase 9.1.1 was already completed in a previous session. The consolidated.py file (1,204 lines) was successfully split into 5 focused modules (file_operations.py, validation_operations.py, analysis_operations.py, rules_operations.py, configuration_operations.py), all under 400 lines. Quality gate passes with no file size violations. Phase 9 roadmap entry marked as Reference (documentation only).
 
 ## 2026-02-17
 
