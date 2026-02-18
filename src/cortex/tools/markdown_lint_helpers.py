@@ -6,6 +6,7 @@ All helpers are used by markdown_operations; reportUnusedFunction is disabled fo
 # pyright: reportUnusedFunction=false
 
 import json
+import re
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -65,11 +66,27 @@ def _result_error(result: GitCommandResult) -> str | None:
 
 
 def _parse_markdownlint_errors(stderr: str) -> list[str]:
-    """Parse markdownlint errors from stderr."""
+    """Parse markdownlint errors from stderr.
+
+    Extracts rule codes (e.g. MD036) and error messages from stderr output.
+    Handles various formats including 'file:line:rule' and standalone rule codes.
+    """
     errors: list[str] = []
     for line in stderr.strip().split("\n"):
-        if line.strip() and not line.startswith("markdownlint-cli2"):
-            errors.append(line.strip())
+        s = line.strip()
+        if not s or s.startswith("markdownlint-cli2"):
+            continue
+
+        # Extract rule codes (MD followed by 3 digits)
+        rule_codes = re.findall(r"MD\d{3}", s)
+        if rule_codes:
+            # Include the full line if it contains rule codes
+            errors.append(s)
+        elif s:
+            # Include non-empty lines even without explicit rule codes
+            # (may contain error messages that are still useful)
+            errors.append(s)
+
     return errors
 
 
@@ -82,23 +99,70 @@ def _parse_markdownlint_output(stdout: str) -> list[str]:
     return errors
 
 
+def _try_parse_file_with_spaces(s: str, by_file: dict[str, list[str]]) -> bool:
+    """Try parsing 'file: line: rule' format (with spaces). Returns True if matched."""
+    idx = s.find(": ")
+    if idx > 0:
+        file_part = s[:idx].strip()
+        if file_part and (".md" in file_part or ".mdc" in file_part):
+            by_file.setdefault(file_part, []).append(s)
+            return True
+    return False
+
+
+def _try_parse_file_no_spaces(s: str, by_file: dict[str, list[str]]) -> bool:
+    """Try parsing 'file:line:rule' format (no spaces). Returns True if matched."""
+    for ext in [".md", ".mdc"]:
+        if ext in s:
+            ext_pos = s.find(ext)
+            if ext_pos > 0:
+                potential_file = s[: ext_pos + len(ext)]
+                rest = s[ext_pos + len(ext) :].strip()
+                if rest.startswith(":") and len(rest) > 1:
+                    by_file.setdefault(potential_file, []).append(s)
+                    return True
+    return False
+
+
+def _try_parse_file_from_rule_code(s: str, by_file: dict[str, list[str]]) -> bool:
+    """Try extracting file path from line containing rule code. Returns True if matched."""
+    rule_match = re.search(r"MD\d{3}", s)
+    if rule_match:
+        rule_pos = rule_match.start()
+        before_rule = s[:rule_pos].strip()
+        for ext in [".md", ".mdc"]:
+            if ext in before_rule:
+                ext_pos = before_rule.rfind(ext)
+                if ext_pos >= 0:
+                    file_part = before_rule[: ext_pos + len(ext)]
+                    if file_part:
+                        by_file.setdefault(file_part, []).append(s)
+                        return True
+    return False
+
+
 def _parse_markdownlint_lines_by_file(output: str) -> dict[str, list[str]]:
     """Parse markdownlint output into per-file line groups.
 
     Lines follow 'file: line: rule' format. Returns mapping of
     relative file path to list of lines for that file.
+
+    Also handles variations like 'file:line:rule' (no spaces) and
+    extracts rule codes (e.g. MD036) even when format differs slightly.
     """
     by_file: dict[str, list[str]] = {}
     for line in output.strip().split("\n"):
         s = line.strip()
         if not s or s.startswith("markdownlint"):
             continue
-        idx = s.find(": ")
-        if idx <= 0:
+
+        # Try different parsing strategies in order
+        if _try_parse_file_with_spaces(s, by_file):
             continue
-        file_part = s[:idx].strip()
-        if file_part and (".md" in file_part or ".mdc" in file_part):
-            by_file.setdefault(file_part, []).append(s)
+        if _try_parse_file_no_spaces(s, by_file):
+            continue
+        _ = _try_parse_file_from_rule_code(s, by_file)
+
     return by_file
 
 

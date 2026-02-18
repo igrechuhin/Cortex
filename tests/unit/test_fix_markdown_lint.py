@@ -16,6 +16,7 @@ from cortex.tools.markdown_operations import (
     _find_markdownlint_command,
     _get_modified_markdown_files,
     _run_command,
+    _run_markdownlint_batch,
     _run_markdownlint_fix,
 )
 
@@ -1368,3 +1369,196 @@ class TestFixMarkdownLintProgressReporting:
         assert len(results) == 1
         assert current_n[0] == 1
         mock_progress.assert_not_called()
+
+
+class TestBatchErrorReporting:
+    """Test improved error reporting when batch fails without rule codes."""
+
+    @pytest.mark.asyncio
+    async def test_batch_failure_with_no_rule_codes_triggers_per_file_fallback(
+        self, tmp_path: Path
+    ):
+        """Test that batch failure with no parsed rule codes triggers per-file fallback."""
+        # Arrange
+        project_root = tmp_path
+        file1 = tmp_path / "file1.md"
+        file2 = tmp_path / "file2.md"
+        _ = file1.write_text("# Test\n")
+        _ = file2.write_text("# Test\n")
+
+        markdownlint_cmd = ["markdownlint-cli2"]
+
+        # Mock batch run that fails with unparseable stderr
+        batch_call_count = 0
+        per_file_call_count = 0
+
+        async def mock_run_command(
+            cmd: list[str], cwd: Path | None = None, timeout: int = 120
+        ) -> GitCommandResult:
+            nonlocal batch_call_count, per_file_call_count
+            # Check if this is a markdownlint command
+            if "markdownlint" in str(cmd[0]) if cmd else False:
+                # Check if this is a batch (multiple files) or single file
+                file_args = [arg for arg in cmd if ".md" in str(arg)]
+                if len(file_args) > 1:  # Batch run (multiple files)
+                    batch_call_count += 1
+                    return GitCommandResult(
+                        success=False,
+                        stdout="",
+                        stderr="Some generic error message without rule codes",
+                        returncode=1,
+                        error="Markdown lint failed",
+                    )
+                elif len(file_args) == 1:  # Single file run (fallback)
+                    per_file_call_count += 1
+                    file_name = file_args[0]
+                    return GitCommandResult(
+                        success=False,
+                        stdout="",
+                        stderr=f"{file_name}: 1:1 MD036/no-emphasis-as-heading",
+                        returncode=1,
+                        error="Markdown lint failed",
+                    )
+            # Git commands or other commands
+            return GitCommandResult(success=True, stdout="", stderr="", returncode=0)
+
+        # Act
+        with patch(
+            "cortex.tools.markdown_operations._run_command",
+            side_effect=mock_run_command,
+        ):
+            results = await _run_markdownlint_batch(
+                [file1, file2],
+                project_root,
+                markdownlint_cmd,
+                None,
+                dry_run=False,
+            )
+
+        # Assert
+        assert batch_call_count == 1, "Batch should be called once"
+        assert per_file_call_count == 2, "Per-file fallback should run for each file"
+        assert len(results) == 2
+        # Each file should have rule codes from per-file runs
+        for result in results:
+            assert result.error_message is not None
+            assert len(result.errors) > 0, "Each file should have rule codes"
+            assert any("MD036" in e for e in result.errors)
+
+    @pytest.mark.asyncio
+    async def test_batch_failure_with_parsed_rule_codes_no_fallback(
+        self, tmp_path: Path
+    ):
+        """Test that batch failure with parsed rule codes does not trigger fallback."""
+        # Arrange
+        project_root = tmp_path
+        file1 = tmp_path / "file1.md"
+        file2 = tmp_path / "file2.md"
+        _ = file1.write_text("# Test\n")
+        _ = file2.write_text("# Test\n")
+
+        markdownlint_cmd = ["markdownlint-cli2"]
+
+        batch_call_count = 0
+        per_file_call_count = 0
+
+        async def mock_run_command(
+            cmd: list[str], cwd: Path | None = None, timeout: int = 120
+        ) -> GitCommandResult:
+            nonlocal batch_call_count, per_file_call_count
+            # Batch run fails but stderr contains parseable rule codes
+            if "--fix" in cmd and len(cmd) > 3:  # Batch run
+                batch_call_count += 1
+                return GitCommandResult(
+                    success=False,
+                    stdout="",
+                    stderr=(
+                        "file1.md: 1:1 MD036/no-emphasis-as-heading\n"
+                        "file2.md: 1:1 MD022/blanks-around-headings"
+                    ),
+                    returncode=1,
+                    error="Markdown lint failed",
+                )
+            # Per-file runs should not be called
+            elif "--fix" in cmd and len(cmd) == 3:  # Single file run
+                per_file_call_count += 1
+            # Git commands
+            return GitCommandResult(success=True, stdout="", stderr="", returncode=0)
+
+        # Act
+        with patch(
+            "cortex.tools.markdown_operations._run_command",
+            side_effect=mock_run_command,
+        ):
+            results = await _run_markdownlint_batch(
+                [file1, file2],
+                project_root,
+                markdownlint_cmd,
+                None,
+                dry_run=False,
+            )
+
+        # Assert
+        assert batch_call_count == 1, "Batch should be called once"
+        assert per_file_call_count == 0, "Per-file fallback should not run"
+        assert len(results) == 2
+        # Results should have rule codes from batch stderr parsing
+        file1_result = next(r for r in results if r.file == "file1.md")
+        file2_result = next(r for r in results if r.file == "file2.md")
+        assert any("MD036" in e for e in file1_result.errors)
+        assert any("MD022" in e for e in file2_result.errors)
+
+    @pytest.mark.asyncio
+    async def test_batch_success_no_fallback(self, tmp_path: Path):
+        """Test that successful batch run does not trigger fallback."""
+        # Arrange
+        project_root = tmp_path
+        file1 = tmp_path / "file1.md"
+        file2 = tmp_path / "file2.md"
+        _ = file1.write_text("# Test\n")
+        _ = file2.write_text("# Test\n")
+
+        markdownlint_cmd = ["markdownlint-cli2"]
+
+        batch_call_count = 0
+        per_file_call_count = 0
+
+        async def mock_run_command(
+            cmd: list[str], cwd: Path | None = None, timeout: int = 120
+        ) -> GitCommandResult:
+            nonlocal batch_call_count, per_file_call_count
+            # Batch run succeeds
+            if "--fix" in cmd and len(cmd) > 3:  # Batch run
+                batch_call_count += 1
+                return GitCommandResult(
+                    success=True,
+                    stdout="Fixed",
+                    stderr="",
+                    returncode=0,
+                )
+            # Per-file runs should not be called
+            elif "--fix" in cmd and len(cmd) == 3:  # Single file run
+                per_file_call_count += 1
+            # Git commands
+            return GitCommandResult(success=True, stdout="", stderr="", returncode=0)
+
+        # Act
+        with patch(
+            "cortex.tools.markdown_operations._run_command",
+            side_effect=mock_run_command,
+        ):
+            results = await _run_markdownlint_batch(
+                [file1, file2],
+                project_root,
+                markdownlint_cmd,
+                None,
+                dry_run=False,
+            )
+
+        # Assert
+        assert batch_call_count == 1, "Batch should be called once"
+        assert per_file_call_count == 0, "Per-file fallback should not run"
+        assert len(results) == 2
+        # Results should indicate success
+        for result in results:
+            assert result.error_message is None

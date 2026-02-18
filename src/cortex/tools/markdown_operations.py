@@ -5,6 +5,7 @@
 import asyncio
 import hashlib
 import json
+import re
 from pathlib import Path
 
 import aiofiles
@@ -299,6 +300,53 @@ async def _run_markdownlint_fix(  # pyright: ignore[reportUnusedFunction]
     )
 
 
+async def _run_per_file_fallback(
+    file_paths: list[Path],
+    project_root: Path,
+    markdownlint_cmd: list[str],
+    dry_run: bool,
+) -> list[FileResult]:
+    """Re-run each file individually to get rule codes when batch fails."""
+    fallback_results: list[FileResult] = []
+    for file_path in file_paths:
+        file_result = await _run_markdownlint_fix(
+            file_path, project_root, markdownlint_cmd, dry_run
+        )
+        fallback_results.append(file_result)
+    return fallback_results
+
+
+def _has_parsed_rule_codes(
+    rel_strs: list[str],
+    by_file: dict[str, list[str]],
+    stderr: str,
+) -> bool:
+    """Check if stderr parsing yielded any rule codes (MD followed by 3 digits pattern)."""
+    # Check if any file got rule codes from by_file parsing
+    if any(by_file.get(rel, []) for rel in rel_strs):
+        return True
+
+    # Check if stderr contains rule codes (MD followed by 3 digits)
+    return bool(re.search(r"MD\d{3}", stderr))
+
+
+def _build_batch_command(
+    rel_strs: list[str],
+    markdownlint_cmd: list[str],
+    config_path: Path | None,
+    project_root: Path,
+    dry_run: bool,
+) -> list[str]:
+    """Build command for batch markdownlint run."""
+    cmd = markdownlint_cmd.copy()
+    if not dry_run:
+        cmd.append("--fix")
+    if config_path is not None:
+        cmd.extend(["--config", str(config_path.relative_to(project_root))])
+    cmd.extend(rel_strs)
+    return cmd
+
+
 async def _run_markdownlint_batch(
     file_paths: list[Path],
     project_root: Path,
@@ -306,26 +354,33 @@ async def _run_markdownlint_batch(
     config_path: Path | None,
     dry_run: bool,
 ) -> list[FileResult]:
-    """Run markdownlint --fix on multiple files in one invocation."""
+    """Run markdownlint --fix on multiple files in one invocation.
+
+    When batch fails, attempts to parse stderr for rule codes. If stderr parsing
+    yields no rule codes, falls back to re-running each file individually to
+    obtain rule codes for targeted fixes.
+    """
     if not file_paths:
         return []
     rel_strs = [str(p.relative_to(project_root)) for p in file_paths]
-    cmd = markdownlint_cmd.copy()
-    if not dry_run:
-        cmd.append("--fix")
-    if config_path is not None:
-        cmd.extend(["--config", str(config_path.relative_to(project_root))])
-    cmd.extend(rel_strs)
+    cmd = _build_batch_command(
+        rel_strs, markdownlint_cmd, config_path, project_root, dry_run
+    )
     result = await _run_command(cmd, cwd=project_root, timeout=120)
-    out = _result_stdout(result) if _result_success(result) else _result_stderr(result)
+    success = _result_success(result)
+    out = _result_stdout(result) if success else _result_stderr(result)
     by_file = _parse_markdownlint_lines_by_file(out)
-    raw_lines = _parse_markdownlint_output(out) if _result_success(result) else []
+    raw_lines = _parse_markdownlint_output(out) if success else []
+
+    if not success and not _has_parsed_rule_codes(
+        rel_strs, by_file, _result_stderr(result)
+    ):
+        return await _run_per_file_fallback(
+            file_paths, project_root, markdownlint_cmd, dry_run
+        )
+
     return _build_markdownlint_batch_results(
-        rel_strs,
-        result,
-        by_file,
-        raw_lines,
-        dry_run,
+        rel_strs, result, by_file, raw_lines, dry_run
     )
 
 

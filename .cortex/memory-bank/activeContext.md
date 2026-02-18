@@ -2,6 +2,12 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026)
+
+- ✅ **Session Optimization: Commit Pipeline Context Loading and Helper Module Pattern** - COMPLETE (2026) - Optimized commit pipeline context loading (Step 1 already implemented in commit.md) and documented helper module extraction pattern in implement prompt (Step 2: added guidance in Step 4, Step 4.6, and Code Quality section)
+
+- ✅ **Session Optimization: fix_markdown_lint Opaque Errors and Commit Fallback** - COMPLETE (2026) - Improved fix_markdown_lint error reporting when batch fails: enhanced stderr parsing to extract rule codes from various formats, added per-file fallback when batch fails without rule codes, documented fallback in commit prompt and troubleshooting guide. All tests pass, quality gate passed.
+
 ## Completed Work (2026-02-18)
 
 - ✅ **Commit: session_start_tools function length compliance** - COMPLETE (2026-02-18) - Fixed quality gate function-length violations in session_start_tools.py by extracting _create_brief_with_suggestions and _session_start_success_result; _compute_suggestions_and_create_brief and_load_brief_and_return_result now ≤30 lines. All pre-commit checks pass; 4229 tests, 91.83% coverage.

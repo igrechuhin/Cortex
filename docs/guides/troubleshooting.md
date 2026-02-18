@@ -925,6 +925,47 @@ When the GitHub Actions "Code Quality" workflow fails on push (e.g. [run #244](h
 
 The `fix_markdown_lint` MCP tool and the commit pipeline require `markdownlint-cli2`. The tool looks for it in this order: (1) local `node_modules/.bin/markdownlint-cli2` (if present), (2) `markdownlint-cli2` in PATH, (3) `npx --yes markdownlint-cli2`.
 
+#### Issue: fix_markdown_lint returns failures without rule codes
+
+**Symptoms**:
+
+- `fix_markdown_lint` returns `success: false` and `files_with_errors: N` (N > 0)
+- Each failing file has `"error_message": "Markdown lint failed"` but `"errors": []` (empty list)
+- No rule codes (e.g. MD036, MD022) are present in the response
+- Agent cannot target fixes without rule codes
+
+**Causes**:
+
+- Batch markdownlint run failed (non-zero exit) and stderr parsing did not extract rule codes
+- markdownlint output format differs from expected `file:line:rule` pattern
+- Batch failure occurred but per-file error details were not captured
+
+**Solution**:
+
+1. **Retry once**: The tool now includes improved stderr parsing and per-file fallback. Retry `fix_markdown_lint` once—it may succeed on the second attempt.
+
+2. **If retry still returns no rule codes**: Run markdown lint locally to obtain rule codes:
+
+   ```bash
+   # From project root
+   npx --yes markdownlint-cli2 --fix '**/*.md' '**/*.mdc'
+   
+   # Or if local install exists
+   node_modules/.bin/markdownlint-cli2 --fix '**/*.md' '**/*.mdc'
+   ```
+
+3. **Review output**: The local run will show rule codes (e.g. `file.md:15:3 MD036/heading-style`) and file locations.
+
+4. **Fix violations**: Apply fixes based on rule codes, then re-run the commit pipeline.
+
+5. **For commit pipeline**: Record "fix_markdown_lint returned no rule codes; used local markdownlint fallback" in commit output.
+
+**Prevention**:
+
+- The tool now includes improved stderr parsing that handles format variations
+- When batch fails, the tool automatically falls back to per-file runs to obtain rule codes
+- This should reduce occurrences of "no rule codes" responses
+
 ##### Recommended: local install (no global install, avoids npx network at run time)
 
 From the project root:
