@@ -14,7 +14,7 @@ import json
 import logging
 import re
 from pathlib import Path
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 from pydantic import ValidationError
 
@@ -51,9 +51,11 @@ from cortex.tools.models import (
     SessionStartResultUnion,
 )
 from cortex.tools.session_registry import list_concurrent_sessions
+from cortex.tools.session_start_models import BriefInputs as _BriefInputs
 from cortex.tools.task_locking import list_active_locks
 
 logger = logging.getLogger(__name__)
+
 
 # Type alias for _gather_brief_components return (keeps function under 30 lines)
 _BriefComponents = tuple[
@@ -630,7 +632,7 @@ def _create_brief_with_suggestions(
     )
 
 
-def _compute_suggestions_and_create_brief(
+def _session_brief_context_kwargs(
     project_name: str,
     current_focus: str,
     recent_completed: list[str],
@@ -643,30 +645,57 @@ def _compute_suggestions_and_create_brief(
     locked_tasks: list[str],
     mcp_healthy: bool = True,
     mcp_health_message: str | None = None,
+) -> dict[str, Any]:
+    """Build kwargs for _create_brief_with_suggestions from context (keeps _compute_suggestions_and_create_brief under 30 lines)."""
+    return {
+        "project_name": project_name,
+        "current_focus": current_focus,
+        "recent_completed": recent_completed,
+        "next_work_item": next_work_item,
+        "next_work_plan_path": next_work_plan_path,
+        "health": health,
+        "git_status": git_status,
+        "last_handoff": last_handoff,
+        "concurrent_sessions": concurrent_sessions,
+        "locked_tasks": locked_tasks,
+        "mcp_healthy": mcp_healthy,
+        "mcp_health_message": mcp_health_message,
+    }
+
+
+def _brief_from_suggestions_and_context(
+    suggestions: list[str],
+    **kwargs: Any,
 ) -> SessionBrief:
+    """Build SessionBrief from suggestions and context kwargs."""
+    return _create_brief_with_suggestions(suggestions, **kwargs)
+
+
+def _compute_suggestions_and_create_brief(inp: _BriefInputs) -> SessionBrief:
     """Compute suggestions and build SessionBrief."""
-    suggestions = _generate_session_suggestions(
-        health,
-        git_status,
-        next_work_item,
-        locked_tasks,
-        concurrent_sessions,
-        mcp_healthy=mcp_healthy,
-    )
-    return _create_brief_with_suggestions(
-        suggestions,
-        project_name,
-        current_focus,
-        recent_completed,
-        next_work_item,
-        next_work_plan_path,
-        health,
-        git_status,
-        last_handoff,
-        concurrent_sessions,
-        locked_tasks,
-        mcp_healthy=mcp_healthy,
-        mcp_health_message=mcp_health_message,
+    return _brief_from_suggestions_and_context(
+        _generate_session_suggestions(
+            inp["health"],
+            inp["git_status"],
+            inp["next_work_item"],
+            inp["locked_tasks"],
+            inp["concurrent_sessions"],
+            mcp_healthy=inp["mcp_healthy"],
+        ),
+        **_session_brief_context_kwargs(
+            inp["project_name"],
+            inp["current_focus"],
+            inp["recent_completed"],
+            inp["next_work_item"],
+            inp["next_work_plan_path"],
+            inp["health"],
+            inp["git_status"],
+            inp["last_handoff"],
+            inp["concurrent_sessions"],
+            inp["locked_tasks"],
+            inp["mcp_healthy"],
+            inp["mcp_health_message"],
+        ),
     )
 
 
@@ -685,20 +714,21 @@ def _assemble_session_brief(
     mcp_health_message: str | None = None,
 ) -> SessionBrief:
     """Assemble session brief from collected components."""
-    return _compute_suggestions_and_create_brief(
-        project_name,
-        current_focus,
-        recent_completed,
-        next_work_item,
-        next_work_plan_path,
-        health,
-        git_status,
-        last_handoff,
-        concurrent_sessions,
-        locked_tasks,
-        mcp_healthy=mcp_healthy,
-        mcp_health_message=mcp_health_message,
-    )
+    inp: _BriefInputs = {
+        "project_name": project_name,
+        "current_focus": current_focus,
+        "recent_completed": recent_completed,
+        "next_work_item": next_work_item,
+        "next_work_plan_path": next_work_plan_path,
+        "health": health,
+        "git_status": git_status,
+        "last_handoff": last_handoff,
+        "concurrent_sessions": concurrent_sessions,
+        "locked_tasks": locked_tasks,
+        "mcp_healthy": mcp_healthy,
+        "mcp_health_message": mcp_health_message,
+    }
+    return _compute_suggestions_and_create_brief(inp)
 
 
 async def _gather_brief_components(

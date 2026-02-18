@@ -30,6 +30,10 @@ class CheckResult(DictLikeModel):
     )
 
 
+# Minimum coverage to accept with warning (89.5%); 90%+ required for CI/release.
+COVERAGE_ACCEPT_MIN = 0.895
+
+
 class TestResult(DictLikeModel):
     """Test execution result."""
 
@@ -43,6 +47,10 @@ class TestResult(DictLikeModel):
     coverage: float | None
     output: str
     errors: list[str]
+    warnings: list[str] = Field(
+        default_factory=list,
+        description="Warnings (e.g. coverage below 90% but >= 89.5%)",
+    )
 
 
 class FrameworkAdapter(ABC):

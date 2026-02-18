@@ -27,7 +27,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 ### Features & Enhancements
 
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
-- **Session Optimization: Test Coverage and Development Workflow Improvements** - PENDING - Improve coverage gap identification, proactive file size enforcement, test coverage guidance, and reduce test development friction based on 2026-02-16 session analysis
 - **Session Optimization: Commit Pipeline Context Loading and Helper Module Pattern** - PENDING - Optimize commit pipeline context loading (reduce token usage 40-60%) and document helper module extraction pattern for code quality violations
 - **Session Optimization: fix_markdown_lint Opaque Errors and Commit Fallback** - PENDING - Improve fix_markdown_lint error reporting when batch fails; document commit fallback when tool returns no rule codes. Plan: .cortex/plans/session-optimization-fix-markdown-lint-opaque-errors.md.
 - **Fix Broken Progress Entry: Phase 54 Title Corruption** - PENDING - Fix corrupted entry in progress.md line 66 ("Phase 54lizer Pattern"  "Phase 54: Session Start Initializer Pattern") and extend corruption detection to catch truncation patterns. Plan: .cortex/plans/fix-progress-phase-54-corruption.md.
@@ -67,3 +66,5 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Phase 57: Evaluation-Driven Tool Improvement** - IN PROGRESS - Remaining work: extend the evaluation task suite, add evaluation dashboards, and implement automated tool description optimization and A/B testing on top of the existing evaluation framework and error-pattern tooling.
 - **Session Optimization: Phase 58 multi-agent follow-ups** - PENDING - Follow-ups for Phase 58 to log AgentRole in load_context session logs, extend context-effectiveness analysis with role-aware statistics, and update prompts/docs once role data is available.
 - **Session Optimization: Refactoring Workflow Improvements (2026-02-17 Analysis)** - PENDING - Improve refactoring workflow to reduce fix iterations: add intermediate validation checkpoints, document type narrowing pattern, add duplicate detection step
+- **Session Optimization: Rule Loading and Discovery (2026-02-18 Analysis)** - PENDING - Enforce rule loading in implement prompt, add rule discovery fallback when rules() empty, document fallback in AGENTS.md/prompt.
+- **Session Optimization: load_context Budget and Test Type Narrowing** - PENDING - Document non-zero load_context budget for non-trivial tasks in implement/fix prompts; document JsonValue narrowing in tests (testing/type rules).

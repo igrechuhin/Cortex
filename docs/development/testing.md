@@ -1173,8 +1173,8 @@ pytest --cov=src/cortex --cov-report=term-missing
 pytest --cov=src/cortex --cov-report=html
 # Open htmlcov/index.html in browser
 
-# Generate JSON report (for CI)
-pytest --cov=src/cortex --cov-report=json
+# Generate JSON report (for CI and gap analysis)
+pytest --cov=src/cortex --cov-report=json:coverage.json
 
 # Show coverage for specific file
 pytest --cov=src/cortex/file_system.py --cov-report=term-missing
@@ -1197,9 +1197,28 @@ TOTAL                     430     28    93%
 - **Cover**: Percentage coverage
 - **Missing**: Line numbers not covered
 
+### Coverage gap analysis
+
+To find files with the most uncovered lines (for prioritization), generate a JSON report then run the gap analysis script:
+
+```bash
+# Generate coverage JSON (from project root)
+uv run python -m pytest tests/ --cov=src/cortex --cov-report=json:coverage.json
+
+# List top 10 files by uncovered line count (default)
+uv run python .cortex/synapse/scripts/python/analyze_coverage_gaps.py
+
+# Top N and optional filters
+uv run python .cortex/synapse/scripts/python/analyze_coverage_gaps.py --top 15
+uv run python .cortex/synapse/scripts/python/analyze_coverage_gaps.py -d src/cortex/tools
+uv run python .cortex/synapse/scripts/python/analyze_coverage_gaps.py -j path/to/coverage.json
+```
+
+Options: `--json` / `-j` (path to JSON), `--top` / `-n` (number of files), `--directory` / `-d` (filter path substring), `--module` / `-m` (filter module name substring). This is available as an optional step in the commit pipeline (e.g. after running tests with JSON coverage) to guide where to add tests.
+
 ### Improving Coverage
 
-1. **Identify missing lines**: Run coverage report
+1. **Identify missing lines**: Run coverage report or use the coverage gap script above
 2. **Write tests for missing lines**: Add test cases
 3. **Verify coverage increases**: Re-run coverage report
 4. **Repeat until ≥90%**: Continue until target is met
@@ -1234,6 +1253,18 @@ def test_parse_config_with_missing_file():
     with pytest.raises(FileNotFoundError):
         parse_config("nonexistent.json")
 ```
+
+### Coverage expectations and prioritization
+
+- **90%+**: Minimum required for CI and release; enforced in the commit pipeline.
+- **89.5%+ with warning**: The pre-commit quality gate accepts 89.5–90% coverage but reports a warning (e.g. when running `execute_pre_commit_checks(checks=["tests"])`). Use this as a temporary buffer; aim for 90%+ before merge/release.
+- **95%+**: Ideal for new or high-impact modules; aim here when adding features or refactoring.
+- **Prioritization**: Use the [coverage gap script](#coverage-gap-analysis) to list files by uncovered line count; tackle the top files first for the biggest impact.
+- **Quick gains**: Add tests for error paths (`except` blocks, validation failures), edge cases (empty input, boundary values), and public entry points before drilling into internal helpers.
+
+### Integration test patterns for handler-dispatch tools
+
+Consolidated tools that dispatch to handlers (e.g. `query_memory_bank`, `execute_pre_commit_checks`) often need both unit tests (mocked, 80–90% coverage) and integration-style tests that call the real handler to reach 95%+. See the “Handler dispatch and coverage” section in this guide for patterns and examples.
 
 ### Coverage Best Practices
 

@@ -289,6 +289,23 @@ class TestPythonAdapter:
             adapter = PythonAdapter(str(tmpdir))
             assert adapter._parse_coverage("no coverage here") is None  # type: ignore[attr-defined]
 
+    def test_parse_test_output_coverage_89_5_accepted_with_warning(self) -> None:
+        """_parse_test_output accepts 89.5%+ with warning and success=True."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter = PythonAdapter(str(tmpdir))
+            output = (
+                "=========== 10 passed in 1.00s ============\n"
+                "Required test coverage of 90% reached. Total coverage: 89.50%"
+            )
+            result = adapter._parse_test_output(  # type: ignore[attr-defined]
+                output, success=True, coverage_threshold=0.90
+            )
+            assert result["success"] is True
+            assert result["coverage"] is not None
+            assert cast(float, result["coverage"]) < 0.90
+            warnings = cast(list[str], result.get("warnings", []))
+            assert any("89.50" in w and "90%" in w for w in warnings)
+
     def test_parse_test_output_zero_tests_run(self) -> None:
         """_parse_test_output sets pass_rate 0 when tests_run is 0."""
         with tempfile.TemporaryDirectory() as tmpdir:
