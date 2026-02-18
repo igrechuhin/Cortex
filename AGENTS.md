@@ -24,6 +24,19 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 
 **Note for AI agents**: Do not add detailed workflow guides (including fix-path rules) to `AGENTS.md` or `CLAUDE.md`; always fetch commit/implement/fix-path behavior from Cortex MCP (Synapse prompts, rules, and memory bank).
 
+## Compound Engineering
+
+Cortex aims to make each unit of engineering work easier than the last; communication and output should become more efficient over time. The workflow follows **Plan → Work → Review → Compound**:
+
+- **Plan**: Plans in `.cortex/plans`, roadmap entries; load context at step start.
+- **Work**: Implement prompt, commit pipeline, code and memory bank updates.
+- **Review**: Pre-commit checks, validation, code review; session optimization analysis at end of session.
+- **Compound**: Update memory bank (activeContext, progress, roadmap), run session optimization, capture what to do differently next time.
+
+Updating activeContext (completed work), progress, and roadmap (future work) after significant changes is the **compound** step: it makes the next session easier by keeping context accurate and avoiding duplicate or conflicting entries. Running session optimization at end of session is the **Compound** step of the loop: it captures mistake patterns, root causes, and recommendations so the next session can avoid repeating them.
+
+See the implement, commit, and analyze prompts (Synapse) for detailed workflow guidance and compound checklist.
+
 ## Workflow
 
 1. **Get session orientation** (recommended) — call `session_start()` for efficient orientation (< 1000 tokens). Returns current focus, next work item, health check, git status, and suggestions. Replaces 3-5 manual orientation calls.

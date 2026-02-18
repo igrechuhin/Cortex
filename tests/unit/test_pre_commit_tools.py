@@ -118,9 +118,23 @@ class TestExecutePreCommitChecks:
                     **_EXECUTE_REQUIRED,
                 )
 
-                mock_to_thread.assert_called_once()
-                call_args = mock_to_thread.call_args
-                assert call_args[0][0].__name__ == "_execute_all_checks"
+                # Verify _execute_all_checks was called via to_thread
+                # (get_or_resolve_project_root may also call to_thread, so check for at least one call)
+                assert mock_to_thread.call_count >= 1
+                # Find the call that invokes _execute_all_checks
+                execute_all_checks_call = None
+                for call in mock_to_thread.call_args_list:
+                    if call[0] and len(call[0]) > 0:
+                        func = call[0][0]
+                        if (
+                            hasattr(func, "__name__")
+                            and func.__name__ == "_execute_all_checks"
+                        ):
+                            execute_all_checks_call = call
+                            break
+                assert (
+                    execute_all_checks_call is not None
+                ), "Expected _execute_all_checks to be called via to_thread"
                 assert result["status"] == "success"
                 assert result["language"] == "python"
 
@@ -1510,28 +1524,40 @@ class TestPreCommitToolsContextLogging:
                 mock_adapter.fix_errors.return_value = mock_result
 
                 async def run_sync(
-                    _fn: Callable[
-                        ...,
-                        tuple[dict[str, CheckResult | TestResult | object], object],
-                    ],
-                    _adapter: FrameworkAdapter,
-                    _lang: str,
-                    checks: list[PreCommitCheck],
-                    _strict: bool,
-                    _timeout: int | None,
-                    _cov: float,
-                    _progress_callback: Callable[[int, int], None] | None = None,
-                ) -> tuple[dict[str, CheckResult], MagicMock]:
-                    results: dict[str, CheckResult] = {}
-                    stats: MagicMock = MagicMock(
-                        total_errors=0,
-                        total_warnings=0,
-                        files_modified=[],
-                        checks_performed=[c.value for c in checks],
-                    )
-                    for c in checks:
-                        results[c.value] = mock_result
-                    return results, stats
+                    func: Callable[..., object], *args: object
+                ) -> object:  # run in same thread for test
+                    # Handle _execute_all_checks call
+                    if (
+                        hasattr(func, "__name__")
+                        and func.__name__ == "_execute_all_checks"
+                    ):
+                        # Extract arguments for _execute_all_checks
+                        if len(args) >= 6:
+                            checks_list = args[2]  # checks_to_perform is 3rd arg
+                            results: dict[str, CheckResult] = {}
+                            if isinstance(checks_list, list):
+                                checks_performed_list: list[str] = []
+                                for item in checks_list:  # type: ignore[reportUnknownVariableType]
+                                    if isinstance(item, PreCommitCheck):
+                                        check_name = item.value
+                                        checks_performed_list.append(check_name)
+                                        results[check_name] = mock_result
+                                stats: MagicMock = MagicMock(
+                                    total_errors=0,
+                                    total_warnings=0,
+                                    files_modified=[],
+                                    checks_performed=checks_performed_list,
+                                )
+                            else:
+                                stats = MagicMock(
+                                    total_errors=0,
+                                    total_warnings=0,
+                                    files_modified=[],
+                                    checks_performed=[],
+                                )
+                            return results, stats
+                    # For other functions (e.g., from get_or_resolve_project_root), call normally
+                    return func(*args)
 
                 mock_to_thread.side_effect = run_sync
 

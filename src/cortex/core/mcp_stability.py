@@ -22,6 +22,7 @@ from cortex.core.constants import (
     MCP_CONNECTION_RETRY_DELAY_SECONDS,
     MCP_MAX_CONCURRENT_TOOLS,
     MCP_TOOL_TIMEOUT_SECONDS,
+    MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS,
     PROGRESS_REPORT_INTERVAL_LONG_RUNNING_SECONDS,
     PROGRESS_REPORT_INTERVAL_SECONDS,
     PROGRESS_REPORT_INTERVAL_VERY_FREQUENT_SECONDS,
@@ -106,6 +107,25 @@ async def _init_usage_context_under_lock(
         raise
 
 
+async def _acquire_usage_context_lock_with_timeout(
+    lock: asyncio.Lock, func_name: str
+) -> None:
+    """Acquire usage context init lock with timeout; raise RuntimeError on timeout."""
+    try:
+        async with asyncio.timeout(MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS):
+            async with lock:
+                return
+    except TimeoutError:
+        logger.error(
+            f"Usage context init lock timeout after {MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS}s "
+            + f"for {func_name}. Another tool call may be stuck in initialization."
+        )
+        raise RuntimeError(
+            f"Failed to acquire usage context init lock after {MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS}s. "
+            + "Another tool call may be stuck in initialization."
+        ) from None
+
+
 def ensure_usage_context[T](
     func: Callable[..., Awaitable[T]],
 ) -> Callable[..., Awaitable[T]]:
@@ -129,12 +149,12 @@ def ensure_usage_context[T](
         if get_current_managers() is not None:
             return await func(*args, **kwargs)
         lock = get_usage_context_init_lock()
-        async with lock:
-            if get_current_managers() is not None:
-                return await func(*args, **kwargs)
-            ctx_raw = kwargs.get("ctx")
-            mcp_ctx = cast(MCPContext | None, ctx_raw)
-            await _init_usage_context_under_lock(mcp_ctx, func.__name__)
+        await _acquire_usage_context_lock_with_timeout(lock, func.__name__)
+        if get_current_managers() is not None:
+            return await func(*args, **kwargs)
+        ctx_raw = kwargs.get("ctx")
+        mcp_ctx = cast(MCPContext | None, ctx_raw)
+        await _init_usage_context_under_lock(mcp_ctx, func.__name__)
         return await func(*args, **kwargs)
 
     original_sig = inspect.signature(func)

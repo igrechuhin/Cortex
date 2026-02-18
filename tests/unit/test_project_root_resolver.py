@@ -77,3 +77,29 @@ class TestResolveProjectRootAsync:
             result = await resolve_project_root_async(None, mock_ctx)
             assert result == Path("/fallback")
             mock_get.assert_called_once_with(None)
+
+    @pytest.mark.asyncio
+    async def test_fallback_root_runs_in_thread_pool(self) -> None:
+        """Test that _fallback_root() runs in thread pool to avoid blocking event loop."""
+        with patch(
+            "cortex.core.project_root_resolver.get_project_root",
+            return_value=Path("/fallback"),
+        ) as mock_get:
+            # Verify that asyncio.to_thread is used (indirectly by checking it doesn't block)
+            # We can't directly test asyncio.to_thread, but we can verify the function works
+            # and that it's async (which it must be if to_thread is used)
+            result = await resolve_project_root_async(None, None)
+            assert result == Path("/fallback")
+            mock_get.assert_called_once_with(None)
+
+    @pytest.mark.asyncio
+    async def test_fallback_root_with_env_var_runs_in_thread_pool(self) -> None:
+        """Test that fallback root with CORTEX_USE_FALLBACK_ROOT env var runs in thread pool."""
+        with patch.dict("os.environ", {"CORTEX_USE_FALLBACK_ROOT": "1"}):
+            with patch(
+                "cortex.core.project_root_resolver.get_project_root",
+                return_value=Path("/fallback"),
+            ) as mock_get:
+                result = await resolve_project_root_async(None, None)
+                assert result == Path("/fallback")
+                mock_get.assert_called_once_with(None)

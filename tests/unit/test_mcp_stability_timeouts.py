@@ -24,10 +24,16 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_FAST,
     MCP_TOOL_TIMEOUT_MEDIUM,
     MCP_TOOL_TIMEOUT_VERY_COMPLEX,
+    MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS,
     PROGRESS_THRESHOLD_TIMEOUT_SECONDS,
 )
 from cortex.core.mcp_async_utils import cancel_and_drain_progress_task
-from cortex.core.mcp_stability import mcp_tool_wrapper, with_mcp_stability
+from cortex.core.mcp_stability import (
+    ensure_usage_context,
+    mcp_tool_wrapper,
+    with_mcp_stability,
+)
+from cortex.core.usage_context import set_current_managers
 
 
 async def fast_operation() -> str:
@@ -679,3 +685,93 @@ class TestAllResourcesHaveRequiredWrappers:
             "MCP resources missing required decorator stack (@mcp.resource(uri=...) -> @ensure_usage_context -> @mcp_resource_wrapper): "
             + ", ".join(f"{f}: lines {lns}" for f, lns in violations)
         )
+
+
+class TestUsageContextInitLockTimeout:
+    """Test that usage context init lock has timeout to prevent indefinite hangs."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(30)  # Allow up to 30s for this test (timeout + overhead)
+    async def test_usage_context_init_lock_timeout(self) -> None:
+        """Test that usage context init lock times out after configured duration."""
+        from unittest.mock import AsyncMock, patch
+
+        # Clear current managers to force lock acquisition
+        set_current_managers(None)
+
+        @ensure_usage_context
+        async def test_tool() -> str:
+            return "success"
+
+        # Create a lock that will be held indefinitely by simulating a stuck initialization
+        from cortex.core.mcp_stability_config import get_usage_context_init_lock
+
+        lock = get_usage_context_init_lock()
+
+        # Hold the lock in a background task to simulate a stuck initialization
+        async def hold_lock_forever() -> None:
+            async with lock:
+                # Hold lock longer than timeout to ensure timeout occurs
+                await asyncio.sleep(MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS + 1)
+
+        # Start holding the lock
+        hold_task = asyncio.create_task(hold_lock_forever())
+        # Wait a bit to ensure lock is acquired
+        await asyncio.sleep(0.1)
+
+        try:
+            # Mock resolve_project_root_async and get_managers to avoid real file system operations
+            with (
+                patch(
+                    "cortex.core.project_root_resolver.resolve_project_root_async",
+                    new_callable=AsyncMock,
+                    return_value=Path("/test"),
+                ),
+                patch(
+                    "cortex.managers.initialization.get_managers",
+                    new_callable=AsyncMock,
+                    return_value={},
+                ),
+            ):
+                # Attempt to call tool - should timeout trying to acquire lock
+                with pytest.raises(
+                    RuntimeError, match="Failed to acquire usage context init lock"
+                ):
+                    _ = await test_tool()
+        finally:
+            # Clean up: cancel the hold task and release lock
+            _ = hold_task.cancel()
+            try:
+                _ = await hold_task
+            except asyncio.CancelledError:
+                pass
+            # Reset managers for other tests
+            set_current_managers(None)
+
+    @pytest.mark.asyncio
+    async def test_usage_context_init_lock_succeeds_when_not_held(self) -> None:
+        """Test that usage context init succeeds when lock is not held."""
+        from unittest.mock import AsyncMock, patch
+
+        # Clear current managers to force lock acquisition
+        set_current_managers(None)
+
+        @ensure_usage_context
+        async def test_tool() -> str:
+            return "success"
+
+        # Mock initialization to avoid real file system operations
+        with (
+            patch(
+                "cortex.core.project_root_resolver.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=Path("/test"),
+            ),
+            patch(
+                "cortex.managers.initialization.get_managers",
+                new_callable=AsyncMock,
+                return_value={},
+            ),
+        ):
+            result = await test_tool()
+            assert result == "success"

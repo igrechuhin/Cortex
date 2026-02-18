@@ -108,9 +108,9 @@ async def resolve_project_root_async(
         logger.info(
             "project_root_resolver: using fallback root (CORTEX_USE_FALLBACK_ROOT=1)"
         )
-        return _fallback_root()
+        return await asyncio.to_thread(_fallback_root)
     if ctx is not None and getattr(ctx, "session", None) is not None:
         path = await _try_roots_from_ctx(ctx)
         if path is not None:
             return path
-    return _fallback_root()
+    return await asyncio.to_thread(_fallback_root)

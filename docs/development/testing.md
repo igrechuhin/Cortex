@@ -152,6 +152,8 @@ pytest -m "not slow" -v        # All tests except marked as slow
 
 ### Understanding pytest.ini Configuration
 
+The `pytest.ini` file configures pytest behavior for the Cortex project. **Important design decision**: Coverage options are **NOT** included in `addopts` to ensure IDE test discovery works without requiring `pytest-cov` to be installed.
+
 ```ini
 [pytest]
 # Test discovery
@@ -160,17 +162,14 @@ python_files = test_*.py             # Test file pattern
 python_classes = Test*               # Test class pattern
 python_functions = test_*            # Test function pattern
 
-# Output options
+# Output options (coverage is NOT in addopts so IDE test discovery works without
+# requiring pytest-cov; CI and execute_pre_commit_checks pass --cov explicitly)
 addopts =
     -v                               # Verbose output
     --strict-markers                 # Error on unknown markers
+    --strict-config                  # Strict configuration checking
     --tb=short                       # Short traceback format
     --disable-warnings               # Hide warnings (unless needed)
-    --cov=src/cortex        # Coverage target
-    --cov-report=html                # HTML coverage report
-    --cov-report=term-missing        # Terminal report with missing lines
-    --cov-report=json                # JSON report for CI
-    --cov-branch                     # Branch coverage
 
 # Available markers
 markers =
@@ -182,9 +181,46 @@ markers =
 # Asyncio configuration
 asyncio_mode = auto                  # Auto-detect async tests
 
-# Minimum Python version
-minversion = 3.8
+# Minimum pytest version
+minversion = 7.4.0
+
+# Test timeout (requires pytest-timeout)
+timeout = 10                         # Per-test timeout: 10 seconds
+session_timeout = 900                # Session timeout: 900 seconds (15 minutes)
+timeout_method = signal              # Signal-based timeout (more reliable)
+
+# Coverage configuration (separate section, not in addopts)
+[coverage:run]
+source = src/cortex
+omit =
+    */tests/*
+    */test_*.py
+    */__pycache__/*
+    */__init__.py
+    */protocols/*.py
+    */benchmarks/*.py
+
+[coverage:report]
+precision = 2
+show_missing = true
+skip_covered = false
 ```
+
+#### Why Coverage is Not in `addopts`
+
+**Design rationale**: Coverage options are intentionally excluded from `addopts` to ensure IDE test discovery works seamlessly:
+
+- **IDE compatibility**: IDEs (VS Code, PyCharm, etc.) run pytest for test discovery without requiring `pytest-cov` to be installed
+- **Faster discovery**: Test discovery runs faster without coverage overhead
+- **Explicit coverage**: Coverage is enabled explicitly when needed (CI, pre-commit checks, manual runs)
+
+**When to use coverage**:
+
+- **CI/CD pipelines**: Coverage is automatically enabled via `execute_pre_commit_checks` tool
+- **Manual full runs**: Pass `--cov` explicitly: `pytest --cov=src/cortex --cov-report=term-missing`
+- **Pre-commit checks**: The commit pipeline automatically includes coverage via `execute_pre_commit_checks(checks=["tests"])`
+
+**Reminder for implement/commit workflows**: When running full test suites (not just IDE discovery), remember to pass `--cov` explicitly if coverage reporting is needed. The commit pipeline handles this automatically via `execute_pre_commit_checks`.
 
 ### Running with Different Options
 

@@ -1,7 +1,8 @@
 # Investigation: FastMCP Blocking Before Tool Handler Invocation
 
-**Status**: IN PROGRESS  
+**Status**: COMPLETE (Fixes Implemented)  
 **Created**: 2026-02-09  
+**Completed**: 2026-02-18  
 **Priority**: **CRITICAL** - Blocks all MCP tool usage  
 **Blocker**: Yes - ASAP priority
 
@@ -103,13 +104,15 @@ Searched [jlowin/fastmcp issues](https://github.com/jlowin/fastmcp/issues):
 
 **Likely causes addressed**:
 
-1. **Blocking event loop in project root fallback**  
+1. **Blocking event loop in project root fallback** ✅ IMPLEMENTED  
    When the cached project root is missing, `resolve_project_root_async()` called `_fallback_root()` synchronously. That runs `get_project_root(None)` (filesystem walks) on the event loop and can block all tools.  
-   **Fix**: Run `_fallback_root()` in `asyncio.to_thread()` so it never blocks the event loop (`project_root_resolver.py`).
+   **Fix**: Run `_fallback_root()` in `asyncio.to_thread()` so it never blocks the event loop (`project_root_resolver.py`).  
+   **Implementation**: Updated `resolve_project_root_async()` to wrap both `_fallback_root()` calls in `asyncio.to_thread()` (lines 111, 116).
 
-2. **Unbounded wait on usage context init lock**  
+2. **Unbounded wait on usage context init lock** ✅ IMPLEMENTED  
    If the first tool call is slow or stuck in `get_managers()`, other tool calls wait on the init lock with no timeout and can hang indefinitely.  
-   **Fix**: Acquire the usage context init lock with a 25s timeout (`MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS`). On timeout, log and raise `RuntimeError` so the call fails instead of hanging (`mcp_stability.py`, `constants.py`).
+   **Fix**: Acquire the usage context init lock with a 25s timeout (`MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS`). On timeout, log and raise `RuntimeError` so the call fails instead of hanging (`mcp_stability.py`, `constants.py`).  
+   **Implementation**: Added `MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS = 25` constant, extracted `_acquire_usage_context_lock_with_timeout()` helper function, updated `ensure_usage_context()` to use timeout wrapper. Tests added to verify timeout behavior.
 
 **Other potential hang points** (unchanged, but bounded):
 

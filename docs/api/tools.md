@@ -21,7 +21,7 @@ Cortex follows MCP semantics: **Resources** are GET-like (read-only, load data i
 
 | Phase | Tools | Category |
 |-------|-------|----------|
-| [Phase 1](#phase-1-foundation-tools) | 8 | Foundation (initialization, file ops, versioning) |
+| [Phase 1](#phase-1-foundation-tools) | 9 | Foundation (initialization, file ops, versioning) |
 | [Phase 50](#phase-50-consolidated-query-tools) | 2 | Consolidated query (memory bank, usage) |
 | [Phase 2](#phase-2-link-management-tools) | — | Link ops via [query_memory_bank](#query_memory_bank) |
 | [Phase 3](#phase-3-validation-and-quality-tools) | 5 | Validation & Quality (schema, duplication, scoring) |
@@ -368,6 +368,106 @@ Unified Memory Bank file management tool for read/write/metadata operations.
       operation="metadata",
   )
   ```
+
+---
+
+### add_roadmap_entry
+
+Add entry to roadmap section, avoiding truncation from full updates.
+
+**USE WHEN:** Create-plan Step 6 needs to register a new plan entry.
+
+**RETURNS:** JSON with operation status, line inserted, error if any.
+
+**Parameters:**
+
+- `section` (str) - **Required.** Section identifier: `"blockers"`, `"active_work"`, `"future"`, or `"pending"`.
+- `entry_text` (str) - **Required.** Single bullet line text (e.g., `"- **Title** - PENDING - Description. Plan: .cortex/plans/slug.md."`). If missing leading `"- "`, it will be auto-added.
+- `position` (str) - Position within section: `"first"` or `"last"` (default: `"last"`).
+- `change_description` (str | None) - Optional description for change tracking.
+
+**Description:**
+
+Performs server-side insertion into `roadmap.md` without requiring the client to send the full roadmap content. This avoids truncation risks from full-content serialization. The tool:
+
+- Parses roadmap sections by header patterns (`## Blockers (ASAP Priority)`, `## Active Work (in progress)`, etc.)
+- Validates section identifier and rejects unknown sections
+- Rejects completed entries (entries containing `- COMPLETED`, `- COMPLETE`, or `- DONE`) — roadmap records future/upcoming work only
+- Inserts the entry at the specified position (first or last bullet in section)
+- Applies roadmap corruption fixes before writing
+- Uses lock-guarding and conflict detection (same as `manage_file`)
+
+**Section Mapping:**
+
+- `"blockers"` → `## Blockers (ASAP Priority)`
+- `"active_work"` → `## Active Work (in progress)` or `### Active Work`
+- `"future"` → `## Future Enhancements`
+- `"pending"` → `## Pending plans (from .cortex/plans)`
+
+**Returns:**
+
+**Success:**
+
+```json
+{
+  "status": "success",
+  "file_name": "roadmap.md",
+  "message": "Entry added to 'pending' section at line 45",
+  "line_inserted": 45,
+  "section": "pending",
+  "error": null
+}
+```
+
+**Error (unknown section):**
+
+```json
+{
+  "status": "error",
+  "file_name": "roadmap.md",
+  "message": "Unknown section: invalid_section",
+  "line_inserted": null,
+  "section": null,
+  "error": "Section must be one of: blockers, active_work, future, pending"
+}
+```
+
+**Error (completed entry rejected):**
+
+```json
+{
+  "status": "error",
+  "file_name": "roadmap.md",
+  "message": "Completed entries not allowed in roadmap",
+  "line_inserted": null,
+  "section": null,
+  "error": "Roadmap records future/upcoming work only. Do not add COMPLETED entries here; record completed work in activeContext.md."
+}
+```
+
+**Examples:**
+
+- **Add plan entry to pending section:**
+
+  ```python
+  await add_roadmap_entry(
+      section="pending",
+      entry_text="- **Phase 50: Consolidated query tools** - PENDING - Plan: .cortex/plans/phase-50-consolidated-query-tools.md.",
+      position="last"
+  )
+  ```
+
+- **Add blocker entry:**
+
+  ```python
+  await add_roadmap_entry(
+      section="blockers",
+      entry_text="- **Critical bug fix** - PENDING - Blocks all other work.",
+      position="first"
+  )
+  ```
+
+**See also:** `remove_roadmap_entry`, `register_plan_in_roadmap`, `complete_plan`, `manage_file` (fallback for multi-entry updates).
 
 ---
 

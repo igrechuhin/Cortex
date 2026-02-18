@@ -6,6 +6,14 @@
 
 ## Blockers (ASAP Priority)
 
+- [Phase: Investigate execute_pre_commit_checks MCP Tool Failure](.cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260218-171353.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `execute_pre_commit_checks`, Error: TypeError - Impact: Commit procedure blocked - Target completion: 2026-02-18
+
+- [Phase: Investigate execute_pre_commit_checks MCP Tool Failure](.cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260218-165258.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `execute_pre_commit_checks`, Error: TypeError - Impact: Commit procedure blocked - Target completion: 2026-02-18
+
+- [Phase: Investigate execute_pre_commit_checks MCP Tool Failure](.cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260218-165232.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `execute_pre_commit_checks`, Error: TypeError - Impact: Commit procedure blocked - Target completion: 2026-02-18
+
+- [Phase: Investigate execute_pre_commit_checks MCP Tool Failure](.cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260218-165206.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `execute_pre_commit_checks`, Error: TypeError - Impact: Commit procedure blocked - Target completion: 2026-02-18
+
 ## Active Work (in progress)
 
 ## Future Enhancements
@@ -27,12 +35,8 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 ### Features & Enhancements
 
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
-- **Session Optimization: pytest.ini and IDE test discovery documentation** - PENDING - Document pytest.ini design (no coverage in addopts for IDE discovery); optional implement/commit reminder for explicit --cov in full runs.
 - **Plans README** - Reference. Plan: .cortex/plans/README.md
-- **Add roadmap entry MCP tool** - PENDING - Reference. Plan: .cortex/plans/add-roadmap-entry-mcp-tool.md
-- **Compound engineering alignment (Cortex)** - PENDING - Reference. Plan: .cortex/plans/compound-engineering-alignment-cortex.md
-- **Enrich memory bank write tools with validations** - PENDING - Reference. Plan: .cortex/plans/enrich-memory-bank-write-tools-with-validations.md
-- **Investigate FastMCP blocking before tool handlers** - PENDING - Reference. Plan: .cortex/plans/investigate-fastmcp-blocking-before-tool-handlers-2026-02-09.md
+- **Investigate FastMCP blocking before tool handlers** - PENDING - Reference. Plan: .cortex/plans/archive/Investigations/2026-02-09/investigate-fastmcp-blocking-before-tool-handlers-2026-02-09.md
 - **Phase 45: Add MCP annotations** - PENDING - Reference. Plan: .cortex/plans/phase-45-add-mcp-annotations.md
 - **Phase 53: Investigate manage_file conflict index stale** - PENDING - Reference. Plan: .cortex/plans/phase-53-investigate-manage-file-conflict-index-stale.md
 - **Phase 68: Investigate fix_quality_issues MCP connection closed** - PENDING - Reference. Plan: .cortex/plans/phase-68-investigate-fix-quality-issues-mcp-connection-closed.md
@@ -65,3 +69,4 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Session Optimization: Refactoring Workflow Improvements (2026-02-17 Analysis)** - PENDING - Improve refactoring workflow to reduce fix iterations: add intermediate validation checkpoints, document type narrowing pattern, add duplicate detection step
 - **Session Optimization: Rule Loading and Discovery (2026-02-18 Analysis)** - PENDING - Enforce rule loading in implement prompt, add rule discovery fallback when rules() empty, document fallback in AGENTS.md/prompt.
 - **Session Optimization: load_context Budget and Test Type Narrowing** - PENDING - Document non-zero load_context budget for non-trivial tasks in implement/fix prompts; document JsonValue narrowing in tests (testing/type rules).
+- **Session Optimization: MCP Connection Stability and Fallback Script Improvements** - PENDING - Improve MCP connection stability during commit pipeline and fix fallback script compatibility issues

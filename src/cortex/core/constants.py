@@ -95,6 +95,9 @@ MCP_HEALTH_CHECK_INTERVAL_SECONDS = 60  # Interval for connection health checks
 MCP_RESOURCE_CACHE_TTL_SECONDS = (
     30  # TTL for cached MCP resource responses (drain queue faster)
 )
+MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS = (
+    25  # Timeout for usage context init lock acquisition (prevents indefinite hangs)
+)
 
 # MCP Tool Timeout Categories (in seconds)
 MCP_TOOL_TIMEOUT_FAST = 60.0  # Fast operations: health checks, simple queries

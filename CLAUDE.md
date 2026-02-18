@@ -36,8 +36,10 @@ Token budget guidance comes from `load_context` tool documentation and context-e
 
 **Note for AI agents**: When you need detailed workflows (commit, implement, fix-path, etc.), read the corresponding Synapse prompts and rules via Cortex MCP instead of adding guidance to `CLAUDE.md` or `AGENTS.md`.
 
+## Compound Engineering
+
+See [AGENTS.md](AGENTS.md#compound-engineering) for the compound-engineering goal and Plan→Work→Review→Compound loop.
+
 ## Safety (non-negotiable)
 
-- No destructive git; no commits/pushes without explicit user request.
-- No hardcoded secrets; no sensitive data in logs or memory bank.
-- Continue until done or genuinely blocked.
+See [AGENTS.md](AGENTS.md#safety-non-negotiable) for safety rules.
