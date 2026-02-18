@@ -31,7 +31,13 @@ from pydantic import BaseModel, ConfigDict, Field
 from cortex.core.constants import MemoryBankFile
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import DictLikeModel, HealthMetrics, IndexStats, JsonDict
+from cortex.core.models import (
+    ConnectionHealth,
+    DictLikeModel,
+    HealthMetrics,
+    IndexStats,
+    JsonDict,
+)
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
 
@@ -2334,6 +2340,15 @@ class ConnectionHealthResult(ToolResultBase):
     health: HealthMetrics
 
 
+class MCPHealthCheckResponse(StrictBaseModel):
+    """Parsed response from check_mcp_connection_health (for parsing only)."""
+
+    status: Literal["success", "error"]
+    health: ConnectionHealth | None = None
+    error: str | None = None
+    error_type: str | None = None
+
+
 class ConnectionHealthErrorResult(ErrorResultBase):
     """Error result for check_mcp_connection_health operations."""
 
@@ -2940,6 +2955,14 @@ class SessionBrief(StrictBaseModel):
     locked_tasks: list[str] = Field(
         default_factory=list,
         description="List of task titles currently locked by other sessions",
+    )
+    mcp_healthy: bool = Field(
+        default=True,
+        description="True if MCP connection health check passed; if False, agent must not proceed",
+    )
+    mcp_health_message: str | None = Field(
+        default=None,
+        description="When mcp_healthy is False, short reason (e.g. unhealthy, connection error)",
     )
 
 

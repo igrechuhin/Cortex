@@ -581,6 +581,113 @@ Use integration tests for:
 - External service calls (mock them)
 - Simple workflows (unit tests are faster)
 
+### Integration Test Pattern for Consolidated Tools
+
+Consolidated tools using handler dispatch patterns (e.g., `query_memory_bank`, `query_usage`) require special consideration for test coverage.
+
+#### Coverage Expectations
+
+- **Unit tests with mocks**: Achieve 80-90% coverage (acceptable)
+  - Handler imports inside functions are not executed when handlers are mocked
+  - This is expected behavior and acceptable for unit tests
+- **Integration tests**: Achieve 95%+ coverage (ideal)
+  - Handlers are called directly, executing all imports and code paths
+  - Provides end-to-end verification of handler dispatch
+
+#### When to Use Integration Tests vs Mocked Unit Tests
+
+**Use mocked unit tests when:**
+
+- Testing individual handler logic in isolation
+- Fast test execution is prioritized
+- 80-90% coverage is acceptable
+- Verifying handler selection and parameter passing
+
+**Use integration tests when:**
+
+- Achieving 95%+ coverage is required
+- Testing handler dispatch patterns end-to-end
+- Verifying import statements inside handlers are executed
+- Testing real file I/O and data flow
+
+#### Example: Testing Handler Dispatch Tools
+
+```python
+"""
+Integration tests for consolidated tools with handler dispatch.
+
+These tests achieve 95%+ coverage by calling handlers directly
+instead of mocking them.
+"""
+
+import pytest
+from pathlib import Path
+from cortex.tools.query_operations import query_memory_bank_operations
+
+
+@pytest.mark.integration
+class TestQueryMemoryBankIntegration:
+    """Integration tests for query_memory_bank handler dispatch."""
+
+    async def test_query_stats_with_real_handlers(
+        self, temp_project_root: Path, sample_memory_bank_files: dict[str, Path]
+    ):
+        """Test stats query with real handler dispatch (95%+ coverage)."""
+        # Arrange: Set up real memory bank files
+        # (sample_memory_bank_files fixture provides real files)
+
+        # Act: Call tool with real handler dispatch
+        result = await query_memory_bank_operations(
+            query_type="stats",
+            temp_project_root=temp_project_root
+        )
+
+        # Assert: Verify handler was called and imports executed
+        assert result["status"] == "success"
+        assert "file_count" in result
+        assert result["file_count"] > 0
+        # This test achieves 95%+ coverage because handler imports are executed
+
+
+@pytest.mark.unit
+class TestQueryMemoryBankUnit:
+    """Unit tests with mocks (80-90% coverage acceptable)."""
+
+    async def test_query_stats_with_mocked_handler(self, mock_handler):
+        """Test stats query with mocked handler (80-90% coverage)."""
+        # Arrange: Mock handler
+        mock_handler.return_value = {"status": "success", "file_count": 5}
+
+        # Act: Call tool with mocked handler
+        result = await query_memory_bank_operations(
+            query_type="stats",
+            handler=mock_handler
+        )
+
+        # Assert: Verify mocked behavior
+        assert result["status"] == "success"
+        assert result["file_count"] == 5
+        # This test achieves 80-90% coverage (acceptable)
+        # Handler imports are not executed when mocked
+```
+
+#### Setting Up Integration Tests
+
+1. **Use real file system**: Use `temp_project_root` fixture for real file I/O
+2. **Call handlers directly**: Don't mock handlers in integration tests
+3. **Verify end-to-end**: Test the full dispatch flow from tool → handler → result
+4. **Coverage goal**: Aim for 95%+ coverage in integration tests
+
+#### Coverage Gap Explanation
+
+The coverage gap between mocked unit tests (80-90%) and integration tests (95%+) is due to:
+
+- **Import statements inside handlers**: Only executed when handlers are called directly
+- **Handler dispatch logic**: Fully exercised in integration tests
+- **Real file I/O**: Covered in integration tests but mocked in unit tests
+
+This is expected behavior. Use integration tests when 95%+ coverage is required.
+
 ---
 
 ## Test Fixtures

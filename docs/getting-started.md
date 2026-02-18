@@ -108,6 +108,25 @@ To use Cortex with Claude Desktop or other MCP clients, add it to your MCP confi
 }
 ```
 
+**Stable MCP by default** — Cortex **exits** when the connection drops (e.g. client disconnect). The client (e.g. Cursor) starts a new process when it next needs MCP, so the next session gets a **fresh Initialize handshake with no user action** (no reload needed). Run `uvx cortex` (or `uv run cortex`) as usual. Optional: set `CORTEX_AUTO_RESTART=1` to respawn the server in-process under the same pipe (then you may need to reload MCP after a disconnect to restore tools).
+
+The same Cursor config as above (command `uvx`, args `["--from", "git+...", "cortex"]`) is enough.
+
+### Stable MCP setup (recommended)
+
+For the most stable MCP experience:
+
+1. **Default: exit on disconnect** — The process exits when the connection drops. The client starts a new process when it next needs MCP, so you get a fresh session and no "0 tools" state without reloading. No user action required.
+2. **Optional: use the bridge** for concurrent request handling (fewer timeouts when the client does many things at once). In Cursor, set the MCP server command to the bridge instead of Cortex directly:
+   - **Command**: `uv run python -m cortex.bridge` (from a clone; requires `uv sync --extra server`).
+   - The bridge runs Cortex over HTTP and proxies stdio ↔ HTTP; one switch in Cursor, same tools.
+3. **Faster markdown lint** (reduces chance of client timeout during long tools): from project root run `npm install` so `fix_markdown_lint` uses `node_modules/.bin/markdownlint-cli2` and avoids slow npx/network.
+4. **During long runs** (e.g. commit, pre-commit): avoid opening UI that triggers many MCP resource reads at once (e.g. MCP resources panel); prefer tool calls over `cortex://` resources.
+5. **Automatic recovery (no manual reload)** — Install the [Cursor MCP Refresh](https://github.com/tankmurdock/cursor-mcp-refresh) extension and set **Auto-refresh interval** (e.g. 60–300 seconds). It periodically refreshes MCP servers, so after a disconnect or "0 tools" state the next refresh restores tools without you toggling. Install from the [releases `.vsix`](https://github.com/tankmurdock/cursor-mcp-refresh/releases) via **Extensions: Install from VSIX**.
+6. **If you see "0 tools"** and don't use the extension: reload MCP manually or see [Troubleshooting: Found 0 tools](guides/troubleshooting.md#issue-mcp-0-tools).
+
+Details and troubleshooting: [MCP disconnections and connection closed](guides/troubleshooting.md#issue-mcp-server-crashes-with-brokenresourceerror), [Found 0 tools](guides/troubleshooting.md#issue-mcp-0-tools).
+
 ## Quick Start
 
 ### 1. Initialize a Memory Bank

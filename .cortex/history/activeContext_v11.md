@@ -2,47 +2,13 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
-## Completed Work (2026)
+## Completed Work (2026-02-18)
 
-- ✅ **Session Optimization: Rules and Context Loading Follow-Ups (2026-02-12)** - COMPLETE (2026) - Fixed rules manager status to reflect current optimization config, enhanced zero-budget/zero-files warnings, extracted validation helpers to maintain function-length limits. All 5 steps completed.
-
-- ✅ **Session Optimization: Pydantic Rule Visibility and Rule Discovery (2026-02-12 Analysis)** - COMPLETE (2026) - Added Pydantic-for-params rule visibility in implement prompt (Step 4), rule discovery fallback in implement/analyze prompts (Step 3), and one-line standards in AGENTS.md/CLAUDE.md. Ensures agents apply Pydantic BaseModel for tool parameters without user reminders.
+- ✅ **Commit: session_start_tools function length compliance** - COMPLETE (2026-02-18) - Fixed quality gate function-length violations in session_start_tools.py by extracting _create_brief_with_suggestions and _session_start_success_result; _compute_suggestions_and_create_brief and_load_brief_and_return_result now ≤30 lines. All pre-commit checks pass; 4229 tests, 91.83% coverage.
 
 ## Completed Work (2026-02-17)
 
-- ✅ **Phase: Investigate fix_markdown_lint MCP Tool Failure** - COMPLETE (2026-02-17) - Root cause: second long-running tool (e.g. fix_markdown_lint) was failing immediately when invoked while execute_pre_commit_checks was still running. Fix: added LONG_RUNNING_SEMAPHORE_WAIT_SECONDS (90s) so the second call waits for the first to finish instead of raising immediately; commit pipeline can now proceed when sequential calls arrive. Tests and troubleshooting docs updated.
-
-- ✅ **Session Optimization: Analysis-Only Context and Rules Indexing** - COMPLETE (2026-02-17) - Documented analysis-only no_data in Analyze prompt and troubleshooting; added rules indexing fallback (Synapse/AGENTS) in troubleshooting; verified manage_file full-file read (no bug). Fixed pre-existing type-check errors in test_mcp_stability_timeouts.py so quality gate passes.
-
-- ✅ **Phase: Investigate execute_pre_commit_checks MCP Tool Failure** - COMPLETE (2026-02-17) - Root cause: long-running semaphore wait (90s) was shorter than execute_pre_commit_checks default test_timeout (300s), so a second call failed with RuntimeError before the first finished. Fix: increased LONG_RUNNING_SEMAPHORE_WAIT_SECONDS to 330s so sequential commit-pipeline calls succeed. Updated error message and troubleshooting docs; added invariant test.
-
-- ✅ **Phase 56 Step 1: Design Compaction Strategy** - COMPLETE (2026-02-17) - Defined compaction rules for activeContext.md and progress.md, designed SessionHandoff JSON format, implemented Pydantic model, and added comprehensive unit tests (92.3% coverage). Design decision: summarize older entries in-place rather than archiving to progress.md.
-
-- ✅ **Session Optimization: Commit Submodule and Roadmap Deduplication (2026-02-17 Analysis)** - COMPLETE (2026-02-17) - Implemented the 2026-02-17 session optimization outcomes by documenting submodule push fallback behavior in the commit pipeline, adding roadmap blocker deduplication for repeated investigation plans, and updating plan-archiver guidance so investigation plans are marked COMPLETE in their plan files when completed.
-
-- ✅ **Phase 57: Evaluation-Driven Tool Improvement (initial framework)** - COMPLETE (2026-02-17) - Implemented first iteration of the tool evaluation framework by adding `run_tool_evaluation` MCP tool and supporting models in `phase5_evaluation`, seeding a core evaluation task suite under `.cortex/evals/tasks/core_workflows.json`, and validating with full quality gate and tests. Phase 57 remains IN PROGRESS for future work on automated description optimization and A/B testing.
-
-- ✅ **Commit (dead code cleanup, type fix, preflight)** - COMPLETE (2026-02-17) - Removed dead _get_all_markdown_files and _collect_markdown_files_sync from markdown_operations.py (unused since fix_markdown_lint scopes to git-modified files); cleaned up test_fix_markdown_lint.py (removed dead-code tests, unused imports). Pre-commit: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4170 passed, 92.56% coverage.
-
-- ✅ **Phase 57: Evaluation-Driven Tool Improvement - Error pattern analysis tool** - COMPLETE (2026-02-17) - Implemented a new analyze_error_patterns MCP tool backed by the existing ToolEvaluationHarness, which runs the evaluation suite, aggregates top error patterns across tasks, and persists a compact error_patterns.json cache under evals/. Added unit tests for the tool and ensured the full test suite and quality gate pass.
-
-- ✅ **Phase 57: Evaluation-Driven Tool Improvement** - COMPLETE (2026-02-17) - First iteration of Phase 57 delivered the evaluation framework (EvalTask, EvalSuiteResult, EvalAnalysis, ToolEvaluationHarness), run_tool_evaluation MCP tool, a seeded core_workflows.json suite, and a new analyze_error_patterns MCP tool that caches top error patterns to evals/error_patterns.json; automated description optimization, A/B testing, and evaluation dashboards remain for future work.
-
-- ✅ **Phase 58: Agent role detection for load_context** - COMPLETE (2026-02-17) - Implemented AgentRole enum and role profiles module, added keyword-based role detection and normalization helpers, and extended load_context tool to accept an optional role parameter with automatic role inference and structured output including the inferred role. Added tests for agent role heuristics and load_context role field, and ensured quality gate, type checks, and full test suite pass (4185 tests, 92.56% coverage).
-
-- ✅ **Commit (function length violations: phase4_context_operations, roadmap_operations)** - COMPLETE (2026-02-17) - Fixed function length violations in phase4_context_operations.py (3 violations) and roadmap_operations.py (1 violation) by extracting helper functions and refactoring dispatch logic. Extracted_finalize_hybrid_metadata_context,_prepare_roadmap_for_removal,_find_and_validate_removal_line, _perform_roadmap_removal,_dispatch_by_depth, _unpack_loading_data,_dispatch_metadata_only_loading, and_dispatch_full_or_summary_loading. All quality checks pass; 4189 tests, 92.44% coverage.
-
-- ✅ **Commit (fix errors, type fixes, quality violations)** - COMPLETE (2026-02-17) - Fixed E402 lint errors (added noqa comments for circular dependency imports), fixed type errors in tests (added @pytest.mark.asyncio and await to async test functions), fixed function length violations (extracted helpers in compaction_operations, plan_completion, task_locking, file_lock_guard, session_start_tools, file_operations), fixed file size violation (reduced file_operations.py from 420 to 400 lines). Pre-commit: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4189 passed, 92.04% coverage.
-
-- ✅ **Commit (quality violations and test type fix)** - COMPLETE (2026-02-17) - Fixed file size (file_operations.py) and function length violations (_handle_write_operation, _run_and_finalize, run_validate_prepare_then_execute) by moving validate_write_request and run_validate_prepare_then_execute to file_operation_helpers, compacting long call sites with # fmt: off. Updated test_validate_write_request_content_none to use validate_write_request from helpers with proper type annotations. Pre-commit: fix_errors, format, markdown lint, type_check, quality, tests 4189 passed, 92% coverage.
-
-- ✅ **Phase 58 Step 3: Task Locking Mechanism** - COMPLETE (2026-02-17) - Implemented task locking system for multi-agent coordination. Created TaskLock model, lock operations (claim/release/list/check), auto-expiry mechanism (2 hours), MCP tools with proper annotations, and comprehensive unit tests achieving 95%+ coverage. Locks stored in .cortex/.cache/locks/active.json using concurrent-safe JSON operations.
-
-- ✅ **Phase 58 Step 4: Concurrent Session Visibility** - COMPLETE (2026-02-17) - Implemented concurrent session visibility for Phase 58 multi-agent specialization. Created session registry system with session_register/session_deregister MCP tools stored in .cortex/.cache/sessions/active.json. Extended SessionBrief model to include concurrent_sessions and locked_tasks fields. Updated session_start tool to load active locks and concurrent sessions and include them in the brief with helpful suggestions. Added comprehensive unit tests achieving 95%+ coverage. All 4217 tests pass with 91.86% coverage.
-
-- ✅ **Session Optimization: Path Resolver and Context Loading (2026-02-11)** - COMPLETE (2026-02-17) - Added path resolver rule to python-testing-standards.mdc requiring use of get_cortex_path() for all .cortex paths in tests (reference test_check_async_tests_script.py pattern). Updated implement prompt to include roadmap/activeContext guidance for session/commit-pipeline tasks in context loading section.
-
-- ✅ **Session Optimization: Rules and Context Loading Follow-Ups (2026-02-12 Analysis)** - COMPLETE (2026-02-17) - Added Context Budget Defaults table to CLAUDE.md and AGENTS.md, added watcher testing guidance to python-testing-standards.mdc, added integration test for rules() returning relevant rules for commit/analyze tasks, added zero-budget/zero-files reminders to commit and analyze prompts. All 4 plan tasks completed.
+- **Summary (2026-02-17)** - 1 entries archived.
 
 ## Completed Work (2026-02-16)
 

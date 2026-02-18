@@ -25,6 +25,7 @@ from cortex.tools.session_start_tools import (
     _extract_recent_completed,  # type: ignore[reportPrivateUsage]
     _generate_session_suggestions,  # type: ignore[reportPrivateUsage]
     _get_git_status,  # type: ignore[reportPrivateUsage]
+    _parse_mcp_health,  # type: ignore[reportPrivateUsage]
     _parse_roadmap_sections,  # type: ignore[reportPrivateUsage]
     _run_git_command,  # type: ignore[reportPrivateUsage]
     _session_start_impl,  # type: ignore[reportPrivateUsage]
@@ -33,6 +34,21 @@ from cortex.tools.session_start_tools import (
 from tests.helpers.managers import make_test_managers
 from tests.helpers.path_helpers import ensure_test_cortex_structure
 from tests.helpers.tool_helpers import get_tool_fn
+
+
+# ConnectionHealth (cortex.core.models) shape matching check_mcp_connection_health
+def _mcp_health_json(healthy: bool) -> str:
+    """Build valid check_mcp_connection_health-style JSON for tests."""
+    health = {
+        "healthy": healthy,
+        "concurrent_operations": 0,
+        "max_concurrent": 5,
+        "semaphore_available": 5,
+        "utilization_percent": 0.0,
+        "long_running_holder": None,
+    }
+    return json.dumps({"status": "success", "health": health})
+
 
 # ============================================================================
 # Helper Function Tests
@@ -526,6 +542,50 @@ class TestGenerateSessionSuggestions:
         assert len(suggestions) > 0
         assert any("Phase 54" in s for s in suggestions)
 
+    def test_generate_suggestions_mcp_unhealthy(self) -> None:
+        """Test that MCP unhealthy prepends critical suggestion."""
+        health = SessionHealthSummary(
+            file_count=7,
+            total_tokens=10000,
+            token_budget_status="healthy",
+            missing_files=[],
+            has_errors=False,
+        )
+        suggestions = _generate_session_suggestions(
+            health, None, None, mcp_healthy=False
+        )
+        assert len(suggestions) > 0
+        assert "do not proceed without mcp" in suggestions[0].lower()
+
+
+class TestParseMCPHealth:
+    """Tests for _parse_mcp_health helper."""
+
+    def test_parse_mcp_health_success_healthy(self) -> None:
+        """Parse successful healthy response."""
+        ok, msg = _parse_mcp_health(_mcp_health_json(healthy=True))
+        assert ok is True
+        assert msg is None
+
+    def test_parse_mcp_health_success_unhealthy(self) -> None:
+        """Parse successful but unhealthy response."""
+        ok, msg = _parse_mcp_health(_mcp_health_json(healthy=False))
+        assert ok is False
+        assert msg == "MCP connection unhealthy"
+
+    def test_parse_mcp_health_error_status(self) -> None:
+        """Parse error status response."""
+        err = json.dumps({"status": "error", "error": "Connection failed"})
+        ok, msg = _parse_mcp_health(err)
+        assert ok is False
+        assert "Connection failed" in (msg or "")
+
+    def test_parse_mcp_health_invalid_json(self) -> None:
+        """Parse invalid JSON returns unhealthy."""
+        ok, msg = _parse_mcp_health("not json")
+        assert ok is False
+        assert msg is not None
+
 
 # ============================================================================
 # Implementation Tests
@@ -620,6 +680,63 @@ Working on Phase 54.
         assert result.brief.next_work_item is not None
         assert "Phase 54" in result.brief.next_work_item
         assert result.token_count > 0
+        assert result.brief.mcp_healthy is True
+
+    @pytest.mark.asyncio
+    async def test_session_start_impl_mcp_unhealthy(self, tmp_path: Path) -> None:
+        """Test session start when MCP health check returns unhealthy."""
+        memory_bank_dir = ensure_test_cortex_structure(tmp_path)
+        _ = (memory_bank_dir / "activeContext.md").write_text(
+            "# Active Context\n\n## Current Focus\n\nTest.\n"
+        )
+        _ = (memory_bank_dir / "roadmap.md").write_text(
+            "# Roadmap\n\n## Pending\n\n- **Task** - PENDING\n"
+        )
+        _ = (memory_bank_dir / "projectBrief.md").write_text("# Cortex\n")
+        for f in [
+            "progress.md",
+            "systemPatterns.md",
+            "techContext.md",
+            "productContext.md",
+        ]:
+            _ = (memory_bank_dir / f).write_text(f"# {f}\n")
+        fs_manager = FileSystemManager(tmp_path)
+        metadata_index = MetadataIndex(tmp_path)
+        _ = await metadata_index.load()
+        for file_name in [
+            "activeContext.md",
+            "roadmap.md",
+            "projectBrief.md",
+            "progress.md",
+            "systemPatterns.md",
+            "techContext.md",
+            "productContext.md",
+        ]:
+            await metadata_index.update_file_metadata(
+                file_name=file_name,
+                path=memory_bank_dir / file_name,
+                exists=True,
+                size_bytes=100,
+                token_count=50,
+                content_hash="sha256:test",
+                sections=[],
+            )
+        managers = make_test_managers(
+            fs=fs_manager, index=metadata_index, tokens=TokenCounter()
+        )
+        with patch(
+            "cortex.tools.session_start_tools.check_mcp_connection_health",
+            new_callable=AsyncMock,
+            return_value=_mcp_health_json(healthy=False),
+        ):
+            result = await _session_start_impl(None, tmp_path, managers)  # type: ignore[arg-type]
+        assert isinstance(result, SessionStartResult)
+        assert result.brief.mcp_healthy is False
+        assert result.brief.mcp_health_message == "MCP connection unhealthy"
+        assert any(
+            "do not proceed without mcp" in s.lower()
+            for s in result.brief.session_suggestions
+        )
 
     @pytest.mark.asyncio
     async def test_session_start_impl_missing_active_context(

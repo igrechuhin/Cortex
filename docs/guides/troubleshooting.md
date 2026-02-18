@@ -49,6 +49,10 @@ pyenv install 3.13.0
 pyenv global 3.13.0
 ```
 
+#### Stable MCP setup (one-place checklist)
+
+For a **stable MCP connection**, see [Getting started: Stable MCP setup](../getting-started.md#stable-mcp-setup-recommended): Cortex exits on disconnect by default (client starts a new process when needed, so you get fresh Initialize with no user action), optional bridge, faster markdown lint, and usage tips. The sections below cover individual issues and causes.
+
 #### Issue: MCP server crashes with BrokenResourceError
 
 **Symptoms**:
@@ -66,11 +70,19 @@ ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
 
 **Solution**:
 
-This is **not an error** - the server handles client disconnections gracefully. When you see this in logs:
+From a **server** perspective this is graceful behavior (the server exits cleanly with exit code 0 and does not crash). From a **workflow** perspective disconnections are a real problem:
 
-1. **Normal behavior**: Server exits cleanly with exit code 0
-2. **No action needed**: Reconnect the client to restart the server
-3. **If persistent**: Check client configuration or network stability
+1. **You must reconnect**  
+   After a disconnection the agent can continue running **without MCP**—it may use only built-in tools and skip Cortex (memory bank, rules, quality checks). To keep the agent under Cortex control, reconnect the client so the MCP server restarts, and if the agent is already running, consider re-running the task so it uses Cortex MCP tools.
+
+2. **Check that MCP is available before relying on the agent**  
+   If you don’t verify the connection, the agent may work without MCP control. Use a lightweight check (e.g. ensure Cortex tools appear in the client, or call `check_mcp_connection_health` if available) before starting important agent work.
+
+3. **If disconnections are frequent**  
+   Check client configuration, timeouts, and network stability. See [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed) for mitigations.
+
+4. **Reconnect is automatic**  
+   By default Cortex **exits** when the connection drops; the client starts a new process when it next needs MCP. No user reload needed. If you set `CORTEX_AUTO_RESTART=1`, you may then see "0 tools" after a disconnect and need to reload MCP.
 
 The server distinguishes between:
 
@@ -118,6 +130,10 @@ If the **client** shows `MCP error -32000: Connection closed` during a tool call
 
 The **client** (e.g. Cursor) closed the MCP connection before the tool finished—usually due to client-side tool timeout or IDE lifecycle, not a server bug. The tool may have completed on the server; the connection was already closed when the response was sent.
 
+**Why it matters**: After a disconnect the agent may keep running **without MCP**. It will not use Cortex tools (memory bank, rules, quality checks). Reconnect so the server restarts; for important work, re-run the task so the agent runs with MCP control.
+
+**Reconnect is automatic**: By default Cortex exits when the connection drops; the client starts a new process when it next needs MCP. If you set `CORTEX_AUTO_RESTART=1`, you may need to reload MCP after a disconnect to restore tools.
+
 **Fix (what to do)**:
 
 1. **Retry once**  
@@ -135,10 +151,28 @@ HTTP/SSE or a stdio–HTTP bridge is not a supported workaround for this issue (
 
 **Server-side mitigations (already in place)**:
 
+- **Client cancel no longer disconnects**: When the client cancels a request (e.g. timeout), the server returns a structured error response instead of propagating cancellation. The connection stays open, so you avoid disconnect and "0 tools" from cancels.
 - Progress and heartbeat for long tools (e.g. 2 s heartbeat and wrapper progress for `fix_markdown_lint`, frequent progress for `execute_pre_commit_checks`).
 - Automatic retry for connection errors in the tool wrapper (one retry).
 - Batched markdown lint to reduce total duration.
 - **Serialization with wait for long-running tools**: Only one of `execute_pre_commit_checks`, `fix_markdown_lint`, or `fix_quality_issues` can run at a time. If you call a second long-running tool while the first is still running, the second call **waits up to 330 seconds (5–6 minutes)** for the first to finish; if the first is still running after that, the server returns an error. This allows sequential commit-pipeline calls (e.g. `execute_pre_commit_checks` then `fix_markdown_lint`) to succeed when the second request arrives before the first has returned. See [Another long-running tool is in progress](#issue-another-long-running-tool-in-progress).
+
+#### Issue: Found 0 tools, 0 prompts, and 0 resources {#issue-mcp-0-tools}
+
+**Symptoms**:
+
+- MCP client log shows: `Found 0 tools, 0 prompts, and 0 resources` for the Cortex server.
+- Warnings like: `Failed to validate request: Received request before initialization was complete`.
+
+**Cause**:
+
+This happens when the client sends ListTools/ListPrompts/ListResources **before** completing an **Initialize** handshake with the server—usually after a disconnect when the server process was **replaced under the same connection** (e.g. you use `CORTEX_AUTO_RESTART=1`). The new process has no session yet; the client may send list requests using old session state, so the server rejects them and the client shows 0 tools.
+
+**Fix (what to do)**:
+
+- **Default (no CORTEX_AUTO_RESTART)**: Cortex exits on disconnect; the client starts a new process when it next needs MCP, so you get a fresh Initialize with no user action. You should not see 0 tools.
+- **Automatic recovery**: Install the [Cursor MCP Refresh](https://github.com/tankmurdock/cursor-mcp-refresh) extension and set **Auto-refresh interval** (e.g. 60–300 seconds). It refreshes MCP servers on a timer, so "0 tools" is cleared on the next refresh without manual toggle. [Install from VSIX](https://github.com/tankmurdock/cursor-mcp-refresh/releases).
+- **If you set CORTEX_AUTO_RESTART=1** and don't use the extension: reload MCP manually (disable/enable Cortex in MCP Servers, or restart Cursor). Retry once first; optional: `CORTEX_USE_FALLBACK_ROOT=1`; see [mcp-tool-timeouts](mcp-tool-timeouts.md).
 
 #### Issue: Another long-running tool is in progress {#issue-another-long-running-tool-in-progress}
 

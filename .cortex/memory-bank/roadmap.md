@@ -27,8 +27,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 ### Features & Enhancements
 
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
-- **Session Optimization: Quality gate skip documentation when environment unavailable** - PENDING - Document when quality gate can be skipped for doc-only sessions when execute_pre_commit_checks fails due to env (ruff/black not in path or type_check unavailable); implement prompt + optional troubleshooting/AGENTS.
-- **Session Optimization: Testing Coverage Documentation and Planning (2026-02-16 Analysis)** - PENDING - Document coverage expectations for consolidated tools (90%+ acceptable, 95%+ ideal), add test planning checklist to implement prompt, document integration test pattern for handler dispatch tools.
 - **Session Optimization: Test Coverage and Development Workflow Improvements** - PENDING - Improve coverage gap identification, proactive file size enforcement, test coverage guidance, and reduce test development friction based on 2026-02-16 session analysis
 - **Session Optimization: Commit Pipeline Context Loading and Helper Module Pattern** - PENDING - Optimize commit pipeline context loading (reduce token usage 40-60%) and document helper module extraction pattern for code quality violations
 - **Session Optimization: fix_markdown_lint Opaque Errors and Commit Fallback** - PENDING - Improve fix_markdown_lint error reporting when batch fails; document commit fallback when tool returns no rule codes. Plan: .cortex/plans/session-optimization-fix-markdown-lint-opaque-errors.md.

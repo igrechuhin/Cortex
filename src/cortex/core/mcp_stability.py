@@ -49,6 +49,10 @@ from cortex.core.mcp_stability_config import (
 from cortex.core.models import ConnectionHealth, JsonValue, MCPToolArguments
 from cortex.core.usage_context import get_current_managers, set_current_managers
 
+# Returned to the client when the request was cancelled (e.g. client timeout).
+# Returning this instead of re-raising CancelledError keeps the connection open.
+CANCELLED_RESPONSE_JSON = '{"status":"error","error":"CancelledError","message":"Tool call was cancelled by client"}'
+
 logger = logging.getLogger(__name__)
 
 
@@ -346,9 +350,9 @@ async def _execute_with_retry[T](
 ) -> T:
     """Execute function with retry logic for transient failures.
 
-    Handles cancellation gracefully: if the client cancels the request,
-    we re-raise CancelledError immediately without retrying or sending
-    responses, preventing "duplicate response suppressed" errors.
+    Cancellation is handled in _execute_with_error_handling by returning a
+    structured response so the connection stays open. If CancelledError still
+    reaches here (e.g. during retry delay), re-raise so we do not retry.
     """
     last_exception: Exception | None = None
     func_name = func.__name__
@@ -632,7 +636,9 @@ async def _execute_with_error_handling[T](
         return result, success, error_type, was_cancelled
     except asyncio.CancelledError:
         success, error_type, was_cancelled = await _handle_cancellation(progress_task)
-        raise
+        # Return a response instead of re-raising so the SDK sends one message and the
+        # connection stays open; re-raising would propagate to the server loop and exit.
+        return (cast(T, CANCELLED_RESPONSE_JSON), success, error_type, was_cancelled)
     except Exception as e:
         success, error_type = False, type(e).__name__
         raise

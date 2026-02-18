@@ -4,10 +4,18 @@ MCP Memory Bank - Main Entry Point
 
 This is the main entry point for the Memory Bank MCP server.
 All tool implementations are in the tools/ package.
+
+By default the process runs once and exits when the connection drops (e.g. client
+disconnect). The client (e.g. Cursor) starts a new process when it next needs
+MCP, so the next session gets a fresh Initialize handshake with no user action.
+Set CORTEX_AUTO_RESTART=1 to run an in-process restart loop (server respawns
+under the same pipe; may require reloading MCP after disconnect to restore tools).
 """
 
 import asyncio
 import logging
+import os
+import subprocess
 import sys
 import traceback
 from builtins import BaseExceptionGroup  # Python 3.11+
@@ -193,17 +201,8 @@ def _require_http_deps() -> None:
         sys.exit(1)
 
 
-def main() -> None:
-    """Entry point for the application when run with uvx.
-
-    Handles MCP stdio or HTTP/SSE connection. Transport is selected via
-    CORTEX_MCP_TRANSPORT (stdio|sse|streamable-http); default stdio.
-    When using sse or streamable-http, set CORTEX_MCP_PORT and optionally
-    CORTEX_MCP_HOST. Ensures graceful shutdown on connection errors.
-
-    The server does not invoke any tools on startup; tools (including
-    execute_pre_commit_checks) run only when the client sends CallTool.
-    """
+def _run_server_once() -> None:
+    """Run the MCP server once (stdio or HTTP). Exits on disconnect or error."""
     transport = get_effective_transport()
     if transport in (TRANSPORT_SSE, TRANSPORT_STREAMABLE_HTTP):
         _require_http_deps()
@@ -230,8 +229,45 @@ def main() -> None:
     ) as e:
         _handle_connection_error(e)
     except Exception as e:
-        logger.exception(f"Unexpected error in MCP server: {e}")
+        logger.exception("Unexpected error in MCP server: %s", e)
         sys.exit(1)
+
+
+def _run_auto_restart_loop() -> None:
+    """Spawn the server in a loop; restart on exit 0 (e.g. disconnect), propagate other exits."""
+    inner_env = {**os.environ, "CORTEX_INNER": "1"}
+    cmd = [sys.executable, "-m", "cortex.main", "--inner"]
+    while True:
+        code = subprocess.call(cmd, env=inner_env)
+        if code != 0:
+            sys.exit(code)
+
+
+def main() -> None:
+    """Entry point for the application when run with uvx.
+
+    By default runs the server once; when the connection drops the process exits.
+    The client starts a new process when it next needs MCP, so the next session
+    gets a fresh Initialize handshake (no user reload needed). Set
+    CORTEX_AUTO_RESTART=1 to run an in-process restart loop instead.
+
+    Handles MCP stdio or HTTP/SSE connection. Transport is selected via
+    CORTEX_MCP_TRANSPORT (stdio|sse|streamable-http); default stdio.
+    When using sse or streamable-http, set CORTEX_MCP_PORT and optionally
+    CORTEX_MCP_HOST. Ensures graceful shutdown on connection errors.
+
+    The server does not invoke any tools on startup; tools (including
+    execute_pre_commit_checks) run only when the client sends CallTool.
+    """
+    if "--inner" in sys.argv or os.environ.get("CORTEX_INNER") == "1":
+        if "--inner" in sys.argv:
+            sys.argv = [a for a in sys.argv if a != "--inner"]
+        _run_server_once()
+        return
+    if os.environ.get("CORTEX_AUTO_RESTART") == "1":
+        _run_auto_restart_loop()
+        return
+    _run_server_once()
 
 
 if __name__ == "__main__":
