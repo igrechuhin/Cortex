@@ -24,9 +24,11 @@ load_context(task_description="<your goal>", token_budget=<appropriate>)
 
 Token budget guidance comes from `load_context` tool documentation and context-effectiveness analysis. Use task-appropriate budgets; see implement prompt for defaults.
 
+**On the fix path**: When you encounter a problem and have to fix something (errors, test failures, quality/type issues), you **must** load context and rules before making changes—e.g. `load_context(task_description="Fixing errors and issues", token_budget=15000)` and get relevant rules—so fixes follow all project rules and guidelines. See AGENTS.md and the commit/implement prompts for details.
+
 **For thinking and reasoning:** Use the `think` tool for quick deliberation moments (analyzing tool outputs, checking policy compliance, planning multi-step operations). For formal multi-step reasoning with revisions and branches, use `sequentialthinking`.
 
-**For rules and standards:** Use Cortex rules/validation tools — do not read `.cortex/rules/` or `.cortex/synapse/` directly. Get structured data standards via `get_synapse_rules(task_description="[language] models, structured data")` or `rules(operation="get_relevant", task_description="structured data, tool parameters")`.
+**For rules and standards:** Use Cortex rules/validation tools — do not read `.cortex/rules/` or `.cortex/synapse/` directly. Get structured data standards via `get_synapse_rules(task_description="[language] models, structured data")` or `rules(operation="get_relevant", task_description="structured data, tool parameters")`. For tool parameters and structured dispatch data use Pydantic BaseModel, not `dict[str, Any]`.
 
 **For quality and tests:** Use `fix_quality_issues` and `execute_pre_commit_checks` — do not run language-specific formatters/linters/test runners directly (get standards via `get_synapse_rules`).
 

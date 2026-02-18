@@ -25,6 +25,25 @@ Environment variables (optional):
 - **Cursor / VS Code**: Use the project’s quality checks before commit; no extra settings required. For inline feedback, consider a line-count or “files over N lines” extension if desired.
 - **Pre-commit**: File size is enforced as part of the Cortex quality gate (Step 12.6 in the commit pipeline). The check runs before the quality gate; warnings appear for files between 350–400 lines, and the run fails if any file exceeds 400 lines.
 
+## Function length limits
+
+- **Hard limit**: 30 logical lines per function (blank lines, comments, and docstrings excluded).
+- **Violation**: Functions over 30 lines fail the quality gate and block commit/CI.
+
+When either the file size or function length limit is exceeded, use the **helper module extraction pattern** (see below).
+
+## Helper module extraction
+
+When the quality gate reports file size (>400 lines) or function length (>30 lines) violations, resolve them using the **helper module extraction pattern**:
+
+1. **Identify cohesive function groups** in the oversized file (e.g. validation helpers, formatting helpers).
+2. **Extract** those groups into a new module named `*_helpers.py` (e.g. `phase4_metadata_helpers.py`).
+3. **Update** the original module: import from the helpers module and keep the public API unchanged.
+4. **Update tests**: add or adjust tests for the new helpers; keep coverage and update imports.
+5. **Run the quality gate** to confirm file size and function length are within limits.
+
+Naming: use `*_helpers.py` for extracted modules. Full pattern and examples are in the maintainability rules (e.g. `maintainability.mdc` via the rules directory or `rules(operation="get_relevant", task_description="helper module extraction")`). The implement prompt also documents this pattern as the standard refactoring approach for quality violations.
+
 ## Related
 
 - [Testing guide](testing.md) – coverage and tests

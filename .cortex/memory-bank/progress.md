@@ -32,6 +32,11 @@
 - **Phase: Investigate promote_session_script failure** - COMPLETE. Root cause: tool_converter.tool_conversion_template() used an f-string containing JSON with colons; Python interpreted it as an invalid format specifier. Fix:_TOOL_TEMPLATE_RETURN_JSON and_TOOL_TEMPLATE_BODY constants with .format() interpolation. Tests and quality gate pass.
 - **Commit (promote_session_script fix, memory bank, reviews)** - Preflight passed: fix_errors, format, synapse_format, synapse_lint, type_check, quality, tests 4245 passed, 91.81% coverage; markdown lint 0 errors. Memory bank and roadmap consistent; no completed plans to archive.
 - **Phase: Investigate roadmap sync validator ghost references** - COMPLETE. Resolved plan refs to archive; added regression test; quality gate passed.
+- **Session Optimization: Commit pipeline context loading and helper module - Reference** - COMPLETE. Added reference docs: commit-pipeline-phases.md (context loading: essential files, 3000–4000 token budget); code-quality.md (function length limits, helper module extraction pattern and *_helpers.py).
+- **Session Optimization: Context usage analytics followups (2026211COMPLETE. Reference plan reviewed; Tasks 1–3 (Coverage refresh, Context defaults, Usage analytics observability) deferred to future sessions. Plan archived to SessionOptimization.
+- **Session Optimization: Context usage analytics followups (2026-02-11)** - COMPLETE. Reference plan reviewed; Tasks 1–3 deferred to future sessions. Plan archived to SessionOptimization. (Corrected entry; previous line had typo.)
+- **Session Optimization: Load context on problem fix path (2026)** - COMPLETE. Added load-context-before-fix to commit prompt (after Pre-Step Load Rules), umbrella fix-path rule in implement ERROR HANDLING, and fix-path guideline in AGENTS.md and CLAUDE.md.
+- **Session Optimization: Pydantic rule visibility and rule discovery (2026-02-12 Analysis)** - COMPLETE. Implement prompt Step 4 and AGENTS.md/CLAUDE.md now explicitly require Pydantic BaseModel (not dict[str, Any]) for tool parameters and dispatch data; rule discovery fallback in implement and analyze prompts clarified; python-mcp-development.mdc updated with tool-params sentence.
 
 ## 2026-02-17
 

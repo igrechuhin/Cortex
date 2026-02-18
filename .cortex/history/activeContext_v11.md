@@ -56,6 +56,14 @@
 
 - ✅ **Phase: Investigate roadmap sync validator ghost references** - COMPLETE (2026-02-18) - Resolved plan references that exist only in archive. Added _find_plan_in_plans_or_archive() so references like .cortex/plans/foo.md resolve to .cortex/plans/archive/SessionOptimization/foo.md when the file is archived; validation no longer reports those as invalid. Ghost-phase filtering (Recent Findings, Completed Milestones) was already in place. Added test_validate_sync_resolves_plan_reference_when_file_only_in_archive. All tests pass; quality gate passed.
 
+- ✅ **Session Optimization: Commit pipeline context loading and helper module - Reference** - COMPLETE (2026-02-18) - Added reference documentation for commit pipeline context loading (docs/design/commit-pipeline-phases.md: essential files, 3000–4000 token budget) and helper module extraction (docs/guides/code-quality.md: function length limits, *_helpers.py pattern). Plan already archived; prompts already updated in prior session.
+
+- ✅ **Session Optimization: Context usage analytics followups (2026-02-11)** - COMPLETE (2026-02-18) - Reference plan reviewed; context defaults and usage analytics tasks deferred to dedicated future phases. Current context stats and coverage plans already inform defaults and coverage debt.
+
+- ✅ **Session Optimization: Load context on problem fix path (2026-02-09)** - COMPLETE (2026-02-18) - Added load-context-when-fixing requirement to commit and implement prompts and to AGENTS.md/CLAUDE.md. Commit prompt: new "Load context when fixing" block requiring load_context(15k) and rules before applying fixes after any step failure. Implement prompt: added umbrella fix-path rule in ERROR HANDLING; Steps 4, 4.5, 4.6 already had Load Context Before Fixing. AGENTS.md and CLAUDE.md: new guideline requiring load context and rules before making fixes when encountering problems.
+
+- ✅ **Session Optimization: Pydantic rule visibility and rule discovery (2026-02-12 Analysis)** - COMPLETE (2026-02-18) - Strengthened Pydantic-for-params visibility: implement prompt Step 4 and AGENTS.md/CLAUDE.md explicitly require Pydantic BaseModel (not dict[str, Any]) for tool parameters and internal dispatch data; rule discovery fallback in implement and analyze prompts clarified with Pydantic wording; Synapse rule python-mcp-development.mdc updated with tool-params sentence.
+
 ## Completed Work (2026-02-17)
 
 - **Summary (2026-02-17)** - 1 entries archived.

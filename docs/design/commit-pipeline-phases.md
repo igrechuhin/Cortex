@@ -65,6 +65,21 @@ Steps 0 through 4 run **strictly sequentially**. Each step depends on
 the previous step completing successfully (e.g., formatting must happen
 before type checking, quality must pass before tests run).
 
+### Context loading for commit pipeline
+
+When running the commit pipeline, use targeted memory-bank context to
+reduce token usage (about 40–60%) while keeping behavior effective:
+
+- **Essential files** (always load): `activeContext.md`, `roadmap.md`,
+  `progress.md`
+- **Optional files** (only if task-specific): `techContext.md`,
+  `systemPatterns.md`, `productContext.md`, `projectBrief.md`
+- **Token budget**: 3000–4000 tokens for commit-pipeline workflow tasks
+
+Use `load_context()` with a commit-pipeline task description and this
+budget; the tool selects the essential files. See the commit prompt
+Pre-Action Checklist for the canonical checklist.
+
 ---
 
 ## Phase B: Documentation and Memory Bank Sync

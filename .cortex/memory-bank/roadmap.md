@@ -28,11 +28,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
 - **Plans README** - Reference. Plan: .cortex/plans/README.md
-- **Session Optimization: Commit pipeline context loading and helper module** - PENDING - Reference. Plan: .cortex/plans/session-optimization-commit-pipeline-context-loading-and-helper-module-pattern.md
-- **Session Optimization: Context usage analytics followups (2026-02-11)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-context-usage-analytics-followups-2026-02-11.md
-- **Session Optimization: Load context on problem fix path (2026-02-09)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-load-context-on-problem-fix-path-2026-02-09.md
-- **Session Optimization: Pydantic rule visibility and rule discovery (2026-02-12 Analysis)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-pydantic-rule-visibility-and-rule-discovery-2026-02-12-analysis.md
-- **Session Optimization: Quality gate skip documentation when environment unavailable** - PENDING - Reference. Plan: .cortex/plans/session-optimization-quality-gate-skip-documentation-when-environment-unavailable.md
 - **Session Optimization: Roadmap completed section cleanup (2026-02-10)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-roadmap-completed-section-cleanup-2026-02-10.md
 - **Session Optimization: Roadmap section removal and sync** - PENDING - Reference. Plan: .cortex/plans/session-optimization-roadmap-section-removal-and-sync.md
 - **Session Optimization: Roadmap sync cleanup (2026-02-09)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-roadmap-sync-cleanup-2026-02-09.md
@@ -54,3 +49,4 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Session Optimization: MCP Connection Stability and Fallback Script Improvements** - PENDING - Improve MCP connection stability during commit pipeline and fix fallback script compatibility issues
 - **Session Optimization: Progress Entry Validation and Memory Bank Write Discipline** - PENDING - Reduce progress entry typos and enforce manage_file-only for memory-bank writes (from 2026-02-18 analysis).
 - **Session Optimization: Analyze 2026-02-18 Follow-ups** - PENDING - Follow-ups from 2026-02-18 analysis: Step 12/MCP stability, load_context budgets, manage_file contract.
+- **Session Optimization: Progress Entry Validation and Write Quality (2026-02-18 Analysis)** - PENDING - Progress entry format validation and write-quality guidance from 2026-02-18 analysis; reduce typos in complete_plan/append_progress_entry.

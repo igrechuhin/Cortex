@@ -10,7 +10,7 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 |---|---|---|
 | Project context, architecture, decisions | `load_context` with two-step pattern: `load_context(depth="metadata_only")` → `manage_file(sections=[...])` for section-level drill-down. Use `strategy="progressive"` for incremental loading. | Read `.cortex/memory-bank/` files directly |
 | Coding rules, standards, style | `rules(operation="get_relevant", ...)`, `get_synapse_rules(task_description="...")` | Read `.cortex/rules/` or `.cortex/synapse/` directly, hardcode language-specific rules |
-| Structured params (tool params, dispatch data) | `get_synapse_rules(task_description="[language] models, structured data")` or `rules(operation="get_relevant", task_description="structured data, tool parameters")` | Hardcode structured data types (e.g., `dict[str, Any]`) |
+| Structured params (tool params, dispatch data; use Pydantic BaseModel, not `dict[str, Any]`) | `get_synapse_rules(task_description="[language] models, structured data")` or `rules(operation="get_relevant", task_description="structured data, tool parameters")` | Hardcode structured data types (e.g., `dict[str, Any]`) |
 | Markdown formatting (headings vs emphasis, MD036) | `get_synapse_rules(task_description="markdown formatting")`, [docs/guides/markdown-formatting.md](docs/guides/markdown-formatting.md) | Use bold for section titles (use `#`/`##`/`###` instead) |
 | Quality fixes (lint, format, types) | `fix_quality_issues` | Run language-specific formatters/linters manually (get standards via `get_synapse_rules`) |
 | Tests and pre-commit checks | `execute_pre_commit_checks` | Run language-specific test runners directly (get standards via `get_synapse_rules`) |
@@ -45,6 +45,8 @@ See the implement, commit, and analyze prompts (Synapse) for detailed workflow g
 4. **Think before acting** — use the `think` tool for quick deliberation moments (analyzing tool outputs, checking policy compliance, planning multi-step operations). For formal multi-step reasoning, use `sequentialthinking`.
 5. **Edit code** — use IDE tools (`Read`, `Write`, `Grep`, `Glob`, `LS`) for source files.
 6. **Verify** — use Cortex quality/test tools, not raw shell commands.
+
+**Load context on the fix path (MANDATORY)**: When you encounter a problem and have to fix something (errors, test failures, quality issues, type/lint violations), you **must** load context and rules **before** making changes. Call `load_context(task_description="Fixing errors and issues", token_budget=15000)` and, when applicable, `rules(operation="get_relevant", task_description="...")` (or read key standards from the rules path if rules are disabled). Only after context and rules are loaded, proceed with fixes. This ensures fixes follow all project rules and guidelines. See the commit and implement prompts for concrete placement.
 
 ## Commit pipeline (phase-based)
 
