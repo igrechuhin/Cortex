@@ -171,6 +171,8 @@ def _detect_phase_patterns(lines: list[str], matches: list[CorruptionMatch]) -> 
                     pattern="missing_newline_before_phase",
                 )
             )
+    # Pattern 13: Truncation corruption - detected via shared function
+    _detect_phase_truncation_patterns(lines, matches)
 
 
 def _detect_score_patterns(lines: list[str], matches: list[CorruptionMatch]) -> None:
@@ -348,6 +350,36 @@ def _detect_plan24_malformed_date(
             )
 
 
+def _detect_phase_truncation_patterns(
+    lines: list[str], matches: list[CorruptionMatch]
+) -> None:
+    """Detect truncation corruption in phase titles.
+
+    Detects patterns like "Phase 54lizer Pattern" where the beginning of the title
+    was lost (missing colon, lowercase+uppercase sequence indicates truncation).
+    Pattern matches: "Phase" + digits + lowercase letters + (optional space) + uppercase letter (missing colon).
+    """
+    # Pattern: "Phase N" followed by lowercase then (optional space) then uppercase without colon
+    # Example: "Phase 54lizer Pattern" -> truncation detected
+    # Matches: "Phase 54lizer Pattern", "Phase 10test Pattern", etc.
+    # Stops before markdown formatting (**, -, end of line)
+    pattern = re.compile(
+        r"\bPhase (\d+)([a-z]+)\s*([A-Z][a-zA-Z\s]*?)(?=\s*\*\*|\s*-|\s*$|$)"
+    )
+    for i, line in enumerate(lines, 1):
+        for match in pattern.finditer(line):
+            phase_num = match.group(1)
+            # Truncation detected - flag for manual fix (requires reference from activeContext.md)
+            matches.append(
+                CorruptionMatch(
+                    line_num=i,
+                    original=match.group(0),
+                    fixed=f"Phase {phase_num}: [MANUAL FIX REQUIRED - check activeContext.md for correct title]",
+                    pattern="phase_title_truncation",
+                )
+            )
+
+
 def _detect_plan24_phrase_patterns(
     lines: list[str], matches: list[CorruptionMatch]
 ) -> None:
@@ -372,10 +404,12 @@ def _detect_phrase_corruption(content: str) -> list[CorruptionMatch]:
 
     Safe for progress.md and other memory-bank files that share phrase patterns
     with roadmap but not roadmap-specific patterns (completion date, phase links).
+    Also includes truncation detection for phase titles.
     """
     matches: list[CorruptionMatch] = []
     lines = content.split("\n")
     _detect_plan24_phrase_patterns(lines, matches)
+    _detect_phase_truncation_patterns(lines, matches)
     return matches
 
 

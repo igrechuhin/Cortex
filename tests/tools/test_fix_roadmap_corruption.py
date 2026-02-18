@@ -132,6 +132,50 @@ def test_fix_memory_bank_content_if_needed_progress_unchanged_when_no_phrase_cor
     assert result == content
 
 
+def test_fix_roadmap_content_if_needed_detects_phase_truncation_corruption():
+    """fix_roadmap_content_if_needed detects truncation corruption in phase titles."""
+    # Arrange
+    content = "- **Phase 54lizer Pattern** - COMPLETE. Some description."
+    # Act
+    result = fix_roadmap_content_if_needed(content)
+    # Assert
+    assert "Phase 54:" in result
+    assert "MANUAL FIX REQUIRED" in result
+    assert "phase_title_truncation" in result or "54lizer" not in result
+
+
+def test_fix_roadmap_content_if_needed_detects_phase_truncation_missing_colon():
+    """fix_roadmap_content_if_needed detects truncation when colon is missing."""
+    # Arrange
+    content = "- **Phase 10test Pattern** - COMPLETE."
+    # Act
+    result = fix_roadmap_content_if_needed(content)
+    # Assert
+    assert "Phase 10:" in result
+    assert "MANUAL FIX REQUIRED" in result
+
+
+def test_fix_roadmap_content_if_needed_does_not_detect_valid_phase_title():
+    """fix_roadmap_content_if_needed does not detect false positives for valid phase titles."""
+    # Arrange
+    content = "- **Phase 5: Valid Title** - COMPLETE. Description."
+    # Act
+    result = fix_roadmap_content_if_needed(content)
+    # Assert
+    assert result == content  # No corruption detected
+
+
+def test_fix_memory_bank_content_if_needed_detects_truncation_in_progress():
+    """fix_memory_bank_content_if_needed detects truncation corruption in progress.md."""
+    # Arrange
+    content = "## 2026-02-12\n\n- **Phase 54lizer Pattern** - COMPLETE. Description."
+    # Act
+    result = fix_memory_bank_content_if_needed(content, "progress.md")
+    # Assert
+    assert "Phase 54:" in result
+    assert "MANUAL FIX REQUIRED" in result
+
+
 class TestFixRoadmapCorruptionContextLogging:
     """Test fix_roadmap_corruption Context logging (FastMCP)."""
 

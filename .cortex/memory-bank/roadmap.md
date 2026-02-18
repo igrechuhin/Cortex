@@ -27,7 +27,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 ### Features & Enhancements
 
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
-- **Fix Broken Progress Entry: Phase 54 Title Corruption** - PENDING - Fix corrupted entry in progress.md line 66 ("Phase 54lizer Pattern"  "Phase 54: Session Start Initializer Pattern") and extend corruption detection to catch truncation patterns. Plan: .cortex/plans/fix-progress-phase-54-corruption.md.
 - **Session Optimization: pytest.ini and IDE test discovery documentation** - PENDING - Document pytest.ini design (no coverage in addopts for IDE discovery); optional implement/commit reminder for explicit --cov in full runs.
 - **Plans README** - Reference. Plan: .cortex/plans/README.md
 - **Add roadmap entry MCP tool** - PENDING - Reference. Plan: .cortex/plans/add-roadmap-entry-mcp-tool.md
