@@ -28,7 +28,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
 - **Plans README** - Reference. Plan: .cortex/plans/README.md
-- **Phase: Investigate roadmap sync validator ghost references** - PENDING - Reference. Plan: .cortex/plans/phase-investigate-roadmap-sync-validator-ghost-references.md
 - **Session Optimization: Commit pipeline context loading and helper module** - PENDING - Reference. Plan: .cortex/plans/session-optimization-commit-pipeline-context-loading-and-helper-module-pattern.md
 - **Session Optimization: Context usage analytics followups (2026-02-11)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-context-usage-analytics-followups-2026-02-11.md
 - **Session Optimization: Load context on problem fix path (2026-02-09)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-load-context-on-problem-fix-path-2026-02-09.md

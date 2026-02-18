@@ -54,6 +54,8 @@
 
 - ✅ **Phase: Investigate promote_session_script failure** - COMPLETE (2026-02-18) - Fixed ValueError from f-string format specifier in tool_conversion_template: moved JSON return literal and template body to module-level constants and use str.format() so braces/colons are not parsed as format specifiers. Quality gate and tests pass.
 
+- ✅ **Phase: Investigate roadmap sync validator ghost references** - COMPLETE (2026-02-18) - Resolved plan references that exist only in archive. Added _find_plan_in_plans_or_archive() so references like .cortex/plans/foo.md resolve to .cortex/plans/archive/SessionOptimization/foo.md when the file is archived; validation no longer reports those as invalid. Ghost-phase filtering (Recent Findings, Completed Milestones) was already in place. Added test_validate_sync_resolves_plan_reference_when_file_only_in_archive. All tests pass; quality gate passed.
+
 ## Completed Work (2026-02-17)
 
 - **Summary (2026-02-17)** - 1 entries archived.

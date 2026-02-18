@@ -121,6 +121,33 @@ class TestValidateRoadmapSyncEnhancements:
             assert result.valid is True
             assert len(result.invalid_references) == 0
 
+    def test_validate_sync_resolves_plan_reference_when_file_only_in_archive(
+        self,
+    ) -> None:
+        """Reference to .cortex/plans/foo.md resolves when file exists only in archive."""
+        # Arrange: plan is in archive/SessionOptimization/, not in plans root
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            plans_root = get_cortex_path(project_root, CortexResourceType.PLANS)
+            plans_root.mkdir(parents=True)
+            archive_sub = plans_root / "archive" / "SessionOptimization"
+            archive_sub.mkdir(parents=True)
+            plan_file = archive_sub / "session-optimization-commit-pipeline.md"
+            _ = plan_file.write_text("# Session Optimization\n")
+
+            roadmap_content = (
+                "## Features & Enhancements\n\n"
+                "- **Session Optimization: Commit pipeline** - PENDING - Reference. "
+                "Plan: .cortex/plans/session-optimization-commit-pipeline.md\n"
+            )
+
+            # Act
+            result = validate_roadmap_sync(project_root, roadmap_content)
+
+            # Assert: reference resolves to archive path, so no invalid_references
+            assert result.valid is True
+            assert len(result.invalid_references) == 0
+
     def test_validate_sync_resolves_bare_memory_bank_md_reference(self) -> None:
         """Bare .md filenames (e.g. activeContext.md) resolve to .cortex/memory-bank."""
         # Arrange

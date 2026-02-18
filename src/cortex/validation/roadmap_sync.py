@@ -236,6 +236,26 @@ def _plans_suffix(file_path: str, prefix: str) -> Path:
     return Path(suffix) if suffix else Path()
 
 
+def _find_plan_in_plans_or_archive(plans_root: Path, relative_path: str) -> Path:
+    """Resolve plan path: plans root first, then under archive by basename.
+
+    Roadmap entries often reference plans as .cortex/plans/foo.md. When a plan
+    is archived it moves to .cortex/plans/archive/SessionOptimization/foo.md.
+    This helper returns the path that exists (root or archive), or the root path
+    so callers get consistent "does not exist" behavior.
+    """
+    candidate = plans_root / relative_path
+    if candidate.exists():
+        return candidate
+    name = Path(relative_path).name
+    archive_dir = plans_root / "archive"
+    if archive_dir.is_dir():
+        for path in archive_dir.rglob(name):
+            if path.is_file():
+                return path
+    return candidate
+
+
 def _resolve_reference_path(project_root: Path, ref: RoadmapReference) -> Path:
     """Resolve roadmap reference path using Cortex structure.
 
@@ -246,11 +266,14 @@ def _resolve_reference_path(project_root: Path, ref: RoadmapReference) -> Path:
     """
     plans_root = get_cortex_path(project_root, CortexResourceType.PLANS)
     if ref.file_path.startswith("plans/"):
-        return plans_root / _plans_suffix(ref.file_path, "plans/")
+        suffix = _plans_suffix(ref.file_path, "plans/")
+        return _find_plan_in_plans_or_archive(plans_root, str(suffix))
     if ref.file_path.startswith("cortex/plans/"):
-        return plans_root / _plans_suffix(ref.file_path, "cortex/plans/")
+        suffix = _plans_suffix(ref.file_path, "cortex/plans/")
+        return _find_plan_in_plans_or_archive(plans_root, str(suffix))
     if ref.file_path.startswith(".cortex/plans/"):
-        return plans_root / _plans_suffix(ref.file_path, ".cortex/plans/")
+        suffix = _plans_suffix(ref.file_path, ".cortex/plans/")
+        return _find_plan_in_plans_or_archive(plans_root, str(suffix))
     if ref.file_path.startswith("cortex/"):
         cortex_root = get_cortex_path(project_root, CortexResourceType.CORTEX_DIR)
         return cortex_root / ref.file_path[len("cortex/") :]
