@@ -28,8 +28,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
 - **Plans README** - Reference. Plan: .cortex/plans/README.md
-- **Phase: Investigate execute_pre_commit_checks failure (20260209)** - PENDING - Reference. Plan: .cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260209-203054.md
-- **Phase: Investigate promote_session_script failure** - PENDING - Reference. Plan: .cortex/plans/phase-investigate-promote_session_script-failure-20260211-184849.md
 - **Phase: Investigate roadmap sync validator ghost references** - PENDING - Reference. Plan: .cortex/plans/phase-investigate-roadmap-sync-validator-ghost-references.md
 - **Session Optimization: Commit pipeline context loading and helper module** - PENDING - Reference. Plan: .cortex/plans/session-optimization-commit-pipeline-context-loading-and-helper-module-pattern.md
 - **Session Optimization: Context usage analytics followups (2026-02-11)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-context-usage-analytics-followups-2026-02-11.md
@@ -55,3 +53,5 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Session Optimization: Rule Loading and Discovery (2026-02-18 Analysis)** - PENDING - Enforce rule loading in implement prompt, add rule discovery fallback when rules() empty, document fallback in AGENTS.md/prompt.
 - **Session Optimization: load_context Budget and Test Type Narrowing** - PENDING - Document non-zero load_context budget for non-trivial tasks in implement/fix prompts; document JsonValue narrowing in tests (testing/type rules).
 - **Session Optimization: MCP Connection Stability and Fallback Script Improvements** - PENDING - Improve MCP connection stability during commit pipeline and fix fallback script compatibility issues
+- **Session Optimization: Progress Entry Validation and Memory Bank Write Discipline** - PENDING - Reduce progress entry typos and enforce manage_file-only for memory-bank writes (from 2026-02-18 analysis).
+- **Session Optimization: Analyze 2026-02-18 Follow-ups** - PENDING - Follow-ups from 2026-02-18 analysis: Step 12/MCP stability, load_context budgets, manage_file contract.

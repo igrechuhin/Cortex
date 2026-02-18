@@ -40,3 +40,11 @@ class TestToolConversionTemplate:
         record = _record(task_description="Do something")
         code = tool_conversion_template(record, tool_name="Do Something Here")
         assert "do_something_here" in code
+
+    def test_template_contains_json_return_without_format_specifier_error(self) -> None:
+        """Template contains the JSON return literal (avoids f-string format specifier)."""
+        record = _record(task_description="Format code")
+        code = tool_conversion_template(record)
+        assert '"status": "success"' in code
+        assert "Template for promoted session script; implement tool logic" in code
+        assert "return '" in code or 'return "' in code

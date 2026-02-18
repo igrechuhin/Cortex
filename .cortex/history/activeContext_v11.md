@@ -50,6 +50,10 @@
 
 - ✅ **Phase 9.1.1: Split consolidated.py - Already Complete** - COMPLETE (2026-02-18) - Verified that Phase 9.1.1 (split consolidated.py) was already completed in a previous session. The consolidated.py file was split into 5 modules, all under 400 lines. Quality gate passes with no violations. Phase 9 roadmap entry is marked as Reference (documentation plan), not an active implementation task.
 
+- ✅ **Phase: Investigate execute_pre_commit_checks failure (20260209)** - COMPLETE (2026-02-18) - Investigation completed: failure no longer reproducible; test passes and execute_pre_commit_checks MCP tool works. Root cause was consistent with to_thread/run_sync argument count; current code and test are aligned.
+
+- ✅ **Phase: Investigate promote_session_script failure** - COMPLETE (2026-02-18) - Fixed ValueError from f-string format specifier in tool_conversion_template: moved JSON return literal and template body to module-level constants and use str.format() so braces/colons are not parsed as format specifiers. Quality gate and tests pass.
+
 ## Completed Work (2026-02-17)
 
 - **Summary (2026-02-17)** - 1 entries archived.
