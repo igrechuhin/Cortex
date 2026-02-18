@@ -17,6 +17,26 @@ Cortex follows MCP semantics: **Resources** are GET-like (read-only, load data i
 - **Prefer Resources for read-only operations** when your client supports MCP resources: use the `cortex://` URI to load data. Use Tools for any operation that writes or changes state.
 - **No `get_*` Tool performs writes**; all current `get_*` tools are read-only and have a corresponding Resource. See Phase 43 plan (`.cortex/plans/phase-43-reconsider-tools-registration.md`) for the full inventory and naming conventions.
 
+### MCP Tool Annotations
+
+All Cortex MCP tools include **annotations** that provide metadata about tool behavior without consuming token context in LLM prompts. Annotations help client applications categorize and discover tools more effectively.
+
+**Annotation Types:**
+
+- **`readOnlyHint`** (bool): Indicates tool only reads data (no side effects)
+- **`destructiveHint`** (bool): Indicates tool may cause destructive changes (delete, overwrite)
+- **`idempotentHint`** (bool): Indicates tool produces same result for repeated calls
+- **`openWorldHint`** (bool): Indicates tool accesses external data sources (network, subprocess)
+
+**Annotation Patterns:**
+
+- **Read-only tools**: `readOnlyHint=True`, `idempotentHint=True` (queries, stats, validation)
+- **Safe write tools**: `readOnlyHint=False`, `destructiveHint=False` (create, update, append)
+- **Destructive tools**: `readOnlyHint=False`, `destructiveHint=True` (delete, rollback, overwrite)
+- **External tools**: `openWorldHint=True` (subprocess execution, network calls)
+
+For details on adding annotations to custom tools, see the [Extension Development Guide](../guides/advanced/extension-development.md#mcp-tool-annotations).
+
 **Total Tools by Phase:**
 
 | Phase | Tools | Category |

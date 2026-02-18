@@ -36,10 +36,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
 - **Plans README** - Reference. Plan: .cortex/plans/README.md
-- **Investigate FastMCP blocking before tool handlers** - PENDING - Reference. Plan: .cortex/plans/archive/Investigations/2026-02-09/investigate-fastmcp-blocking-before-tool-handlers-2026-02-09.md
-- **Phase 45: Add MCP annotations** - PENDING - Reference. Plan: .cortex/plans/phase-45-add-mcp-annotations.md
-- **Phase 53: Investigate manage_file conflict index stale** - PENDING - Reference. Plan: .cortex/plans/phase-53-investigate-manage-file-conflict-index-stale.md
-- **Phase 68: Investigate fix_quality_issues MCP connection closed** - PENDING - Reference. Plan: .cortex/plans/phase-68-investigate-fix-quality-issues-mcp-connection-closed.md
 - **Phase 9: Excellence 9.8+** - PENDING - Reference. Plan: .cortex/plans/phase-9-excellence-98.md
 - **Phase: Investigate commit pipeline quality gate miss** - PENDING - Reference. Plan: .cortex/plans/phase-investigate-commit-pipeline-quality-gate-miss-2026-02-07.md
 - **Phase: Investigate execute_pre_commit_checks failure (20260205)** - PENDING - Reference. Plan: .cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260205-222815.md

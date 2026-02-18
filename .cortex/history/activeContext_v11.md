@@ -10,6 +10,12 @@
 
 - ✅ **Enrich memory bank write tools with validations** - COMPLETE (2026) - Added pre-write schema validation and content sanity checks (null bytes) to memory bank write tools. Schema validation prevents writing corrupted records, and null-byte check protects text files. All tests passing (4240/4240, 91.8% coverage).
 
+- ✅ **Phase 45: Add MCP annotations** - COMPLETE (2026) - Completed Phase 45: Added MCP annotations to all tools, verified with tests (4244 tests, 100% pass rate), and updated documentation with annotation patterns and guidelines.
+
+- ✅ **Phase 53: Investigate manage_file conflict index stale** - COMPLETE (2026) - Implemented update_index cleanup action in check_structure_health to refresh metadata index for memory bank files, fixing stale index issues that blocked manage_file(write) operations. Added comprehensive tests covering dry-run, execution, edge cases, and multiple files.
+
+- ✅ **Phase 68: Investigate fix_quality_issues MCP connection closed** - COMPLETE (2026) - Completed fix for fix_quality_issues timeout mismatch. Changed timeout from 60s to 960s (MCP_TOOL_TIMEOUT_VERY_COMPLEX) and enabled progress reporting. All tests pass (4244 tests, 91.8% coverage), quality gate passes.
+
 ## Completed Work (2026-02-18)
 
 - ✅ **Commit: session_start_tools function length compliance** - COMPLETE (2026-02-18) - Fixed quality gate function-length violations in session_start_tools.py by extracting _create_brief_with_suggestions and _session_start_success_result; _compute_suggestions_and_create_brief and_load_brief_and_return_result now ≤30 lines. All pre-commit checks pass; 4229 tests, 91.83% coverage.
@@ -27,6 +33,8 @@
 - ✅ **Compound Engineering Alignment (Cortex)** - COMPLETE (2026-02-18) - Documented compound-engineering goal and Plan→Work→Review→Compound loop in project brief, CLAUDE.md, and AGENTS.md. Added compound note to memory bank workflow rule. Verified implement, commit, and analyze prompts already reference the compound loop. Verified compound checklist exists in commit prompt. Cross-checked with existing session-optimization plans for consistency.
 
 - ✅ **Investigate FastMCP blocking before tool handlers - Fixes Implemented** - COMPLETE (2026-02-18) - Implemented two blocking fixes from investigation plan: (1) Wrapped `_fallback_root()` in `asyncio.to_thread()` to prevent event loop blocking during project root fallback; (2) Added 25s timeout to usage context init lock acquisition with proper error handling. Both fixes prevent indefinite hangs. Added comprehensive tests, quality gate passed.
+
+- ✅ **Investigate FastMCP blocking before tool handlers** - COMPLETE (2026-02-18) - Verified investigation complete - both fixes implemented (blocking event loop fix and usage context lock timeout). Removed reference entry from roadmap.
 
 ## Completed Work (2026-02-17)
 

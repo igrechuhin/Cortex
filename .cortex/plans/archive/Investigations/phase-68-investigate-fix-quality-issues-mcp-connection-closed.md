@@ -2,10 +2,10 @@
 
 ### Status
 
-- **Status**: IN PROGRESS (2026-02-04) - Root cause identified: timeout mismatch
+- **Status**: COMPLETE (2026-02-18) - Fix applied: timeout increased to 960s, progress reporting enabled
 - **Priority**: Blocker (ASAP when reproduces)
 - **Created**: 2026-02-03
-- **Updated**: 2026-02-04 - Root cause: `fix_quality_issues` timeout (60s) too short for operations that can take 600s
+- **Updated**: 2026-02-18 - Fix completed: `fix_quality_issues` timeout changed to `MCP_TOOL_TIMEOUT_VERY_COMPLEX` (960s) and progress reporting enabled
 
 ### Problem Statement
 
@@ -102,10 +102,11 @@ During the same session you may see `MCP error -32001: Request timed out` on res
        `Connection closed` / `ClosedResourceError` is reported.
      - Use the documented fallback or stop the commit when the second attempt
        fails, instead of silently proceeding.
-3. **Refine `fix_quality_issues` behavior for long-running scenarios (PARTIAL)**
+3. **Refine `fix_quality_issues` behavior for long-running scenarios (COMPLETED)**
    - `mcp_stability.py` provides time-based progress reporting and connection
-     health checks; `fix_quality_issues` is wrapped with `mcp_tool_wrapper` and
-     has progress enabled so the client sees regular activity during long runs.
+     health checks; `fix_quality_issues` is wrapped with `mcp_tool_wrapper` with
+     timeout `MCP_TOOL_TIMEOUT_VERY_COMPLEX` (960s) and `enable_progress=True`
+     so the client sees regular activity during long runs.
    - Additional granularity (e.g. narrower helpers or per-check tools) is now
      tracked in future optimization phases and is out of scope for this
      connection-closed investigation.
@@ -134,7 +135,14 @@ During the same session you may see `MCP error -32001: Request timed out` on res
 
 **Root Cause**: `fix_quality_issues` uses `MCP_TOOL_TIMEOUT_QUALITY_FIXES` (60 seconds) but internally calls `execute_pre_commit_checks` which can take up to `MCP_TOOL_TIMEOUT_VERY_COMPLEX` (600 seconds). Additionally, progress reporting is enabled but **does not activate** because the 60s timeout is below `PROGRESS_THRESHOLD_TIMEOUT_SECONDS` (120s), causing the client to see no activity and timeout.
 
-**Fix**: Change `fix_quality_issues` timeout from `MCP_TOOL_TIMEOUT_QUALITY_FIXES` (60s) to `MCP_TOOL_TIMEOUT_VERY_COMPLEX` (600s) to match the actual operation duration and enable progress reporting.
+**Fix**: Change `fix_quality_issues` timeout from `MCP_TOOL_TIMEOUT_QUALITY_FIXES` (60s) to `MCP_TOOL_TIMEOUT_VERY_COMPLEX` (960s) to match the actual operation duration and enable progress reporting.
+
+**Fix Applied (2026-02-18)**:
+
+- Timeout changed to `MCP_TOOL_TIMEOUT_VERY_COMPLEX` (960s) ✅
+- Progress reporting enabled (`enable_progress=True`) ✅
+- All tests pass (4244 tests, 91.8% coverage) ✅
+- Quality gate passes ✅
 
 ### Testing Strategy
 

@@ -183,6 +183,133 @@ async def _custom_logic(
     return result
 ```
 
+### MCP Tool Annotations
+
+MCP annotations provide metadata about tool behavior (read-only, destructive, idempotent, etc.) without consuming token context in LLM prompts. All Cortex tools use annotations to improve discoverability and usability.
+
+**Annotation Helpers:**
+
+Cortex provides helper functions in `cortex.core.mcp_annotations` for consistent annotation patterns:
+
+```python
+from cortex.core.mcp_annotations import (
+    read_only_annotations,
+    safe_write_annotations,
+    destructive_annotations,
+    external_annotations,
+)
+```
+
+**Annotation Patterns:**
+
+1. **Read-only tools** (queries, stats, validation):
+
+```python
+@mcp.tool(
+    annotations=read_only_annotations("Get Custom Statistics")
+)
+async def get_custom_stats() -> str:
+    """Read-only tool that returns statistics."""
+    ...
+```
+
+1. **Safe write tools** (create, update, append operations):
+
+```python
+@mcp.tool(
+    annotations=safe_write_annotations("Update Custom Data")
+)
+async def update_custom_data(data: str) -> str:
+    """Tool that safely creates or updates data."""
+    ...
+```
+
+1. **Destructive tools** (delete, overwrite, rollback):
+
+```python
+@mcp.tool(
+    annotations=destructive_annotations("Delete Custom Data")
+)
+async def delete_custom_data(id: str) -> str:
+    """Tool that can delete or overwrite data."""
+    ...
+```
+
+1. **External tools** (network calls, subprocess execution):
+
+```python
+@mcp.tool(
+    annotations=external_annotations(
+        "Execute External Command",
+        read_only=False,
+        destructive=False,
+        idempotent=False,
+    )
+)
+async def execute_command(cmd: str) -> str:
+    """Tool that runs external commands."""
+    ...
+```
+
+**Annotation Decision Tree:**
+
+- **Does the tool modify state?**
+  - **No** → Use `read_only_annotations()`
+  - **Yes** → Continue below
+- **Does the tool delete or overwrite existing data?**
+  - **Yes** → Use `destructive_annotations()`
+  - **No** → Continue below
+- **Does the tool call external systems (subprocess, network)?**
+  - **Yes** → Use `external_annotations()` with appropriate flags
+  - **No** → Use `safe_write_annotations()`
+
+**Type Checking Note:**
+
+FastMCP type stubs may not declare `annotations` parameter. Use `# pyright: ignore[reportCallIssue]` and `# pyright: ignore[reportUntypedFunctionDecorator]` where needed:
+
+```python
+@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
+    annotations=read_only_annotations(
+        "My Tool"
+    ),  # pyright: ignore[reportCallIssue]
+)
+async def my_tool() -> str:
+    ...
+```
+
+**Complete Example with Annotations:**
+
+```python
+"""Custom MCP tool with proper annotations."""
+
+import json
+from cortex.server import mcp
+from cortex.core.mcp_annotations import read_only_annotations
+from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.constants import MCP_TOOL_TIMEOUT_FAST
+
+
+@mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
+    annotations=read_only_annotations(
+        "Get Custom Analytics",
+        idempotent=True,
+    ),  # pyright: ignore[reportCallIssue]
+)
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)
+async def get_custom_analytics() -> str:
+    """Get custom analytics data.
+
+    USE WHEN: User needs analytics, user requests statistics.
+
+    RETURNS: JSON with analytics data.
+    """
+    return json.dumps({
+        "status": "success",
+        "analytics": {"count": 42}
+    }, indent=2)
+```
+
 ### Advanced MCP Tool with Validation
 
 ```python

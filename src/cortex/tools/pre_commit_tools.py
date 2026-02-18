@@ -703,7 +703,7 @@ async def _fix_quality_issues_impl(
 @ensure_usage_context
 @mcp_tool_wrapper(
     timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX,
-    enable_progress=False,
+    enable_progress=True,
 )
 async def fix_quality_issues(
     include_untracked_markdown: bool = True,
