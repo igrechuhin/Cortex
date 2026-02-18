@@ -713,3 +713,41 @@ class TestValidateRoadmapSync:
             # Only valid.py reference should be validated (and it exists, so no invalid refs)
             assert len(result.invalid_references) == 0
             assert result.valid is True
+
+    def test_validate_sync_plan_reference_in_archive_is_valid(self) -> None:
+        """Plan reference that exists only in archive is valid (no invalid ref)."""
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            cortex = project_root / ".cortex"
+            plans = cortex / "plans"
+            archive = plans / "archive" / "SessionOptimization"
+            archive.mkdir(parents=True)
+            archived_plan = archive / "session-optimization-archived.md"
+            _ = archived_plan.write_text("# Archived plan\n")
+            roadmap_content = (
+                "## Features & Enhancements\n\n"
+                "- **Item** - PENDING. Plan: .cortex/plans/session-optimization-archived.md\n"
+            )
+            result = validate_roadmap_sync(project_root, roadmap_content)
+            assert len(result.invalid_references) == 0
+            assert result.valid is True or len(result.unlinked_plans) > 0
+
+    def test_validate_sync_plan_reference_missing_and_not_in_archive_is_invalid(
+        self,
+    ) -> None:
+        """Plan reference that does not exist in plans or archive is invalid."""
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            cortex = project_root / ".cortex"
+            plans = cortex / "plans"
+            plans.mkdir(parents=True)
+            roadmap_content = (
+                "## Features & Enhancements\n\n"
+                "- **Item** - PENDING. Plan: .cortex/plans/nonexistent-plan.md\n"
+            )
+            result = validate_roadmap_sync(project_root, roadmap_content)
+            assert len(result.invalid_references) == 1
+            assert result.invalid_references[0].file_path.endswith(
+                "nonexistent-plan.md"
+            )
+            assert result.valid is False

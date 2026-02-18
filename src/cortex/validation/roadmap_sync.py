@@ -310,6 +310,27 @@ def _is_legacy_pre_commit_reference(ref: RoadmapReference) -> bool:
     }
 
 
+def _plan_exists_in_archive(project_root: Path, ref: RoadmapReference) -> bool:
+    """Return True if this plan reference exists under plans/archive (e.g. archived).
+
+    When roadmap entries reference Plan: .cortex/plans/X.md and X was moved to
+    archive, the reference should still be considered valid.
+    """
+    plans_root = get_cortex_path(project_root, CortexResourceType.PLANS)
+    try:
+        _ = _resolve_reference_path(project_root, ref).relative_to(plans_root)
+    except ValueError:
+        return False
+    archive_root = get_cortex_path(project_root, CortexResourceType.PLANS_ARCHIVE)
+    if not archive_root.exists():
+        return False
+    name = Path(ref.file_path).name
+    for candidate in archive_root.rglob(name):
+        if candidate.is_file():
+            return True
+    return False
+
+
 def _validate_line_reference(ref: RoadmapReference, resolved_path: Path) -> str | None:
     """Validate line reference exists in file. Returns warning message or None."""
     if ref.line is None:
@@ -351,6 +372,8 @@ def _validate_roadmap_references(
 
         resolved_path = _resolve_reference_path(project_root, ref)
         if not resolved_path.exists():
+            if _plan_exists_in_archive(project_root, ref):
+                continue
             invalid_refs.append(ref)
             warnings.append(
                 _format_missing_reference_warning(ref, resolved_path, project_root)
