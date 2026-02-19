@@ -319,6 +319,38 @@ class TestLoadContext:
             # Effective budget = min(10000, 100000) - 10000 = 0
             assert result["token_budget"] == 0
 
+    async def test_load_context_zero_budget_normalized_to_default(
+        self, mock_project_root: Path, mock_managers: dict[str, object]
+    ) -> None:
+        """token_budget=0 is normalized to None so effective budget comes from config."""
+        # Arrange
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_context_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            # Act: non-trivial task with token_budget=0 → normalized to config default
+            result_str = await load_context(
+                task_description="Implement feature X",
+                token_budget=0,
+                response_format="detailed",
+            )
+            result = json.loads(result_str)
+
+            # Assert: success (no error); effective budget from config same as default path
+            assert result["status"] == "success"
+            assert result["token_budget"] == 0  # mock: default 10000 - reserve 10000
+
     async def test_load_context_dependency_aware_strategy(
         self, mock_project_root: Path, mock_managers: dict[str, object]
     ) -> None:
@@ -1277,10 +1309,11 @@ class TestContextBudgetValidation:
         assert is_non_trivial_task("List items") is False
 
     @pytest.mark.asyncio
-    async def test_load_context_rejects_zero_budget_for_non_trivial(
+    @pytest.mark.asyncio
+    async def test_load_context_normalizes_zero_budget_for_non_trivial(
         self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
-        """load_context rejects token_budget=0 for non-trivial tasks."""
+        """load_context normalizes token_budget=0 to config default for non-trivial tasks."""
         with (
             patch(
                 "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
@@ -1291,15 +1324,21 @@ class TestContextBudgetValidation:
                 "cortex.tools.phase4_optimization.get_managers",
                 return_value=mock_managers,
             ),
+            patch(
+                "cortex.tools.phase4_context_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
         ):
             result_str = await load_context(
                 task_description="Implement a new feature",
                 token_budget=0,
+                response_format="detailed",
             )
             result = json.loads(result_str)
-            assert result.get("status") == "error"
-            assert "token_budget=0 is not allowed" in result.get("error", "")
-            assert "non-trivial tasks" in result.get("error", "")
+            assert result.get("status") == "success"
+            # Effective budget from config (0 normalized to None); detailed format includes it
+            assert "token_budget" in result
+            assert result["token_budget"] == 0  # mock: default 10000 - reserve 10000
 
     @pytest.mark.asyncio
     async def test_load_context_allows_zero_budget_for_trivial(

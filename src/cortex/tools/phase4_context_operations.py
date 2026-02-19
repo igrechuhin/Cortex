@@ -41,13 +41,13 @@ def _calculate_effective_budget(
     """Calculate effective token budget with max and reserve applied.
 
     Args:
-        token_budget: Requested budget or None for default
+        token_budget: Requested budget, None for default, or 0 (treated as None).
         optimization_config: Optimization configuration
 
     Returns:
         Effective budget after applying max_budget and reserve_for_response
     """
-    if token_budget is None:
+    if token_budget is None or token_budget == 0:
         token_budget = optimization_config.get_token_budget()
     max_budget = optimization_config.get_max_token_budget()
     reserve = optimization_config.get_reserve_for_response()

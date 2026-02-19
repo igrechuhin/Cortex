@@ -10,8 +10,6 @@
 
 - [Phase: Investigate tool_raising_json_error MCP Tool Failure](.cortex/plans/phase-investigate-tool_raising_json_error-failure-20260219-202641.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `tool_raising_json_error`, Error: JSONDecodeError - Impact: Commit procedure blocked - Target completion: 2026-02-19
 
-- **Session Optimization: Fix load_context Zero-Budget Configuration Error (Blocker)** - PENDING - BLOCKER: Reject or normalize token_budget=0 for non-trivial tasks so load_context always provides memory-bank guidance; add validation in handler, treat 0 as None in effective budget, and add prompt examples.
-
 ## Active Work (in progress)
 
 ## Future Enhancements

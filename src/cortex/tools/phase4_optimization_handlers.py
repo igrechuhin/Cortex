@@ -432,10 +432,12 @@ async def load_context(
         JSON with selected files, their content, and relevance scores
     """
     await log_client(ctx, "info", "load_context: starting", logger_name=__name__)
+    # Normalize token_budget=0 to None so effective budget comes from config (always provides guidance)
+    effective_budget = None if token_budget == 0 else token_budget
     try:
         result = await _execute_load_context(
             task_description,
-            token_budget,
+            effective_budget,
             strategy,
             loading_strategy,
             depth,
