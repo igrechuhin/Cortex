@@ -18,7 +18,11 @@ from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
-from cortex.tools.models import AddRoadmapEntryResult, RemoveRoadmapEntryResult
+from cortex.tools.models import (
+    AddRoadmapEntryResult,
+    RemoveRoadmapEntryResult,
+    RemoveRoadmapSectionResult,
+)
 from cortex.tools.roadmap_corruption import fix_roadmap_content_if_needed
 
 
@@ -237,6 +241,56 @@ def _remove_line_at(content: str, one_based_line: int) -> str:
     return "\n".join(new_lines)
 
 
+def _find_section_end_line(
+    lines: list[str],
+    header_pattern: re.Pattern[str],
+    start_i: int,
+    start_level: int,
+) -> int:
+    """Return 0-based index of last line of section (inclusive)."""
+    end_i = start_i
+    for i in range(start_i + 1, len(lines)):
+        match = header_pattern.match(lines[i])
+        if match and len(match.group(1)) <= start_level:
+            return i - 1
+        end_i = i
+    return end_i
+
+
+def _find_section_range_by_heading(
+    content: str, section_heading_contains: str
+) -> tuple[int, int, str] | None:
+    """Find a section by heading text and return (start_0based, end_0based_inclusive, heading).
+
+    Matches ## or ### lines whose rest contains section_heading_contains (case-sensitive).
+    Section ends at the line before the next ## or ### of same or higher level, or end of file.
+    Returns None if no matching heading found.
+    """
+    needle = section_heading_contains.strip()
+    if not needle:
+        return None
+    lines = content.split("\n")
+    header_pattern = re.compile(r"^(#{2,3})\s+(.+)$")
+    for i, line in enumerate(lines):
+        match = header_pattern.match(line)
+        if not match or needle not in match.group(2).strip():
+            continue
+        start_heading = match.group(2).strip()
+        start_level = len(match.group(1))
+        end_i = _find_section_end_line(lines, header_pattern, i, start_level)
+        return (i, end_i, start_heading)
+    return None
+
+
+def _remove_section_range(content: str, start_0based: int, end_0based: int) -> str:
+    """Remove lines [start_0based, end_0based] inclusive; return new content."""
+    lines = content.split("\n")
+    if start_0based < 0 or end_0based >= len(lines) or start_0based > end_0based:
+        return content
+    new_lines = lines[:start_0based] + lines[end_0based + 1 :]
+    return "\n".join(new_lines)
+
+
 def _extract_plan_path_from_bullet(line: str) -> str | None:
     """Extract a plan path from a roadmap bullet, if present.
 
@@ -333,6 +387,18 @@ def _removal_error(message: str, error: str) -> RemoveRoadmapEntryResult:
     )
 
 
+def _section_removal_error(message: str, error: str) -> RemoveRoadmapSectionResult:
+    """Build error result for roadmap section removal."""
+    return RemoveRoadmapSectionResult(
+        status="error",
+        file_name=MemoryBankFile.ROADMAP,
+        message=message,
+        section_heading=None,
+        lines_removed=None,
+        error=error,
+    )
+
+
 async def _execute_roadmap_removal(
     root_path: Path, entry_contains: str
 ) -> RemoveRoadmapEntryResult:
@@ -403,6 +469,40 @@ async def _perform_roadmap_removal(
         file_name=MemoryBankFile.ROADMAP,
         message=f"Removed roadmap entry at line {line_num}",
         line_removed=line_num,
+        error=None,
+    )
+
+
+async def _execute_roadmap_section_removal(
+    root_path: Path, section_heading_contains: str
+) -> RemoveRoadmapSectionResult:
+    """Remove a roadmap section by heading text. Returns result."""
+    roadmap_path, current_content, read_error = _prepare_roadmap_for_removal(root_path)
+    if read_error:
+        return _section_removal_error("Failed to read roadmap", read_error)
+    assert current_content is not None
+
+    range_result = _find_section_range_by_heading(
+        current_content, section_heading_contains
+    )
+    if range_result is None:
+        return _section_removal_error(
+            "No matching section found",
+            f"No ##/### heading containing '{section_heading_contains.strip()}' found",
+        )
+    start_i, end_i, heading = range_result
+    lines_removed = end_i - start_i + 1
+    updated = _remove_section_range(current_content, start_i, end_i)
+    write_error = await _write_roadmap_file(roadmap_path, updated, root_path)
+    if write_error:
+        return _section_removal_error("Failed to write roadmap", write_error)
+
+    return RemoveRoadmapSectionResult(
+        status="success",
+        file_name=MemoryBankFile.ROADMAP,
+        message=f"Removed section '{heading}' ({lines_removed} lines)",
+        section_heading=heading,
+        lines_removed=lines_removed,
         error=None,
     )
 
@@ -631,6 +731,64 @@ async def remove_roadmap_entry(
             file_name=MemoryBankFile.ROADMAP,
             message="Unexpected error",
             line_removed=None,
+            error=str(e),
+        )
+        return error_result.model_dump_json()
+
+
+async def _remove_roadmap_section_impl(
+    section_heading_contains: str,
+    ctx: MCPContext | None,
+) -> str:
+    """Implementation of remove_roadmap_section logic."""
+    await log_client(
+        ctx,
+        "info",
+        "remove_roadmap_section: starting",
+        logger_name=__name__,
+    )
+    root = await resolve_project_root_async(None, ctx)
+    result = await _execute_roadmap_section_removal(root, section_heading_contains)
+    await log_client(
+        ctx,
+        "info" if result.status == "success" else "warning",
+        f"remove_roadmap_section: {result.status}",
+        logger_name=__name__,
+    )
+    return result.model_dump_json()
+
+
+@mcp.tool(annotations=safe_write_annotations("Remove Roadmap Section"))
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)
+async def remove_roadmap_section(
+    section_heading_contains: str,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Remove a roadmap section by heading text (and its content until next section).
+
+    USE WHEN: After removing all bullets in a subsection with remove_roadmap_entry,
+    use this to remove the orphan section header and optional intro paragraph
+    without building or writing full roadmap content (avoids corruption risk).
+
+    Matches ## or ### headings that contain the given text (case-sensitive).
+    RETURNS: JSON with status, section_heading, lines_removed, or error.
+    """
+    try:
+        return await _remove_roadmap_section_impl(section_heading_contains, ctx)
+    except Exception as e:
+        await log_client(
+            ctx,
+            "error",
+            f"remove_roadmap_section: {e}",
+            logger_name=__name__,
+        )
+        error_result = RemoveRoadmapSectionResult(
+            status="error",
+            file_name=MemoryBankFile.ROADMAP,
+            message="Unexpected error",
+            section_heading=None,
+            lines_removed=None,
             error=str(e),
         )
         return error_result.model_dump_json()

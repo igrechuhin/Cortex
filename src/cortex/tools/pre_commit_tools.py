@@ -21,7 +21,7 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_VERY_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
 from cortex.core.mcp_annotations import external_annotations, safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
-from cortex.core.models import JsonValue, ModelDict
+from cortex.core.models import JsonValue, ModelDict, OperationStatus
 from cortex.core.usage_context import get_or_resolve_project_root
 from cortex.server import mcp
 from cortex.services.framework_adapters.base import (
@@ -400,7 +400,7 @@ class FixQualityResult(BaseModel):
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    status: Literal["success", "error"] = Field(description="Operation status")
+    status: OperationStatus = Field(description="Operation status")
     errors_fixed: int = Field(ge=0, description="Number of errors fixed")
     warnings_fixed: int = Field(ge=0, description="Number of warnings fixed")
     formatting_issues_fixed: int = Field(

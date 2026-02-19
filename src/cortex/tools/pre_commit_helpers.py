@@ -9,7 +9,7 @@ import math
 from collections.abc import Sequence
 from enum import Enum
 from pathlib import Path
-from typing import Literal, cast
+from typing import cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -18,7 +18,7 @@ from cortex.core.constants import (
     MAX_FILE_LINES,
     MAX_FUNCTION_LINES,
 )
-from cortex.core.models import JsonValue, ModelDict
+from cortex.core.models import JsonValue, ModelDict, OperationStatus
 from cortex.core.path_resolver import has_memory_bank
 from cortex.managers.initialization import get_project_root
 from cortex.services.framework_adapters.base import (
@@ -123,7 +123,7 @@ class PreCommitResult(BaseModel):
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    status: Literal["success", "error"] = Field(description="Operation status")
+    status: OperationStatus = Field(description="Operation status")
     language: str | None = Field(default=None, description="Detected language")
     checks_performed: list[str] = Field(
         default_factory=list, description="List of checks performed"

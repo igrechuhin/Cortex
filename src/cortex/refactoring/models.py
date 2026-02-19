@@ -11,7 +11,7 @@ from typing import Literal
 
 from pydantic import ConfigDict, Field
 
-from cortex.core.models import DictLikeModel, ModelDict
+from cortex.core.models import DictLikeModel, ModelDict, OperationStatus
 
 # ============================================================================
 # Base Model
@@ -1091,7 +1091,7 @@ class ApprovalHistoryResult(RefactoringBaseModel):
 class CleanupExpiredResult(RefactoringBaseModel):
     """Result of cleaning up expired approvals."""
 
-    status: Literal["success", "error"] = Field(..., description="Cleanup status")
+    status: OperationStatus = Field(..., description="Cleanup status")
     expired_count: int = Field(default=0, ge=0, description="Number expired")
     expiry_days: int = Field(..., ge=0, description="Expiry threshold in days")
     message: str = Field(..., description="Status message")
@@ -1135,7 +1135,7 @@ class RollbackHistoryResult(RefactoringBaseModel):
 class RollbackImpactResult(RefactoringBaseModel):
     """Result of analyzing rollback impact."""
 
-    status: Literal["success", "error"] = Field(..., description="Analysis status")
+    status: OperationStatus = Field(..., description="Analysis status")
     execution_id: str = Field(..., description="Execution ID")
     total_files: int = Field(default=0, ge=0, description="Total files affected")
     conflicts_count: int = Field(default=0, ge=0, description="Number of conflicts")
@@ -1163,7 +1163,7 @@ class RollbackImpactResult(RefactoringBaseModel):
 class ResetLearningResult(RefactoringBaseModel):
     """Result of resetting learning data."""
 
-    status: Literal["success", "error"] = Field(..., description="Reset status")
+    status: OperationStatus = Field(..., description="Reset status")
     message: str = Field(..., description="Status message")
     feedback_reset: int = Field(default=0, ge=0, description="Feedback records reset")
     patterns_reset: int = Field(default=0, ge=0, description="Patterns reset")
@@ -1190,7 +1190,7 @@ class ExportedPatterns(RefactoringBaseModel):
 class ExportPatternsResult(RefactoringBaseModel):
     """Result of exporting learned patterns."""
 
-    status: Literal["success", "error"] = Field(..., description="Export status")
+    status: OperationStatus = Field(..., description="Export status")
     format: str = Field(..., description="Export format")
     patterns_count: int = Field(
         default=0, ge=0, description="Number of patterns exported"

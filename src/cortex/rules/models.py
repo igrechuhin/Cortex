@@ -9,7 +9,7 @@ from typing import Literal
 
 from pydantic import ConfigDict, Field
 
-from cortex.core.models import DictLikeModel
+from cortex.core.models import DictLikeModel, OperationStatus
 
 # ============================================================================
 # Base Model
@@ -71,7 +71,7 @@ class SubmoduleInitResult(RulesBaseModel):
 
     model_config = ConfigDict(extra="allow", validate_assignment=True)
 
-    status: Literal["success", "error"] = Field(description="Operation status")
+    status: OperationStatus = Field(description="Operation status")
     action: str | None = Field(
         default=None, description="Action performed (initialized, updated_existing)"
     )
@@ -102,7 +102,7 @@ class SyncChanges(RulesBaseModel):
 class SyncResult(RulesBaseModel):
     """Result of repository sync operation."""
 
-    status: Literal["success", "error"] = Field(description="Operation status")
+    status: OperationStatus = Field(description="Operation status")
     pulled: bool = Field(default=False, description="Whether pull was performed")
     pushed: bool = Field(default=False, description="Whether push was performed")
     changes: SyncChanges = Field(
@@ -116,7 +116,7 @@ class UpdateResult(RulesBaseModel):
 
     model_config = ConfigDict(extra="allow", validate_assignment=True)
 
-    status: Literal["success", "error"] = Field(description="Operation status")
+    status: OperationStatus = Field(description="Operation status")
     file: str | None = Field(default=None, description="File updated")
     category: str | None = Field(default=None, description="Category of file")
     committed: bool = Field(default=False, description="Whether changes were committed")
@@ -279,7 +279,7 @@ class SynapseInitResult(RulesBaseModel):
 class SynapseSyncResult(RulesBaseModel):
     """Result of Synapse sync operation."""
 
-    status: Literal["success", "error"] = Field(description="Operation status")
+    status: OperationStatus = Field(description="Operation status")
     pulled: bool = Field(default=False, description="Whether pull was performed")
     pushed: bool = Field(default=False, description="Whether push was performed")
     changes: SyncChanges = Field(

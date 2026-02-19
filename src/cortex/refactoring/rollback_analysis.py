@@ -6,9 +6,10 @@ Handle rollback impact analysis operations.
 
 from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from cortex.core.models import OperationStatus
 
 # ============================================================================
 # Pydantic Models for Rollback Analysis
@@ -32,7 +33,7 @@ class RollbackImpactAnalysis(BaseModel):
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    status: Literal["success", "error"] = Field(..., description="Analysis status")
+    status: OperationStatus = Field(..., description="Analysis status")
     execution_id: str = Field(..., description="Execution ID analyzed")
     snapshot_id: str | None = Field(default=None, description="Snapshot ID if found")
     total_files: int = Field(default=0, ge=0, description="Total files affected")

@@ -1,33 +1,103 @@
 {
   "schema_version": "1.0.0",
   "created_at": "2026-01-25T21:38:36.940164",
-  "last_updated": "2026-02-18T22:45:45.632732",
+  "last_updated": "2026-02-19T08:21:43.508547",
   "project_root": "/Users/i.grechukhin/Repo/Cortex",
   "memory_bank_dir": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank",
   "files": {
     "roadmap.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/roadmap.md",
       "exists": true,
-      "size_bytes": 11241,
-      "token_count": 2661,
+      "size_bytes": 6036,
+      "token_count": 1375,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-17T14:39:14.542387",
-      "content_hash": "sha256:cee6a0fe02c4bc427295f248d609a15ad74f7ebecdad7abc4d80afe8ce2f06e1",
+      "last_modified": "2026-02-19T08:12:37.737232",
+      "content_hash": "sha256:d024c2fa3fa500534cfe12cc18a81fd672bb4b14bf4b64defc14593b4ec4b359",
       "sections": [
-        "# Roadmap: MCP Memory Bank",
-        "## Blockers (ASAP Priority)",
-        "## Active Work (in progress)",
-        "## Future Enhancements",
-        "## Pending plans (from .cortex/plans)",
-        "### Investigation Plans (Archive / Reference)",
-        "### Session Optimization Plans (2026-02-03)",
-        "### Session Optimization Plans (2026-02-02)",
-        "### Session Optimization Plans (2026-02-01)",
-        "### Features & Enhancements"
+        {
+          "title": "# Roadmap: MCP Memory Bank",
+          "level": 1,
+          "line_start": 1,
+          "line_end": 6,
+          "content_hash": "sha256:3ffd4ae78c54d14e2f18ac3f16ff5bdd197434cd1d4c9d85d928ead936753fe3",
+          "token_count": 129
+        },
+        {
+          "title": "## Blockers (ASAP Priority)",
+          "level": 2,
+          "line_start": 7,
+          "line_end": 8,
+          "content_hash": "sha256:f93c417b935594999186af8600ec5c36ab63fb0364b8be77dc855b4840cbc326",
+          "token_count": 8
+        },
+        {
+          "title": "## Active Work (in progress)",
+          "level": 2,
+          "line_start": 9,
+          "line_end": 10,
+          "content_hash": "sha256:baeb6ce4690b40abc5cd3fc4ac2bb37bf24ee8216469135dc71597a2da079f4c",
+          "token_count": 7
+        },
+        {
+          "title": "## Future Enhancements",
+          "level": 2,
+          "line_start": 11,
+          "line_end": 14,
+          "content_hash": "sha256:0ca05dc7030b24182173d9c63a2a4237bf463a64dec2a0cdb87daf2e7a476c64",
+          "token_count": 79
+        },
+        {
+          "title": "## Pending plans (from .cortex/plans)",
+          "level": 2,
+          "line_start": 15,
+          "line_end": 16,
+          "content_hash": "sha256:6d51505ce4c62deec2788b6151c52eb57168f619330d641d2cb645007fe86e5d",
+          "token_count": 11
+        },
+        {
+          "title": "### Investigation Plans (Archive / Reference)",
+          "level": 3,
+          "line_start": 17,
+          "line_end": 20,
+          "content_hash": "sha256:88cecd33202786f11280b0758ce7133af71b73a185f0700cca345c05ed80cde3",
+          "token_count": 36
+        },
+        {
+          "title": "### Session Optimization Plans (2026-02-03)",
+          "level": 3,
+          "line_start": 21,
+          "line_end": 22,
+          "content_hash": "sha256:f6c463dfefa3a8f6154a5191ebc46814c6683f913441d9e690dc74db89b8a235",
+          "token_count": 12
+        },
+        {
+          "title": "### Session Optimization Plans (2026-02-02)",
+          "level": 3,
+          "line_start": 23,
+          "line_end": 24,
+          "content_hash": "sha256:0326f18b53aa7af258cb7dfcb5c85d53e62e5ed8daa7bb210ebd5b94e9750b40",
+          "token_count": 12
+        },
+        {
+          "title": "### Session Optimization Plans (2026-02-01)",
+          "level": 3,
+          "line_start": 25,
+          "line_end": 26,
+          "content_hash": "sha256:26acc664ac341cfba4e53c2f4b322dc18e40d944dc43ab1a317c5f19e10fc907",
+          "token_count": 12
+        },
+        {
+          "title": "### Features & Enhancements",
+          "level": 3,
+          "line_start": 27,
+          "line_end": 52,
+          "content_hash": "sha256:810d98ed6b97d2ee5d19f871801a20b20caf9999b157207892740a35a44be03f",
+          "token_count": 1069
+        }
       ],
       "read_count": 6,
-      "write_count": 113,
-      "last_read": "2026-02-17T14:39:14.542387",
+      "write_count": 114,
+      "last_read": "2026-02-19T08:12:37.737232",
       "last_write": "2026-01-26T08:23:30.603464",
       "current_version": 11,
       "version_history": [
@@ -1317,17 +1387,28 @@
           "snapshot_path": ".cortex/history/roadmap_v11.md",
           "changed_sections": [],
           "change_description": "Link follow-ups roadmap dedup/plan-lifecycle plan into roadmap for roadmap_sync validation"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-19T08:12:37.736479",
+          "content_hash": "sha256:d024c2fa3fa500534cfe12cc18a81fd672bb4b14bf4b64defc14593b4ec4b359",
+          "size_bytes": 6036,
+          "token_count": 1375,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/roadmap_v11.md",
+          "changed_sections": [],
+          "change_description": "Add plan file link to Promote OperationStatus roadmap entry"
         }
       ]
     },
     "progress.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/progress.md",
       "exists": true,
-      "size_bytes": 35694,
-      "token_count": 5545,
+      "size_bytes": 25962,
+      "token_count": 3987,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-18T22:45:45.630455",
-      "content_hash": "sha256:1305c4be46b718de4a7de3dfec8ec6daba539737b2ba7e3ed550a740432392df",
+      "last_modified": "2026-02-19T08:21:43.506508",
+      "content_hash": "sha256:2d3fe1a2b84ff81ce3af7f26916a4e7079abad11deb73fcb8c575e890632fea4",
       "sections": [
         {
           "title": "# Progress Log",
@@ -1338,113 +1419,113 @@
           "token_count": 3
         },
         {
-          "title": "## 2026",
+          "title": "## 2026-02-19",
           "level": 2,
           "line_start": 3,
-          "line_end": 17,
-          "content_hash": "sha256:aba105eb1adad49a48896329e8aef5655c6644638f46e6cb0d7c7e2a8d854127",
-          "token_count": 629
+          "line_end": 7,
+          "content_hash": "sha256:30ffbac2ccaa58703c7b76134eba03cf6e9a15979f5b5a3ce8d271f31f19a86a",
+          "token_count": 61
         },
         {
           "title": "## 2026-02-18",
           "level": 2,
-          "line_start": 18,
-          "line_end": 40,
+          "line_start": 8,
+          "line_end": 30,
           "content_hash": "sha256:e3adcf8111392f3c541b53dbf590062ac46134de15d6474d28d38c9dd3c12f01",
           "token_count": 1010
         },
         {
           "title": "## 2026-02-17",
           "level": 2,
-          "line_start": 41,
-          "line_end": 64,
+          "line_start": 31,
+          "line_end": 54,
           "content_hash": "sha256:fc5a49e882dee275e27a3f8640bb82f578dc8f5dae3be0df48891a1d645397a4",
           "token_count": 1246
         },
         {
           "title": "## 2026-02-16",
           "level": 2,
-          "line_start": 65,
-          "line_end": 78,
+          "line_start": 55,
+          "line_end": 68,
           "content_hash": "sha256:bb3200e943d3cda0878a66df22617fbc124a6246ce0402f4404d53bc117a751a",
           "token_count": 765
         },
         {
           "title": "## 2026-02-13",
           "level": 2,
-          "line_start": 79,
-          "line_end": 82,
+          "line_start": 69,
+          "line_end": 72,
           "content_hash": "sha256:2ebff96cc90820a6ed6838cea3cb6a951d52ce041c3952444126c22cead5d8c2",
           "token_count": 55
         },
         {
           "title": "## 2026-02-12",
           "level": 2,
-          "line_start": 83,
-          "line_end": 101,
+          "line_start": 73,
+          "line_end": 91,
           "content_hash": "sha256:bb7df1fa1f06def73bead6aac74e957b924d63dfcc02b0918d98e14b74985d5f",
           "token_count": 720
         },
         {
           "title": "## 2026-02-11",
           "level": 2,
-          "line_start": 102,
-          "line_end": 124,
-          "content_hash": "sha256:13ba0d67f5bebef241d6eea254781d8455ecdc81aaf9b91592385b53680ecba4",
-          "token_count": 1003
+          "line_start": 92,
+          "line_end": 95,
+          "content_hash": "sha256:315c6d8706aeb6855ea985cc294466764b0ad5064ce295851962049dc5477c6f",
+          "token_count": 13
         },
         {
           "title": "## 2026-02-10",
           "level": 2,
-          "line_start": 125,
-          "line_end": 128,
+          "line_start": 96,
+          "line_end": 99,
           "content_hash": "sha256:980cb03944bf1ffbd3349c49fb6edca2345cab04de009aabab1cf57f3094ee7b",
           "token_count": 13
         },
         {
           "title": "## 2026-02-09",
           "level": 2,
-          "line_start": 129,
-          "line_end": 132,
+          "line_start": 100,
+          "line_end": 103,
           "content_hash": "sha256:88dc73ec4f36b923e87741185bd39c5b42a3adf923fb0ba4840612c039e7f3c7",
           "token_count": 13
         },
         {
           "title": "## 2026-02-07",
           "level": 2,
-          "line_start": 133,
-          "line_end": 136,
+          "line_start": 104,
+          "line_end": 107,
           "content_hash": "sha256:2ecb1c1a863777e7134c18d3e5d7773dd15a2a68d85aa96fbceb833bb53004c3",
           "token_count": 13
         },
         {
           "title": "## 2026-02-05",
           "level": 2,
-          "line_start": 137,
-          "line_end": 140,
+          "line_start": 108,
+          "line_end": 111,
           "content_hash": "sha256:7913e8aed73f6e3dcf32ea0a2b4cccb390e50dd31d657e7b91dfe868f3d57e3d",
           "token_count": 13
         },
         {
           "title": "## What Works",
           "level": 2,
-          "line_start": 141,
-          "line_end": 144,
+          "line_start": 112,
+          "line_end": 115,
           "content_hash": "sha256:3b086fceb97a0cc91c3f7d1589d686ccf624174efd5b0b97d33d8d9bc801a286",
           "token_count": 52
         },
         {
           "title": "## What's Left",
           "level": 2,
-          "line_start": 145,
-          "line_end": 148,
+          "line_start": 116,
+          "line_end": 119,
           "content_hash": "sha256:bd698cf51d2d59c2ce4333a538cddf8a4f5931df5ec383aeff37ff9c6c018f8b",
           "token_count": 6
         }
       ],
       "read_count": 2,
-      "write_count": 405,
-      "last_read": "2026-02-18T22:45:45.630455",
+      "write_count": 410,
+      "last_read": "2026-02-19T08:21:43.506508",
       "last_write": "2026-01-26T09:14:15.342877",
       "current_version": 11,
       "version_history": [
@@ -5839,10 +5920,10 @@
         },
         {
           "version": 11,
-          "timestamp": "2026-02-18T22:42:45.560936",
+          "timestamp": "2026-02-18T22:46:59.801410",
           "content_hash": "sha256:1305c4be46b718de4a7de3dfec8ec6daba539737b2ba7e3ed550a740432392df",
           "size_bytes": 35694,
-          "token_count": 5545,
+          "token_count": 7762,
           "change_type": "modified",
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
@@ -5850,10 +5931,10 @@
         },
         {
           "version": 11,
-          "timestamp": "2026-02-18T22:42:45.599748",
-          "content_hash": "sha256:1305c4be46b718de4a7de3dfec8ec6daba539737b2ba7e3ed550a740432392df",
-          "size_bytes": 35694,
-          "token_count": 5545,
+          "timestamp": "2026-02-19T07:51:10.851323",
+          "content_hash": "sha256:f3ff5e5c0b2fb891e1454baaed531a3bc01dba82ad933e40ec560295cc135ab4",
+          "size_bytes": 25772,
+          "token_count": 5649,
           "change_type": "modified",
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
@@ -5861,10 +5942,10 @@
         },
         {
           "version": 11,
-          "timestamp": "2026-02-18T22:42:45.635859",
-          "content_hash": "sha256:1305c4be46b718de4a7de3dfec8ec6daba539737b2ba7e3ed550a740432392df",
-          "size_bytes": 35694,
-          "token_count": 5545,
+          "timestamp": "2026-02-19T08:03:30.237121",
+          "content_hash": "sha256:2d3fe1a2b84ff81ce3af7f26916a4e7079abad11deb73fcb8c575e890632fea4",
+          "size_bytes": 25962,
+          "token_count": 5688,
           "change_type": "modified",
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
@@ -5872,10 +5953,10 @@
         },
         {
           "version": 11,
-          "timestamp": "2026-02-18T22:45:45.564103",
-          "content_hash": "sha256:1305c4be46b718de4a7de3dfec8ec6daba539737b2ba7e3ed550a740432392df",
-          "size_bytes": 35694,
-          "token_count": 5545,
+          "timestamp": "2026-02-19T08:12:56.358148",
+          "content_hash": "sha256:2d3fe1a2b84ff81ce3af7f26916a4e7079abad11deb73fcb8c575e890632fea4",
+          "size_bytes": 25962,
+          "token_count": 5688,
           "change_type": "modified",
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
@@ -5883,10 +5964,10 @@
         },
         {
           "version": 11,
-          "timestamp": "2026-02-18T22:45:45.597571",
-          "content_hash": "sha256:1305c4be46b718de4a7de3dfec8ec6daba539737b2ba7e3ed550a740432392df",
-          "size_bytes": 35694,
-          "token_count": 5545,
+          "timestamp": "2026-02-19T08:15:41.704388",
+          "content_hash": "sha256:2d3fe1a2b84ff81ce3af7f26916a4e7079abad11deb73fcb8c575e890632fea4",
+          "size_bytes": 25962,
+          "token_count": 5688,
           "change_type": "modified",
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
@@ -5894,10 +5975,65 @@
         },
         {
           "version": 11,
-          "timestamp": "2026-02-18T22:45:45.629698",
-          "content_hash": "sha256:1305c4be46b718de4a7de3dfec8ec6daba539737b2ba7e3ed550a740432392df",
-          "size_bytes": 35694,
-          "token_count": 5545,
+          "timestamp": "2026-02-19T08:18:07.310499",
+          "content_hash": "sha256:2d3fe1a2b84ff81ce3af7f26916a4e7079abad11deb73fcb8c575e890632fea4",
+          "size_bytes": 25962,
+          "token_count": 3987,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-19T08:18:07.336065",
+          "content_hash": "sha256:2d3fe1a2b84ff81ce3af7f26916a4e7079abad11deb73fcb8c575e890632fea4",
+          "size_bytes": 25962,
+          "token_count": 3987,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-19T08:18:07.361991",
+          "content_hash": "sha256:2d3fe1a2b84ff81ce3af7f26916a4e7079abad11deb73fcb8c575e890632fea4",
+          "size_bytes": 25962,
+          "token_count": 3987,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-19T08:21:43.453624",
+          "content_hash": "sha256:2d3fe1a2b84ff81ce3af7f26916a4e7079abad11deb73fcb8c575e890632fea4",
+          "size_bytes": 25962,
+          "token_count": 3987,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-19T08:21:43.479869",
+          "content_hash": "sha256:2d3fe1a2b84ff81ce3af7f26916a4e7079abad11deb73fcb8c575e890632fea4",
+          "size_bytes": 25962,
+          "token_count": 3987,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/progress_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-19T08:21:43.505984",
+          "content_hash": "sha256:2d3fe1a2b84ff81ce3af7f26916a4e7079abad11deb73fcb8c575e890632fea4",
+          "size_bytes": 25962,
+          "token_count": 3987,
           "change_type": "modified",
           "snapshot_path": ".cortex/history/progress_v11.md",
           "changed_sections": [],
@@ -5908,11 +6044,11 @@
     "activeContext.md": {
       "path": "/Users/i.grechukhin/Repo/Cortex/.cortex/memory-bank/activeContext.md",
       "exists": true,
-      "size_bytes": 12434,
-      "token_count": 2099,
+      "size_bytes": 1938,
+      "token_count": 314,
       "token_model": "cl100k_base",
-      "last_modified": "2026-02-18T22:45:45.621135",
-      "content_hash": "sha256:9e4b95c66b635831d8071b75365aa52b2d856f8329aeb6a3b9537ad79c184791",
+      "last_modified": "2026-02-19T08:21:43.499367",
+      "content_hash": "sha256:19c3f5e9edec097df800a88f90f4a94d1779a7188a5887d4828832f1f81e001c",
       "sections": [
         {
           "title": "# Active Context: Cortex",
@@ -5923,121 +6059,121 @@
           "token_count": 23
         },
         {
-          "title": "## Completed Work (2026)",
+          "title": "## Completed Work (2026-02-19)",
           "level": 2,
           "line_start": 5,
-          "line_end": 30,
-          "content_hash": "sha256:b3ba349522d4dbcb726e40d1468bc74e3ddc8c93aa71c06b58a9b4a371d8f7de",
-          "token_count": 717
+          "line_end": 10,
+          "content_hash": "sha256:39e6e424b7dc9201b2217b289c84a29d46b8e34928ad3b3e22c39868bf3e9357",
+          "token_count": 84
         },
         {
           "title": "## Completed Work (2026-02-18)",
           "level": 2,
-          "line_start": 31,
-          "line_end": 66,
-          "content_hash": "sha256:d2ab19541b50ce814b5f081d92681ee8871ef7ed7ab282a0c911d69169aead84",
-          "token_count": 1166
+          "line_start": 11,
+          "line_end": 14,
+          "content_hash": "sha256:7fd6ee5e0975ee9e7c700ccefef9c2fc6f645d5e67a7a0a74e47d393873a3adb",
+          "token_count": 14
         },
         {
           "title": "## Completed Work (2026-02-17)",
           "level": 2,
-          "line_start": 67,
-          "line_end": 70,
+          "line_start": 15,
+          "line_end": 18,
           "content_hash": "sha256:bc8f97c7e47db13d4caf60ae37b748f8bed6cff7c48043b913648736a137802e",
           "token_count": 14
         },
         {
           "title": "## Completed Work (2026-02-16)",
           "level": 2,
-          "line_start": 71,
-          "line_end": 74,
+          "line_start": 19,
+          "line_end": 22,
           "content_hash": "sha256:989a691eb60fa972680015114657ec0072a9b0a67b670f543198d52c2a1214b7",
           "token_count": 14
         },
         {
           "title": "## Completed Work (2026-02-13)",
           "level": 2,
-          "line_start": 75,
-          "line_end": 78,
+          "line_start": 23,
+          "line_end": 26,
           "content_hash": "sha256:e8bc1f0112e7257847330942d7f3c44a8482c6d34e5525546081a2658b8fb203",
           "token_count": 14
         },
         {
           "title": "## Completed Work (2026-01-14)",
           "level": 2,
-          "line_start": 79,
-          "line_end": 82,
+          "line_start": 27,
+          "line_end": 30,
           "content_hash": "sha256:3fe31c3b16e8dc8860942a27947c0b7f9333379328964710a367cf9ee20dfda8",
           "token_count": 14
         },
         {
           "title": "## Completed Work (2026-02-12)",
           "level": 2,
-          "line_start": 83,
-          "line_end": 86,
+          "line_start": 31,
+          "line_end": 34,
           "content_hash": "sha256:0cafb2700a23a589590ab848fcc7a4036daa98f1dcbf287ed0d152769aca2d02",
           "token_count": 14
         },
         {
           "title": "## Completed Work (2026-02-11)",
           "level": 2,
-          "line_start": 87,
-          "line_end": 90,
+          "line_start": 35,
+          "line_end": 38,
           "content_hash": "sha256:4c64f0ccd2de8e0fdcef74f1506d047c9a3afa588113170d4e78578f002cfc5d",
           "token_count": 14
         },
         {
           "title": "## Completed Work (2026-02-10)",
           "level": 2,
-          "line_start": 91,
-          "line_end": 94,
+          "line_start": 39,
+          "line_end": 42,
           "content_hash": "sha256:d7947ed1fef7d28b643bd8922176145e5c6ea9929358d98f39204fd3bcfc1520",
           "token_count": 14
         },
         {
           "title": "## Completed Work (2026-02-09)",
           "level": 2,
-          "line_start": 95,
-          "line_end": 98,
+          "line_start": 43,
+          "line_end": 46,
           "content_hash": "sha256:2356c4033e4f97bec991d7e2cdbcf7b3de693f27a797ae494b5447c14bfaf9e7",
           "token_count": 14
         },
         {
           "title": "## Completed Work (2026-02-07)",
           "level": 2,
-          "line_start": 99,
-          "line_end": 102,
+          "line_start": 47,
+          "line_end": 50,
           "content_hash": "sha256:7c47202d74e7fd62962b1ce4bfc0ac3e9766b46ef29ca1c098b385c12cd0d30e",
           "token_count": 14
         },
         {
           "title": "## Current Focus",
           "level": 2,
-          "line_start": 103,
-          "line_end": 106,
+          "line_start": 51,
+          "line_end": 54,
           "content_hash": "sha256:590aa5bb5ab49256df65b54042e184286214768af00290735bec5e937d3011b8",
           "token_count": 11
         },
         {
           "title": "## Recent Changes",
           "level": 2,
-          "line_start": 107,
-          "line_end": 110,
+          "line_start": 55,
+          "line_end": 58,
           "content_hash": "sha256:a836bd8f2f1eaade91e4dc9b2bb4914bb15b9d10cc3e2b6012d3431d79072ff1",
           "token_count": 45
         },
         {
           "title": "## Next Steps",
           "level": 2,
-          "line_start": 111,
-          "line_end": 114,
+          "line_start": 59,
+          "line_end": 62,
           "content_hash": "sha256:2d95f981e9a718ee86bfe827cfd59f487d120d7f0c947e404a34fb8bca1496c1",
           "token_count": 6
         }
       ],
       "read_count": 2,
-      "write_count": 376,
-      "last_read": "2026-02-18T22:45:45.621135",
+      "write_count": 381,
+      "last_read": "2026-02-19T08:21:43.499367",
       "last_write": "2026-01-26T08:21:45.157617",
       "current_version": 11,
       "version_history": [
@@ -10113,10 +10249,10 @@
         },
         {
           "version": 11,
-          "timestamp": "2026-02-18T22:42:45.548753",
+          "timestamp": "2026-02-18T22:46:59.793474",
           "content_hash": "sha256:9e4b95c66b635831d8071b75365aa52b2d856f8329aeb6a3b9537ad79c184791",
           "size_bytes": 12434,
-          "token_count": 2099,
+          "token_count": 2834,
           "change_type": "modified",
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
@@ -10124,10 +10260,10 @@
         },
         {
           "version": 11,
-          "timestamp": "2026-02-18T22:42:45.588637",
-          "content_hash": "sha256:9e4b95c66b635831d8071b75365aa52b2d856f8329aeb6a3b9537ad79c184791",
-          "size_bytes": 12434,
-          "token_count": 2099,
+          "timestamp": "2026-02-19T07:51:10.842926",
+          "content_hash": "sha256:a96bbf37b5f1e7bfb54533aa1b5a29a69f50b81892a73d46cfbc572b572c2fdb",
+          "size_bytes": 1691,
+          "token_count": 489,
           "change_type": "modified",
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
@@ -10135,10 +10271,10 @@
         },
         {
           "version": 11,
-          "timestamp": "2026-02-18T22:42:45.625668",
-          "content_hash": "sha256:9e4b95c66b635831d8071b75365aa52b2d856f8329aeb6a3b9537ad79c184791",
-          "size_bytes": 12434,
-          "token_count": 2099,
+          "timestamp": "2026-02-19T08:03:30.229917",
+          "content_hash": "sha256:19c3f5e9edec097df800a88f90f4a94d1779a7188a5887d4828832f1f81e001c",
+          "size_bytes": 1938,
+          "token_count": 544,
           "change_type": "modified",
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
@@ -10146,10 +10282,10 @@
         },
         {
           "version": 11,
-          "timestamp": "2026-02-18T22:45:45.553400",
-          "content_hash": "sha256:9e4b95c66b635831d8071b75365aa52b2d856f8329aeb6a3b9537ad79c184791",
-          "size_bytes": 12434,
-          "token_count": 2099,
+          "timestamp": "2026-02-19T08:12:56.351090",
+          "content_hash": "sha256:19c3f5e9edec097df800a88f90f4a94d1779a7188a5887d4828832f1f81e001c",
+          "size_bytes": 1938,
+          "token_count": 544,
           "change_type": "modified",
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
@@ -10157,10 +10293,10 @@
         },
         {
           "version": 11,
-          "timestamp": "2026-02-18T22:45:45.588602",
-          "content_hash": "sha256:9e4b95c66b635831d8071b75365aa52b2d856f8329aeb6a3b9537ad79c184791",
-          "size_bytes": 12434,
-          "token_count": 2099,
+          "timestamp": "2026-02-19T08:15:41.697083",
+          "content_hash": "sha256:19c3f5e9edec097df800a88f90f4a94d1779a7188a5887d4828832f1f81e001c",
+          "size_bytes": 1938,
+          "token_count": 544,
           "change_type": "modified",
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
@@ -10168,10 +10304,65 @@
         },
         {
           "version": 11,
-          "timestamp": "2026-02-18T22:45:45.620498",
-          "content_hash": "sha256:9e4b95c66b635831d8071b75365aa52b2d856f8329aeb6a3b9537ad79c184791",
-          "size_bytes": 12434,
-          "token_count": 2099,
+          "timestamp": "2026-02-19T08:18:07.303434",
+          "content_hash": "sha256:19c3f5e9edec097df800a88f90f4a94d1779a7188a5887d4828832f1f81e001c",
+          "size_bytes": 1938,
+          "token_count": 314,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-19T08:18:07.328611",
+          "content_hash": "sha256:19c3f5e9edec097df800a88f90f4a94d1779a7188a5887d4828832f1f81e001c",
+          "size_bytes": 1938,
+          "token_count": 314,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-19T08:18:07.354759",
+          "content_hash": "sha256:19c3f5e9edec097df800a88f90f4a94d1779a7188a5887d4828832f1f81e001c",
+          "size_bytes": 1938,
+          "token_count": 314,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-19T08:21:43.446271",
+          "content_hash": "sha256:19c3f5e9edec097df800a88f90f4a94d1779a7188a5887d4828832f1f81e001c",
+          "size_bytes": 1938,
+          "token_count": 314,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-19T08:21:43.471709",
+          "content_hash": "sha256:19c3f5e9edec097df800a88f90f4a94d1779a7188a5887d4828832f1f81e001c",
+          "size_bytes": 1938,
+          "token_count": 314,
+          "change_type": "modified",
+          "snapshot_path": ".cortex/history/activeContext_v11.md",
+          "changed_sections": [],
+          "change_description": "Compacted by compact_session"
+        },
+        {
+          "version": 11,
+          "timestamp": "2026-02-19T08:21:43.498912",
+          "content_hash": "sha256:19c3f5e9edec097df800a88f90f4a94d1779a7188a5887d4828832f1f81e001c",
+          "size_bytes": 1938,
+          "token_count": 314,
           "change_type": "modified",
           "snapshot_path": ".cortex/history/activeContext_v11.md",
           "changed_sections": [],
@@ -12427,8 +12618,8 @@
   },
   "totals": {
     "total_files": 10,
-    "total_size_bytes": 91272,
-    "total_tokens": 17330,
-    "last_full_scan": "2026-02-18T22:45:45.630492"
+    "total_size_bytes": 65839,
+    "total_tokens": 12701,
+    "last_full_scan": "2026-02-19T08:21:43.506545"
   }
 }

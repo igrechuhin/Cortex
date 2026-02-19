@@ -19,6 +19,9 @@ type JsonValue = JsonPrimitive | list[JsonValue] | dict[str, JsonValue]
 # Common JSON dictionary shape used at JSON boundaries.
 type ModelDict = dict[str, JsonValue]
 
+# Operation result status used by tool and validation result models.
+type OperationStatus = Literal["success", "error"]
+
 # ============================================================================
 # Dict-like Pydantic base model (preserves legacy call sites)
 # ============================================================================
@@ -932,7 +935,7 @@ class SubmoduleInitResult(BaseModel):
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    status: Literal["success", "error"] = Field(description="Operation status")
+    status: OperationStatus = Field(description="Operation status")
     action: str | None = Field(default=None, description="Action performed")
     repo_url: str | None = Field(default=None, description="Repository URL")
     local_path: str | None = Field(default=None, description="Local submodule path")
@@ -949,7 +952,7 @@ class SubmoduleSyncResult(BaseModel):
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    status: Literal["success", "error"] = Field(description="Sync status")
+    status: OperationStatus = Field(description="Sync status")
     pulled: bool = Field(default=False, description="Whether pull was performed")
     pushed: bool = Field(default=False, description="Whether push was performed")
     changes: dict[str, str] = Field(default_factory=dict, description="Changes summary")

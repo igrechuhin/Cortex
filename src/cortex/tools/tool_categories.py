@@ -100,6 +100,11 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Used in implement workflow step 5 (memory bank update)",
     ),
     ToolCategoryEntry(
+        name="remove_roadmap_section",
+        category=ToolCategory.ALWAYS_LOADED,
+        rationale="Used in implement workflow step 5 to remove orphan sections without full-content write",
+    ),
+    ToolCategoryEntry(
         name="complete_plan",
         category=ToolCategory.ALWAYS_LOADED,
         rationale="Used in implement workflow step 5 for plan completion",

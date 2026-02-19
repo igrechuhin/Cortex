@@ -2,67 +2,15 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
-## Completed Work (2026)
+## Completed Work (2026-02-19)
 
-- ✅ **Session Optimization: Commit Pipeline Context Loading and Helper Module Pattern** - COMPLETE (2026) - Optimized commit pipeline context loading (Step 1 already implemented in commit.md) and documented helper module extraction pattern in implement prompt (Step 2: added guidance in Step 4, Step 4.6, and Code Quality section)
+- ✅ **Session Optimization: Roadmap completed section cleanup (2026-02-10)** - COMPLETE (2026-02-19) - Verified roadmap.md: no legacy completed section present; validate(roadmap_sync) reports completed_entries_in_roadmap empty. No migration or removal needed; cleanup goal already satisfied.
 
-- ✅ **Session Optimization: fix_markdown_lint Opaque Errors and Commit Fallback** - COMPLETE (2026) - Improved fix_markdown_lint error reporting when batch fails: enhanced stderr parsing to extract rule codes from various formats, added per-file fallback when batch fails without rule codes, documented fallback in commit prompt and troubleshooting guide. All tests pass, quality gate passed.
-
-- ✅ **Enrich memory bank write tools with validations** - COMPLETE (2026) - Added pre-write schema validation and content sanity checks (null bytes) to memory bank write tools. Schema validation prevents writing corrupted records, and null-byte check protects text files. All tests passing (4240/4240, 91.8% coverage).
-
-- ✅ **Phase 45: Add MCP annotations** - COMPLETE (2026) - Completed Phase 45: Added MCP annotations to all tools, verified with tests (4244 tests, 100% pass rate), and updated documentation with annotation patterns and guidelines.
-
-- ✅ **Phase 53: Investigate manage_file conflict index stale** - COMPLETE (2026) - Implemented update_index cleanup action in check_structure_health to refresh metadata index for memory bank files, fixing stale index issues that blocked manage_file(write) operations. Added comprehensive tests covering dry-run, execution, edge cases, and multiple files.
-
-- ✅ **Phase 68: Investigate fix_quality_issues MCP connection closed** - COMPLETE (2026) - Completed fix for fix_quality_issues timeout mismatch. Changed timeout from 60s to 960s (MCP_TOOL_TIMEOUT_VERY_COMPLEX) and enabled progress reporting. All tests pass (4244 tests, 91.8% coverage), quality gate passes.
-
-- ✅ **Phase: Investigate commit pipeline quality gate miss** - COMPLETE (2026) - Investigation complete: Root cause identified (type-check scope mismatch between CI and commit pipeline). Fix implemented - PythonAdapter.type_check() now uses check_types.py script when available to match CI scope (src + tests + synapse scripts), with fallback to pyright src/ tests/ when script missing.
-
-- ✅ **Phase: Investigate execute_pre_commit_checks MCP Tool Failure** - COMPLETE (2026) - Issue already fixed in commit 400b96d. The test's run_sync function was updated to use *args instead of specific parameters, allowing it to handle dynamic arguments from asyncio.to_thread correctly. All 4244 tests now pass.
-
-- ✅ **Phase: Investigate execute_pre_commit_checks MCP Tool Failure** - COMPLETE (2026) - Issue already fixed in commit 400b96d. The test's run_sync function was updated to use *args instead of specific parameters, allowing it to handle dynamic arguments from asyncio.to_thread correctly. All 4244 tests now pass.
-
-- ✅ **Phase: Investigate execute_pre_commit_checks MCP Tool Failure** - COMPLETE (2026) - Issue already fixed in commit 400b96d. The test's run_sync function was updated to use *args instead of specific parameters, allowing it to handle dynamic arguments from asyncio.to_thread correctly. All 4244 tests now pass.
-
-- ✅ **Phase: Investigate execute_pre_commit_checks MCP Tool Failure** - COMPLETE (2026) - Issue already fixed in commit 400b96d. The test's run_sync function was updated to use *args instead of specific parameters, allowing it to handle dynamic arguments from asyncio.to_thread correctly. All 4244 tests now pass.
-
-- ✅ **Phase: Investigate execute_pre_commit_checks failure (20260205)** - COMPLETE (2026) - Investigation already completed - issue fixed in commit 400b96d. The test's run_sync function was updated to use *args instead of specific parameters, allowing it to handle dynamic arguments from asyncio.to_thread correctly.
+- ✅ **Session Optimization: Roadmap section removal and sync** - COMPLETE (2026-02-19) - Added remove_roadmap_section MCP tool for safe section removal; documented unlinked_plans excludes archive; updated implement/memory-bank-updater guidance.
 
 ## Completed Work (2026-02-18)
 
-- ✅ **Commit: session_start_tools function length compliance** - COMPLETE (2026-02-18) - Fixed quality gate function-length violations in session_start_tools.py by extracting _create_brief_with_suggestions and _session_start_success_result; _compute_suggestions_and_create_brief and_load_brief_and_return_result now ≤30 lines. All pre-commit checks pass; 4229 tests, 91.83% coverage.
-
-- ✅ **Session Optimization: Test Coverage and Development Workflow Improvements** - COMPLETE (2026-02-18) - Implemented all six steps: (1) analyze_coverage_gaps.py script and testing docs, (2) file size warn at 350/error at 400 and code-quality guide, (3) coverage expectations and prioritization in testing guide plus implement/commit prompt refs, (4) tests/helpers/imports.py canonical imports and README, (5) 89.5%+ coverage accepted with warning in execute_pre_commit_checks and TestResult.warnings, (6) test_templates.py and README. Quality and type_check passed; tests 4232 passed, 91.84% coverage.
-
-- ✅ **Commit: quality and Synapse script formatting** - COMPLETE (2026-02-18) - Fixed function-length violation in session_start_tools.py (_compute_suggestions_and_create_brief) and Black-formatted analyze_coverage_gaps.py. Preflight passed; 4235 tests, 91.84% coverage.
-
-- ✅ **Fix Broken Progress Entry: Phase 54 Title Corruption** - COMPLETE (2026-02-18) - Extended corruption detection to catch truncation patterns in phase titles (e.g., "Phase 54lizer Pattern" -> "Phase 54: Session Start Initializer Pattern"). Added truncation detection pattern to roadmap_corruption.py for both roadmap.md and progress.md. Added comprehensive tests. The corrupted entry was not found in progress.md (may have been already fixed), but detection is now in place to prevent future truncation corruptions.
-
-- ✅ **Session Optimization: pytest.ini and IDE test discovery documentation** - COMPLETE (2026-02-18) - Documented pytest.ini design rationale in docs/development/testing.md: coverage options intentionally excluded from addopts to ensure IDE test discovery works without requiring pytest-cov. Added explanation of design decision, when to use coverage explicitly (CI, pre-commit, manual runs), and reminder for implement/commit workflows to pass --cov explicitly for full runs.
-
-- ✅ **Add roadmap entry MCP tool** - COMPLETE (2026-02-18) - Added documentation for `add_roadmap_entry` MCP tool to `docs/api/tools.md`. The tool was already fully implemented with comprehensive tests (test_roadmap_operations.py). Updated Phase 1 tool count from 8 to 9 in the API reference overview.
-
-- ✅ **Compound Engineering Alignment (Cortex)** - COMPLETE (2026-02-18) - Documented compound-engineering goal and Plan→Work→Review→Compound loop in project brief, CLAUDE.md, and AGENTS.md. Added compound note to memory bank workflow rule. Verified implement, commit, and analyze prompts already reference the compound loop. Verified compound checklist exists in commit prompt. Cross-checked with existing session-optimization plans for consistency.
-
-- ✅ **Investigate FastMCP blocking before tool handlers - Fixes Implemented** - COMPLETE (2026-02-18) - Implemented two blocking fixes from investigation plan: (1) Wrapped `_fallback_root()` in `asyncio.to_thread()` to prevent event loop blocking during project root fallback; (2) Added 25s timeout to usage context init lock acquisition with proper error handling. Both fixes prevent indefinite hangs. Added comprehensive tests, quality gate passed.
-
-- ✅ **Investigate FastMCP blocking before tool handlers** - COMPLETE (2026-02-18) - Verified investigation complete - both fixes implemented (blocking event loop fix and usage context lock timeout). Removed reference entry from roadmap.
-
-- ✅ **Phase 9.1.1: Split consolidated.py - Already Complete** - COMPLETE (2026-02-18) - Verified that Phase 9.1.1 (split consolidated.py) was already completed in a previous session. The consolidated.py file was split into 5 modules, all under 400 lines. Quality gate passes with no violations. Phase 9 roadmap entry is marked as Reference (documentation plan), not an active implementation task.
-
-- ✅ **Phase: Investigate execute_pre_commit_checks failure (20260209)** - COMPLETE (2026-02-18) - Investigation completed: failure no longer reproducible; test passes and execute_pre_commit_checks MCP tool works. Root cause was consistent with to_thread/run_sync argument count; current code and test are aligned.
-
-- ✅ **Phase: Investigate promote_session_script failure** - COMPLETE (2026-02-18) - Fixed ValueError from f-string format specifier in tool_conversion_template: moved JSON return literal and template body to module-level constants and use str.format() so braces/colons are not parsed as format specifiers. Quality gate and tests pass.
-
-- ✅ **Phase: Investigate roadmap sync validator ghost references** - COMPLETE (2026-02-18) - Resolved plan references that exist only in archive. Added _find_plan_in_plans_or_archive() so references like .cortex/plans/foo.md resolve to .cortex/plans/archive/SessionOptimization/foo.md when the file is archived; validation no longer reports those as invalid. Ghost-phase filtering (Recent Findings, Completed Milestones) was already in place. Added test_validate_sync_resolves_plan_reference_when_file_only_in_archive. All tests pass; quality gate passed.
-
-- ✅ **Session Optimization: Commit pipeline context loading and helper module - Reference** - COMPLETE (2026-02-18) - Added reference documentation for commit pipeline context loading (docs/design/commit-pipeline-phases.md: essential files, 3000–4000 token budget) and helper module extraction (docs/guides/code-quality.md: function length limits, *_helpers.py pattern). Plan already archived; prompts already updated in prior session.
-
-- ✅ **Session Optimization: Context usage analytics followups (2026-02-11)** - COMPLETE (2026-02-18) - Reference plan reviewed; context defaults and usage analytics tasks deferred to dedicated future phases. Current context stats and coverage plans already inform defaults and coverage debt.
-
-- ✅ **Session Optimization: Load context on problem fix path (2026-02-09)** - COMPLETE (2026-02-18) - Added load-context-when-fixing requirement to commit and implement prompts and to AGENTS.md/CLAUDE.md. Commit prompt: new "Load context when fixing" block requiring load_context(15k) and rules before applying fixes after any step failure. Implement prompt: added umbrella fix-path rule in ERROR HANDLING; Steps 4, 4.5, 4.6 already had Load Context Before Fixing. AGENTS.md and CLAUDE.md: new guideline requiring load context and rules before making fixes when encountering problems.
-
-- ✅ **Session Optimization: Pydantic rule visibility and rule discovery (2026-02-12 Analysis)** - COMPLETE (2026-02-18) - Strengthened Pydantic-for-params visibility: implement prompt Step 4 and AGENTS.md/CLAUDE.md explicitly require Pydantic BaseModel (not dict[str, Any]) for tool parameters and internal dispatch data; rule discovery fallback in implement and analyze prompts clarified with Pydantic wording; Synapse rule python-mcp-development.mdc updated with tool-params sentence.
+- **Summary (2026-02-18)** - 1 entries archived.
 
 ## Completed Work (2026-02-17)
 

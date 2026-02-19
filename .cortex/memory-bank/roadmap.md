@@ -28,8 +28,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
 - **Plans README** - Reference. Plan: .cortex/plans/README.md
-- **Session Optimization: Roadmap completed section cleanup (2026-02-10)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-roadmap-completed-section-cleanup-2026-02-10.md
-- **Session Optimization: Roadmap section removal and sync** - PENDING - Reference. Plan: .cortex/plans/session-optimization-roadmap-section-removal-and-sync.md
 - **Session Optimization: Roadmap sync cleanup (2026-02-09)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-roadmap-sync-cleanup-2026-02-09.md
 - **Session Optimization: Rules and context loading follow-ups (2026-02-12 Analysis)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-rules-and-context-loading-follow-ups-2026-02-12-analysis.md
 - **Session Optimization: Rules context followups (2026-02-12)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-rules-context-followups-2026-02-12.md
@@ -50,3 +48,4 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Session Optimization: Progress Entry Validation and Memory Bank Write Discipline** - PENDING - Reduce progress entry typos and enforce manage_file-only for memory-bank writes (from 2026-02-18 analysis).
 - **Session Optimization: Analyze 2026-02-18 Follow-ups** - PENDING - Follow-ups from 2026-02-18 analysis: Step 12/MCP stability, load_context budgets, manage_file contract.
 - **Session Optimization: Progress Entry Validation and Write Quality (2026-02-18 Analysis)** - PENDING - Progress entry format validation and write-quality guidance from 2026-02-18 analysis; reduce typos in complete_plan/append_progress_entry.
+- **Promote OperationStatus to str Enum** - PENDING - Replace type OperationStatus = Literal["success", "error"] with class OperationStatus(str, Enum) in core/models.py; keep JSON output unchanged. Plan: .cortex/plans/operation-status-promote-to-enum.md

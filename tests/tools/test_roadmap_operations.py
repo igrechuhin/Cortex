@@ -15,11 +15,14 @@ from cortex.tools.roadmap_operations import (  # type: ignore[import-not-found]
     _entry_text_looks_completed,  # type: ignore[name-defined]
     _execute_roadmap_insertion,  # type: ignore[name-defined]
     _execute_roadmap_removal,  # type: ignore[name-defined]
+    _execute_roadmap_section_removal,  # type: ignore[name-defined]
     _find_bullet_line_containing,  # type: ignore[name-defined]
+    _find_section_range_by_heading,  # type: ignore[name-defined]
     _get_section_bullet_lines,  # type: ignore[name-defined]
     _insert_roadmap_entry,  # type: ignore[name-defined]
     _parse_roadmap_sections,  # type: ignore[name-defined]
     _remove_line_at,  # type: ignore[name-defined]
+    _remove_section_range,  # type: ignore[name-defined]
 )
 
 
@@ -117,6 +120,90 @@ class TestFindBulletLineContaining:
     def test_first_bullet_match_wins(self) -> None:
         content = "- **A** - PENDING\n- **B** - PENDING\n"
         assert _find_bullet_line_containing(content, "PENDING") == 1
+
+
+class TestFindSectionRangeByHeading:
+    """Tests for _find_section_range_by_heading."""
+
+    def test_finds_section_and_range(self) -> None:
+        content = (
+            "## Blockers\n\nNone.\n\n"
+            "### Session Optimization (2026-02-03)\n\n"
+            "Completed.\n\n"
+            "## Active Work\n\n- Item\n"
+        )
+        result = _find_section_range_by_heading(content, "Session Optimization")
+        assert result is not None
+        start, end, heading = result
+        assert "Session Optimization" in heading
+        assert start >= 0 and end >= start
+        lines = content.split("\n")
+        assert lines[start].strip().startswith("###")
+        assert "Session" in lines[start]
+
+    def test_returns_none_when_needle_empty(self) -> None:
+        assert _find_section_range_by_heading("## Foo\n", "  ") is None
+        assert _find_section_range_by_heading("## Foo\n", "") is None
+
+    def test_returns_none_when_no_match(self) -> None:
+        content = "## Blockers\n\nNone.\n"
+        assert _find_section_range_by_heading(content, "Session Optimization") is None
+
+
+class TestRemoveSectionRange:
+    """Tests for _remove_section_range."""
+
+    def test_removes_range(self) -> None:
+        content = "a\nb\nc\nd\ne"
+        out = _remove_section_range(content, 1, 3)
+        assert out == "a\ne"
+
+    def test_removes_single_line(self) -> None:
+        content = "a\nb\nc"
+        assert _remove_section_range(content, 1, 1) == "a\nc"
+
+
+class TestExecuteRoadmapSectionRemoval:
+    """Tests for _execute_roadmap_section_removal."""
+
+    @pytest.mark.asyncio
+    async def test_section_removal_success(self, tmp_path: Path) -> None:
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True)
+        content = (
+            "# Roadmap\n\n## Blockers\n\nNone\n\n"
+            "### Session Optimization (2026-02-03)\n\n"
+            "Empty subsection.\n\n"
+            "## Active Work\n\n- Item\n"
+        )
+        _ = (memory_bank_dir / "roadmap.md").write_text(content)
+        result = await _execute_roadmap_section_removal(
+            tmp_path, "Session Optimization (2026-02-03)"
+        )
+        assert result.status == "success"
+        assert result.section_heading is not None
+        assert "Session Optimization" in result.section_heading
+        assert (
+            result.lines_removed == 4
+        )  # heading + blank + "Empty subsection." + blank
+        text = (memory_bank_dir / "roadmap.md").read_text()
+        assert "Session Optimization (2026-02-03)" not in text
+        assert "## Active Work" in text
+
+    @pytest.mark.asyncio
+    async def test_section_removal_not_found_returns_error(
+        self, tmp_path: Path
+    ) -> None:
+        memory_bank_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        memory_bank_dir.mkdir(parents=True)
+        _ = (memory_bank_dir / "roadmap.md").write_text(
+            "# Roadmap\n\n## Blockers\n\nNone\n"
+        )
+        result = await _execute_roadmap_section_removal(
+            tmp_path, "Session Optimization (2026-02-03)"
+        )
+        assert result.status == "error"
+        assert result.lines_removed is None
 
 
 class TestRemoveLineAtRoadmap:

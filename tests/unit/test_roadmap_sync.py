@@ -95,6 +95,27 @@ class TestValidateRoadmapSyncEnhancements:
             # Path is reported relative to project root
             assert str(plan_file.relative_to(project_root)) in result.unlinked_plans
 
+    def test_validate_sync_excludes_archive_plans_from_unlinked(self) -> None:
+        """Plans under .cortex/plans/archive/ are excluded from unlinked_plans."""
+        # Arrange: plan only in archive, no reference in roadmap
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            archive_dir = (
+                get_cortex_path(project_root, CortexResourceType.PLANS_ARCHIVE)
+                / "Phase18"
+            )
+            archive_dir.mkdir(parents=True)
+            plan_in_archive = archive_dir / "phase-18-markdown-lint-fix-tool.md"
+            _ = plan_in_archive.write_text("# Plan\n")
+            roadmap_content = "## Blockers (ASAP Priority)\n\nNo entries yet.\n"
+
+            # Act
+            result = validate_roadmap_sync(project_root, roadmap_content)
+
+            # Assert: archive plan must not appear in unlinked_plans
+            assert result.valid is True
+            assert result.unlinked_plans == []
+
     def test_validate_sync_resolves_dot_cortex_plans_archive_reference(self) -> None:
         """Archive PhaseX refs resolve to .cortex/plans (no path-style mismatch)."""
         # Arrange: layout is project_root/.cortex/plans/archive/Phase62/phase-62-foo.md

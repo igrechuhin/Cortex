@@ -37,6 +37,7 @@ from cortex.core.models import (
     HealthMetrics,
     IndexStats,
     JsonDict,
+    OperationStatus,
 )
 from cortex.core.token_counter import TokenCounter
 from cortex.core.version_manager import VersionManager
@@ -1902,7 +1903,7 @@ class PreflightCheckSummary(StrictBaseModel):
     """Summary information for a single preflight check."""
 
     name: str = Field(..., min_length=1, description="Name of the check or phase step")
-    status: Literal["success", "error"] = Field(
+    status: OperationStatus = Field(
         ..., description="Check status: success when no errors, error otherwise"
     )
     errors: int | None = Field(
@@ -2343,7 +2344,7 @@ class ConnectionHealthResult(ToolResultBase):
 class MCPHealthCheckResponse(StrictBaseModel):
     """Parsed response from check_mcp_connection_health (for parsing only)."""
 
-    status: Literal["success", "error"]
+    status: OperationStatus
     health: ConnectionHealth | None = None
     error: str | None = None
     error_type: str | None = None
@@ -2477,7 +2478,7 @@ class PreCommitResultModel(StrictBaseModel):
         validate_assignment=True,
     )
 
-    status: Literal["success", "error"] = Field(..., description="Operation status")
+    status: OperationStatus = Field(..., description="Operation status")
     language: str | None = Field(None, description="Detected language")
     checks_performed: list[str] = Field(
         default_factory=list, description="Checks performed"
@@ -2731,7 +2732,7 @@ class ContextStatisticsResult(StrictBaseModel):
 class RulesExecutionResult(StrictBaseModel):
     """Result of executing rules with context."""
 
-    status: Literal["success", "error"] = Field(description="Execution status")
+    status: OperationStatus = Field(description="Execution status")
     task_description: str | None = Field(None, description="Task description")
     context: JsonDict | None = Field(None, description="Context information")
     rules_loaded: JsonDict | None = Field(
@@ -2789,7 +2790,7 @@ class ManagersInitResult(StrictBaseModel):
 class AddRoadmapEntryResult(StrictBaseModel):
     """Result of adding a roadmap entry."""
 
-    status: Literal["success", "error"] = Field(description="Operation status")
+    status: OperationStatus = Field(description="Operation status")
     file_name: str = Field(description="File that was modified")
     message: str = Field(description="Success or error message")
     line_inserted: int | None = Field(
@@ -2804,7 +2805,7 @@ class AddRoadmapEntryResult(StrictBaseModel):
 class RemoveRoadmapEntryResult(StrictBaseModel):
     """Result of removing a single roadmap entry (bullet line)."""
 
-    status: Literal["success", "error"] = Field(description="Operation status")
+    status: OperationStatus = Field(description="Operation status")
     file_name: str = Field(description="File that was modified")
     message: str = Field(description="Success or error message")
     line_removed: int | None = Field(
@@ -2815,10 +2816,27 @@ class RemoveRoadmapEntryResult(StrictBaseModel):
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
 
+class RemoveRoadmapSectionResult(StrictBaseModel):
+    """Result of removing a roadmap section by heading."""
+
+    status: OperationStatus = Field(description="Operation status")
+    file_name: str = Field(description="File that was modified")
+    message: str = Field(description="Success or error message")
+    section_heading: str | None = Field(
+        None, description="Heading text that was matched and removed"
+    )
+    lines_removed: int | None = Field(
+        None, ge=0, description="Number of lines removed (header and content)"
+    )
+    error: str | None = Field(None, description="Error message if status is error")
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+
+
 class AppendProgressEntryResult(StrictBaseModel):
     """Result of appending a single entry to progress.md."""
 
-    status: Literal["success", "error"] = Field(description="Operation status")
+    status: OperationStatus = Field(description="Operation status")
     file_name: str = Field(
         description=f"File that was modified ({MemoryBankFile.PROGRESS})"
     )
@@ -2834,7 +2852,7 @@ class AppendProgressEntryResult(StrictBaseModel):
 class AppendActiveContextEntryResult(StrictBaseModel):
     """Result of appending a single completed entry to activeContext.md."""
 
-    status: Literal["success", "error"] = Field(description="Operation status")
+    status: OperationStatus = Field(description="Operation status")
     file_name: str = Field(
         description=f"File that was modified ({MemoryBankFile.ACTIVE_CONTEXT})"
     )
@@ -3021,7 +3039,7 @@ class ClaimTaskErrorResult(ErrorResultBase):
 class ReleaseTaskResult(StrictBaseModel):
     """Result of releasing a task lock."""
 
-    status: Literal["success", "error"] = Field(description="Operation status")
+    status: OperationStatus = Field(description="Operation status")
     task_title: str = Field(description="Task title that was released")
     released: bool = Field(description="Whether lock was successfully released")
     message: str = Field(description="Success or error message")
@@ -3057,6 +3075,6 @@ class CheckTaskAvailableResult(StrictBaseModel):
 class SessionRegistryResult(StrictBaseModel):
     """Result of session registry operations."""
 
-    status: Literal["success", "error"] = Field(description="Operation status")
+    status: OperationStatus = Field(description="Operation status")
     message: str = Field(description="Success or error message")
     error: str | None = Field(None, description="Error message if status is error")

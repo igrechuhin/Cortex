@@ -19,7 +19,7 @@ from cortex.core.constants import (
     QUALITY_WEIGHT_STRUCTURE,
     SIMILARITY_THRESHOLD_DUPLICATE,
 )
-from cortex.core.models import DictLikeModel, JsonValue, ModelDict
+from cortex.core.models import DictLikeModel, JsonValue, ModelDict, OperationStatus
 
 # ============================================================================
 # Validation Config Models (from validation_config.py)
@@ -516,7 +516,7 @@ class InfrastructureValidationResultModel(BaseModel):
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    status: Literal["success", "error"] = Field(description="Validation status")
+    status: OperationStatus = Field(description="Validation status")
     check_type: Literal["infrastructure"] = Field(description="Type of check")
     checks_performed: dict[str, bool] = Field(
         default_factory=lambda: dict[str, bool](),
@@ -589,7 +589,7 @@ class SingleFileTimestampResult(BaseModel):
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    status: Literal["success", "error"] = Field(..., description="Operation status")
+    status: OperationStatus = Field(..., description="Operation status")
     check_type: Literal["timestamps"] = Field(
         default="timestamps", description="Type of check"
     )

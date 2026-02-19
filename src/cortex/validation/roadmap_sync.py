@@ -70,7 +70,8 @@ class SyncValidationResult(BaseModel):
     unlinked_plans: list[str] = Field(
         default_factory=list,
         description=(
-            "Plan files under .cortex/plans that are not referenced in roadmap.md"
+            "Plan files under .cortex/plans (excluding .cortex/plans/archive/) "
+            "that are not referenced in roadmap.md; archived plans are excluded."
         ),
     )
     completed_entries_in_roadmap: list[CompletedEntryInRoadmap] = Field(
