@@ -8,6 +8,8 @@
 
 - ✅ **Session Optimization: Roadmap section removal and sync** - COMPLETE (2026-02-19) - Added remove_roadmap_section MCP tool for safe section removal; documented unlinked_plans excludes archive; updated implement/memory-bank-updater guidance.
 
+- ✅ **Session Optimization: Roadmap sync cleanup (2026-02-09)** - COMPLETE (2026-02-19) - Fixed roadmap_sync validation: corrected invalid reference core/models.py to src/cortex/core/models.py; added Plan links to 9 roadmap bullets; added 6 reference entries for previously unlinked plans. validate(check_type="roadmap_sync") now returns valid: true.
+
 ## Completed Work (2026-02-18)
 
 - **Summary (2026-02-18)** - 1 entries archived.
