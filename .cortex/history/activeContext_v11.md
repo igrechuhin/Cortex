@@ -20,6 +20,12 @@
 
 - ✅ **Session Optimization: Sequential plan steps** - COMPLETE (2026-02-19) - Verified and strengthened Plan step sequence in implement prompt; create-plan already had implementation sequence wording. Added integration tests for both prompts.
 
+- ✅ **Session Optimization: Test coverage and development workflow improvements** - COMPLETE (2026-02-19) - All six steps were already implemented in a prior session: coverage gap script (analyze_coverage_gaps.py), file size 350/400 warn/error in pre-commit and code-quality.md, coverage guidance in testing.md and implement/commit prompts, canonical imports in tests/helpers/imports.py, 89.5%+ accept with warning in python_adapter and docs, test templates in tests/helpers/test_templates.py. Roadmap entry removed; plan remains in archive.
+
+- ✅ **Session Optimization: Testing coverage documentation and planning (2026-02-16 Analysis)** - COMPLETE (2026-02-19) - Verified coverage expectations and test planning checklist already in place; added integration-test subsection to docs/guides/testing.md.
+
+- ✅ **Structured planning Cortex MCP tools** - COMPLETE (2026-02-19) - Documented create_plan and register_plan_in_roadmap in docs/api/tools.md; updated create-plan prompt to prefer create_plan and register_plan_in_roadmap; added integration tests (test_structured_plan_tools.py) and create_plan preference compliance tests.
+
 ## Completed Work (2026-02-18)
 
 - **Summary (2026-02-18)** - 1 entries archived.

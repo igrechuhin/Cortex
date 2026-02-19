@@ -77,6 +77,43 @@ class TestCreatePlanPathResolution:
         )
 
 
+class TestCreatePlanPrefersCreatePlanTool:
+    """Assert create-plan prompt prefers create_plan tool for new plan file creation."""
+
+    @pytest.fixture
+    def create_plan_prompt_content(self) -> str:
+        """Read create-plan prompt; skip if missing."""
+        path = _create_plan_prompt_path()
+        if not path.exists():
+            pytest.skip(
+                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present)"
+            )
+        return path.read_text()
+
+    def test_prompt_prefers_create_plan_for_new_plan_file(
+        self, create_plan_prompt_content: str
+    ) -> None:
+        """Create-plan Step 5 must prefer create_plan when creating a new plan file."""
+        assert "create_plan" in create_plan_prompt_content
+        assert (
+            "Prefer" in create_plan_prompt_content
+            or "prefer" in create_plan_prompt_content
+        )
+
+    def test_prompt_mentions_fallback_write_for_plan_file(
+        self, create_plan_prompt_content: str
+    ) -> None:
+        """Create-plan Step 5 must mention fallback (Write) when create_plan unavailable."""
+        assert (
+            "Fallback" in create_plan_prompt_content
+            or "fallback" in create_plan_prompt_content
+        )
+        assert (
+            "Write" in create_plan_prompt_content
+            or "create_plan" in create_plan_prompt_content
+        )
+
+
 class TestCreatePlanRoadmapUpdate:
     """Assert create-plan prompt requires register_plan_in_roadmap for new plan; no StrReplace/direct Write."""
 

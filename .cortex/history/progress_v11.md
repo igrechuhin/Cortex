@@ -13,6 +13,9 @@
 - **Session Optimization: Rules context followups (2026-02-12) – Reference** – COMPLETE. Reconciled roadmap: plan already completed and archived; removed stale roadmap entry.
 - **Session Optimization: Sequential plan steps** - COMPLETE. Verified implement-next-roadmap-step.md Plan step sequence block (added explicit in-order/first-uncompleted/do-not-skip wording); create-plan.md already documents implementation sequence. Added test_plan_step_sequence_mandatory_block and TestCreatePlanImplementationSequence in test_implement_prompt_quality_gates.py.
 - **Commit (preflight, memory bank, plan archive)** - Preflight passed: fix_errors, format, markdown lint (0 errors), synapse_format, synapse_lint, type_check, quality, tests 4265 passed, 91.74% coverage. No completed plans in plans root; memory bank and roadmap consistent.
+- **Session Optimization: Test coverage and development workflow (Reference)** - Roadmap cleanup. Plan was already completed and archived; removed stale PENDING roadmap entry so next implement picks the next pending item.
+- **Session Optimization: Testing coverage documentation and planning (2026-02-16 Analysis)** - COMPLETE. Coverage expectations and Test Coverage Planning Checklist already in testing-standards.mdc and implement prompt; added integration vs unit test subsection to docs/guides/testing.md.
+- **Structured planning Cortex MCP tools** - COMPLETE. Documented create_plan and register_plan_in_roadmap in docs/api/tools.md; updated create-plan prompt to prefer create_plan and register_plan_in_roadmap; added integration tests and create_plan preference compliance tests.
 
 ## 2026-02-18
 

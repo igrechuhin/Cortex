@@ -14,7 +14,11 @@ import pytest
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.plan_operations import (
     CreatePlanResult,
+    GetPlanResult,
+    ListPlansResult,
     RegisterPlanResult,
+    get_plan,
+    list_plans,
     register_plan_in_roadmap,
 )
 
@@ -23,10 +27,28 @@ from cortex.tools.plan_operations import (
     _create_plan_file as create_plan_file,  # type: ignore[private-usage]
 )
 from cortex.tools.plan_operations import (
+    _extract_first_heading as extract_first_heading,  # type: ignore[private-usage]
+)
+from cortex.tools.plan_operations import (
+    _extract_status_line as extract_status_line,  # type: ignore[private-usage]
+)
+from cortex.tools.plan_operations import (
     _find_insertion_line_for_section as find_insertion_line,  # type: ignore[private-usage]
 )
 from cortex.tools.plan_operations import (
+    _get_plan_impl as get_plan_impl,  # type: ignore[private-usage]
+)
+from cortex.tools.plan_operations import (
+    _get_plan_path as get_plan_path,  # type: ignore[private-usage]
+)
+from cortex.tools.plan_operations import (
     _is_completed_status as is_completed_status,  # type: ignore[private-usage]
+)
+from cortex.tools.plan_operations import (
+    _list_plan_files as list_plan_files,  # type: ignore[private-usage]
+)
+from cortex.tools.plan_operations import (
+    _list_plans_impl as list_plans_impl,  # type: ignore[private-usage]
 )
 from cortex.tools.plan_operations import (
     _parse_roadmap_sections as parse_roadmap_sections,  # type: ignore[private-usage]
@@ -497,3 +519,231 @@ None
         assert "Plan 1" in updated2
         assert "Plan 2" in updated2
         assert "Plan 3" in updated2
+
+
+class TestExtractFirstHeading:
+    """Test _extract_first_heading helper."""
+
+    def test_extracts_first_heading(self) -> None:
+        """First # line is returned without # prefix."""
+        content = "# My Plan Title\n\n**Status**: Pending\n"
+        assert extract_first_heading(content) == "My Plan Title"
+
+    def test_extracts_second_level_heading(self) -> None:
+        """## heading is accepted."""
+        content = "## Goal\n\nSome text\n"
+        assert extract_first_heading(content) == "Goal"
+
+    def test_returns_none_when_no_heading(self) -> None:
+        """No # line returns None."""
+        content = "Plain text only\n"
+        assert extract_first_heading(content) is None
+
+    def test_empty_content_returns_none(self) -> None:
+        """Empty string returns None."""
+        assert extract_first_heading("") is None
+
+
+class TestExtractStatusLine:
+    """Test _extract_status_line helper."""
+
+    def test_extracts_status_value(self) -> None:
+        """**Status**: Pending is extracted."""
+        content = "**Status**: Pending\n"
+        assert extract_status_line(content) == "Pending"
+
+    def test_returns_none_when_no_status(self) -> None:
+        """No Status line returns None."""
+        content = "# Title\n\nNo status here.\n"
+        assert extract_status_line(content) is None
+
+    def test_case_insensitive_status_key(self) -> None:
+        """**status** (lowercase) is matched."""
+        content = "**status**: In Progress\n"
+        assert extract_status_line(content) == "In Progress"
+
+
+class TestListPlanFiles:
+    """Test _list_plan_files helper."""
+
+    def test_lists_root_plans_only_when_exclude_archive(self) -> None:
+        """With include_archive=False, only non-archive plans are listed."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+            plans_dir.mkdir(parents=True)
+            _ = (plans_dir / "a.md").write_text("# A")
+            _ = (plans_dir / "b.md").write_text("# B")
+            archive = plans_dir / "archive"
+            archive.mkdir()
+            _ = (archive / "old.md").write_text("# Old")
+            pairs, err = list_plan_files(root, include_archive=False)
+        assert err is None
+        slugs = [p[0] for p in pairs]
+        assert "a" in slugs
+        assert "b" in slugs
+        assert "old" not in slugs
+
+    def test_includes_archive_when_requested(self) -> None:
+        """With include_archive=True, archive plans are included."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+            plans_dir.mkdir(parents=True)
+            _ = (plans_dir / "x.md").write_text("# X")
+            (plans_dir / "archive").mkdir()
+            _ = (plans_dir / "archive" / "y.md").write_text("# Y")
+            pairs, err = list_plan_files(root, include_archive=True)
+        assert err is None
+        slugs = [p[0] for p in pairs]
+        assert "x" in slugs
+        assert "y" in slugs
+
+    def test_returns_empty_when_plans_dir_missing(self) -> None:
+        """When plans dir does not exist, returns empty list."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            pairs, err = list_plan_files(root, include_archive=False)
+        assert err is None
+        assert pairs == []
+
+
+class TestGetPlanPath:
+    """Test _get_plan_path helper."""
+
+    def test_resolves_root_plan(self) -> None:
+        """Finds plan at plans root."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+            plans_dir.mkdir(parents=True)
+            _ = (plans_dir / "my-plan.md").write_text("# My Plan")
+            path = get_plan_path(root, "my-plan")
+        assert path is not None
+        assert path.name == "my-plan.md"
+
+    def test_returns_none_when_not_found(self) -> None:
+        """Returns None when slug has no matching file."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+            plans_dir.mkdir(parents=True)
+            path = get_plan_path(root, "nonexistent")
+        assert path is None
+
+
+class TestListPlansImpl:
+    """Test _list_plans_impl."""
+
+    def test_returns_entries_with_titles(self) -> None:
+        """List entries include slug and title from first heading."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+            plans_dir.mkdir(parents=True)
+            _ = (plans_dir / "phase-1.md").write_text(
+                "# Phase 1: Foundation\n\nContent"
+            )
+            result = list_plans_impl(root, include_archive=False)
+        assert result.status == "success"
+        assert len(result.plans) == 1
+        assert result.plans[0].slug == "phase-1"
+        assert result.plans[0].title == "Phase 1: Foundation"
+
+
+class TestGetPlanImpl:
+    """Test _get_plan_impl."""
+
+    def test_content_format_returns_full_content(self) -> None:
+        """response_format=content returns full markdown."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+            plans_dir.mkdir(parents=True)
+            _ = (plans_dir / "test.md").write_text(
+                "# Test\n\n**Status**: Pending\n\nBody"
+            )
+            result = get_plan_impl(root, "test", "content")
+        assert result.status == "success"
+        assert result.content == "# Test\n\n**Status**: Pending\n\nBody"
+        assert result.slug == "test"
+
+    def test_metadata_format_returns_title_and_status(self) -> None:
+        """response_format=metadata returns title and plan_status."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
+            plans_dir.mkdir(parents=True)
+            _ = (plans_dir / "test.md").write_text("# My Plan\n\n**Status**: Pending\n")
+            result = get_plan_impl(root, "test", "metadata")
+        assert result.status == "success"
+        assert result.title == "My Plan"
+        assert result.plan_status == "Pending"
+        assert result.content is None
+
+    def test_not_found_returns_error(self) -> None:
+        """Unknown slug returns error result."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            get_cortex_path(root, CortexResourceType.PLANS).mkdir(parents=True)
+            result = get_plan_impl(root, "missing", "content")
+        assert result.status == "error"
+        assert "not found" in result.message.lower()
+
+
+class TestListPlansTool:
+    """Test list_plans MCP tool."""
+
+    @pytest.mark.asyncio
+    async def test_list_plans_returns_json(self, tmp_path: Path) -> None:
+        """list_plans returns valid ListPlansResult JSON."""
+        plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+        plans_dir.mkdir(parents=True)
+        _ = (plans_dir / "one.md").write_text("# One")
+        with patch(
+            "cortex.tools.plan_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
+        ):
+            result_str = await list_plans(include_archive=False, ctx=None)
+        result = ListPlansResult.model_validate_json(result_str)
+        assert result.status == "success"
+        assert len(result.plans) >= 1
+        assert any(p.slug == "one" for p in result.plans)
+
+
+class TestGetPlanTool:
+    """Test get_plan MCP tool."""
+
+    @pytest.mark.asyncio
+    async def test_get_plan_content_returns_full_text(self, tmp_path: Path) -> None:
+        """get_plan with response_format=content returns plan content."""
+        plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+        plans_dir.mkdir(parents=True)
+        _ = (plans_dir / "my-plan.md").write_text("# My Plan\n\nBody text")
+        with patch(
+            "cortex.tools.plan_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
+        ):
+            result_str = await get_plan(
+                slug="my-plan", response_format="content", ctx=None
+            )
+        result = GetPlanResult.model_validate_json(result_str)
+        assert result.status == "success"
+        assert result.content == "# My Plan\n\nBody text"
+        assert result.slug == "my-plan"
+
+    @pytest.mark.asyncio
+    async def test_get_plan_not_found_returns_error(self, tmp_path: Path) -> None:
+        """get_plan with unknown slug returns error."""
+        get_cortex_path(tmp_path, CortexResourceType.PLANS).mkdir(parents=True)
+        with patch(
+            "cortex.tools.plan_operations.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=tmp_path,
+        ):
+            result_str = await get_plan(slug="nonexistent", ctx=None)
+        result = GetPlanResult.model_validate_json(result_str)
+        assert result.status == "error"
+        assert "not found" in result.message.lower()

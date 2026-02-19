@@ -487,7 +487,222 @@ Performs server-side insertion into `roadmap.md` without requiring the client to
   )
   ```
 
-**See also:** `remove_roadmap_entry`, `register_plan_in_roadmap`, `complete_plan`, `manage_file` (fallback for multi-entry updates).
+**See also:** `remove_roadmap_entry`, `register_plan_in_roadmap`, `create_plan`, `complete_plan`, `manage_file` (fallback for multi-entry updates).
+
+---
+
+### create_plan
+
+Create a structured plan file in the plans directory.
+
+**USE WHEN:** Creating a new plan during the create-plan workflow. Prefer this over writing the plan file with the Write tool so path resolution and filename sanitization are handled consistently.
+
+**RETURNS:** JSON with `status`, `file_path` (on success), `message`, and `error` (if any).
+
+**Parameters:**
+
+- `title` (str) - **Required.** Plan title (used to generate slug if `slug` not provided).
+- `content` (str) - **Required.** Full markdown content for the plan file.
+- `slug` (str | None) - Optional filename slug (e.g. `phase-x-feature-name`). If not provided, generated from title (lowercase, non-alphanumeric replaced with hyphens).
+
+**Description:**
+
+- Resolves plans directory via project structure (same as `get_structure_info().paths.plans`).
+- Sanitizes slug/filename; writes content to `{plans_dir}/{slug}.md`.
+- Creates plans directory if it does not exist.
+
+**Returns:**
+
+**Success:**
+
+```json
+{
+  "status": "success",
+  "file_path": "/path/to/.cortex/plans/phase-x-feature.md",
+  "message": "Plan created at ...",
+  "error": null
+}
+```
+
+**Error:**
+
+```json
+{
+  "status": "error",
+  "file_path": null,
+  "message": "Failed to create plan file",
+  "error": "Could not generate valid filename from title or slug"
+}
+```
+
+**Example:**
+
+```python
+await create_plan(
+    title="Phase 60: Structured plan tools",
+    content="# Phase 60\n\n**Status**: Pending\n\n## Goal\n...",
+    slug="phase-60-structured-plan-tools"
+)
+```
+
+**See also:** `register_plan_in_roadmap`, `add_roadmap_entry`, `get_structure_info`.
+
+---
+
+### register_plan_in_roadmap
+
+Register a plan entry in the roadmap using structured merging.
+
+**USE WHEN:** Registering a newly created plan in roadmap.md during the create-plan workflow. Prefer this over building full roadmap content and calling `manage_file(write)` for a single new entry to avoid truncation.
+
+**RETURNS:** JSON with `status`, `file_name`, `message`, `line_inserted`, `section`, and `error` (if any).
+
+**Parameters:**
+
+- `plan_title` (str) - **Required.** Title of the plan (used in roadmap entry).
+- `description` (str) - **Required.** One-line or short description for the roadmap entry.
+- `status` (str) - Plan status: use `PENDING` or `IN PROGRESS` only (default: `PENDING`). Completed work belongs in activeContext.md; COMPLETED/COMPLETE/DONE are rejected.
+- `section` (str) - Roadmap section: `blockers`, `active_work`, `future`, or `pending` (default: `pending`).
+
+**Description:**
+
+- Reads `roadmap.md` via the same path as memory-bank operations.
+- Inserts one bullet in the requested section (format: `- **Title** - STATUS - description`).
+- Writes updated content with lock-guarding and corruption fixes; no truncation of existing entries.
+
+**Returns:**
+
+**Success:**
+
+```json
+{
+  "status": "success",
+  "file_name": "roadmap.md",
+  "message": "Plan registered in 'pending' section at line 45",
+  "line_inserted": 45,
+  "section": "pending",
+  "error": null
+}
+```
+
+**Error (completed status rejected):**
+
+```json
+{
+  "status": "error",
+  "file_name": "roadmap.md",
+  "message": "Failed to register plan",
+  "line_inserted": null,
+  "section": null,
+  "error": "Roadmap records future/upcoming work only. ..."
+}
+```
+
+**Example:**
+
+```python
+await register_plan_in_roadmap(
+    plan_title="Phase 60: Structured plan tools",
+    description="Reference. Plan: .cortex/plans/phase-60-structured-plan-tools.md.",
+    status="PENDING",
+    section="pending"
+)
+```
+
+**See also:** `create_plan`, `list_plans`, `get_plan`, `add_roadmap_entry`, `remove_roadmap_entry`, `complete_plan`, `manage_file` (fallback).
+
+---
+
+### list_plans
+
+List plan files in the plans directory.
+
+**USE WHEN:** Checking for existing plans before creating a new one (e.g. create-plan Step 2.5) or discovering plan slugs for `get_plan`.
+
+**RETURNS:** JSON with `status`, `plans` (list of `{slug, title}`), `message`, and `error` (if any).
+
+**Parameters:**
+
+- `include_archive` (bool) - If true, include plans under `.cortex/plans/archive/` (default: false).
+
+**Description:**
+
+- Resolves plans directory via project structure. Lists `.md` files; when `include_archive` is false, excludes paths under `archive/`. Each entry includes `slug` (filename without `.md`) and optional `title` (first `#` heading from file content).
+
+**Returns (success):**
+
+```json
+{
+  "status": "success",
+  "plans": [{"slug": "phase-60-feature", "title": "Phase 60: Feature"}],
+  "message": "Found 1 plan(s)",
+  "error": null
+}
+```
+
+**Example:**
+
+```python
+await list_plans(include_archive=False)
+```
+
+**See also:** `get_plan`, `create_plan`, `register_plan_in_roadmap`.
+
+---
+
+### get_plan
+
+Read a plan by slug (filename without `.md`).
+
+**USE WHEN:** Enriching an existing plan or checking plan content without raw file reads.
+
+**RETURNS:** JSON with `status`, `slug`, and either full `content` (when `response_format='content'`) or `title` and `plan_status` (when `response_format='metadata'`).
+
+**Parameters:**
+
+- `slug` (str) - **Required.** Plan filename without `.md` (e.g. `phase-60-feature` or `structured-planning-cortex-mcp-tools`).
+- `response_format` (str) - `content` (default) for full markdown; `metadata` for title and **Status** value only.
+
+**Description:**
+
+- Resolves plan file under plans directory (root or under subdirs, e.g. archive). For `metadata`, parses first `#` heading as title and `**Status**:` line as `plan_status`.
+
+**Returns (success, content):**
+
+```json
+{
+  "status": "success",
+  "slug": "my-plan",
+  "content": "# My Plan\n\n**Status**: Pending\n\n...",
+  "title": null,
+  "plan_status": null,
+  "message": "Plan 'my-plan' read successfully",
+  "error": null
+}
+```
+
+**Returns (success, metadata):**
+
+```json
+{
+  "status": "success",
+  "slug": "my-plan",
+  "content": null,
+  "title": "My Plan",
+  "plan_status": "Pending",
+  "message": "Plan 'my-plan' metadata",
+  "error": null
+}
+```
+
+**Example:**
+
+```python
+await get_plan(slug="phase-60-feature", response_format="content")
+await get_plan(slug="phase-60-feature", response_format="metadata")
+```
+
+**See also:** `list_plans`, `create_plan`, `register_plan_in_roadmap`.
 
 ---
 
