@@ -354,6 +354,15 @@ class TestMCPToolWrapperIntegration:
         get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
         monkeypatch.chdir(tmp_path)
 
+        # Force handler to use tmp_path so the investigation plan is written there
+        def _fake_project_root(_root: str | None) -> Path:
+            return tmp_path
+
+        monkeypatch.setattr(
+            "cortex.core.mcp_failure_handler.get_project_root",
+            _fake_project_root,
+        )
+
         @mcp_tool_wrapper(timeout=1.0)
         async def tool_raising_json_error() -> dict[str, object]:
             """Tool that raises JSONDecodeError (detected as MCP tool failure)."""

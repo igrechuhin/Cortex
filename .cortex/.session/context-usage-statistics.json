@@ -1,17 +1,17 @@
 {
-  "last_updated": "2026-02-18T17:22",
-  "total_sessions_analyzed": 186,
-  "total_load_context_calls": 223,
-  "avg_token_utilization": 0.484,
-  "avg_files_selected": 6.2,
-  "avg_relevance_score": 0.609,
+  "last_updated": "2026-02-19T19:58",
+  "total_sessions_analyzed": 188,
+  "total_load_context_calls": 225,
+  "avg_token_utilization": 0.48,
+  "avg_files_selected": 6.19,
+  "avg_relevance_score": 0.605,
   "common_task_patterns": {
     "fix/debug": 31,
     "other": 42,
     "implement/add": 58,
     "update/modify": 9,
-    "testing": 52,
-    "documentation": 8,
+    "testing": 53,
+    "documentation": 9,
     "refactor": 11,
     "review": 9,
     "optimization": 3
@@ -73,7 +73,7 @@
         "notes": "Adequate performance"
       },
       "testing": {
-        "calls_count": 52,
+        "calls_count": 53,
         "recommended_budget": 10000,
         "essential_files": [
           "productContext.md",
@@ -82,12 +82,12 @@
           "roadmap.md",
           "projectBrief.md"
         ],
-        "avg_utilization": 0.523,
-        "avg_relevance": 0.637,
+        "avg_utilization": 0.513,
+        "avg_relevance": 0.63,
         "notes": "Adequate performance"
       },
       "documentation": {
-        "calls_count": 8,
+        "calls_count": 9,
         "recommended_budget": 10000,
         "essential_files": [
           "productContext.md",
@@ -96,9 +96,9 @@
           "roadmap.md",
           "activeContext.md"
         ],
-        "avg_utilization": 0.561,
-        "avg_relevance": 0.636,
-        "notes": "Adequate performance"
+        "avg_utilization": 0.498,
+        "avg_relevance": 0.589,
+        "notes": "Moderate utilization - some budget optimization possible"
       },
       "refactor": {
         "calls_count": 11,
@@ -143,50 +143,50 @@
     },
     "file_effectiveness": {
       "activeContext.md": {
-        "times_selected": 148,
-        "avg_relevance": 0.766,
+        "times_selected": 150,
+        "avg_relevance": 0.76,
         "task_types_used": [
-          "fix/debug",
-          "documentation",
           "optimization",
-          "implement/add",
-          "refactor",
-          "testing",
-          "update/modify",
           "other",
-          "review"
+          "fix/debug",
+          "refactor",
+          "review",
+          "testing",
+          "documentation",
+          "update/modify",
+          "implement/add"
         ],
         "recommendation": "High value - prioritize for loading"
       },
       "techContext.md": {
-        "times_selected": 204,
-        "avg_relevance": 0.602,
+        "times_selected": 205,
+        "avg_relevance": 0.6,
         "task_types_used": [
-          "fix/debug",
-          "documentation",
           "optimization",
-          "implement/add",
-          "refactor",
-          "testing",
-          "update/modify",
           "other",
-          "review"
+          "fix/debug",
+          "refactor",
+          "review",
+          "testing",
+          "documentation",
+          "update/modify",
+          "implement/add"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "roadmap.md": {
-        "times_selected": 166,
-        "avg_relevance": 0.595,
+        "times_selected": 167,
+        "avg_relevance": 0.593,
         "task_types_used": [
-          "fix/debug",
-          "documentation",
           "optimization",
-          "implement/add",
-          "refactor",
-          "testing",
-          "update/modify",
           "other",
-          "review"
+          "fix/debug",
+          "refactor",
+          "review",
+          "testing",
+          "documentation",
+          "update/modify",
+          "implement/add"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -194,31 +194,31 @@
         "times_selected": 108,
         "avg_relevance": 0.289,
         "task_types_used": [
-          "fix/debug",
-          "documentation",
           "optimization",
-          "implement/add",
-          "refactor",
-          "testing",
-          "update/modify",
           "other",
-          "review"
+          "fix/debug",
+          "refactor",
+          "review",
+          "testing",
+          "documentation",
+          "update/modify",
+          "implement/add"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "projectBrief.md": {
-        "times_selected": 204,
-        "avg_relevance": 0.511,
+        "times_selected": 206,
+        "avg_relevance": 0.509,
         "task_types_used": [
-          "fix/debug",
-          "documentation",
           "optimization",
-          "implement/add",
-          "refactor",
-          "testing",
-          "update/modify",
           "other",
-          "review"
+          "fix/debug",
+          "refactor",
+          "review",
+          "testing",
+          "documentation",
+          "update/modify",
+          "implement/add"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -226,8 +226,8 @@
         "times_selected": 3,
         "avg_relevance": 0.621,
         "task_types_used": [
-          "other",
-          "fix/debug"
+          "fix/debug",
+          "other"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -235,56 +235,56 @@
         "times_selected": 3,
         "avg_relevance": 0.24,
         "task_types_used": [
-          "other",
-          "fix/debug"
+          "fix/debug",
+          "other"
         ],
         "recommendation": "Lower relevance - consider excluding for most tasks"
       },
       "progress.md": {
-        "times_selected": 134,
-        "avg_relevance": 0.581,
+        "times_selected": 135,
+        "avg_relevance": 0.579,
         "task_types_used": [
-          "fix/debug",
-          "documentation",
           "optimization",
-          "implement/add",
-          "refactor",
-          "testing",
-          "update/modify",
           "other",
-          "review"
+          "fix/debug",
+          "refactor",
+          "review",
+          "testing",
+          "documentation",
+          "update/modify",
+          "implement/add"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "systemPatterns.md": {
-        "times_selected": 201,
-        "avg_relevance": 0.582,
+        "times_selected": 202,
+        "avg_relevance": 0.58,
         "task_types_used": [
-          "fix/debug",
-          "documentation",
           "optimization",
-          "implement/add",
-          "refactor",
-          "testing",
-          "update/modify",
           "other",
-          "review"
+          "fix/debug",
+          "refactor",
+          "review",
+          "testing",
+          "documentation",
+          "update/modify",
+          "implement/add"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
       "productContext.md": {
-        "times_selected": 202,
-        "avg_relevance": 0.573,
+        "times_selected": 203,
+        "avg_relevance": 0.572,
         "task_types_used": [
-          "fix/debug",
-          "documentation",
           "optimization",
-          "implement/add",
-          "refactor",
-          "testing",
-          "update/modify",
           "other",
-          "review"
+          "fix/debug",
+          "refactor",
+          "review",
+          "testing",
+          "documentation",
+          "update/modify",
+          "implement/add"
         ],
         "recommendation": "Moderate value - include when relevant"
       },
@@ -306,10 +306,10 @@
       }
     },
     "learned_patterns": [
-      "Average 48% budget utilization - ~9k tokens unused per call",
-      "'techContext.md' is most frequently loaded (204/223 calls)",
+      "Average 47% budget utilization - ~9k tokens unused per call",
+      "'projectBrief.md' is most frequently loaded (206/225 calls)",
       "Most common task type: 'implement/add' (58 calls)",
-      "\u26a0\ufe0f CRITICAL: At least one load_context call had token_budget=0 or files_selected=0 for a non-trivial task (refactor/fix/debug/implement). This is a configuration error - these tasks MUST use a non-zero token budget (typically 10k-15k for fix/debug, 20k-30k for implement/add). Re-run load_context with an appropriate budget to ensure proper context loading. Zero-budget/zero-files calls for non-trivial tasks indicate the agent ran without memory-bank guidance, which violates the documented workflow."
+      "\u26a0\ufe0f CRITICAL: At least one load_context call had token_budget=0 or files_selected=0 for a non-trivial task (refactor/fix/debug/implement/testing). This is a configuration error - these tasks MUST use a non-zero token budget (typically 10k-15k for fix/debug, 20k-30k for implement/add). Re-run load_context with an appropriate budget to ensure proper context loading. Zero-budget/zero-files calls for non-trivial tasks indicate the agent ran without memory-bank guidance, which violates the documented workflow."
     ],
     "budget_recommendations": {
       "fix/debug": 10000,
@@ -321,6 +321,28 @@
       "refactor": 10000,
       "review": 10000,
       "optimization": 15000
+    },
+    "role_recommendations": {
+      "debugging": {
+        "calls_count": 1,
+        "recommended_budget": 10000,
+        "essential_files": [],
+        "avg_utilization": 0.006,
+        "avg_relevance": 0.232,
+        "notes": "Low utilization - consider smaller token budgets; Low relevance - consider refining file selection; Limited data - insights will improve with more samples"
+      },
+      "planning": {
+        "calls_count": 1,
+        "recommended_budget": 15000,
+        "essential_files": [],
+        "avg_utilization": 0.0,
+        "avg_relevance": 0.21,
+        "notes": "Low utilization - consider smaller token budgets; Low relevance - consider refining file selection; Limited data - insights will improve with more samples"
+      }
+    },
+    "role_budget_recommendations": {
+      "debugging": 10000,
+      "planning": 15000
     }
   },
   "entries": [
@@ -355,7 +377,8 @@
         "tmp-mcp-test.md": 0.24,
         "file.md": 0.245,
         "phase-60-improve-manage-file-discoverability.plan.md": 0.628
-      }
+      },
+      "role": null
     },
     {
       "session_id": "458acf9df579",
@@ -388,7 +411,8 @@
         "tmp-mcp-test.md": 0.24,
         "file.md": 0.245,
         "phase-60-improve-manage-file-discoverability.plan.md": 0.631
-      }
+      },
+      "role": null
     },
     {
       "session_id": "3df67b66821d",
@@ -421,7 +445,8 @@
         "tmp-mcp-test.md": 0.24,
         "file.md": 0.526,
         "phase-60-improve-manage-file-discoverability.plan.md": 0.604
-      }
+      },
+      "role": null
     },
     {
       "session_id": "e2ff048821da",
@@ -450,7 +475,8 @@
         "progress.md": 0.558,
         "activeContext.md": 0.763,
         "file.md": 0.539
-      }
+      },
+      "role": null
     },
     {
       "session_id": "b188e21812f9",
@@ -479,7 +505,8 @@
         "progress.md": 0.649,
         "activeContext.md": 0.859,
         "file.md": 0.509
-      }
+      },
+      "role": null
     },
     {
       "session_id": "6e6c1eb87a35",
@@ -508,7 +535,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.22
-      }
+      },
+      "role": null
     },
     {
       "session_id": "1ae93d8a289d",
@@ -538,7 +566,8 @@
         "activeContext.md": 0.855,
         "file.md": 0.217,
         "projectBrief.md": 0.249
-      }
+      },
+      "role": null
     },
     {
       "session_id": "7936fdf19c55",
@@ -568,7 +597,8 @@
         "activeContext.md": 0.855,
         "file.md": 0.464,
         "projectBrief.md": 0.247
-      }
+      },
+      "role": null
     },
     {
       "session_id": "c54c5c5dae6a",
@@ -599,7 +629,8 @@
         "techContext.md": 0.762,
         "productContext.md": 0.687,
         "systemPatterns.md": 0.697
-      }
+      },
+      "role": null
     },
     {
       "session_id": "053d1bd1b4ac",
@@ -632,7 +663,8 @@
         "techContext.md": 0.733,
         "productContext.md": 0.707,
         "systemPatterns.md": 0.687
-      }
+      },
+      "role": null
     },
     {
       "session_id": "435404693bac",
@@ -665,7 +697,8 @@
         "techContext.md": 0.748,
         "productContext.md": 0.68,
         "systemPatterns.md": 0.662
-      }
+      },
+      "role": null
     },
     {
       "session_id": "48c87eaaa3d7",
@@ -698,7 +731,8 @@
         "techContext.md": 0.518,
         "productContext.md": 0.61,
         "systemPatterns.md": 0.445
-      }
+      },
+      "role": null
     },
     {
       "session_id": "812b1a792915",
@@ -731,7 +765,8 @@
         "techContext.md": 0.634,
         "productContext.md": 0.507,
         "systemPatterns.md": 0.552
-      }
+      },
+      "role": null
     },
     {
       "session_id": "3bd2cf007d6c",
@@ -764,7 +799,8 @@
         "techContext.md": 0.637,
         "productContext.md": 0.639,
         "systemPatterns.md": 0.563
-      }
+      },
+      "role": null
     },
     {
       "session_id": "b2ecc9457f93",
@@ -797,7 +833,8 @@
         "techContext.md": 0.505,
         "productContext.md": 0.559,
         "systemPatterns.md": 0.531
-      }
+      },
+      "role": null
     },
     {
       "session_id": "b2ecc9457f93",
@@ -830,7 +867,8 @@
         "techContext.md": 0.489,
         "productContext.md": 0.573,
         "systemPatterns.md": 0.613
-      }
+      },
+      "role": null
     },
     {
       "session_id": "39cd196b3a73",
@@ -863,7 +901,8 @@
         "techContext.md": 0.728,
         "productContext.md": 0.658,
         "systemPatterns.md": 0.672
-      }
+      },
+      "role": null
     },
     {
       "session_id": "2dbb3e6a5156",
@@ -896,7 +935,8 @@
         "techContext.md": 0.733,
         "productContext.md": 0.752,
         "systemPatterns.md": 0.751
-      }
+      },
+      "role": null
     },
     {
       "session_id": "8620961116db",
@@ -920,7 +960,8 @@
         "techContext.md": 0.755,
         "productContext.md": 0.698,
         "systemPatterns.md": 0.715
-      }
+      },
+      "role": null
     },
     {
       "session_id": "266580563bee",
@@ -944,7 +985,8 @@
         "techContext.md": 0.766,
         "productContext.md": 0.742,
         "systemPatterns.md": 0.729
-      }
+      },
+      "role": null
     },
     {
       "session_id": "4b4b0192d227",
@@ -974,7 +1016,8 @@
         "techContext.md": 0.71,
         "productContext.md": 0.708,
         "systemPatterns.md": 0.729
-      }
+      },
+      "role": null
     },
     {
       "session_id": "84f963290917",
@@ -998,7 +1041,8 @@
         "techContext.md": 0.736,
         "productContext.md": 0.635,
         "systemPatterns.md": 0.528
-      }
+      },
+      "role": null
     },
     {
       "session_id": "63236166c4b5",
@@ -1021,7 +1065,8 @@
         "techContext.md": 0.713,
         "productContext.md": 0.623,
         "systemPatterns.md": 0.742
-      }
+      },
+      "role": null
     },
     {
       "session_id": "3f416f245ba7",
@@ -1049,7 +1094,8 @@
         "techContext.md": 0.574,
         "productContext.md": 0.589,
         "systemPatterns.md": 0.455
-      }
+      },
+      "role": null
     },
     {
       "session_id": "071842a58e75",
@@ -1080,7 +1126,8 @@
         "techContext.md": 0.461,
         "productContext.md": 0.504,
         "systemPatterns.md": 0.583
-      }
+      },
+      "role": null
     },
     {
       "session_id": "8958e8d12b20",
@@ -1111,7 +1158,8 @@
         "techContext.md": 0.706,
         "productContext.md": 0.589,
         "systemPatterns.md": 0.707
-      }
+      },
+      "role": null
     },
     {
       "session_id": "8802367cb9c4",
@@ -1141,7 +1189,8 @@
         "techContext.md": 0.397,
         "productContext.md": 0.377,
         "systemPatterns.md": 0.427
-      }
+      },
+      "role": null
     },
     {
       "session_id": "c930465fe51f",
@@ -1172,7 +1221,8 @@
         "techContext.md": 0.773,
         "productContext.md": 0.771,
         "systemPatterns.md": 0.761
-      }
+      },
+      "role": null
     },
     {
       "session_id": "c930465fe51f",
@@ -1203,7 +1253,8 @@
         "techContext.md": 0.649,
         "productContext.md": 0.588,
         "systemPatterns.md": 0.655
-      }
+      },
+      "role": null
     },
     {
       "session_id": "11774cfcb8fa",
@@ -1234,7 +1285,8 @@
         "techContext.md": 0.782,
         "productContext.md": 0.78,
         "systemPatterns.md": 0.77
-      }
+      },
+      "role": null
     },
     {
       "session_id": "611384e7f9a5",
@@ -1264,7 +1316,8 @@
         "techContext.md": 0.752,
         "productContext.md": 0.726,
         "systemPatterns.md": 0.703
-      }
+      },
+      "role": null
     },
     {
       "session_id": "147833c3f5e2",
@@ -1295,7 +1348,8 @@
         "techContext.md": 0.81,
         "productContext.md": 0.769,
         "systemPatterns.md": 0.803
-      }
+      },
+      "role": null
     },
     {
       "session_id": "0cdee57e8586",
@@ -1326,7 +1380,8 @@
         "techContext.md": 0.81,
         "productContext.md": 0.771,
         "systemPatterns.md": 0.803
-      }
+      },
+      "role": null
     },
     {
       "session_id": "cb35ddfd740c",
@@ -1356,7 +1411,8 @@
         "techContext.md": 0.687,
         "productContext.md": 0.674,
         "systemPatterns.md": 0.687
-      }
+      },
+      "role": null
     },
     {
       "session_id": "bf9c7b1337b7",
@@ -1384,7 +1440,8 @@
         "techContext.md": 0.802,
         "productContext.md": 0.784,
         "systemPatterns.md": 0.745
-      }
+      },
+      "role": null
     },
     {
       "session_id": "a8dfb25b3733",
@@ -1414,7 +1471,8 @@
         "techContext.md": 0.718,
         "productContext.md": 0.594,
         "systemPatterns.md": 0.725
-      }
+      },
+      "role": null
     },
     {
       "session_id": "a8dfb25b3733",
@@ -1443,7 +1501,8 @@
         "techContext.md": 0.669,
         "productContext.md": 0.655,
         "systemPatterns.md": 0.622
-      }
+      },
+      "role": null
     },
     {
       "session_id": "a8dfb25b3733",
@@ -1466,7 +1525,8 @@
         "techContext.md": 0.661,
         "productContext.md": 0.659,
         "systemPatterns.md": 0.642
-      }
+      },
+      "role": null
     },
     {
       "session_id": "a8dfb25b3733",
@@ -1492,7 +1552,8 @@
         "techContext.md": 0.811,
         "productContext.md": 0.781,
         "systemPatterns.md": 0.797
-      }
+      },
+      "role": null
     },
     {
       "session_id": "a8dfb25b3733",
@@ -1520,7 +1581,8 @@
         "techContext.md": 0.545,
         "productContext.md": 0.555,
         "systemPatterns.md": 0.464
-      }
+      },
+      "role": null
     },
     {
       "session_id": "a387c9f02a13",
@@ -1543,7 +1605,8 @@
         "techContext.md": 0.718,
         "productContext.md": 0.594,
         "systemPatterns.md": 0.724
-      }
+      },
+      "role": null
     },
     {
       "session_id": "f260b5b8a7d4",
@@ -1573,7 +1636,8 @@
         "techContext.md": 0.771,
         "productContext.md": 0.726,
         "systemPatterns.md": 0.725
-      }
+      },
+      "role": null
     },
     {
       "session_id": "f260b5b8a7d4",
@@ -1601,7 +1665,8 @@
         "techContext.md": 0.722,
         "productContext.md": 0.62,
         "systemPatterns.md": 0.679
-      }
+      },
+      "role": null
     },
     {
       "session_id": "f260b5b8a7d4",
@@ -1629,7 +1694,8 @@
         "techContext.md": 0.731,
         "productContext.md": 0.653,
         "systemPatterns.md": 0.702
-      }
+      },
+      "role": null
     },
     {
       "session_id": "f260b5b8a7d4",
@@ -1657,7 +1723,8 @@
         "techContext.md": 0.773,
         "productContext.md": 0.6,
         "systemPatterns.md": 0.621
-      }
+      },
+      "role": null
     },
     {
       "session_id": "026e9009b804",
@@ -1690,7 +1757,8 @@
         "techContext.md": 0.652,
         "productContext.md": 0.619,
         "systemPatterns.md": 0.594
-      }
+      },
+      "role": null
     },
     {
       "session_id": "026e9009b804",
@@ -1723,7 +1791,8 @@
         "techContext.md": 0.657,
         "productContext.md": 0.558,
         "systemPatterns.md": 0.573
-      }
+      },
+      "role": null
     },
     {
       "session_id": "026e9009b804",
@@ -1756,7 +1825,8 @@
         "techContext.md": 0.593,
         "productContext.md": 0.599,
         "systemPatterns.md": 0.573
-      }
+      },
+      "role": null
     },
     {
       "session_id": "03e2506436ee",
@@ -1785,7 +1855,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.621
-      }
+      },
+      "role": null
     },
     {
       "session_id": "0a6520891498",
@@ -1814,7 +1885,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.225
-      }
+      },
+      "role": null
     },
     {
       "session_id": "0e05f687c739",
@@ -1843,7 +1915,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.225
-      }
+      },
+      "role": null
     },
     {
       "session_id": "106c8d90bdab",
@@ -1872,7 +1945,8 @@
         "progress.md": 0.599,
         "activeContext.md": 0.814,
         "file.md": 0.573
-      }
+      },
+      "role": null
     },
     {
       "session_id": "106c8d90bdab",
@@ -1901,7 +1975,8 @@
         "progress.md": 0.616,
         "activeContext.md": 0.837,
         "file.md": 0.585
-      }
+      },
+      "role": null
     },
     {
       "session_id": "107f04e293cd",
@@ -1930,7 +2005,8 @@
         "progress.md": 0.557,
         "activeContext.md": 0.729,
         "file.md": 0.598
-      }
+      },
+      "role": null
     },
     {
       "session_id": "107f04e293cd",
@@ -1959,7 +2035,8 @@
         "progress.md": 0.589,
         "activeContext.md": 0.818,
         "file.md": 0.241
-      }
+      },
+      "role": null
     },
     {
       "session_id": "11e58b65bb92",
@@ -1988,7 +2065,8 @@
         "progress.md": 0.632,
         "activeContext.md": 0.818,
         "file.md": 0.53
-      }
+      },
+      "role": null
     },
     {
       "session_id": "138b631e7dc7",
@@ -2021,7 +2099,8 @@
         "techContext.md": 0.808,
         "productContext.md": 0.767,
         "systemPatterns.md": 0.803
-      }
+      },
+      "role": null
     },
     {
       "session_id": "138b631e7dc7",
@@ -2054,7 +2133,8 @@
         "techContext.md": 0.479,
         "productContext.md": 0.519,
         "systemPatterns.md": 0.459
-      }
+      },
+      "role": null
     },
     {
       "session_id": "1767c7eb8c42",
@@ -2083,7 +2163,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.854,
         "file.md": 0.231
-      }
+      },
+      "role": null
     },
     {
       "session_id": "17bbecbd5e27",
@@ -2112,7 +2193,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.225
-      }
+      },
+      "role": null
     },
     {
       "session_id": "182c216223d4",
@@ -2141,7 +2223,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "1c8ce5b8bc39",
@@ -2171,7 +2254,8 @@
         "activeContext.md": 0.858,
         "file.md": 0.214,
         "projectBrief.md": 0.25
-      }
+      },
+      "role": null
     },
     {
       "session_id": "1cf5a9a271a7",
@@ -2200,7 +2284,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.47
-      }
+      },
+      "role": null
     },
     {
       "session_id": "2ca89705f2cd",
@@ -2229,7 +2314,8 @@
         "progress.md": 0.381,
         "activeContext.md": 0.535,
         "file.md": 0.502
-      }
+      },
+      "role": null
     },
     {
       "session_id": "2de1a48924c5",
@@ -2262,7 +2348,8 @@
         "techContext.md": 0.834,
         "productContext.md": 0.794,
         "systemPatterns.md": 0.829
-      }
+      },
+      "role": null
     },
     {
       "session_id": "30194cffbc4c",
@@ -2291,7 +2378,8 @@
         "progress.md": 0.25,
         "activeContext.md": 0.762,
         "file.md": 0.233
-      }
+      },
+      "role": null
     },
     {
       "session_id": "3aff3ed67e2a",
@@ -2320,7 +2408,8 @@
         "progress.md": 0.649,
         "activeContext.md": 0.859,
         "file.md": 0.228
-      }
+      },
+      "role": null
     },
     {
       "session_id": "3cd4d2a5148d",
@@ -2348,7 +2437,8 @@
         "techContext.md": 0.824,
         "productContext.md": 0.746,
         "systemPatterns.md": 0.79
-      }
+      },
+      "role": null
     },
     {
       "session_id": "3d97df974d59",
@@ -2377,7 +2467,8 @@
         "progress.md": 0.649,
         "activeContext.md": 0.858,
         "file.md": 0.231
-      }
+      },
+      "role": null
     },
     {
       "session_id": "3f6c6db42c99",
@@ -2406,7 +2497,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.227
-      }
+      },
+      "role": null
     },
     {
       "session_id": "41959ef505bd",
@@ -2435,7 +2527,8 @@
         "progress.md": 0.641,
         "activeContext.md": 0.851,
         "file.md": 0.24
-      }
+      },
+      "role": null
     },
     {
       "session_id": "444b0ea80653",
@@ -2464,7 +2557,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.859,
         "file.md": 0.224
-      }
+      },
+      "role": null
     },
     {
       "session_id": "44d12357875a",
@@ -2493,7 +2587,8 @@
         "progress.md": 0.599,
         "activeContext.md": 0.776,
         "file.md": 0.242
-      }
+      },
+      "role": null
     },
     {
       "session_id": "4583b96a9c3c",
@@ -2522,7 +2617,8 @@
         "progress.md": 0.648,
         "activeContext.md": 0.858,
         "file.md": 0.235
-      }
+      },
+      "role": null
     },
     {
       "session_id": "472714ed0b46",
@@ -2551,7 +2647,8 @@
         "progress.md": 0.649,
         "activeContext.md": 0.859,
         "file.md": 0.24
-      }
+      },
+      "role": null
     },
     {
       "session_id": "4798913c5cad",
@@ -2579,7 +2676,8 @@
         "techContext.md": 0.747,
         "productContext.md": 0.604,
         "systemPatterns.md": 0.636
-      }
+      },
+      "role": null
     },
     {
       "session_id": "48d55dcda75d",
@@ -2608,7 +2706,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.858,
         "file.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "4f30458114a3",
@@ -2637,7 +2736,8 @@
         "progress.md": 0.649,
         "activeContext.md": 0.859,
         "file.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "505c35e1dc11",
@@ -2666,7 +2766,8 @@
         "progress.md": 0.649,
         "activeContext.md": 0.859,
         "file.md": 0.224
-      }
+      },
+      "role": null
     },
     {
       "session_id": "511a5cb10c7f",
@@ -2695,7 +2796,8 @@
         "progress.md": 0.649,
         "activeContext.md": 0.859,
         "file.md": 0.227
-      }
+      },
+      "role": null
     },
     {
       "session_id": "511a5cb10c7f",
@@ -2724,7 +2826,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.859,
         "file.md": 0.227
-      }
+      },
+      "role": null
     },
     {
       "session_id": "51ca536e34d8",
@@ -2753,7 +2856,8 @@
         "progress.md": 0.648,
         "activeContext.md": 0.858,
         "file.md": 0.23
-      }
+      },
+      "role": null
     },
     {
       "session_id": "52c1607350ef",
@@ -2783,7 +2887,8 @@
         "activeContext.md": 0.844,
         "file.md": 0.217,
         "projectBrief.md": 0.249
-      }
+      },
+      "role": null
     },
     {
       "session_id": "53248a7c5c27",
@@ -2813,7 +2918,8 @@
         "techContext.md": 0.802,
         "productContext.md": 0.742,
         "systemPatterns.md": 0.776
-      }
+      },
+      "role": null
     },
     {
       "session_id": "588060835bc2",
@@ -2842,7 +2948,8 @@
         "progress.md": 0.649,
         "activeContext.md": 0.847,
         "file.md": 0.236
-      }
+      },
+      "role": null
     },
     {
       "session_id": "59a98bdebf01",
@@ -2871,7 +2978,8 @@
         "progress.md": 0.599,
         "activeContext.md": 0.78,
         "file.md": 0.241
-      }
+      },
+      "role": null
     },
     {
       "session_id": "5c2cab6b80d9",
@@ -2900,7 +3008,8 @@
         "progress.md": 0.636,
         "activeContext.md": 0.852,
         "file.md": 0.237
-      }
+      },
+      "role": null
     },
     {
       "session_id": "608eebddf21f",
@@ -2929,7 +3038,8 @@
         "activeContext.md": 0.823,
         "file.md": 0.217,
         "projectBrief.md": 0.25
-      }
+      },
+      "role": null
     },
     {
       "session_id": "612c171043d3",
@@ -2958,7 +3068,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.225
-      }
+      },
+      "role": null
     },
     {
       "session_id": "6282fce09ca3",
@@ -2987,7 +3098,8 @@
         "activeContext.md": 0.294,
         "file.md": 0.606,
         "projectBrief.md": 0.8
-      }
+      },
+      "role": null
     },
     {
       "session_id": "68612bdc11ad",
@@ -3016,7 +3128,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.859,
         "file.md": 0.228
-      }
+      },
+      "role": null
     },
     {
       "session_id": "695437564ebb",
@@ -3045,7 +3158,8 @@
         "progress.md": 0.649,
         "activeContext.md": 0.859,
         "file.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "6be2252b1aa5",
@@ -3074,7 +3188,8 @@
         "progress.md": 0.644,
         "activeContext.md": 0.855,
         "file.md": 0.24
-      }
+      },
+      "role": null
     },
     {
       "session_id": "6c37e71c0491",
@@ -3105,7 +3220,8 @@
         "techContext.md": 0.798,
         "productContext.md": 0.705,
         "systemPatterns.md": 0.793
-      }
+      },
+      "role": null
     },
     {
       "session_id": "6c37e71c0491",
@@ -3128,7 +3244,8 @@
         "techContext.md": 0.762,
         "productContext.md": 0.721,
         "systemPatterns.md": 0.722
-      }
+      },
+      "role": null
     },
     {
       "session_id": "6c9b05eded6f",
@@ -3158,7 +3275,8 @@
         "techContext.md": 0.536,
         "productContext.md": 0.536,
         "systemPatterns.md": 0.613
-      }
+      },
+      "role": null
     },
     {
       "session_id": "6f015849f7d6",
@@ -3187,7 +3305,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.226
-      }
+      },
+      "role": null
     },
     {
       "session_id": "710e112c7749",
@@ -3216,7 +3335,8 @@
         "progress.md": 0.645,
         "activeContext.md": 0.857,
         "file.md": 0.237
-      }
+      },
+      "role": null
     },
     {
       "session_id": "7b51405c600e",
@@ -3245,7 +3365,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.225
-      }
+      },
+      "role": null
     },
     {
       "session_id": "7c3cf13a62dd",
@@ -3272,7 +3393,8 @@
         "activeContext.md": 0.685,
         "progress.md": 0.507,
         "roadmap.md": 0.557
-      }
+      },
+      "role": null
     },
     {
       "session_id": "802f3e625309",
@@ -3301,7 +3423,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.502
-      }
+      },
+      "role": null
     },
     {
       "session_id": "80487ae31a32",
@@ -3330,7 +3453,8 @@
         "progress.md": 0.61,
         "activeContext.md": 0.804,
         "file.md": 0.24
-      }
+      },
+      "role": null
     },
     {
       "session_id": "8216ae3d446b",
@@ -3359,7 +3483,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "835f607288ce",
@@ -3388,7 +3513,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.505
-      }
+      },
+      "role": null
     },
     {
       "session_id": "84bbb548b6d2",
@@ -3418,7 +3544,8 @@
         "activeContext.md": 0.844,
         "file.md": 0.213,
         "projectBrief.md": 0.249
-      }
+      },
+      "role": null
     },
     {
       "session_id": "8563b2630403",
@@ -3447,7 +3574,8 @@
         "progress.md": 0.615,
         "activeContext.md": 0.831,
         "file.md": 0.241
-      }
+      },
+      "role": null
     },
     {
       "session_id": "8a6575e0793f",
@@ -3476,7 +3604,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "8c9f32ab07fd",
@@ -3505,7 +3634,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.842,
         "file.md": 0.224
-      }
+      },
+      "role": null
     },
     {
       "session_id": "8fd4f6901b08",
@@ -3535,7 +3665,8 @@
         "activeContext.md": 0.856,
         "file.md": 0.217,
         "projectBrief.md": 0.25
-      }
+      },
+      "role": null
     },
     {
       "session_id": "91ddcf7ac3c2",
@@ -3564,7 +3695,8 @@
         "activeContext.md": 0.294,
         "file.md": 0.606,
         "projectBrief.md": 0.8
-      }
+      },
+      "role": null
     },
     {
       "session_id": "92988db675b1",
@@ -3593,7 +3725,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.859,
         "file.md": 0.235
-      }
+      },
+      "role": null
     },
     {
       "session_id": "92d567ea020e",
@@ -3622,7 +3755,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.225
-      }
+      },
+      "role": null
     },
     {
       "session_id": "941860aefaca",
@@ -3651,7 +3785,8 @@
         "progress.md": 0.646,
         "activeContext.md": 0.854,
         "file.md": 0.241
-      }
+      },
+      "role": null
     },
     {
       "session_id": "94c4b8f6b776",
@@ -3680,7 +3815,8 @@
         "progress.md": 0.632,
         "activeContext.md": 0.835,
         "file.md": 0.227
-      }
+      },
+      "role": null
     },
     {
       "session_id": "9a075b0eca7b",
@@ -3710,7 +3846,8 @@
         "activeContext.md": 0.857,
         "file.md": 0.217,
         "projectBrief.md": 0.25
-      }
+      },
+      "role": null
     },
     {
       "session_id": "a0e149830348",
@@ -3739,7 +3876,8 @@
         "progress.md": 0.649,
         "activeContext.md": 0.859,
         "file.md": 0.225
-      }
+      },
+      "role": null
     },
     {
       "session_id": "a0f3120fcc94",
@@ -3768,7 +3906,8 @@
         "activeContext.md": 0.294,
         "file.md": 0.607,
         "projectBrief.md": 0.8
-      }
+      },
+      "role": null
     },
     {
       "session_id": "a36a90004ddd",
@@ -3797,7 +3936,8 @@
         "progress.md": 0.649,
         "activeContext.md": 0.859,
         "file.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "a61cf7c3a1e1",
@@ -3826,7 +3966,8 @@
         "progress.md": 0.648,
         "activeContext.md": 0.859,
         "file.md": 0.233
-      }
+      },
+      "role": null
     },
     {
       "session_id": "aa4e9e3d7311",
@@ -3855,7 +3996,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.225
-      }
+      },
+      "role": null
     },
     {
       "session_id": "ab85c0f78497",
@@ -3884,7 +4026,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.227
-      }
+      },
+      "role": null
     },
     {
       "session_id": "b19e7928b1a0",
@@ -3913,7 +4056,8 @@
         "progress.md": 0.648,
         "activeContext.md": 0.854,
         "file.md": 0.56
-      }
+      },
+      "role": null
     },
     {
       "session_id": "b4842a466e3f",
@@ -3940,7 +4084,8 @@
         "activeContext.md": 0.572,
         "progress.md": 0.393,
         "roadmap.md": 0.553
-      }
+      },
+      "role": null
     },
     {
       "session_id": "bde72651d63b",
@@ -3969,7 +4114,8 @@
         "progress.md": 0.625,
         "activeContext.md": 0.82,
         "file.md": 0.226
-      }
+      },
+      "role": null
     },
     {
       "session_id": "c2a4504b2635",
@@ -3997,7 +4143,8 @@
         "techContext.md": 0.718,
         "productContext.md": 0.616,
         "systemPatterns.md": 0.707
-      }
+      },
+      "role": null
     },
     {
       "session_id": "c30ea3aaa167",
@@ -4026,7 +4173,8 @@
         "progress.md": 0.649,
         "activeContext.md": 0.859,
         "file.md": 0.232
-      }
+      },
+      "role": null
     },
     {
       "session_id": "c35f8334a17f",
@@ -4055,7 +4203,8 @@
         "progress.md": 0.648,
         "activeContext.md": 0.856,
         "file.md": 0.224
-      }
+      },
+      "role": null
     },
     {
       "session_id": "c37939b2b9b6",
@@ -4083,7 +4232,8 @@
         "techContext.md": 0.787,
         "productContext.md": 0.774,
         "systemPatterns.md": 0.738
-      }
+      },
+      "role": null
     },
     {
       "session_id": "c685c896ed7c",
@@ -4112,7 +4262,8 @@
         "progress.md": 0.635,
         "activeContext.md": 0.849,
         "file.md": 0.233
-      }
+      },
+      "role": null
     },
     {
       "session_id": "caacf4f90597",
@@ -4141,7 +4292,8 @@
         "progress.md": 0.592,
         "activeContext.md": 0.81,
         "file.md": 0.244
-      }
+      },
+      "role": null
     },
     {
       "session_id": "cfa1810ff56a",
@@ -4170,7 +4322,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "cfc09ef4b24d",
@@ -4199,7 +4352,8 @@
         "progress.md": 0.649,
         "activeContext.md": 0.86,
         "file.md": 0.233
-      }
+      },
+      "role": null
     },
     {
       "session_id": "d1ab6ed0e478",
@@ -4228,7 +4382,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.859,
         "file.md": 0.227
-      }
+      },
+      "role": null
     },
     {
       "session_id": "d392dbfbbea0",
@@ -4257,7 +4412,8 @@
         "progress.md": 0.649,
         "activeContext.md": 0.86,
         "file.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "d3eb742053b7",
@@ -4286,7 +4442,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.859,
         "file.md": 0.621
-      }
+      },
+      "role": null
     },
     {
       "session_id": "dd4404db3a0b",
@@ -4315,7 +4472,8 @@
         "progress.md": 0.575,
         "activeContext.md": 0.8,
         "file.md": 0.228
-      }
+      },
+      "role": null
     },
     {
       "session_id": "e43601825007",
@@ -4345,7 +4503,8 @@
         "activeContext.md": 0.859,
         "file.md": 0.217,
         "projectBrief.md": 0.78
-      }
+      },
+      "role": null
     },
     {
       "session_id": "e5ff4ce0184b",
@@ -4378,7 +4537,8 @@
         "techContext.md": 0.822,
         "productContext.md": 0.81,
         "systemPatterns.md": 0.817
-      }
+      },
+      "role": null
     },
     {
       "session_id": "e9fdd1a461df",
@@ -4408,7 +4568,8 @@
         "activeContext.md": 0.858,
         "file.md": 0.216,
         "projectBrief.md": 0.25
-      }
+      },
+      "role": null
     },
     {
       "session_id": "ea11c092081a",
@@ -4437,7 +4598,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.232
-      }
+      },
+      "role": null
     },
     {
       "session_id": "f127fb8eaae9",
@@ -4466,7 +4628,8 @@
         "progress.md": 0.648,
         "activeContext.md": 0.859,
         "file.md": 0.228
-      }
+      },
+      "role": null
     },
     {
       "session_id": "f1dccbc226c6",
@@ -4495,7 +4658,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.224
-      }
+      },
+      "role": null
     },
     {
       "session_id": "f421155c5f2b",
@@ -4516,7 +4680,8 @@
       "relevance_by_file": {
         "file1.md": 0.9,
         "file2.md": 0.8
-      }
+      },
+      "role": null
     },
     {
       "session_id": "f421155c5f2b",
@@ -4537,7 +4702,8 @@
       "relevance_by_file": {
         "file1.md": 0.9,
         "file2.md": 0.8
-      }
+      },
+      "role": null
     },
     {
       "session_id": "f421155c5f2b",
@@ -4558,7 +4724,8 @@
       "relevance_by_file": {
         "file1.md": 0.9,
         "file2.md": 0.8
-      }
+      },
+      "role": null
     },
     {
       "session_id": "f421155c5f2b",
@@ -4587,7 +4754,8 @@
         "progress.md": 0.648,
         "activeContext.md": 0.838,
         "file.md": 0.218
-      }
+      },
+      "role": null
     },
     {
       "session_id": "f421155c5f2b",
@@ -4608,7 +4776,8 @@
       "relevance_by_file": {
         "file1.md": 0.9,
         "file2.md": 0.8
-      }
+      },
+      "role": null
     },
     {
       "session_id": "f421155c5f2b",
@@ -4629,7 +4798,8 @@
       "relevance_by_file": {
         "file1.md": 0.9,
         "file2.md": 0.8
-      }
+      },
+      "role": null
     },
     {
       "session_id": "fe4529244cb7",
@@ -4658,7 +4828,8 @@
         "progress.md": 0.65,
         "activeContext.md": 0.86,
         "file.md": 0.226
-      }
+      },
+      "role": null
     },
     {
       "session_id": "7d2a04d1f76a",
@@ -4686,7 +4857,8 @@
         "techContext.md": 0.787,
         "productContext.md": 0.774,
         "systemPatterns.md": 0.738
-      }
+      },
+      "role": null
     },
     {
       "session_id": "b520f2831127",
@@ -4716,7 +4888,8 @@
         "techContext.md": 0.386,
         "productContext.md": 0.367,
         "systemPatterns.md": 0.417
-      }
+      },
+      "role": null
     },
     {
       "session_id": "7a4fee630e97",
@@ -4745,7 +4918,8 @@
         "techContext.md": 0.822,
         "productContext.md": 0.77,
         "systemPatterns.md": 0.769
-      }
+      },
+      "role": null
     },
     {
       "session_id": "dc7793e29c5b",
@@ -4774,7 +4948,8 @@
         "techContext.md": 0.698,
         "productContext.md": 0.547,
         "systemPatterns.md": 0.672
-      }
+      },
+      "role": null
     },
     {
       "session_id": "6e2eac12a6af",
@@ -4803,7 +4978,8 @@
         "techContext.md": 0.823,
         "productContext.md": 0.816,
         "systemPatterns.md": 0.811
-      }
+      },
+      "role": null
     },
     {
       "session_id": "6e2eac12a6af",
@@ -4826,7 +5002,8 @@
         "techContext.md": 0.694,
         "productContext.md": 0.682,
         "systemPatterns.md": 0.664
-      }
+      },
+      "role": null
     },
     {
       "session_id": "5a94f292fd73",
@@ -4854,7 +5031,8 @@
         "techContext.md": 0.833,
         "productContext.md": 0.812,
         "systemPatterns.md": 0.792
-      }
+      },
+      "role": null
     },
     {
       "session_id": "2803b89351b1",
@@ -4883,7 +5061,8 @@
         "techContext.md": 0.831,
         "productContext.md": 0.773,
         "systemPatterns.md": 0.763
-      }
+      },
+      "role": null
     },
     {
       "session_id": "2803b89351b1",
@@ -4914,7 +5093,8 @@
         "techContext.md": 0.762,
         "productContext.md": 0.739,
         "systemPatterns.md": 0.757
-      }
+      },
+      "role": null
     },
     {
       "session_id": "427fa83eb7d6",
@@ -4943,7 +5123,8 @@
         "techContext.md": 0.814,
         "productContext.md": 0.768,
         "systemPatterns.md": 0.82
-      }
+      },
+      "role": null
     },
     {
       "session_id": "e6e495453bd7",
@@ -4971,7 +5152,8 @@
         "techContext.md": 0.832,
         "productContext.md": 0.758,
         "systemPatterns.md": 0.759
-      }
+      },
+      "role": null
     },
     {
       "session_id": "292c35f8e776",
@@ -5000,7 +5182,8 @@
         "techContext.md": 0.831,
         "productContext.md": 0.757,
         "systemPatterns.md": 0.758
-      }
+      },
+      "role": null
     },
     {
       "session_id": "17c6d48bf0b8",
@@ -5029,7 +5212,8 @@
         "techContext.md": 0.831,
         "productContext.md": 0.757,
         "systemPatterns.md": 0.758
-      }
+      },
+      "role": null
     },
     {
       "session_id": "866fb3e30948",
@@ -5057,7 +5241,8 @@
         "techContext.md": 0.831,
         "productContext.md": 0.758,
         "systemPatterns.md": 0.758
-      }
+      },
+      "role": null
     },
     {
       "session_id": "e889a798c88d",
@@ -5080,7 +5265,8 @@
         "techContext.md": 0.813,
         "productContext.md": 0.793,
         "systemPatterns.md": 0.801
-      }
+      },
+      "role": null
     },
     {
       "session_id": "37ae327b41a5",
@@ -5103,7 +5289,8 @@
         "techContext.md": 0.762,
         "productContext.md": 0.756,
         "systemPatterns.md": 0.778
-      }
+      },
+      "role": null
     },
     {
       "session_id": "37ae327b41a5",
@@ -5134,7 +5321,8 @@
         "techContext.md": 0.832,
         "productContext.md": 0.794,
         "systemPatterns.md": 0.8
-      }
+      },
+      "role": null
     },
     {
       "session_id": "7b3afa06b557",
@@ -5157,7 +5345,8 @@
         "techContext.md": 0.668,
         "productContext.md": 0.703,
         "systemPatterns.md": 0.629
-      }
+      },
+      "role": null
     },
     {
       "session_id": "5c26b6a04495",
@@ -5185,7 +5374,8 @@
         "techContext.md": 0.83,
         "productContext.md": 0.806,
         "systemPatterns.md": 0.782
-      }
+      },
+      "role": null
     },
     {
       "session_id": "f8702795e0da",
@@ -5214,7 +5404,8 @@
         "techContext.md": 0.809,
         "productContext.md": 0.791,
         "systemPatterns.md": 0.735
-      }
+      },
+      "role": null
     },
     {
       "session_id": "f1c6aa5636bb",
@@ -5243,7 +5434,8 @@
         "techContext.md": 0.678,
         "productContext.md": 0.722,
         "systemPatterns.md": 0.601
-      }
+      },
+      "role": null
     },
     {
       "session_id": "04b7a0cea927",
@@ -5272,7 +5464,8 @@
         "techContext.md": 0.81,
         "productContext.md": 0.796,
         "systemPatterns.md": 0.771
-      }
+      },
+      "role": null
     },
     {
       "session_id": "04b7a0cea927",
@@ -5300,7 +5493,8 @@
         "techContext.md": 0.818,
         "productContext.md": 0.639,
         "systemPatterns.md": 0.642
-      }
+      },
+      "role": null
     },
     {
       "session_id": "d94bfe419128",
@@ -5331,7 +5525,8 @@
         "techContext.md": 0.822,
         "productContext.md": 0.811,
         "systemPatterns.md": 0.83
-      }
+      },
+      "role": null
     },
     {
       "session_id": "722e47e860ba",
@@ -5360,7 +5555,8 @@
         "techContext.md": 0.795,
         "productContext.md": 0.798,
         "systemPatterns.md": 0.812
-      }
+      },
+      "role": null
     },
     {
       "session_id": "7e8d13df1648",
@@ -5388,7 +5584,8 @@
         "techContext.md": 0.797,
         "productContext.md": 0.658,
         "systemPatterns.md": 0.737
-      }
+      },
+      "role": null
     },
     {
       "session_id": "7e8d13df1648",
@@ -5416,7 +5613,8 @@
         "techContext.md": 0.764,
         "productContext.md": 0.58,
         "systemPatterns.md": 0.728
-      }
+      },
+      "role": null
     },
     {
       "session_id": "8fce646148c2",
@@ -5445,7 +5643,8 @@
         "techContext.md": 0.821,
         "productContext.md": 0.81,
         "systemPatterns.md": 0.83
-      }
+      },
+      "role": null
     },
     {
       "session_id": "b844ebae0a1d",
@@ -5476,7 +5675,8 @@
         "techContext.md": 0.804,
         "productContext.md": 0.81,
         "systemPatterns.md": 0.825
-      }
+      },
+      "role": null
     },
     {
       "session_id": "5882e0d39fa0",
@@ -5505,7 +5705,8 @@
         "techContext.md": 0.834,
         "productContext.md": 0.7,
         "systemPatterns.md": 0.702
-      }
+      },
+      "role": null
     },
     {
       "session_id": "d92a9161fd12",
@@ -5534,7 +5735,8 @@
         "techContext.md": 0.819,
         "productContext.md": 0.793,
         "systemPatterns.md": 0.828
-      }
+      },
+      "role": null
     },
     {
       "session_id": "74f86cc2e9d6",
@@ -5563,7 +5765,8 @@
         "techContext.md": 0.815,
         "productContext.md": 0.789,
         "systemPatterns.md": 0.824
-      }
+      },
+      "role": null
     },
     {
       "session_id": "d3f97da2e8fd",
@@ -5592,7 +5795,8 @@
         "techContext.md": 0.787,
         "productContext.md": 0.629,
         "systemPatterns.md": 0.791
-      }
+      },
+      "role": null
     },
     {
       "session_id": "6a11d64e0382",
@@ -5623,7 +5827,8 @@
         "techContext.md": 0.229,
         "productContext.md": 0.229,
         "systemPatterns.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "6a11d64e0382",
@@ -5654,7 +5859,8 @@
         "techContext.md": 0.229,
         "productContext.md": 0.229,
         "systemPatterns.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "6a11d64e0382",
@@ -5683,7 +5889,8 @@
         "techContext.md": 0.715,
         "productContext.md": 0.651,
         "systemPatterns.md": 0.528
-      }
+      },
+      "role": null
     },
     {
       "session_id": "a8c6b1fed8c5",
@@ -5714,7 +5921,8 @@
         "techContext.md": 0.229,
         "productContext.md": 0.229,
         "systemPatterns.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "a8c6b1fed8c5",
@@ -5745,7 +5953,8 @@
         "techContext.md": 0.229,
         "productContext.md": 0.229,
         "systemPatterns.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "0206edaccb4a",
@@ -5773,7 +5982,8 @@
         "techContext.md": 0.781,
         "productContext.md": 0.771,
         "systemPatterns.md": 0.747
-      }
+      },
+      "role": null
     },
     {
       "session_id": "05b85fa5a211",
@@ -5804,7 +6014,8 @@
         "techContext.md": 0.741,
         "productContext.md": 0.613,
         "systemPatterns.md": 0.775
-      }
+      },
+      "role": null
     },
     {
       "session_id": "16173d23e723",
@@ -5832,7 +6043,8 @@
         "techContext.md": 0.772,
         "productContext.md": 0.775,
         "systemPatterns.md": 0.735
-      }
+      },
+      "role": null
     },
     {
       "session_id": "16173d23e723",
@@ -5860,7 +6072,8 @@
         "techContext.md": 0.812,
         "productContext.md": 0.634,
         "systemPatterns.md": 0.591
-      }
+      },
+      "role": null
     },
     {
       "session_id": "4801d03bd0df",
@@ -5891,7 +6104,8 @@
         "techContext.md": 0.229,
         "productContext.md": 0.229,
         "systemPatterns.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "4bd640c4aeab",
@@ -5920,7 +6134,8 @@
         "techContext.md": 0.816,
         "productContext.md": 0.677,
         "systemPatterns.md": 0.66
-      }
+      },
+      "role": null
     },
     {
       "session_id": "4bd640c4aeab",
@@ -5951,7 +6166,8 @@
         "techContext.md": 0.229,
         "productContext.md": 0.229,
         "systemPatterns.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "55da7e60b234",
@@ -5982,7 +6198,8 @@
         "techContext.md": 0.229,
         "productContext.md": 0.229,
         "systemPatterns.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "58c40fa4f7f0",
@@ -6010,7 +6227,8 @@
         "techContext.md": 0.778,
         "productContext.md": 0.564,
         "systemPatterns.md": 0.605
-      }
+      },
+      "role": null
     },
     {
       "session_id": "58c40fa4f7f0",
@@ -6038,7 +6256,8 @@
         "techContext.md": 0.71,
         "productContext.md": 0.543,
         "systemPatterns.md": 0.687
-      }
+      },
+      "role": null
     },
     {
       "session_id": "598b0ed0c6a9",
@@ -6066,7 +6285,8 @@
         "techContext.md": 0.825,
         "productContext.md": 0.697,
         "systemPatterns.md": 0.68
-      }
+      },
+      "role": null
     },
     {
       "session_id": "8518c49d7495",
@@ -6095,7 +6315,8 @@
         "techContext.md": 0.816,
         "productContext.md": 0.677,
         "systemPatterns.md": 0.66
-      }
+      },
+      "role": null
     },
     {
       "session_id": "92fdb77760c7",
@@ -6126,7 +6347,8 @@
         "techContext.md": 0.741,
         "productContext.md": 0.613,
         "systemPatterns.md": 0.775
-      }
+      },
+      "role": null
     },
     {
       "session_id": "92fdb77760c7",
@@ -6155,7 +6377,8 @@
         "techContext.md": 0.763,
         "productContext.md": 0.669,
         "systemPatterns.md": 0.78
-      }
+      },
+      "role": null
     },
     {
       "session_id": "9624e73af33b",
@@ -6184,7 +6407,8 @@
         "techContext.md": 0.797,
         "productContext.md": 0.692,
         "systemPatterns.md": 0.72
-      }
+      },
+      "role": null
     },
     {
       "session_id": "9c1a09e8c7da",
@@ -6212,7 +6436,8 @@
         "techContext.md": 0.761,
         "productContext.md": 0.63,
         "systemPatterns.md": 0.716
-      }
+      },
+      "role": null
     },
     {
       "session_id": "a103eb6e0015",
@@ -6241,7 +6466,8 @@
         "techContext.md": 0.817,
         "productContext.md": 0.678,
         "systemPatterns.md": 0.661
-      }
+      },
+      "role": null
     },
     {
       "session_id": "a103eb6e0015",
@@ -6272,7 +6498,8 @@
         "techContext.md": 0.229,
         "productContext.md": 0.229,
         "systemPatterns.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "a103eb6e0015",
@@ -6303,7 +6530,8 @@
         "techContext.md": 0.229,
         "productContext.md": 0.229,
         "systemPatterns.md": 0.229
-      }
+      },
+      "role": null
     },
     {
       "session_id": "a3b947f00b80",
@@ -6331,7 +6559,8 @@
         "techContext.md": 0.794,
         "productContext.md": 0.79,
         "systemPatterns.md": 0.761
-      }
+      },
+      "role": null
     },
     {
       "session_id": "b4fa5b99fb29",
@@ -6360,7 +6589,8 @@
         "techContext.md": 0.692,
         "productContext.md": 0.631,
         "systemPatterns.md": 0.662
-      }
+      },
+      "role": null
     },
     {
       "session_id": "b943e3400286",
@@ -6388,7 +6618,8 @@
         "techContext.md": 0.636,
         "productContext.md": 0.725,
         "systemPatterns.md": 0.615
-      }
+      },
+      "role": null
     },
     {
       "session_id": "bcb5715b5a65",
@@ -6411,7 +6642,8 @@
         "techContext.md": 0.676,
         "productContext.md": 0.734,
         "systemPatterns.md": 0.736
-      }
+      },
+      "role": null
     },
     {
       "session_id": "c3890d99242d",
@@ -6439,7 +6671,8 @@
         "techContext.md": 0.775,
         "productContext.md": 0.595,
         "systemPatterns.md": 0.59
-      }
+      },
+      "role": null
     },
     {
       "session_id": "d2b4a71abbfe",
@@ -6468,7 +6701,8 @@
         "techContext.md": 0.788,
         "productContext.md": 0.771,
         "systemPatterns.md": 0.762
-      }
+      },
+      "role": null
     },
     {
       "session_id": "d5b896984b42",
@@ -6496,7 +6730,8 @@
         "techContext.md": 0.76,
         "productContext.md": 0.607,
         "systemPatterns.md": 0.715
-      }
+      },
+      "role": null
     },
     {
       "session_id": "d8ff4cdafe35",
@@ -6525,7 +6760,8 @@
         "techContext.md": 0.77,
         "productContext.md": 0.772,
         "systemPatterns.md": 0.74
-      }
+      },
+      "role": null
     },
     {
       "session_id": "dfd70f17c322",
@@ -6556,7 +6792,8 @@
         "techContext.md": 0.823,
         "productContext.md": 0.812,
         "systemPatterns.md": 0.831
-      }
+      },
+      "role": null
     },
     {
       "session_id": "e3e1c3c65bd9",
@@ -6584,7 +6821,8 @@
         "techContext.md": 0.693,
         "productContext.md": 0.653,
         "systemPatterns.md": 0.63
-      }
+      },
+      "role": null
     },
     {
       "session_id": "e3e1c3c65bd9",
@@ -6612,7 +6850,8 @@
         "techContext.md": 0.753,
         "productContext.md": 0.64,
         "systemPatterns.md": 0.742
-      }
+      },
+      "role": null
     },
     {
       "session_id": "e88dc737b780",
@@ -6641,7 +6880,8 @@
         "techContext.md": 0.834,
         "productContext.md": 0.695,
         "systemPatterns.md": 0.678
-      }
+      },
+      "role": null
     },
     {
       "session_id": "ff5200195528",
@@ -6664,7 +6904,8 @@
         "techContext.md": 0.484,
         "productContext.md": 0.482,
         "systemPatterns.md": 0.546
-      }
+      },
+      "role": null
     },
     {
       "session_id": "5c746fb881f8",
@@ -6687,7 +6928,8 @@
         "techContext.md": 0.225,
         "productContext.md": 0.225,
         "systemPatterns.md": 0.225
-      }
+      },
+      "role": null
     },
     {
       "session_id": "ba7aba0143da",
@@ -6718,7 +6960,8 @@
         "techContext.md": 0.225,
         "productContext.md": 0.225,
         "systemPatterns.md": 0.225
-      }
+      },
+      "role": null
     },
     {
       "session_id": "5ec620036e0e",
@@ -6749,7 +6992,8 @@
         "techContext.md": 0.223,
         "productContext.md": 0.223,
         "systemPatterns.md": 0.223
-      }
+      },
+      "role": null
     },
     {
       "session_id": "cfbf4341c67d",
@@ -6780,7 +7024,70 @@
         "techContext.md": 0.221,
         "productContext.md": 0.221,
         "systemPatterns.md": 0.221
-      }
+      },
+      "role": null
+    },
+    {
+      "session_id": "69051ed9ebca",
+      "timestamp": "2026-02-19T16:18",
+      "task_description": "Fixing code quality violations and test failures for commit",
+      "token_budget": 5000,
+      "total_tokens": 28,
+      "utilization": 0.0056,
+      "files_selected": 7,
+      "files_excluded": 0,
+      "avg_relevance_score": 0.232,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 7,
+      "selected_file_names": [
+        "activeContext.md",
+        "projectBrief.md",
+        "roadmap.md",
+        "systemPatterns.md",
+        "productContext.md",
+        "progress.md",
+        "techContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.249,
+        "progress.md": 0.25,
+        "activeContext.md": 0.25,
+        "projectBrief.md": 0.22,
+        "techContext.md": 0.218,
+        "productContext.md": 0.218,
+        "systemPatterns.md": 0.218
+      },
+      "role": "debugging"
+    },
+    {
+      "session_id": "c1d99d9b0cc6",
+      "timestamp": "2026-02-19T19:57",
+      "task_description": "Session Optimization: Refactoring Workflow Improvements - add intermediate validation checkpoints, document type narrowing pattern, add duplicate detection step",
+      "token_budget": 0,
+      "total_tokens": 13657,
+      "utilization": 0.0,
+      "files_selected": 2,
+      "files_excluded": 8,
+      "avg_relevance_score": 0.21,
+      "files_with_high_relevance": 0,
+      "files_with_low_relevance": 6,
+      "selected_file_names": [
+        "projectBrief.md",
+        "activeContext.md"
+      ],
+      "relevance_by_file": {
+        "roadmap.md": 0.4,
+        "progress.md": 0.09000000000000001,
+        "activeContext.md": 0.4,
+        "tmp-mcp-test.md": 0.09000000000000001,
+        "file.md": 0.09000000000000001,
+        "phase-60-improve-manage-file-discoverability.plan.md": 0.09000000000000001,
+        "projectBrief.md": 0.4,
+        "techContext.md": 0.09000000000000001,
+        "productContext.md": 0.09000000000000001,
+        "systemPatterns.md": 0.36000000000000004
+      },
+      "role": "planning"
     }
   ]
 }

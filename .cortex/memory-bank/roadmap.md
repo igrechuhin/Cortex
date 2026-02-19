@@ -6,6 +6,12 @@
 
 ## Blockers (ASAP Priority)
 
+- [Phase: Investigate tool_raising_json_error MCP Tool Failure](.cortex/plans/phase-investigate-tool_raising_json_error-failure-20260219-203414.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `tool_raising_json_error`, Error: JSONDecodeError - Impact: Commit procedure blocked - Target completion: 2026-02-19
+
+- [Phase: Investigate tool_raising_json_error MCP Tool Failure](.cortex/plans/phase-investigate-tool_raising_json_error-failure-20260219-202641.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `tool_raising_json_error`, Error: JSONDecodeError - Impact: Commit procedure blocked - Target completion: 2026-02-19
+
+- **Session Optimization: Fix load_context Zero-Budget Configuration Error (Blocker)** - PENDING - BLOCKER: Reject or normalize token_budget=0 for non-trivial tasks so load_context always provides memory-bank guidance; add validation in handler, treat 0 as None in effective budget, and add prompt examples.
+
 ## Active Work (in progress)
 
 ## Future Enhancements
@@ -29,8 +35,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
 - **Plans README** - Reference. Plan: .cortex/plans/README.md
 - **Phase 57: Evaluation-Driven Tool Improvement** - IN PROGRESS - Remaining work: extend the evaluation task suite, add evaluation dashboards, and implement automated tool description optimization and A/B testing on top of the existing evaluation framework and error-pattern tooling. Plan: .cortex/plans/phase-57-evaluation-driven-tool-improvement.md.
-- **Session Optimization: Phase 58 multi-agent follow-ups** - PENDING - Follow-ups for Phase 58 to log AgentRole in load_context session logs, extend context-effectiveness analysis with role-aware statistics, and update prompts/docs once role data is available. Plan: .cortex/plans/session-optimization-phase-58-multi-agent-follow-ups.md.
-- **Session Optimization: Refactoring Workflow Improvements (2026-02-17 Analysis)** - PENDING - Improve refactoring workflow to reduce fix iterations: add intermediate validation checkpoints, document type narrowing pattern, add duplicate detection step. Plan: .cortex/plans/session-optimization-refactoring-workflow-improvements-2026-02-17-analysis.md.
 - **Session Optimization: load_context Budget and Test Type Narrowing** - PENDING - Document non-zero load_context budget for non-trivial tasks in implement/fix prompts; document JsonValue narrowing in tests (testing/type rules).
 - **Session Optimization: MCP Connection Stability and Fallback Script Improvements** - PENDING - Improve MCP connection stability during commit pipeline and fix fallback script compatibility issues. Plan: .cortex/plans/session-optimization-mcp-connection-stability-and-fallback-script-improvements.md.
 - **Session Optimization: Progress Entry Validation and Memory Bank Write Discipline** - PENDING - Reduce progress entry typos and enforce manage_file-only for memory-bank writes (from 2026-02-18 analysis). Plan: .cortex/plans/session-optimization-progress-entry-validation-and-memory-bank-write-discipline.md.

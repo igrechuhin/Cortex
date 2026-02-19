@@ -101,7 +101,12 @@ def _validate_zero_budget_for_non_trivial(
 def is_non_trivial_task(task_description: str) -> bool:
     """Detect if a task is non-trivial based on keywords."""
     task_lower = task_description.lower()
-    keywords = ["implement", "add", "create", "build", "develop", "fix", "debug", "resolve", "correct", "repair", "refactor", "refactoring", "restructure", "restructuring", "reorganize", "test", "testing", "verify", "validate", "optimize", "optimization", "improve", "improving", "enhance", "update", "modify", "change", "edit"]
+    keywords = (
+        "implement add create build develop fix debug resolve correct repair "
+        "refactor refactoring restructure restructuring reorganize test testing "
+        "verify validate optimize optimization improve improving enhance "
+        "update modify change edit"
+    ).split()
     return any(kw in task_lower for kw in keywords)
 
 

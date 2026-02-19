@@ -308,7 +308,129 @@ def _prepare_logging_params(
     )
 
 
-def log_metadata_context_call(project_root: Path, task_description: str, token_budget: int, strategy: str, files_map: list[dict[str, object]], always_loaded_content: dict[str, str], always_load_sections: dict[str, list[str]], files_metadata: dict[str, ModelDict], always_loaded_tokens: int, relevance_scores: dict[str, float], agent_role: AgentRole | None) -> None:
+def _invoke_load_context_log(
+    project_root: Path,
+    task_description: str,
+    token_budget: int,
+    strategy: str,
+    selected_files: list[str],
+    selected_sections: dict[str, list[str]],
+    total_tokens: int,
+    utilization: float,
+    excluded_files: list[str],
+    relevance_scores: dict[str, float],
+    role: str | None,
+) -> None:
+    """Call session logger with prepared params."""
+    log_load_context_call(
+        project_root,
+        task_description,
+        token_budget,
+        strategy,
+        selected_files,
+        selected_sections,
+        total_tokens,
+        utilization,
+        excluded_files,
+        relevance_scores,
+        role,
+    )
+
+
+def _emit_metadata_context_log(
+    project_root: Path,
+    task_description: str,
+    token_budget: int,
+    strategy: str,
+    files_map: list[dict[str, object]],
+    always_loaded_content: dict[str, str],
+    always_load_sections: dict[str, list[str]],
+    files_metadata: dict[str, ModelDict],
+    always_loaded_tokens: int,
+    relevance_scores: dict[str, float],
+    agent_role: AgentRole | None,
+) -> None:
+    """Prepare logging params and emit metadata-only context log."""
+    selected_files, selected_sections, excluded_files, total_tokens, utilization = (
+        _prepare_logging_params(
+            files_map,
+            always_loaded_content,
+            always_load_sections,
+            files_metadata,
+            always_loaded_tokens,
+            token_budget,
+        )
+    )
+    # fmt: off
+    _invoke_load_context_log(project_root, task_description, token_budget, strategy, selected_files, selected_sections, total_tokens, utilization, excluded_files, relevance_scores, agent_role.value if agent_role else None)
+    # fmt: on
+
+
+def log_metadata_context_call(
+    project_root: Path,
+    task_description: str,
+    token_budget: int,
+    strategy: str,
+    files_map: list[dict[str, object]],
+    always_loaded_content: dict[str, str],
+    always_load_sections: dict[str, list[str]],
+    files_metadata: dict[str, ModelDict],
+    always_loaded_tokens: int,
+    relevance_scores: dict[str, float],
+    agent_role: AgentRole | None,
+) -> None:
     """Log metadata-only context loading call."""
-    selected_files, selected_sections, excluded_files, total_tokens, utilization = _prepare_logging_params(files_map, always_loaded_content, always_load_sections, files_metadata, always_loaded_tokens, token_budget)
-    log_load_context_call(project_root, task_description, token_budget, strategy, selected_files, selected_sections, total_tokens, utilization, excluded_files, relevance_scores, agent_role.value if agent_role else None)
+    _emit_metadata_context_log(
+        project_root,
+        task_description,
+        token_budget,
+        strategy,
+        files_map,
+        always_loaded_content,
+        always_load_sections,
+        files_metadata,
+        always_loaded_tokens,
+        relevance_scores,
+        agent_role,
+    )
+
+
+def summarize_files_content(
+    files_content: dict[str, str], files_metadata: dict[str, ModelDict]
+) -> dict[str, str]:
+    """Summarize file contents to first paragraph + section headings.
+
+    Args:
+        files_content: Full file contents
+        files_metadata: File metadata including sections
+
+    Returns:
+        Dictionary with summarized content (first paragraph + headings)
+    """
+    summarized: dict[str, str] = {}
+    for file_name, content in files_content.items():
+        lines = content.split("\n")
+        summary_parts: list[str] = []
+        first_paragraph_lines: list[str] = []
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                if first_paragraph_lines:
+                    break
+                continue
+            if stripped.startswith("#"):
+                break
+            first_paragraph_lines.append(line)
+        if first_paragraph_lines:
+            summary_parts.append("\n".join(first_paragraph_lines))
+        metadata = files_metadata.get(file_name, {})
+        sections_list = metadata.get("sections", [])
+        if isinstance(sections_list, list) and sections_list:
+            summary_parts.append("\n\n## Sections:")
+            for section in sections_list[:10]:
+                if isinstance(section, dict):
+                    heading = str(section.get("heading", ""))
+                    if heading:
+                        summary_parts.append(heading)
+        summarized[file_name] = "\n".join(summary_parts) if summary_parts else content
+    return summarized

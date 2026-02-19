@@ -36,6 +36,25 @@ def _commit_prompt_path() -> Path:
     )
 
 
+def _implement_prompt_path() -> Path:
+    """Return path to implement prompt under .cortex/synapse/prompts/."""
+    return (
+        get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE)
+        / "prompts"
+        / "implement-next-roadmap-step.md"
+    )
+
+
+def _python_coding_standards_path() -> Path:
+    """Return path to Python coding standards under .cortex/synapse/rules/."""
+    return (
+        get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE)
+        / "rules"
+        / "python"
+        / "python-coding-standards.mdc"
+    )
+
+
 class TestCommitWorkflowModelInvariants:
     """Assert commit workflow model invariants used by the commit prompt."""
 
@@ -219,4 +238,100 @@ class TestCommitPromptAlignment:
         assert (
             "_ = module" in commit_prompt_content
             or "reportUnusedImport" in commit_prompt_content
+        )
+
+    def test_commit_prompt_contains_intermediate_validation_during_refactoring(
+        self, commit_prompt_content: str
+    ) -> None:
+        """Commit prompt must include Step 3.5: Intermediate Validation During Refactoring.
+
+        Session optimization (2026-02-17): When fixing function length by extracting
+        helpers, run type check and quality check after each refactor.
+        """
+        assert "3.5" in commit_prompt_content
+        assert "Intermediate Validation During Refactoring" in commit_prompt_content
+        assert "refactor" in commit_prompt_content.lower()
+        assert (
+            "type check" in commit_prompt_content.lower()
+            or "quality check" in commit_prompt_content.lower()
+        )
+
+    def test_commit_prompt_contains_duplicate_detection_before_creating_helpers(
+        self, commit_prompt_content: str
+    ) -> None:
+        """Commit prompt must include Step 3.6: Duplicate Detection Before Creating Helpers.
+
+        Session optimization (2026-02-17): Before creating new helpers, search for
+        existing functions with similar names to avoid duplicate/redeclared symbols.
+        """
+        assert "3.6" in commit_prompt_content
+        assert "Duplicate Detection Before Creating Helpers" in commit_prompt_content
+        assert (
+            "grep" in commit_prompt_content.lower()
+            or "search" in commit_prompt_content.lower()
+        )
+        assert "duplicate" in commit_prompt_content.lower()
+
+
+class TestImplementPromptRefactoringGuidance:
+    """Assert implement prompt contains refactoring workflow guidance (2026-02-17)."""
+
+    @pytest.fixture
+    def implement_prompt_content(self) -> str:
+        """Read implement prompt content; skip if file missing."""
+        path = _implement_prompt_path()
+        if not path.exists():
+            pytest.skip(
+                f"Implement prompt not found at {path} (e.g. synapse not present)"
+            )
+        return path.read_text()
+
+    def test_implement_prompt_contains_incremental_validation_guidance(
+        self, implement_prompt_content: str
+    ) -> None:
+        """Implement prompt must advise incremental validation when refactoring."""
+        assert "incremental" in implement_prompt_content.lower()
+        assert "refactor" in implement_prompt_content.lower()
+        assert (
+            "type check" in implement_prompt_content.lower()
+            or "quality check" in implement_prompt_content.lower()
+        )
+
+    def test_implement_prompt_contains_duplicate_detection_guidance(
+        self, implement_prompt_content: str
+    ) -> None:
+        """Implement prompt must advise duplicate detection before extracting helpers."""
+        assert "duplicate" in implement_prompt_content.lower()
+        assert "helper" in implement_prompt_content.lower()
+        assert "Grep" in implement_prompt_content or "grep" in implement_prompt_content
+
+
+class TestPythonCodingStandardsTypeNarrowing:
+    """Assert Python coding standards document type narrowing pattern (2026-02-17)."""
+
+    @pytest.fixture
+    def python_standards_content(self) -> str:
+        """Read Python coding standards content; skip if file missing."""
+        path = _python_coding_standards_path()
+        if not path.exists():
+            pytest.skip(
+                f"Python coding standards not found at {path} (e.g. synapse not present)"
+            )
+        return path.read_text()
+
+    def test_python_standards_contain_type_narrowing_section(
+        self, python_standards_content: str
+    ) -> None:
+        """Python coding standards must include Type Narrowing with assert section."""
+        assert "Type Narrowing with assert" in python_standards_content
+        assert "assert value is not None" in python_standards_content
+        assert "control flow" in python_standards_content.lower()
+
+    def test_python_standards_type_hints_reference_type_narrowing(
+        self, python_standards_content: str
+    ) -> None:
+        """Type Hints section must cross-reference Type Narrowing section."""
+        assert "Type Narrowing" in python_standards_content
+        assert (
+            "Optional" in python_standards_content or "None" in python_standards_content
         )

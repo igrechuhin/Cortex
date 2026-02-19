@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: PENDING
+Status: COMPLETE
 
 ## Goal
 

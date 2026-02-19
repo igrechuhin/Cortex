@@ -1061,6 +1061,34 @@ RollbackError: Failed to rollback refactoring split_002
    }
    ```
 
+### Refactoring Workflow Best Practices
+
+When fixing quality violations (e.g. function length, file size) by refactoring, follow these practices to reduce fix iterations and avoid type/duplicate errors.
+
+#### Intermediate Validation
+
+Run type check and quality check **after each refactor step**, not only at the end. This catches new violations (e.g. redeclaration, new function length) immediately. See commit prompt Step 3.5 (Intermediate Validation During Refactoring) and implement prompt "Code Quality" (incremental validation). Benefits: fewer pre-commit cycles and faster resolution.
+
+#### Type Narrowing
+
+When control flow guarantees a value is not `None` but the type checker still reports an error, use `assert value is not None` to narrow the type. See [Python coding standards: Type Narrowing with assert](../../.cortex/synapse/rules/python/python-coding-standards.mdc) (Synapse rules). Quick reference:
+
+```python
+def process_value(value: int | None) -> int:
+    if value is None:
+        return 0
+    assert value is not None  # Type narrowing for type checker
+    return value * 2
+```
+
+For type check errors involving `int | None` or similar, see the [Type Narrowing](#type-narrowing) subsection above.
+
+#### Duplicate Detection
+
+Before creating new helper functions during refactoring, search for existing functions with similar names to avoid duplicates (e.g. redeclaration or unused-symbol errors). See commit prompt Step 3.6 (Duplicate Detection Before Creating Helpers) and implement prompt "Code Quality" (duplicate detection). Use the Grep tool or your language’s search to find existing helpers; reuse or rename to avoid duplicate declarations.
+
+For quality check failures during refactoring, see [Intermediate Validation](#intermediate-validation) above.
+
 ### Performance Issues
 
 #### Issue: Slow tiktoken initialization

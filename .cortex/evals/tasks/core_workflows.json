@@ -271,6 +271,91 @@
       "Not fixing sync issues before proceeding"
     ],
     "usage_query": "run_docs_and_memory_bank_sync"
+  },
+  {
+    "id": "context-role-quality-agent",
+    "name": "Load context for quality agent (formatting and linting)",
+    "description": "Quality agent needs context for code quality, formatting, and linting tasks. Should detect 'quality' role and prioritize techContext.md and systemPatterns.md.",
+    "category": "context",
+    "expected_tools": ["load_context"],
+    "expected_outcome": "Role is detected as 'quality', techContext.md and systemPatterns.md are prioritized, role is logged in session logs, and budget aligns with quality role defaults (~15k).",
+    "token_budget_baseline": 15000,
+    "common_failure_modes": [
+      "Role not detected from task description",
+      "Role not logged in session logs",
+      "Wrong files prioritized (e.g., projectBrief instead of techContext)",
+      "Budget not aligned with quality role defaults"
+    ],
+    "usage_query": "format lint quality",
+    "expected_role": "quality"
+  },
+  {
+    "id": "context-role-testing-agent",
+    "name": "Load context for testing agent (test writing and coverage)",
+    "description": "Testing agent needs context for writing/fixing tests and coverage work. Should detect 'testing' role and prioritize techContext.md, systemPatterns.md, and progress.md.",
+    "category": "context",
+    "expected_tools": ["load_context"],
+    "expected_outcome": "Role is detected as 'testing', techContext.md, systemPatterns.md, and progress.md are prioritized, role is logged in session logs, and budget aligns with testing role defaults (~15k).",
+    "token_budget_baseline": 15000,
+    "common_failure_modes": [
+      "Role not detected from task description",
+      "Role not logged in session logs",
+      "Missing progress.md for test history context",
+      "Budget not aligned with testing role defaults"
+    ],
+    "usage_query": "test pytest coverage",
+    "expected_role": "testing"
+  },
+  {
+    "id": "context-role-docs-agent",
+    "name": "Load context for docs agent (documentation updates)",
+    "description": "Docs agent needs context for documentation updates. Should detect 'docs' role and prioritize projectBrief.md, productContext.md, and activeContext.md.",
+    "category": "context",
+    "expected_tools": ["load_context"],
+    "expected_outcome": "Role is detected as 'docs', projectBrief.md, productContext.md, and activeContext.md are prioritized, role is logged in session logs, and budget aligns with docs role defaults (~10k).",
+    "token_budget_baseline": 10000,
+    "common_failure_modes": [
+      "Role not detected from task description",
+      "Role not logged in session logs",
+      "Wrong files prioritized (e.g., techContext instead of projectBrief)",
+      "Budget not aligned with docs role defaults"
+    ],
+    "usage_query": "docs documentation readme",
+    "expected_role": "docs"
+  },
+  {
+    "id": "context-role-debugging-agent",
+    "name": "Load context for debugging agent (bug investigation)",
+    "description": "Debugging agent needs context for bug investigation and fix/debug flows. Should detect 'debugging' role and prioritize activeContext.md, systemPatterns.md, and techContext.md.",
+    "category": "context",
+    "expected_tools": ["load_context"],
+    "expected_outcome": "Role is detected as 'debugging', activeContext.md, systemPatterns.md, and techContext.md are prioritized, role is logged in session logs, and budget aligns with debugging role defaults (~15k).",
+    "token_budget_baseline": 15000,
+    "common_failure_modes": [
+      "Role not detected from task description",
+      "Role not logged in session logs",
+      "Missing activeContext.md for recent changes context",
+      "Budget not aligned with debugging role defaults"
+    ],
+    "usage_query": "fix bug error exception",
+    "expected_role": "debugging"
+  },
+  {
+    "id": "context-role-planning-agent",
+    "name": "Load context for planning agent (plan and roadmap work)",
+    "description": "Planning agent needs context for creating/updating plans and roadmap work. Should detect 'planning' role and prioritize roadmap.md, activeContext.md, and projectBrief.md.",
+    "category": "context",
+    "expected_tools": ["load_context"],
+    "expected_outcome": "Role is detected as 'planning', roadmap.md, activeContext.md, and projectBrief.md are prioritized, role is logged in session logs, and budget aligns with planning role defaults (~20k).",
+    "token_budget_baseline": 20000,
+    "common_failure_modes": [
+      "Role not detected from task description",
+      "Role not logged in session logs",
+      "Missing roadmap.md for current work context",
+      "Budget not aligned with planning role defaults"
+    ],
+    "usage_query": "plan roadmap design phase",
+    "expected_role": "planning"
   }
 ]
 
