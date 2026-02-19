@@ -14,7 +14,7 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 | Markdown formatting (headings vs emphasis, MD036) | `get_synapse_rules(task_description="markdown formatting")`, [docs/guides/markdown-formatting.md](docs/guides/markdown-formatting.md) | Use bold for section titles (use `#`/`##`/`###` instead) |
 | Quality fixes (lint, format, types) | `fix_quality_issues` | Run language-specific formatters/linters manually (get standards via `get_synapse_rules`) |
 | Tests and pre-commit checks | `execute_pre_commit_checks` | Run language-specific test runners directly (get standards via `get_synapse_rules`) |
-| Memory bank, roadmap, plans, reviews | Dedicated MCP helpers | Edit `.cortex/` files directly |
+| Memory bank, roadmap, plans, reviews | Dedicated MCP helpers (`manage_file` for all reads/writes) | Edit `.cortex/` files directly; do not use Write, StrReplace, or ApplyPatch on memory-bank paths—any edit (including one-line fixes) must use `manage_file(operation='read')` then `manage_file(operation='write', content=...)` |
 | Project structure, paths | `get_structure_info` | Hardcode `.cortex/` paths |
 | Cache JSON under `.cortex/.cache` | `read_cache_json` / `write_cache_json` | Read/write cache files directly |
 

@@ -6,10 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- [Phase: Investigate tool_raising_json_error MCP Tool Failure](.cortex/plans/phase-investigate-tool_raising_json_error-failure-20260219-203414.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `tool_raising_json_error`, Error: JSONDecodeError - Impact: Commit procedure blocked - Target completion: 2026-02-19
-
-- [Phase: Investigate tool_raising_json_error MCP Tool Failure](.cortex/plans/phase-investigate-tool_raising_json_error-failure-20260219-202641.md) - ASAP (PLANNING) - Investigate and fix MCP tool failure that occurred during commit procedure - Tool: `tool_raising_json_error`, Error: JSONDecodeError - Impact: Commit procedure blocked - Target completion: 2026-02-19
-
 ## Active Work (in progress)
 
 ## Future Enhancements
@@ -33,9 +29,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
 - **Plans README** - Reference. Plan: .cortex/plans/README.md
 - **Phase 57: Evaluation-Driven Tool Improvement** - IN PROGRESS - Remaining work: extend the evaluation task suite, add evaluation dashboards, and implement automated tool description optimization and A/B testing on top of the existing evaluation framework and error-pattern tooling. Plan: .cortex/plans/phase-57-evaluation-driven-tool-improvement.md.
-- **Session Optimization: load_context Budget and Test Type Narrowing** - PENDING - Document non-zero load_context budget for non-trivial tasks in implement/fix prompts; document JsonValue narrowing in tests (testing/type rules).
-- **Session Optimization: MCP Connection Stability and Fallback Script Improvements** - PENDING - Improve MCP connection stability during commit pipeline and fix fallback script compatibility issues. Plan: .cortex/plans/session-optimization-mcp-connection-stability-and-fallback-script-improvements.md.
-- **Session Optimization: Progress Entry Validation and Memory Bank Write Discipline** - PENDING - Reduce progress entry typos and enforce manage_file-only for memory-bank writes (from 2026-02-18 analysis). Plan: .cortex/plans/session-optimization-progress-entry-validation-and-memory-bank-write-discipline.md.
 - **Session Optimization: Analyze 2026-02-18 Follow-ups** - PENDING - Follow-ups from 2026-02-18 analysis: Step 12/MCP stability, load_context budgets, manage_file contract. Plan: .cortex/plans/session-optimization-analyze-2026-02-18-follow-ups.md.
 - **Session Optimization: Progress Entry Validation and Write Quality (2026-02-18 Analysis)** - PENDING - Progress entry format validation and write-quality guidance from 2026-02-18 analysis; reduce typos in complete_plan/append_progress_entry. Plan: .cortex/plans/session-optimization-progress-entry-validation-2026-02-18-analysis.md.
 - **Reference: Compound engineering alignment** - Plan: .cortex/plans/compound-engineering-alignment-cortex.md
@@ -45,5 +38,8 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Reference: Investigate fix_markdown_lint failure (2026-02-16)** - Plan: .cortex/plans/phase-investigate-fix_markdown_lint-failure-20260216-204350.md
 - **Reference: Session Optimization load context and test typing** - Plan: .cortex/plans/session-optimization-load-context-and-test-typing.md
 - **Session Optimization: Memory bank write discipline (2026-02-19 analysis)** - PENDING - Reinforce manage_file-only for roadmap edits in implement/analyze prompts and memory-bank-updater. Plan: .cortex/plans/session-optimization-memory-bank-write-discipline-2026-02-19-analysis.md
-- **Session Optimization: Testing Standards and Code Quality Improvements (2026-02-19 Analysis)** - PENDING - Improve testing standards compliance and code quality workflow: add prompt reminders for private API testing prohibition and proactive helper extraction, add testing standards review step, review type checker configuration.
-- **Promote response_format Literal to Pydantic Enum** - PENDING - Replace Literal["concise", "detailed"] with ResponseFormat(str, Enum) across MCP tools for better type safety and consistency with project patterns.
+- **Session Optimization: Testing Standards and Code Quality Improvements (2026-02-19 Analysis)** - PENDING - Improve testing standards compliance and code quality workflow: add prompt reminders for private API testing prohibition and proactive helper extraction, add testing standards review step, review type checker configuration. Plan: .cortex/plans/session-optimization-testing-standards-and-code-quality-improvements-2026-02-19-analysis.md
+- **Promote response_format Literal to Pydantic Enum** - PENDING - Replace Literal["concise", "detailed"] with ResponseFormat(str, Enum) across MCP tools for better type safety and consistency with project patterns. Plan: .cortex/plans/promote-response-format-to-pydantic-enum.md
+- **Session Optimization: Analyze 2026-02-19 Follow-ups** - PENDING - Implement load_context budget examples, memory-bank MCP-only edit reminders, and roadmap sync guidance from end-of-session analysis. Plan: .cortex/plans/session-optimization-analyze-2026-02-19-follow-ups.md
+- **Session Optimization: Step 12.7 MCP Connection Stability Enhancements** - PENDING - Enhance MCP connection stability for Step 12.7 (tests with coverage validation) in the commit pipeline to prevent commit blocks due to connection closure during long-running test execution.
+- **Promote load_context depth Literal to Pydantic Enum** - PENDING - Replace Literal["metadata_only", "summary", "full"] with ContextDepth(str, Enum) for load_context depth parameter; align with OperationStatus/ResponseFormat pattern.

@@ -98,6 +98,52 @@ def _validate_zero_budget_for_non_trivial(
     return None
 
 
+def _resolve_load_context_budget(
+    task_description: str, token_budget: int | None
+) -> tuple[int | None, str | None]:
+    """Validate zero budget for non-trivial tasks and resolve effective budget.
+
+    Returns:
+        (effective_budget, error_json_or_none). If error is non-None, caller should return it.
+    """
+    validation_error = _validate_zero_budget_for_non_trivial(
+        task_description, token_budget
+    )
+    if validation_error:
+        return None, validation_error
+    effective_budget = None if token_budget == 0 else token_budget
+    return effective_budget, None
+
+
+async def _execute_load_context_with_logging(
+    task_description: str,
+    effective_budget: int | None,
+    strategy: str,
+    loading_strategy: str | None,
+    depth: Literal["metadata_only", "summary", "full"] | None,
+    response_format: Literal["concise", "detailed"],
+    role: str | None,
+    ctx: MCPContext | None,
+) -> str:
+    """Run _execute_load_context with success/error logging. Returns result JSON or error string."""
+    try:
+        result = await _execute_load_context(
+            task_description,
+            effective_budget,
+            strategy,
+            loading_strategy,
+            depth,
+            response_format,
+            role,
+            ctx,
+        )
+        await log_client(ctx, "info", "load_context: completed", logger_name=__name__)
+        return result
+    except Exception as e:
+        await log_client(ctx, "error", f"load_context: {e!s}", logger_name=__name__)
+        return _format_load_context_error(e)
+
+
 def is_non_trivial_task(task_description: str) -> bool:
     """Detect if a task is non-trivial based on keywords."""
     task_lower = task_description.lower()
@@ -432,24 +478,21 @@ async def load_context(
         JSON with selected files, their content, and relevance scores
     """
     await log_client(ctx, "info", "load_context: starting", logger_name=__name__)
-    # Normalize token_budget=0 to None so effective budget comes from config (always provides guidance)
-    effective_budget = None if token_budget == 0 else token_budget
-    try:
-        result = await _execute_load_context(
-            task_description,
-            effective_budget,
-            strategy,
-            loading_strategy,
-            depth,
-            response_format,
-            role,
-            ctx,
-        )
-        await log_client(ctx, "info", "load_context: completed", logger_name=__name__)
-        return result
-    except Exception as e:
-        await log_client(ctx, "error", f"load_context: {e!s}", logger_name=__name__)
-        return _format_load_context_error(e)
+    effective_budget, budget_error = _resolve_load_context_budget(
+        task_description, token_budget
+    )
+    if budget_error:
+        return budget_error
+    return await _execute_load_context_with_logging(
+        task_description,
+        effective_budget,
+        strategy,
+        loading_strategy,
+        depth,
+        response_format,
+        role,
+        ctx,
+    )
 
 
 def _determine_depth_from_budget(

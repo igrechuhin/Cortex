@@ -495,10 +495,29 @@ def _progress_error(message: str, error: str) -> AppendProgressEntryResult:
     )
 
 
+def _validate_progress_entry_text(entry_text: str) -> str | None:
+    """Reject progress entry text that matches common corruption patterns.
+
+    Ensures COMPLETE is preceded by the proper delimiter (e.g. " - COMPLETE"
+    or ")** - COMPLETE") to avoid malformed bullets like "20260209COMPLETE".
+    Returns an error message if invalid, None if valid.
+    """
+    t = (entry_text or "").strip()
+    if "COMPLETE" in t and " - COMPLETE" not in t:
+        return (
+            "Progress entry contains 'COMPLETE' but is missing ' - COMPLETE' "
+            "(e.g. use '**Title** - COMPLETE. Summary...', not '...COMPLETE' alone)"
+        )
+    return None
+
+
 async def _execute_append_progress(
     root: Path, date_str: str, entry_text: str
 ) -> AppendProgressEntryResult:
     """Append one entry to progress.md under ## date_str. Returns result."""
+    validation_err = _validate_progress_entry_text(entry_text)
+    if validation_err:
+        return _progress_error("Invalid progress entry format", validation_err)
     mem_dir = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
     progress_path = mem_dir / MemoryBankFile.PROGRESS
     content, read_err = _read_file(progress_path)

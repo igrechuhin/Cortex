@@ -270,6 +270,23 @@ If you see this error in another project, either add coverage options only when 
 3. **Reload the window**  
    After changing settings: Command Palette → "Developer: Reload Window", then use the Test view again.
 
+#### Step 12.7 and sandboxed environments {#step-127-and-sandboxed-environments}
+
+**Symptoms**:
+
+- Step 12.7 (tests with coverage) in the commit pipeline fails or cannot execute when run in a sandboxed environment (e.g. restricted CI, agent runner, or environment where test execution is disabled or times out).
+
+**Cause**:
+
+Sandboxed environments may block or limit subprocess execution, network, or long-running processes. The commit pipeline requires Step 12.7 to pass before commit; there is no fallback for tests (unlike formatting or quality checks).
+
+**What to do**:
+
+1. **Commit remains blocked** until Step 12.7 executes successfully. Phase A (Step 4) test results are not acceptable in place of Step 12.7, because code or memory-bank changes in Steps 5–11 can affect test results.
+2. **Run tests outside the sandbox**: Run the full test suite locally or in a non-sandboxed CI job (e.g. `execute_pre_commit_checks(checks=["tests"], ...)` or `uv run pytest tests/` with coverage). Ensure tests pass and coverage ≥ 90%.
+3. **Re-run the commit pipeline** after tests pass outside the sandbox, so Step 12.7 can complete (or run the pipeline in an environment where Step 12.7 is allowed).
+4. **Document the limitation**: If your environment routinely runs in a sandbox, document that commit must be run in an environment where test execution is allowed, or run tests manually before invoking commit.
+
 ### File Operations
 
 #### Issue: File lock timeout

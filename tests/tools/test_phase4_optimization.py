@@ -319,10 +319,30 @@ class TestLoadContext:
             # Effective budget = min(10000, 100000) - 10000 = 0
             assert result["token_budget"] == 0
 
-    async def test_load_context_zero_budget_normalized_to_default(
+    async def test_load_context_zero_budget_non_trivial_returns_validation_error(
         self, mock_project_root: Path, mock_managers: dict[str, object]
     ) -> None:
-        """token_budget=0 is normalized to None so effective budget comes from config."""
+        """token_budget=0 with non-trivial task returns validation error (no normalization)."""
+        # Arrange: no need to patch managers; validation runs before init
+        # Act: non-trivial task with token_budget=0 → rejected with error
+        result_str = await load_context(
+            task_description="Implement feature X",
+            token_budget=0,
+            response_format="detailed",
+        )
+        result = json.loads(result_str)
+
+        # Assert: validation error, not success
+        assert result["status"] == "error"
+        assert "token_budget=0" in result.get("error", "")
+        assert (
+            "non-trivial" in result.get("error", "").lower() or "suggestion" in result
+        )
+
+    async def test_load_context_trivial_task_zero_budget_normalized_to_default(
+        self, mock_project_root: Path, mock_managers: dict[str, object]
+    ) -> None:
+        """token_budget=0 with trivial task is normalized to default and succeeds."""
         # Arrange
         with (
             patch(
@@ -339,15 +359,15 @@ class TestLoadContext:
                 side_effect=_get_manager_helper,
             ),
         ):
-            # Act: non-trivial task with token_budget=0 → normalized to config default
+            # Act: trivial task (no implement/fix/debug etc.) with token_budget=0
             result_str = await load_context(
-                task_description="Implement feature X",
+                task_description="What is the project name?",
                 token_budget=0,
                 response_format="detailed",
             )
             result = json.loads(result_str)
 
-            # Assert: success (no error); effective budget from config same as default path
+            # Assert: normalized to default budget path, success
             assert result["status"] == "success"
             assert result["token_budget"] == 0  # mock: default 10000 - reserve 10000
 
@@ -1309,36 +1329,22 @@ class TestContextBudgetValidation:
         assert is_non_trivial_task("List items") is False
 
     @pytest.mark.asyncio
-    @pytest.mark.asyncio
-    async def test_load_context_normalizes_zero_budget_for_non_trivial(
+    async def test_load_context_rejects_zero_budget_for_non_trivial(
         self, mock_project_root: Path, mock_managers: ManagersDict
     ) -> None:
-        """load_context normalizes token_budget=0 to config default for non-trivial tasks."""
-        with (
-            patch(
-                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
-                new_callable=AsyncMock,
-                return_value=mock_project_root,
-            ),
-            patch(
-                "cortex.tools.phase4_optimization.get_managers",
-                return_value=mock_managers,
-            ),
-            patch(
-                "cortex.tools.phase4_context_operations.get_manager",
-                side_effect=_get_manager_helper,
-            ),
-        ):
-            result_str = await load_context(
-                task_description="Implement a new feature",
-                token_budget=0,
-                response_format="detailed",
-            )
-            result = json.loads(result_str)
-            assert result.get("status") == "success"
-            # Effective budget from config (0 normalized to None); detailed format includes it
-            assert "token_budget" in result
-            assert result["token_budget"] == 0  # mock: default 10000 - reserve 10000
+        """load_context returns validation error for token_budget=0 with non-trivial tasks."""
+        # No patches: validation runs before initialization
+        result_str = await load_context(
+            task_description="Implement a new feature",
+            token_budget=0,
+            response_format="detailed",
+        )
+        result = json.loads(result_str)
+        assert result.get("status") == "error"
+        assert "token_budget=0" in result.get("error", "")
+        assert (
+            "non-trivial" in result.get("error", "").lower() or "suggestion" in result
+        )
 
     @pytest.mark.asyncio
     async def test_load_context_allows_zero_budget_for_trivial(

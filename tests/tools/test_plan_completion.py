@@ -25,6 +25,7 @@ from cortex.tools.plan_completion import (
     _find_roadmap_bullet_line,  # type: ignore[private-usage]
     _last_bullet_line_in_range,  # type: ignore[private-usage]
     _remove_line_at,  # type: ignore[private-usage]
+    _validate_progress_entry_text,  # type: ignore[private-usage]
     complete_plan,
 )
 
@@ -146,6 +147,28 @@ class TestAppendProgressEntryContent:
         assert "Summary" in new_content
 
 
+class TestValidateProgressEntryText:
+    """Tests for _validate_progress_entry_text (progress entry format validation)."""
+
+    def test_valid_accepts_title_dash_complete(self) -> None:
+        assert _validate_progress_entry_text("**Title** - COMPLETE. Summary.") is None
+
+    def test_valid_accepts_parenthesis_close_dash_complete(self) -> None:
+        assert _validate_progress_entry_text(")** - COMPLETE. Done.") is None
+
+    def test_invalid_rejects_complete_without_delimiter(self) -> None:
+        err = _validate_progress_entry_text("20260209COMPLETE")
+        assert err is not None
+        assert " - COMPLETE" in err
+
+    def test_invalid_rejects_plain_complete(self) -> None:
+        err = _validate_progress_entry_text("COMPLETE")
+        assert err is not None
+
+    def test_valid_accepts_no_complete(self) -> None:
+        assert _validate_progress_entry_text("**Ongoing** - In progress.") is None
+
+
 class TestExecuteAppendProgress:
     """Tests for _execute_append_progress."""
 
@@ -170,6 +193,22 @@ class TestExecuteAppendProgress:
             tmp_path, "2026-02-09", "**New** - COMPLETE."
         )
         assert result.status == "error"
+
+    @pytest.mark.asyncio
+    async def test_append_rejects_malformed_progress_entry(
+        self, tmp_path: Path
+    ) -> None:
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        _ = (mem / "progress.md").write_text(
+            "# Progress\n\n## 2026-02-09\n\n- **Old** - COMPLETE.\n"
+        )
+        result = await _execute_append_progress(
+            tmp_path, "2026-02-09", "20260209COMPLETE"
+        )
+        assert result.status == "error"
+        assert result.error is not None
+        assert " - COMPLETE" in (result.error or "")
 
 
 class TestExecuteAppendActiveContext:

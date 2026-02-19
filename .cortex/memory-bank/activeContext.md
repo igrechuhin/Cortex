@@ -40,6 +40,16 @@
 
 - ✅ **Session Optimization: Fix load_context Zero-Budget Configuration Error** - COMPLETE (2026-02-19) - Normalized token_budget=0 to None in load_context handler and in _calculate_effective_budget so effective budget comes from config; added prompt examples in implement and analyze; tests updated (test_load_context_normalizes_zero_budget_for_non_trivial, test_load_context_zero_budget_normalized_to_default).
 
+- ✅ **Session Optimization: load_context Budget and Test Type Narrowing** - COMPLETE (2026-02-19) - Documented non-zero load_context token budget for non-trivial tasks in implement and commit prompts; added JsonValue narrowing in tests to python-testing-standards.mdc.
+
+- ✅ **Investigate tool_raising_json_error MCP Tool Failure** - COMPLETE (2026-02-19) - Resolved blocker: identified as false positive (tool name only in test); removed two duplicate roadmap entries and archived both investigation plans to archive/Investigations/2026-02-19.
+
+- ✅ **Session Optimization: Fix load_context Zero-Budget Configuration Error** - COMPLETE (2026-02-19) - Reject token_budget=0 for non-trivial tasks in load_context; treat 0 as None in _calculate_effective_budget; added INCORRECT/CORRECT examples to implement and analyze prompts; tests and docs/api/tools.md updated.
+
+- ✅ **Session Optimization: MCP Connection Stability and Fallback Script Improvements** - COMPLETE (2026-02-19) - Improved MCP connection stability (health check before Step 12, retry with delay), Python 3.7+ compatibility for fallback scripts (from **future** import annotations), sandbox limitations documented for Step 12.7 in commit.md and troubleshooting.md, connection health check before Step 4 (optional).
+
+- ✅ **Session Optimization: Progress Entry Validation and Memory Bank Write Discipline** - COMPLETE (2026-02-19) - Added progress entry format validation guidance in memory-bank-updater and implement prompt; enforced manage_file-only for all memory-bank edits in implement, analyze, and AGENTS.md; added MCP validation to reject progress bullets missing " - COMPLETE" (e.g. 20260209COMPLETE). Tests and quality gate pass.
+
 ## Completed Work (2026-02-18)
 
 - **Summary (2026-02-18)** - 1 entries archived.

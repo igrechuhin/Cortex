@@ -1149,6 +1149,8 @@ This tool should be called at the START of any task to:
 - `loading_strategy` (str | None) - Required when strategy="progressive". Options: "by_relevance" (default), "by_priority", "by_dependencies"
 - `response_format` (str) - Response format: "concise" (default) or "detailed"
 
+**Zero budget (`token_budget=0`):** For **non-trivial** tasks (implement, fix, debug, refactor, test, optimize), passing `token_budget=0` returns a **validation error**; use an explicit non-zero budget (e.g. 10,000 for implement/add, 15,000 for fix/debug). For **trivial** tasks, `token_budget=0` is treated as "use default" and the config default budget is used. Recommend explicit non-zero budgets for implement, fix, debug, and planning tasks.
+
 **Description:**
 
 Uses relevance scoring and loading strategies to select the best subset of Memory Bank files that fit within a token budget. Supports hybrid retrieval strategy: when `depth="metadata_only"`, essential sections from configured files (e.g., "## Current Focus" and "## Next Steps" from activeContext.md) are automatically loaded in full, while other files return metadata only. Use the two-step pattern: `load_context(depth="metadata_only")` → `manage_file(sections=[...])` for optimal token efficiency (90%+ savings).

@@ -1,6 +1,6 @@
 # Phase: Investigate tool_raising_json_error MCP Tool Failure
 
-**Status**: PLANNING
+**Status**: COMPLETE
 **Priority**: ASAP (Blocker)
 **Created**: 2026-02-19
 **Target Completion**: 2026-02-19
@@ -19,6 +19,10 @@ Investigate and fix MCP tool failure that occurred during commit procedure execu
 - **Error Message**: `Expecting value: line 1 column 1 (char 0)`
 
 **Impact**: Commit procedure blocked at step: MCP tool execution. This is a blocker.
+
+## Resolution (2026-02-19)
+
+Root cause: **False positive**. The name `tool_raising_json_error` comes only from the test helper in `tests/unit/test_mcp_failure_handler.py` (used to verify the failure handler creates investigation plans). The blocker entries and plans were created when that test (or similar path) wrote to the repo. There is no production MCP tool with that name. Actions taken: removed both duplicate blocker entries from the roadmap and archived these investigation plans.
 
 ## Requirements
 

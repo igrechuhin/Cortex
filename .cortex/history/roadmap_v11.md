@@ -14,6 +14,8 @@
 
 ## Pending plans (from .cortex/plans)
 
+- **Session Optimization: Fix load_context Zero-Budget Configuration Error** - PENDING - Fix load_context token_budget=0 for non-trivial tasks. Plan: .cortex/plans/session-optimization-load-context-zero-budget-fix.md
+
 ### Investigation Plans (Archive / Reference)
 
 Completed investigations are recorded in [activeContext.md](activeContext.md). Plan files under `.cortex/plans/archive/` as needed.
@@ -28,21 +30,7 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
 - **Plans README** - Reference. Plan: .cortex/plans/README.md
-- **Session Optimization: Rules and context loading follow-ups (2026-02-12 Analysis)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-rules-and-context-loading-follow-ups-2026-02-12-analysis.md
-- **Session Optimization: Rules context followups (2026-02-12)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-rules-context-followups-2026-02-12.md
-- **Session Optimization: Sequential plan steps** - PENDING - Reference. Plan: .cortex/plans/session-optimization-sequential-plan-steps.md
-- **Session Optimization: Test coverage and development workflow improvements** - PENDING - Reference. Plan: .cortex/plans/session-optimization-test-coverage-and-development-workflow-improvements.md
-- **Session Optimization: Testing coverage documentation and planning (2026-02-16 Analysis)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-testing-coverage-documentation-and-planning-2026-02-16-analysis.md
-- **Structured planning Cortex MCP tools** - PENDING - Reference. Plan: .cortex/plans/structured-planning-cortex-mcp-tools.md
-- **Test fixture validation and maintenance** - PENDING - Reference. Plan: .cortex/plans/test-fixture-validation-maintenance.md
-- **Type cleanup inventory** - PENDING - Reference. Plan: .cortex/plans/type-cleanup-inventory.md
-- **Session Optimization Follow-Ups: Roadmap Dedup and Plan Lifecycle** - PENDING - Follow-ups from 2026-02-17 analysis to propagate roadmap blocker deduplication and investigation-plan lifecycle alignment patterns to all roadmap writers and failure handlers. Plan: .cortex/plans/session-optimization-follow-ups-roadmap-dedup-and-plan-lifecycle.md.
-- **Session Optimization Follow-Ups: Phase 57 Evaluation Framework and Context Budgets (2026-02-17)** - PENDING - Follow-ups from 2026-02-17 analysis to harden context-budget validation/zero-file safeguards, expand the Phase 57 evaluation task suite, add evaluation dashboards, and enable rules indexing for implement/analyze flows. Plan: .cortex/plans/session-optimization-phase57-eval-and-context-budgets-2026-02-17.md.
 - **Phase 57: Evaluation-Driven Tool Improvement** - IN PROGRESS - Remaining work: extend the evaluation task suite, add evaluation dashboards, and implement automated tool description optimization and A/B testing on top of the existing evaluation framework and error-pattern tooling. Plan: .cortex/plans/phase-57-evaluation-driven-tool-improvement.md.
-- **Session Optimization: Phase 58 multi-agent follow-ups** - PENDING - Follow-ups for Phase 58 to log AgentRole in load_context session logs, extend context-effectiveness analysis with role-aware statistics, and update prompts/docs once role data is available. Plan: .cortex/plans/session-optimization-phase-58-multi-agent-follow-ups.md.
-- **Session Optimization: Refactoring Workflow Improvements (2026-02-17 Analysis)** - PENDING - Improve refactoring workflow to reduce fix iterations: add intermediate validation checkpoints, document type narrowing pattern, add duplicate detection step. Plan: .cortex/plans/session-optimization-refactoring-workflow-improvements-2026-02-17-analysis.md.
-- **Session Optimization: Rule Loading and Discovery (2026-02-18 Analysis)** - PENDING - Enforce rule loading in implement prompt, add rule discovery fallback when rules() empty, document fallback in AGENTS.md/prompt. Plan: .cortex/plans/session-optimization-rule-loading-and-discovery-2026-02-18.md.
-- **Session Optimization: load_context Budget and Test Type Narrowing** - PENDING - Document non-zero load_context budget for non-trivial tasks in implement/fix prompts; document JsonValue narrowing in tests (testing/type rules).
 - **Session Optimization: MCP Connection Stability and Fallback Script Improvements** - PENDING - Improve MCP connection stability during commit pipeline and fix fallback script compatibility issues. Plan: .cortex/plans/session-optimization-mcp-connection-stability-and-fallback-script-improvements.md.
 - **Session Optimization: Progress Entry Validation and Memory Bank Write Discipline** - PENDING - Reduce progress entry typos and enforce manage_file-only for memory-bank writes (from 2026-02-18 analysis). Plan: .cortex/plans/session-optimization-progress-entry-validation-and-memory-bank-write-discipline.md.
 - **Session Optimization: Analyze 2026-02-18 Follow-ups** - PENDING - Follow-ups from 2026-02-18 analysis: Step 12/MCP stability, load_context budgets, manage_file contract. Plan: .cortex/plans/session-optimization-analyze-2026-02-18-follow-ups.md.
@@ -53,5 +41,7 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Reference: Investigate execute_pre_commit_checks failure (2026-02-17)** - Plan: .cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260217-201854.md
 - **Reference: Investigate fix_markdown_lint failure (2026-02-16)** - Plan: .cortex/plans/phase-investigate-fix_markdown_lint-failure-20260216-204350.md
 - **Reference: Session Optimization load context and test typing** - Plan: .cortex/plans/session-optimization-load-context-and-test-typing.md
-- **Promote OperationStatus to str Enum** - PENDING - Replace type OperationStatus = Literal["success", "error"] with class OperationStatus(str, Enum) in src/cortex/core/models.py; keep JSON output unchanged. Plan: .cortex/plans/operation-status-promote-to-enum.md
 - **Session Optimization: Memory bank write discipline (2026-02-19 analysis)** - PENDING - Reinforce manage_file-only for roadmap edits in implement/analyze prompts and memory-bank-updater. Plan: .cortex/plans/session-optimization-memory-bank-write-discipline-2026-02-19-analysis.md
+- **Session Optimization: Testing Standards and Code Quality Improvements (2026-02-19 Analysis)** - PENDING - Improve testing standards compliance and code quality workflow: add prompt reminders for private API testing prohibition and proactive helper extraction, add testing standards review step, review type checker configuration. Plan: .cortex/plans/session-optimization-testing-standards-and-code-quality-improvements-2026-02-19-analysis.md
+- **Promote response_format Literal to Pydantic Enum** - PENDING - Replace Literal["concise", "detailed"] with ResponseFormat(str, Enum) across MCP tools for better type safety and consistency with project patterns. Plan: .cortex/plans/promote-response-format-to-pydantic-enum.md
+- **Session Optimization: Analyze 2026-02-19 Follow-ups** - PENDING - Implement load_context budget examples, memory-bank MCP-only edit reminders, and roadmap sync guidance from end-of-session analysis. Plan: .cortex/plans/session-optimization-analyze-2026-02-19-follow-ups.md
