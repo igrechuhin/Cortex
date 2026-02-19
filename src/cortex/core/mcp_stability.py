@@ -676,6 +676,7 @@ async def _run_and_finalize[T](
     use_serial_semaphore: bool = False,
 ) -> T:
     """Run execute_fn and finalize (cancel progress, record usage)."""
+
     # fmt: off
     async def _do() -> T:
         result, s, et, wc = await execute_fn()

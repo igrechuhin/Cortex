@@ -12,6 +12,7 @@ from datetime import datetime
 from pathlib import Path
 
 from cortex.core.file_system import FileSystemManager
+from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.validation.models import (
     AllFilesTimestampResult,
@@ -261,7 +262,7 @@ async def validate_timestamps_single_file(
     has_blocking_violations = scan_result.invalid_format_count > 0
 
     result = SingleFileTimestampResult(
-        status="success",
+        status=OperationStatus.SUCCESS,
         check_type="timestamps",
         file_name=file_name,
         valid_count=scan_result.valid_count,

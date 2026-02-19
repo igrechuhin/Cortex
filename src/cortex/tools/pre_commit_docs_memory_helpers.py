@@ -12,7 +12,7 @@ import json
 from typing import cast
 
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.models import JsonDict, JsonValue, ModelDict
+from cortex.core.models import JsonDict, JsonValue, ModelDict, OperationStatus
 from cortex.tools.models import (
     DocsAndMemoryBankSyncErrorResult,
     DocsAndMemoryBankSyncResult,
@@ -106,7 +106,7 @@ def _build_timestamps_summary(
     if timestamps_result is None:
         return None
     valid_flag = bool(timestamps_result.get("valid", False))
-    status = "success" if valid_flag else "error"
+    status = OperationStatus.SUCCESS if valid_flag else OperationStatus.ERROR
     invalid_format = timestamps_result.get("total_invalid_format")
     invalid_with_time = timestamps_result.get("total_invalid_with_time")
     errors_count = 0
@@ -132,7 +132,7 @@ def _build_roadmap_sync_summary(
     if roadmap_result is None:
         return None
     valid_flag = bool(roadmap_result.get("valid", False))
-    status = "success" if valid_flag else "error"
+    status = OperationStatus.SUCCESS if valid_flag else OperationStatus.ERROR
     summary_obj = roadmap_result.get("summary", {})
     errors_count: int | None = None
     warnings_count: int | None = None

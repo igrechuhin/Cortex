@@ -73,7 +73,7 @@ async def analyze_rollback_impact(
     snapshot_id: str | None = await find_snapshot_fn(execution_id)
     if not snapshot_id:
         return RollbackImpactAnalysis(
-            status="error",
+            status=OperationStatus.ERROR,
             execution_id=execution_id,
             message=f"No snapshot found for execution {execution_id}",
         )
@@ -85,7 +85,7 @@ async def analyze_rollback_impact(
     )
 
     return RollbackImpactAnalysis(
-        status="success",
+        status=OperationStatus.SUCCESS,
         execution_id=execution_id,
         snapshot_id=snapshot_id,
         total_files=len(affected_files),

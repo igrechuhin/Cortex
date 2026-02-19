@@ -68,9 +68,11 @@ async def _execute_summarization(
     effective_strategy: str,
 ) -> str:
     """Execute summarization with resolved parameters."""
-    summarization_engine, metadata_index, fs_manager = (
-        await _get_summarization_managers(mgrs)
-    )
+    (
+        summarization_engine,
+        metadata_index,
+        fs_manager,
+    ) = await _get_summarization_managers(mgrs)
 
     files_to_summarize = await _get_files_to_summarize(file_name, metadata_index)
     results = await _summarize_files(

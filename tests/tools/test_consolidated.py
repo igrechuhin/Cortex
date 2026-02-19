@@ -1450,9 +1450,7 @@ class TestConfigure:
             "optimization_config": mock_optimization_config,
         }
 
-        def get_manager_side_effect(
-            mgrs: object, key: str, cls: type
-        ) -> object:  # type: ignore[type-arg]
+        def get_manager_side_effect(mgrs: object, key: str, cls: type) -> object:  # type: ignore[type-arg]
             if key == "learning_engine":
                 return mock_learning_engine
             return mock_optimization_config

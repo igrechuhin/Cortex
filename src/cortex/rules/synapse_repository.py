@@ -11,6 +11,7 @@ from datetime import datetime
 from pathlib import Path
 
 from cortex.core.constants import GIT_OPERATION_TIMEOUT_SECONDS
+from cortex.core.models import OperationStatus
 from cortex.core.security import CommitMessageSanitizer
 from cortex.rules.models import (
     GitCommandResult,
@@ -145,7 +146,7 @@ class SynapseRepository:
 
         except Exception as e:
             return SubmoduleInitResult(
-                status="error",
+                status=OperationStatus.ERROR,
                 error=str(e),
                 action="initialize_synapse",
             )
@@ -172,7 +173,7 @@ class SynapseRepository:
 
         if result.success:
             return SubmoduleInitResult(
-                status="success",
+                status=OperationStatus.SUCCESS,
                 action="updated_existing",
                 repo_url=repo_url,
                 local_path=str(self.synapse_path),
@@ -180,7 +181,7 @@ class SynapseRepository:
             )
 
         return SubmoduleInitResult(
-            status="error",
+            status=OperationStatus.ERROR,
             error=f"Failed to update submodule: {result.error or 'Unknown error'}",
             stdout=result.stdout,
             stderr=result.stderr,
@@ -211,7 +212,7 @@ class SynapseRepository:
 
         if not result.success:
             return SubmoduleInitResult(
-                status="error",
+                status=OperationStatus.ERROR,
                 error=f"Failed to add submodule: {result.error or 'Unknown error'}",
                 stdout=result.stdout,
                 stderr=result.stderr,
@@ -222,7 +223,7 @@ class SynapseRepository:
         )
 
         return SubmoduleInitResult(
-            status="success",
+            status=OperationStatus.SUCCESS,
             action="initialized",
             repo_url=repo_url,
             local_path=str(self.synapse_path),
@@ -245,7 +246,7 @@ class SynapseRepository:
         try:
             if not self.synapse_path.exists():
                 return SyncResult(
-                    status="error",
+                    status=OperationStatus.ERROR,
                     error="Synapse folder not found. Run initialize_synapse first.",
                 )
 
@@ -260,14 +261,14 @@ class SynapseRepository:
             self.last_sync = datetime.now()
 
             return SyncResult(
-                status="success",
+                status=OperationStatus.SUCCESS,
                 pulled=pull,
                 pushed=pushed,
                 changes=changes,
             )
 
         except Exception as e:
-            return SyncResult(status="error", error=str(e))
+            return SyncResult(status=OperationStatus.ERROR, error=str(e))
 
     async def _pull_changes(self, changes: SyncChanges) -> SyncResult | None:
         """Pull changes from remote.
@@ -291,7 +292,7 @@ class SynapseRepository:
 
         if not result.success:
             return SyncResult(
-                status="error",
+                status=OperationStatus.ERROR,
                 error=f"Failed to pull changes: {result.error or 'Unknown error'}",
             )
 
@@ -380,7 +381,7 @@ class SynapseRepository:
         )
         if not add_result.success:
             return UpdateResult(
-                status="error",
+                status=OperationStatus.ERROR,
                 error=f"Failed to git add: {add_result.error or 'Unknown error'}",
             )
         return None
@@ -419,7 +420,7 @@ class SynapseRepository:
     ) -> UpdateResult:
         """Build success response for file update."""
         return UpdateResult(
-            status="success",
+            status=OperationStatus.SUCCESS,
             committed=committed,
             pushed=pushed,
             commit_hash=commit_hash,
@@ -447,7 +448,7 @@ class SynapseRepository:
             return self._build_update_success_response(committed, pushed, commit_hash)
 
         except Exception as e:
-            return UpdateResult(status="error", error=str(e))
+            return UpdateResult(status=OperationStatus.ERROR, error=str(e))
 
     async def _get_commit_hash(self) -> str | None:
         """Get current commit hash.

@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 
 from cortex.core.constants import GIT_OPERATION_TIMEOUT_SECONDS
-from cortex.core.models import ModelDict
+from cortex.core.models import ModelDict, OperationStatus
 
 from ..core.retry import retry_async
 from ..core.security import InputValidator
@@ -202,7 +202,7 @@ class SynapseManager:
             validated_url = InputValidator.validate_git_url(repo_url)
         except ValueError as e:
             return SubmoduleInitResult(
-                status="error",
+                status=OperationStatus.ERROR,
                 error=f"Invalid git URL: {e}",
                 action="initialize_synapse",
             )
@@ -332,7 +332,9 @@ class SynapseManager:
         """
         try:
             if not self.synapse_path.exists():
-                return UpdateResult(status="error", error="Synapse not initialized")
+                return UpdateResult(
+                    status=OperationStatus.ERROR, error="Synapse not initialized"
+                )
 
             rule_path = await self.loader.create_rule_file(category, file, content)
             result = await self.repository.update_file(rule_path, commit_message)
@@ -348,7 +350,7 @@ class SynapseManager:
             return result
 
         except Exception as e:
-            return UpdateResult(status="error", error=str(e))
+            return UpdateResult(status=OperationStatus.ERROR, error=str(e))
 
     async def create_synapse_rule(
         self,
@@ -389,7 +391,7 @@ class SynapseManager:
             return UpdateResult.model_validate(result_dict)
 
         except Exception as e:
-            return UpdateResult(status="error", error=str(e))
+            return UpdateResult(status=OperationStatus.ERROR, error=str(e))
 
     async def _update_manifest_for_new_rule(
         self,
@@ -491,7 +493,9 @@ class SynapseManager:
         """
         try:
             if not self.synapse_path.exists():
-                return UpdateResult(status="error", error="Synapse not initialized")
+                return UpdateResult(
+                    status=OperationStatus.ERROR, error="Synapse not initialized"
+                )
 
             prompt_path = await self.prompts_loader.create_prompt_file(
                 category, file, content
@@ -511,6 +515,6 @@ class SynapseManager:
 
         except Exception as e:
             return UpdateResult(
-                status="error",
+                status=OperationStatus.ERROR,
                 error=str(e),
             )

@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from typing import cast
 
 from cortex.core.context_logging import MCPContext, log_client
-from cortex.core.models import JsonDict, JsonValue, ModelDict
+from cortex.core.models import JsonDict, JsonValue, ModelDict, OperationStatus
 from cortex.tools.markdown_operations import fix_markdown_lint
 from cortex.tools.models import (
     PreflightCheckSummary,
@@ -74,40 +74,37 @@ def _compute_preflight_passed(
     return exec_success and markdown_success
 
 
+def _one_check_summary(name: str, check_dict: ModelDict) -> PreflightCheckSummary:
+    """Build a single PreflightCheckSummary from a check result dict."""
+    success_flag = bool(check_dict.get("success"))
+    errors_value = check_dict.get("errors", [])
+    warnings_value = check_dict.get("warnings", [])
+    errors_count = len(errors_value) if isinstance(errors_value, list) else None
+    warnings_count = len(warnings_value) if isinstance(warnings_value, list) else None
+    output_obj = check_dict.get("output")
+    message = str(output_obj) if output_obj else None
+    return PreflightCheckSummary(
+        name=name,
+        status=(OperationStatus.SUCCESS if success_flag else OperationStatus.ERROR),
+        errors=errors_count,
+        warnings=warnings_count,
+        message=message,
+    )
+
+
 def _build_execute_check_summaries(
     execute_result: ModelDict,
 ) -> list[PreflightCheckSummary]:
     """Build summaries for checks returned by execute_pre_commit_checks."""
     summaries: list[PreflightCheckSummary] = []
-
     results_obj = execute_result.get("results", {})
     if not isinstance(results_obj, dict):
         return summaries
-
     results_dict = cast(dict[str, JsonValue], results_obj)
     for name, raw in results_dict.items():
         if not isinstance(raw, dict):
             continue
-        check_dict = cast(ModelDict, raw)
-        success_flag = bool(check_dict.get("success"))
-        errors_value = check_dict.get("errors", [])
-        warnings_value = check_dict.get("warnings", [])
-        errors_count = len(errors_value) if isinstance(errors_value, list) else None
-        warnings_count = (
-            len(warnings_value) if isinstance(warnings_value, list) else None
-        )
-        output_obj = check_dict.get("output")
-        message = str(output_obj) if output_obj else None
-        summaries.append(
-            PreflightCheckSummary(
-                name=name,
-                status="success" if success_flag else "error",
-                errors=errors_count,
-                warnings=warnings_count,
-                message=message,
-            )
-        )
-
+        summaries.append(_one_check_summary(name, cast(ModelDict, raw)))
     return summaries
 
 
@@ -126,7 +123,9 @@ def _append_markdown_summary(
         else 0
     )
     md_error_message = markdown_result.get("error_message")
-    md_status = "success" if files_with_errors == 0 else "error"
+    md_status = (
+        OperationStatus.SUCCESS if files_with_errors == 0 else OperationStatus.ERROR
+    )
     summaries.append(
         PreflightCheckSummary(
             name="markdown_lint",

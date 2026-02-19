@@ -381,7 +381,7 @@ def _build_response(
     total_errors = stats.total_errors
     success = total_errors == 0
     response = PreCommitResult(
-        status="success" if success else "error",
+        status=OperationStatus.SUCCESS if success else OperationStatus.ERROR,
         language=detected_language,
         checks_performed=stats.checks_performed,
         results=results,
@@ -557,7 +557,7 @@ def _build_quality_response(
 ) -> FixQualityResult:
     """Build quality fix response."""
     return FixQualityResult(
-        status="success",
+        status=OperationStatus.SUCCESS,
         errors_fixed=errors_fixed,
         warnings_fixed=warnings_fixed,
         formatting_issues_fixed=formatting_issues_fixed,

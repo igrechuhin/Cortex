@@ -19,6 +19,7 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import read_only_annotations, safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.models import OperationStatus
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.session_logger import get_session_id
 from cortex.optimization.agent_roles import AgentRole, normalize_role_name
@@ -331,7 +332,7 @@ async def _claim_task_impl(
         return error_result.model_dump_json()
 
     result = ClaimTaskResult(
-        status="success",
+        status=OperationStatus.SUCCESS,
         lock=lock,
         message=f"Successfully claimed lock on task '{task_title}'",
     )
@@ -384,7 +385,7 @@ async def _release_task_impl(task_title: str, ctx: MCPContext | None) -> str:
 
     if released:
         result = ReleaseTaskResult(
-            status="success",
+            status=OperationStatus.SUCCESS,
             task_title=task_title,
             released=True,
             message=f"Successfully released lock on task '{task_title}'",
@@ -395,7 +396,7 @@ async def _release_task_impl(task_title: str, ctx: MCPContext | None) -> str:
         )
     else:
         result = ReleaseTaskResult(
-            status="error",
+            status=OperationStatus.ERROR,
             task_title=task_title,
             released=False,
             message=f"Failed to release lock on task '{task_title}' (not found or locked by another session)",
@@ -433,7 +434,7 @@ async def release_task_lock(
     except Exception as e:
         await log_client(ctx, "error", f"release_task: {e}", logger_name=__name__)
         result = ReleaseTaskResult(
-            status="error",
+            status=OperationStatus.ERROR,
             task_title=task_title,
             released=False,
             message=f"Unexpected error: {e}",
@@ -450,7 +451,7 @@ async def _list_active_tasks_impl(ctx: MCPContext | None) -> str:
     locks = await list_active_locks(root)
 
     result = ListActiveTasksResult(
-        status="success",
+        status=OperationStatus.SUCCESS,
         locks=locks,
         count=len(locks),
     )
@@ -486,7 +487,7 @@ async def list_active_tasks(
     except Exception as e:
         await log_client(ctx, "error", f"list_active_tasks: {e}", logger_name=__name__)
         result = ListActiveTasksResult(
-            status="success",
+            status=OperationStatus.SUCCESS,
             locks=[],
             count=0,
         )
@@ -513,7 +514,7 @@ async def _check_task_available_impl(task_title: str, ctx: MCPContext | None) ->
                 break
 
     result = CheckTaskAvailableResult(
-        status="success",
+        status=OperationStatus.SUCCESS,
         task_title=task_title,
         available=available,
         lock=lock,
@@ -554,7 +555,7 @@ async def check_task_available_lock(
             ctx, "error", f"check_task_available: {e}", logger_name=__name__
         )
         result = CheckTaskAvailableResult(
-            status="success",
+            status=OperationStatus.SUCCESS,
             task_title=task_title,
             available=True,  # Treat errors as available to avoid blocking
             lock=None,

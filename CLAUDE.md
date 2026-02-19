@@ -22,7 +22,20 @@ load_context(task_description="<your goal>", token_budget=<appropriate>)
 
 **Pattern**: `session_start()` → review brief → `load_context(task_description=brief.next_work_item, ...)` → work
 
-Token budget guidance comes from `load_context` tool documentation and context-effectiveness analysis. Use task-appropriate budgets; see implement prompt for defaults.
+Token budget guidance comes from `load_context` tool documentation and context-effectiveness analysis. Use task-appropriate budgets.
+
+**Context budget defaults (task-type)**:
+
+| Task type | Token budget |
+|-----------|--------------|
+| implement/add, update/modify | 10,000 |
+| fix/debug, other | 15,000 |
+| small feature | 20,000–30,000 |
+| optimization | 15,000 |
+| narrow review/documentation | 7,000–8,000 |
+| architecture/large design | 40,000–50,000 |
+
+See implement prompt for full checklist and zero-budget guardrails.
 
 **On the fix path**: When you encounter a problem and have to fix something (errors, test failures, quality/type issues), you **must** load context and rules before making changes—e.g. `load_context(task_description="Fixing errors and issues", token_budget=15000)` and get relevant rules—so fixes follow all project rules and guidelines. See AGENTS.md and the commit/implement prompts for details.
 

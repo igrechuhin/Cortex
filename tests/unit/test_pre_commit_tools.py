@@ -355,7 +355,6 @@ class TestExecutePreCommitChecks:
             new_callable=AsyncMock,
             side_effect=Exception("Test error"),
         ):
-
             result = await execute_pre_commit_checks(
                 checks=["fix_errors"],
                 **_EXECUTE_REQUIRED,
@@ -906,7 +905,6 @@ class TestFixQualityIssues:
             new_callable=AsyncMock,
             side_effect=Exception("Root error"),
         ):
-
             result_json = await fix_quality_issues()
             result = json.loads(result_json)
 

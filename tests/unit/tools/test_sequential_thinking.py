@@ -399,7 +399,7 @@ class TestThinkTool:
         """Rapid successive think calls work correctly."""
         reset_core_for_testing()
         for i in range(5):
-            result = await think(thought=f"Thought {i+1}")
+            result = await think(thought=f"Thought {i + 1}")
             data = json.loads(result)
             assert data["thought_number"] == i + 1
 

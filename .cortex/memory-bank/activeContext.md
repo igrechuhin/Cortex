@@ -10,6 +10,10 @@
 
 - ✅ **Session Optimization: Roadmap sync cleanup (2026-02-09)** - COMPLETE (2026-02-19) - Fixed roadmap_sync validation: corrected invalid reference core/models.py to src/cortex/core/models.py; added Plan links to 9 roadmap bullets; added 6 reference entries for previously unlinked plans. validate(check_type="roadmap_sync") now returns valid: true.
 
+- ✅ **Session Optimization: Rule Loading and Discovery (2026-02-18 Analysis)** - COMPLETE (2026-02-19) - Enforced rule loading in implement prompt (Step 3 checklist, rule discovery fallback); added context budget table to CLAUDE.md and AGENTS.md; added zero-budget reminder to commit.md; added integration test for rules() with real indexing.
+
+- ✅ **Promote OperationStatus to str Enum** - COMPLETE (2026-02-19) - Replaced Literal type alias with OperationStatus(str, Enum) in core/models; updated all construction sites to use OperationStatus.SUCCESS/ERROR; ClaimTaskResult, ListActiveTasksResult, CheckTaskAvailableResult now use OperationStatus; added unit tests; JSON/MCP output unchanged.
+
 ## Completed Work (2026-02-18)
 
 - **Summary (2026-02-18)** - 1 entries archived.

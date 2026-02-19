@@ -1038,11 +1038,7 @@ class TestEdgeCases:
         memory_bank_dir = ensure_test_cortex_structure(temp_project_root)
         file_path = memory_bank_dir / "test.md"
         file_content = (
-            "# Test\n\n"
-            "## Section A\n\n"
-            "Content A.\n\n"
-            "## Section B\n\n"
-            "Content B.\n"
+            "# Test\n\n## Section A\n\nContent A.\n\n## Section B\n\nContent B.\n"
         )
         _ = file_path.write_text(file_content)
 

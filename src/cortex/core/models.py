@@ -6,6 +6,7 @@ Used by: version_manager, dependency_graph, metadata_index, migration
 """
 
 from collections.abc import ItemsView, KeysView, ValuesView
+from enum import Enum
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -19,8 +20,13 @@ type JsonValue = JsonPrimitive | list[JsonValue] | dict[str, JsonValue]
 # Common JSON dictionary shape used at JSON boundaries.
 type ModelDict = dict[str, JsonValue]
 
-# Operation result status used by tool and validation result models.
-type OperationStatus = Literal["success", "error"]
+
+class OperationStatus(str, Enum):
+    """Operation result status used by tool and validation result models."""
+
+    SUCCESS = "success"
+    ERROR = "error"
+
 
 # ============================================================================
 # Dict-like Pydantic base model (preserves legacy call sites)

@@ -19,6 +19,7 @@ from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.exceptions import FileConflictError, FileLockTimeoutError
 from cortex.core.mcp_annotations import destructive_annotations, safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
@@ -486,7 +487,7 @@ def _archive_plan_file(
 def _progress_error(message: str, error: str) -> AppendProgressEntryResult:
     """Build error result for progress operations."""
     return AppendProgressEntryResult(
-        status="error",
+        status=OperationStatus.ERROR,
         file_name=MemoryBankFile.PROGRESS,
         message=message,
         line_inserted=None,
@@ -514,7 +515,7 @@ async def _execute_append_progress(
     if write_err:
         return _progress_error("Failed to write progress", write_err)
     return AppendProgressEntryResult(
-        status="success",
+        status=OperationStatus.SUCCESS,
         file_name=MemoryBankFile.PROGRESS,
         message=f"Appended entry at line {line_inserted}",
         line_inserted=line_inserted,
@@ -525,7 +526,7 @@ async def _execute_append_progress(
 def _active_context_error(message: str, error: str) -> AppendActiveContextEntryResult:
     """Build error result for activeContext operations."""
     return AppendActiveContextEntryResult(
-        status="error",
+        status=OperationStatus.ERROR,
         file_name=MemoryBankFile.ACTIVE_CONTEXT,
         message=message,
         line_inserted=None,
@@ -556,7 +557,7 @@ async def _execute_append_active_context(
     if write_err:
         return _active_context_error("Failed to write activeContext", write_err)
     return AppendActiveContextEntryResult(
-        status="success",
+        status=OperationStatus.SUCCESS,
         file_name=MemoryBankFile.ACTIVE_CONTEXT,
         message=f"Appended entry at line {line_inserted}",
         line_inserted=line_inserted,
@@ -708,7 +709,7 @@ async def append_progress_entry(
             ctx, "error", f"append_progress_entry: {e}", logger_name=__name__
         )
         return AppendProgressEntryResult(
-            status="error",
+            status=OperationStatus.ERROR,
             file_name=MemoryBankFile.PROGRESS,
             message="Unexpected error",
             line_inserted=None,
@@ -764,7 +765,7 @@ async def append_active_context_entry(
             logger_name=__name__,
         )
         return AppendActiveContextEntryResult(
-            status="error",
+            status=OperationStatus.ERROR,
             file_name=MemoryBankFile.ACTIVE_CONTEXT,
             message="Unexpected error",
             line_inserted=None,

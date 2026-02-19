@@ -17,6 +17,7 @@ from cortex.core.constants import MCP_TOOL_TIMEOUT_MEDIUM
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.models import OperationStatus
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.session_logger import get_session_id
 from cortex.optimization.agent_roles import AgentRole, normalize_role_name
@@ -172,7 +173,7 @@ async def _register_session_impl(
     _ = await register_session(root, task_title, agent_role=agent_role)
 
     result = SessionRegistryResult(
-        status="success",
+        status=OperationStatus.SUCCESS,
         message=f"Successfully registered session for task '{task_title}'",
         error=None,
     )
@@ -209,7 +210,7 @@ async def session_register(
     except Exception as e:
         await log_client(ctx, "error", f"register_session: {e}", logger_name=__name__)
         result = SessionRegistryResult(
-            status="error",
+            status=OperationStatus.ERROR,
             message=f"Unexpected error: {e}",
             error=str(e),
         )
@@ -225,7 +226,7 @@ async def _deregister_session_impl(ctx: MCPContext | None) -> str:
 
     if deregistered:
         result = SessionRegistryResult(
-            status="success",
+            status=OperationStatus.SUCCESS,
             message="Successfully deregistered session",
             error=None,
         )
@@ -234,7 +235,7 @@ async def _deregister_session_impl(ctx: MCPContext | None) -> str:
         )
     else:
         result = SessionRegistryResult(
-            status="error",
+            status=OperationStatus.ERROR,
             message="Session not found in registry",
             error="Session not found",
         )
@@ -271,7 +272,7 @@ async def session_deregister(
     except Exception as e:
         await log_client(ctx, "error", f"deregister_session: {e}", logger_name=__name__)
         result = SessionRegistryResult(
-            status="error",
+            status=OperationStatus.ERROR,
             message=f"Unexpected error: {e}",
             error=str(e),
         )

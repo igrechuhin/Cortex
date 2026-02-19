@@ -5,6 +5,7 @@ Tests the session_start tool that combines orientation tasks into a single call.
 
 import json
 from pathlib import Path
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -295,7 +296,8 @@ class TestRunGitCommand:
     async def test_run_git_command_timeout(self) -> None:
         """Test git command timeout."""
         result = await _run_git_command(
-            ["sleep", "10"], timeout=0.1  # Will timeout quickly
+            ["sleep", "10"],
+            timeout=0.1,  # Will timeout quickly
         )
         assert not result.success
         assert (
@@ -419,7 +421,8 @@ class TestCalculateHealthSummary:
         managers = make_test_managers(fs=fs_manager, index=metadata_index)
 
         health = await _calculate_health_summary(
-            managers, tmp_path  # type: ignore[arg-type]
+            cast(dict[str, object], managers),
+            tmp_path,  # type: ignore[arg-type]
         )
         assert health.file_count == 7
         assert health.total_tokens == 350  # 7 files * 50 tokens
@@ -443,7 +446,8 @@ class TestCalculateHealthSummary:
         managers = make_test_managers(fs=fs_manager, index=metadata_index)
 
         health = await _calculate_health_summary(
-            managers, tmp_path  # type: ignore[arg-type]
+            cast(dict[str, object], managers),
+            tmp_path,  # type: ignore[arg-type]
         )
         assert health.file_count == 2
         assert len(health.missing_files) == 5
@@ -475,7 +479,8 @@ class TestCalculateHealthSummary:
         managers = make_test_managers(fs=fs_manager, index=metadata_index)
 
         health = await _calculate_health_summary(
-            managers, tmp_path  # type: ignore[arg-type]
+            cast(dict[str, object], managers),
+            tmp_path,  # type: ignore[arg-type]
         )
         assert health.token_budget_status == "over_budget"
 
@@ -668,7 +673,9 @@ Working on Phase 54.
         )
 
         result = await _session_start_impl(
-            None, tmp_path, managers  # type: ignore[arg-type]
+            None,
+            tmp_path,
+            managers,  # type: ignore[arg-type]
         )
 
         assert isinstance(result, SessionStartResult)

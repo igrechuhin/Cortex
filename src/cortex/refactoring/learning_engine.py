@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import cast
 
-from cortex.core.models import ModelDict
+from cortex.core.models import ModelDict, OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.refactoring.models import (
     FeedbackRecordResult,
@@ -318,7 +318,7 @@ class LearningEngine:
         )
 
         return ResetLearningResult(
-            status="success",
+            status=OperationStatus.SUCCESS,
             message="Learning data reset",
             feedback_reset=counts.get("feedback_reset", 0),
             patterns_reset=counts.get("patterns_reset", 0),

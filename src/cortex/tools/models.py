@@ -3025,7 +3025,7 @@ class TaskLock(StrictBaseModel):
 class ClaimTaskResult(StrictBaseModel):
     """Result of claiming a task lock (success)."""
 
-    status: Literal["success"] = Field(default="success")
+    status: OperationStatus = Field(default=OperationStatus.SUCCESS)
     lock: TaskLock = Field(description="Lock data for the claimed task")
     message: str = Field(description="Success message")
 
@@ -3049,7 +3049,7 @@ class ReleaseTaskResult(StrictBaseModel):
 class ListActiveTasksResult(StrictBaseModel):
     """Result of listing active task locks."""
 
-    status: Literal["success"] = Field(default="success")
+    status: OperationStatus = Field(default=OperationStatus.SUCCESS)
     locks: list[TaskLock] = Field(
         default_factory=lambda: [], description="List of active task locks"
     )
@@ -3059,7 +3059,7 @@ class ListActiveTasksResult(StrictBaseModel):
 class CheckTaskAvailableResult(StrictBaseModel):
     """Result of checking if a task is available."""
 
-    status: Literal["success"] = Field(default="success")
+    status: OperationStatus = Field(default=OperationStatus.SUCCESS)
     task_title: str = Field(description="Task title that was checked")
     available: bool = Field(description="Whether task is available (not locked)")
     lock: TaskLock | None = Field(

@@ -201,22 +201,22 @@ class TestCompactSession:
         # Create test content with old dates
         active_content = f"""# Active Context
 
-## Completed Work ({yesterday.strftime('%Y-%m-%d')})
+## Completed Work ({yesterday.strftime("%Y-%m-%d")})
 
 - Old task 1
 - Old task 2
 
-## Completed Work ({today.strftime('%Y-%m-%d')})
+## Completed Work ({today.strftime("%Y-%m-%d")})
 
 - Current task
 """
         progress_content = f"""# Progress Log
 
-## {old_date.strftime('%Y-%m-%d')}
+## {old_date.strftime("%Y-%m-%d")}
 
 - Very old entry
 
-## {today.strftime('%Y-%m-%d')}
+## {today.strftime("%Y-%m-%d")}
 
 - Recent entry
 """

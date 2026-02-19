@@ -564,10 +564,11 @@ async def _load_always_loaded_and_metadata(
     agent_role: AgentRole | None = None,
 ) -> tuple[dict[str, str], int, dict[str, ModelDict], dict[str, float]]:
     """Load always-loaded content and prepare metadata with role-based scoring."""
-    always_loaded_content, always_loaded_tokens = (
-        await _load_and_calculate_always_loaded(
-            always_load_sections, metadata_index, fs_manager
-        )
+    (
+        always_loaded_content,
+        always_loaded_tokens,
+    ) = await _load_and_calculate_always_loaded(
+        always_load_sections, metadata_index, fs_manager
     )
     files_metadata, relevance_scores = await _prepare_metadata_and_relevance(
         metadata_index, task_description, agent_role

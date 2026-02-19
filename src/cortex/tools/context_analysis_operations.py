@@ -97,6 +97,8 @@ def _is_non_trivial_task(task_description: str) -> bool:
         "implement",
         "add",
         "create",
+        "testing",
+        "test ",
     ]
     return any(keyword in task_lower for keyword in non_trivial_keywords)
 
@@ -366,7 +368,7 @@ def _get_zero_budget_warning(entries: list[ContextUsageEntry]) -> str | None:
     if non_trivial_tasks:
         return (
             "⚠️ CRITICAL: At least one load_context call had token_budget=0 "
-            "or files_selected=0 for a non-trivial task (refactor/fix/debug/implement). "
+            "or files_selected=0 for a non-trivial task (refactor/fix/debug/implement/testing). "
             "This is a configuration error - these tasks MUST use a non-zero token budget "
             "(typically 10k-15k for fix/debug, 20k-30k for implement/add). "
             "Re-run load_context with an appropriate budget to ensure proper context loading. "
@@ -375,7 +377,7 @@ def _get_zero_budget_warning(entries: list[ContextUsageEntry]) -> str | None:
         )
     return (
         "Warning: at least one load_context call had token_budget=0 or "
-        "no selected files. For non-trivial tasks (refactor/fix/debug/implement), "
+        "no selected files. For non-trivial tasks (refactor/fix/debug/implement/testing), "
         "this is a configuration error - use a non-zero token budget "
         "(typically 10k-15k for fix/debug, 20k-30k for implement/add)."
     )

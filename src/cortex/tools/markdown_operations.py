@@ -771,9 +771,11 @@ async def _fix_markdown_lint_impl(
     Always scopes to git-modified (+ optionally untracked) markdown files.
     For full-repo lint, use ``markdownlint-cli2 --fix`` directly from the shell.
     """
-    validation_error, markdownlint_cmd, config_path = (
-        await _validate_markdown_prerequisites(root_path)
-    )
+    (
+        validation_error,
+        markdownlint_cmd,
+        config_path,
+    ) = await _validate_markdown_prerequisites(root_path)
     if validation_error:
         return _apply_validation_error_hint(validation_error)
     assert markdownlint_cmd is not None

@@ -1302,3 +1302,54 @@ class TestRulesContextLogging:
                 for c in mock_log.call_args_list
                 if len(c[0]) >= 3
             )
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_rules_get_relevant_returns_at_least_one_rule_for_commit_pipeline() -> (
+    None
+):
+    """Integration: rules(get_relevant, 'Commit pipeline, test coverage') returns >= 1 rule when rules present.
+
+    Ensures rules indexing is effective for commit/analyze workflows.
+    Uses real project root and real managers when .cortex/rules exists.
+    """
+    project_root = Path(__file__).resolve().parents[2]
+    rules_dir = project_root / ".cortex" / "rules"
+    if not rules_dir.exists():
+        pytest.skip(reason=".cortex/rules not present")
+    rule_files = list(rules_dir.rglob("*.mdc")) if rules_dir.is_dir() else []
+    if not rule_files:
+        pytest.skip(reason=".cortex/rules has no .mdc files")
+
+    async def _return_project_root(_: object, __: object) -> Path:
+        return project_root
+
+    with patch(
+        "cortex.tools.rules_operations.resolve_project_root_async",
+        new_callable=AsyncMock,
+        side_effect=_return_project_root,
+    ):
+        # Index first so get_relevant can return from index
+        index_result = await rules(operation="index", force=True)
+        index_data = json.loads(index_result)
+        if index_data.get("status") == "disabled":
+            pytest.skip(reason="Rules indexing disabled in config")
+
+        get_result = await rules(
+            operation="get_relevant",
+            task_description="Commit pipeline, test coverage",
+            min_relevance_score=0.1,
+        )
+    get_data = json.loads(get_result)
+    assert get_data.get("status") == "success", get_data
+    rules_count = get_data.get("rules_count", 0)
+    total = (
+        len(get_data.get("local_rules", []))
+        + len(get_data.get("generic_rules", []))
+        + len(get_data.get("language_rules", []))
+    )
+    assert rules_count >= 1 or total >= 1, (
+        "rules() should return at least one rule for 'Commit pipeline, test coverage' "
+        "when rules are present and indexed"
+    )

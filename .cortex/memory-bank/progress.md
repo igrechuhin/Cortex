@@ -6,6 +6,9 @@
 - **Session Optimization: Roadmap section removal and sync** - COMPLETE. remove_roadmap_section tool, roadmap_sync doc and test for archive exclusion, implement/memory-bank-updater guidance.
 - **Session Optimization: Roadmap sync cleanup (2026-02-09)** - COMPLETE. Fixed invalid roadmap reference, linked 15 unlinked plans via Plan links and reference entries; roadmap_sync validation now valid.
 - **Commit (preflight, memory bank, plan archive)** - Preflight passed: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4256 passed, 91.74% coverage. No completed plans in plans root; memory bank and roadmap consistent.
+- **Session Optimization: Rule Loading and Discovery (2026-02-18)** - COMPLETE. Implement prompt Step 3 rule verification and get_synapse_rules fallback; context budget table in CLAUDE/AGENTS; zero-budget reminder in commit.md; integration test for rules() tool.
+- **Promote OperationStatus to str Enum** - COMPLETE. Replaced type alias with str Enum in core/models; updated 8 modules and all construction sites; JSON unchanged.
+- **Commit (function length: pre_commit_preflight_helpers)** - Extracted `_one_check_summary` from `_build_execute_check_summaries` to fix function length (32→≤30 lines). Preflight: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4263 passed, 91.75% coverage.
 
 ## 2026-02-18
 

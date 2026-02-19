@@ -251,8 +251,7 @@ class TestFindCompletedEntriesInRoadmap:
             project_root = Path(tmpdir)
             (project_root / "src").mkdir()
             content = (
-                "## Section\n\n"
-                "- **Phase 18** - COMPLETED (archived) - Plan: foo.md.\n"
+                "## Section\n\n- **Phase 18** - COMPLETED (archived) - Plan: foo.md.\n"
             )
             result = validate_roadmap_sync(project_root, content)
             assert len(result.completed_entries_in_roadmap) == 1

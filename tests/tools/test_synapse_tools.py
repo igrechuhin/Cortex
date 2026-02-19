@@ -17,6 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.core.models import OperationStatus
 from cortex.managers.types import ManagersDict
 from cortex.rules.models import SynapseSyncResult, SyncChanges
 from cortex.tools.synapse_tools import (
@@ -83,7 +84,7 @@ def mock_synapse_manager():
     manager = MagicMock()
     manager.sync_synapse = AsyncMock(
         return_value=SynapseSyncResult(
-            status="success",
+            status=OperationStatus.SUCCESS,
             pulled=True,
             pushed=False,
             changes=SyncChanges(

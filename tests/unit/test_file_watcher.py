@@ -97,7 +97,10 @@ class TestMemoryBankWatcherLifecycle:
         watcher = MemoryBankWatcher(tmp_path, callback)
         loop = asyncio.get_event_loop()
 
-        watcher.start(loop)
+        with patch("cortex.core.file_watcher.Observer") as MockObserver:
+            observer_instance = MockObserver.return_value
+            observer_instance.is_alive.return_value = True
+            watcher.start(loop)
         # After start, the underlying observer should be created.
         assert watcher.observer is not None
 
@@ -331,7 +334,10 @@ class TestFileWatcherManagerLifecycle:
         manager = FileWatcherManager()
         callback = AsyncMock()
 
-        await manager.start(tmp_path, callback)
+        with patch("cortex.core.file_watcher.Observer") as MockObserver:
+            observer_instance = MockObserver.return_value
+            observer_instance.is_alive.return_value = True
+            await manager.start(tmp_path, callback)
 
         assert manager.watcher is not None
         assert manager.is_running is True
@@ -348,7 +354,10 @@ class TestFileWatcherManagerLifecycle:
 
         assert not non_existent.exists()
 
-        await manager.start(non_existent, callback)
+        with patch("cortex.core.file_watcher.Observer") as MockObserver:
+            observer_instance = MockObserver.return_value
+            observer_instance.is_alive.return_value = True
+            await manager.start(non_existent, callback)
 
         assert non_existent.exists()
         assert manager.is_running is True
@@ -361,7 +370,10 @@ class TestFileWatcherManagerLifecycle:
         manager = FileWatcherManager()
         callback = AsyncMock()
 
-        await manager.start(tmp_path, callback, debounce_delay=2.5)
+        with patch("cortex.core.file_watcher.Observer") as MockObserver:
+            observer_instance = MockObserver.return_value
+            observer_instance.is_alive.return_value = True
+            await manager.start(tmp_path, callback, debounce_delay=2.5)
 
         assert manager.watcher is not None
         assert manager.watcher.debounce_delay == 2.5
@@ -376,11 +388,17 @@ class TestFileWatcherManagerLifecycle:
         manager = FileWatcherManager()
         callback = AsyncMock()
 
-        await manager.start(tmp_path, callback)
+        with patch("cortex.core.file_watcher.Observer") as MockObserver:
+            observer_instance = MockObserver.return_value
+            observer_instance.is_alive.return_value = True
+            await manager.start(tmp_path, callback)
         first_watcher = manager.watcher
 
         # Try to start again
-        await manager.start(tmp_path, callback)
+        with patch("cortex.core.file_watcher.Observer") as MockObserver:
+            observer_instance = MockObserver.return_value
+            observer_instance.is_alive.return_value = True
+            await manager.start(tmp_path, callback)
 
         # Should still have the same watcher
         assert manager.watcher is first_watcher
@@ -392,11 +410,14 @@ class TestFileWatcherManagerLifecycle:
         manager = FileWatcherManager()
         callback = AsyncMock()
 
-        # Start watcher
+        # Start watcher with mocked Observer
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            loop.run_until_complete(manager.start(tmp_path, callback))
+            with patch("cortex.core.file_watcher.Observer") as MockObserver:
+                observer_instance = MockObserver.return_value
+                observer_instance.is_alive.return_value = True
+                loop.run_until_complete(manager.start(tmp_path, callback))
 
             assert manager.is_running is True
             assert manager.watcher is not None
@@ -424,7 +445,10 @@ class TestFileWatcherManagerLifecycle:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            loop.run_until_complete(manager.start(tmp_path, callback))
+            with patch("cortex.core.file_watcher.Observer") as MockObserver:
+                observer_instance = MockObserver.return_value
+                observer_instance.is_alive.return_value = True
+                loop.run_until_complete(manager.start(tmp_path, callback))
             assert manager.is_running is True
 
             # Trigger destructor

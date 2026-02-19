@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import cast
 
-from cortex.core.models import JsonDict, JsonValue, ModelDict
+from cortex.core.models import JsonDict, JsonValue, ModelDict, OperationStatus
 from cortex.managers.initialization import get_managers, get_project_root
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
@@ -45,7 +45,7 @@ def format_language_rules_list(rules: list[ModelDict]) -> list[ModelDict]:
 def _create_error_result(error_message: str) -> RulesExecutionResult:
     """Create error result for rules execution."""
     return RulesExecutionResult(
-        status="error",
+        status=OperationStatus.ERROR,
         task_description=None,
         context=None,
         rules_loaded=None,
@@ -141,7 +141,7 @@ def format_rules_response(
     source = str(source_raw) if source_raw is not None else "local_only"
 
     return RulesExecutionResult(
-        status="success",
+        status=OperationStatus.SUCCESS,
         task_description=task_description,
         context=context,
         rules_loaded=JsonDict.from_dict(rules_loaded_data),
