@@ -166,6 +166,111 @@
       "Not filtering by load_context tool name"
     ],
     "usage_query": "load_context"
+  },
+  {
+    "id": "memory-compact-session",
+    "name": "Compact memory bank files at end of session",
+    "description": "Agent compacts activeContext and progress files to reduce token usage, creates session handoff JSON, and applies progressive summarization.",
+    "category": "memory_bank",
+    "expected_tools": ["compact_session"],
+    "expected_outcome": "activeContext and progress are compacted, session handoff JSON is written, and token savings are reported.",
+    "token_budget_baseline": 0,
+    "common_failure_modes": [
+      "Not creating pre-compaction snapshots for rollback safety",
+      "Failing to write session handoff JSON",
+      "Not applying progressive summarization tiers correctly"
+    ],
+    "usage_query": "compact_session"
+  },
+  {
+    "id": "memory-validate-roadmap-sync",
+    "name": "Validate memory bank with roadmap sync check",
+    "description": "Agent validates memory bank files including roadmap synchronization to ensure no orphaned plans or invalid references.",
+    "category": "memory_bank",
+    "expected_tools": ["validate"],
+    "expected_outcome": "All validation checks pass including roadmap_sync with no unlinked plans or invalid references.",
+    "token_budget_baseline": 0,
+    "common_failure_modes": [
+      "Not running roadmap_sync check type",
+      "Ignoring unlinked_plans warnings",
+      "Not fixing invalid plan references"
+    ],
+    "usage_query": "roadmap_sync"
+  },
+  {
+    "id": "memory-append-progress-entry",
+    "name": "Append progress entry using helper tool",
+    "description": "Agent uses append_progress_entry helper to safely add a single progress entry without full-content writes.",
+    "category": "memory_bank",
+    "expected_tools": ["append_progress_entry"],
+    "expected_outcome": "Progress entry is appended under correct date section using safe helper tool.",
+    "token_budget_baseline": 0,
+    "common_failure_modes": [
+      "Using manage_file with full content instead of append helper",
+      "Incorrect date format (not YYYY-MM-DD)",
+      "Entry format violations (coverage percentages, phase names)"
+    ],
+    "usage_query": "append_progress_entry"
+  },
+  {
+    "id": "memory-append-active-context-entry",
+    "name": "Append activeContext entry using helper tool",
+    "description": "Agent uses append_active_context_entry helper to safely add completed work entry without full-content writes.",
+    "category": "memory_bank",
+    "expected_tools": ["append_active_context_entry"],
+    "expected_outcome": "Completed work entry is appended under correct date section using safe helper tool.",
+    "token_budget_baseline": 0,
+    "common_failure_modes": [
+      "Using manage_file with full content instead of append helper",
+      "Incorrect date format (not YYYY-MM-DD)",
+      "Not creating date section if missing"
+    ],
+    "usage_query": "append_active_context_entry"
+  },
+  {
+    "id": "memory-remove-roadmap-entry",
+    "name": "Remove roadmap entry using helper tool",
+    "description": "Agent uses remove_roadmap_entry helper to safely remove a single roadmap bullet without full-content writes.",
+    "category": "memory_bank",
+    "expected_tools": ["remove_roadmap_entry"],
+    "expected_outcome": "Roadmap entry is removed safely using helper tool without corruption.",
+    "token_budget_baseline": 0,
+    "common_failure_modes": [
+      "Using manage_file with full content instead of remove helper",
+      "Not removing orphaned section headings after last bullet",
+      "Removing wrong entry due to non-unique substring"
+    ],
+    "usage_query": "remove_roadmap_entry"
+  },
+  {
+    "id": "commit-run-preflight-checks",
+    "name": "Run preflight checks before commit",
+    "description": "Agent runs Phase A preflight checks (fix_errors, format, markdown lint, type_check, quality, tests) before commit pipeline.",
+    "category": "pre_commit",
+    "expected_tools": ["run_preflight_checks"],
+    "expected_outcome": "All preflight checks pass with zero errors, ready for commit pipeline Phase B.",
+    "token_budget_baseline": 0,
+    "common_failure_modes": [
+      "Not fixing errors before proceeding",
+      "Skipping quality gate when violations exist",
+      "Not running all required checks (fix_errors, format, markdown lint, type_check, quality, tests)"
+    ],
+    "usage_query": "run_preflight_checks"
+  },
+  {
+    "id": "commit-run-docs-and-memory-bank-sync",
+    "name": "Run docs and memory bank sync validation",
+    "description": "Agent runs Phase B docs and memory bank sync validation to ensure timestamps and roadmap sync are correct.",
+    "category": "pre_commit",
+    "expected_tools": ["run_docs_and_memory_bank_sync"],
+    "expected_outcome": "Docs and memory bank sync validation passes with no timestamp or roadmap sync violations.",
+    "token_budget_baseline": 0,
+    "common_failure_modes": [
+      "Not validating roadmap sync",
+      "Ignoring timestamp format violations",
+      "Not fixing sync issues before proceeding"
+    ],
+    "usage_query": "run_docs_and_memory_bank_sync"
   }
 ]
 

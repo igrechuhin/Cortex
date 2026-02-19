@@ -37,6 +37,8 @@ Token budget guidance comes from `load_context` tool documentation and context-e
 
 See implement prompt for full checklist and zero-budget guardrails.
 
+**AgentRole awareness**: The `load_context` tool automatically detects agent roles (feature/quality/testing/docs/planning/debugging/review) from task descriptions and uses role-aware context selection. Roles influence file prioritization and context-effectiveness analysis provides role-specific budget recommendations. See AGENTS.md for role descriptions and detection keywords.
+
 **On the fix path**: When you encounter a problem and have to fix something (errors, test failures, quality/type issues), you **must** load context and rules before making changes—e.g. `load_context(task_description="Fixing errors and issues", token_budget=15000)` and get relevant rules—so fixes follow all project rules and guidelines. See AGENTS.md and the commit/implement prompts for details.
 
 **For thinking and reasoning:** Use the `think` tool for quick deliberation moments (analyzing tool outputs, checking policy compliance, planning multi-step operations). For formal multi-step reasoning with revisions and branches, use `sequentialthinking`.

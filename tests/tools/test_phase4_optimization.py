@@ -25,6 +25,7 @@ from cortex.tools.phase4_optimization import (
     summarize_content,
     summarize_content_resource,
 )
+from cortex.tools.phase4_optimization_handlers import is_non_trivial_task
 from tests.helpers.fixture_validator import validate_optimization_config_mock
 from tests.helpers.managers import make_test_managers
 
@@ -1229,3 +1230,152 @@ class TestPhase4OptimizationResources:
             result = json.loads(result_str)
         assert result["status"] == "success"
         assert result["files_summarized"] == 2
+
+
+# ============================================================================
+# Phase 57 Follow-ups: Context Budget Validation
+# ============================================================================
+
+
+class TestContextBudgetValidation:
+    """Test context budget validation for non-trivial tasks."""
+
+    def test_is_non_trivial_task_detects_implement(self) -> None:
+        """is_non_trivial_task detects 'implement' keyword."""
+        assert is_non_trivial_task("Implement a new feature") is True
+        assert is_non_trivial_task("implement authentication") is True
+
+    def test_is_non_trivial_task_detects_fix(self) -> None:
+        """is_non_trivial_task detects 'fix' keyword."""
+        assert is_non_trivial_task("Fix a bug") is True
+        assert is_non_trivial_task("debugging the issue") is True
+
+    def test_is_non_trivial_task_detects_refactor(self) -> None:
+        """is_non_trivial_task detects 'refactor' keyword."""
+        assert is_non_trivial_task("Refactor the code") is True
+        assert is_non_trivial_task("restructuring modules") is True
+
+    def test_is_non_trivial_task_detects_test(self) -> None:
+        """is_non_trivial_task detects 'test' keyword."""
+        assert is_non_trivial_task("Test the functionality") is True
+        assert is_non_trivial_task("verify the behavior") is True
+
+    def test_is_non_trivial_task_detects_optimize(self) -> None:
+        """is_non_trivial_task detects 'optimize' keyword."""
+        assert is_non_trivial_task("Optimize performance") is True
+        assert is_non_trivial_task("improving efficiency") is True
+
+    def test_is_non_trivial_task_detects_update(self) -> None:
+        """is_non_trivial_task detects 'update' keyword."""
+        assert is_non_trivial_task("Update the module") is True
+        assert is_non_trivial_task("modify the function") is True
+
+    def test_is_non_trivial_task_rejects_trivial(self) -> None:
+        """is_non_trivial_task returns False for trivial tasks."""
+        assert is_non_trivial_task("Read a file") is False
+        assert is_non_trivial_task("Check status") is False
+        assert is_non_trivial_task("List items") is False
+
+    @pytest.mark.asyncio
+    async def test_load_context_rejects_zero_budget_for_non_trivial(
+        self, mock_project_root: Path, mock_managers: ManagersDict
+    ) -> None:
+        """load_context rejects token_budget=0 for non-trivial tasks."""
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+        ):
+            result_str = await load_context(
+                task_description="Implement a new feature",
+                token_budget=0,
+            )
+            result = json.loads(result_str)
+            assert result.get("status") == "error"
+            assert "token_budget=0 is not allowed" in result.get("error", "")
+            assert "non-trivial tasks" in result.get("error", "")
+
+    @pytest.mark.asyncio
+    async def test_load_context_allows_zero_budget_for_trivial(
+        self, mock_project_root: Path, mock_managers: ManagersDict
+    ) -> None:
+        """load_context allows token_budget=0 for trivial tasks."""
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_context_operations.get_manager",
+                side_effect=_get_manager_helper,
+            ),
+        ):
+            # This should not error - trivial tasks can have zero budget
+            # (though the actual loading may still fail if optimization is disabled)
+            result_str = await load_context(
+                task_description="Read a file",
+                token_budget=0,
+            )
+            result = json.loads(result_str)
+            # Should either succeed or fail for other reasons (optimization disabled, etc.)
+            # but NOT fail with "token_budget=0 is not allowed"
+            assert "token_budget=0 is not allowed" not in result.get("error", "")
+
+    @pytest.mark.asyncio
+    async def test_load_context_warns_zero_files_for_non_trivial(
+        self, mock_project_root: Path, mock_managers: ManagersDict
+    ) -> None:
+        """load_context adds warning when non-trivial task results in zero files."""
+        # Mock a result with zero selected files
+        mock_result = json.dumps(
+            {
+                "status": "success",
+                "task_description": "Implement a new feature",
+                "token_budget": 10000,
+                "selected_files": [],
+                "total_tokens": 0,
+            }
+        )
+
+        with (
+            patch(
+                "cortex.tools.phase4_optimization_handlers.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=mock_project_root,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization.get_managers",
+                return_value=mock_managers,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization_handlers._load_context_with_error_handling",
+                new_callable=AsyncMock,
+                return_value=mock_result,
+            ),
+            patch(
+                "cortex.tools.phase4_optimization_handlers._format_load_context_response",
+                return_value=mock_result,
+            ),
+        ):
+            result_str = await load_context(
+                task_description="Implement a new feature",
+                token_budget=10000,
+            )
+            result = json.loads(result_str)
+            assert result.get("status") == "success"
+            warnings = result.get("warnings", [])
+            assert len(warnings) > 0
+            assert any(
+                w.get("type") == "zero_files_selected" for w in warnings
+            ), f"Expected zero_files_selected warning, got: {warnings}"

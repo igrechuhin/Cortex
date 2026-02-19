@@ -4,7 +4,11 @@ Phase 4: Metadata Building Helpers
 Helper functions for building metadata structures for context loading.
 """
 
+from pathlib import Path
+from typing import cast
+
 from cortex.core.models import JsonValue, ModelDict
+from cortex.core.session_logger import log_load_context_call
 from cortex.optimization.agent_roles import AgentRole, get_role_profile
 
 
@@ -224,3 +228,87 @@ def build_files_map_from_metadata(
 
     files_map.sort(key=get_relevance_for_sort, reverse=True)
     return files_map, total_tokens_available
+
+
+def extract_selected_files_from_map(
+    files_map: list[dict[str, object]],
+) -> tuple[list[str], dict[str, list[str]]]:
+    """Extract selected files and sections from files_map."""
+    selected_files: list[str] = []
+    selected_sections: dict[str, list[str]] = {}
+    for file_entry in files_map:
+        file_name_raw = file_entry.get("file_name", "")
+        file_name = str(file_name_raw) if file_name_raw else ""
+        if file_name:
+            selected_files.append(file_name)
+            sections_raw = file_entry.get("sections", [])
+            if isinstance(sections_raw, list) and sections_raw:
+                section_strings: list[str] = []
+                for section_item_raw in cast(list[object], sections_raw):
+                    if section_item_raw is not None:
+                        section_strings.append(str(section_item_raw))
+                selected_sections[file_name] = section_strings
+    return selected_files, selected_sections
+
+
+def calculate_metadata_tokens(files_map: list[dict[str, object]]) -> int:
+    """Calculate total tokens from metadata files."""
+    return sum(
+        (
+            int(tokens_val)
+            if isinstance(tokens_val := file_entry.get("total_tokens"), (int, str))
+            else 0
+        )
+        for file_entry in files_map[:10]
+    )
+
+
+def extract_metadata_logging_info(
+    files_map: list[dict[str, object]],
+    always_loaded_content: dict[str, str],
+    always_load_sections: dict[str, list[str]],
+    files_metadata: dict[str, ModelDict],
+    always_loaded_tokens: int,
+    token_budget: int,
+) -> tuple[list[str], dict[str, list[str]], list[str], int, float]:
+    """Extract logging information from metadata-only context.
+
+    Returns:
+        Tuple of (selected_files, selected_sections, excluded_files, total_tokens, utilization)
+    """
+    selected_files, selected_sections = extract_selected_files_from_map(files_map)
+    selected_files.extend(list(always_loaded_content.keys()))
+    for file_name, sections_dict in always_load_sections.items():
+        if file_name not in selected_sections:
+            selected_sections[file_name] = sections_dict
+    all_metadata_files = set(files_metadata.keys())
+    excluded_files = list(all_metadata_files - set(selected_files))
+    metadata_tokens = calculate_metadata_tokens(files_map)
+    total_tokens = metadata_tokens + always_loaded_tokens
+    utilization = round(total_tokens / token_budget, 2) if token_budget > 0 else 0.0
+    return selected_files, selected_sections, excluded_files, total_tokens, utilization
+
+
+def _prepare_logging_params(
+    files_map: list[dict[str, object]],
+    always_loaded_content: dict[str, str],
+    always_load_sections: dict[str, list[str]],
+    files_metadata: dict[str, ModelDict],
+    always_loaded_tokens: int,
+    token_budget: int,
+) -> tuple[list[str], dict[str, list[str]], list[str], int, float]:
+    """Prepare logging parameters from metadata context."""
+    return extract_metadata_logging_info(
+        files_map,
+        always_loaded_content,
+        always_load_sections,
+        files_metadata,
+        always_loaded_tokens,
+        token_budget,
+    )
+
+
+def log_metadata_context_call(project_root: Path, task_description: str, token_budget: int, strategy: str, files_map: list[dict[str, object]], always_loaded_content: dict[str, str], always_load_sections: dict[str, list[str]], files_metadata: dict[str, ModelDict], always_loaded_tokens: int, relevance_scores: dict[str, float], agent_role: AgentRole | None) -> None:
+    """Log metadata-only context loading call."""
+    selected_files, selected_sections, excluded_files, total_tokens, utilization = _prepare_logging_params(files_map, always_loaded_content, always_load_sections, files_metadata, always_loaded_tokens, token_budget)
+    log_load_context_call(project_root, task_description, token_budget, strategy, selected_files, selected_sections, total_tokens, utilization, excluded_files, relevance_scores, agent_role.value if agent_role else None)

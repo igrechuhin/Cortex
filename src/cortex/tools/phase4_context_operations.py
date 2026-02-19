@@ -28,6 +28,7 @@ from cortex.tools.phase4_hybrid_metadata_helpers import (
 from cortex.tools.phase4_metadata_helpers import (
     build_files_map_from_metadata,
     calculate_metadata_relevance_scores,
+    log_metadata_context_call,
 )
 
 logger = logging.getLogger(__name__)
@@ -99,6 +100,7 @@ async def _load_and_format_context_result(
     depth: str,
     result: OptimizationResult,
     project_root: Path | None,
+    agent_role: AgentRole | None = None,
 ) -> str:
     """Load context result and format with logging.
 
@@ -109,13 +111,19 @@ async def _load_and_format_context_result(
         depth: Content depth level
         result: Optimization result
         project_root: Project root for logging
+        agent_role: Optional agent role for role-aware logging
 
     Returns:
         JSON string with formatted result
     """
     if project_root is not None:
         _log_context_call(
-            project_root, task_description, effective_budget, strategy, result
+            project_root,
+            task_description,
+            effective_budget,
+            strategy,
+            result,
+            agent_role,
         )
 
     return _format_load_context_result(
@@ -228,7 +236,13 @@ async def _handle_full_or_summary_depth(
         depth,
     )
     return await _load_and_format_context_result(
-        task_description, effective_budget, strategy, depth, result, project_root
+        task_description,
+        effective_budget,
+        strategy,
+        depth,
+        result,
+        project_root,
+        agent_role,
     )
 
 
@@ -400,6 +414,7 @@ def _log_context_call(
     token_budget: int,
     strategy: str,
     result: OptimizationResult,
+    agent_role: AgentRole | None = None,
 ) -> None:
     """Log load_context call for effectiveness analysis.
 
@@ -409,6 +424,7 @@ def _log_context_call(
         token_budget: Token budget used
         strategy: Strategy used
         result: Context loading result
+        agent_role: Optional agent role for role-aware logging
     """
     raw_scores: JsonValue = result.metadata.get("relevance_scores", {})
     # Ensure relevance_scores is dict[str, float]
@@ -418,6 +434,11 @@ def _log_context_call(
         for file_name, score_value in typed_scores.items():
             if isinstance(score_value, (int, float)):
                 scores[file_name] = float(score_value)
+
+    # Convert AgentRole enum to string value for logging
+    role_str: str | None = None
+    if agent_role is not None:
+        role_str = agent_role.value
 
     log_load_context_call(
         project_root=project_root,
@@ -430,6 +451,7 @@ def _log_context_call(
         utilization=result.utilization,
         excluded_files=result.excluded_files,
         relevance_scores=scores,
+        role=role_str,
     )
 
 
@@ -576,116 +598,27 @@ async def _load_always_loaded_and_metadata(
     return always_loaded_content, always_loaded_tokens, files_metadata, relevance_scores
 
 
-async def _prepare_hybrid_metadata_context(
-    metadata_index: MetadataIndex,
-    task_description: str,
-    always_load_sections: dict[str, list[str]],
-    fs_manager: FileSystemManager,
-    agent_role: AgentRole | None = None,
-) -> tuple[
-    dict[str, str],
-    int,
-    dict[str, ModelDict],
-    dict[str, float],
-    list[dict[str, object]],
-    int,
-]:
+async def _prepare_hybrid_metadata_context(metadata_index: MetadataIndex, task_description: str, always_load_sections: dict[str, list[str]], fs_manager: FileSystemManager, agent_role: AgentRole | None = None) -> tuple[dict[str, str], int, dict[str, ModelDict], dict[str, float], list[dict[str, object]], int]:
     """Prepare hybrid metadata context with role-based scoring."""
-    loaded_data = await _load_always_loaded_and_metadata(
-        always_load_sections,
-        metadata_index,
-        fs_manager,
-        task_description,
-        agent_role,
-    )
+    loaded_data = await _load_always_loaded_and_metadata(always_load_sections, metadata_index, fs_manager, task_description, agent_role)
     return _finalize_hybrid_metadata_context(loaded_data, always_load_sections)
 
 
-def _finalize_hybrid_metadata_context(
-    loaded_data: tuple[dict[str, str], int, dict[str, ModelDict], dict[str, float]],
-    always_load_sections: dict[str, list[str]],
-) -> tuple[
-    dict[str, str],
-    int,
-    dict[str, ModelDict],
-    dict[str, float],
-    list[dict[str, object]],
-    int,
-]:
+def _finalize_hybrid_metadata_context(loaded_data: tuple[dict[str, str], int, dict[str, ModelDict], dict[str, float]], always_load_sections: dict[str, list[str]]) -> tuple[dict[str, str], int, dict[str, ModelDict], dict[str, float], list[dict[str, object]], int]:
     """Finalize hybrid metadata context from loaded data."""
-    always_loaded_content, always_loaded_tokens, files_metadata, relevance_scores = (
-        loaded_data
-    )
-    files_map, total_tokens_available = _build_filtered_files_map(
-        files_metadata, relevance_scores, always_load_sections
-    )
-    return _build_hybrid_context_result(
-        always_loaded_content,
-        always_loaded_tokens,
-        files_metadata,
-        relevance_scores,
-        files_map,
-        total_tokens_available,
-    )
+    always_loaded_content, always_loaded_tokens, files_metadata, relevance_scores = loaded_data
+    files_map, total_tokens_available = _build_filtered_files_map(files_metadata, relevance_scores, always_load_sections)
+    return (always_loaded_content, always_loaded_tokens, files_metadata, relevance_scores, files_map, total_tokens_available)
 
 
-def _build_hybrid_context_result(
-    always_loaded_content: dict[str, str],
-    always_loaded_tokens: int,
-    files_metadata: dict[str, ModelDict],
-    relevance_scores: dict[str, float],
-    files_map: list[dict[str, object]],
-    total_tokens_available: int,
-) -> tuple[
-    dict[str, str],
-    int,
-    dict[str, ModelDict],
-    dict[str, float],
-    list[dict[str, object]],
-    int,
-]:
-    """Build hybrid context result tuple."""
-    return (
-        always_loaded_content,
-        always_loaded_tokens,
-        files_metadata,
-        relevance_scores,
-        files_map,
-        total_tokens_available,
-    )
-
-
-async def _load_context_metadata_only(
-    metadata_index: MetadataIndex,
-    task_description: str,
-    token_budget: int,
-    strategy: str,
-    project_root: Path | None,
-    optimization_config: OptimizationConfig,
-    fs_manager: FileSystemManager,
-    agent_role: AgentRole | None = None,
-) -> str:
+async def _load_context_metadata_only(metadata_index: MetadataIndex, task_description: str, token_budget: int, strategy: str, project_root: Path | None, optimization_config: OptimizationConfig, fs_manager: FileSystemManager, agent_role: AgentRole | None = None) -> str:
     """Load context map with hybrid retrieval and role-based scoring."""
     always_load_sections = optimization_config.get_always_load_sections()
-    (
-        always_loaded_content,
-        always_loaded_tokens,
-        _,
-        _,
-        files_map,
-        total_tokens_available,
-    ) = await _prepare_hybrid_metadata_context(
-        metadata_index, task_description, always_load_sections, fs_manager, agent_role
-    )
-    return _build_hybrid_metadata_response(
-        task_description,
-        token_budget,
-        strategy,
-        files_map,
-        total_tokens_available,
-        always_loaded_content,
-        always_loaded_tokens,
-    )
+    ctx_data = await _prepare_hybrid_metadata_context(metadata_index, task_description, always_load_sections, fs_manager, agent_role)
+    always_loaded_content, always_loaded_tokens, files_metadata, relevance_scores, files_map, total_tokens_available = ctx_data
+    if project_root is not None:
+        log_metadata_context_call(project_root, task_description, token_budget, strategy, files_map, always_loaded_content, always_load_sections, files_metadata, always_loaded_tokens, relevance_scores, agent_role)
+    return _build_hybrid_metadata_response(task_description, token_budget, strategy, files_map, total_tokens_available, always_loaded_content, always_loaded_tokens)
 
 
 def _summarize_files_content(

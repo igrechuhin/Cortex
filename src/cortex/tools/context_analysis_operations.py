@@ -65,6 +65,8 @@ def _create_empty_insights() -> ContextInsights:
         file_effectiveness={},
         learned_patterns=[],
         budget_recommendations={},
+        role_recommendations={},
+        role_budget_recommendations={},
     )
 
 
@@ -159,6 +161,7 @@ def _analyze_log_entry(
         files_with_low_relevance=sum(1 for s in relevance_scores if s < 0.3),
         selected_file_names=selected_files,
         relevance_by_file=relevance_by_file,
+        role=entry.role,
     )
 
 
@@ -176,6 +179,25 @@ def _generate_task_type_insights(
     insights: dict[str, TaskTypeInsight] = {}
     for task_type, task_list in task_entries.items():
         insights[task_type] = _compute_task_insight(task_type, task_list)
+    return insights
+
+
+def _generate_role_insights(
+    entries: list[ContextUsageEntry],
+) -> dict[str, TaskTypeInsight]:
+    """Generate insights for each agent role."""
+    role_entries: dict[str, list[ContextUsageEntry]] = {}
+    for entry in entries:
+        # Only include entries with a role
+        if entry.role:
+            if entry.role not in role_entries:
+                role_entries[entry.role] = []
+            role_entries[entry.role].append(entry)
+
+    insights: dict[str, TaskTypeInsight] = {}
+    for role, role_list in role_entries.items():
+        # Use role name as the "task type" for consistency with TaskTypeInsight
+        insights[role] = _compute_task_insight(role, role_list)
     return insights
 
 
@@ -436,6 +458,29 @@ def _generate_budget_recommendations(
     return recommendations
 
 
+def _generate_role_budget_recommendations(
+    entries: list[ContextUsageEntry],
+) -> dict[str, int]:
+    """Generate budget recommendations by agent role."""
+    role_tokens: dict[str, list[int]] = {}
+    for entry in entries:
+        # Only include entries with a role
+        if entry.role:
+            if entry.role not in role_tokens:
+                role_tokens[entry.role] = []
+            role_tokens[entry.role].append(entry.total_tokens)
+
+    recommendations: dict[str, int] = {}
+    for role, tokens in role_tokens.items():
+        avg = sum(tokens) / len(tokens)
+        # Add 20% buffer, round to nearest 5000, minimum 10000
+        recommended = int(avg * 1.2)
+        recommended = ((recommended + 2500) // 5000) * 5000
+        recommendations[role] = max(recommended, 10000)
+
+    return recommendations
+
+
 def _generate_insights(entries: list[ContextUsageEntry]) -> ContextInsights:
     """Generate all actionable insights from entries."""
     if not entries:
@@ -446,6 +491,8 @@ def _generate_insights(entries: list[ContextUsageEntry]) -> ContextInsights:
         file_effectiveness=_generate_file_effectiveness(entries),
         learned_patterns=_generate_learned_patterns(entries),
         budget_recommendations=_generate_budget_recommendations(entries),
+        role_recommendations=_generate_role_insights(entries),
+        role_budget_recommendations=_generate_role_budget_recommendations(entries),
     )
 
 

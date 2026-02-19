@@ -56,6 +56,18 @@ See the implement, commit, and analyze prompts (Synapse) for detailed workflow g
 
 Zero-budget or zero-files `load_context` is only acceptable for trivial/no-op tasks. See implement prompt for full checklist and zero-budget guardrails.
 
+**AgentRole awareness**: The `load_context` tool automatically detects agent roles from task descriptions and uses role-aware context selection. Roles influence file prioritization and can inform budget recommendations. Context-effectiveness analysis (`analyze_context_effectiveness()`) tracks statistics by role and provides role-specific insights. Supported roles:
+
+- **feature** — Implementing new features or enhancements (default fallback)
+- **quality** — Code quality, formatting, linting (keywords: format, lint, quality, pre-commit, ruff, black, mypy)
+- **testing** — Writing/fixing tests, coverage work (keywords: test, tests, pytest, fixture, coverage)
+- **docs** — Documentation updates (keywords: docs, documentation, readme, guide, tutorial, markdown)
+- **planning** — Creating/updating plans and roadmap work (keywords: plan, roadmap, design, phase, investigate)
+- **debugging** — Bug investigation and fix/debug flows (keywords: fix, bug, error, failure, exception, debug)
+- **review** — Code review and analysis (keywords: review, code review, pr, pull request)
+
+Roles are automatically inferred from task descriptions; explicit role parameters are optional. See `cortex.optimization.agent_roles` for role detection logic and profiles.
+
 1. **Think before acting** — use the `think` tool for quick deliberation moments (analyzing tool outputs, checking policy compliance, planning multi-step operations). For formal multi-step reasoning, use `sequentialthinking`.
 2. **Edit code** — use IDE tools (`Read`, `Write`, `Grep`, `Glob`, `LS`) for source files.
 3. **Verify** — use Cortex quality/test tools, not raw shell commands.

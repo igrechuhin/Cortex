@@ -43,6 +43,10 @@ class LoadContextLogEntry(BaseModel):
         default_factory=lambda: dict[str, float](),
         description="Relevance scores by file",
     )
+    role: str | None = Field(
+        default=None,
+        description="Agent role (feature/quality/testing/docs/planning/debugging/review)",
+    )
 
 
 class SessionLog(DictLikeModel):
@@ -146,6 +150,7 @@ def log_load_context_call(
     utilization: float,
     excluded_files: list[str],
     relevance_scores: dict[str, float],
+    role: str | None = None,
 ) -> None:
     """Log a load_context call for later analysis.
 
@@ -160,6 +165,7 @@ def log_load_context_call(
         utilization: Token budget utilization (0.0-1.0)
         excluded_files: Files that were excluded
         relevance_scores: Relevance scores for all files
+        role: Optional agent role (feature/quality/testing/docs/planning/debugging/review)
     """
     _ = _ensure_session_dir(project_root)
     log_path = _get_session_log_path(project_root)
@@ -177,6 +183,7 @@ def log_load_context_call(
         utilization=utilization,
         excluded_files=excluded_files,
         relevance_scores=relevance_scores,
+        role=role,
     )
 
     session_log.load_context_calls.append(entry)

@@ -221,6 +221,11 @@ async def test_run_tool_evaluation_uses_harness_and_writes_cache() -> None:
             new=MagicMock(return_value=analysis),
         ) as mock_analyze,
         patch(
+            "cortex.tools.phase5_evaluation._write_evaluation_dashboard",
+            new_callable=AsyncMock,
+            return_value=Path("/project/.cortex/evals/dashboard.md"),
+        ),
+        patch(
             "cortex.tools.phase5_evaluation.write_cache_json",
             new_callable=AsyncMock,
         ) as mock_write_cache,
@@ -395,3 +400,80 @@ async def test_run_task_uses_usage_tracker_metrics() -> None:
     assert pytest.approx(result.total_duration_ms, rel=1e-6) == 30.0
     assert result.error_types == {"ValueError": 1}
     assert result.evaluated_tools == ["load_context"]
+
+
+@pytest.mark.asyncio
+async def test_run_tool_evaluation_generates_dashboard(tmp_path: Path) -> None:
+    """run_tool_evaluation generates dashboard.md file alongside last_suite.json."""
+    project_root = tmp_path
+    evals_dir = project_root / ".cortex" / "evals" / "tasks"
+    _ = evals_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create a minimal task file
+    task_file = evals_dir / "test_tasks.json"
+    _ = task_file.write_text(
+        json.dumps(
+            [
+                {
+                    "id": "test-task",
+                    "name": "Test Task",
+                    "description": "Test description",
+                    "category": "other",
+                    "expected_tools": ["load_context"],
+                    "expected_outcome": "Success",
+                }
+            ]
+        )
+    )
+
+    cache_dir = project_root / ".cortex" / ".cache" / "evals"
+    _ = cache_dir.mkdir(parents=True, exist_ok=True)
+
+    with (
+        patch(
+            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=project_root,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._get_usage_tracker",
+            new_callable=AsyncMock,
+        ) as mock_tracker,
+        patch(
+            "cortex.tools.phase5_evaluation._load_eval_tasks",
+            new_callable=AsyncMock,
+            return_value=[
+                EvalTask(
+                    id="test-task",
+                    name="Test Task",
+                    description="Test description",
+                    category="other",
+                    expected_tools=["load_context"],
+                    expected_outcome="Success",
+                )
+            ],
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._persist_latest_suite",
+            new_callable=AsyncMock,
+        ),
+    ):
+        # Mock usage tracker to return empty events (no data scenario)
+        mock_tracker_instance = MagicMock()
+        mock_tracker_instance.search_usage = AsyncMock(return_value=[])
+        mock_tracker.return_value = mock_tracker_instance
+
+        result_str = await run_tool_evaluation(task_ids=["test-task"])
+        result = json.loads(result_str)
+
+        # Verify dashboard path is in response
+        assert "dashboard_path" in result
+        dashboard_path = project_root / result["dashboard_path"]
+        assert dashboard_path.exists()
+        assert dashboard_path.name == "dashboard.md"
+        assert dashboard_path.parent.name == "evals"
+
+        # Verify dashboard content
+        content = dashboard_path.read_text(encoding="utf-8")
+        assert "# Evaluation Dashboard" in content
+        assert "## Overall Metrics" in content

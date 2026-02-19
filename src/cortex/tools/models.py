@@ -2529,6 +2529,10 @@ class ContextUsageEntry(StrictBaseModel):
     relevance_by_file: dict[str, float] | None = Field(
         None, description="Relevance scores by file name"
     )
+    role: str | None = Field(
+        default=None,
+        description="Agent role (feature/quality/testing/docs/planning/debugging/review)",
+    )
 
 
 class TaskTypeInsight(StrictBaseModel):
@@ -2579,6 +2583,13 @@ class ContextInsights(StrictBaseModel):
     )
     budget_recommendations: dict[str, int] = Field(
         default_factory=dict, description="Budget recommendations by task type"
+    )
+    role_recommendations: dict[str, TaskTypeInsight] = Field(
+        default_factory=dict,
+        description="Recommendations by agent role (feature/quality/testing/docs/planning/debugging/review)",
+    )
+    role_budget_recommendations: dict[str, int] = Field(
+        default_factory=dict, description="Budget recommendations by agent role"
     )
 
 

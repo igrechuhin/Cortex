@@ -20,6 +20,7 @@
 - **Type cleanup inventory** - COMPLETE. Reference plan archived; inventory doc available for Phase 53 model design and refactor prioritization.
 - **Session Optimization Follow-Ups: Roadmap Dedup and Plan Lifecycle** - COMPLETE. Added plan-path-based deduplication to register_plan_in_roadmap and add_roadmap_entry tools to prevent duplicate blockers for the same investigation plan. Fixed regex bug in_extract_plan_path_from_bullet (double backslash \s instead of \s). Added unit tests for deduplication behavior. Reviewed plan-archiver agent - already has Status: COMPLETE guidance. All tests pass.
 - **Commit (plan archiving, roadmap dedup, test fixture validation)** - Preflight passed: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4304 passed, 91.77% coverage. Archived 3 completed plans; updated plan deduplication logic and test fixture validation.
+- **Session Optimization Follow-Ups: Phase 57 Evaluation Framework and Context Budgets (2026-02-17)** - COMPLETE. Added context budget validation (rejects token_budget=0 for non-trivial tasks), zero-file warnings, 9 evaluation tasks (7 memory-bank, 2 commit pipeline), evaluation dashboard generation, rules indexing integration in prompts. Fixed testing standards violations (private API testing), function length violations via helper extraction. Quality gate passed.
 
 ## 2026-02-18
 

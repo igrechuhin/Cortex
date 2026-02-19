@@ -46,6 +46,65 @@ from cortex.tools.phase4_relevance_operations import get_relevance_scores_impl
 from cortex.tools.phase4_summarization_operations import summarize_content_impl
 
 
+def _determine_agent_role(role: str | None, task_description: str) -> AgentRole:
+    """Determine effective agent role from explicit parameter or task description.
+
+    Args:
+        role: Explicit role parameter
+        task_description: Task description for keyword-based detection
+
+    Returns:
+        Determined agent role
+    """
+    explicit_role = normalize_role_name(role) if role is not None else None
+    return explicit_role or detect_agent_role(task_description)
+
+
+def _validate_zero_budget_for_non_trivial(
+    task_description: str, token_budget: int | None
+) -> str | None:
+    """Validate token_budget=0 is not used for non-trivial tasks.
+
+    Args:
+        task_description: Task description
+        token_budget: Token budget
+
+    Returns:
+        Error JSON string if validation fails, None otherwise
+    """
+    if token_budget == 0 and is_non_trivial_task(task_description):
+        return json.dumps(
+            {
+                "status": "error",
+                "error": (
+                    "token_budget=0 is not allowed for non-trivial tasks "
+                    "(implement/add, fix/debug, refactor, test, optimize). "
+                    "Use a non-zero budget (e.g., 10000 for implement/add, "
+                    "15000 for fix/debug) or ensure the task is truly trivial."
+                ),
+                "error_type": "ValueError",
+                "task_description": task_description,
+                "suggestion": (
+                    "For non-trivial tasks, use appropriate token budgets: "
+                    "10000 for implement/add/update/modify, "
+                    "15000 for fix/debug/other, "
+                    "20000-30000 for small features, "
+                    "15000 for optimization, "
+                    "7000-8000 for narrow review/documentation."
+                ),
+            },
+            indent=2,
+        )
+    return None
+
+
+def is_non_trivial_task(task_description: str) -> bool:
+    """Detect if a task is non-trivial based on keywords."""
+    task_lower = task_description.lower()
+    keywords = ["implement", "add", "create", "build", "develop", "fix", "debug", "resolve", "correct", "repair", "refactor", "refactoring", "restructure", "restructuring", "reorganize", "test", "testing", "verify", "validate", "optimize", "optimization", "improve", "improving", "enhance", "update", "modify", "change", "edit"]
+    return any(kw in task_lower for kw in keywords)
+
+
 def _format_load_context_error(error: Exception) -> str:
     """Format error response for load_context failures."""
     from cortex.tools.tool_error_formatters import format_tool_error
@@ -183,6 +242,25 @@ async def _initialize_context_loading(
     return root, mgrs, enabled_error
 
 
+async def _validate_and_initialize_context_loading(
+    task_description: str, token_budget: int | None, ctx: MCPContext | None
+) -> tuple[Path | None, ManagersDict | None, str | None]:
+    """Validate budget and initialize context loading.
+
+    Returns:
+        Tuple of (root, managers, error) where error is None if successful
+    """
+    validation_error = _validate_zero_budget_for_non_trivial(
+        task_description, token_budget
+    )
+    if validation_error:
+        return None, None, validation_error
+    root, mgrs, enabled_error = await _initialize_context_loading(ctx)
+    if enabled_error:
+        return None, None, enabled_error
+    return root, mgrs, None
+
+
 async def _execute_load_context(
     task_description: str,
     token_budget: int | None,
@@ -207,15 +285,13 @@ async def _execute_load_context(
     Returns:
         JSON string with loaded context or error
     """
-    root, mgrs, enabled_error = await _initialize_context_loading(ctx)
-    if enabled_error:
-        return enabled_error
+    root, mgrs, error = await _validate_and_initialize_context_loading(
+        task_description, token_budget, ctx
+    )
+    if error or root is None or mgrs is None:
+        return error or json.dumps({"status": "error", "error": "Failed to initialize"})
 
-    # Determine effective role: explicit parameter wins, otherwise
-    # fall back to keyword-based detection from task_description.
-    explicit_role = normalize_role_name(role) if role is not None else None
-    agent_role: AgentRole = explicit_role or detect_agent_role(task_description)
-
+    agent_role = _determine_agent_role(role, task_description)
     effective_depth = _determine_depth_from_budget(depth, token_budget)
     out = await _load_context_with_error_handling(
         mgrs,
@@ -227,7 +303,97 @@ async def _execute_load_context(
         root,
         agent_role,
     )
-    return _format_load_context_response(out, response_format, agent_role.value)
+    return _format_and_add_warnings_if_needed(
+        out, response_format, agent_role.value, task_description, token_budget
+    )
+
+
+def _format_and_add_warnings_if_needed(
+    out: str,
+    response_format: Literal["concise", "detailed"],
+    role: str,
+    task_description: str,
+    token_budget: int | None,
+) -> str:
+    """Format response and add zero-file warnings if needed."""
+    result_str = _format_load_context_response(out, response_format, role)
+    if is_non_trivial_task(task_description):
+        result_str = _add_zero_file_warning_if_needed(
+            result_str, task_description, token_budget
+        )
+    return result_str
+
+
+def _count_files_from_result(result_data: dict[str, object]) -> int:
+    """Count files from load_context result data.
+
+    Args:
+        result_data: Parsed JSON result data
+
+    Returns:
+        Number of files selected
+    """
+    files_count = 0
+    if "files" in result_data:
+        # metadata_only format
+        files_list = result_data.get("files")
+        if isinstance(files_list, list):
+            files_count = len(files_list)  # type: ignore[arg-type]
+        elif "total_files" in result_data:
+            total_files = result_data.get("total_files")
+            if isinstance(total_files, int):
+                files_count = total_files
+    elif "selected_files" in result_data:
+        # full/summary format
+        selected_files = result_data.get("selected_files")
+        if isinstance(selected_files, list):
+            files_count = len(selected_files)  # type: ignore[arg-type]
+    return files_count
+
+
+def _add_zero_file_warning_if_needed(
+    result_str: str, task_description: str, token_budget: int | None
+) -> str:
+    """Add zero-file warning to result if non-trivial task has zero files.
+
+    Args:
+        result_str: JSON string result from load_context
+        task_description: Task description
+        token_budget: Token budget used
+
+    Returns:
+        Updated result string with warning if needed, original otherwise
+    """
+    try:
+        result_data: dict[str, object] = json.loads(result_str)
+        if result_data.get("status") != "success":
+            return result_str
+
+        files_count = _count_files_from_result(result_data)
+        if files_count == 0:
+            warnings_raw = result_data.get("warnings")
+            warnings: list[dict[str, object]] = (
+                list(warnings_raw) if isinstance(warnings_raw, list) else []  # type: ignore[arg-type]
+            )
+            warnings.append(
+                {
+                    "type": "zero_files_selected",
+                    "message": (
+                        "Non-trivial task resulted in zero selected files. "
+                        "This may indicate insufficient context or a configuration issue. "
+                        "Consider increasing token_budget or reviewing task_description."
+                    ),
+                    "task_description": task_description,
+                    "token_budget": token_budget,
+                }
+            )
+            result_data["warnings"] = warnings
+            return json.dumps(result_data, indent=2)
+    except (json.JSONDecodeError, KeyError, TypeError):
+        # If parsing fails, return original response
+        pass
+
+    return result_str
 
 
 @mcp.tool(annotations=read_only_annotations("Load Context"))

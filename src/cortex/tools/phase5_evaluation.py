@@ -483,8 +483,150 @@ async def run_tool_evaluation(
     analysis = harness.analyze_results(suite)
 
     await _persist_latest_suite(root, suite, analysis)
+    dashboard_path = await _write_evaluation_dashboard(root, analysis, suite)
     payload = _build_evaluation_payload(root, tasks, suite, analysis)
+    payload["dashboard_path"] = str(dashboard_path.relative_to(root))
     return json.dumps(payload, indent=2)
+
+
+def _format_overall_metrics(
+    analysis: EvalAnalysis, suite: EvalSuiteResult
+) -> list[str]:
+    """Format overall metrics section."""
+    lines: list[str] = []
+    lines.append("# Evaluation Dashboard")
+    lines.append("")
+    lines.append(f"**Generated:** {suite.generated_at}")
+    lines.append("")
+    lines.append("## Overall Metrics")
+    lines.append("")
+    lines.append(f"- **Overall Success Rate:** {analysis.overall_success_rate:.1%}")
+    lines.append(f"- **Total Tasks:** {analysis.total_tasks}")
+    lines.append(f"- **Tasks with No Data:** {analysis.tasks_with_no_data}")
+    lines.append(f"- **Tasks Unavailable:** {analysis.tasks_unavailable}")
+    lines.append(f"- **Average Calls per Task:** {analysis.average_calls_per_task:.1f}")
+    lines.append("")
+    return lines
+
+
+def _format_category_success_rates(analysis: EvalAnalysis) -> list[str]:
+    """Format success rate by category section."""
+    lines: list[str] = []
+    if analysis.success_rate_by_category:
+        lines.append("## Success Rate by Category")
+        lines.append("")
+        for category, rate in sorted(
+            analysis.success_rate_by_category.items(),
+            key=lambda x: x[1],
+            reverse=True,
+        ):
+            lines.append(f"- **{category}:** {rate:.1%}")
+        lines.append("")
+    return lines
+
+
+def _format_error_patterns(analysis: EvalAnalysis) -> list[str]:
+    """Format top error patterns section."""
+    lines: list[str] = []
+    if analysis.top_error_patterns:
+        lines.append("## Top Error Patterns")
+        lines.append("")
+        for i, pattern in enumerate(analysis.top_error_patterns[:10], 1):
+            tools_str = ", ".join(pattern.affected_tools[:5])
+            if len(pattern.affected_tools) > 5:
+                tools_str += f" (+{len(pattern.affected_tools) - 5} more)"
+            lines.append(f"{i}. **{pattern.error_type}** ({pattern.count} occurrences)")
+            lines.append(f"   - Affected tools: {tools_str}")
+            lines.append("")
+    return lines
+
+
+def _format_single_task(task: EvalTaskResult) -> list[str]:
+    """Format a single task entry."""
+    status_emoji = (
+        "✅" if task.status == "success" else "⚠️" if task.status == "mixed" else "❌"
+    )
+    lines = [
+        f"- {status_emoji} **{task.task_name}** ({task.task_id})",
+        f"  - Status: {task.status}",
+        f"  - Success Rate: {task.success_rate:.1%}",
+        f"  - Total Calls: {task.total_calls}",
+    ]
+    if task.error_types:
+        top_error = max(task.error_types.items(), key=lambda x: x[1])
+        lines.append(f"  - Top Error: {top_error[0]} ({top_error[1]} occurrences)")
+    lines.append("")
+    return lines
+
+
+def _format_task_details(suite: EvalSuiteResult) -> list[str]:
+    """Format task-level details section."""
+    lines: list[str] = []
+    if suite.tasks:
+        lines.append("## Task Details")
+        lines.append("")
+        tasks_by_category: dict[str, list[EvalTaskResult]] = {}
+        for task in suite.tasks:
+            category = task.category
+            if category not in tasks_by_category:
+                tasks_by_category[category] = []
+            tasks_by_category[category].append(task)
+        for category in sorted(tasks_by_category.keys()):
+            lines.append(f"### {category.title()} Tasks")
+            lines.append("")
+            for task in sorted(
+                tasks_by_category[category],
+                key=lambda t: t.success_rate,
+                reverse=True,
+            ):
+                lines.extend(_format_single_task(task))
+    return lines
+
+
+def _generate_evaluation_dashboard(
+    analysis: EvalAnalysis,
+    suite: EvalSuiteResult,
+) -> str:
+    """Generate Markdown dashboard from evaluation analysis.
+
+    Args:
+        analysis: Evaluation analysis with aggregated metrics
+        suite: Evaluation suite results with individual task metrics
+
+    Returns:
+        Markdown string with dashboard report
+    """
+    lines: list[str] = []
+    lines.extend(_format_overall_metrics(analysis, suite))
+    lines.extend(_format_category_success_rates(analysis))
+    lines.extend(_format_error_patterns(analysis))
+    lines.extend(_format_task_details(suite))
+    return "\n".join(lines)
+
+
+async def _write_evaluation_dashboard(
+    root: Path,
+    analysis: EvalAnalysis,
+    suite: EvalSuiteResult,
+) -> Path:
+    """Write evaluation dashboard Markdown report next to last_suite.json.
+
+    Args:
+        root: Project root path
+        analysis: Evaluation analysis
+        suite: Evaluation suite results
+
+    Returns:
+        Path to written dashboard file
+    """
+    dashboard_content = _generate_evaluation_dashboard(analysis, suite)
+    cache_dir = get_cache_path(root, CortexResourceType.CACHE.value)
+    dashboard_path = cache_dir / "evals" / "dashboard.md"
+    # Create directory if it doesn't exist; return value intentionally unused
+    # pyright: ignore[reportUnusedCallResult]
+    dashboard_path.parent.mkdir(parents=True, exist_ok=True)
+    _ = dashboard_path.write_text(dashboard_content, encoding="utf-8")
+    return dashboard_path
 
 
 async def _persist_latest_suite(
