@@ -11,6 +11,8 @@ from pathlib import Path
 
 import pytest
 
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+
 
 def _repo_root() -> Path:
     """Return repository root (directory containing src/ and tests/)."""
@@ -20,20 +22,25 @@ def _repo_root() -> Path:
 def _implement_prompt_path() -> Path:
     """Return path to implement-next-roadmap-step prompt."""
     return (
-        _repo_root()
-        / ".cortex"
-        / "synapse"
+        get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE)
         / "prompts"
         / "implement-next-roadmap-step.md"
+    )
+
+
+def _create_plan_prompt_path() -> Path:
+    """Return path to create-plan prompt."""
+    return (
+        get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE)
+        / "prompts"
+        / "create-plan.md"
     )
 
 
 def _python_coding_standards_path() -> Path:
     """Return path to Python coding standards rules."""
     return (
-        _repo_root()
-        / ".cortex"
-        / "synapse"
+        get_cortex_path(_repo_root(), CortexResourceType.SYNAPSE)
         / "rules"
         / "python"
         / "python-coding-standards.mdc"
@@ -124,6 +131,38 @@ class TestImplementPromptQualityGates:
             or "20k" in prompt_content
             or "20,000" in prompt_content
         )
+
+    def test_plan_step_sequence_mandatory_block(self, prompt_content: str) -> None:
+        """Implement prompt contains Plan step sequence (MANDATORY) and in-order execution."""
+        assert "Plan step sequence" in prompt_content
+        assert "MANDATORY when implementing a plan" in prompt_content
+        assert "in order" in prompt_content
+        assert (
+            "first uncompleted step" in prompt_content
+            or "do not skip" in prompt_content
+        )
+
+
+class TestCreatePlanImplementationSequence:
+    """Assert create-plan prompt documents implementation sequence (Session Optimization 2026-02-01)."""
+
+    @pytest.fixture
+    def create_plan_content(self) -> str:
+        """Read create-plan prompt; skip if missing."""
+        path = _create_plan_prompt_path()
+        if not path.exists():
+            pytest.skip(
+                f"Create-plan prompt not found at {path} (e.g. synapse submodule not present)"
+            )
+        return path.read_text()
+
+    def test_implementation_steps_section_sequence_wording(
+        self, create_plan_content: str
+    ) -> None:
+        """Implementation Steps section states steps define implementation sequence and execute in order."""
+        assert "implementation sequence" in create_plan_content
+        assert "execute them in order" in create_plan_content
+        assert "Step 1" in create_plan_content and "Step 2" in create_plan_content
 
 
 class TestPythonCodingStandardsTypedDictProhibition:

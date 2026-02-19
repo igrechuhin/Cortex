@@ -460,45 +460,61 @@ class TestFileWatcherManagerLifecycle:
 
 
 class TestFileWatcherManagerIntegration:
-    """Integration tests for FileWatcherManager with real file events."""
+    """Integration-style tests for FileWatcherManager with mocked Observer.
+
+    Uses patched Observer to avoid real OS threads; events are simulated
+    via the watcher's event handlers to verify callback flow.
+    """
 
     @pytest.mark.asyncio
     async def test_end_to_end_file_modification_detection(self, tmp_path: Path) -> None:
-        """Test end-to-end file modification detection."""
+        """Test modification detection flow with mocked observer and simulated events."""
         manager = FileWatcherManager()
         callback = AsyncMock()
 
-        await manager.start(tmp_path, callback, debounce_delay=0.2)
+        with patch("cortex.core.file_watcher.Observer") as MockObserver:
+            observer_instance = MockObserver.return_value
+            observer_instance.is_alive.return_value = True
+            await manager.start(tmp_path, callback, debounce_delay=0.2)
 
-        # Create and modify a file
+        assert manager.watcher is not None
+        watcher = manager.watcher
+        watcher.loop = asyncio.get_event_loop()
+
+        # Simulate file modification via handler (no real OS observer)
         test_file = tmp_path / "test.md"
         _ = test_file.write_text("Initial content")
+        watcher.on_modified(FileModifiedEvent(str(test_file)))
 
-        # Wait for watcher to detect file
-        await asyncio.sleep(0.5)
-
-        # Callback should be called for file creation
-        # Note: Actual file system events may vary by OS
-        # This is a best-effort integration test
+        await asyncio.sleep(0.3)
+        callback.assert_called_once_with(test_file, "modified")
 
         manager.stop()
 
     @pytest.mark.asyncio
     async def test_multiple_file_changes(self, tmp_path: Path) -> None:
-        """Test handling multiple file changes."""
+        """Test handling multiple file changes with mocked observer."""
         manager = FileWatcherManager()
         callback = AsyncMock()
 
-        await manager.start(tmp_path, callback, debounce_delay=0.1)
+        with patch("cortex.core.file_watcher.Observer") as MockObserver:
+            observer_instance = MockObserver.return_value
+            observer_instance.is_alive.return_value = True
+            await manager.start(tmp_path, callback, debounce_delay=0.1)
 
-        # Create multiple files
+        assert manager.watcher is not None
+        watcher = manager.watcher
+        watcher.loop = asyncio.get_event_loop()
+
         file1 = tmp_path / "file1.md"
         file2 = tmp_path / "file2.md"
-
         _ = file1.write_text("Content 1")
         _ = file2.write_text("Content 2")
 
-        # Wait for debounce
-        await asyncio.sleep(0.3)
+        watcher.on_created(FileCreatedEvent(str(file1)))
+        watcher.on_created(FileCreatedEvent(str(file2)))
+
+        await asyncio.sleep(0.2)
+        assert callback.call_count == 2
 
         manager.stop()

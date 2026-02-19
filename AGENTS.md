@@ -43,10 +43,22 @@ See the implement, commit, and analyze prompts (Synapse) for detailed workflow g
 2. **Scope the task** — restate the user's goal.
 3. **Call Cortex MCP** — load context using two-step pattern (`load_context(depth="metadata_only")` → `manage_file(sections=[...])`), fetch rules, discover tools. Let Cortex choose what's relevant. **Pattern**: `session_start()` → `load_context(task_description=brief.next_work_item, ...)` → work
 
-**Context budget defaults (task-type)**: implement/add or update/modify → 10k; fix/debug or other → 15k; small feature → 20k–30k; optimization → 15k; narrow review/docs → 7k–8k; architecture/large design → 40k–50k. Zero-budget or zero-files `load_context` is only acceptable for trivial/no-op tasks..
-4. **Think before acting** — use the `think` tool for quick deliberation moments (analyzing tool outputs, checking policy compliance, planning multi-step operations). For formal multi-step reasoning, use `sequentialthinking`.
-5. **Edit code** — use IDE tools (`Read`, `Write`, `Grep`, `Glob`, `LS`) for source files.
-6. **Verify** — use Cortex quality/test tools, not raw shell commands.
+**Context budget defaults (task-type)**:
+
+| Task type | Token budget |
+|-----------|--------------|
+| implement/add, update/modify | 10,000 |
+| fix/debug, other | 15,000 |
+| small feature | 20,000–30,000 |
+| optimization | 15,000 |
+| narrow review/documentation | 7,000–8,000 |
+| architecture/large design | 40,000–50,000 |
+
+Zero-budget or zero-files `load_context` is only acceptable for trivial/no-op tasks. See implement prompt for full checklist and zero-budget guardrails.
+
+1. **Think before acting** — use the `think` tool for quick deliberation moments (analyzing tool outputs, checking policy compliance, planning multi-step operations). For formal multi-step reasoning, use `sequentialthinking`.
+2. **Edit code** — use IDE tools (`Read`, `Write`, `Grep`, `Glob`, `LS`) for source files.
+3. **Verify** — use Cortex quality/test tools, not raw shell commands.
 
 **Load context on the fix path (MANDATORY)**: When you encounter a problem and have to fix something (errors, test failures, quality issues, type/lint violations), you **must** load context and rules **before** making changes. Call `load_context(task_description="Fixing errors and issues", token_budget=15000)` and, when applicable, `rules(operation="get_relevant", task_description="...")` (or read key standards from the rules path if rules are disabled). Only after context and rules are loaded, proceed with fixes. This ensures fixes follow all project rules and guidelines. See the commit and implement prompts for concrete placement.
 

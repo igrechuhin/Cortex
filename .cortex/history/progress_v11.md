@@ -9,6 +9,10 @@
 - **Session Optimization: Rule Loading and Discovery (2026-02-18)** - COMPLETE. Implement prompt Step 3 rule verification and get_synapse_rules fallback; context budget table in CLAUDE/AGENTS; zero-budget reminder in commit.md; integration test for rules() tool.
 - **Promote OperationStatus to str Enum** - COMPLETE. Replaced type alias with str Enum in core/models; updated 8 modules and all construction sites; JSON unchanged.
 - **Commit (function length: pre_commit_preflight_helpers)** - Extracted `_one_check_summary` from `_build_execute_check_summaries` to fix function length (32→≤30 lines). Preflight: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4263 passed, 91.75% coverage.
+- **Session Optimization: Rules and context loading follow-ups (2026-02-12 Analysis)** - COMPLETE. Implemented plan: (1) watcher tests use mocked Observer and simulated events; added File Watcher subsection to general testing-standards.mdc. (2) Context budget table in AGENTS.md and task-type defaults in implement prompt Pre-Action Checklist. (3) Integration test for rules(get_relevant, "Commit pipeline, test coverage") fixed to assert on rules/rules_count. (4) Zero-budget/zero-files guardrails already in analytics and commit/analyze prompts.
+- **Session Optimization: Rules context followups (2026-02-12) – Reference** – COMPLETE. Reconciled roadmap: plan already completed and archived; removed stale roadmap entry.
+- **Session Optimization: Sequential plan steps** - COMPLETE. Verified implement-next-roadmap-step.md Plan step sequence block (added explicit in-order/first-uncompleted/do-not-skip wording); create-plan.md already documents implementation sequence. Added test_plan_step_sequence_mandatory_block and TestCreatePlanImplementationSequence in test_implement_prompt_quality_gates.py.
+- **Commit (preflight, memory bank, plan archive)** - Preflight passed: fix_errors, format, markdown lint (0 errors), synapse_format, synapse_lint, type_check, quality, tests 4265 passed, 91.74% coverage. No completed plans in plans root; memory bank and roadmap consistent.
 
 ## 2026-02-18
 

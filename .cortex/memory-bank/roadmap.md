@@ -28,9 +28,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
 - **Plans README** - Reference. Plan: .cortex/plans/README.md
-- **Session Optimization: Rules and context loading follow-ups (2026-02-12 Analysis)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-rules-and-context-loading-follow-ups-2026-02-12-analysis.md
-- **Session Optimization: Rules context followups (2026-02-12)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-rules-context-followups-2026-02-12.md
-- **Session Optimization: Sequential plan steps** - PENDING - Reference. Plan: .cortex/plans/session-optimization-sequential-plan-steps.md
 - **Session Optimization: Test coverage and development workflow improvements** - PENDING - Reference. Plan: .cortex/plans/session-optimization-test-coverage-and-development-workflow-improvements.md
 - **Session Optimization: Testing coverage documentation and planning (2026-02-16 Analysis)** - PENDING - Reference. Plan: .cortex/plans/session-optimization-testing-coverage-documentation-and-planning-2026-02-16-analysis.md
 - **Structured planning Cortex MCP tools** - PENDING - Reference. Plan: .cortex/plans/structured-planning-cortex-mcp-tools.md

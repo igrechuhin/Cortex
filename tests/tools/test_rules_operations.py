@@ -1344,12 +1344,8 @@ async def test_rules_get_relevant_returns_at_least_one_rule_for_commit_pipeline(
     get_data = json.loads(get_result)
     assert get_data.get("status") == "success", get_data
     rules_count = get_data.get("rules_count", 0)
-    total = (
-        len(get_data.get("local_rules", []))
-        + len(get_data.get("generic_rules", []))
-        + len(get_data.get("language_rules", []))
-    )
-    assert rules_count >= 1 or total >= 1, (
+    rules_list = get_data.get("rules", [])
+    assert rules_count >= 1 or len(rules_list) >= 1, (
         "rules() should return at least one rule for 'Commit pipeline, test coverage' "
         "when rules are present and indexed"
     )

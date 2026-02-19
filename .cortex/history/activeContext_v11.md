@@ -14,6 +14,12 @@
 
 - ✅ **Promote OperationStatus to str Enum** - COMPLETE (2026-02-19) - Replaced Literal type alias with OperationStatus(str, Enum) in core/models; updated all construction sites to use OperationStatus.SUCCESS/ERROR; ClaimTaskResult, ListActiveTasksResult, CheckTaskAvailableResult now use OperationStatus; added unit tests; JSON/MCP output unchanged.
 
+- ✅ **Session Optimization: Rules and context loading follow-ups (2026-02-12 Analysis)** - COMPLETE (2026-02-19) - Completed all four plan tasks: watcher tests mock Observer; context budgets documented in AGENTS.md and implement checklist; rules integration test fixed; zero-budget guardrails confirmed in analytics and prompts.
+
+- ✅ **Session Optimization: Rules context followups (2026-02-12) – Reference** - COMPLETE (2026-02-19) - Reconciled roadmap reference; plan was already complete and in archive/SessionOptimization; removed roadmap entry.
+
+- ✅ **Session Optimization: Sequential plan steps** - COMPLETE (2026-02-19) - Verified and strengthened Plan step sequence in implement prompt; create-plan already had implementation sequence wording. Added integration tests for both prompts.
+
 ## Completed Work (2026-02-18)
 
 - **Summary (2026-02-18)** - 1 entries archived.
