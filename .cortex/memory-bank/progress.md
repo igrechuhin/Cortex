@@ -16,6 +16,10 @@
 - **Session Optimization: Test coverage and development workflow (Reference)** - Roadmap cleanup. Plan was already completed and archived; removed stale PENDING roadmap entry so next implement picks the next pending item.
 - **Session Optimization: Testing coverage documentation and planning (2026-02-16 Analysis)** - COMPLETE. Coverage expectations and Test Coverage Planning Checklist already in testing-standards.mdc and implement prompt; added integration vs unit test subsection to docs/guides/testing.md.
 - **Structured planning Cortex MCP tools** - COMPLETE. Documented create_plan and register_plan_in_roadmap in docs/api/tools.md; updated create-plan prompt to prefer create_plan and register_plan_in_roadmap; added integration tests and create_plan preference compliance tests.
+- **Test fixture validation and maintenance** - COMPLETE. Generic fixture validator, protocol, integration test for fixture completeness; FIXTURE_REQUIREMENTS and FIXTURE_MAINTENANCE already present.
+- **Type cleanup inventory** - COMPLETE. Reference plan archived; inventory doc available for Phase 53 model design and refactor prioritization.
+- **Session Optimization Follow-Ups: Roadmap Dedup and Plan Lifecycle** - COMPLETE. Added plan-path-based deduplication to register_plan_in_roadmap and add_roadmap_entry tools to prevent duplicate blockers for the same investigation plan. Fixed regex bug in_extract_plan_path_from_bullet (double backslash \s instead of \s). Added unit tests for deduplication behavior. Reviewed plan-archiver agent - already has Status: COMPLETE guidance. All tests pass.
+- **Commit (plan archiving, roadmap dedup, test fixture validation)** - Preflight passed: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4304 passed, 91.77% coverage. Archived 3 completed plans; updated plan deduplication logic and test fixture validation.
 
 ## 2026-02-18
 

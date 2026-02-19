@@ -376,6 +376,26 @@ def _find_insertion_line_for_section(
     return section_start + 1
 
 
+def _extract_plan_path_from_bullet(line: str) -> str | None:
+    """Extract a plan path from a roadmap bullet, if present.
+
+    Expected patterns (examples):
+    - "Plan: .cortex/plans/phase-58-...md."
+    - "Plan: plans/phase-58-...md"
+
+    Returns:
+        The raw plan path string (without surrounding punctuation) or None
+        if no plan reference is found.
+    """
+    # Simple, conservative heuristic: look for "Plan:" followed by a path-like token.
+    match = re.search(r"Plan:\s*([^\s]+)", line)
+    if not match:
+        return None
+    # Strip common trailing punctuation like '.' or ',' from the captured path.
+    raw = match.group(1).strip()
+    return raw.rstrip(".,")
+
+
 def _register_plan_entry(
     content: str,
     plan_title: str,
@@ -385,6 +405,9 @@ def _register_plan_entry(
     position: str = "last",
 ) -> tuple[str, int | None]:
     """Register a plan entry in the roadmap.
+
+    Deduplicates entries that reference the same plan path to avoid
+    accumulating duplicate blockers for the same plan.
 
     Returns: (updated_content, inserted_line_number)
     """
@@ -398,6 +421,22 @@ def _register_plan_entry(
 
     # Format entry: "- **Plan Title** - STATUS - Description"
     entry_text = f"- **{plan_title}** - {status} - {description}"
+
+    # Extract plan path from entry text (description may contain "Plan: ...")
+    plan_path = _extract_plan_path_from_bullet(entry_text)
+    if plan_path:
+        # Check if any existing entry in this section already references this plan path
+        for i in range(section_start + 1, section_end + 1):
+            if i < len(lines):
+                existing_plan_path = _extract_plan_path_from_bullet(lines[i])
+                if existing_plan_path and plan_path == existing_plan_path:
+                    # Duplicate found - return unchanged content (no-op)
+                    return (content, None)
+
+    # As an extra safety guard, avoid inserting an exact duplicate line within this section
+    section_content = "\n".join(lines[section_start : section_end + 1])
+    if entry_text.strip() in section_content:
+        return (content, None)
 
     insert_line = _find_insertion_line_for_section(
         lines, section_start, section_end, position

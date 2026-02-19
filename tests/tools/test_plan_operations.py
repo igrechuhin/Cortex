@@ -308,6 +308,76 @@ class TestRegisterPlanEntry:
         assert "- Block 1" in updated
         assert "Blockers (ASAP Priority)" in updated
 
+    def test_register_duplicate_plan_path_is_noop(self) -> None:
+        """Test that registering plan with same plan path is a no-op."""
+        content = """# Roadmap
+
+## Blockers (ASAP Priority)
+
+- **Investigate Tool** - PENDING - Plan: .cortex/plans/phase-investigate-tool-failure-20260217-123456.md.
+
+## Other Section
+"""
+        # Try to register plan with same plan path
+        updated, line_inserted = register_plan_entry(
+            content,
+            plan_title="Investigate Tool Again",
+            description="Plan: .cortex/plans/phase-investigate-tool-failure-20260217-123456.md.",
+            status="PENDING",
+            section_id="blockers",
+        )
+
+        # Should return unchanged content (no-op)
+        assert updated == content
+        assert line_inserted is None
+
+    def test_register_exact_duplicate_line_is_noop(self) -> None:
+        """Test that registering exact duplicate entry is a no-op."""
+        content = """# Roadmap
+
+## Pending plans (from .cortex/plans)
+
+- **Plan A** - PENDING - Plan: .cortex/plans/plan-a.md.
+
+## Other Section
+"""
+        # Try to register exact same plan
+        updated, line_inserted = register_plan_entry(
+            content,
+            plan_title="Plan A",
+            description="Plan: .cortex/plans/plan-a.md.",
+            status="PENDING",
+            section_id="pending",
+        )
+
+        # Should return unchanged content (no-op)
+        assert updated == content
+        assert line_inserted is None
+
+    def test_register_different_plan_path_succeeds(self) -> None:
+        """Test that registering plan with different plan path succeeds."""
+        content = """# Roadmap
+
+## Blockers (ASAP Priority)
+
+- **Investigate Tool A** - PENDING - Plan: .cortex/plans/phase-investigate-tool-a-failure-20260217-123456.md.
+
+## Other Section
+"""
+        # Register plan with different plan path
+        updated, line_inserted = register_plan_entry(
+            content,
+            plan_title="Investigate Tool B",
+            description="Plan: .cortex/plans/phase-investigate-tool-b-failure-20260217-123456.md.",
+            status="PENDING",
+            section_id="blockers",
+        )
+
+        # Should succeed (different plan path)
+        assert updated != content
+        assert line_inserted is not None
+        assert "phase-investigate-tool-b-failure" in updated
+
 
 class TestCreatePlanFile:
     """Test plan file creation."""

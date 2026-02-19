@@ -591,6 +591,67 @@ class TestInsertRoadmapEntry:
         assert "**Plan 1**" in updated_content2
         assert "**Plan 2**" in updated_content2
 
+    def test_insert_duplicate_plan_path_is_noop(self) -> None:
+        """Test that inserting entry with same plan path is a no-op."""
+        content = """## Blockers (ASAP Priority)
+
+- **Investigate Tool** - PENDING - Plan: .cortex/plans/phase-investigate-tool-failure-20260217-123456.md.
+
+## Other Section
+"""
+        # Try to insert entry with same plan path
+        updated_content, line_inserted = _insert_roadmap_entry(
+            content,
+            "blockers",
+            "- **Investigate Tool Again** - PENDING - Plan: .cortex/plans/phase-investigate-tool-failure-20260217-123456.md.",
+            position="last",
+        )
+
+        # Should return unchanged content (no-op)
+        assert updated_content == content
+        assert line_inserted is None
+
+    def test_insert_exact_duplicate_line_is_noop(self) -> None:
+        """Test that inserting exact duplicate line is a no-op."""
+        content = """## Pending plans (from .cortex/plans)
+
+- **Plan A** - PENDING - Plan: .cortex/plans/plan-a.md.
+
+## Other Section
+"""
+        # Try to insert exact same entry
+        updated_content, line_inserted = _insert_roadmap_entry(
+            content,
+            "pending",
+            "- **Plan A** - PENDING - Plan: .cortex/plans/plan-a.md.",
+            position="last",
+        )
+
+        # Should return unchanged content (no-op)
+        assert updated_content == content
+        assert line_inserted is None
+
+    def test_insert_different_plan_path_succeeds(self) -> None:
+        """Test that inserting entry with different plan path succeeds."""
+        content = """## Blockers (ASAP Priority)
+
+- **Investigate Tool A** - PENDING - Plan: .cortex/plans/phase-investigate-tool-a-failure-20260217-123456.md.
+
+## Other Section
+"""
+        # Insert entry with different plan path
+        updated_content, line_inserted = _insert_roadmap_entry(
+            content,
+            "blockers",
+            "- **Investigate Tool B** - PENDING - Plan: .cortex/plans/phase-investigate-tool-b-failure-20260217-123456.md.",
+            position="last",
+        )
+
+        # Should succeed (different plan path)
+        assert updated_content != content
+        assert line_inserted is not None
+        assert "phase-investigate-tool-b-failure" in updated_content
+
 
 class TestRoadmapSectionModel:
     """Tests for RoadmapSection model."""

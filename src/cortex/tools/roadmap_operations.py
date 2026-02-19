@@ -49,6 +49,49 @@ def _get_header_to_section_map() -> dict[str, str]:
     }
 
 
+def _process_section_header(
+    lines: list[str],
+    i: int,
+    header_text: str,
+    header_to_section: dict[str, str],
+    current_section_name: str | None,
+    current_section_start: int,
+    sections: dict[str, RoadmapSection],
+) -> tuple[str | None, int]:
+    """Process a section header and update sections dict.
+
+    Returns: (new_current_section_name, new_current_section_start)
+    """
+    section_id = header_to_section.get(header_text)
+    if current_section_name is not None:
+        sections[current_section_name] = RoadmapSection(
+            name=current_section_name,
+            header=lines[current_section_start],
+            start_line=current_section_start,
+            end_line=i - 1,
+        )
+    if section_id:
+        return (section_id, i)
+    # Unknown header - clear current section so it doesn't get overwritten at end
+    return (None, current_section_start)
+
+
+def _finalize_last_section(
+    sections: dict[str, RoadmapSection],
+    current_section_name: str | None,
+    current_section_start: int,
+    lines: list[str],
+) -> None:
+    """Finalize the last section if one is still open."""
+    if current_section_name is not None:
+        sections[current_section_name] = RoadmapSection(
+            name=current_section_name,
+            header=lines[current_section_start],
+            start_line=current_section_start,
+            end_line=len(lines) - 1,
+        )
+
+
 def _parse_roadmap_sections(content: str) -> dict[str, RoadmapSection]:
     """Parse roadmap to identify section boundaries."""
     sections: dict[str, RoadmapSection] = {}
@@ -64,26 +107,17 @@ def _parse_roadmap_sections(content: str) -> dict[str, RoadmapSection]:
         if not match:
             continue
         header_text = match.group(2)
-        section_id = header_to_section.get(header_text)
-        if current_section_name is not None:
-            sections[current_section_name] = RoadmapSection(
-                name=current_section_name,
-                header=lines[current_section_start],
-                start_line=current_section_start,
-                end_line=i - 1,
-            )
-        if section_id:
-            current_section_name = section_id
-            current_section_start = i
-
-    if current_section_name is not None:
-        sections[current_section_name] = RoadmapSection(
-            name=current_section_name,
-            header=lines[current_section_start],
-            start_line=current_section_start,
-            end_line=len(lines) - 1,
+        current_section_name, current_section_start = _process_section_header(
+            lines,
+            i,
+            header_text,
+            header_to_section,
+            current_section_name,
+            current_section_start,
+            sections,
         )
 
+    _finalize_last_section(sections, current_section_name, current_section_start, lines)
     return sections
 
 
@@ -127,7 +161,11 @@ def _insert_roadmap_entry(
     entry_text: str,
     position: str = "last",
 ) -> tuple[str, int | None]:
-    """Insert a roadmap entry into the specified section."""
+    """Insert a roadmap entry into the specified section.
+
+    Deduplicates entries that reference the same plan path to avoid
+    accumulating duplicate blockers for the same plan.
+    """
     sections = _parse_roadmap_sections(content)
 
     if section_id not in sections:
@@ -138,6 +176,22 @@ def _insert_roadmap_entry(
 
     if not entry_text.startswith("- "):
         entry_text = f"- {entry_text}"
+
+    # Extract plan path from entry text, if present
+    plan_path = _extract_plan_path_from_bullet(entry_text)
+    if plan_path:
+        # Check if any existing entry in this section already references this plan path
+        for i in range(section.start_line + 1, section.end_line + 1):
+            if i < len(lines):
+                existing_plan_path = _extract_plan_path_from_bullet(lines[i])
+                if existing_plan_path and plan_path == existing_plan_path:
+                    # Duplicate found - return unchanged content (no-op)
+                    return (content, None)
+
+    # As an extra safety guard, avoid inserting an exact duplicate line within this section
+    section_content = "\n".join(lines[section.start_line : section.end_line + 1])
+    if entry_text.strip() in section_content:
+        return (content, None)
 
     insert_line = _find_insertion_line(lines, section, position)
     lines.insert(insert_line, entry_text)
@@ -304,7 +358,7 @@ def _extract_plan_path_from_bullet(line: str) -> str | None:
         if no plan reference is found.
     """
     # Simple, conservative heuristic: look for \"Plan:\" followed by a path-like token.
-    match = re.search(r"Plan:\s*([^\\s]+)", line)
+    match = re.search(r"Plan:\s*([^\s]+)", line)
     if not match:
         return None
     # Strip common trailing punctuation like '.' or ',' from the captured path.

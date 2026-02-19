@@ -11,6 +11,7 @@ from unittest.mock import MagicMock
 from tests.helpers.fixture_validator import (
     OPTIMIZATION_CONFIG_REQUIRED_FOR_PHASE4,
     FixtureValidationResult,
+    validate_mock_manager_fixture,
     validate_optimization_config_mock,
 )
 
@@ -143,3 +144,46 @@ def test_optimization_config_required_phase4_non_empty() -> None:
     assert "is_summarization_enabled" in OPTIMIZATION_CONFIG_REQUIRED_FOR_PHASE4
     assert "get_summarization_strategy" in OPTIMIZATION_CONFIG_REQUIRED_FOR_PHASE4
     assert "get_token_budget" in OPTIMIZATION_CONFIG_REQUIRED_FOR_PHASE4
+
+
+# =============================================================================
+# validate_mock_manager_fixture (generic)
+# =============================================================================
+
+
+def test_validate_mock_manager_fixture_all_present_passes() -> None:
+    """Generic validator passes when all required members are present."""
+    mock = MagicMock()
+    mock.foo.return_value = 1
+    mock.bar.return_value = "baz"
+
+    result = validate_mock_manager_fixture(mock, ["foo", "bar"], mock_name="test_mock")
+
+    assert result.valid is True
+    assert result.missing == []
+    assert "present" in result.message
+    assert "test_mock" in result.message
+
+
+def test_validate_mock_manager_fixture_missing_fails() -> None:
+    """Generic validator fails and lists missing members."""
+    # Use SimpleNamespace so missing attributes are not auto-created (unlike MagicMock).
+    mock = SimpleNamespace(foo=MagicMock(return_value=1))
+    # bar missing
+
+    result = validate_mock_manager_fixture(mock, ["foo", "bar"], mock_name="test_mock")
+
+    assert result.valid is False
+    assert result.missing == ["bar"]
+    assert "bar" in result.message
+    assert "test_mock" in result.message
+
+
+def test_validate_mock_manager_fixture_empty_required_passes() -> None:
+    """Generic validator passes when no members are required."""
+    mock = MagicMock()
+
+    result = validate_mock_manager_fixture(mock, [], mock_name="any")
+
+    assert result.valid is True
+    assert result.missing == []

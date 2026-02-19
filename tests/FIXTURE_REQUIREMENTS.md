@@ -42,3 +42,11 @@ When a tool uses `ensure_usage_context`, the handler may call `set_current_manag
 ## projectBrief schema (integration tests)
 
 Integration tests that write to `projectBrief.md` must use content that includes the required schema sections: **Project Overview**, **Goals**, **Core Requirements**, **Success Criteria**. See session optimization review 2026-02-07 (schema vs tests) and `tests/integration/test_mcp_tools_integration.py` for valid examples.
+
+## make_test_managers / ManagersDict (tool tests)
+
+Used by: many tests in `tests/tools/` that need a typed `ManagersDict` with optional overrides (e.g. `fs`, `index`, `optimization_config`).
+
+**Required**: Use `tests.helpers.managers.make_test_managers(**kwargs)` to build a valid `ManagersDict`. Pass only the managers you need to override; the rest are filled with `MagicMock`. For Phase 4 tools, pass `optimization_config` with all members required by `validate_optimization_config_mock()` (see optimization_config above).
+
+**Note**: The shared `conftest.mock_managers` fixture uses `make_test_managers()` with no overrides. Tests that need a specific `optimization_config` (e.g. Phase 4) use a local `mock_managers` fixture that builds `optimization_config` and validates it.
