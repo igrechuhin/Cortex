@@ -35,6 +35,14 @@ class ResponseFormat(str, Enum):
     DETAILED = "detailed"
 
 
+class ContextDepth(str, Enum):
+    """Content depth for load_context and context operations."""
+
+    METADATA_ONLY = "metadata_only"
+    SUMMARY = "summary"
+    FULL = "full"
+
+
 # ============================================================================
 # Dict-like Pydantic base model (preserves legacy call sites)
 # ============================================================================

@@ -11,6 +11,7 @@
 - **Promote response_format Literal to Pydantic Enum (2026-02-20)** - COMPLETE. Replaced Literal["concise", "detailed"] with ResponseFormat(str, Enum) across 5 tool modules and consolidated query params; added unit tests for enum and serialization.
 - **Session Optimization: Analyze 2026-02-19 Follow-ups (2026-02-20)** - COMPLETE. Implemented load_context budget examples, memory-bank MCP-only edit reminders, and roadmap sync guidance in implement, analyze, and create-plan prompts.
 - **Session Optimization: Step 12.7 MCP Connection Stability Enhancements (2026-02-20)** - COMPLETE. Implemented connection health check before Step 12.7, enhanced retry logic with exponential backoff, connection stability monitoring, and documentation updates.
+- **Promote load_context depth Literal to Pydantic Enum (2026-02-20)** - COMPLETE. Replaced Literal type annotations with ContextDepth(str, Enum) for load_context depth parameter. Updated all handlers and operations to use enum. Maintained backward compatibility with string coercion. All tests pass (4328/4328), quality gate passed.
 
 ## 2026-02-19
 

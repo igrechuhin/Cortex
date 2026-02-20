@@ -11,7 +11,7 @@ from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import JsonValue, ModelDict
+from cortex.core.models import ContextDepth, JsonValue, ModelDict
 from cortex.core.session_logger import log_load_context_call
 from cortex.core.token_counter import TokenCounter
 from cortex.managers.manager_utils import get_manager
@@ -62,7 +62,7 @@ async def _load_context_with_content(
     task_description: str,
     effective_budget: int,
     strategy: str,
-    depth: str,
+    depth: ContextDepth,
 ) -> OptimizationResult:
     """Load context with file content (summary or full).
 
@@ -82,7 +82,7 @@ async def _load_context_with_content(
         metadata_index, fs_manager
     )
 
-    if depth == "summary":
+    if depth == ContextDepth.SUMMARY:
         files_content = summarize_files_content(files_content, files_metadata)
 
     return await context_optimizer.optimize_context(
@@ -98,7 +98,7 @@ async def _load_and_format_context_result(
     task_description: str,
     effective_budget: int,
     strategy: str,
-    depth: str,
+    depth: ContextDepth,
     result: OptimizationResult,
     project_root: Path | None,
     agent_role: AgentRole | None = None,
@@ -204,7 +204,7 @@ async def _handle_full_or_summary_depth(
     task_description: str,
     effective_budget: int,
     strategy: str,
-    depth: str,
+    depth: ContextDepth,
     project_root: Path | None,
     agent_role: AgentRole | None = None,
 ) -> str:
@@ -252,7 +252,7 @@ async def load_context_impl(
     task_description: str,
     token_budget: int | None,
     strategy: str,
-    depth: str = "full",
+    depth: ContextDepth | str = ContextDepth.FULL,
     project_root: Path | None = None,
     agent_role: AgentRole | None = None,
 ) -> str:
@@ -263,13 +263,21 @@ async def load_context_impl(
         task_description: Task description
         token_budget: Token budget
         strategy: Loading strategy
-        depth: Content depth level
+        depth: Content depth level (ContextDepth enum or string for backward compatibility)
         project_root: Project root path
         agent_role: Optional agent role for role-based context selection
 
     Returns:
         JSON string with loaded context
     """
+    # Normalize string input to ContextDepth enum for backward compatibility
+    if not isinstance(depth, ContextDepth):
+        try:
+            depth = ContextDepth(depth)
+        except ValueError:
+            # Invalid string value, default to FULL
+            depth = ContextDepth.FULL
+
     loading_data = await _prepare_context_loading(mgrs, token_budget)
     return await _dispatch_by_depth(
         loading_data, task_description, strategy, depth, project_root, agent_role
@@ -282,13 +290,13 @@ async def _dispatch_by_depth(
     ],
     task_description: str,
     strategy: str,
-    depth: str,
+    depth: ContextDepth,
     project_root: Path | None,
     agent_role: AgentRole | None,
 ) -> str:
     """Dispatch context loading based on depth parameter."""
     components = _unpack_loading_data(loading_data)
-    if depth == "metadata_only":
+    if depth == ContextDepth.METADATA_ONLY:
         return await _dispatch_metadata_only_loading(
             components, task_description, strategy, project_root, agent_role
         )
@@ -335,7 +343,7 @@ async def _dispatch_full_or_summary_loading(
     ],
     task_description: str,
     strategy: str,
-    depth: str,
+    depth: ContextDepth,
     project_root: Path | None,
     agent_role: AgentRole | None,
 ) -> str:
@@ -514,7 +522,7 @@ def _build_hybrid_metadata_response(
         "task_description": task_description,
         "token_budget": token_budget,
         "strategy": strategy,
-        "depth": "metadata_only",
+        "depth": ContextDepth.METADATA_ONLY.value,
         "files": files_map,
         "total_files": len(files_map),
         "total_tokens_available": total_tokens_available,
@@ -712,7 +720,7 @@ def _format_load_context_result(
     token_budget: int,
     strategy: str,
     result: OptimizationResult,
-    depth: str = "full",
+    depth: ContextDepth = ContextDepth.FULL,
 ) -> str:
     """Format load context result as JSON.
 
@@ -726,12 +734,14 @@ def _format_load_context_result(
     Returns:
         JSON string with loaded context results
     """
+    # Serialize enum to string value for JSON output
+    depth_str = depth.value
     response_data = {
         "status": "success",
         "task_description": task_description,
         "token_budget": token_budget,
         "strategy": strategy,
-        "depth": depth,
+        "depth": depth_str,
         "selected_files": result.selected_files,
         "selected_sections": result.selected_sections,
         "total_tokens": result.total_tokens,
@@ -741,7 +751,7 @@ def _format_load_context_result(
     }
 
     # For metadata_only, include files map if available
-    if depth == "metadata_only" and "files" in result.metadata:
+    if depth == ContextDepth.METADATA_ONLY and "files" in result.metadata:
         response_data["files"] = result.metadata["files"]
 
     return json.dumps(response_data, indent=2)

@@ -14,7 +14,7 @@ Note: load_progressive_context has been merged into load_context with strategy="
 
 import json
 from pathlib import Path
-from typing import Literal, cast
+from typing import cast
 from urllib.parse import unquote
 
 # Import via facade to allow test patching
@@ -31,7 +31,7 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
-from cortex.core.models import ResponseFormat
+from cortex.core.models import ContextDepth, ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
@@ -121,7 +121,7 @@ async def _execute_load_context_with_logging(
     effective_budget: int | None,
     strategy: str,
     loading_strategy: str | None,
-    depth: Literal["metadata_only", "summary", "full"] | None,
+    depth: ContextDepth | None,
     response_format: ResponseFormat,
     role: str | None,
     ctx: MCPContext | None,
@@ -318,7 +318,7 @@ async def _execute_load_context(
     token_budget: int | None,
     strategy: str,
     loading_strategy: str | None,
-    depth: Literal["metadata_only", "summary", "full"] | None,
+    depth: ContextDepth | None,
     response_format: ResponseFormat,
     role: str | None,
     ctx: MCPContext | None,
@@ -351,7 +351,7 @@ async def _execute_load_context(
         token_budget,
         strategy,
         loading_strategy,
-        effective_depth,
+        effective_depth.value,
         root,
         agent_role,
     )
@@ -456,7 +456,7 @@ async def load_context(
     token_budget: int | None = None,
     strategy: str = "dependency_aware",
     loading_strategy: str | None = None,
-    depth: Literal["metadata_only", "summary", "full"] | None = None,
+    depth: ContextDepth | None = None,
     response_format: ResponseFormat = ResponseFormat.CONCISE,
     role: str | None = None,
     ctx: MCPContext | None = None,
@@ -497,9 +497,9 @@ async def load_context(
 
 
 def _determine_depth_from_budget(
-    depth: Literal["metadata_only", "summary", "full"] | None,
+    depth: ContextDepth | None,
     token_budget: int | None,
-) -> Literal["metadata_only", "summary", "full"]:
+) -> ContextDepth:
     """Determine depth level from budget if not explicitly specified.
 
     Args:
@@ -513,13 +513,13 @@ def _determine_depth_from_budget(
         return depth
 
     if token_budget is None:
-        return "full"
+        return ContextDepth.FULL
 
     if token_budget < 5000:
-        return "metadata_only"
+        return ContextDepth.METADATA_ONLY
     if token_budget <= 15000:
-        return "summary"
-    return "full"
+        return ContextDepth.SUMMARY
+    return ContextDepth.FULL
 
 
 async def _load_context_progressive(
