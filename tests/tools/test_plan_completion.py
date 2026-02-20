@@ -1,7 +1,7 @@
 """
 Tests for plan_completion module.
 
-Tests complete_plan: move a plan from roadmap to activeContext.
+Tests public API: complete_plan, append_progress_entry, append_active_context_entry.
 """
 
 import json
@@ -10,241 +10,327 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.core.models import OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.plan_completion import (
     CompletePlanResult,
-    _append_completed_entry,  # type: ignore[private-usage]
-    _append_progress_entry_content,  # type: ignore[private-usage]
-    _archive_plan_file,  # type: ignore[private-usage]
-    _archive_subdir_for_plan,  # type: ignore[private-usage]
-    _create_section_and_append,  # type: ignore[private-usage]
-    _execute_append_active_context,  # type: ignore[private-usage]
-    _execute_append_progress,  # type: ignore[private-usage]
-    _find_completed_work_section,  # type: ignore[private-usage]
-    _find_progress_date_section,  # type: ignore[private-usage]
-    _find_roadmap_bullet_line,  # type: ignore[private-usage]
-    _last_bullet_line_in_range,  # type: ignore[private-usage]
-    _remove_line_at,  # type: ignore[private-usage]
-    _validate_progress_entry_text,  # type: ignore[private-usage]
+    append_active_context_entry,
+    append_progress_entry,
     complete_plan,
 )
 
 
-class TestFindRoadmapBulletLine:
-    """Tests for _find_roadmap_bullet_line."""
-
-    def test_finds_bullet_containing_title(self) -> None:
-        content = "## Pending\n\n- **Wire optimization** - PENDING - Connect config.\n"
-        assert _find_roadmap_bullet_line(content, "Wire optimization") == 3
-
-    def test_returns_none_when_not_found(self) -> None:
-        content = "## Pending\n\n- **Other** - PENDING\n"
-        assert _find_roadmap_bullet_line(content, "Wire optimization") is None
-
-    def test_first_match_wins(self) -> None:
-        content = "- **Phase A** - PENDING\n- **Phase B** - PENDING\n"
-        assert _find_roadmap_bullet_line(content, "Phase") == 1
+def _patch_root(tmp_path: Path):
+    """Context manager to patch resolve_project_root_async to return tmp_path."""
+    return patch(
+        "cortex.tools.plan_completion.resolve_project_root_async",
+        new_callable=AsyncMock,
+        return_value=tmp_path,
+    )
 
 
-class TestRemoveLineAt:
-    """Tests for _remove_line_at."""
-
-    def test_removes_line(self) -> None:
-        content = "line1\nline2\nline3"
-        out = _remove_line_at(content, 2)
-        assert out == "line1\nline3"
-
-    def test_removes_first_line(self) -> None:
-        content = "a\nb\nc"
-        assert _remove_line_at(content, 1) == "b\nc"
-
-
-class TestFindCompletedWorkSection:
-    """Tests for _find_completed_work_section."""
-
-    def test_finds_section(self) -> None:
-        content = (
-            "# Active\n\n## Completed Work (2026-02-05)\n\n- ✅ **X** - COMPLETE\n"
-        )
-        section = _find_completed_work_section(content, "2026-02-05")
-        assert section is not None
-        start, end = section
-        assert start == 3
-        assert end >= 3
-
-    def test_returns_none_when_date_missing(self) -> None:
-        content = "## Completed Work (2026-02-04)\n\n- item\n"
-        assert _find_completed_work_section(content, "2026-02-05") is None
-
-
-class TestLastBulletLineInRange:
-    """Tests for _last_bullet_line_in_range."""
-
-    def test_returns_last_bullet_index(self) -> None:
-        lines = ["## H", "", "- one", "- two"]
-        assert _last_bullet_line_in_range(lines, 0, 4) == 3
-
-    def test_returns_none_when_no_bullet(self) -> None:
-        lines = ["## H", "", "text"]
-        assert _last_bullet_line_in_range(lines, 0, 3) is None
-
-
-class TestAppendCompletedEntry:
-    """Tests for _append_completed_entry."""
-
-    def test_appends_to_existing_section(self) -> None:
-        content = "# Active\n\n## Completed Work (2026-02-05)\n\n- ✅ **Old** - COMPLETE (2026-02-05) - x\n"
-        new_content, line = _append_completed_entry(
-            content, "2026-02-05", "New plan", "Summary"
-        )
-        assert line is not None
-        assert "**New plan**" in new_content
-        assert "COMPLETE (2026-02-05)" in new_content
-        assert "Summary" in new_content
-
-
-class TestCreateSectionAndAppend:
-    """Tests for _create_section_and_append."""
-
-    def test_appends_when_section_exists(self) -> None:
-        content = (
-            "# Active\n\n## Completed Work (2026-02-05)\n\n- ✅ **A** - COMPLETE - a\n"
-        )
-        new_content, line = _create_section_and_append(
-            content, "2026-02-05", "B", "b summary"
-        )
-        assert line is not None
-        assert "**B**" in new_content
-        assert "b summary" in new_content
-
-
-class TestFindProgressDateSection:
-    """Tests for _find_progress_date_section."""
-
-    def test_finds_section(self) -> None:
-        content = "# Progress Log\n\n## 2026-02-09\n\n- **X** - COMPLETE.\n"
-        section = _find_progress_date_section(content, "2026-02-09")
-        assert section is not None
-        start, end = section
-        assert start == 2
-        assert end >= 2
-
-    def test_returns_none_when_date_missing(self) -> None:
-        content = "# Progress\n\n## 2026-02-08\n\n"
-        assert _find_progress_date_section(content, "2026-02-09") is None
-
-
-class TestAppendProgressEntryContent:
-    """Tests for _append_progress_entry_content."""
-
-    def test_appends_to_existing_date_section(self) -> None:
-        content = "# Progress Log\n\n## 2026-02-09\n\n" + "- **Old** - COMPLETE.\n"
-        new_content, line = _append_progress_entry_content(
-            content, "2026-02-09", "**New** - COMPLETE. Summary."
-        )
-        assert line is not None
-        assert "**New**" in new_content
-        assert "Summary" in new_content
-
-
-class TestValidateProgressEntryText:
-    """Tests for _validate_progress_entry_text (progress entry format validation)."""
-
-    def test_valid_accepts_title_dash_complete(self) -> None:
-        assert _validate_progress_entry_text("**Title** - COMPLETE. Summary.") is None
-
-    def test_valid_accepts_parenthesis_close_dash_complete(self) -> None:
-        assert _validate_progress_entry_text(")** - COMPLETE. Done.") is None
-
-    def test_invalid_rejects_complete_without_delimiter(self) -> None:
-        err = _validate_progress_entry_text("20260209COMPLETE")
-        assert err is not None
-        assert " - COMPLETE" in err
-
-    def test_invalid_rejects_plain_complete(self) -> None:
-        err = _validate_progress_entry_text("COMPLETE")
-        assert err is not None
-
-    def test_valid_accepts_no_complete(self) -> None:
-        assert _validate_progress_entry_text("**Ongoing** - In progress.") is None
-
-
-class TestExecuteAppendProgress:
-    """Tests for _execute_append_progress."""
+class TestCompletePlanFindRoadmapBullet:
+    """complete_plan finds and removes the matching roadmap bullet (public API)."""
 
     @pytest.mark.asyncio
-    async def test_append_success(self, tmp_path: Path) -> None:
+    async def test_finds_bullet_containing_title(self, tmp_path: Path) -> None:
         mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         mem.mkdir(parents=True)
-        _ = (mem / "progress.md").write_text(
+        roadmap = mem / "roadmap.md"
+        _ = roadmap.write_text(
+            "# Roadmap\n\n## Pending\n\n"
+            + "- **Wire optimization** - PENDING - Connect config.\n"
+        )
+        _ = (mem / "activeContext.md").write_text(
+            "# Active\n\n## Completed Work (2026-02-05)\n\n"
+        )
+        with _patch_root(tmp_path):
+            result_str = await complete_plan(
+                plan_title="Wire optimization",
+                summary="Done.",
+                completion_date="2026-02-05",
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result["roadmap_line_removed"] is not None
+        assert "Wire optimization" not in roadmap.read_text()
+
+    @pytest.mark.asyncio
+    async def test_returns_error_when_plan_not_found(self, tmp_path: Path) -> None:
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        _ = (mem / "roadmap.md").write_text(
+            "# Roadmap\n\n## Pending\n\n- **Other** - PENDING\n"
+        )
+        _ = (mem / "activeContext.md").write_text(
+            "# Active\n\n## Completed Work (2026-02-05)\n\n"
+        )
+        with _patch_root(tmp_path):
+            result_str = await complete_plan(
+                plan_title="Wire optimization",
+                summary="Done.",
+                completion_date="2026-02-05",
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert (
+            "not found" in result.get("message", "").lower()
+            or "bullet" in (result.get("error") or "").lower()
+        )
+
+    @pytest.mark.asyncio
+    async def test_first_match_wins(self, tmp_path: Path) -> None:
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        roadmap = mem / "roadmap.md"
+        _ = roadmap.write_text(
+            "# Roadmap\n\n## Pending\n\n"
+            + "- **Phase A** - PENDING\n"
+            + "- **Phase B** - PENDING\n"
+        )
+        _ = (mem / "activeContext.md").write_text(
+            "# Active\n\n## Completed Work (2026-02-05)\n\n"
+        )
+        with _patch_root(tmp_path):
+            result_str = await complete_plan(
+                plan_title="Phase",
+                summary="Done.",
+                completion_date="2026-02-05",
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        text = roadmap.read_text()
+        assert "Phase A" not in text
+        assert "Phase B" in text
+
+
+class TestCompletePlanCompletedWorkSection:
+    """complete_plan appends to or creates Completed Work section (public API)."""
+
+    @pytest.mark.asyncio
+    async def test_appends_to_existing_section(self, tmp_path: Path) -> None:
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        _ = (mem / "roadmap.md").write_text(
+            "# Roadmap\n\n## Pending\n\n- **New plan** - PENDING\n"
+        )
+        active = mem / "activeContext.md"
+        _ = active.write_text(
+            "# Active\n\n## Completed Work (2026-02-05)\n\n"
+            + "- ✅ **Old** - COMPLETE (2026-02-05) - x\n"
+        )
+        with _patch_root(tmp_path):
+            result_str = await complete_plan(
+                plan_title="New plan",
+                summary="Summary",
+                completion_date="2026-02-05",
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "**New plan**" in active.read_text()
+        assert "Summary" in active.read_text()
+
+    @pytest.mark.asyncio
+    async def test_creates_section_when_missing(self, tmp_path: Path) -> None:
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        _ = (mem / "roadmap.md").write_text(
+            "# Roadmap\n\n## Pending\n\n- **New plan** - PENDING\n"
+        )
+        active = mem / "activeContext.md"
+        _ = active.write_text("# Active\n\n## Completed Work (2026-02-04)\n\n")
+        with _patch_root(tmp_path):
+            result_str = await complete_plan(
+                plan_title="New plan",
+                summary="Summary",
+                completion_date="2026-02-05",
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        text = active.read_text()
+        assert "## Completed Work (2026-02-05)" in text
+        assert "**New plan**" in text
+
+
+class TestAppendProgressEntry:
+    """append_progress_entry public API."""
+
+    @pytest.mark.asyncio
+    async def test_appends_to_existing_date_section(self, tmp_path: Path) -> None:
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        progress = mem / "progress.md"
+        _ = progress.write_text(
             "# Progress Log\n\n## 2026-02-09\n\n- **Old** - COMPLETE.\n"
         )
-        result = await _execute_append_progress(
-            tmp_path, "2026-02-09", "**New step** - COMPLETE. Done."
-        )
-        assert result.status == "success"
-        assert result.line_inserted is not None
-        assert "**New step**" in (mem / "progress.md").read_text()
+        with _patch_root(tmp_path):
+            result_str = await append_progress_entry(
+                "2026-02-09", "**New step** - COMPLETE. Done."
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result.get("line_inserted") is not None
+        assert "**New step**" in progress.read_text()
 
     @pytest.mark.asyncio
-    async def test_append_when_file_missing_returns_error(self, tmp_path: Path) -> None:
+    async def test_creates_date_section_when_missing(self, tmp_path: Path) -> None:
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        progress = mem / "progress.md"
+        _ = progress.write_text("# Progress\n\n## 2026-02-08\n\n")
+        with _patch_root(tmp_path):
+            result_str = await append_progress_entry(
+                "2026-02-09", "**New** - COMPLETE. Summary."
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        text = progress.read_text()
+        assert "## 2026-02-09" in text
+        assert "**New**" in text
+
+    @pytest.mark.asyncio
+    async def test_returns_error_when_file_missing(self, tmp_path: Path) -> None:
         get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
-        result = await _execute_append_progress(
-            tmp_path, "2026-02-09", "**New** - COMPLETE."
-        )
-        assert result.status == "error"
+        with _patch_root(tmp_path):
+            result_str = await append_progress_entry(
+                "2026-02-09", "**New** - COMPLETE."
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "error"
 
     @pytest.mark.asyncio
-    async def test_append_rejects_malformed_progress_entry(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_rejects_malformed_progress_entry(self, tmp_path: Path) -> None:
         mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         mem.mkdir(parents=True)
         _ = (mem / "progress.md").write_text(
             "# Progress\n\n## 2026-02-09\n\n- **Old** - COMPLETE.\n"
         )
-        result = await _execute_append_progress(
-            tmp_path, "2026-02-09", "20260209COMPLETE"
-        )
-        assert result.status == "error"
-        assert result.error is not None
-        assert " - COMPLETE" in (result.error or "")
-
-
-class TestExecuteAppendActiveContext:
-    """Tests for _execute_append_active_context."""
+        with _patch_root(tmp_path):
+            result_str = await append_progress_entry("2026-02-09", "20260209COMPLETE")
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert result.get("error")
+        assert " - COMPLETE" in (result.get("error") or "")
 
     @pytest.mark.asyncio
-    async def test_append_success(self, tmp_path: Path) -> None:
+    async def test_rejects_invalid_date(self, tmp_path: Path) -> None:
         mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         mem.mkdir(parents=True)
-        _ = (mem / "activeContext.md").write_text(
-            "# Active\n\n## Completed Work (2026-02-09)\n\n"
+        _ = (mem / "progress.md").write_text(
+            "# Progress\n\n## 2026-02-09\n\n- **Old** - COMPLETE.\n"
         )
-        result = await _execute_append_active_context(
-            tmp_path, "2026-02-09", "New step", "Summary of work."
+        with _patch_root(tmp_path):
+            result_str = await append_progress_entry(
+                "2026/02/09", "**New** - COMPLETE. Done."
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert "date" in (result.get("error") or "").lower()
+
+
+class TestAppendProgressEntryValidation:
+    """Progress entry format validation via append_progress_entry."""
+
+    @pytest.mark.asyncio
+    async def test_valid_formats_accepted(self, tmp_path: Path) -> None:
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        _ = (mem / "progress.md").write_text("# Progress\n\n## 2026-02-09\n\n")
+        with _patch_root(tmp_path):
+            for entry in (
+                "**Title** - COMPLETE. Summary.",
+                ")** - COMPLETE. Done.",
+                "**Phase 54 (2026-02-20)** - COMPLETE. Implemented.",
+                "**Ongoing** - In progress.",
+            ):
+                result_str = await append_progress_entry("2026-02-09", entry)
+                result = json.loads(result_str)
+                assert result["status"] == "success", f"Rejected valid: {entry!r}"
+
+    @pytest.mark.asyncio
+    async def test_invalid_formats_rejected(self, tmp_path: Path) -> None:
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        _ = (mem / "progress.md").write_text("# Progress\n\n## 2026-02-09\n\n")
+        with _patch_root(tmp_path):
+            for entry, fragment in (
+                ("**Title (2026-02-20** - COMPLETE. Done.", ")** - COMPLETE"),
+                ("20260209COMPLETE", " - COMPLETE"),
+                ("COMPLETE", None),
+            ):
+                result_str = await append_progress_entry("2026-02-09", entry)
+                result = json.loads(result_str)
+                assert result["status"] == "error", f"Accepted invalid: {entry!r}"
+                if fragment:
+                    assert fragment in (result.get("error") or "")
+
+
+class TestCompletePlanDateValidation:
+    """Date validation (YYYY-MM-DD) via complete_plan and append_progress_entry."""
+
+    @pytest.mark.asyncio
+    async def test_complete_plan_rejects_invalid_date(self) -> None:
+        result_str = await complete_plan(
+            plan_title="Any plan",
+            summary="Summary",
+            completion_date="2026/02/05",
         )
-        assert result.status == "success"
-        assert result.line_inserted is not None
-        text = (mem / "activeContext.md").read_text()
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert "date" in (result.get("error") or "").lower() or "YYYY-MM-DD" in (
+            result.get("error") or ""
+        )
+
+    @pytest.mark.asyncio
+    async def test_append_progress_rejects_invalid_dates(self, tmp_path: Path) -> None:
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        _ = (mem / "progress.md").write_text("# Progress\n\n## 2026-02-09\n\n")
+        valid_entry = "**X** - COMPLETE. Done."
+        with _patch_root(tmp_path):
+            for bad_date in ("", "2026-2-20", "20260220", "2026/02/20", "2026-02-30"):
+                result_str = await append_progress_entry(bad_date, valid_entry)
+                result = json.loads(result_str)
+                assert result["status"] == "error", f"Accepted date: {bad_date!r}"
+
+
+class TestAppendActiveContextEntry:
+    """append_active_context_entry public API."""
+
+    @pytest.mark.asyncio
+    async def test_appends_to_existing_section(self, tmp_path: Path) -> None:
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        active = mem / "activeContext.md"
+        _ = active.write_text("# Active\n\n## Completed Work (2026-02-09)\n\n")
+        with _patch_root(tmp_path):
+            result_str = await append_active_context_entry(
+                "2026-02-09", "New step", "Summary of work."
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result.get("line_inserted") is not None
+        text = active.read_text()
         assert "New step" in text
         assert "Summary of work" in text
 
     @pytest.mark.asyncio
-    async def test_append_when_file_missing_returns_error(self, tmp_path: Path) -> None:
+    async def test_returns_error_when_file_missing(self, tmp_path: Path) -> None:
         get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK).mkdir(parents=True)
-        result = await _execute_append_active_context(
-            tmp_path, "2026-02-09", "Title", "Summary"
-        )
-        assert result.status == "error"
+        with _patch_root(tmp_path):
+            result_str = await append_active_context_entry(
+                "2026-02-09", "Title", "Summary"
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "error"
 
 
 class TestCompletePlanResult:
-    """Test CompletePlanResult model."""
+    """CompletePlanResult model."""
 
     def test_success_serialization(self) -> None:
         result = CompletePlanResult(
-            status="success",
+            status=OperationStatus.SUCCESS,
             message="Moved",
             roadmap_line_removed=5,
             active_context_line_inserted=10,
@@ -259,7 +345,7 @@ class TestCompletePlanResult:
 
     def test_error_serialization(self) -> None:
         result = CompletePlanResult(
-            status="error",
+            status=OperationStatus.ERROR,
             message="Not found",
             roadmap_line_removed=None,
             active_context_line_inserted=None,
@@ -272,62 +358,143 @@ class TestCompletePlanResult:
         assert "No bullet" in data.get("error", "")
 
 
-class TestArchiveSubdirForPlan:
-    """Tests for _archive_subdir_for_plan."""
+class TestCompletePlanArchive:
+    """complete_plan with plan_file_name: archive behavior (public API)."""
 
-    def test_session_optimization_returns_session_optimization(self) -> None:
-        assert (
-            _archive_subdir_for_plan("session-optimization-foo.md")
-            == "SessionOptimization"
-        )
-
-    def test_phase_number_returns_phase_n(self) -> None:
-        assert _archive_subdir_for_plan("phase-9-excellence-98.md") == "Phase9"
-        assert _archive_subdir_for_plan("phase-53-type-cleanup.md") == "Phase53"
-
-    def test_investigate_with_date_returns_investigations_date(self) -> None:
-        assert (
-            _archive_subdir_for_plan("phase-investigate-foo-20260204-123456.md")
-            == "Investigations/2026-02-04"
-        )
-
-    def test_path_traversal_returns_none(self) -> None:
-        assert _archive_subdir_for_plan("foo/bar.md") is None
-        assert _archive_subdir_for_plan("") is None
-
-
-class TestArchivePlanFile:
-    """Tests for _archive_plan_file."""
-
-    def test_rejects_path_traversal(self, tmp_path: Path) -> None:
-        _, err = _archive_plan_file(tmp_path, "session-optimization/../evil.md")
-        assert err is not None
-        assert "single filename" in (err or "").lower()
-
-    def test_returns_error_when_file_not_found(self, tmp_path: Path) -> None:
-        get_cortex_path(tmp_path, CortexResourceType.PLANS).mkdir(parents=True)
-        _, err = _archive_plan_file(tmp_path, "session-optimization-missing.md")
-        assert err is not None
-        assert "not found" in (err or "").lower()
-
-    def test_moves_session_optimization_to_archive_and_removes_from_root(
+    @pytest.mark.asyncio
+    async def test_rejects_path_traversal_in_plan_file_name(
         self, tmp_path: Path
     ) -> None:
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        _ = (mem / "roadmap.md").write_text(
+            "# Roadmap\n\n## Pending\n\n- **Some plan** - PENDING\n"
+        )
+        _ = (mem / "activeContext.md").write_text(
+            "# Active\n\n## Completed Work (2026-02-09)\n\n"
+        )
+        with _patch_root(tmp_path):
+            result_str = await complete_plan(
+                plan_title="Some plan",
+                summary="Done.",
+                completion_date="2026-02-09",
+                plan_file_name="session-optimization/../evil.md",
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert "single filename" in (result.get("error") or "").lower()
+
+    @pytest.mark.asyncio
+    async def test_returns_error_when_plan_file_not_found(self, tmp_path: Path) -> None:
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        _ = (mem / "roadmap.md").write_text(
+            "# Roadmap\n\n## Pending\n\n- **Some plan** - PENDING\n"
+        )
+        _ = (mem / "activeContext.md").write_text(
+            "# Active\n\n## Completed Work (2026-02-09)\n\n"
+        )
+        get_cortex_path(tmp_path, CortexResourceType.PLANS).mkdir(parents=True)
+        with _patch_root(tmp_path):
+            result_str = await complete_plan(
+                plan_title="Some plan",
+                summary="Done.",
+                completion_date="2026-02-09",
+                plan_file_name="session-optimization-missing.md",
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert "not found" in (result.get("error") or "").lower()
+
+    @pytest.mark.asyncio
+    async def test_moves_session_optimization_to_archive(self, tmp_path: Path) -> None:
         plans = get_cortex_path(tmp_path, CortexResourceType.PLANS)
         plans.mkdir(parents=True)
         plan_name = "session-optimization-foo.md"
         _ = (plans / plan_name).write_text("# Plan\n")
-        path, err = _archive_plan_file(tmp_path, plan_name)
-        assert err is None
-        assert path is not None
-        assert "SessionOptimization" in path
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        _ = (mem / "roadmap.md").write_text(
+            "# Roadmap\n\n## Pending\n\n- **Foo** - PENDING\n"
+        )
+        _ = (mem / "activeContext.md").write_text(
+            "# Active\n\n## Completed Work (2026-02-09)\n\n"
+        )
+        with _patch_root(tmp_path):
+            result_str = await complete_plan(
+                plan_title="Foo",
+                summary="Done.",
+                completion_date="2026-02-09",
+                plan_file_name=plan_name,
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert result.get("archive_path")
+        assert "SessionOptimization" in (result.get("archive_path") or "")
         assert not (plans / plan_name).exists()
-        plans_archive = get_cortex_path(tmp_path, CortexResourceType.PLANS_ARCHIVE)
-        assert (plans_archive / "SessionOptimization" / plan_name).exists()
+        archive = get_cortex_path(tmp_path, CortexResourceType.PLANS_ARCHIVE)
+        assert (archive / "SessionOptimization" / plan_name).exists()
+
+    @pytest.mark.asyncio
+    async def test_moves_phase_plan_to_phase_n_subdir(self, tmp_path: Path) -> None:
+        plans = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+        plans.mkdir(parents=True)
+        plan_name = "phase-9-excellence-98.md"
+        _ = (plans / plan_name).write_text("# Plan\n")
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        _ = (mem / "roadmap.md").write_text(
+            "# Roadmap\n\n## Pending\n\n- **Phase 9** - PENDING\n"
+        )
+        _ = (mem / "activeContext.md").write_text(
+            "# Active\n\n## Completed Work (2026-02-09)\n\n"
+        )
+        with _patch_root(tmp_path):
+            result_str = await complete_plan(
+                plan_title="Phase 9",
+                summary="Done.",
+                completion_date="2026-02-09",
+                plan_file_name=plan_name,
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "Phase9" in (result.get("archive_path") or "")
+        archive = get_cortex_path(tmp_path, CortexResourceType.PLANS_ARCHIVE)
+        assert (archive / "Phase9" / plan_name).exists()
+
+    @pytest.mark.asyncio
+    async def test_moves_investigate_plan_to_investigations_date(
+        self, tmp_path: Path
+    ) -> None:
+        plans = get_cortex_path(tmp_path, CortexResourceType.PLANS)
+        plans.mkdir(parents=True)
+        plan_name = "phase-investigate-foo-20260204-123456.md"
+        _ = (plans / plan_name).write_text("# Plan\n")
+        mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        mem.mkdir(parents=True)
+        _ = (mem / "roadmap.md").write_text(
+            "# Roadmap\n\n## Pending\n\n- **Investigate foo** - PENDING\n"
+        )
+        _ = (mem / "activeContext.md").write_text(
+            "# Active\n\n## Completed Work (2026-02-09)\n\n"
+        )
+        with _patch_root(tmp_path):
+            result_str = await complete_plan(
+                plan_title="Investigate foo",
+                summary="Done.",
+                completion_date="2026-02-09",
+                plan_file_name=plan_name,
+            )
+        result = json.loads(result_str)
+        assert result["status"] == "success"
+        assert "Investigations" in (result.get("archive_path") or "")
+        assert "2026-02-04" in (result.get("archive_path") or "")
+        archive = get_cortex_path(tmp_path, CortexResourceType.PLANS_ARCHIVE)
+        assert (archive / "Investigations" / "2026-02-04" / plan_name).exists()
 
 
 class TestCompletePlanIntegration:
-    """Integration tests for complete_plan tool."""
+    """Integration tests for complete_plan."""
 
     @pytest.mark.asyncio
     async def test_complete_plan_moves_entry(self, tmp_path: Path) -> None:
@@ -344,11 +511,7 @@ class TestCompletePlanIntegration:
             + "## Completed Work (2026-02-05)\n\n"
             + "- ✅ **Phase 50** - COMPLETE (2026-02-05) - Plan tools.\n"
         )
-        with patch(
-            "cortex.tools.plan_completion.resolve_project_root_async",
-            new_callable=AsyncMock,
-            return_value=tmp_path,
-        ):
+        with _patch_root(tmp_path):
             result_str = await complete_plan(
                 plan_title="Wire optimization",
                 summary="Connected config to runtime.",
@@ -372,11 +535,7 @@ class TestCompletePlanIntegration:
         _ = (mem / "activeContext.md").write_text(
             "# Active\n\n## Completed Work (2026-02-05)\n\n"
         )
-        with patch(
-            "cortex.tools.plan_completion.resolve_project_root_async",
-            new_callable=AsyncMock,
-            return_value=tmp_path,
-        ):
+        with _patch_root(tmp_path):
             result_str = await complete_plan(
                 plan_title="Nonexistent plan",
                 summary="Summary",
@@ -390,10 +549,22 @@ class TestCompletePlanIntegration:
         )
 
     @pytest.mark.asyncio
+    async def test_complete_plan_rejects_invalid_completion_date(self) -> None:
+        result_str = await complete_plan(
+            plan_title="Any plan",
+            summary="Summary",
+            completion_date="2026/02/05",
+        )
+        result = json.loads(result_str)
+        assert result["status"] == "error"
+        assert "date" in (result.get("error") or "").lower() or "YYYY-MM-DD" in (
+            result.get("error") or ""
+        )
+
+    @pytest.mark.asyncio
     async def test_complete_plan_with_plan_file_name_archives_file(
         self, tmp_path: Path
     ) -> None:
-        """complete_plan with plan_file_name moves plan file to archive and removes from plans root."""
         mem = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
         mem.mkdir(parents=True)
         plans_dir = get_cortex_path(tmp_path, CortexResourceType.PLANS)
@@ -411,11 +582,7 @@ class TestCompletePlanIntegration:
             "# Active\n\n## Completed Work (2026-02-09)\n\n"
         )
         _ = (mem / "progress.md").write_text("# Progress\n\n## 2026-02-09\n\n")
-        with patch(
-            "cortex.tools.plan_completion.resolve_project_root_async",
-            new_callable=AsyncMock,
-            return_value=tmp_path,
-        ):
+        with _patch_root(tmp_path):
             result_str = await complete_plan(
                 plan_title="Roadmap full-content enforcement",
                 summary="Strengthened create-plan and memory-bank-updater.",

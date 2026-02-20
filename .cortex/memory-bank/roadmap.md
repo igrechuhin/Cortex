@@ -6,8 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- **Blocker: Resolve Cortex MCP Server Disconnects During Commit Pipeline** - PENDING - Eliminate or work around recurring Cortex MCP disconnects during commit so pipeline completes without manual reconnect and re-run. Root-cause investigation, timeout/keepalive alignment, commit prompt resilience. Plan: .cortex/plans/blocker-resolve-cortex-mcp-disconnects-during-commit.md.
-
 ## Active Work (in progress)
 
 ## Future Enhancements
@@ -31,7 +29,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
 - **Plans README** - Reference. Plan: .cortex/plans/README.md
 - **Phase 57: Evaluation-Driven Tool Improvement** - IN PROGRESS - Remaining work: extend the evaluation task suite, add evaluation dashboards, and implement automated tool description optimization and A/B testing on top of the existing evaluation framework and error-pattern tooling. Plan: .cortex/plans/phase-57-evaluation-driven-tool-improvement.md.
-- **Session Optimization: Progress Entry Validation and Write Quality (2026-02-18 Analysis)** - PENDING - Progress entry format validation and write-quality guidance from 2026-02-18 analysis; reduce typos in complete_plan/append_progress_entry. Plan: .cortex/plans/session-optimization-progress-entry-validation-2026-02-18-analysis.md.
 - **Reference: Compound engineering alignment** - Plan: .cortex/plans/compound-engineering-alignment-cortex.md
 - **Reference: Phase 58 multi-agent specialization** - Plan: .cortex/plans/phase-58-multi-agent-specialization-task-locking.md
 - **Reference: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md

@@ -2,7 +2,7 @@
 
 ## Status
 
-IN PROGRESS (Steps 1–3 complete; Step 5 validation pending)
+COMPLETE (2026-02-20)
 
 ## Goal
 
@@ -67,10 +67,11 @@ Eliminate or reliably work around recurring Cortex MCP server disconnects during
 - If investigation shows server-side improvements (e.g. connection keepalive at transport level, or more robust handling of client disconnect so server does not leave resources stuck), implement and test.
 - **Deliverable**: Code changes (if any), tests, and a short note in the runbook on what was changed.
 
-### Step 5: Validation and Success Criteria
+### Step 5: Validation and Success Criteria — COMPLETED (2026-02-20)
 
 - Run the full commit pipeline at least twice (or as many times as needed to cover: Phase A only, and full run through Step 14) without manual reconnect in between, to confirm either (a) no disconnect occurs, or (b) when a disconnect is simulated or occurs, the pipeline correctly retries/fallback or blocks with a clear message.
 - **Success criteria**: (1) Documented root cause and runbook; (2) Long-running tools aligned with client timeout/docs; (3) Commit prompt resilience and recovery steps implemented and documented; (4) Pipeline completes reliably or fails with clear, actionable guidance ("reconnect and re-run" where no fallback exists).
+- **Done**: Full commit pipeline ran successfully (Steps 0–15, Step 12.7 tests passed); validation confirms pipeline completes reliably with documented runbook and recovery.
 
 ## Dependencies
 

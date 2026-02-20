@@ -9,7 +9,7 @@ appropriate archive directory and removes any duplicate from the plans root.
 
 import re
 import shutil
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -35,7 +35,9 @@ class CompletePlanResult(BaseModel):
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    status: str = Field(description="Operation status: 'success' or 'error'")
+    status: OperationStatus = Field(
+        description="Operation status: 'success' or 'error'"
+    )
     message: str = Field(description="Success or error message")
     roadmap_line_removed: int | None = Field(
         None, ge=1, description="Line number removed from roadmap (on success)"
@@ -300,7 +302,7 @@ def _complete_plan_error(
 ) -> CompletePlanResult:
     """Build error result for plan completion."""
     return CompletePlanResult(
-        status="error",
+        status=OperationStatus.ERROR,
         message=message,
         roadmap_line_removed=roadmap_line,
         active_context_line_inserted=active_line,
@@ -310,10 +312,23 @@ def _complete_plan_error(
     )
 
 
+def _complete_plan_invalid_date_json(date_err: str) -> str:
+    """Return JSON error result for invalid completion_date."""
+    return CompletePlanResult(
+        status=OperationStatus.ERROR,
+        message="Invalid completion_date",
+        roadmap_line_removed=None,
+        active_context_line_inserted=None,
+        progress_line_inserted=None,
+        archive_path=None,
+        error=date_err,
+    ).model_dump_json()
+
+
 def _complete_plan_success(roadmap_line: int, active_line: int) -> CompletePlanResult:
     """Build success result for plan completion."""
     return CompletePlanResult(
-        status="success",
+        status=OperationStatus.SUCCESS,
         message=f"Plan moved from roadmap (line {roadmap_line}) to activeContext (line {active_line})",
         roadmap_line_removed=roadmap_line,
         active_context_line_inserted=active_line,
@@ -495,11 +510,27 @@ def _progress_error(message: str, error: str) -> AppendProgressEntryResult:
     )
 
 
+def _validate_date_str(date_str: str) -> str | None:
+    """Validate date_str is YYYY-MM-DD. Returns error message if invalid, None if valid."""
+    if not date_str or not date_str.strip():
+        return "Date is required (YYYY-MM-DD)."
+    s = date_str.strip()
+    if len(s) != 10 or s[4] != "-" or s[7] != "-":
+        return "Date must be YYYY-MM-DD (e.g. 2026-02-20)."
+    try:
+        _ = datetime.strptime(s, "%Y-%m-%d")
+        return None
+    except ValueError:
+        return "Date must be a valid calendar date (YYYY-MM-DD)."
+
+
 def _validate_progress_entry_text(entry_text: str) -> str | None:
     """Reject progress entry text that matches common corruption patterns.
 
     Ensures COMPLETE is preceded by the proper delimiter (e.g. " - COMPLETE"
     or ")** - COMPLETE") to avoid malformed bullets like "20260209COMPLETE".
+    When the entry contains an open parenthesis before COMPLETE, requires
+    ")** - COMPLETE" so the title segment is properly closed.
     Returns an error message if invalid, None if valid.
     """
     t = (entry_text or "").strip()
@@ -508,6 +539,11 @@ def _validate_progress_entry_text(entry_text: str) -> str | None:
             "Progress entry contains 'COMPLETE' but is missing ' - COMPLETE' "
             "(e.g. use '**Title** - COMPLETE. Summary...', not '...COMPLETE' alone)"
         )
+    if "(" in t and ")** - COMPLETE" not in t and " - COMPLETE" in t:
+        return (
+            "Progress entry has '(' but is missing ')** - COMPLETE'. "
+            "Use '**Title (date)** - COMPLETE. Summary...' so the title segment is closed."
+        )
     return None
 
 
@@ -515,6 +551,9 @@ async def _execute_append_progress(
     root: Path, date_str: str, entry_text: str
 ) -> AppendProgressEntryResult:
     """Append one entry to progress.md under ## date_str. Returns result."""
+    date_err = _validate_date_str(date_str)
+    if date_err:
+        return _progress_error("Invalid date format", date_err)
     validation_err = _validate_progress_entry_text(entry_text)
     if validation_err:
         return _progress_error("Invalid progress entry format", validation_err)
@@ -599,7 +638,7 @@ async def _apply_progress_and_archive(
     if plan_file_name:
         archive_path, archive_err = _archive_plan_file(root, plan_file_name)
         if archive_err:
-            result.status = "error"
+            result.status = OperationStatus.ERROR
             result.error = archive_err
             result.message = (
                 f"Plan moved to activeContext but archive failed: {archive_err}"
@@ -619,9 +658,11 @@ async def _complete_plan_impl(
     """Implementation of complete_plan: roadmap + activeContext, optional progress, optional archive."""
     await log_client(ctx, "info", "complete_plan: starting", logger_name=__name__)
     date_str = (completion_date or _today_iso()).strip()
+    if date_err := _validate_date_str(date_str):
+        return _complete_plan_invalid_date_json(date_err)
     root = await resolve_project_root_async(None, ctx)
     result = await _do_complete_plan(root, plan_title, summary, date_str)
-    if result.status != "success":
+    if result.status != OperationStatus.SUCCESS:
         await log_client(
             ctx, "warning", f"complete_plan: {result.status}", logger_name=__name__
         )
@@ -675,7 +716,7 @@ async def complete_plan(
     except Exception as e:
         await log_client(ctx, "error", f"complete_plan: {e}", logger_name=__name__)
         return CompletePlanResult(
-            status="error",
+            status=OperationStatus.ERROR,
             message="Unexpected error",
             roadmap_line_removed=None,
             active_context_line_inserted=None,

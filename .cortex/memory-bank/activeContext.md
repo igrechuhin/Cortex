@@ -8,6 +8,10 @@
 
 - ✅ **Blocker: MCP disconnects during commit (Steps 1–3)** - COMPLETE (2026-02-20) - Documented disconnect patterns (runbook in troubleshooting), aligned long-running tools with client timeout (mcp-tool-timeouts), and hardened commit prompt (optional health check before 12.7, runbook links, reconnect/re-run). Integration test ensures commit prompt references runbook and recovery. Validation (run pipeline twice) pending.
 
+- ✅ **Blocker: Resolve Cortex MCP Server Disconnects During Commit Pipeline** - COMPLETE (2026-02-20) - Runbook, timeout docs, and commit prompt resilience implemented; full commit pipeline ran successfully (Steps 0–15). Blocker resolved.
+
+- ✅ **Session Optimization: Progress Entry Validation and Write Quality (2026-02-18 Analysis)** - COMPLETE (2026-02-20) - Added date (YYYY-MM-DD) and progress entry format validation in plan_completion; progress entry template and write-quality guidance in implement prompt and memory-bank-updater.
+
 ## Completed Work (2026-02-19)
 
 - **Summary (2026-02-19)** - 1 entries archived.
