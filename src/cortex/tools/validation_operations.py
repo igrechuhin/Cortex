@@ -18,6 +18,7 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.models import ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.validation_dispatch import (
@@ -64,7 +65,7 @@ async def validate(
     check_code_quality_consistency: bool = True,
     check_documentation_consistency: bool = True,
     check_config_consistency: bool = True,
-    response_format: Literal["concise", "detailed"] = "concise",
+    response_format: ResponseFormat = ResponseFormat.CONCISE,
     ctx: MCPContext | None = None,
 ) -> str:
     """Run validation checks on Memory Bank files for schema compliance,
@@ -555,10 +556,10 @@ def _compute_validate_valid_flag(
 def format_validate_response(
     raw: str,
     check_type: ValidateCheckTypeName,
-    response_format: Literal["concise", "detailed"],
+    response_format: ResponseFormat,
 ) -> str:
     """Format validate response based on response_format."""
-    if response_format != "concise":
+    if response_format != ResponseFormat.CONCISE:
         return raw
 
     data = _parse_validate_json(raw)

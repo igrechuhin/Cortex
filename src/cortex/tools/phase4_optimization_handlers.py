@@ -31,6 +31,7 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.models import ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
@@ -121,7 +122,7 @@ async def _execute_load_context_with_logging(
     strategy: str,
     loading_strategy: str | None,
     depth: Literal["metadata_only", "summary", "full"] | None,
-    response_format: Literal["concise", "detailed"],
+    response_format: ResponseFormat,
     role: str | None,
     ctx: MCPContext | None,
 ) -> str:
@@ -318,7 +319,7 @@ async def _execute_load_context(
     strategy: str,
     loading_strategy: str | None,
     depth: Literal["metadata_only", "summary", "full"] | None,
-    response_format: Literal["concise", "detailed"],
+    response_format: ResponseFormat,
     role: str | None,
     ctx: MCPContext | None,
 ) -> str:
@@ -361,7 +362,7 @@ async def _execute_load_context(
 
 def _format_and_add_warnings_if_needed(
     out: str,
-    response_format: Literal["concise", "detailed"],
+    response_format: ResponseFormat,
     role: str,
     task_description: str,
     token_budget: int | None,
@@ -456,7 +457,7 @@ async def load_context(
     strategy: str = "dependency_aware",
     loading_strategy: str | None = None,
     depth: Literal["metadata_only", "summary", "full"] | None = None,
-    response_format: Literal["concise", "detailed"] = "concise",
+    response_format: ResponseFormat = ResponseFormat.CONCISE,
     role: str | None = None,
     ctx: MCPContext | None = None,
 ) -> str:
@@ -577,11 +578,11 @@ def _build_concise_payload(data: dict[str, object], role: str | None) -> str:
 
 def _format_load_context_response(
     out: str,
-    response_format: Literal["concise", "detailed"],
+    response_format: ResponseFormat,
     role: str | None = None,
 ) -> str:
     """Format load_context response payload based on response_format."""
-    if response_format != "concise":
+    if response_format != ResponseFormat.CONCISE:
         return _format_detailed_load_context_response(out, role)
 
     try:

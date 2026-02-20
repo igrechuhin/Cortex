@@ -17,7 +17,7 @@ from cortex.core.mcp_stability import (
     mcp_tool_wrapper,
 )
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import JsonValue, ModelDict
+from cortex.core.models import JsonValue, ModelDict, ResponseFormat
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.core.version_manager import VersionManager
@@ -35,7 +35,7 @@ async def get_memory_bank_stats(
     include_token_budget: bool = True,
     include_refactoring_history: bool = False,
     refactoring_days: int = 90,
-    response_format: Literal["concise", "detailed"] = "concise",
+    response_format: ResponseFormat = ResponseFormat.CONCISE,
     ctx: MCPContext | None = None,
 ) -> str:
     """Get overall Memory Bank statistics and analytics.
@@ -155,10 +155,10 @@ async def get_memory_bank_stats(
 
 
 def format_memory_bank_stats_response(
-    result_dict: ModelDict, response_format: Literal["concise", "detailed"]
+    result_dict: ModelDict, response_format: ResponseFormat
 ) -> str:
     """Format get_memory_bank_stats response based on response_format."""
-    if response_format == "concise":
+    if response_format == ResponseFormat.CONCISE:
         summary_raw: JsonValue | None = result_dict.get("summary")  # type: ignore[assignment]
         summary: ModelDict = summary_raw if isinstance(summary_raw, dict) else {}
         token_budget_raw: JsonValue | None = result_dict.get("token_budget")  # type: ignore[assignment]

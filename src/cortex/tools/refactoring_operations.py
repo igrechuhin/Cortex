@@ -19,6 +19,7 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.models import ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
 from cortex.tools.refactoring_operation_helpers import (
@@ -61,7 +62,7 @@ async def _suggest_refactoring_run(
     size_threshold: int | None,
     goal: str | None,
     preview_suggestion_id: str | None,
-    response_format: Literal["concise", "detailed"],
+    response_format: ResponseFormat,
     ctx: MCPContext | None,
 ) -> str:
     """Run suggest_refactoring with logging. Returns JSON string."""
@@ -99,7 +100,7 @@ async def suggest_refactoring(
     preview_suggestion_id: str | None = None,
     show_diff: bool = True,
     estimate_impact: bool = True,
-    response_format: Literal["concise", "detailed"] = "concise",
+    response_format: ResponseFormat = ResponseFormat.CONCISE,
     ctx: MCPContext | None = None,
 ) -> str:
     """Generate intelligent refactoring suggestions to improve Memory Bank
@@ -645,10 +646,10 @@ def _build_concise_suggestions(
 
 def format_suggest_refactoring_response(
     raw: str,
-    response_format: Literal["concise", "detailed"],
+    response_format: ResponseFormat,
 ) -> str:
     """Format suggest_refactoring response based on response_format."""
-    if response_format != "concise":
+    if response_format != ResponseFormat.CONCISE:
         return raw
 
     data = _parse_suggest_refactoring_json(raw)

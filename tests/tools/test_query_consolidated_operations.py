@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from cortex.core.models import ResponseFormat
 from cortex.tools.query_memory_bank_operations import query_memory_bank
 from cortex.tools.query_usage_operations import query_usage
 
@@ -332,7 +333,7 @@ async def test_query_usage_stats_with_response_format_concise() -> None:
     assert data["status"] == "success"
     # Verify response_format was passed to handler
     call_kwargs = mock_stats.call_args[1]
-    assert call_kwargs["response_format"] == "concise"
+    assert call_kwargs["response_format"] == ResponseFormat.CONCISE
 
 
 @pytest.mark.asyncio
@@ -360,7 +361,7 @@ async def test_query_usage_stats_with_response_format_detailed() -> None:
     assert data["status"] == "success"
     # Verify response_format was passed to handler
     call_kwargs = mock_stats.call_args[1]
-    assert call_kwargs["response_format"] == "detailed"
+    assert call_kwargs["response_format"] == ResponseFormat.DETAILED
 
 
 @pytest.mark.asyncio
@@ -386,4 +387,4 @@ async def test_query_usage_search_with_response_format_concise() -> None:
     assert data["status"] == "success"
     # Verify response_format was passed to handler
     call_kwargs = mock_search.call_args[1]
-    assert call_kwargs["response_format"] == "concise"
+    assert call_kwargs["response_format"] == ResponseFormat.CONCISE

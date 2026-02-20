@@ -7,7 +7,7 @@ MCP tools for querying MCP tool usage statistics and optimization recommendation
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Literal, cast
+from typing import cast
 
 from pydantic import BaseModel, ConfigDict
 
@@ -18,6 +18,7 @@ from cortex.core.mcp_stability import (
     mcp_resource_wrapper,
     mcp_tool_wrapper,
 )
+from cortex.core.models import ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.managers.initialization import get_managers
 from cortex.managers.lazy_manager import LazyManager
@@ -235,7 +236,7 @@ async def get_tool_usage_stats(
     start_date: str | None = None,
     end_date: str | None = None,
     tool_name: str | None = None,
-    response_format: Literal["concise", "detailed"] = "concise",
+    response_format: ResponseFormat = ResponseFormat.CONCISE,
     ctx: MCPContext | None = None,
 ) -> str:
     """Get usage statistics for MCP tools.
@@ -428,7 +429,7 @@ async def search_usage(
     success: bool | None = None,
     limit: int = 50,
     query: str | None = None,
-    response_format: Literal["concise", "detailed"] = "concise",
+    response_format: ResponseFormat = ResponseFormat.CONCISE,
     ctx: MCPContext | None = None,
 ) -> str:
     """Search usage events and return a compact index."""
@@ -457,10 +458,10 @@ async def search_usage(
 def _format_tool_usage_stats_response(
     root: Path,
     result: dict[str, object],
-    response_format: Literal["concise", "detailed"],
+    response_format: ResponseFormat,
 ) -> str:
     """Format get_tool_usage_stats response based on response_format."""
-    if response_format == "concise":
+    if response_format == ResponseFormat.CONCISE:
         tools_raw: list[dict[str, object]] = cast(
             list[dict[str, object]], result.get("tools") or []
         )
@@ -487,11 +488,11 @@ def _format_tool_usage_stats_response(
 def _format_search_usage_response(
     root: Path,
     payload: SearchUsageResponse,
-    response_format: Literal["concise", "detailed"],
+    response_format: ResponseFormat,
 ) -> str:
     """Format search_usage response based on response_format."""
     data = payload.model_dump()
-    if response_format == "concise":
+    if response_format == ResponseFormat.CONCISE:
         results_raw: list[dict[str, object]] = cast(
             list[dict[str, object]], data.get("results") or []
         )

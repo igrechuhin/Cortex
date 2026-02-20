@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 from collections.abc import Awaitable, Callable
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -19,6 +18,7 @@ from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_tool_wrapper,
 )
+from cortex.core.models import ResponseFormat
 from cortex.server import mcp
 
 
@@ -30,7 +30,7 @@ class QueryUsageParams(BaseModel):
     start_date: str | None = None
     end_date: str | None = None
     tool_name: str | None = None
-    response_format: str = "concise"
+    response_format: ResponseFormat = ResponseFormat.CONCISE
     days: int = 90
     min_usage_count: int = 0
     min_usage_threshold: int = 5
@@ -152,11 +152,17 @@ _USAGE_HANDLERS: dict[str, _Handler] = {
 }
 
 
-def _params_from_tool_args(locals_dict: dict[str, Any]) -> QueryUsageParams:
+def _params_from_tool_args(
+    locals_dict: dict[str, str | int | bool | list[str] | None],
+) -> QueryUsageParams:
     """Build QueryUsageParams from query_usage's locals (excluding query_type, ctx)."""
-    d = {k: v for k, v in locals_dict.items() if k not in ("query_type", "ctx")}
+    d: dict[str, str | int | bool | list[str] | None] = {
+        k: v for k, v in locals_dict.items() if k not in ("query_type", "ctx")
+    }
     d["ids"] = d.get("ids") or []
-    return QueryUsageParams(**d)
+    rf = d.get("response_format", ResponseFormat.CONCISE)
+    d["response_format"] = ResponseFormat(rf) if isinstance(rf, str) else rf
+    return QueryUsageParams.model_validate(d)
 
 
 async def _query_usage_impl(

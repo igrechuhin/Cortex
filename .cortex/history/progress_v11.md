@@ -7,6 +7,8 @@
 - **Blocker: Resolve Cortex MCP Server Disconnects During Commit** - COMPLETE. Runbook, timeout alignment, and commit prompt resilience in place; full commit pipeline validated (Steps 0–15 passed).
 - **Session Optimization: Progress Entry Validation and Write Quality (2026-02-18 Analysis)** - COMPLETE. Date and progress-entry validation in tools; template and write-quality guidance in implement prompt and memory-bank-updater.
 - **Session Optimization: Memory bank write discipline (2026-02-20)** - COMPLETE. Added explicit reminders about manage_file-only for roadmap edits in implement prompt, analyze prompt, and memory-bank-updater agent.
+- **Session Optimization: Testing Standards and Code Quality Improvements (2026-02-19 Analysis) (2026-02-20)** - COMPLETE. Implement prompt and rules updated for testing standards and proactive helper extraction; Pyright guidance documented.
+- **Promote response_format Literal to Pydantic Enum (2026-02-20)** - COMPLETE. Replaced Literal["concise", "detailed"] with ResponseFormat(str, Enum) across 5 tool modules and consolidated query params; added unit tests for enum and serialization.
 
 ## 2026-02-19
 

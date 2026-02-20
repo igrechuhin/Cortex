@@ -28,6 +28,13 @@ class OperationStatus(str, Enum):
     ERROR = "error"
 
 
+class ResponseFormat(str, Enum):
+    """Response format for MCP tools that support concise/detailed output."""
+
+    CONCISE = "concise"
+    DETAILED = "detailed"
+
+
 # ============================================================================
 # Dict-like Pydantic base model (preserves legacy call sites)
 # ============================================================================

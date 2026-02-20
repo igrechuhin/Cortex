@@ -1,5 +1,6 @@
 import json
 
+from cortex.core.models import ResponseFormat
 from cortex.tools.refactoring_operations import format_suggest_refactoring_response
 
 
@@ -23,7 +24,9 @@ def test_format_suggest_refactoring_response_consolidation_concise() -> None:
         }
     )
 
-    out = format_suggest_refactoring_response(raw, response_format="concise")
+    out = format_suggest_refactoring_response(
+        raw, response_format=ResponseFormat.CONCISE
+    )
     data = json.loads(out)
 
     assert data["status"] == "success"
@@ -37,7 +40,9 @@ def test_format_suggest_refactoring_response_consolidation_concise() -> None:
 def test_format_suggest_refactoring_response_detailed_passthrough() -> None:
     """When response_format='detailed', payload should be unchanged."""
     original = json.dumps({"status": "success", "type": "consolidation"})
-    out = format_suggest_refactoring_response(original, response_format="detailed")
+    out = format_suggest_refactoring_response(
+        original, response_format=ResponseFormat.DETAILED
+    )
     assert out == original
 
 
@@ -45,7 +50,9 @@ def test_format_suggest_refactoring_response_invalid_json_returns_raw() -> None:
     """Invalid JSON payload should be returned unchanged in concise mode."""
     original = "not-json-at-all"
 
-    out = format_suggest_refactoring_response(original, response_format="concise")
+    out = format_suggest_refactoring_response(
+        original, response_format=ResponseFormat.CONCISE
+    )
 
     assert out == original
 
@@ -60,7 +67,9 @@ def test_format_suggest_refactoring_response_error_status_passthrough() -> None:
         }
     )
 
-    out = format_suggest_refactoring_response(original, response_format="concise")
+    out = format_suggest_refactoring_response(
+        original, response_format=ResponseFormat.CONCISE
+    )
 
     assert out == original
 
@@ -76,7 +85,9 @@ def test_format_suggest_refactoring_response_reorganization_concise() -> None:
         }
     )
 
-    out = format_suggest_refactoring_response(raw, response_format="concise")
+    out = format_suggest_refactoring_response(
+        raw, response_format=ResponseFormat.CONCISE
+    )
     data = json.loads(out)
 
     assert data["status"] == "success"
@@ -106,7 +117,9 @@ def test_format_suggest_refactoring_response_splits_concise() -> None:
         }
     )
 
-    out = format_suggest_refactoring_response(raw, response_format="concise")
+    out = format_suggest_refactoring_response(
+        raw, response_format=ResponseFormat.CONCISE
+    )
     data = json.loads(out)
 
     assert data["status"] == "success"
@@ -129,7 +142,9 @@ def test_format_suggest_refactoring_response_unknown_type_returns_raw() -> None:
         }
     )
 
-    out = format_suggest_refactoring_response(original, response_format="concise")
+    out = format_suggest_refactoring_response(
+        original, response_format=ResponseFormat.CONCISE
+    )
 
     assert out == original
 
@@ -144,7 +159,9 @@ def test_format_suggest_refactoring_response_reorganization_without_goal() -> No
         }
     )
 
-    out = format_suggest_refactoring_response(raw, response_format="concise")
+    out = format_suggest_refactoring_response(
+        raw, response_format=ResponseFormat.CONCISE
+    )
     data = json.loads(out)
 
     assert data["status"] == "success"
@@ -168,6 +185,8 @@ def test_format_suggest_refactoring_response_consolidation_with_non_list_opportu
         }
     )
 
-    out = format_suggest_refactoring_response(original, response_format="concise")
+    out = format_suggest_refactoring_response(
+        original, response_format=ResponseFormat.CONCISE
+    )
 
     assert out == original

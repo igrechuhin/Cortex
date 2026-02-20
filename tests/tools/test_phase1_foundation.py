@@ -1188,7 +1188,7 @@ def test_format_memory_bank_stats_response_concise() -> None:
     """format_memory_bank_stats_response should produce a concise payload."""
     from typing import cast
 
-    from cortex.core.models import ModelDict
+    from cortex.core.models import ModelDict, ResponseFormat
     from cortex.tools.phase1_foundation_stats import format_memory_bank_stats_response
 
     result_dict = {
@@ -1203,7 +1203,7 @@ def test_format_memory_bank_stats_response_concise() -> None:
     }
 
     out = format_memory_bank_stats_response(
-        cast(ModelDict, result_dict), response_format="concise"
+        cast(ModelDict, result_dict), response_format=ResponseFormat.CONCISE
     )
     data = json.loads(out)
 
@@ -1217,7 +1217,7 @@ def test_format_memory_bank_stats_response_detailed_passthrough() -> None:
     """When response_format is detailed, payload should be unchanged."""
     from typing import cast
 
-    from cortex.core.models import ModelDict
+    from cortex.core.models import ModelDict, ResponseFormat
     from cortex.tools.phase1_foundation_stats import format_memory_bank_stats_response
 
     original = {
@@ -1227,7 +1227,7 @@ def test_format_memory_bank_stats_response_detailed_passthrough() -> None:
     }
 
     out = format_memory_bank_stats_response(
-        cast(ModelDict, original), response_format="detailed"
+        cast(ModelDict, original), response_format=ResponseFormat.DETAILED
     )
     data = json.loads(out)
 

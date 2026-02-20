@@ -18,6 +18,7 @@ from cortex.core.mcp_stability import (
     ensure_usage_context,
     mcp_tool_wrapper,
 )
+from cortex.core.models import ResponseFormat
 from cortex.server import mcp
 
 
@@ -34,7 +35,7 @@ class QueryMemoryBankParams(BaseModel):
     include_token_budget: bool = True
     include_refactoring_history: bool = False
     refactoring_days: int = 90
-    response_format: str = "concise"
+    response_format: ResponseFormat = ResponseFormat.CONCISE
 
 
 def _error_payload(message: str) -> str:
@@ -144,7 +145,7 @@ def _build_memory_bank_params(
     include_token_budget: bool,
     include_refactoring_history: bool,
     refactoring_days: int,
-    response_format: str,
+    response_format: ResponseFormat,
 ) -> QueryMemoryBankParams:
     """Build params model for memory bank query."""
     return QueryMemoryBankParams(
@@ -191,7 +192,7 @@ async def query_memory_bank(
     include_token_budget: bool = True,
     include_refactoring_history: bool = False,
     refactoring_days: int = 90,
-    response_format: str = "concise",  # noqa: RUF100
+    response_format: str = "concise",
     ctx: MCPContext | None = None,
 ) -> str:
     """Query Memory Bank. query_type: stats|version_history|dependency_graph|link_graph|parse_links|validate_links|resolve_transclusions."""
@@ -210,6 +211,6 @@ async def query_memory_bank(
         include_token_budget,
         include_refactoring_history,
         refactoring_days,
-        response_format,
+        ResponseFormat(response_format),
     )
     return await _query_memory_bank_impl(query_type, params, ctx)

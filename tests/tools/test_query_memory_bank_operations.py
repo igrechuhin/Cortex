@@ -288,10 +288,12 @@ async def test_query_memory_bank_resolve_transclusions_with_file_name() -> None:
 async def test_query_memory_bank_stats_with_response_format_concise() -> None:
     """query_memory_bank passes response_format=concise to stats handler."""
 
+    from cortex.core.models import ResponseFormat
+
     async def mock_handler(
         params: QueryMemoryBankParams, ctx: MCPContext | None
     ) -> str:
-        assert params.response_format == "concise"
+        assert params.response_format == ResponseFormat.CONCISE
         return '{"status": "success", "total_files": 7, "total_tokens": 1000}'
 
     original_handler = query_memory_bank_operations._MEMORY_BANK_HANDLERS["stats"]  # type: ignore[reportPrivateUsage]
@@ -312,10 +314,12 @@ async def test_query_memory_bank_stats_with_response_format_concise() -> None:
 async def test_query_memory_bank_stats_with_response_format_detailed() -> None:
     """query_memory_bank passes response_format=detailed to stats handler."""
 
+    from cortex.core.models import ResponseFormat
+
     async def mock_handler(
         params: QueryMemoryBankParams, ctx: MCPContext | None
     ) -> str:
-        assert params.response_format == "detailed"
+        assert params.response_format == ResponseFormat.DETAILED
         return (
             '{"status": "success", "total_files": 7, "total_tokens": 1000, "files": []}'
         )
