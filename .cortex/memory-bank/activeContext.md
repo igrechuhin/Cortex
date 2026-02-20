@@ -12,6 +12,8 @@
 
 - ✅ **Session Optimization: Progress Entry Validation and Write Quality (2026-02-18 Analysis)** - COMPLETE (2026-02-20) - Added date (YYYY-MM-DD) and progress entry format validation in plan_completion; progress entry template and write-quality guidance in implement prompt and memory-bank-updater.
 
+- ✅ **Session Optimization: Memory bank write discipline (2026-02-19 analysis)** - COMPLETE (2026-02-20) - Added explicit reminders about manage_file-only for roadmap edits in implement prompt (Step 6.3), analyze prompt (Step 2), and memory-bank-updater agent. All three files now explicitly prohibit Write/StrReplace/ApplyPatch on roadmap.md and other memory-bank paths.
+
 ## Completed Work (2026-02-19)
 
 - **Summary (2026-02-19)** - 1 entries archived.
