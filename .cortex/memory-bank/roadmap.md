@@ -10,7 +10,7 @@
 
 ## Future Enhancements
 
-- **Phase 56: Session Compaction Workflow** - IN PROGRESS (Step 1 complete) - Automatic compaction for activeContext/progress, structured JSON session handoff, progressive summarization (daily/weekly/monthly tiers), compact_session tool. Plan: .cortex/plans/archive/Phase56/phase-56-session-compaction-workflow.md.
+- **Phase 56: Session Compaction Workflow** - IN PROGRESS (Steps 1-2 complete) - Automatic compaction for activeContext/progress, structured JSON session handoff, progressive summarization (daily/weekly/monthly tiers), compact_session tool. Plan: .cortex/plans/archive/Phase56/phase-56-session-compaction-workflow.md.
 
 ## Pending plans (from .cortex/plans)
 
@@ -35,4 +35,3 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Reference: Investigate execute_pre_commit_checks failure (2026-02-17)** - Plan: .cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260217-201854.md
 - **Reference: Investigate fix_markdown_lint failure (2026-02-16)** - Plan: .cortex/plans/phase-investigate-fix_markdown_lint-failure-20260216-204350.md
 - **Reference: Session Optimization load context and test typing** - Plan: .cortex/plans/session-optimization-load-context-and-test-typing.md
-- **Encourage enums for all fixed-set fields in Python Pydantic standards** - PENDING - Update python-pydantic-standards.mdc to encourage enums (or project enums) for all fixed-set fields (status, priority, state, etc.), not only status; align with python-coding-standards and DRY.

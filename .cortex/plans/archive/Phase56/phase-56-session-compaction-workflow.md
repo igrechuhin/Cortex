@@ -69,16 +69,18 @@ Anthropic also recommends structured JSON over Markdown for progress tracking: "
 
 ### Step 2: Implement compact_session Tool
 
-- [ ] Create `compact_session(summary: str | None = None)` tool:
+- [x] Create `compact_session(summary: str | None = None)` tool:
   - Reads current activeContext.md
   - Archives completed work older than current date to progress.md
   - Compacts progress.md entries older than 7 days
   - Writes session handoff JSON to `.cortex/.cache/session/last_handoff.json`
   - Updates activeContext.md with compacted content
   - Reports token savings: "Compacted activeContext from 15K to 3K tokens"
-- [ ] Implement safe compaction (never loses information, just moves/summarizes)
-- [ ] Create rollback mechanism (keep pre-compaction snapshot)
-- [ ] Unit tests for compaction logic (95%+ coverage)
+- [x] Implement safe compaction (never loses information, just moves/summarizes)
+- [x] Create rollback mechanism (keep pre-compaction snapshot)
+- [x] Unit tests for compaction logic (95%+ coverage)
+
+**Status**: COMPLETE. `compact_session` tool implemented in `compaction_operations.py` with safe compaction (pre-compaction snapshots), rollback mechanism, session handoff JSON write, and comprehensive unit tests covering success paths, missing files, snapshots, managers not initialized, and file conflict errors. Integration with analyze prompt already complete (analyze.md calls compact_session at end of session).
 
 ### Step 3: Structured Session Handoff
 

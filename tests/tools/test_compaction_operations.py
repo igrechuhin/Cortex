@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.core.cache_utils import CacheType, get_cache_dir
+from cortex.core.exceptions import FileConflictError
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -323,3 +324,52 @@ class TestCompactSession:
             assert any(
                 "progress.pre_compact" in s or "progress" in s for s in snapshot_strs
             )
+
+    @pytest.mark.asyncio
+    async def test_compact_session_file_conflict_error(self, tmp_path: Path) -> None:
+        """Test compact_session handles file conflict errors with rollback info."""
+        _ = ensure_test_cortex_structure(tmp_path)
+        mb_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        active_path = mb_dir / "activeContext.md"
+        progress_path = mb_dir / "progress.md"
+
+        fs_manager = FileSystemManager(tmp_path)
+        _ = await fs_manager.write_file(
+            active_path, "# Active Context\n\nContent", expected_hash=None
+        )
+        _ = await fs_manager.write_file(
+            progress_path, "# Progress\n\nContent", expected_hash=None
+        )
+
+        token_counter = TokenCounter()
+        metadata_index = MetadataIndex(tmp_path)
+        version_manager = VersionManager(tmp_path)
+        managers = make_test_managers(
+            fs=fs_manager,
+            tokens=token_counter,
+            index=metadata_index,
+            versions=version_manager,
+        )
+        with (
+            patch(
+                "cortex.core.usage_context.get_current_managers", return_value=managers
+            ),
+            patch(
+                "cortex.core.usage_context.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.compaction_operations.execute_memory_bank_write",
+                new_callable=AsyncMock,
+                side_effect=FileConflictError("activeContext.md", "hash1", "hash2"),
+            ),
+        ):
+            tool_fn = get_tool_fn(compact_session)
+            result_json = await tool_fn(summary=None, ctx=None)
+            result = to_dict(result_json)
+
+        assert result["status"] == "error"
+        rollback_msg = str(result.get("rollback", ""))
+        result_str = str(result)
+        assert "rollback" in rollback_msg.lower() or "rollback" in result_str.lower()
