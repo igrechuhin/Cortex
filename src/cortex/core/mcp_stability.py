@@ -13,13 +13,9 @@ import time
 from collections.abc import Awaitable, Callable
 from inspect import Signature
 from pathlib import Path
-from typing import Any, Literal, Protocol, cast
-
-import anyio
+from typing import Literal, Protocol, cast
 
 from cortex.core.constants import (
-    MCP_CONNECTION_RETRY_ATTEMPTS,
-    MCP_CONNECTION_RETRY_DELAY_SECONDS,
     MCP_MAX_CONCURRENT_TOOLS,
     MCP_TOOL_TIMEOUT_SECONDS,
     MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS,
@@ -35,11 +31,15 @@ from cortex.core.mcp_stability_config import (
     TrackedSemaphore,
     acquire_long_running_semaphore,
     connection_error_fallback,
+    get_connection_retry_attempts,
+    get_connection_retry_delay,
     get_long_running_semaphore_holder,
     get_resource_semaphore,
     get_semaphore,
     get_usage_context_init_lock,
+    is_connection_error,
     long_running_tools_serialized,
+    raise_if_retries_exhausted,
     record_usage_finish,
     release_long_running_semaphore,
     release_semaphore_and_cancel_progress_if_needed,
@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 
 async def _resolve_root_and_managers(
     mcp_ctx: MCPContext | None,
-) -> tuple[Path, dict[str, Any]]:
+) -> tuple[Path, dict[str, object]]:
     """Resolve project root and get managers; log timings. Returns (root, mgrs_dict)."""
     from cortex.core.project_root_resolver import resolve_project_root_async
     from cortex.managers.initialization import get_managers
@@ -185,11 +185,12 @@ async def _handle_timeout_error(
     Returns:
         Tuple of (error to raise if final attempt, exception to store)
     """
+    max_attempts = get_connection_retry_attempts(func_name)
     logger.warning(
         f"MCP tool {func_name} timed out after {timeout}s "
-        + f"(attempt {attempt}/{MCP_CONNECTION_RETRY_ATTEMPTS})"
+        + f"(attempt {attempt}/{max_attempts})"
     )
-    if attempt == MCP_CONNECTION_RETRY_ATTEMPTS:
+    if attempt == max_attempts:
         error = TimeoutError(f"MCP tool {func_name} exceeded timeout of {timeout}s")
         error.__cause__ = e
         return error, None
@@ -222,23 +223,31 @@ async def _handle_connection_error(
         Tuple of (error to raise if final attempt, exception to store)
     """
     _record_connection_closure()
+    max_attempts = get_connection_retry_attempts(func_name)
     logger.warning(
-        f"MCP connection error in {func_name} "
-        + f"(attempt {attempt}/{MCP_CONNECTION_RETRY_ATTEMPTS}): {e}"
+        f"MCP connection error in {func_name} (attempt {attempt}/{max_attempts}): {e}"
     )
-    if attempt == MCP_CONNECTION_RETRY_ATTEMPTS:
+    if attempt == max_attempts:
         fallback = connection_error_fallback.get(func_name, "")
         base_msg = f"MCP tool {func_name} failed after {attempt} attempts (connection)."
         error: RuntimeError | ConnectionError = (
             ConnectionError(base_msg + fallback)
-            if _is_connection_error(e)
+            if is_connection_error(e)
             else RuntimeError(
                 f"MCP connection failed for {func_name} after {attempt} attempts"
             )
         )
         error.__cause__ = e
         return error, None
-    await asyncio.sleep(MCP_CONNECTION_RETRY_DELAY_SECONDS * attempt)
+    delay = get_connection_retry_delay(func_name, attempt)
+    logger.info(
+        "MCP connection error in %s (attempt %d/%d): retrying in %.1fs",
+        func_name,
+        attempt,
+        max_attempts,
+        delay,
+    )
+    await asyncio.sleep(delay)
     return None, e
 
 
@@ -260,45 +269,6 @@ async def _execute_single_attempt[T](
             return await func(*args, **call_kwargs)
 
 
-def _is_connection_error(e: Exception) -> bool:
-    """Check if exception is connection-related.
-
-    Args:
-        e: Exception to check
-
-    Returns:
-        True if exception is connection-related
-    """
-    connection_error_types = (
-        ConnectionError,
-        BrokenPipeError,
-        OSError,
-        anyio.BrokenResourceError,  # anyio resource errors (e.g., stdio closed)
-        anyio.ClosedResourceError,  # send on closed stream after client disconnect
-    )
-
-    if isinstance(e, connection_error_types):
-        return True
-
-    # RuntimeError only when MCP/client reports connection closed (e.g. -32000)
-    if isinstance(e, RuntimeError):
-        msg = str(e).lower()
-        if "-32000" in str(e) or "connection closed" in msg or "connection" in msg:
-            return True
-
-    error_message = str(e).lower()
-    connection_keywords = [
-        "connection",
-        "broken pipe",
-        "connection reset",
-        "tool not found",
-        "resource",
-        "stdio",
-    ]
-
-    return any(keyword in error_message for keyword in connection_keywords)
-
-
 async def _retry_path_health_and_recovery(
     func_name: str, attempt: int, last_exception: Exception | None
 ) -> None:
@@ -308,26 +278,8 @@ async def _retry_path_health_and_recovery(
         raise ConnectionError(
             f"Connection not healthy before retry {attempt} for {func_name}"
         ) from last_exception
-    if last_exception and _is_connection_error(last_exception):
+    if last_exception and is_connection_error(last_exception):
         _record_connection_recovery()
-
-
-def _raise_final_error(func_name: str, last_exception: Exception | None) -> None:
-    """Raise ConnectionError or RuntimeError after retries exhausted.
-
-    Connection errors include fallback steps so the user can resolve without the tool.
-    """
-    if last_exception and _is_connection_error(last_exception):
-        fallback = connection_error_fallback.get(func_name, "")
-        raise ConnectionError(
-            f"MCP tool {func_name} failed after "
-            + f"{MCP_CONNECTION_RETRY_ATTEMPTS} attempts (connection)."
-            + fallback
-        ) from last_exception
-    raise RuntimeError(
-        f"MCP tool {func_name} failed after "
-        + f"{MCP_CONNECTION_RETRY_ATTEMPTS} attempts"
-    ) from last_exception
 
 
 async def _handle_retry_exception(
@@ -350,7 +302,7 @@ async def _handle_retry_exception(
             raise error
         return False, stored_exception
 
-    if _is_connection_error(e):
+    if is_connection_error(e):
         error, stored_exception = await _handle_connection_error(func_name, attempt, e)
         if error:
             raise error
@@ -368,30 +320,23 @@ async def _execute_with_retry[T](
     kwargs: MCPToolArguments,
     ctx: JsonValue | None = None,
 ) -> T:
-    """Execute function with retry logic for transient failures.
-
-    Cancellation is handled in _execute_with_error_handling by returning a
-    structured response so the connection stays open. If CancelledError still
-    reaches here (e.g. during retry delay), re-raise so we do not retry.
-    """
+    """Execute with retry for transient failures. Cancellation re-raised (no retry)."""
     last_exception: Exception | None = None
     func_name = func.__name__
+    max_attempts = get_connection_retry_attempts(func_name)
 
-    for attempt in range(1, MCP_CONNECTION_RETRY_ATTEMPTS + 1):
+    for attempt in range(1, max_attempts + 1):
         try:
             return await _execute_single_attempt(
                 func, semaphore, timeout, args, kwargs, ctx
             )
         except asyncio.CancelledError:
-            # Client cancelled the request - re-raise immediately without retrying
-            # This prevents the MCP SDK from trying to send a response for a cancelled
-            # request, which causes "duplicate response suppressed" errors and connection
-            # issues. Cancellation is not retryable.
+            # Re-raise immediately; retrying cancelled requests causes duplicate response errors.
             logger.debug(
                 "Request for %s was cancelled by client (attempt %d/%d)",
                 func_name,
                 attempt,
-                MCP_CONNECTION_RETRY_ATTEMPTS,
+                max_attempts,
             )
             raise
         except Exception as e:
@@ -400,9 +345,7 @@ async def _execute_with_retry[T](
             )
         await _retry_path_health_and_recovery(func_name, attempt, last_exception)
 
-    if last_exception:
-        _raise_final_error(func_name, last_exception)
-    raise RuntimeError(f"MCP tool {func_name} failed unexpectedly")
+    raise_if_retries_exhausted(func_name, last_exception)
 
 
 async def _progress_report_loop(
@@ -467,7 +410,7 @@ async def _progress_report_step(
         # If the client has disconnected (e.g. stdio closed), stop the
         # progress loop quietly instead of surfacing an unhandled
         # ExceptionGroup during TaskGroup cleanup.
-        if _is_connection_error(e):
+        if is_connection_error(e):
             logger.info(
                 "Progress loop for %s stopped due to connection error: %s",
                 tool_name,
@@ -558,7 +501,7 @@ async def _cancel_progress_and_report_done(
     except Exception as e:  # pragma: no cover - depends on live MCP connection
         # If the connection is already closed, suppress the error so we don't
         # turn a normal client disconnect into a tool failure.
-        if _is_connection_error(e):
+        if is_connection_error(e):
             logger.info(
                 "Suppressing final progress report error for %s due to connection issue: %s",
                 tool_name or "<unknown>",

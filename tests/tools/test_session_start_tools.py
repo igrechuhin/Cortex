@@ -13,8 +13,10 @@ import pytest
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.token_counter import TokenCounter
+from cortex.tools.compaction_operations import write_handoff
 from cortex.tools.models import (
     GitStatusSummary,
+    SessionHandoff,
     SessionHealthSummary,
     SessionStartErrorResult,
     SessionStartResult,
@@ -688,6 +690,182 @@ Working on Phase 54.
         assert "Phase 54" in result.brief.next_work_item
         assert result.token_count > 0
         assert result.brief.mcp_healthy is True
+
+    @pytest.mark.asyncio
+    async def test_session_start_impl_includes_handoff(self, tmp_path: Path) -> None:
+        """Test that session_start includes handoff when it exists."""
+        memory_bank_dir = ensure_test_cortex_structure(tmp_path)
+
+        # Create required files
+        active_context_content = """# Active Context
+
+## Current Focus
+
+Working on Phase 54.
+
+## Completed Work
+
+- ✅ Phase 50 - COMPLETE
+"""
+        _ = (memory_bank_dir / "activeContext.md").write_text(active_context_content)
+
+        roadmap_content = """# Roadmap
+
+## Pending plans (from .cortex/plans)
+
+- **Phase 54** - PENDING - Session Start Initializer
+"""
+        _ = (memory_bank_dir / "roadmap.md").write_text(roadmap_content)
+
+        project_brief_content = "# Cortex\n\nProject description."
+        _ = (memory_bank_dir / "projectBrief.md").write_text(project_brief_content)
+
+        # Create other required files
+        for file_name in [
+            "progress.md",
+            "systemPatterns.md",
+            "techContext.md",
+            "productContext.md",
+        ]:
+            _ = (memory_bank_dir / file_name).write_text(f"# {file_name}\n\nContent")
+
+        # Setup managers
+        fs_manager = FileSystemManager(tmp_path)
+        metadata_index = MetadataIndex(tmp_path)
+        _ = await metadata_index.load()
+
+        token_counter = TokenCounter()
+
+        # Update metadata
+        for file_name in [
+            "activeContext.md",
+            "roadmap.md",
+            "projectBrief.md",
+            "progress.md",
+            "systemPatterns.md",
+            "techContext.md",
+            "productContext.md",
+        ]:
+            await metadata_index.update_file_metadata(
+                file_name=file_name,
+                path=memory_bank_dir / file_name,
+                exists=True,
+                size_bytes=100,
+                token_count=50,
+                content_hash="sha256:test",
+                sections=[],
+            )
+
+        # Create a handoff file before calling session_start
+        handoff = SessionHandoff(
+            session_id="2026-02-20T17-00",
+            completed_tasks=["Phase 50 Step 1", "Phase 50 Step 2"],
+            in_progress=None,
+            decisions_made=["Use Pydantic v2"],
+            blockers=[],
+            next_actions=["Complete Phase 54"],
+        )
+        await write_handoff(tmp_path, handoff, fs_manager)
+
+        managers = make_test_managers(
+            fs=fs_manager, index=metadata_index, tokens=token_counter
+        )
+
+        result = await _session_start_impl(
+            None,
+            tmp_path,
+            managers,  # type: ignore[arg-type]
+        )
+
+        assert isinstance(result, SessionStartResult)
+        assert result.status == "success"
+        assert result.brief is not None
+        assert result.brief.last_handoff is not None
+        assert result.brief.last_handoff.session_id == "2026-02-20T17-00"
+        assert len(result.brief.last_handoff.completed_tasks) == 2
+        assert "Phase 50 Step 1" in result.brief.last_handoff.completed_tasks
+        assert "Phase 50 Step 2" in result.brief.last_handoff.completed_tasks
+        assert result.brief.last_handoff.next_actions == ["Complete Phase 54"]
+
+    @pytest.mark.asyncio
+    async def test_session_start_impl_handoff_none_when_missing(
+        self, tmp_path: Path
+    ) -> None:
+        """Test that session_start returns None handoff when file doesn't exist."""
+        memory_bank_dir = ensure_test_cortex_structure(tmp_path)
+
+        # Create required files
+        active_context_content = """# Active Context
+
+## Current Focus
+
+Working on Phase 54.
+"""
+        _ = (memory_bank_dir / "activeContext.md").write_text(active_context_content)
+
+        roadmap_content = """# Roadmap
+
+## Pending plans (from .cortex/plans)
+
+- **Phase 54** - PENDING - Session Start Initializer
+"""
+        _ = (memory_bank_dir / "roadmap.md").write_text(roadmap_content)
+
+        project_brief_content = "# Cortex\n\nProject description."
+        _ = (memory_bank_dir / "projectBrief.md").write_text(project_brief_content)
+
+        # Create other required files
+        for file_name in [
+            "progress.md",
+            "systemPatterns.md",
+            "techContext.md",
+            "productContext.md",
+        ]:
+            _ = (memory_bank_dir / file_name).write_text(f"# {file_name}\n\nContent")
+
+        # Setup managers
+        fs_manager = FileSystemManager(tmp_path)
+        metadata_index = MetadataIndex(tmp_path)
+        _ = await metadata_index.load()
+
+        token_counter = TokenCounter()
+
+        # Update metadata
+        for file_name in [
+            "activeContext.md",
+            "roadmap.md",
+            "projectBrief.md",
+            "progress.md",
+            "systemPatterns.md",
+            "techContext.md",
+            "productContext.md",
+        ]:
+            await metadata_index.update_file_metadata(
+                file_name=file_name,
+                path=memory_bank_dir / file_name,
+                exists=True,
+                size_bytes=100,
+                token_count=50,
+                content_hash="sha256:test",
+                sections=[],
+            )
+
+        # Don't create handoff file - should return None
+
+        managers = make_test_managers(
+            fs=fs_manager, index=metadata_index, tokens=token_counter
+        )
+
+        result = await _session_start_impl(
+            None,
+            tmp_path,
+            managers,  # type: ignore[arg-type]
+        )
+
+        assert isinstance(result, SessionStartResult)
+        assert result.status == "success"
+        assert result.brief is not None
+        assert result.brief.last_handoff is None
 
     @pytest.mark.asyncio
     async def test_session_start_impl_mcp_unhealthy(self, tmp_path: Path) -> None:

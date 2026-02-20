@@ -9,7 +9,9 @@ import logging
 import time
 from collections.abc import Awaitable, Callable
 from types import TracebackType
-from typing import Literal, cast
+from typing import Literal, NoReturn, cast
+
+import anyio
 
 from cortex.core.constants import (
     MCP_MAX_CONCURRENT_RESOURCES,
@@ -218,6 +220,84 @@ def _get_usage_context_init_lock() -> asyncio.Lock:
     global _usage_context_init_lock
     _usage_context_init_lock = _usage_context_init_lock or asyncio.Lock()
     return _usage_context_init_lock
+
+
+# Connection retry overrides per tool (Blocker: MCP disconnects). Defaults use
+# MCP_CONNECTION_RETRY_ATTEMPTS and MCP_CONNECTION_RETRY_DELAY_SECONDS from constants.
+# fix_markdown_lint: 4 attempts (1 initial + 3 retries), exponential backoff 1s, 2s, 4s.
+_CONNECTION_RETRY_OVERRIDES: dict[str, tuple[int, tuple[float, ...]]] = {
+    "fix_markdown_lint": (4, (1.0, 2.0, 4.0)),
+}
+
+
+def get_connection_retry_attempts(tool_name: str) -> int:
+    """Return max attempts (initial + retries) for connection retries for a tool."""
+    from cortex.core.constants import MCP_CONNECTION_RETRY_ATTEMPTS
+
+    if tool_name in _CONNECTION_RETRY_OVERRIDES:
+        return _CONNECTION_RETRY_OVERRIDES[tool_name][0]
+    return MCP_CONNECTION_RETRY_ATTEMPTS
+
+
+def get_connection_retry_delay(tool_name: str, attempt: int) -> float:
+    """Return delay in seconds before retry N (attempt is 1-based; delay before attempt 2, 3, ...)."""
+    from cortex.core.constants import MCP_CONNECTION_RETRY_DELAY_SECONDS
+
+    if tool_name in _CONNECTION_RETRY_OVERRIDES:
+        _, delays = _CONNECTION_RETRY_OVERRIDES[tool_name]
+        if 1 <= attempt <= len(delays):
+            return delays[attempt - 1]
+        return delays[-1] if delays else MCP_CONNECTION_RETRY_DELAY_SECONDS * attempt
+    return MCP_CONNECTION_RETRY_DELAY_SECONDS * attempt
+
+
+def is_connection_error(e: Exception) -> bool:
+    """Return True if exception is connection-related (e.g. -32000, ClosedResourceError)."""
+    connection_error_types = (
+        ConnectionError,
+        BrokenPipeError,
+        OSError,
+        anyio.BrokenResourceError,
+        anyio.ClosedResourceError,
+    )
+    if isinstance(e, connection_error_types):
+        return True
+    if isinstance(e, RuntimeError):
+        msg = str(e).lower()
+        if "-32000" in str(e) or "connection closed" in msg or "connection" in msg:
+            return True
+    keywords = [
+        "connection",
+        "broken pipe",
+        "connection reset",
+        "tool not found",
+        "resource",
+        "stdio",
+    ]
+    return any(k in str(e).lower() for k in keywords)
+
+
+def raise_final_error(func_name: str, last_exception: Exception | None) -> NoReturn:
+    """Raise ConnectionError or RuntimeError after retries exhausted; never returns."""
+    max_attempts = get_connection_retry_attempts(func_name)
+    if last_exception and is_connection_error(last_exception):
+        fallback = _CONNECTION_ERROR_FALLBACK.get(func_name, "")
+        raise ConnectionError(
+            f"MCP tool {func_name} failed after {max_attempts} attempts (connection)."
+            + fallback
+        ) from last_exception
+    raise RuntimeError(
+        f"MCP tool {func_name} failed after {max_attempts} attempts"
+    ) from last_exception
+
+
+def raise_if_retries_exhausted(
+    func_name: str, last_exception: Exception | None
+) -> NoReturn:
+    """Raise final error after retries exhausted; never returns."""
+    if last_exception:
+        raise_final_error(func_name, last_exception)
+    raise RuntimeError(f"MCP tool {func_name} failed unexpectedly")
 
 
 # Public aliases for use by mcp_stability (avoid reportPrivateUsage).

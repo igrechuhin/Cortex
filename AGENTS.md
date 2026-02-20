@@ -28,11 +28,12 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 ## Type Annotations and Data Modeling
 
 - Always load rules before coding to verify type annotation standards
-- Avoid `Any` type - use Pydantic models for internal data structures when possible
-- Use `object` type only for external interfaces (MCP tool parameters), not internal functions
-- Internal functions must use Pydantic BaseModel types (e.g., `ConnectionHealth`) instead of `dict[str, object]`
+- `Any` type is forbidden; for internal APIs, use Pydantic models if possible, otherwise use `object`
+- Use `object` type for external interfaces (MCP tool parameters) and for internal APIs when Pydantic models aren't feasible
+- Internal functions must use Pydantic BaseModel types (e.g., `ConnectionHealth`) instead of `dict[str, object]` when possible
 - When logging Pydantic models, use `model.model_dump()` to convert to dict for logging purposes
 - Check existing Pydantic models before creating new dict types for internal data structures
+- Use `Literal` types only for external API boundaries (MCP tool parameters); internal Pydantic models must use enums
 
 ## Compound Engineering
 

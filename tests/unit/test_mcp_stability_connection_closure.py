@@ -214,9 +214,7 @@ class TestConnectionClosureHandling:
     async def test_connection_closure_keyword_detection(self) -> None:
         """Test that connection closure keywords are detected."""
         # Arrange
-        from cortex.core.mcp_stability import (
-            _is_connection_error,  # type: ignore[reportPrivateUsage]
-        )
+        from cortex.core.mcp_stability_config import is_connection_error
 
         # Test various connection closure error messages
         error_messages = [
@@ -229,7 +227,7 @@ class TestConnectionClosureHandling:
         for msg in error_messages:
             error = RuntimeError(msg)
             # Act
-            result = _is_connection_error(error)
+            result = is_connection_error(error)
             # Assert
             assert result is True, f"Should detect connection error: {msg}"
 
@@ -252,3 +250,23 @@ class TestConnectionClosureHandling:
 
         # Should have attempted 2 times (initial + 1 retry)
         assert attempt_count == 2
+
+    @pytest.mark.asyncio
+    async def test_fix_markdown_lint_gets_four_attempts(self) -> None:
+        """fix_markdown_lint uses 4 attempts (1 initial + 3 retries) with exponential backoff."""
+        attempt_count = 0
+
+        async def fix_markdown_lint() -> str:
+            nonlocal attempt_count
+            attempt_count += 1
+            if attempt_count < 4:
+                raise ConnectionError("Connection closed")
+            return "success"
+
+        fix_markdown_lint.__name__ = "fix_markdown_lint"
+
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await with_mcp_stability(fix_markdown_lint, timeout=10.0)
+
+        assert result == "success"
+        assert attempt_count == 4

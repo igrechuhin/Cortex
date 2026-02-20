@@ -153,7 +153,7 @@ HTTP/SSE or a stdio–HTTP bridge is not a supported workaround for this issue (
 
 - **Client cancel no longer disconnects**: When the client cancels a request (e.g. timeout), the server returns a structured error response instead of propagating cancellation. The connection stays open, so you avoid disconnect and "0 tools" from cancels.
 - Progress and heartbeat for long tools (e.g. 2 s heartbeat and wrapper progress for `fix_markdown_lint`, frequent progress for `execute_pre_commit_checks`).
-- Automatic retry for connection errors in the tool wrapper (one retry).
+- Automatic retry for connection errors in the tool wrapper. Most tools get one retry; `fix_markdown_lint` gets **four attempts** (1 initial + 3 retries) with exponential backoff (1 s, 2 s, 4 s) to reduce commit-pipeline disconnects.
 - Batched markdown lint to reduce total duration.
 - **Serialization with wait for long-running tools**: Only one of `execute_pre_commit_checks`, `fix_markdown_lint`, or `fix_quality_issues` can run at a time. If you call a second long-running tool while the first is still running, the second call **waits up to 330 seconds (5–6 minutes)** for the first to finish; if the first is still running after that, the server returns an error. This allows sequential commit-pipeline calls (e.g. `execute_pre_commit_checks` then `fix_markdown_lint`) to succeed when the second request arrives before the first has returned. See [Another long-running tool is in progress](#issue-another-long-running-tool-in-progress).
 

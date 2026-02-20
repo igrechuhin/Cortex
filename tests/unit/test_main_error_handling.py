@@ -392,19 +392,17 @@ class TestMainTransportSelection:
 
 
 class TestMCPStabilityConnectionErrorDetection:
-    """Tests for _is_connection_error() in mcp_stability.py."""
+    """Tests for is_connection_error() in mcp_stability_config."""
 
     def test_broken_resource_error_is_connection_error(self) -> None:
         """Test that anyio.BrokenResourceError is recognized as connection error."""
         # Arrange
-        from cortex.core.mcp_stability import (
-            _is_connection_error,  # type: ignore[reportPrivateUsage]
-        )
+        from cortex.core.mcp_stability_config import is_connection_error
 
         error = anyio.BrokenResourceError("Resource broken")
 
         # Act
-        result = _is_connection_error(error)
+        result = is_connection_error(error)
 
         # Assert
         assert result is True
@@ -412,14 +410,12 @@ class TestMCPStabilityConnectionErrorDetection:
     def test_closed_resource_error_is_connection_error(self) -> None:
         """Test that anyio.ClosedResourceError is recognized as connection error."""
         # Arrange
-        from cortex.core.mcp_stability import (
-            _is_connection_error,  # type: ignore[reportPrivateUsage]
-        )
+        from cortex.core.mcp_stability_config import is_connection_error
 
         error = anyio.ClosedResourceError()
 
         # Act
-        result = _is_connection_error(error)
+        result = is_connection_error(error)
 
         # Assert
         assert result is True
@@ -427,14 +423,12 @@ class TestMCPStabilityConnectionErrorDetection:
     def test_connection_error_is_connection_error(self) -> None:
         """Test that ConnectionError is recognized as connection error."""
         # Arrange
-        from cortex.core.mcp_stability import (
-            _is_connection_error,  # type: ignore[reportPrivateUsage]
-        )
+        from cortex.core.mcp_stability_config import is_connection_error
 
         error = ConnectionError("Connection failed")
 
         # Act
-        result = _is_connection_error(error)
+        result = is_connection_error(error)
 
         # Assert
         assert result is True
@@ -442,14 +436,12 @@ class TestMCPStabilityConnectionErrorDetection:
     def test_broken_pipe_error_is_connection_error(self) -> None:
         """Test that BrokenPipeError is recognized as connection error."""
         # Arrange
-        from cortex.core.mcp_stability import (
-            _is_connection_error,  # type: ignore[reportPrivateUsage]
-        )
+        from cortex.core.mcp_stability_config import is_connection_error
 
         error = BrokenPipeError("Broken pipe")
 
         # Act
-        result = _is_connection_error(error)
+        result = is_connection_error(error)
 
         # Assert
         assert result is True
@@ -457,41 +449,35 @@ class TestMCPStabilityConnectionErrorDetection:
     def test_oserror_is_connection_error(self) -> None:
         """Test that OSError is recognized as connection error."""
         # Arrange
-        from cortex.core.mcp_stability import (
-            _is_connection_error,  # type: ignore[reportPrivateUsage]
-        )
+        from cortex.core.mcp_stability_config import is_connection_error
 
         error = OSError("OS error")
 
         # Act
-        result = _is_connection_error(error)
+        result = is_connection_error(error)
 
         # Assert
         assert result is True
 
     def test_runtime_error_with_connection_message_is_connection_error(self) -> None:
         """RuntimeError is connection error only when message indicates closure."""
-        from cortex.core.mcp_stability import (
-            _is_connection_error,  # type: ignore[reportPrivateUsage]
-        )
+        from cortex.core.mcp_stability_config import is_connection_error
 
         error = RuntimeError("MCP error -32000: Connection closed")
-        assert _is_connection_error(error) is True
+        assert is_connection_error(error) is True
 
         generic = RuntimeError("Runtime error")
-        assert _is_connection_error(generic) is False
+        assert is_connection_error(generic) is False
 
     def test_value_error_is_not_connection_error(self) -> None:
         """Test that ValueError is not recognized as connection error."""
         # Arrange
-        from cortex.core.mcp_stability import (
-            _is_connection_error,  # type: ignore[reportPrivateUsage]
-        )
+        from cortex.core.mcp_stability_config import is_connection_error
 
         error = ValueError("Value error")
 
         # Act
-        result = _is_connection_error(error)
+        result = is_connection_error(error)
 
         # Assert
         assert result is False
