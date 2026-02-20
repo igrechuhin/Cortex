@@ -130,7 +130,7 @@ If the **client** shows `MCP error -32000: Connection closed` during a tool call
 
 The **client** (e.g. Cursor) closed the MCP connection before the tool finished—usually due to client-side tool timeout or IDE lifecycle, not a server bug. The tool may have completed on the server; the connection was already closed when the response was sent.
 
-**Why it matters**: After a disconnect the agent may keep running **without MCP**. It will not use Cortex tools (memory bank, rules, quality checks). Reconnect so the server restarts; for important work, re-run the task so the agent runs with MCP control.
+**Why it matters**: After a disconnect the agent may keep running **without MCP**. It will not use Cortex tools (memory bank, rules, quality checks). Reconnect so the server restarts; for important work, re-run the task so the agent runs with MCP control. For disconnects **during the commit pipeline**, see the [MCP disconnect runbook (commit pipeline)](#mcp-disconnect-runbook-commit).
 
 **Reconnect is automatic**: By default Cortex exits when the connection drops; the client starts a new process when it next needs MCP. If you set `CORTEX_AUTO_RESTART=1`, you may need to reload MCP after a disconnect to restore tools.
 
@@ -188,6 +188,31 @@ Only one of `execute_pre_commit_checks`, `fix_markdown_lint`, or `fix_quality_is
 
 1. If you see this error, the first long-running tool took longer than 330 seconds (5–6 minutes). Wait for it to finish, then retry the tool you wanted to run.
 2. Prefer running long-running tools one after another and wait for each to complete before starting the next (e.g. run `fix_markdown_lint` only after `execute_pre_commit_checks` has completed, or vice versa). Sequential calls that arrive while the first is still running will wait automatically.
+
+#### MCP disconnect runbook (commit pipeline) {#mcp-disconnect-runbook-commit}
+
+Use this runbook when the Cortex MCP connection is lost **during** `/cortex/commit` (e.g. client shows `MCP error -32000: Connection closed` or "Connection closed", and the pipeline stops or cannot complete Step 12).
+
+**Typical disconnect points** (where disconnects are most often observed):
+
+| When | Step / phase | Likely cause | Recommended action |
+|------|----------------|---------------|---------------------|
+| After Phase A (Steps 0–4) | Before or at start of Step 5 | Client idle or tool-call timeout after Phase A gap | Reconnect Cortex MCP, then re-run `/cortex/commit`. Call `check_mcp_connection_health()` before Step 12 if the pipeline supports it. |
+| During Step 12.1 (format) | Format fix or check | Client timeout during formatting tool | Retry once; if retry fails, use fallback scripts (`fix_formatting.py` then `check_formatting.py`) per commit prompt; record "MCP connection closed; fallback used". Do not skip Step 12.1. |
+| During Step 12.5 (markdown lint) | `fix_markdown_lint` or check | Client timeout (markdown lint can be slow) | Retry once; if retry fails, run markdown lint via shell (see commit prompt) and record "MCP connection closed; fallback used". |
+| During Step 12.6 (file size / function length) | Quality checks | Client timeout | Retry once; if retry fails, use shell script fallbacks for file size and function length checks; record "MCP connection closed; fallback used". Do not skip Step 12.6. |
+| During Step 12.7 (tests with coverage) | `execute_pre_commit_checks(checks=["tests"], ...)` | Client timeout (tests can run 5–10+ minutes) | Retry once. **There is no fallback for Step 12.7.** If retry fails, **block commit** and tell the user: "Reconnect Cortex MCP and re-run the commit command." Do not proceed with Phase A results. |
+
+**Likely cause**: In most cases the **client** (e.g. Cursor) closed the connection—due to client-side tool-call timeout or IDE lifecycle—not a server crash. The tool may have completed on the server; the connection was already closed when the response was sent. See [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed).
+
+**How to confirm**: Check MCP server stderr (or Cursor Output / MCP logs) for lines like `MCP connection error in <tool_name> (attempt 1/2): ...` to see which tool and attempt failed. Session logs or repro scenarios: run `/cortex/commit`, let it reach the long step (e.g. 12.7), and note after how long the disconnect occurs to compare with client timeout settings.
+
+**Recovery summary**:
+
+- **Steps with fallback (12.1, 12.5, 12.6)**: Retry once → if still failing, use documented shell/script fallback → record "MCP connection closed; fallback used" → continue pipeline. Never skip these steps based on Phase A.
+- **Step 12.7 (no fallback)**: Retry once → if still failing, **block commit**, report connection failure, and instruct user to **reconnect Cortex MCP and re-run the commit command**. Do not proceed with Phase A test results.
+
+**References**: Commit prompt "Connection closed" and "Step 12" sections; [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed); [Client connection closed during long tools](../../mcp-tool-timeouts.md#client-connection-closed-during-long-tools) in mcp-tool-timeouts.
 
 ### Development and Testing
 
@@ -685,6 +710,23 @@ When the only action in the session is running the Analyze (End of Session) prom
 
 - No action required. Report the manual summary (e.g. files used from Pre-Analysis Checklist) in the Context Effectiveness Analysis section.
 - **Optional**: To record one call for metrics, run `session_start()` or `load_context(task_description="end-of-session analysis", token_budget=5000)` before running the analysis steps.
+
+#### Issue: load_context zero-budget or zero-files (configuration error)
+
+**Symptoms**:
+
+- `load_context` returns a validation error when `token_budget=0` is passed for a non-trivial task
+- Context-effectiveness analysis reports `token_budget=0` or `files_selected=0` for refactor/fix/debug/implement tasks in `learned_patterns` or recommendations
+
+**Cause**:
+
+For non-trivial tasks (refactor, fix, debug, implement), zero token budget or zero files selected is a **configuration/usage error**. The implement, commit, and analyze prompts require non-zero `token_budget` for these task types (e.g. 10k–15k for fix/debug, 20k–30k for implement/add). Passing `token_budget=0` or ending up with zero files selected indicates the caller did not request adequate context.
+
+**Solution**:
+
+1. Use an explicit non-zero `token_budget` when calling `load_context` for non-trivial work: e.g. `load_context(task_description="...", token_budget=10000)` or `token_budget=15000` for fix/debug, `token_budget=20000` or higher for implement/add.
+2. Do not pass `token_budget=0` for refactor/fix/debug/implement; the tool may return a validation error for non-trivial tasks.
+3. If context-effectiveness reporting flags zero-budget or zero-files in historical sessions, treat it as a configuration error and document the recommendation to use task-appropriate budgets in future runs.
 
 #### Issue: Rules indexing returns no rules (get_relevant)
 

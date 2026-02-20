@@ -270,6 +270,19 @@ Timeout errors follow this format:
 MCP tool <tool_name> exceeded timeout of <timeout>s
 ```
 
+## Commit pipeline: long-running tools and client timeout
+
+The commit pipeline (e.g. `/cortex/commit`) uses these MCP tools that can run for a long time:
+
+| Tool | Typical duration | Server behavior | Client timeout recommendation |
+|------|------------------|-----------------|-------------------------------|
+| `execute_pre_commit_checks` (Step 12.7: tests) | 300–600 s (driven by `test_timeout` param, often 300–600) | Very-complex timeout (960 s); frequent progress reports to reduce idle timeout | If the client exposes a tool-call timeout, set it to **≥ test_timeout + buffer** (e.g. 600 + 60 s). Otherwise rely on retry and runbook. |
+| `fix_markdown_lint` (Step 12.5) | 30–120 s (depends on repo size; scoped to git-modified when possible) | Batched runs, 5 s heartbeat, progress after each file | Same as above; use local markdownlint for faster runs (see [troubleshooting](../guides/troubleshooting.md#issue-mcp-error-32000-connection-closed)). |
+| `fix_quality_issues` (pre-flight / Step 12.1) | 30–120 s | Progress and timeout; serialized with other long tools | Retry once; then use fallback scripts per commit prompt. |
+
+- **Keepalive / progress**: The server sends progress or heartbeat for all of these (see "Tools that need more frequent progress" in `mcp_stability_config` and "Client connection closed during long tools" below). This reduces the chance of client idle timeout (-32000).
+- **If Cursor or the MCP client exposes a configurable tool-call timeout**: Set it to at least the longest expected run (e.g. `test_timeout` + 60 s for Step 12.7). If it is not configurable, the only mitigations are server-side progress and the pipeline retry/fallback behavior; see [MCP disconnect runbook (commit pipeline)](../guides/troubleshooting.md#mcp-disconnect-runbook-commit).
+
 ## Client connection closed during long tools
 
 Long-running MCP tools may complete on the server after the client has already closed the connection. In that case the transport can raise an error (e.g. `anyio.ClosedResourceError`) and the client may see a message like `{"error":"MCP error -32000: Connection closed"}`. Note: `fix_markdown_lint` now always scopes to git-modified + untracked files (not full-repo), which greatly reduces runtime and the chance of hitting this issue.

@@ -189,6 +189,18 @@ class TestCommitPromptAlignment:
         assert "markdownlint-cli2" in commit_prompt_content
         assert "MCP connection closed; fallback used" in commit_prompt_content
 
+    def test_commit_prompt_references_mcp_disconnect_runbook_and_recovery(
+        self, commit_prompt_content: str
+    ) -> None:
+        """Commit prompt must reference MCP disconnect runbook and reconnect/re-run recovery.
+
+        Blocker: Resolve Cortex MCP Server Disconnects During Commit Pipeline.
+        Agents must have explicit recovery steps and a link to the runbook.
+        """
+        assert "reconnect Cortex MCP" in commit_prompt_content
+        assert "re-run the commit command" in commit_prompt_content
+        assert "mcp-disconnect-runbook-commit" in commit_prompt_content
+
     def test_commit_prompt_requires_rerun_step_12_3_after_fix_in_step_12_2_or_12_3(
         self, commit_prompt_content: str
     ) -> None:

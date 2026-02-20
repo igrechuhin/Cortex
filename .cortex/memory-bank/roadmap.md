@@ -6,6 +6,8 @@
 
 ## Blockers (ASAP Priority)
 
+- **Blocker: Resolve Cortex MCP Server Disconnects During Commit Pipeline** - PENDING - Eliminate or work around recurring Cortex MCP disconnects during commit so pipeline completes without manual reconnect and re-run. Root-cause investigation, timeout/keepalive alignment, commit prompt resilience. Plan: .cortex/plans/blocker-resolve-cortex-mcp-disconnects-during-commit.md.
+
 ## Active Work (in progress)
 
 ## Future Enhancements
@@ -29,7 +31,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
 - **Plans README** - Reference. Plan: .cortex/plans/README.md
 - **Phase 57: Evaluation-Driven Tool Improvement** - IN PROGRESS - Remaining work: extend the evaluation task suite, add evaluation dashboards, and implement automated tool description optimization and A/B testing on top of the existing evaluation framework and error-pattern tooling. Plan: .cortex/plans/phase-57-evaluation-driven-tool-improvement.md.
-- **Session Optimization: Analyze 2026-02-18 Follow-ups** - PENDING - Follow-ups from 2026-02-18 analysis: Step 12/MCP stability, load_context budgets, manage_file contract. Plan: .cortex/plans/session-optimization-analyze-2026-02-18-follow-ups.md.
 - **Session Optimization: Progress Entry Validation and Write Quality (2026-02-18 Analysis)** - PENDING - Progress entry format validation and write-quality guidance from 2026-02-18 analysis; reduce typos in complete_plan/append_progress_entry. Plan: .cortex/plans/session-optimization-progress-entry-validation-2026-02-18-analysis.md.
 - **Reference: Compound engineering alignment** - Plan: .cortex/plans/compound-engineering-alignment-cortex.md
 - **Reference: Phase 58 multi-agent specialization** - Plan: .cortex/plans/phase-58-multi-agent-specialization-task-locking.md
@@ -41,5 +42,5 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 - **Session Optimization: Testing Standards and Code Quality Improvements (2026-02-19 Analysis)** - PENDING - Improve testing standards compliance and code quality workflow: add prompt reminders for private API testing prohibition and proactive helper extraction, add testing standards review step, review type checker configuration. Plan: .cortex/plans/session-optimization-testing-standards-and-code-quality-improvements-2026-02-19-analysis.md
 - **Promote response_format Literal to Pydantic Enum** - PENDING - Replace Literal["concise", "detailed"] with ResponseFormat(str, Enum) across MCP tools for better type safety and consistency with project patterns. Plan: .cortex/plans/promote-response-format-to-pydantic-enum.md
 - **Session Optimization: Analyze 2026-02-19 Follow-ups** - PENDING - Implement load_context budget examples, memory-bank MCP-only edit reminders, and roadmap sync guidance from end-of-session analysis. Plan: .cortex/plans/session-optimization-analyze-2026-02-19-follow-ups.md
-- **Session Optimization: Step 12.7 MCP Connection Stability Enhancements** - PENDING - Enhance MCP connection stability for Step 12.7 (tests with coverage validation) in the commit pipeline to prevent commit blocks due to connection closure during long-running test execution.
-- **Promote load_context depth Literal to Pydantic Enum** - PENDING - Replace Literal["metadata_only", "summary", "full"] with ContextDepth(str, Enum) for load_context depth parameter; align with OperationStatus/ResponseFormat pattern.
+- **Session Optimization: Step 12.7 MCP Connection Stability Enhancements** - PENDING - Enhance MCP connection stability for Step 12.7 (tests with coverage validation) in the commit pipeline to prevent commit blocks due to connection closure during long-running test execution. Plan: .cortex/plans/session-optimization-step-12-7-mcp-connection-stability-enhancements.md.
+- **Promote load_context depth Literal to Pydantic Enum** - PENDING - Replace Literal["metadata_only", "summary", "full"] with ContextDepth(str, Enum) for load_context depth parameter; align with OperationStatus/ResponseFormat pattern. Plan: .cortex/plans/promote-load-context-depth-to-pydantic-enum.md.

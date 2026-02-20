@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-02-20
+
+- **Session Optimization: Analyze 2026-02-18 Follow-ups** - COMPLETE. Step 12.5 retry and user guidance to reconnect MCP and re-run commit; load_context zero-budget/zero-files documented in troubleshooting; manage_file contract in analyze prompt and Pre-Analysis Checklist.
+- **Blocker: Resolve Cortex MCP Disconnects During Commit (Steps 1–3)** - Runbook and docs: added MCP disconnect runbook to troubleshooting.md, commit-pipeline tools table to mcp-tool-timeouts.md; commit prompt updated with optional health check before 12.7, runbook links, and reconnect/re-run messaging; integration test for runbook reference. Step 5 (run commit pipeline twice) pending.
+
 ## 2026-02-19
 
 - **Session Optimization: Roadmap completed section cleanup (2026-02-10)** - COMPLETE. Verified no legacy completed bullets in roadmap; completed_entries_in_roadmap empty; no migration or removal required.
@@ -101,22 +106,7 @@
 
 ## 2026-02-12
 
-- **Session Optimization: Commit Pipeline Improvements – Step 2 (Early Markdown Lint)** - COMPLETE. Added pre-commit markdownlint hook to .pre-commit-config.yaml, documented in docs/getting-started.md and commit prompt Step 1.5, Cursor rule .cursor/rules/markdown-lint-on-save.md, unit test tests/unit/test_pre_commit_config.py.
-- **Markdown Formatting Guidelines (Session Optimization Commit Pipeline)** - COMPLETE. Added docs/guides/markdown-formatting.md; referenced in AGENTS.md, implement prompt, and commit prompt; Synapse rule markdown-formatting.mdc already present and indexed.
-- **Session Optimization: Commit Pipeline Improvements** - COMPLETE. Git SSL docs (troubleshooting + git-operations), test maintenance guide and async checklist, push retry and non-blocking, memory-bank write quality guidance.
-- **Compound engineering alignment (Cortex MCP)** - COMPLETE. Documented compound goal and loop in project brief and agent docs; aligned implement/commit/analyze prompts; added 5-item compound checklist to commit prompt; documented compound in memory bank and analyze purpose; cross-referenced session-optimization plans; added prompt sanity tests.
-- **MCP idempotent resource: project root path** - COMPLETE. Added cortex://project/root resource, unit tests, docs.
-- **Commit (reportPrivateUsage phase8_structure)** - COMPLETE. Fixed reportPrivateUsage in tests: added public invalidate_structure_resource_cache() in phase8_structure.py; test uses it instead of accessing _structure_resource_cache. Type check and preflight pass.
-- **Load context when agent encounters problem / fix path** - COMPLETE. Added mandatory requirement to load context and rules before fixing errors, test failures, or quality violations in commit prompt, implement prompt, AGENTS.md, and CLAUDE.md. Ensures fix-path work follows project rules and reduces mistake patterns.
-- **Reconsider Memory Bank Structure and File Responsibilities** - COMPLETE. Defined a canonical Memory Bank structure spec and aligned schema_validator, memory_bank_instructions, techContext, and tests so all seven core files have single, non-overlapping responsibilities.
-- **Session Optimization: Roadmap Completed-Section Cleanup** - COMPLETE. Legacy completed sections have been removed from `roadmap.md` and completion tracking is now handled exclusively via `activeContext.md` and `progress.md`, with roadmap reserved for future work only.
-- **Session Optimization: Pydantic v2 Context & Rules Improvements** - COMPLETE. Added a Pydantic v2 rule for Python, hardened context-effectiveness analytics for refactor tasks, and added tests around usage analytics models and load_context logging.
-- **Session Optimization: Context & Usage Analytics Improvements (2026-02-11)** - COMPLETE. Implemented context and usage analytics improvements based on the 2026-02-11 analysis, updating context-effectiveness metrics, usage analytics tooling, optimization config, and tests.
-- **Phase 50: response_format for validate & suggest_refactoring** - COMPLETE. Added response_format parameter and concise formatting helpers for validate() and suggest_refactoring() tools, including unit tests and quality gate fixes.
-- **Phase 50: Tool consolidation usage audit** - PARTIAL. Documented consolidation groups and a usage-matrix template for overlapping MCP tools; numeric usage statistics are still blocked by usage JSON file locks and should be filled in a later session when `get_tool_usage_stats` / `get_unused_tools` are available.
-- **Phase 50: Tool Consolidation and Response Format Optimization** - IN PROGRESS. Defaulted response_format to 'concise' for high-token tools (load_context, get_memory_bank_stats, validate, suggest_refactoring, get_tool_usage_stats, search_usage), updated tests accordingly, and verified coverage at approximately 90.0%.
-- **Phase 50 Step 4 Phase 1: Tool Consolidation (Low-Risk Merges)** - COMPLETE. Merged `write_file` into `manage_file`, `load_progressive_context` into `load_context` (with `strategy="progressive"`), and `update_config` into `configure`. All deprecated tools now include deprecation warnings in docstrings and responses. Backward compatibility maintained. Quality gate passed.
-- **Phase 50 Step 4 Phase 2: query_memory_bank and query_usage** - COMPLETE. Implemented consolidated tools query_memory_bank (stats, version_history, dependency_graph, link_graph, parse_links, validate_links, resolve_transclusions) and query_usage (stats, unused, report, recommendations, search, events, observation, timeline). Removed @mcp.tool from 15 legacy tools; updated tool_categories, tool_registry, tests. Quality and tests pass.
+- **Week containing 2026-02-12** - 1 entries summarized.
 
 ## 2026-02-11
 

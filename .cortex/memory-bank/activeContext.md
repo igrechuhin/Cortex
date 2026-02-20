@@ -2,53 +2,15 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-02-20)
+
+- ✅ **Session Optimization: Analyze 2026-02-18 Follow-ups** - COMPLETE (2026-02-20) - Aligned Step 12 with MCP stability (12.5 retry + reconnect/re-run commit guidance), documented load_context zero-budget/zero-files as configuration error in troubleshooting, and added manage_file contract (file_name + operation required) to analyze prompt and pre-step.
+
+- ✅ **Blocker: MCP disconnects during commit (Steps 1–3)** - COMPLETE (2026-02-20) - Documented disconnect patterns (runbook in troubleshooting), aligned long-running tools with client timeout (mcp-tool-timeouts), and hardened commit prompt (optional health check before 12.7, runbook links, reconnect/re-run). Integration test ensures commit prompt references runbook and recovery. Validation (run pipeline twice) pending.
+
 ## Completed Work (2026-02-19)
 
-- ✅ **Session Optimization: Roadmap completed section cleanup (2026-02-10)** - COMPLETE (2026-02-19) - Verified roadmap.md: no legacy completed section present; validate(roadmap_sync) reports completed_entries_in_roadmap empty. No migration or removal needed; cleanup goal already satisfied.
-
-- ✅ **Session Optimization: Roadmap section removal and sync** - COMPLETE (2026-02-19) - Added remove_roadmap_section MCP tool for safe section removal; documented unlinked_plans excludes archive; updated implement/memory-bank-updater guidance.
-
-- ✅ **Session Optimization: Roadmap sync cleanup (2026-02-09)** - COMPLETE (2026-02-19) - Fixed roadmap_sync validation: corrected invalid reference core/models.py to src/cortex/core/models.py; added Plan links to 9 roadmap bullets; added 6 reference entries for previously unlinked plans. validate(check_type="roadmap_sync") now returns valid: true.
-
-- ✅ **Session Optimization: Rule Loading and Discovery (2026-02-18 Analysis)** - COMPLETE (2026-02-19) - Enforced rule loading in implement prompt (Step 3 checklist, rule discovery fallback); added context budget table to CLAUDE.md and AGENTS.md; added zero-budget reminder to commit.md; added integration test for rules() with real indexing.
-
-- ✅ **Promote OperationStatus to str Enum** - COMPLETE (2026-02-19) - Replaced Literal type alias with OperationStatus(str, Enum) in core/models; updated all construction sites to use OperationStatus.SUCCESS/ERROR; ClaimTaskResult, ListActiveTasksResult, CheckTaskAvailableResult now use OperationStatus; added unit tests; JSON/MCP output unchanged.
-
-- ✅ **Session Optimization: Rules and context loading follow-ups (2026-02-12 Analysis)** - COMPLETE (2026-02-19) - Completed all four plan tasks: watcher tests mock Observer; context budgets documented in AGENTS.md and implement checklist; rules integration test fixed; zero-budget guardrails confirmed in analytics and prompts.
-
-- ✅ **Session Optimization: Rules context followups (2026-02-12) – Reference** - COMPLETE (2026-02-19) - Reconciled roadmap reference; plan was already complete and in archive/SessionOptimization; removed roadmap entry.
-
-- ✅ **Session Optimization: Sequential plan steps** - COMPLETE (2026-02-19) - Verified and strengthened Plan step sequence in implement prompt; create-plan already had implementation sequence wording. Added integration tests for both prompts.
-
-- ✅ **Session Optimization: Test coverage and development workflow improvements** - COMPLETE (2026-02-19) - All six steps were already implemented in a prior session: coverage gap script (analyze_coverage_gaps.py), file size 350/400 warn/error in pre-commit and code-quality.md, coverage guidance in testing.md and implement/commit prompts, canonical imports in tests/helpers/imports.py, 89.5%+ accept with warning in python_adapter and docs, test templates in tests/helpers/test_templates.py. Roadmap entry removed; plan remains in archive.
-
-- ✅ **Session Optimization: Testing coverage documentation and planning (2026-02-16 Analysis)** - COMPLETE (2026-02-19) - Verified coverage expectations and test planning checklist already in place; added integration-test subsection to docs/guides/testing.md.
-
-- ✅ **Structured planning Cortex MCP tools** - COMPLETE (2026-02-19) - Documented create_plan and register_plan_in_roadmap in docs/api/tools.md; updated create-plan prompt to prefer create_plan and register_plan_in_roadmap; added integration tests (test_structured_plan_tools.py) and create_plan preference compliance tests.
-
-- ✅ **Test fixture validation and maintenance** - COMPLETE (2026-02-19) - Added generic validate_mock_manager_fixture and OptimizationConfigProtocol; integration test test_fixture_completeness.py; expanded FIXTURE_REQUIREMENTS to 5 fixture types. Steps 2–4 were already in place.
-
-- ✅ **Type cleanup inventory** - COMPLETE (2026-02-19) - Reference inventory for Phase 53 type-safety cleanup (dict/object/TypedDict/Any patterns, prioritized modules, Pydantic candidates) retained as reference; no code changes.
-
-- ✅ **Session Optimization Follow-Ups: Roadmap Dedup and Plan Lifecycle** - COMPLETE (2026-02-19) - Added deduplication logic to register_plan_in_roadmap and add_roadmap_entry tools, fixed regex bug in plan path extraction, added unit tests, and reviewed plan-archiver agent for Status: COMPLETE expectations
-
-- ✅ **Session Optimization Follow-Ups: Phase 57 Evaluation Framework and Context Budgets (2026-02-17)** - COMPLETE (2026-02-19) - Completed all tasks: context budget validation, zero-file warnings, evaluation suite expansion (9 new tasks), dashboard generation, rules indexing integration. All quality gates passed.
-
-- ✅ **Session Optimization: Phase 58 multi-agent follow-ups** - COMPLETE (2026-02-19) - Completed Phase 58 follow-ups: verified role logging, enhanced prompts/docs with role descriptions, added role-aware evaluation tasks. Role logging already working; backward compatibility verified; prompts and docs updated; evaluation tasks added.
-
-- ✅ **Session Optimization: Refactoring Workflow Improvements (2026-02-17 Analysis)** - COMPLETE (2026-02-19) - Added intermediate validation and duplicate detection to commit/implement prompts, type narrowing pattern to Python coding standards, refactoring best practices to troubleshooting guide, and integration tests for alignment.
-
-- ✅ **Session Optimization: Fix load_context Zero-Budget Configuration Error** - COMPLETE (2026-02-19) - Normalized token_budget=0 to None in load_context handler and in _calculate_effective_budget so effective budget comes from config; added prompt examples in implement and analyze; tests updated (test_load_context_normalizes_zero_budget_for_non_trivial, test_load_context_zero_budget_normalized_to_default).
-
-- ✅ **Session Optimization: load_context Budget and Test Type Narrowing** - COMPLETE (2026-02-19) - Documented non-zero load_context token budget for non-trivial tasks in implement and commit prompts; added JsonValue narrowing in tests to python-testing-standards.mdc.
-
-- ✅ **Investigate tool_raising_json_error MCP Tool Failure** - COMPLETE (2026-02-19) - Resolved blocker: identified as false positive (tool name only in test); removed two duplicate roadmap entries and archived both investigation plans to archive/Investigations/2026-02-19.
-
-- ✅ **Session Optimization: Fix load_context Zero-Budget Configuration Error** - COMPLETE (2026-02-19) - Reject token_budget=0 for non-trivial tasks in load_context; treat 0 as None in _calculate_effective_budget; added INCORRECT/CORRECT examples to implement and analyze prompts; tests and docs/api/tools.md updated.
-
-- ✅ **Session Optimization: MCP Connection Stability and Fallback Script Improvements** - COMPLETE (2026-02-19) - Improved MCP connection stability (health check before Step 12, retry with delay), Python 3.7+ compatibility for fallback scripts (from **future** import annotations), sandbox limitations documented for Step 12.7 in commit.md and troubleshooting.md, connection health check before Step 4 (optional).
-
-- ✅ **Session Optimization: Progress Entry Validation and Memory Bank Write Discipline** - COMPLETE (2026-02-19) - Added progress entry format validation guidance in memory-bank-updater and implement prompt; enforced manage_file-only for all memory-bank edits in implement, analyze, and AGENTS.md; added MCP validation to reject progress bullets missing " - COMPLETE" (e.g. 20260209COMPLETE). Tests and quality gate pass.
+- **Summary (2026-02-19)** - 1 entries archived.
 
 ## Completed Work (2026-02-18)
 
