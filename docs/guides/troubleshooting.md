@@ -312,6 +312,58 @@ Sandboxed environments may block or limit subprocess execution, network, or long
 3. **Re-run the commit pipeline** after tests pass outside the sandbox, so Step 12.7 can complete (or run the pipeline in an environment where Step 12.7 is allowed).
 4. **Document the limitation**: If your environment routinely runs in a sandbox, document that commit must be run in an environment where test execution is allowed, or run tests manually before invoking commit.
 
+#### Step 12.7 Timeout and Connection Requirements {#step-127-timeout-and-connection-requirements}
+
+**Overview**: Step 12.7 (tests with coverage validation) is a long-running operation that can take up to 600 seconds (10 minutes) to complete. The commit pipeline includes connection stability enhancements to prevent commit blocks due to connection closure during test execution.
+
+**Expected test execution time**:
+
+- **Typical duration**: 5–10 minutes for full test suite with coverage
+- **Maximum timeout**: 600 seconds (10 minutes) as configured in `test_timeout=600`
+- **Client-side timeout requirements**: The client (e.g. Cursor IDE) must have a tool-call timeout ≥ 600 seconds to avoid connection closure during Step 12.7
+
+**Connection health check before Step 12.7**:
+
+- **MANDATORY**: The commit pipeline executes `check_mcp_connection_health()` immediately before Step 12.7.1
+- **If health check fails**: Wait 2–5 seconds, retry health check once
+- **If still unhealthy**: Block commit with message: "MCP connection unhealthy before Step 12.7. Please reconnect Cortex MCP server and re-run commit pipeline."
+- **Rationale**: Fails fast with a clear message instead of timing out during the long test run
+
+**Enhanced retry logic with exponential backoff**:
+
+- **First retry**: If `execute_pre_commit_checks(checks=["tests"])` fails with connection error (e.g., "Connection closed", MCP error -32000), wait 2 seconds and retry
+- **Second retry**: If first retry fails, wait 5 seconds and retry again
+- **If both retries fail**: Block commit immediately. Do not proceed to Step 13. Report error and instruct user to reconnect Cortex MCP and re-run the commit command
+- **No fallback**: Unlike Step 12.6, there is no shell script fallback for tests. Step 12.7 must execute successfully via MCP
+
+**Connection stability monitoring**:
+
+- Connection health metrics are logged before and after test execution for analysis:
+  - Health status (healthy/unhealthy)
+  - Concurrent operations count
+  - Resource utilization percentage
+  - Long-running semaphore holder (if any)
+- Metrics help identify patterns:
+  - Timeout thresholds (when do connections close relative to execution time?)
+  - Concurrent operation limits (does semaphore usage correlate with failures?)
+  - Client vs server-side timeouts
+
+**How to increase client timeout** (if needed):
+
+- **Cursor IDE**: Check Cursor settings for MCP tool timeout configuration. Default timeout should be ≥ 600 seconds for Step 12.7
+- **Other clients**: Consult client documentation for tool-call timeout settings
+- **If timeout cannot be increased**: Consider running tests manually before invoking commit, or use a CI environment with longer timeouts
+
+**Troubleshooting connection closures during Step 12.7**:
+
+1. **Check connection health before Step 12.7**: The pipeline automatically checks health; if it reports unhealthy, reconnect MCP before proceeding
+2. **Review connection stability logs**: Check server logs for connection health metrics recorded before/after test execution
+3. **Verify client timeout**: Ensure client tool-call timeout ≥ 600 seconds
+4. **Check for concurrent long-running operations**: If another long-running tool is executing, wait for it to complete before running commit pipeline
+5. **Reconnect and retry**: If Step 12.7 fails after retries, reconnect Cortex MCP server and re-run the commit command
+
+**References**: Commit prompt Step 12.7 section; [MCP disconnect runbook (commit pipeline)](#mcp-disconnect-runbook-commit); [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed)
+
 ### File Operations
 
 #### Issue: File lock timeout

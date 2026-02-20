@@ -11,6 +11,7 @@ Total: 2 tools
 
 import asyncio
 import json
+import logging
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Literal, cast
@@ -20,8 +21,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from cortex.core.constants import MCP_TOOL_TIMEOUT_VERY_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client, report_progress_safe
 from cortex.core.mcp_annotations import external_annotations, safe_write_annotations
-from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
-from cortex.core.models import JsonValue, ModelDict, OperationStatus
+from cortex.core.mcp_stability import (
+    check_connection_health,
+    ensure_usage_context,
+    mcp_tool_wrapper,
+)
+from cortex.core.models import ConnectionHealth, JsonValue, ModelDict, OperationStatus
 from cortex.core.usage_context import get_or_resolve_project_root
 from cortex.server import mcp
 from cortex.services.framework_adapters.base import (
@@ -59,6 +64,8 @@ from cortex.tools.pre_commit_helpers import (
     unsupported_language_result_dict,
 )
 from cortex.tools.pre_commit_pipeline import run_checks_pipeline
+
+logger = logging.getLogger(__name__)
 
 # Adapter registry: language -> factory(project_root) -> FrameworkAdapter.
 # Python, TypeScript, JavaScript, Rust, Go, Java, Swift, and Kotlin have full implementations.
@@ -188,6 +195,86 @@ async def _run_all_checks_off_loop(
     )
 
 
+async def _log_connection_health_before_tests() -> ConnectionHealth | None:
+    """Log connection health before test execution (Step 12.7 monitoring)."""
+    try:
+        health = await check_connection_health()
+        logger.info(
+            "execute_pre_commit_checks: connection health before tests: %s",
+            health.model_dump(),
+        )
+        return health
+    except Exception as e:
+        logger.warning(
+            "execute_pre_commit_checks: failed to check connection health before tests: %s",
+            e,
+        )
+        return None
+
+
+async def _log_connection_health_after_tests(
+    health_before: ConnectionHealth | None,
+) -> None:
+    """Log connection health after successful test execution (Step 12.7 monitoring)."""
+    try:
+        health_after = await check_connection_health()
+        logger.info(
+            "execute_pre_commit_checks: connection health after tests: %s (health_before=%s)",
+            health_after.model_dump(),
+            health_before.model_dump() if health_before else None,
+        )
+    except Exception as e:
+        logger.warning(
+            "execute_pre_commit_checks: failed to check connection health after tests: %s",
+            e,
+        )
+
+
+def _log_test_execution_error(
+    error: Exception, health_before: ConnectionHealth | None
+) -> None:
+    """Log test execution error with connection health context."""
+    logger.error(
+        "execute_pre_commit_checks: test execution failed: %s (health_before=%s)",
+        error,
+        health_before,
+    )
+
+
+async def _run_checks_with_connection_monitoring(
+    adapter: FrameworkAdapter,
+    language_info: LanguageInfo,
+    checks_to_perform: list[PreCommitCheck],
+    strict_mode: bool,
+    timeout: int | None,
+    coverage_threshold: float,
+    ctx: MCPContext | None,
+) -> tuple[dict[str, CheckResult | TestResult | QualityCheckResult], CheckStats]:
+    """Run checks with connection stability monitoring for tests (Step 12.7)."""
+    health_before: ConnectionHealth | None = (
+        await _log_connection_health_before_tests()
+        if PreCommitCheck.TESTS in checks_to_perform
+        else None
+    )
+    try:
+        return await _run_all_checks_off_loop(
+            adapter,
+            language_info,
+            checks_to_perform,
+            strict_mode,
+            timeout,
+            coverage_threshold,
+            ctx,
+        )
+    except Exception as e:
+        if PreCommitCheck.TESTS in checks_to_perform:
+            _log_test_execution_error(e, health_before)
+        raise
+    finally:
+        if PreCommitCheck.TESTS in checks_to_perform:
+            await _log_connection_health_after_tests(health_before)
+
+
 async def _execute_pre_commit_checks_impl(
     root: Path,
     language: str | None,
@@ -204,7 +291,8 @@ async def _execute_pre_commit_checks_impl(
         return resolved
     adapter, language_info = resolved
     checks_to_perform = determine_checks_to_perform(checks)
-    results, stats = await _run_all_checks_off_loop(
+
+    results, stats = await _run_checks_with_connection_monitoring(
         adapter,
         language_info,
         checks_to_perform,
@@ -213,6 +301,7 @@ async def _execute_pre_commit_checks_impl(
         coverage_threshold,
         ctx,
     )
+
     out = _build_response(results, stats, language_info.language)
     await log_client(
         ctx, "info", "execute_pre_commit_checks: completed", logger_name=__name__

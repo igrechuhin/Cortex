@@ -11,6 +11,7 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 | Project context, architecture, decisions | `load_context` with two-step pattern: `load_context(depth="metadata_only")` → `manage_file(sections=[...])` for section-level drill-down. Use `strategy="progressive"` for incremental loading. | Read `.cortex/memory-bank/` files directly |
 | Coding rules, standards, style | `rules(operation="get_relevant", ...)`, `get_synapse_rules(task_description="...")` | Read `.cortex/rules/` or `.cortex/synapse/` directly, hardcode language-specific rules |
 | Structured params (tool params, dispatch data; use Pydantic BaseModel, not `dict[str, Any]`) | `get_synapse_rules(task_description="[language] models, structured data")` or `rules(operation="get_relevant", task_description="structured data, tool parameters")` | Hardcode structured data types (e.g., `dict[str, Any]`) |
+| Type annotations (internal vs external) | Load rules before coding; use Pydantic models for internal data structures; `object` only for external interfaces (MCP tools) | Use `Any` type; use `object` for internal functions; skip loading rules |
 | Markdown formatting (headings vs emphasis, MD036) | `get_synapse_rules(task_description="markdown formatting")`, [docs/guides/markdown-formatting.md](docs/guides/markdown-formatting.md) | Use bold for section titles (use `#`/`##`/`###` instead) |
 | Quality fixes (lint, format, types) | `fix_quality_issues` | Run language-specific formatters/linters manually (get standards via `get_synapse_rules`) |
 | Tests and pre-commit checks | `execute_pre_commit_checks` | Run language-specific test runners directly (get standards via `get_synapse_rules`) |
@@ -23,6 +24,15 @@ This project has a **Cortex MCP server** that provides tools for everything agen
 **Workflow and compound-engineering:** Delivered by Cortex MCP; do not duplicate here — fetch via `load_context` / memory bank.
 
 **Note for AI agents**: Do not add detailed workflow guides (including fix-path rules) to `AGENTS.md` or `CLAUDE.md`; always fetch commit/implement/fix-path behavior from Cortex MCP (Synapse prompts, rules, and memory bank).
+
+## Type Annotations and Data Modeling
+
+- Always load rules before coding to verify type annotation standards
+- Avoid `Any` type - use Pydantic models for internal data structures when possible
+- Use `object` type only for external interfaces (MCP tool parameters), not internal functions
+- Internal functions must use Pydantic BaseModel types (e.g., `ConnectionHealth`) instead of `dict[str, object]`
+- When logging Pydantic models, use `model.model_dump()` to convert to dict for logging purposes
+- Check existing Pydantic models before creating new dict types for internal data structures
 
 ## Compound Engineering
 
