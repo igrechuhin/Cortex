@@ -1,6 +1,6 @@
 # Phase 56: Session Compaction Workflow
 
-**Status:** PENDING
+**Status:** COMPLETE
 **Created:** 2026-02-11
 **Priority:** MEDIUM
 **Estimated Effort:** 2 sprints
@@ -104,18 +104,22 @@ Anthropic also recommends structured JSON over Markdown for progress tracking: "
 
 ### Step 5: Integration with Analyze Prompt
 
-- [ ] Update analyze prompt to call `compact_session` at end of session
-- [ ] Include session handoff in analyze output
-- [ ] Update session_start (Phase 54) to read last handoff
-- [ ] Update AGENTS.md with compaction guidance
+- [x] Update analyze prompt to call `compact_session` at end of session
+- [x] Include session handoff in analyze output
+- [x] Update session_start (Phase 54) to read last handoff
+- [x] Update AGENTS.md with compaction guidance
+
+**Status**: COMPLETE. analyze.md calls compact_session; session_start includes last_handoff in SessionBrief; AGENTS.md documents end-of-session compaction and manual compaction.
 
 ### Step 6: Testing and Validation
 
-- [ ] Unit tests for all compaction and summarization logic (95%+ coverage)
-- [ ] Integration test: full session lifecycle (start → work → compact → next session start)
-- [ ] Verify no information loss during compaction (all entries preserved in archive/summary)
-- [ ] Measure token savings: activeContext before/after compaction
-- [ ] Measure progress.md growth rate with summarization enabled
+- [x] Unit tests for all compaction and summarization logic (95%+ coverage)
+- [x] Integration test: full session lifecycle (start → work → compact → next session start)
+- [x] Verify no information loss during compaction (all entries preserved in archive/summary)
+- [x] Measure token savings: activeContext before/after compaction
+- [x] Measure progress.md growth rate with summarization enabled
+
+**Status**: COMPLETE (2026-02-21). Added test_compact_session_managers_not_initialized, test_read_handoff_invalid_schema_returns_none; fixed test_session_lifecycle_compact_then_session_start_sees_handoff (patch compaction_operations for project root and managers). Coverage and lifecycle test pass.
 
 ## Dependencies
 

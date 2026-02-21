@@ -118,9 +118,54 @@ class TestReadHandoff:
 
         assert result is None
 
+    @pytest.mark.asyncio
+    async def test_read_handoff_invalid_schema_returns_none(
+        self, tmp_path: Path
+    ) -> None:
+        """Test reading JSON with invalid schema (e.g. wrong types) returns None."""
+        _ = ensure_test_cortex_structure(tmp_path)
+        fs_manager = FileSystemManager(tmp_path)
+        cache_dir = get_cache_dir(tmp_path, CacheType.SESSION)
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        handoff_file = cache_dir / "last_handoff.json"
+        # Valid JSON but invalid for SessionHandoff (session_id must be string, etc.)
+        _ = await fs_manager.write_file(
+            handoff_file,
+            '{"session_id": 123, "completed_tasks": "not-a-list"}',
+            expected_hash=None,
+        )
+
+        result = await read_handoff(tmp_path, fs_manager)
+
+        assert result is None
+
 
 class TestCompactSession:
     """Tests for compact_session tool."""
+
+    @pytest.mark.asyncio
+    async def test_compact_session_managers_not_initialized(
+        self, tmp_path: Path
+    ) -> None:
+        """Test compact_session returns error when usage context managers are not set."""
+        _ = ensure_test_cortex_structure(tmp_path)
+        # Patch where compact_session looks up managers so it sees None
+        with (
+            patch(
+                "cortex.tools.compaction_operations.get_current_managers",
+                return_value=None,
+            ),
+            patch(
+                "cortex.core.usage_context.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ),
+        ):
+            tool_fn = get_tool_fn(compact_session)
+            result_json = await tool_fn(summary=None, ctx=None)
+            result = to_dict(result_json)
+        assert result.get("status") == "error"
+        assert "managers not initialized" in str(result.get("error", "")).lower()
 
     @pytest.mark.asyncio
     async def test_compact_session_missing_files(self, tmp_path: Path) -> None:
@@ -432,3 +477,76 @@ class TestCompactSession:
         assert (
             "summarized" not in progress_after.lower() or "Old entry" in progress_after
         )
+
+    @pytest.mark.asyncio
+    async def test_compact_session_token_savings_when_compressing(
+        self, tmp_path: Path
+    ) -> None:
+        """Compacting old completed work reports positive token savings."""
+        _ = ensure_test_cortex_structure(tmp_path)
+        mb_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        active_path = mb_dir / "activeContext.md"
+        progress_path = mb_dir / "progress.md"
+        today = date.today()
+        yesterday = today - timedelta(days=1)
+        old_date = today - timedelta(days=10)
+        active_content = f"""# Active Context
+
+## Completed Work ({old_date.strftime("%Y-%m-%d")})
+
+- Long entry one that would be summarized
+- Long entry two that would be summarized
+
+## Completed Work ({yesterday.strftime("%Y-%m-%d")})
+
+- Yesterday task A
+- Yesterday task B
+
+## Completed Work ({today.strftime("%Y-%m-%d")})
+
+- Current task
+"""
+        progress_content = f"""# Progress
+
+## {old_date.strftime("%Y-%m-%d")}
+
+- Old progress entry
+"""
+        fs_manager = FileSystemManager(tmp_path)
+        _ = await fs_manager.write_file(active_path, active_content, expected_hash=None)
+        _ = await fs_manager.write_file(
+            progress_path, progress_content, expected_hash=None
+        )
+        token_counter = TokenCounter()
+        metadata_index = MetadataIndex(tmp_path)
+        version_manager = VersionManager(tmp_path)
+        managers = make_test_managers(
+            fs=fs_manager,
+            tokens=token_counter,
+            index=metadata_index,
+            versions=version_manager,
+        )
+        with (
+            patch(
+                "cortex.core.usage_context.get_current_managers", return_value=managers
+            ),
+            patch(
+                "cortex.core.usage_context.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.compaction_operations.PROGRESS_TOKEN_THRESHOLD_DEFAULT",
+                0,
+            ),
+        ):
+            tool_fn = get_tool_fn(compact_session)
+            result_json = await tool_fn(summary=None, ctx=None)
+            result = to_dict(result_json)
+        assert result["status"] == "success"
+        savings = result.get("token_savings")
+        assert isinstance(savings, dict)
+        assert "total" in savings
+        assert isinstance(savings["total"], (int, float)) and savings["total"] >= 0
+        assert "activeContext" in savings
+        assert "rollback_snapshots" in result

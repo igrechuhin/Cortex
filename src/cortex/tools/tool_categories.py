@@ -330,6 +330,24 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
 
 
 # ---------------------------------------------------------------------------
+# Programmatic tool calling (Phase 49 Step 8)
+# ---------------------------------------------------------------------------
+
+# Anthropic code execution caller ID; when present in tool meta, clients may
+# allow the tool to be invoked from code execution context.
+ALLOWED_CALLERS_CODE_EXECUTION: tuple[str, ...] = ("code_execution_20250825",)
+
+# Tools that support programmatic calling (validation, refactoring, batch file).
+# Used in @mcp.tool(meta={"allowed_callers": list(ALLOWED_CALLERS_CODE_EXECUTION)}).
+TOOLS_WITH_ALLOWED_CALLERS: tuple[str, ...] = (
+    "validate",
+    "suggest_refactoring",
+    "apply_refactoring",
+    "manage_file",
+)
+
+
+# ---------------------------------------------------------------------------
 # Lookup helpers
 # ---------------------------------------------------------------------------
 

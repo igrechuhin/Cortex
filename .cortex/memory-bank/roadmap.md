@@ -10,11 +10,7 @@
 
 ## Future Enhancements
 
-- **Phase 56: Session Compaction Workflow** - IN PROGRESS (Steps 1-4 complete) - Automatic compaction for activeContext/progress, structured JSON session handoff, progressive summarization (daily/weekly/monthly tiers), compact_session tool. Plan: .cortex/plans/archive/Phase56/phase-56-session-compaction-workflow.md.
-
 ## Pending plans (from .cortex/plans)
-
-- **Reference: Pydantic rules encourage enums for fixed sets** - Plan: .cortex/plans/pydantic-rules-encourage-enums-for-all-fixed-sets.md
 
 ### Investigation Plans (Archive / Reference)
 

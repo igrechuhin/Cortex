@@ -1,4 +1,4 @@
-"""Tests for tool search operations (Phase 49 Step 5)."""
+"""Tests for tool search operations (Phase 49 Step 5–6)."""
 
 from __future__ import annotations
 
@@ -6,6 +6,11 @@ import json
 
 import pytest
 
+from cortex.tools.tool_categories import (
+    build_category_config,
+    get_always_loaded_tool_names,
+    get_deferred_tool_names,
+)
 from cortex.tools.tool_search_operations import search_tools
 
 
@@ -59,3 +64,41 @@ async def test_search_tools_limit_clamped() -> None:
     result2 = await search_tools(query="a", limit=100)
     data2 = json.loads(result2)
     assert len(data2["tools"]) <= 50
+
+
+# ---------------------------------------------------------------------------
+# Phase 49 Step 6: Token savings and tool discovery
+# ---------------------------------------------------------------------------
+
+
+def test_tool_search_token_savings_potential() -> None:
+    """When tool_search is enabled, always_loaded count is less than total tools.
+
+    Documents token savings: initial list size = always_loaded only; deferred
+    tools are discovered via search_tools. When MCP supports defer_loading,
+    this ratio implies expected token reduction.
+    """
+    config = build_category_config()
+    always = len(config.always_loaded)
+    deferred = len(config.deferred_medium) + len(config.deferred_low)
+    total = always + deferred
+    assert always < total, "always_loaded must be a subset to achieve token savings"
+    assert always >= 10, "enough core tools for session start and quality gates"
+    assert deferred >= 20, "enough deferred tools for on-demand discovery"
+
+
+@pytest.mark.asyncio
+@pytest.mark.timeout(5)
+async def test_tool_search_discovery_returns_only_deferred_tools() -> None:
+    """search_tools returns only tools from deferred_medium and deferred_low."""
+    always = set(get_always_loaded_tool_names())
+    deferred = set(get_deferred_tool_names())
+    assert always.isdisjoint(deferred), "no tool may be in both always and deferred"
+    result = await search_tools(query="refactor", limit=10)
+    data = json.loads(result)
+    assert data["status"] == "success"
+    returned_names = {t["name"] for t in data["tools"]}
+    assert returned_names <= deferred, "search_tools must return only deferred tools"
+    assert returned_names.isdisjoint(
+        always
+    ), "search_tools must not return always_loaded"

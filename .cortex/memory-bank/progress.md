@@ -5,6 +5,12 @@
 - **Phase 56 Step 4: Progressive summarization (2026-02-21)** - COMPLETE. Implemented auto-trigger when progress.md exceeds token threshold (PROGRESS_TOKEN_THRESHOLD_DEFAULT); progress summarization only when tokens >= 10K. Added unit tests for Tier 1/2/3 and summarize_progress(weekly|monthly), and test for progress-below-threshold unchanged.
 - **Commit (preflight, memory bank, plan archive)** - Preflight passed: fix_errors, format, markdown lint (0 errors), synapse_format, synapse_lint, type_check, quality, tests 4344 passed, 91.84% coverage. No completed plans in plans root; memory bank and roadmap consistent.
 - Commit (preflight, memory bank, plan archive) - Preflight passed: fix_errors, format, markdown lint (0 errors), synapse_format, synapse_lint, type_check, quality, tests 4344 passed, 91.84% coverage. No completed plans in plans root; memory bank and roadmap consistent.
+- **Phase 56 Session Compaction Workflow (2026-02-21)** - COMPLETE. Step 6 Testing and Validation: added test_compact_session_managers_not_initialized and test_read_handoff_invalid_schema_returns_none; fixed lifecycle test (patch compaction_operations for project root and managers). All tests pass, quality gate passed.
+- **Pydantic rules encourage enums for all fixed sets (2026-02-21)** - COMPLETE. Updated Pydantic standards rule; rules-only.
+- **Phase 49 Step 6: Tool Search Tool - Testing (2026-02-21)** - COMPLETE. Token savings and tool discovery tests (test_tool_search_operations, test_optimization_config), get_tool_search_config tests, configuration options documented in docs/guides/advanced-tool-use.md. Quality gate passed.
+- **Phase 49 Step 7: Programmatic Tool Calling - Analysis (2026-02-21)** - COMPLETE. Identified tool chains (validation, refactoring, batch manage_file), recommended allowed_callers for validate, suggest_refactoring, apply_refactoring, manage_file, documented orchestration patterns in docs/guides/advanced-tool-use.md.
+- **Phase 49 Step 8: Programmatic Tool Calling - Implementation (2026-02-21)** - COMPLETE. Added allowed_callers to tool meta for validate, suggest_refactoring, apply_refactoring, manage_file; ALLOWED_CALLERS_CODE_EXECUTION and TOOLS_WITH_ALLOWED_CALLERS in tool_categories.py; docs and unit tests updated.
+- **Commit (preflight, memory bank, plan archive)** - Preflight passed: fix_errors, format, markdown lint (0 errors), synapse_format, synapse_lint, type_check, quality, tests 4357 passed, 91.85% coverage. No completed plans in plans root; memory bank and roadmap consistent.
 
 ## 2026-02-20
 

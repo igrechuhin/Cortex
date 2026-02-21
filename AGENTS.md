@@ -119,3 +119,10 @@ The commit workflow is organized into phases (see `docs/design/commit-pipeline-p
 - No destructive git (`reset --hard`, force-push); no commits/pushes without explicit user request.
 - No hardcoded secrets; no sensitive data in logs or memory bank.
 - Continue until done or genuinely blocked; do not stop after planning work you can do now.
+
+## Learned User Preferences
+
+- Do not mark a blocker or plan as complete when only documentation was updated and the root cause may not have been encountered; the user expects code changes or validated recurrence before closing.
+- User flags use of `Any` as a rules violation; follow type annotation rules strictly (use Pydantic or `object` instead).
+
+## Learned Workspace Facts

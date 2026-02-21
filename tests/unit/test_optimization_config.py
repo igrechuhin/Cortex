@@ -919,3 +919,36 @@ class TestNewConfigGetters:
         assert "python" in keywords
         assert isinstance(keywords["python"], list)
         assert "python" in keywords["python"]
+
+
+class TestGetToolSearchConfig:
+    """Tests for get_tool_search_config (Phase 49 Step 6)."""
+
+    def test_get_tool_search_config_returns_expected_keys(
+        self, temp_project_root: Path
+    ) -> None:
+        """get_tool_search_config returns enabled, always_loaded, deferred_medium, deferred_low."""
+        config = OptimizationConfig(temp_project_root)
+        ts = config.get_tool_search_config()
+        assert isinstance(ts, dict)
+        assert "enabled" in ts
+        assert "always_loaded" in ts
+        assert "deferred_medium" in ts
+        assert "deferred_low" in ts
+        assert isinstance(ts["always_loaded"], list)
+        assert isinstance(ts["deferred_medium"], list)
+        assert isinstance(ts["deferred_low"], list)
+
+    def test_get_tool_search_config_token_savings_potential(
+        self, temp_project_root: Path
+    ) -> None:
+        """always_loaded count is less than total so deferred loading reduces initial tokens."""
+        config = OptimizationConfig(temp_project_root)
+        ts = config.get_tool_search_config()
+        always = cast(list[str], ts["always_loaded"])
+        medium = cast(list[str], ts["deferred_medium"])
+        low = cast(list[str], ts["deferred_low"])
+        total = len(always) + len(medium) + len(low)
+        assert len(always) < total
+        assert len(always) >= 10
+        assert len(medium) + len(low) >= 20

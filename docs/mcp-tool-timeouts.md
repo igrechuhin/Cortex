@@ -281,7 +281,7 @@ The commit pipeline (e.g. `/cortex/commit`) uses these MCP tools that can run fo
 | `fix_quality_issues` (pre-flight / Step 12.1) | 30–120 s | Progress and timeout; serialized with other long tools | Retry once; then use fallback scripts per commit prompt. |
 
 - **Keepalive / progress**: The server sends progress or heartbeat for all of these (see "Tools that need more frequent progress" in `mcp_stability_config` and "Client connection closed during long tools" below). This reduces the chance of client idle timeout (-32000).
-- **If Cursor or the MCP client exposes a configurable tool-call timeout**: Set it to at least the longest expected run (e.g. `test_timeout` + 60 s for Step 12.7). If it is not configurable, the only mitigations are server-side progress and the pipeline retry/fallback behavior; see [MCP disconnect runbook (commit pipeline)](../guides/troubleshooting.md#mcp-disconnect-runbook-commit).
+- **If Cursor or the MCP client exposes a configurable tool-call timeout**: Set it to at least the longest expected run (e.g. `test_timeout` + 60 s for Step 12.7). For Cursor IDE, community-documented settings (`mcp.server.timeout`, `mcp.elicitation.timeout` in milliseconds) and recommended values are in [Cursor IDE: MCP tool timeout configuration](../guides/troubleshooting.md#cursor-ide-mcp-tool-timeout-configuration). If the client does not expose a configurable timeout, the only mitigations are server-side progress and the pipeline retry/fallback behavior; see [MCP disconnect runbook (commit pipeline)](../guides/troubleshooting.md#mcp-disconnect-runbook-commit).
 
 ## Client connection closed during long tools
 

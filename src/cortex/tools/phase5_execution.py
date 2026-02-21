@@ -26,6 +26,7 @@ from cortex.tools.phase5_execution_planning import (
     execute_with_error_handling,
     provide_feedback_impl,
 )
+from cortex.tools.tool_categories import ALLOWED_CALLERS_CODE_EXECUTION
 
 
 async def _apply_refactoring_validate_and_run(
@@ -62,7 +63,10 @@ async def _apply_refactoring_validate_and_run(
     )
 
 
-@mcp.tool(annotations=safe_write_annotations("Apply Refactoring"))
+@mcp.tool(
+    annotations=safe_write_annotations("Apply Refactoring"),
+    meta={"allowed_callers": list(ALLOWED_CALLERS_CODE_EXECUTION)},
+)
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def apply_refactoring(

@@ -21,6 +21,7 @@ from cortex.core.mcp_stability import (
 from cortex.core.models import ResponseFormat
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.server import mcp
+from cortex.tools.tool_categories import ALLOWED_CALLERS_CODE_EXECUTION
 from cortex.tools.validation_dispatch import (
     call_dispatch_validation,
     prepare_validation_managers,
@@ -51,7 +52,10 @@ VALIDATE_INPUT_EXAMPLES: list[dict[str, object]] = [
 
 @mcp.tool(
     annotations=read_only_annotations("Validate Memory Bank"),
-    meta={"input_examples": VALIDATE_INPUT_EXAMPLES},
+    meta={
+        "input_examples": VALIDATE_INPUT_EXAMPLES,
+        "allowed_callers": list(ALLOWED_CALLERS_CODE_EXECUTION),
+    },
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)

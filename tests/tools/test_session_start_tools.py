@@ -13,7 +13,8 @@ import pytest
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
 from cortex.core.token_counter import TokenCounter
-from cortex.tools.compaction_operations import write_handoff
+from cortex.core.version_manager import VersionManager
+from cortex.tools.compaction_operations import compact_session, write_handoff
 from cortex.tools.models import (
     GitStatusSummary,
     SessionHandoff,
@@ -866,6 +867,93 @@ Working on Phase 54.
         assert result.status == "success"
         assert result.brief is not None
         assert result.brief.last_handoff is None
+
+    @pytest.mark.asyncio
+    async def test_session_lifecycle_compact_then_session_start_sees_handoff(
+        self, tmp_path: Path
+    ) -> None:
+        """Integration: compact_session then session_start returns handoff in brief."""
+        memory_bank_dir = ensure_test_cortex_structure(tmp_path)
+        active_content = """# Active Context
+
+## Current Focus
+
+Test.
+
+## Completed Work (2026-02-01)
+
+- Old task
+"""
+        _ = (memory_bank_dir / "activeContext.md").write_text(active_content)
+        _ = (memory_bank_dir / "progress.md").write_text(
+            "# Progress\n\n## 2026-02-21\n\n- Entry\n"
+        )
+        _ = (memory_bank_dir / "roadmap.md").write_text(
+            "# Roadmap\n\n## Pending\n\n- Item\n"
+        )
+        _ = (memory_bank_dir / "projectBrief.md").write_text("# Cortex\n")
+        for f in ["systemPatterns.md", "techContext.md", "productContext.md"]:
+            _ = (memory_bank_dir / f).write_text(f"# {f}\n")
+
+        fs_manager = FileSystemManager(tmp_path)
+        token_counter = TokenCounter()
+        metadata_index = MetadataIndex(tmp_path)
+        _ = await metadata_index.load()
+        version_manager = VersionManager(tmp_path)
+        for file_name in [
+            "activeContext.md",
+            "roadmap.md",
+            "projectBrief.md",
+            "progress.md",
+            "systemPatterns.md",
+            "techContext.md",
+            "productContext.md",
+        ]:
+            await metadata_index.update_file_metadata(
+                file_name=file_name,
+                path=memory_bank_dir / file_name,
+                exists=True,
+                size_bytes=100,
+                token_count=50,
+                content_hash="sha256:test",
+                sections=[],
+            )
+        managers = make_test_managers(
+            fs=fs_manager,
+            tokens=token_counter,
+            index=metadata_index,
+            versions=version_manager,
+        )
+        # Patch in compaction_operations so compact_session uses tmp_path and our test managers
+        with (
+            patch(
+                "cortex.tools.compaction_operations.get_current_managers",
+                return_value=managers,
+            ),
+            patch(
+                "cortex.tools.compaction_operations.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ),
+        ):
+            tool_fn = get_tool_fn(compact_session)
+            _ = await tool_fn(summary="Lifecycle integration test", ctx=None)
+
+        with patch(
+            "cortex.tools.session_start_tools.check_mcp_connection_health",
+            new_callable=AsyncMock,
+            return_value=_mcp_health_json(healthy=True),
+        ):
+            result = await _session_start_impl(
+                None,
+                tmp_path,
+                managers,  # type: ignore[arg-type]
+            )
+        assert isinstance(result, SessionStartResult)
+        assert result.status == "success"
+        assert result.brief is not None
+        assert result.brief.last_handoff is not None
+        assert "Lifecycle integration test" in result.brief.last_handoff.next_actions
 
     @pytest.mark.asyncio
     async def test_session_start_impl_mcp_unhealthy(self, tmp_path: Path) -> None:

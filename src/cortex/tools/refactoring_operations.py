@@ -28,6 +28,7 @@ from cortex.tools.refactoring_operation_helpers import (
     suggest_refactoring_error_json,
     validate_suggest_refactoring_type,
 )
+from cortex.tools.tool_categories import ALLOWED_CALLERS_CODE_EXECUTION
 
 
 async def _suggest_refactoring_impl(
@@ -89,7 +90,10 @@ async def _suggest_refactoring_run(
         return suggest_refactoring_error_json(e)
 
 
-@mcp.tool(annotations=read_only_annotations("Suggest Refactoring"))
+@mcp.tool(
+    annotations=read_only_annotations("Suggest Refactoring"),
+    meta={"allowed_callers": list(ALLOWED_CALLERS_CODE_EXECUTION)},
+)
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
 async def suggest_refactoring(

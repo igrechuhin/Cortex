@@ -59,6 +59,7 @@ from cortex.tools.file_section_helpers import (
     extract_content_sections,
 )
 from cortex.tools.roadmap_corruption import fix_memory_bank_content_if_needed
+from cortex.tools.tool_categories import ALLOWED_CALLERS_CODE_EXECUTION
 from cortex.validation.schema_validator import SchemaValidator
 
 logger = logging.getLogger(__name__)
@@ -84,7 +85,10 @@ MANAGE_FILE_INPUT_EXAMPLES: list[dict[str, object]] = [
 
 @mcp.tool(
     annotations=safe_write_annotations("Manage Memory Bank Files"),
-    meta={"input_examples": MANAGE_FILE_INPUT_EXAMPLES},
+    meta={
+        "input_examples": MANAGE_FILE_INPUT_EXAMPLES,
+        "allowed_callers": list(ALLOWED_CALLERS_CODE_EXECUTION),
+    },
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_MEDIUM)

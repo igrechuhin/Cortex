@@ -1,10 +1,15 @@
-"""Unit tests for Phase 49 advanced tool use (input examples).
+"""Unit tests for Phase 49 advanced tool use (input examples and allowed_callers).
 
 Verifies that tools that support Anthropic-style input_examples expose
 them via meta and that the example payloads have the expected structure.
+Also verifies programmatic tool calling (allowed_callers) constant and tool list.
 """
 
 from cortex.tools.file_operations import MANAGE_FILE_INPUT_EXAMPLES
+from cortex.tools.tool_categories import (
+    ALLOWED_CALLERS_CODE_EXECUTION,
+    TOOLS_WITH_ALLOWED_CALLERS,
+)
 from cortex.tools.validation_operations import VALIDATE_INPUT_EXAMPLES
 
 
@@ -82,3 +87,25 @@ class TestValidateInputExamples:
         for ex in dup_examples:
             if "similarity_threshold" in ex:
                 assert isinstance(ex["similarity_threshold"], (int, float))
+
+
+class TestAllowedCallersProgrammaticToolCalling:
+    """Test Phase 49 Step 8: allowed_callers for programmatic tool calling."""
+
+    def test_allowed_callers_constant_is_single_code_execution_id(self) -> None:
+        """ALLOWED_CALLERS_CODE_EXECUTION is the Anthropic code execution caller."""
+        assert ALLOWED_CALLERS_CODE_EXECUTION == ("code_execution_20250825",)
+
+    def test_tools_with_allowed_callers_has_four_tools(self) -> None:
+        """Exactly four tools support programmatic calling per Phase 49 analysis."""
+        assert len(TOOLS_WITH_ALLOWED_CALLERS) == 4
+
+    def test_tools_with_allowed_callers_matches_documented_list(self) -> None:
+        """TOOLS_WITH_ALLOWED_CALLERS matches advanced-tool-use.md recommendation."""
+        expected = {
+            "validate",
+            "suggest_refactoring",
+            "apply_refactoring",
+            "manage_file",
+        }
+        assert set(TOOLS_WITH_ALLOWED_CALLERS) == expected

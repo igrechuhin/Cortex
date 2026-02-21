@@ -13,12 +13,13 @@ Learn how to setup and use Memory Bank directly in Cursor: <http://enlightby.ai/
 ## Features
 
 - **Memory Bank Management** - Create, validate, and maintain structured memory bank files
+- **Session & Context** - Session start brief, context loading within token budgets, progressive loading, and end-of-session compaction with handoff
 - **DRY Linking** - Transclusion engine for including content across files without duplication
-- **Validation & Quality** - Schema validation, duplication detection, and quality metrics
-- **Token Optimization** - Context optimization within token budgets, progressive loading, and summarization
+- **Validation & Quality** - Schema validation, duplication detection, quality metrics, and pre-commit checks
+- **Token Optimization** - Context optimization, summarization, and relevance scoring
 - **Refactoring Support** - Pattern analysis, refactoring suggestions, safe execution, and rollback
-- **Shared Rules** - Cross-project rule sharing and management
-- **Project Structure** - Standardized project structure management with templates
+- **Shared Rules (Synapse)** - Cross-project rule sharing and management
+- **Project Structure** - Standardized project structure management and commit pipeline (preflight, docs/memory-bank sync)
 
 ## Prerequisites
 
@@ -93,7 +94,7 @@ Add this to your mcp.json config file:
 
 ### Manually
 
-Clone repository and run the following commands:
+Clone the repository, then from the Cortex repo root:
 
 ```bash
 # Install Node.js dependencies (required for markdownlint-cli2)
@@ -103,7 +104,7 @@ npm install -g markdownlint-cli2
 uv sync --dev
 ```
 
-Then add this to your mcp.json config file:
+Add this to your mcp.json (use a path to the Cortex repo as the server working directory if your client supports it):
 
 ```json
 {
@@ -116,66 +117,39 @@ Then add this to your mcp.json config file:
 }
 ```
 
-## Usage Example
+## Getting Started
 
-Ask Cursor or any other AI code assistant with Cortex MCP:
+In Cursor (or any AI assistant with Cortex MCP), try:
 
 ```text
-Initialize memory bank for my project and analyze its structure
+session_start()
 ```
 
-Provide more context to get better results.
+Then load task-specific context:
+
+```text
+load_context(task_description="your goal", token_budget=10000)
+```
+
+For a new project, use the **initialize** prompt to create the Memory Bank and `.cortex/` structure.
 
 ## Available Tools
 
-### Foundation Tools
+Cortex exposes 60+ MCP tools. Key tools by workflow:
 
-- **manage_file** - Read, write, and manage memory bank files
-- **get_dependency_graph** - View file dependencies
-- **get_version_history** - Track file version history
-- **rollback_file_version** - Rollback to previous versions
-- **get_memory_bank_stats** - Get memory bank statistics
+| Workflow | Tools |
+|----------|--------|
+| **Session** | `session_start` – orientation brief; `load_context` – task context within token budget (supports `strategy="progressive"`); `compact_session` – end-of-session compaction and handoff |
+| **Memory Bank** | `manage_file` – read/write files; `query_memory_bank` – stats, version history, dependency/link graph, transclusions, validation |
+| **Validation & Quality** | `validate` – schema, duplication, quality; `execute_pre_commit_checks` – full pre-commit gate; `fix_quality_issues` – auto-fix lint/format/types |
+| **Commit Pipeline** | `run_preflight_checks` – Phase A (format, lint, types, tests); `run_docs_and_memory_bank_sync` – Phase B (docs/memory-bank sync) |
+| **Plans & Roadmap** | `create_plan`, `register_plan_in_roadmap`, `complete_plan`, `add_roadmap_entry`, `append_progress_entry`, `append_active_context_entry` |
+| **Rules & Synapse** | `rules`, `get_synapse_rules`, `get_synapse_prompts`, `sync_synapse`, `configure`, `get_structure_info` |
+| **Refactoring** | `suggest_refactoring`, `apply_refactoring`, `provide_feedback` |
+| **Analysis & Reasoning** | `analyze`, `analyze_context_effectiveness`, `sequentialthinking`, `think` |
+| **Usage & Discovery** | `query_usage` – usage stats and analytics; `search_tools` – discover deferred tools by query |
 
-### Linking Tools
-
-- **parse_file_links** - Parse links in memory bank files
-- **resolve_transclusions** - Resolve `{{include:path}}` references
-- **validate_links** - Validate link integrity
-- **get_link_graph** - Get transclusion dependency tree
-
-### Validation & Analysis Tools
-
-- **validate** - Run schema validation and duplication detection
-- **analyze** - Analyze patterns and structure
-- **suggest_refactoring** - Get refactoring suggestions
-- **check_structure_health** - Validate project structure
-
-### Optimization Tools
-
-- **load_context** - Load relevant context for a task within token budget
-- **load_progressive_context** - Load context incrementally
-- **summarize_content** - Summarize content
-- **get_relevance_scores** - Score files by relevance
-
-### Refactoring Tools
-
-- **apply_refactoring** - Execute refactoring safely
-- **provide_feedback** - Submit feedback for learning
-
-### Planning & Reasoning Tools
-
-- **sequentialthinking** - Stepwise reasoning and planning (thought history, branches; compatible with MCP sequential thinking contract)
-
-### Rules & Configuration Tools
-
-- **rules** - Manage cursor rules (index and get relevant rules)
-- **sync_synapse** - Sync Synapse repository with remote
-- **update_synapse_rule** - Update a rule in Synapse repository
-- **get_synapse_rules** - Get rules from Synapse repository
-- **get_synapse_prompts** - Get prompts from Synapse repository
-- **update_synapse_prompt** - Update a prompt in Synapse repository
-- **configure** - Configure server settings
-- **get_structure_info** - Get project structure information
+Full tool reference: [docs/api/tools.md](docs/api/tools.md).
 
 ## Available Prompts
 
@@ -289,3 +263,10 @@ Use transclusion to include content from other files without duplication:
 ```markdown
 {{include:path/to/file.md}}
 ```
+
+## Documentation
+
+- [Getting started](docs/getting-started.md) – Setup and first steps
+- [MCP Tools API](docs/api/tools.md) – Full tool reference
+- [Troubleshooting](docs/guides/troubleshooting.md) – Common issues and fixes
+- [Advanced tool use](docs/guides/advanced-tool-use.md) – Tool search and categorization

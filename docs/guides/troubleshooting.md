@@ -203,9 +203,9 @@ Use this runbook when the Cortex MCP connection is lost **during** `/cortex/comm
 | During Step 12.6 (file size / function length) | Quality checks | Client timeout | Retry once; if retry fails, use shell script fallbacks for file size and function length checks; record "MCP connection closed; fallback used". Do not skip Step 12.6. |
 | During Step 12.7 (tests with coverage) | `execute_pre_commit_checks(checks=["tests"], ...)` | Client timeout (tests can run 5–10+ minutes) | Retry once. **There is no fallback for Step 12.7.** If retry fails, **block commit** and tell the user: "Reconnect Cortex MCP and re-run the commit command." Do not proceed with Phase A results. |
 
-**Likely cause**: In most cases the **client** (e.g. Cursor) closed the connection—due to client-side tool-call timeout or IDE lifecycle—not a server crash. The tool may have completed on the server; the connection was already closed when the response was sent. See [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed).
+**Likely cause**: In most cases the **client** (e.g. Cursor) closed the connection—due to client-side tool-call timeout or IDE lifecycle—not a server crash. The tool may have completed on the server; the connection was already closed when the response was sent. To increase Cursor’s timeout, see [Cursor IDE: MCP tool timeout configuration](#cursor-ide-mcp-tool-timeout-configuration). See also [MCP error -32000: Connection closed](#issue-mcp-error-32000-connection-closed).
 
-**How to confirm**: Check MCP server stderr (or Cursor Output / MCP logs) for lines like `MCP connection error in <tool_name> (attempt 1/2): ...` to see which tool and attempt failed. Session logs or repro scenarios: run `/cortex/commit`, let it reach the long step (e.g. 12.7), and note after how long the disconnect occurs to compare with client timeout settings.
+**How to confirm**: Check MCP server stderr (or Cursor Output / MCP logs) for lines like `MCP connection error in <tool_name> (attempt 1/2): ...` to see which tool and attempt failed. In one observed case (MCP log 1-18553), disconnect during `fix_markdown_lint` occurred **≈10 s** after the tool call started; compare that with client timeout settings. Session logs or repro: run `/cortex/commit`, let it reach the long step (e.g. 12.7), and note after how long the disconnect occurs.
 
 **Recovery summary**:
 
@@ -350,9 +350,31 @@ Sandboxed environments may block or limit subprocess execution, network, or long
 
 **How to increase client timeout** (if needed):
 
-- **Cursor IDE**: Check Cursor settings for MCP tool timeout configuration. Default timeout should be ≥ 600 seconds for Step 12.7
-- **Other clients**: Consult client documentation for tool-call timeout settings
-- **If timeout cannot be increased**: Consider running tests manually before invoking commit, or use a CI environment with longer timeouts
+- **Cursor IDE**: See [Cursor IDE: MCP tool timeout configuration](#cursor-ide-mcp-tool-timeout-configuration) below for settings and recommended values. Default timeout should be ≥ 600 seconds for Step 12.7.
+- **Other clients**: Consult client documentation for tool-call timeout settings.
+- **If timeout cannot be increased**: Consider running tests manually before invoking commit, or use a CI environment with longer timeouts.
+
+#### Cursor IDE: MCP tool timeout configuration {#cursor-ide-mcp-tool-timeout-configuration}
+
+Cursor IDE may apply a **client-side tool-call timeout**; when that is shorter than a long-running MCP tool (e.g. `fix_markdown_lint`, `execute_pre_commit_checks`), the client can close the connection and you see `MCP error -32000: Connection closed`. Reported behavior varies by version: some users see ~60 s or 2 minutes (e.g. Cursor 1.5.1+), others see longer defaults; in one log (MCP log 1-18553), disconnect occurred **≈10 s** after `fix_markdown_lint` started, which may indicate a separate shorter limit in some builds or environments.
+
+**Configurable timeout (community-documented)**:
+
+Cursor does not officially document a tool-call timeout setting. Community guides and forum posts suggest adding the following to Cursor’s **Settings (JSON)** (e.g. `Ctrl/Cmd + Shift + P` → “Open Settings (JSON)”):
+
+```json
+"mcp.server.timeout": 600000,
+"mcp.elicitation.timeout": 600000
+```
+
+Values are in **milliseconds**. `600000` = 10 minutes. Use at least **600000** (10 min) if you run the full commit pipeline including Step 12.7 (tests). After changing, reload Cursor (e.g. `Ctrl/Cmd + R`).
+
+**Caveats**:
+
+- These keys are not guaranteed to be supported in all Cursor versions or builds; if disconnects persist, rely on server-side progress, retries, and the [MCP disconnect runbook](#mcp-disconnect-runbook-commit).
+- If you observe disconnects at ~10 s despite a long `mcp.server.timeout`, another limit (e.g. stdio or first-response timeout) may apply; report the timing and Cursor version for diagnostics.
+
+**References**: [MCP tool calling timeout (Cursor forum)](https://forum.cursor.com/t/mcp-tool-calling-timeout/49149), [Long Running MCP tool calls (Cursor forum)](https://forum.cursor.com/t/long-running-mcp-tool-calls/131279); [mcp-tool-timeouts.md](../mcp-tool-timeouts.md) (commit pipeline tools and client timeout).
 
 **Troubleshooting connection closures during Step 12.7**:
 

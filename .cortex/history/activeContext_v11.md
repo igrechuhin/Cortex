@@ -6,6 +6,16 @@
 
 - ✅ **Phase 56 Step 4: Progressive summarization** - COMPLETE (2026-02-21) - Auto-trigger for progress summarization when progress.md exceeds 10K tokens; Tier 1/2/3 and threshold tests added.
 
+- ✅ **Phase 56 Session Compaction Workflow** - COMPLETE (2026-02-21) - Completed Step 6 Testing and Validation: new tests for managers-not-initialized and invalid handoff schema; fixed session lifecycle integration test (patch in compaction_operations). Phase 56 complete.
+
+- ✅ **Pydantic rules encourage enums for all fixed sets** - COMPLETE (2026-02-21) - Updated python-pydantic-standards.mdc to encourage enums for all fixed-set fields (status, priority, state, type, kind), added explicit guidance and python-coding-standards reference, generalized violations list.
+
+- ✅ **Phase 49 Step 6: Tool Search Tool - Testing** - COMPLETE (2026-02-21) - Token savings and tool discovery tests; get_tool_search_config tests; configuration options documented in advanced-tool-use.md.
+
+- ✅ **Phase 49 Step 7: Programmatic Tool Calling - Analysis** - COMPLETE (2026-02-21) - Tool chains and allowed_callers analysis documented in advanced-tool-use.md; plan Step 7 marked complete.
+
+- ✅ **Phase 49 Step 8: Programmatic Tool Calling - Implementation** - COMPLETE (2026-02-21) - Added allowed_callers to tool meta for validate, suggest_refactoring, apply_refactoring, manage_file. Constant and tool list in tool_categories.py; advanced-tool-use.md and tests updated. Quality gate passed.
+
 ## Completed Work (2026-02-20)
 
 - **Summary (2026-02-20)** - 1 entries archived.

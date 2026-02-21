@@ -13,7 +13,9 @@ import pytest
 from pydantic import ValidationError
 
 from cortex.tools.tool_categories import (
+    ALLOWED_CALLERS_CODE_EXECUTION,
     TOOL_CATEGORIES,
+    TOOLS_WITH_ALLOWED_CALLERS,
     ToolCategory,
     ToolCategoryConfig,
     ToolCategoryEntry,
@@ -231,6 +233,22 @@ class TestGetToolsByCategory:
         """Sum of all categories equals total tools."""
         total = sum(len(get_tools_by_category(cat)) for cat in ToolCategory)
         assert total == len(TOOL_CATEGORIES)
+
+
+@pytest.mark.timeout(5)
+class TestProgrammaticToolCallingConstants:
+    """Tests for Phase 49 Step 8 allowed_callers constants."""
+
+    def test_allowed_callers_code_execution_is_tuple(self) -> None:
+        """ALLOWED_CALLERS_CODE_EXECUTION is a non-empty tuple."""
+        assert isinstance(ALLOWED_CALLERS_CODE_EXECUTION, tuple)
+        assert len(ALLOWED_CALLERS_CODE_EXECUTION) >= 1
+
+    def test_tools_with_allowed_callers_all_catalogued(self) -> None:
+        """Every tool in TOOLS_WITH_ALLOWED_CALLERS is in TOOL_CATEGORIES."""
+        catalogued = {e.name for e in TOOL_CATEGORIES}
+        for name in TOOLS_WITH_ALLOWED_CALLERS:
+            assert name in catalogued, f"{name} should be in TOOL_CATEGORIES"
 
 
 @pytest.mark.timeout(5)

@@ -73,8 +73,8 @@ Eliminate or reliably work around recurring Cortex MCP server disconnects during
 **Implementation steps**:
 
 1. **Investigate client timeout behavior**:
+   - **Observed (MCP log 1-18553)**: Duration before disconnect ≈ **10 s** (CallTool for `fix_markdown_lint` at 11:16:49.616 → "MCP stdio connection broken during TaskGroup cleanup" at 11:16:59.204). Suggests client-side tool-call timeout may be ~10 s; document and confirm.
    - Review recent disconnect occurrences (transcript `d00e3e56-36ae-4749-9276-bc824e487fd9` and others) to determine:
-     - Duration before disconnect (time from tool start to -32000 error)
      - Whether progress/heartbeat messages were sent before disconnect
      - Whether disconnect correlates with specific operations (e.g. subprocess calls, file I/O)
    - Check Cursor MCP client documentation/settings for configurable tool-call timeout
