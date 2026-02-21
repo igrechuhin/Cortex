@@ -126,3 +126,5 @@ The commit workflow is organized into phases (see `docs/design/commit-pipeline-p
 - User flags use of `Any` as a rules violation; follow type annotation rules strictly (use Pydantic or `object` instead).
 
 ## Learned Workspace Facts
+
+- Do not edit files under `.venv` or other third-party package directories; apply coding standards (e.g. enums, types) only to project source code.

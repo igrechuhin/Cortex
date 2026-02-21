@@ -164,6 +164,32 @@ Other tools (e.g. `load_context`, `execute_pre_commit_checks`, `rules`) are typi
 
 The MCP SDK does not expose `allowed_callers` as a top-level Tool field. Cortex adds it via **tool `meta`** (e.g. `@mcp.tool(meta={"allowed_callers": ["code_execution_20250825"]})`) so that compatible clients can forward it to the Anthropic API. The four tools above have `allowed_callers` in their meta (Phase 49 Step 8).
 
+## Usage Guide
+
+### Using Tool Use Examples
+
+- **Docstrings**: All complex tools (e.g. `manage_file`, `validate`) document USE WHEN, EXAMPLES, and RETURNS. Use these when prompting the model so it sees concrete parameter combinations.
+- **meta.input_examples**: If your MCP client forwards tool `meta` to the Anthropic API and you have advanced-tool-use beta, the server already sends `input_examples` for `manage_file` and `validate`. No client configuration needed beyond using a Claude model that supports input examples.
+
+### Using Tool Search
+
+1. **Configuration**: In `.cortex/config/optimization.json`, set `tool_search.enabled` to `true` when your client and MCP stack support deferring tool loading. Default is `false` (all tools listed).
+2. **Discovery**: Call the **search_tools** MCP tool with `query` (regex over name and rationale) and optional `category` (`deferred_medium` or `deferred_low`) to discover tools not in the initial list. Example: `search_tools(query="refactor", limit=10)`.
+3. **Always-available**: `search_tools` is in the always_loaded set so it is available even when deferred loading is enabled.
+
+### Using Programmatic Tool Calling
+
+When your client and the Anthropic API support code execution with `allowed_callers`:
+
+1. **Eligible tools**: `validate`, `suggest_refactoring`, `apply_refactoring`, `manage_file` expose `allowed_callers` in tool `meta`. The client must forward this meta to the API.
+2. **Workflows**: Use one code block to run multiple tool calls (e.g. `validate(check_type="schema")` then `validate(check_type="quality")`, or `suggest_refactoring(type="consolidation")` then `apply_refactoring(action="approve")` and `apply_refactoring(action="apply")`). See the orchestration tables above for patterns.
+
+## Measuring Improvements
+
+- **Token usage**: Compare initial tool list size (e.g. number of tools × average tokens per tool) with always_loaded-only when `tool_search.enabled` is true. Current tests assert `always_loaded < total` so deferred loading yields fewer tools sent upfront. For end-to-end token counts, use Claude API usage metrics before/after enabling Tool Search or Programmatic Tool Calling.
+- **Accuracy**: Run manual evaluations with Claude on tasks that require complex parameters (e.g. `manage_file` with `sections`, `validate` with multiple `check_type` values). Compare success rate or parameter correctness before and after adding input_examples or enabling advanced features.
+- **Workflow efficiency**: For programmatic tool calling, measure end-to-end latency or number of inference steps for multi-tool workflows (e.g. validation chain, refactor suggest → apply). Future automation could run a fixed task suite and record token usage and step count.
+
 ## Implementation Status
 
 - **Phase 49 Steps 1–3**: Research, feasibility, and tool use examples (`input_examples` on `manage_file`, `validate`) documented and implemented.
@@ -174,6 +200,7 @@ The MCP SDK does not expose `allowed_callers` as a top-level Tool field. Cortex 
 - **Phase 49 Step 8**: Programmatic Tool Calling implementation — `allowed_callers` added to tool `meta` for validate, suggest_refactoring, apply_refactoring, and manage_file. Constant `ALLOWED_CALLERS_CODE_EXECUTION` and list `TOOLS_WITH_ALLOWED_CALLERS` in `tool_categories.py`; clients can forward meta to the API for code-execution orchestration.
 - **Tool docstrings**: High-value tools include USE WHEN, EXAMPLES, RETURNS; additional input examples are added in docstrings and, where useful, in `meta` for compatible clients.
 - **Future**: When MCP or Anthropic standardizes `defer_loading`, Cortex can filter `list_tools` using `get_tool_search_config()` and the categorization in `tool_categories.py`.
+- **Phase 49 Step 9**: Documentation and testing — API tools reference ([tools.md](../api/tools.md)) updated with Advanced Tool Use subsection; usage guide and measuring-improvements sections added to this guide; comprehensive tests extended (input_examples minimum count, allowed_callers category consistency, search_tools always_loaded).
 
 ## Related Documentation
 

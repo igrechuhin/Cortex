@@ -7,9 +7,11 @@ import json
 import pytest
 
 from cortex.tools.tool_categories import (
+    ToolCategory,
     build_category_config,
     get_always_loaded_tool_names,
     get_deferred_tool_names,
+    get_tool_category,
 )
 from cortex.tools.tool_search_operations import search_tools
 
@@ -102,3 +104,8 @@ async def test_tool_search_discovery_returns_only_deferred_tools() -> None:
     assert returned_names.isdisjoint(
         always
     ), "search_tools must not return always_loaded"
+
+
+def test_search_tools_is_always_loaded() -> None:
+    """search_tools must be always_loaded so it is available when deferred loading is on."""
+    assert get_tool_category("search_tools") == ToolCategory.ALWAYS_LOADED

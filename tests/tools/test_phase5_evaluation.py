@@ -7,22 +7,33 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from cortex.managers.usage_models import ToolUsageEvent
 from cortex.tools.phase5_evaluation import (
+    ABComparisonResult,
+    ABWinner,
     ErrorPattern,
     EvalAnalysis,
     EvalSuiteResult,
     EvalTask,
     EvalTaskResult,
+    OptimizationRunRecord,
+    OptimizationRunWinner,
     ToolEvaluationHarness,
+    ToolTaskMetrics,
+    _append_optimization_record,
     _load_eval_tasks,
+    _load_optimization_history,
     analyze_error_patterns,
+    compare_ab_analyses,
     run_tool_evaluation,
+    run_tool_optimization_workflow,
 )
+from cortex.tools.phase5_evaluation_dashboard_helpers import aggregate_tool_metrics
 
 
 @pytest.mark.asyncio
@@ -140,6 +151,86 @@ def test_analyze_results_handles_empty_suite() -> None:
     assert analysis.average_calls_per_task == 0.0
     assert analysis.top_error_patterns == []
     assert analysis.success_rate_by_category == {}
+
+
+@pytest.mark.asyncio
+async def test_run_suite_reproducibility_same_tracker_data() -> None:
+    """Same tasks and same tracker data produce the same suite metrics (reproducibility)."""
+    project_root = Path(__file__).resolve().parents[2]
+    events_load_context = [
+        ToolUsageEvent(
+            tool_name="load_context",
+            timestamp="2026-02-17T12:00:00Z",
+            duration_ms=50.0,
+            success=True,
+        ),
+        ToolUsageEvent(
+            tool_name="load_context",
+            timestamp="2026-02-17T12:01:00Z",
+            duration_ms=60.0,
+            success=False,
+            error_type="ValueError",
+        ),
+    ]
+    events_pre_commit = [
+        ToolUsageEvent(
+            tool_name="execute_pre_commit_checks",
+            timestamp="2026-02-17T12:02:00Z",
+            duration_ms=200.0,
+            success=True,
+        ),
+    ]
+    mock_tracker = AsyncMock()
+
+    async def search_usage(
+        start_date: str | None = None,
+        end_date: str | None = None,
+        tool_name: str | None = None,
+        success: bool | None = None,
+        limit: int = 200,
+        query: str | None = None,
+    ) -> list[ToolUsageEvent]:
+        if tool_name == "load_context":
+            return list(events_load_context)
+        if tool_name == "execute_pre_commit_checks":
+            return list(events_pre_commit)
+        return []
+
+    mock_tracker.search_usage = search_usage
+
+    tasks = [
+        EvalTask(
+            id="ctx-1",
+            name="Context task",
+            description="Load context",
+            category="context",
+            expected_tools=["load_context"],
+            expected_outcome="ok",
+        ),
+        EvalTask(
+            id="pre-1",
+            name="Pre-commit task",
+            description="Run checks",
+            category="pre_commit",
+            expected_tools=["execute_pre_commit_checks"],
+            expected_outcome="ok",
+        ),
+    ]
+    harness = ToolEvaluationHarness(project_root=project_root, tracker=mock_tracker)
+
+    suite1 = await harness.run_suite(tasks)
+    suite2 = await harness.run_suite(tasks)
+
+    assert len(suite1.tasks) == len(suite2.tasks) == 2
+    for i in range(2):
+        r1, r2 = suite1.tasks[i], suite2.tasks[i]
+        assert r1.task_id == r2.task_id
+        assert r1.total_calls == r2.total_calls
+        assert r1.successful_calls == r2.successful_calls
+        assert r1.failed_calls == r2.failed_calls
+        assert r1.status == r2.status
+        assert pytest.approx(r1.success_rate, rel=1e-9) == r2.success_rate
+    assert suite1.generated_at != suite2.generated_at
 
 
 @pytest.mark.asyncio
@@ -340,6 +431,122 @@ async def test_analyze_error_patterns_persists_error_cache() -> None:
     args, _ = mock_write_cache.call_args
     assert args[1] == "evals/error_patterns.json"
 
+    # Return payload includes error_patterns with expected shape.
+    assert "error_patterns" in data
+    assert len(data["error_patterns"]) == 1
+    assert data["error_patterns"][0]["error_type"] == "ValueError"
+    assert data["error_patterns"][0]["count"] == 1
+    assert data["error_patterns"][0]["affected_tools"] == ["load_context"]
+
+
+@pytest.mark.asyncio
+async def test_analyze_error_patterns_empty_suite_returns_zero_patterns() -> None:
+    """analyze_error_patterns returns zero patterns when suite has no tasks."""
+    project_root = Path("/project")
+    empty_suite = EvalSuiteResult(
+        generated_at="2026-02-21T00:00:00Z",
+        tasks=[],
+    )
+    empty_analysis = EvalAnalysis(
+        overall_success_rate=0.0,
+        total_tasks=0,
+        tasks_with_no_data=0,
+        tasks_unavailable=0,
+        average_calls_per_task=0.0,
+        top_error_patterns=[],
+        success_rate_by_category={},
+    )
+
+    with (
+        patch(
+            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=project_root,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._get_usage_tracker",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._load_eval_tasks",
+            new_callable=AsyncMock,
+            return_value=[],
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.run_suite",
+            new_callable=AsyncMock,
+            return_value=empty_suite,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.analyze_results",
+            new=MagicMock(return_value=empty_analysis),
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation.write_cache_json",
+            new_callable=AsyncMock,
+        ),
+    ):
+        raw = await analyze_error_patterns(task_ids=None, ctx=None)
+
+    data = json.loads(raw)
+    assert data["status"] == "success"
+    assert data["tasks_loaded"] == 0
+    assert data["total_patterns"] == 0
+    assert data["error_patterns"] == []
+
+
+@pytest.mark.asyncio
+async def test_analyze_error_patterns_passes_task_ids_to_load_tasks() -> None:
+    """analyze_error_patterns passes task_ids to _load_eval_tasks."""
+    project_root = Path("/project")
+    empty_suite = EvalSuiteResult(
+        generated_at="2026-02-21T00:00:00Z",
+        tasks=[],
+    )
+    empty_analysis = EvalAnalysis(
+        overall_success_rate=0.0,
+        total_tasks=0,
+        tasks_with_no_data=0,
+        tasks_unavailable=0,
+        average_calls_per_task=0.0,
+        top_error_patterns=[],
+        success_rate_by_category={},
+    )
+
+    with (
+        patch(
+            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=project_root,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._get_usage_tracker",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._load_eval_tasks",
+            new_callable=AsyncMock,
+            return_value=[],
+        ) as mock_load,
+        patch(
+            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.run_suite",
+            new_callable=AsyncMock,
+            return_value=empty_suite,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.analyze_results",
+            new=MagicMock(return_value=empty_analysis),
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation.write_cache_json",
+            new_callable=AsyncMock,
+        ),
+    ):
+        await analyze_error_patterns(task_ids=["t1", "t2"], ctx=None)
+
+    mock_load.assert_awaited_once()
+    assert mock_load.call_args[0][1] == ["t1", "t2"]
+
 
 @pytest.mark.asyncio
 async def test_run_task_uses_usage_tracker_metrics() -> None:
@@ -400,6 +607,57 @@ async def test_run_task_uses_usage_tracker_metrics() -> None:
     assert pytest.approx(result.total_duration_ms, rel=1e-6) == 30.0
     assert result.error_types == {"ValueError": 1}
     assert result.evaluated_tools == ["load_context"]
+    assert "load_context" in result.tool_metrics
+    m = result.tool_metrics["load_context"]
+    assert m.calls == 2
+    assert m.successful == 1
+    assert m.failed == 1
+
+
+def test_aggregate_tool_metrics_sums_across_tasks() -> None:
+    """aggregate_tool_metrics sums per-tool calls and success/failed across tasks."""
+    t1 = EvalTaskResult(
+        task_id="t1",
+        task_name="T1",
+        category="context",
+        status="success",
+        total_calls=5,
+        successful_calls=4,
+        failed_calls=1,
+        success_rate=0.8,
+        avg_duration_ms=0.0,
+        total_duration_ms=0.0,
+        error_types={},
+        evaluated_tools=["load_context"],
+        tool_metrics={
+            "load_context": ToolTaskMetrics(calls=5, successful=4, failed=1),
+        },
+    )
+    t2 = EvalTaskResult(
+        task_id="t2",
+        task_name="T2",
+        category="context",
+        status="success",
+        total_calls=3,
+        successful_calls=3,
+        failed_calls=0,
+        success_rate=1.0,
+        avg_duration_ms=0.0,
+        total_duration_ms=0.0,
+        error_types={},
+        evaluated_tools=["load_context", "manage_file"],
+        tool_metrics={
+            "load_context": ToolTaskMetrics(calls=2, successful=2, failed=0),
+            "manage_file": ToolTaskMetrics(calls=1, successful=1, failed=0),
+        },
+    )
+    suite = EvalSuiteResult(
+        generated_at="2026-02-21T00:00:00Z",
+        tasks=[t1, t2],
+    )
+    agg = aggregate_tool_metrics(suite)
+    assert agg["load_context"] == (7, 6, 1)
+    assert agg["manage_file"] == (1, 1, 0)
 
 
 @pytest.mark.asyncio
@@ -477,3 +735,456 @@ async def test_run_tool_evaluation_generates_dashboard(tmp_path: Path) -> None:
         content = dashboard_path.read_text(encoding="utf-8")
         assert "# Evaluation Dashboard" in content
         assert "## Overall Metrics" in content
+        assert "Overall Tool Effectiveness Score" in content
+
+
+@pytest.mark.asyncio
+async def test_run_tool_evaluation_dashboard_includes_top_tools_sections(
+    tmp_path: Path,
+) -> None:
+    """Dashboard includes Top 5 Tools by Usage and by Improvement when suite has tool_metrics."""
+    project_root = tmp_path
+    evals_dir = project_root / ".cortex" / "evals" / "tasks"
+    _ = evals_dir.mkdir(parents=True, exist_ok=True)
+    _ = (evals_dir / "test_tasks.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": "t1",
+                    "name": "Task 1",
+                    "description": "Desc",
+                    "category": "context",
+                    "expected_tools": ["load_context"],
+                    "expected_outcome": "OK",
+                }
+            ]
+        )
+    )
+    _ = (project_root / ".cortex" / ".cache" / "evals").mkdir(
+        parents=True, exist_ok=True
+    )
+
+    suite_with_tool_metrics = EvalSuiteResult(
+        generated_at="2026-02-21T12:00:00Z",
+        tasks=[
+            EvalTaskResult(
+                task_id="t1",
+                task_name="Task 1",
+                category="context",
+                status="success",
+                total_calls=10,
+                successful_calls=8,
+                failed_calls=2,
+                success_rate=0.8,
+                avg_duration_ms=5.0,
+                total_duration_ms=50.0,
+                error_types={},
+                evaluated_tools=["load_context", "manage_file"],
+                tool_metrics={
+                    "load_context": ToolTaskMetrics(calls=8, successful=7, failed=1),
+                    "manage_file": ToolTaskMetrics(calls=2, successful=1, failed=1),
+                },
+            ),
+        ],
+    )
+
+    with (
+        patch(
+            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=project_root,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._get_usage_tracker",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._load_eval_tasks",
+            new_callable=AsyncMock,
+            return_value=[
+                EvalTask(
+                    id="t1",
+                    name="Task 1",
+                    description="Desc",
+                    category="context",
+                    expected_tools=["load_context"],
+                    expected_outcome="OK",
+                )
+            ],
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.run_suite",
+            new_callable=AsyncMock,
+            return_value=suite_with_tool_metrics,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._persist_latest_suite",
+            new_callable=AsyncMock,
+        ),
+    ):
+        result_str = await run_tool_evaluation(task_ids=["t1"])
+        result = json.loads(result_str)
+        dashboard_path = project_root / result["dashboard_path"]
+        content = dashboard_path.read_text(encoding="utf-8")
+
+    assert "## Top 5 Tools by Usage" in content
+    assert "## Top 5 Tools by Improvement Needed" in content
+    assert "load_context" in content
+    assert "manage_file" in content
+
+
+def test_compare_ab_analyses_optimized_wins_by_success_rate() -> None:
+    """compare_ab_analyses returns optimized when success rate is higher."""
+    baseline = EvalAnalysis(
+        overall_success_rate=0.7,
+        total_tasks=10,
+        tasks_with_no_data=0,
+        tasks_unavailable=0,
+        average_calls_per_task=5.0,
+        top_error_patterns=[],
+        success_rate_by_category={},
+    )
+    optimized = EvalAnalysis(
+        overall_success_rate=0.9,
+        total_tasks=10,
+        tasks_with_no_data=0,
+        tasks_unavailable=0,
+        average_calls_per_task=5.0,
+        top_error_patterns=[],
+        success_rate_by_category={},
+    )
+    result = compare_ab_analyses(baseline, optimized)
+    assert isinstance(result, ABComparisonResult)
+    assert result.winner == ABWinner.optimized
+    assert result.success_rate_delta == pytest.approx(0.2)
+    assert result.total_error_count_baseline == 0
+    assert result.total_error_count_optimized == 0
+    assert result.error_count_delta == 0
+
+
+def test_compare_ab_analyses_baseline_wins_when_success_rate_lower() -> None:
+    """compare_ab_analyses returns baseline when optimized success rate is lower."""
+    baseline = EvalAnalysis(
+        overall_success_rate=0.9,
+        total_tasks=10,
+        tasks_with_no_data=0,
+        tasks_unavailable=0,
+        average_calls_per_task=5.0,
+        top_error_patterns=[],
+        success_rate_by_category={},
+    )
+    optimized = EvalAnalysis(
+        overall_success_rate=0.6,
+        total_tasks=10,
+        tasks_with_no_data=0,
+        tasks_unavailable=0,
+        average_calls_per_task=5.0,
+        top_error_patterns=[],
+        success_rate_by_category={},
+    )
+    result = compare_ab_analyses(baseline, optimized)
+    assert result.winner == ABWinner.baseline
+    assert result.success_rate_delta == pytest.approx(-0.3)
+
+
+def test_compare_ab_analyses_tie_breaks_by_error_count() -> None:
+    """When success rates tie, fewer total errors wins."""
+    baseline = EvalAnalysis(
+        overall_success_rate=0.8,
+        total_tasks=5,
+        tasks_with_no_data=0,
+        tasks_unavailable=0,
+        average_calls_per_task=4.0,
+        top_error_patterns=[
+            ErrorPattern(error_type="ErrA", count=3, affected_tools=["t1"]),
+        ],
+        success_rate_by_category={},
+    )
+    optimized = EvalAnalysis(
+        overall_success_rate=0.8,
+        total_tasks=5,
+        tasks_with_no_data=0,
+        tasks_unavailable=0,
+        average_calls_per_task=4.0,
+        top_error_patterns=[
+            ErrorPattern(error_type="ErrA", count=1, affected_tools=["t1"]),
+        ],
+        success_rate_by_category={},
+    )
+    result = compare_ab_analyses(baseline, optimized)
+    assert result.winner == ABWinner.optimized
+    assert result.success_rate_delta == 0.0
+    assert result.total_error_count_baseline == 3
+    assert result.total_error_count_optimized == 1
+    assert result.error_count_delta == -2
+
+
+def test_compare_ab_analyses_tie_when_equal() -> None:
+    """When success rates and error counts match, winner is tie."""
+    analysis = EvalAnalysis(
+        overall_success_rate=0.75,
+        total_tasks=4,
+        tasks_with_no_data=0,
+        tasks_unavailable=0,
+        average_calls_per_task=3.0,
+        top_error_patterns=[
+            ErrorPattern(error_type="X", count=2, affected_tools=["a"]),
+        ],
+        success_rate_by_category={},
+    )
+    result = compare_ab_analyses(analysis, analysis)
+    assert result.winner == ABWinner.tie
+    assert result.success_rate_delta == 0.0
+    assert result.error_count_delta == 0
+
+
+@pytest.mark.asyncio
+async def test_load_optimization_history_empty_when_missing(tmp_path: Path) -> None:
+    """_load_optimization_history returns empty list when cache file is missing."""
+    with patch(
+        "cortex.tools.phase5_evaluation.read_cache_json",
+        new_callable=AsyncMock,
+        return_value=None,
+    ):
+        history = await _load_optimization_history(tmp_path)
+    assert history == []
+
+
+@pytest.mark.asyncio
+async def test_load_optimization_history_parses_runs(tmp_path: Path) -> None:
+    """_load_optimization_history parses runs from cache."""
+    raw = {
+        "runs": [
+            {
+                "run_id": "run-1",
+                "generated_at": "2026-02-21T12:00:00Z",
+                "baseline_success_rate": 0.8,
+                "optimized_success_rate": None,
+                "winner": "baseline_only",
+                "success_rate_delta": None,
+                "total_error_count_baseline": 5,
+                "total_error_count_optimized": None,
+            },
+        ]
+    }
+    with patch(
+        "cortex.tools.phase5_evaluation.read_cache_json",
+        new_callable=AsyncMock,
+        return_value=raw,
+    ):
+        history = await _load_optimization_history(tmp_path)
+    assert len(history) == 1
+    assert history[0].run_id == "run-1"
+    assert history[0].baseline_success_rate == 0.8
+    assert history[0].winner == OptimizationRunWinner.baseline_only
+
+
+@pytest.mark.asyncio
+async def test_append_optimization_record_persists(tmp_path: Path) -> None:
+    """_append_optimization_record appends a record and writes cache."""
+    record = OptimizationRunRecord(
+        run_id="run-test",
+        generated_at="2026-02-21T12:00:00Z",
+        baseline_success_rate=0.7,
+        optimized_success_rate=None,
+        winner=OptimizationRunWinner.baseline_only,
+        success_rate_delta=None,
+        total_error_count_baseline=2,
+        total_error_count_optimized=None,
+    )
+    write_calls: list[tuple[Path, str, object]] = []
+
+    async def capture_write(root: Path, key: str, data: object) -> None:
+        write_calls.append((root, key, data))
+        return None
+
+    with (
+        patch(
+            "cortex.tools.phase5_evaluation.read_cache_json",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation.write_cache_json",
+            side_effect=capture_write,
+        ),
+    ):
+        await _append_optimization_record(tmp_path, record)
+
+    assert len(write_calls) == 1
+    assert write_calls[0][1] == "evals/optimization_history.json"
+    raw_payload = write_calls[0][2]
+    assert isinstance(raw_payload, dict)
+    runs = cast(
+        list[dict[str, object]],
+        raw_payload.get("runs"),
+    )
+    assert runs is not None
+    assert len(runs) == 1
+    assert runs[0].get("run_id") == "run-test"
+
+
+@pytest.mark.asyncio
+async def test_run_tool_optimization_workflow_baseline_only() -> None:
+    """run_tool_optimization_workflow records baseline_only when no optimized run."""
+    project_root = Path("/project")
+    baseline_analysis = EvalAnalysis(
+        overall_success_rate=0.75,
+        total_tasks=5,
+        tasks_with_no_data=0,
+        tasks_unavailable=0,
+        average_calls_per_task=4.0,
+        top_error_patterns=[],
+        success_rate_by_category={"context": 0.75},
+    )
+    suite = EvalSuiteResult(
+        generated_at="2026-02-21T12:00:00Z",
+        tasks=[],
+    )
+    with (
+        patch(
+            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=project_root,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._get_usage_tracker",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._load_eval_tasks",
+            new_callable=AsyncMock,
+            return_value=[
+                EvalTask(
+                    id="t1",
+                    name="T1",
+                    description="D",
+                    category="context",
+                    expected_tools=[],
+                    expected_outcome="ok",
+                )
+            ],
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.run_suite",
+            new_callable=AsyncMock,
+            return_value=suite,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.analyze_results",
+            return_value=baseline_analysis,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._append_optimization_record",
+            new_callable=AsyncMock,
+        ) as mock_append,
+        patch(
+            "cortex.tools.phase5_evaluation._load_optimization_history",
+            new_callable=AsyncMock,
+            return_value=[],
+        ),
+    ):
+        result_str = await run_tool_optimization_workflow(
+            task_ids=None, optimized_analysis_json=None, ctx=None
+        )
+
+    data = json.loads(result_str)
+    assert data["status"] == "success"
+    assert "run_id" in data
+    assert data["baseline_success_rate"] == 0.75
+    assert data["record"]["winner"] == "baseline_only"
+    assert data["history_runs_count"] == 0
+    _ = mock_append.assert_awaited_once()
+    call_record = mock_append.call_args[0][1]
+    assert call_record.winner == OptimizationRunWinner.baseline_only
+    assert call_record.baseline_success_rate == 0.75
+
+
+@pytest.mark.asyncio
+async def test_run_tool_optimization_workflow_with_ab_comparison() -> None:
+    """run_tool_optimization_workflow compares and records when optimized_analysis given."""
+    project_root = Path("/project")
+    baseline_analysis = EvalAnalysis(
+        overall_success_rate=0.7,
+        total_tasks=5,
+        tasks_with_no_data=0,
+        tasks_unavailable=0,
+        average_calls_per_task=4.0,
+        top_error_patterns=[
+            ErrorPattern(error_type="E", count=3, affected_tools=["t1"]),
+        ],
+        success_rate_by_category={},
+    )
+    optimized_analysis = EvalAnalysis(
+        overall_success_rate=0.9,
+        total_tasks=5,
+        tasks_with_no_data=0,
+        tasks_unavailable=0,
+        average_calls_per_task=4.0,
+        top_error_patterns=[],
+        success_rate_by_category={},
+    )
+    suite = EvalSuiteResult(
+        generated_at="2026-02-21T12:00:00Z",
+        tasks=[],
+    )
+    with (
+        patch(
+            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=project_root,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._get_usage_tracker",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._load_eval_tasks",
+            new_callable=AsyncMock,
+            return_value=[],
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.run_suite",
+            new_callable=AsyncMock,
+            return_value=suite,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation.ToolEvaluationHarness.analyze_results",
+            return_value=baseline_analysis,
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._append_optimization_record",
+            new_callable=AsyncMock,
+        ) as mock_append,
+        patch(
+            "cortex.tools.phase5_evaluation._load_optimization_history",
+            new_callable=AsyncMock,
+            return_value=[
+                OptimizationRunRecord(
+                    run_id="run-prev",
+                    generated_at="2026-02-20T00:00:00Z",
+                    baseline_success_rate=0.5,
+                    winner=OptimizationRunWinner.baseline_only,
+                )
+            ],
+        ),
+    ):
+        optimized_json = optimized_analysis.model_dump(mode="json")
+        result_str = await run_tool_optimization_workflow(
+            task_ids=None,
+            optimized_analysis_json=json.dumps(optimized_json),
+            ctx=None,
+        )
+
+    data = json.loads(result_str)
+    assert data["status"] == "success"
+    assert data["record"]["winner"] == "optimized"
+    assert data["record"]["success_rate_delta"] == pytest.approx(0.2)
+    assert data["history_runs_count"] == 1
+    _ = mock_append.assert_awaited_once()
+    call_record = mock_append.call_args[0][1]
+    assert call_record.winner == OptimizationRunWinner.optimized
+    assert call_record.baseline_success_rate == 0.7
+    assert call_record.optimized_success_rate == 0.9

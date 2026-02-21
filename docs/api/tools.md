@@ -57,6 +57,16 @@ For details on adding annotations to custom tools, see the [Extension Developmen
 
 **Phase 50 consolidation (2026-02):** Memory bank read operations (stats, version_history, dependency_graph, link_graph, parse_links, validate_links, resolve_transclusions) are available via **`query_memory_bank`**. Usage analytics (stats, unused, report, recommendations, search, events, observation, timeline) are available via **`query_usage`**. Context loading supports progressive strategy via **`load_context(strategy="progressive", ...)`**. File writes and config updates use **`manage_file`** and **`configure`**.
 
+### Advanced Tool Use (Phase 49)
+
+Cortex supports Anthropic's advanced tool use features for lower token usage and better tool selection:
+
+- **Tool Use Examples** – Tools such as `manage_file` and `validate` expose `input_examples` in tool `meta` (and in docstrings) so clients can improve parameter accuracy. See [Advanced Tool Use](../guides/advanced-tool-use.md#1-tool-use-examples-accuracy).
+- **Tool Search** – Tools are categorized into always-loaded vs deferred. The **`search_tools`** tool discovers deferred tools by query; when MCP supports `defer_loading`, only always-loaded tools are sent initially. See [Tool Categorization](../guides/advanced-tool-use.md#tool-categorization-phase-49-step-4) and [Configuration](../guides/advanced-tool-use.md#configuration).
+- **Programmatic Tool Calling** – `validate`, `suggest_refactoring`, `apply_refactoring`, and `manage_file` expose `allowed_callers` in `meta` for code-execution orchestration when the client/API supports it. See [Programmatic Tool Calling](../guides/advanced-tool-use.md#programmatic-tool-calling--orchestration-analysis-phase-49-step-7).
+
+Full research, configuration, and usage: [Advanced Tool Use (Anthropic)](../guides/advanced-tool-use.md).
+
 ---
 
 ## Phase 1: Foundation Tools

@@ -161,6 +161,11 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Evaluation framework for MCP tools (Phase 57)",
     ),
     ToolCategoryEntry(
+        name="run_tool_optimization_workflow",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale="Baseline + A/B comparison and optimization history (Phase 57)",
+    ),
+    ToolCategoryEntry(
         name="get_relevance_scores",
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="File prioritization before loading context",

@@ -9,6 +9,8 @@ from cortex.tools.file_operations import MANAGE_FILE_INPUT_EXAMPLES
 from cortex.tools.tool_categories import (
     ALLOWED_CALLERS_CODE_EXECUTION,
     TOOLS_WITH_ALLOWED_CALLERS,
+    ToolCategory,
+    get_tool_category,
 )
 from cortex.tools.validation_operations import VALIDATE_INPUT_EXAMPLES
 
@@ -20,6 +22,10 @@ class TestManageFileInputExamples:
         """Input examples must be a non-empty list of example payloads."""
         assert isinstance(MANAGE_FILE_INPUT_EXAMPLES, list)
         assert len(MANAGE_FILE_INPUT_EXAMPLES) >= 1
+
+    def test_input_examples_has_at_least_basic_and_advanced(self) -> None:
+        """At least two examples (basic and advanced) for comprehensive coverage."""
+        assert len(MANAGE_FILE_INPUT_EXAMPLES) >= 2
 
     def test_each_example_has_file_name_and_operation(self) -> None:
         """Each example must include file_name and operation for tool selection."""
@@ -59,6 +65,10 @@ class TestValidateInputExamples:
         """Input examples must be a non-empty list of example payloads."""
         assert isinstance(VALIDATE_INPUT_EXAMPLES, list)
         assert len(VALIDATE_INPUT_EXAMPLES) >= 1
+
+    def test_input_examples_has_at_least_basic_and_advanced(self) -> None:
+        """At least two examples (basic and advanced) for comprehensive coverage."""
+        assert len(VALIDATE_INPUT_EXAMPLES) >= 2
 
     def test_each_example_has_check_type(self) -> None:
         """Each example must include check_type for tool selection."""
@@ -109,3 +119,14 @@ class TestAllowedCallersProgrammaticToolCalling:
             "manage_file",
         }
         assert set(TOOLS_WITH_ALLOWED_CALLERS) == expected
+
+    def test_tools_with_allowed_callers_have_category(self) -> None:
+        """Every tool in TOOLS_WITH_ALLOWED_CALLERS exists in tool categorization."""
+        for name in TOOLS_WITH_ALLOWED_CALLERS:
+            cat = get_tool_category(name)
+            assert cat is not None, f"{name} must have a tool category"
+            assert cat in (
+                ToolCategory.ALWAYS_LOADED,
+                ToolCategory.DEFERRED_MEDIUM,
+                ToolCategory.DEFERRED_LOW,
+            )

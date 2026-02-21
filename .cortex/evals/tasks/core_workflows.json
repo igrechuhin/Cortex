@@ -126,6 +126,35 @@
     "usage_query": "roadmap"
   },
   {
+    "id": "plan-add-roadmap-entry-for-new-plan",
+    "name": "Add a new roadmap entry for a created plan",
+    "description": "Agent creates a plan file and adds a corresponding roadmap entry using add_roadmap_entry or register_plan_in_roadmap so the plan appears in the implementation queue.",
+    "category": "plan",
+    "expected_tools": ["add_roadmap_entry", "register_plan_in_roadmap", "manage_file"],
+    "expected_outcome": "Roadmap contains a new entry pointing to the plan file; entry is in the correct section (e.g. Features & Enhancements).",
+    "token_budget_baseline": 0,
+    "common_failure_modes": [
+      "Adding entry without plan path or with wrong path",
+      "Placing entry in wrong roadmap section",
+      "Using full-content roadmap write instead of add_roadmap_entry"
+    ],
+    "usage_query": "add_roadmap_entry"
+  },
+  {
+    "id": "plan-archive-or-list-plans",
+    "name": "List or discover plans in the plans directory",
+    "description": "Agent needs to list active plans, find a plan by name, or verify plan archive structure using get_structure_info and file discovery.",
+    "category": "plan",
+    "expected_tools": ["get_structure_info", "manage_file"],
+    "expected_outcome": "Plans directory path is resolved, and relevant plan files or archive structure are identified without hardcoding paths.",
+    "token_budget_baseline": 5000,
+    "common_failure_modes": [
+      "Hardcoding .cortex/plans path instead of get_structure_info",
+      "Not checking archive subdirectories (PhaseX, SessionOptimization)"
+    ],
+    "usage_query": "plans"
+  },
+  {
     "id": "memory-update-active-context",
     "name": "Read activeContext and update completed work",
     "description": "Agent reads activeContext, records newly completed work, and adds next steps.",

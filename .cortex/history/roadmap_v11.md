@@ -10,11 +10,7 @@
 
 ## Future Enhancements
 
-- **Phase 56: Session Compaction Workflow** - IN PROGRESS (Steps 1-4 complete) - Automatic compaction for activeContext/progress, structured JSON session handoff, progressive summarization (daily/weekly/monthly tiers), compact_session tool. Plan: .cortex/plans/archive/Phase56/phase-56-session-compaction-workflow.md.
-
 ## Pending plans (from .cortex/plans)
-
-- **Reference: Pydantic rules encourage enums for fixed sets** - Plan: .cortex/plans/pydantic-rules-encourage-enums-for-all-fixed-sets.md
 
 ### Investigation Plans (Archive / Reference)
 
@@ -28,9 +24,14 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Features & Enhancements
 
-- **Phase 49: Introduce Anthropic advanced tool use** - IN PROGRESS - Plan: .cortex/plans/phase-49-introduce-anthropic-advanced-tool-use.md.
-- **Plans README** - Reference. Plan: .cortex/plans/README.md
 - **Phase 57: Evaluation-Driven Tool Improvement** - IN PROGRESS - Remaining work: extend the evaluation task suite, add evaluation dashboards, and implement automated tool description optimization and A/B testing on top of the existing evaluation framework and error-pattern tooling. Plan: .cortex/plans/phase-57-evaluation-driven-tool-improvement.md.
+- **Reference: Code quality remediation (P0)** - Plan: .cortex/plans/plan-code-quality-remediation.md
+- **Reference: Test coverage and quality (P0)** - Plan: .cortex/plans/plan-test-coverage-and-quality.md
+- **Reference: Documentation completeness (P1)** - Plan: .cortex/plans/plan-documentation-completeness.md
+- **Reference: Evaluation framework maturation (P1)** - Plan: .cortex/plans/plan-evaluation-framework-maturation.md
+- **Reference: Anthropic context engineering alignment (P1)** - Plan: .cortex/plans/plan-anthropic-context-engineering-alignment.md
+- **Reference: Agent skills and composability (P2)** - Plan: .cortex/plans/plan-agent-skills-and-composability.md
+- **Reference: Security and resilience (P2)** - Plan: .cortex/plans/plan-security-and-resilience.md
 - **Reference: Compound engineering alignment** - Plan: .cortex/plans/compound-engineering-alignment-cortex.md
 - **Reference: Phase 58 multi-agent specialization** - Plan: .cortex/plans/phase-58-multi-agent-specialization-task-locking.md
 - **Reference: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md

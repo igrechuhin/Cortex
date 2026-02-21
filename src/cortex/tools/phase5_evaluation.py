@@ -20,12 +20,13 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from enum import Enum
 from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cortex.core.cache_json_access import write_cache_json
+from cortex.core.cache_json_access import read_cache_json, write_cache_json
 from cortex.core.constants import MCP_TOOL_TIMEOUT_COMPLEX
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import read_only_annotations
@@ -87,6 +88,16 @@ class EvalTask(BaseModel):
     )
 
 
+class ToolTaskMetrics(BaseModel):
+    """Per-tool metrics within a single evaluation task."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    calls: int = Field(ge=0, description="Number of calls for this tool")
+    successful: int = Field(ge=0, description="Number of successful calls")
+    failed: int = Field(ge=0, description="Number of failed calls")
+
+
 class EvalTaskResult(BaseModel):
     """Computed metrics for a single evaluation task."""
 
@@ -102,8 +113,22 @@ class EvalTaskResult(BaseModel):
     success_rate: float = 0.0
     avg_duration_ms: float = 0.0
     total_duration_ms: float = 0.0
+    total_input_tokens: int = Field(
+        default=0,
+        ge=0,
+        description="Total input tokens consumed (0 when usage events lack token data)",
+    )
+    total_output_tokens: int = Field(
+        default=0,
+        ge=0,
+        description="Total output tokens consumed (0 when usage events lack token data)",
+    )
     error_types: dict[str, int] = Field(default_factory=dict)
     evaluated_tools: list[str] = Field(default_factory=list)
+    tool_metrics: dict[str, ToolTaskMetrics] = Field(
+        default_factory=dict,
+        description="Per-tool call and success counts for dashboard aggregation",
+    )
 
 
 def _empty_eval_results() -> list[EvalTaskResult]:
@@ -142,6 +167,20 @@ class ErrorPattern(BaseModel):
     affected_tools: list[str]
 
 
+class ToolCombination(BaseModel):
+    """Tool usage pattern: set of tools used together in tasks."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    tools: list[str] = Field(description="Tool names that co-occur in tasks")
+    task_count: int = Field(ge=0, description="Number of tasks using this combination")
+
+
+def _empty_tool_combinations() -> list[ToolCombination]:
+    """Typed default factory for EvalAnalysis.top_tool_combinations."""
+    return []
+
+
 class EvalAnalysis(BaseModel):
     """High-level analysis of an evaluation suite."""
 
@@ -152,8 +191,69 @@ class EvalAnalysis(BaseModel):
     tasks_with_no_data: int
     tasks_unavailable: int
     average_calls_per_task: float
+    average_tokens_per_task: float = Field(
+        default=0.0,
+        ge=0,
+        description="Average input+output tokens per task (0 when usage lacks token data)",
+    )
+    token_consumption_by_category: dict[str, float] = Field(
+        default_factory=dict,
+        description="Average tokens per task by category (empty when no token data)",
+    )
     top_error_patterns: list[ErrorPattern]
     success_rate_by_category: dict[str, float]
+    top_tool_combinations: list[ToolCombination] = Field(
+        default_factory=_empty_tool_combinations,
+        description="Most common tool sets used together across tasks",
+    )
+
+
+class ABWinner(str, Enum):
+    """Winner of an A/B comparison (baseline vs optimized)."""
+
+    baseline = "baseline"
+    optimized = "optimized"
+    tie = "tie"
+
+
+class OptimizationRunWinner(str, Enum):
+    """Winner or status of an optimization run (includes baseline-only)."""
+
+    baseline = "baseline"
+    optimized = "optimized"
+    tie = "tie"
+    baseline_only = "baseline_only"
+
+
+class ABComparisonResult(BaseModel):
+    """Result of comparing baseline vs optimized evaluation analyses (A/B)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    winner: ABWinner
+    success_rate_delta: float = Field(
+        description="optimized minus baseline overall_success_rate"
+    )
+    total_error_count_baseline: int = 0
+    total_error_count_optimized: int = 0
+    error_count_delta: int = Field(
+        description="optimized total errors minus baseline (negative = fewer errors)"
+    )
+
+
+class OptimizationRunRecord(BaseModel):
+    """Single optimization run for history persistence."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: str
+    generated_at: str = Field(description="ISO 8601 timestamp")
+    baseline_success_rate: float = 0.0
+    optimized_success_rate: float | None = None
+    winner: OptimizationRunWinner = OptimizationRunWinner.baseline_only
+    success_rate_delta: float | None = None
+    total_error_count_baseline: int = 0
+    total_error_count_optimized: int | None = None
 
 
 @dataclass(slots=True)
@@ -199,6 +299,21 @@ class _AggregatedEvents:
         for e in self.events:
             if e.error_type:
                 out[e.error_type] = out.get(e.error_type, 0) + 1
+        return out
+
+    def tool_metrics(self) -> dict[str, ToolTaskMetrics]:
+        """Per-tool call and success counts for dashboard aggregation."""
+        by_tool: dict[str, list[ToolUsageEvent]] = {}
+        for e in self.events:
+            by_tool.setdefault(e.tool_name, []).append(e)
+        out: dict[str, ToolTaskMetrics] = {}
+        for name, evs in by_tool.items():
+            successful = sum(1 for e in evs if e.success)
+            out[name] = ToolTaskMetrics(
+                calls=len(evs),
+                successful=successful,
+                failed=len(evs) - successful,
+            )
         return out
 
 
@@ -380,6 +495,7 @@ class ToolEvaluationHarness:
             total_duration_ms=agg.total_duration_ms,
             error_types=agg.error_types,
             evaluated_tools=task.expected_tools,
+            tool_metrics=agg.tool_metrics(),
         )
 
     async def run_task(self, task: EvalTask) -> EvalTaskResult:
@@ -399,17 +515,11 @@ class ToolEvaluationHarness:
 
     def analyze_results(self, suite: EvalSuiteResult) -> EvalAnalysis:
         """Analyze a completed suite and compute high-level metrics."""
+        from cortex.tools import phase5_evaluation_helpers as _eval_helpers
+
         total_tasks = len(suite.tasks)
         if total_tasks == 0:
-            return EvalAnalysis(
-                overall_success_rate=0.0,
-                total_tasks=0,
-                tasks_with_no_data=0,
-                tasks_unavailable=0,
-                average_calls_per_task=0.0,
-                top_error_patterns=[],
-                success_rate_by_category={},
-            )
+            return _eval_helpers.empty_eval_analysis()
         acc = _AnalysisAccumulator()
         for result in suite.tasks:
             acc.add_result(result)
@@ -417,40 +527,55 @@ class ToolEvaluationHarness:
         average_calls_per_task = (
             float(acc.total_calls) / float(total_tasks) if total_tasks else 0.0
         )
-        return EvalAnalysis(
-            overall_success_rate=overall_success_rate,
-            total_tasks=total_tasks,
-            tasks_with_no_data=acc.tasks_with_no_data,
-            tasks_unavailable=acc.tasks_unavailable,
-            average_calls_per_task=average_calls_per_task,
-            top_error_patterns=_top_error_patterns(acc.error_counter),
-            success_rate_by_category=_compute_success_rate_by_category(
-                acc.category_success
-            ),
+        return _eval_helpers.build_eval_analysis(
+            acc.category_success,
+            acc.error_counter,
+            acc.tasks_with_no_data,
+            acc.tasks_unavailable,
+            total_tasks,
+            overall_success_rate,
+            average_calls_per_task,
+            suite,
         )
 
 
-def _compute_success_rate_by_category(
-    category_success: dict[str, list[float]],
-) -> dict[str, float]:
-    """Compute average success rate for each category."""
-    out: dict[str, float] = {}
-    for category, rates in category_success.items():
-        if not rates:
-            continue
-        out[category] = sum(rates) / float(len(rates))
-    return out
+def _total_error_count(analysis: EvalAnalysis) -> int:
+    """Sum of error counts across all top error patterns."""
+    return sum(p.count for p in analysis.top_error_patterns)
 
 
-def _top_error_patterns(
-    error_counter: dict[str, ErrorPattern],
-    limit: int = 10,
-) -> list[ErrorPattern]:
-    """Return top-N error patterns sorted by count descending."""
-    patterns_sorted = sorted(
-        error_counter.values(), key=lambda p: p.count, reverse=True
+def compare_ab_analyses(
+    baseline: EvalAnalysis, optimized: EvalAnalysis
+) -> ABComparisonResult:
+    """Compare baseline vs optimized analysis for A/B tool description testing.
+
+    Winner is chosen by: higher overall_success_rate wins; if tie, fewer
+    total errors wins; else tie.
+    """
+    success_rate_delta = optimized.overall_success_rate - baseline.overall_success_rate
+    total_baseline = _total_error_count(baseline)
+    total_optimized = _total_error_count(optimized)
+    error_delta = total_optimized - total_baseline
+
+    if success_rate_delta > 0:
+        winner = ABWinner.optimized
+    elif success_rate_delta < 0:
+        winner = ABWinner.baseline
+    else:
+        if error_delta < 0:
+            winner = ABWinner.optimized
+        elif error_delta > 0:
+            winner = ABWinner.baseline
+        else:
+            winner = ABWinner.tie
+
+    return ABComparisonResult(
+        winner=winner,
+        success_rate_delta=success_rate_delta,
+        total_error_count_baseline=total_baseline,
+        total_error_count_optimized=total_optimized,
+        error_count_delta=error_delta,
     )
-    return patterns_sorted[:limit]
 
 
 async def _get_usage_tracker(root: Path) -> UsageTracker | None:
@@ -489,121 +614,6 @@ async def run_tool_evaluation(
     return json.dumps(payload, indent=2)
 
 
-def _format_overall_metrics(
-    analysis: EvalAnalysis, suite: EvalSuiteResult
-) -> list[str]:
-    """Format overall metrics section."""
-    lines: list[str] = []
-    lines.append("# Evaluation Dashboard")
-    lines.append("")
-    lines.append(f"**Generated:** {suite.generated_at}")
-    lines.append("")
-    lines.append("## Overall Metrics")
-    lines.append("")
-    lines.append(f"- **Overall Success Rate:** {analysis.overall_success_rate:.1%}")
-    lines.append(f"- **Total Tasks:** {analysis.total_tasks}")
-    lines.append(f"- **Tasks with No Data:** {analysis.tasks_with_no_data}")
-    lines.append(f"- **Tasks Unavailable:** {analysis.tasks_unavailable}")
-    lines.append(f"- **Average Calls per Task:** {analysis.average_calls_per_task:.1f}")
-    lines.append("")
-    return lines
-
-
-def _format_category_success_rates(analysis: EvalAnalysis) -> list[str]:
-    """Format success rate by category section."""
-    lines: list[str] = []
-    if analysis.success_rate_by_category:
-        lines.append("## Success Rate by Category")
-        lines.append("")
-        for category, rate in sorted(
-            analysis.success_rate_by_category.items(),
-            key=lambda x: x[1],
-            reverse=True,
-        ):
-            lines.append(f"- **{category}:** {rate:.1%}")
-        lines.append("")
-    return lines
-
-
-def _format_error_patterns(analysis: EvalAnalysis) -> list[str]:
-    """Format top error patterns section."""
-    lines: list[str] = []
-    if analysis.top_error_patterns:
-        lines.append("## Top Error Patterns")
-        lines.append("")
-        for i, pattern in enumerate(analysis.top_error_patterns[:10], 1):
-            tools_str = ", ".join(pattern.affected_tools[:5])
-            if len(pattern.affected_tools) > 5:
-                tools_str += f" (+{len(pattern.affected_tools) - 5} more)"
-            lines.append(f"{i}. **{pattern.error_type}** ({pattern.count} occurrences)")
-            lines.append(f"   - Affected tools: {tools_str}")
-            lines.append("")
-    return lines
-
-
-def _format_single_task(task: EvalTaskResult) -> list[str]:
-    """Format a single task entry."""
-    status_emoji = (
-        "✅" if task.status == "success" else "⚠️" if task.status == "mixed" else "❌"
-    )
-    lines = [
-        f"- {status_emoji} **{task.task_name}** ({task.task_id})",
-        f"  - Status: {task.status}",
-        f"  - Success Rate: {task.success_rate:.1%}",
-        f"  - Total Calls: {task.total_calls}",
-    ]
-    if task.error_types:
-        top_error = max(task.error_types.items(), key=lambda x: x[1])
-        lines.append(f"  - Top Error: {top_error[0]} ({top_error[1]} occurrences)")
-    lines.append("")
-    return lines
-
-
-def _format_task_details(suite: EvalSuiteResult) -> list[str]:
-    """Format task-level details section."""
-    lines: list[str] = []
-    if suite.tasks:
-        lines.append("## Task Details")
-        lines.append("")
-        tasks_by_category: dict[str, list[EvalTaskResult]] = {}
-        for task in suite.tasks:
-            category = task.category
-            if category not in tasks_by_category:
-                tasks_by_category[category] = []
-            tasks_by_category[category].append(task)
-        for category in sorted(tasks_by_category.keys()):
-            lines.append(f"### {category.title()} Tasks")
-            lines.append("")
-            for task in sorted(
-                tasks_by_category[category],
-                key=lambda t: t.success_rate,
-                reverse=True,
-            ):
-                lines.extend(_format_single_task(task))
-    return lines
-
-
-def _generate_evaluation_dashboard(
-    analysis: EvalAnalysis,
-    suite: EvalSuiteResult,
-) -> str:
-    """Generate Markdown dashboard from evaluation analysis.
-
-    Args:
-        analysis: Evaluation analysis with aggregated metrics
-        suite: Evaluation suite results with individual task metrics
-
-    Returns:
-        Markdown string with dashboard report
-    """
-    lines: list[str] = []
-    lines.extend(_format_overall_metrics(analysis, suite))
-    lines.extend(_format_category_success_rates(analysis))
-    lines.extend(_format_error_patterns(analysis))
-    lines.extend(_format_task_details(suite))
-    return "\n".join(lines)
-
-
 async def _write_evaluation_dashboard(
     root: Path,
     analysis: EvalAnalysis,
@@ -619,7 +629,11 @@ async def _write_evaluation_dashboard(
     Returns:
         Path to written dashboard file
     """
-    dashboard_content = _generate_evaluation_dashboard(analysis, suite)
+    from cortex.tools.phase5_evaluation_dashboard_helpers import (
+        generate_evaluation_dashboard,
+    )
+
+    dashboard_content = generate_evaluation_dashboard(analysis, suite)
     cache_dir = get_cache_path(root, CortexResourceType.CACHE.value)
     dashboard_path = cache_dir / "evals" / "dashboard.md"
     # Create directory if it doesn't exist; return value intentionally unused
@@ -687,6 +701,105 @@ async def _persist_error_patterns(root: Path, analysis: EvalAnalysis) -> None:
     )
 
 
+_OPTIMIZATION_HISTORY_KEY = "evals/optimization_history.json"
+
+
+async def _load_optimization_history(
+    root: Path,
+) -> list[OptimizationRunRecord]:
+    """Load optimization run history from cache; returns empty list if missing."""
+    raw = await read_cache_json(root, _OPTIMIZATION_HISTORY_KEY)
+    if not raw or not isinstance(raw, dict) or "runs" not in raw:
+        return []
+    runs = raw.get("runs")
+    if not isinstance(runs, list):
+        return []
+    records: list[OptimizationRunRecord] = []
+    for item in runs:
+        if isinstance(item, dict):
+            try:
+                records.append(OptimizationRunRecord.model_validate(item))
+            except Exception:
+                continue
+    return records
+
+
+async def _append_optimization_record(
+    root: Path, record: OptimizationRunRecord
+) -> None:
+    """Append a single optimization run record to history and persist."""
+    history = await _load_optimization_history(root)
+    history.append(record)
+    await write_cache_json(
+        root,
+        _OPTIMIZATION_HISTORY_KEY,
+        {"runs": [r.model_dump(mode="json") for r in history]},
+    )
+
+
+def _parse_optimized_analysis(json_str: str | None) -> EvalAnalysis | None:
+    """Parse optimized_analysis_json into EvalAnalysis or return None."""
+    if not json_str or not json_str.strip():
+        return None
+    try:
+        optimized_dict = json.loads(json_str)
+        return EvalAnalysis.model_validate(optimized_dict)
+    except (json.JSONDecodeError, Exception):
+        return None
+
+
+def _build_optimization_record(
+    baseline_analysis: EvalAnalysis,
+    optimized_analysis: EvalAnalysis | None,
+    run_id: str,
+    generated_at: str,
+) -> OptimizationRunRecord:
+    """Build OptimizationRunRecord for baseline-only or A/B comparison."""
+    total_errors_baseline = _total_error_count(baseline_analysis)
+    if optimized_analysis is None:
+        return OptimizationRunRecord(
+            run_id=run_id,
+            generated_at=generated_at,
+            baseline_success_rate=baseline_analysis.overall_success_rate,
+            optimized_success_rate=None,
+            winner=OptimizationRunWinner.baseline_only,
+            success_rate_delta=None,
+            total_error_count_baseline=total_errors_baseline,
+            total_error_count_optimized=None,
+        )
+    comparison = compare_ab_analyses(baseline_analysis, optimized_analysis)
+    return OptimizationRunRecord(
+        run_id=run_id,
+        generated_at=generated_at,
+        baseline_success_rate=baseline_analysis.overall_success_rate,
+        optimized_success_rate=optimized_analysis.overall_success_rate,
+        winner=OptimizationRunWinner(comparison.winner.value),
+        success_rate_delta=comparison.success_rate_delta,
+        total_error_count_baseline=comparison.total_error_count_baseline,
+        total_error_count_optimized=comparison.total_error_count_optimized,
+    )
+
+
+def _build_optimization_workflow_payload(
+    root: Path,
+    run_id: str,
+    baseline_analysis: EvalAnalysis,
+    record: OptimizationRunRecord,
+    history: list[OptimizationRunRecord],
+) -> str:
+    """Build JSON payload string for run_tool_optimization_workflow response."""
+    payload = {
+        "status": "success",
+        "project_root": str(root),
+        "run_id": run_id,
+        "baseline_success_rate": baseline_analysis.overall_success_rate,
+        "record": record.model_dump(mode="json"),
+        "history_runs_count": len(history),
+        "cache_file": str(get_cache_path(root, "evals") / "optimization_history.json"),
+    }
+    return json.dumps(payload, indent=2)
+
+
 @mcp.tool(annotations=read_only_annotations("Tool Error Pattern Analysis"))
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
@@ -731,3 +844,43 @@ async def analyze_error_patterns(
         ],
     }
     return json.dumps(payload, indent=2)
+
+
+@mcp.tool(annotations=read_only_annotations("Tool Optimization Workflow"))
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
+async def run_tool_optimization_workflow(
+    task_ids: list[str] | None = None,
+    optimized_analysis_json: str | None = None,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Run evaluation baseline and optionally compare with optimized run (A/B).
+
+    Runs the evaluation suite to get baseline metrics, then either records
+    a baseline-only entry or compares with provided optimized analysis and
+    appends the result to .cortex/.cache/evals/optimization_history.json.
+    """
+    root = await resolve_project_root_async(None, ctx)
+    if ctx is not None:
+        await log_client(
+            ctx,
+            "info",
+            "run_tool_optimization_workflow: starting",
+            logger_name=__name__,
+        )
+    tracker = await _get_usage_tracker(root)
+    tasks = await _load_eval_tasks(root, task_ids)
+    harness = ToolEvaluationHarness(project_root=root, tracker=tracker)
+    suite = await harness.run_suite(tasks)
+    baseline_analysis = harness.analyze_results(suite)
+    run_id = f"run-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
+    generated_at = datetime.now(UTC).isoformat()
+    optimized_analysis = _parse_optimized_analysis(optimized_analysis_json)
+    record = _build_optimization_record(
+        baseline_analysis, optimized_analysis, run_id, generated_at
+    )
+    await _append_optimization_record(root, record)
+    history = await _load_optimization_history(root)
+    return _build_optimization_workflow_payload(
+        root, run_id, baseline_analysis, record, history
+    )

@@ -1,0 +1,111 @@
+# Plan: Security & Resilience Hardening
+
+## Status: PLANNED
+
+## Priority: P2 (Medium)
+
+## Created: 2026-02-21
+
+## Effort: 1 sprint
+
+## Motivation
+
+Comprehensive review (2026-02-21) identified resilience and security areas needing attention:
+
+- No input sanitization audit for MCP tool parameters
+- No rate limiting beyond semaphore-based concurrency control
+- Global state patterns (semaphores, caches) need resilience testing
+- No chaos/fault injection testing
+- Async error handling could be more specific in some paths
+- No formal security review since ADR-008
+
+---
+
+## Step 1: MCP Tool Input Sanitization Audit
+
+**Risk:** MCP tools accept string parameters from AI agents. Malformed or adversarial inputs could cause:
+
+- Path traversal (e.g., `../../etc/passwd` in file paths)
+- Injection in shell commands (if any tool constructs shell commands)
+- Excessive resource consumption (very long strings, deep nesting)
+
+**Action:**
+
+1. Audit all 101+ tool parameter handlers for input validation
+2. Verify file path parameters are sandboxed to project root
+3. Check for shell command construction (should use subprocess with args, not string interpolation)
+4. Add input size limits (max string length, max list size, max nesting depth)
+5. Add fuzz tests for critical tools: `manage_file`, `execute_pre_commit_checks`, `load_context`
+
+**Acceptance criteria:** All tools validate inputs. Path traversal blocked. No shell injection possible. Fuzz tests pass.
+
+---
+
+## Step 2: Resilience Testing for Concurrent Access
+
+**Current state:** Cortex uses `asyncio.Lock`, `TrackedSemaphore`, and file locking. But no tests verify behavior under contention.
+
+**Action:**
+
+1. Create concurrent access test suite:
+   - Multiple simultaneous `manage_file` writes to same file
+   - Concurrent `session_start` calls
+   - Semaphore exhaustion and recovery
+   - Lock timeout handling
+2. Test graceful degradation:
+   - What happens when semaphore is exhausted?
+   - What happens when file lock times out?
+   - Are resources properly released on exceptions?
+3. Add chaos tests:
+   - Random delays in async operations
+   - Simulated file system errors (permission denied, disk full)
+   - Network interruption during MCP communication
+
+**Acceptance criteria:** Concurrent access tests pass. No resource leaks. Graceful degradation verified.
+
+---
+
+## Step 3: Error Recovery Audit
+
+**Current state:** 44 generic exception raises (mostly `RuntimeError`, `ValueError`). Some catch-all patterns.
+
+**Action:**
+
+1. Audit all `except Exception` and `except BaseException` handlers
+2. Ensure each handler:
+   - Logs the error with context
+   - Releases held resources (locks, semaphores, file handles)
+   - Returns meaningful error to the MCP client
+   - Does not swallow errors silently
+3. Replace generic exceptions with specific custom exceptions where appropriate
+4. Ensure `asyncio.CancelledError` is never accidentally caught
+
+**Acceptance criteria:** No silent error swallowing. All resources released on error. Specific exceptions used.
+
+---
+
+## Step 4: Secret/Credential Protection
+
+**Current state:** ADR-008 covers security practices. Need verification.
+
+**Action:**
+
+1. Verify no secrets in codebase (`git secrets --scan`)
+2. Verify `.gitignore` covers all sensitive file patterns
+3. Verify MCP tool responses never include credentials or tokens
+4. Add pre-commit hook for secret detection if not present
+5. Audit logging to ensure no secrets in log output
+
+**Acceptance criteria:** No secrets in codebase. Pre-commit secret scanning active.
+
+---
+
+## Verification
+
+After all steps:
+
+1. Input sanitization tests pass (including fuzz tests)
+2. Concurrent access tests pass under contention
+3. Error recovery audit complete with no silent swallowing
+4. Secret scanning active in pre-commit
+5. Security audit findings documented
