@@ -373,3 +373,62 @@ class TestCompactSession:
         rollback_msg = str(result.get("rollback", ""))
         result_str = str(result)
         assert "rollback" in rollback_msg.lower() or "rollback" in result_str.lower()
+
+    @pytest.mark.asyncio
+    async def test_compact_session_progress_below_threshold_unchanged(
+        self, tmp_path: Path
+    ) -> None:
+        """Progress below token threshold is not summarized (auto-trigger)."""
+        _ = ensure_test_cortex_structure(tmp_path)
+        mb_dir = get_cortex_path(tmp_path, CortexResourceType.MEMORY_BANK)
+        active_path = mb_dir / "activeContext.md"
+        progress_path = mb_dir / "progress.md"
+        today_str = date.today().strftime("%Y-%m-%d")
+        old_date_str = (date.today() - timedelta(days=40)).strftime("%Y-%m-%d")
+        # Small progress (well under 10K tokens) with old date that would be summarized
+        active_content = f"# Active Context\n\n## Completed Work ({today_str})\n\n- X\n"
+        progress_content = f"""# Progress
+
+## {old_date_str}
+
+- Old entry kept when under threshold
+"""
+        fs_manager = FileSystemManager(tmp_path)
+        _ = await fs_manager.write_file(active_path, active_content, expected_hash=None)
+        _ = await fs_manager.write_file(
+            progress_path, progress_content, expected_hash=None
+        )
+        token_counter = TokenCounter()
+        metadata_index = MetadataIndex(tmp_path)
+        version_manager = VersionManager(tmp_path)
+        managers = make_test_managers(
+            fs=fs_manager,
+            tokens=token_counter,
+            index=metadata_index,
+            versions=version_manager,
+        )
+        # Ensure threshold is above our progress size (small content ~20 tokens)
+        with (
+            patch(
+                "cortex.core.usage_context.get_current_managers", return_value=managers
+            ),
+            patch(
+                "cortex.core.usage_context.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=tmp_path,
+            ),
+            patch(
+                "cortex.tools.compaction_operations.PROGRESS_TOKEN_THRESHOLD_DEFAULT",
+                10_000,
+            ),
+        ):
+            tool_fn = get_tool_fn(compact_session)
+            result_json = await tool_fn(summary=None, ctx=None)
+            result = to_dict(result_json)
+        assert result["status"] == "success"
+        # Progress was below threshold so should be unchanged (old entry still full)
+        progress_after, _ = await fs_manager.read_file(progress_path)
+        assert "Old entry kept when under threshold" in progress_after
+        assert (
+            "summarized" not in progress_after.lower() or "Old entry" in progress_after
+        )

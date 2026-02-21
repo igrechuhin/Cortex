@@ -10,7 +10,7 @@
 
 ## Future Enhancements
 
-- **Phase 56: Session Compaction Workflow** - IN PROGRESS (Steps 1-3 complete) - Automatic compaction for activeContext/progress, structured JSON session handoff, progressive summarization (daily/weekly/monthly tiers), compact_session tool. Plan: .cortex/plans/archive/Phase56/phase-56-session-compaction-workflow.md.
+- **Phase 56: Session Compaction Workflow** - IN PROGRESS (Steps 1-4 complete) - Automatic compaction for activeContext/progress, structured JSON session handoff, progressive summarization (daily/weekly/monthly tiers), compact_session tool. Plan: .cortex/plans/archive/Phase56/phase-56-session-compaction-workflow.md.
 
 ## Pending plans (from .cortex/plans)
 

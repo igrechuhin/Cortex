@@ -175,6 +175,82 @@ class TestApplyProgressTiers:
         assert "Entry A" in result
         assert "summarized" not in result.lower() or "Entry A" in result
 
+    def test_tier1_same_day_kept_full(self) -> None:
+        """Tier 1: same-day section is kept in full."""
+        content = """# Progress
+
+## 2026-02-17
+
+- Entry A
+- Entry B
+"""
+        result = apply_progress_tiers(
+            content, "2026-02-17", days_full=7, days_weekly=30
+        )
+        assert "Entry A" in result and "Entry B" in result
+        assert "summarized" not in result.lower()
+
+    def test_tier1_within_7_days_kept_full(self) -> None:
+        """Tier 1: section 5 days old is kept in full."""
+        content = """# Progress
+
+## 2026-02-12
+
+- Entry
+"""
+        result = apply_progress_tiers(
+            content, "2026-02-17", days_full=7, days_weekly=30
+        )
+        assert "Entry" in result
+        assert "summarized" not in result.lower()
+
+    def test_tier2_8_days_summarized_as_week(self) -> None:
+        """Tier 2: section 8 days old becomes weekly summary."""
+        content = """# Progress
+
+## 2026-02-09
+
+- Old 1
+- Old 2
+"""
+        result = apply_progress_tiers(
+            content, "2026-02-17", days_full=7, days_weekly=30
+        )
+        assert "Old 1" not in result and "Old 2" not in result
+        assert "Week containing 2026-02-09" in result
+        assert "2 entries" in result
+
+    def test_tier2_29_days_still_weekly_summary(self) -> None:
+        """Tier 2: section 29 days old is weekly summary."""
+        content = """# Progress
+
+## 2026-01-19
+
+- Item
+"""
+        result = apply_progress_tiers(
+            content, "2026-02-17", days_full=7, days_weekly=30
+        )
+        assert "Item" not in result
+        assert "Week containing 2026-01-19" in result
+
+    def test_tier3_31_days_summarized_as_month(self) -> None:
+        """Tier 3: section 31+ days old becomes monthly summary."""
+        content = """# Progress
+
+## 2026-01-01
+
+- Old entry 1
+- Old entry 2
+"""
+        result = apply_progress_tiers(
+            content, "2026-02-17", days_full=7, days_weekly=30
+        )
+        assert "Old entry 1" not in result
+        assert "Month containing 2026-01-01" in result
+        assert "2 entries" in result
+        assert "## 2026-01-01\n\n-" in result
+
     def test_old_days_summarized(self) -> None:
         content = """# Progress
 
@@ -206,7 +282,8 @@ class TestSummarizeEntriesAsLine:
 class TestSummarizeProgress:
     """Tests for summarize_progress."""
 
-    def test_weekly_tier(self) -> None:
+    def test_weekly_tier_recent_kept_full(self) -> None:
+        """Weekly tier: 0-7 days kept full."""
         content = """# Progress
 
 ## 2026-02-10
@@ -216,7 +293,30 @@ class TestSummarizeProgress:
         result = summarize_progress(content, "weekly", "2026-02-17")
         assert "Entry" in result or "summarized" in result.lower()
 
-    def test_monthly_tier(self) -> None:
+    def test_weekly_tier_old_summarized(self) -> None:
+        """Weekly tier: 7-30d summarized as week."""
+        content = """# Progress
+
+## 2026-02-01
+
+- Item
+"""
+        result = summarize_progress(content, "weekly", "2026-02-17")
+        assert "Week containing" in result or "Item" not in result
+
+    def test_monthly_tier_keeps_0_30_days_full(self) -> None:
+        """Monthly tier: 0-30 days kept full."""
+        content = """# Progress
+
+## 2026-01-25
+
+- Entry
+"""
+        result = summarize_progress(content, "monthly", "2026-02-17")
+        assert "Entry" in result
+
+    def test_monthly_tier_summarizes_30_plus(self) -> None:
+        """Monthly tier: 30+ days summarized as month."""
         content = """# Progress
 
 ## 2026-01-01
@@ -227,3 +327,4 @@ class TestSummarizeProgress:
         assert (
             "Old" not in result or "summarized" in result.lower() or "Summary" in result
         )
+        assert "Month containing" in result or "summarized" in result.lower()

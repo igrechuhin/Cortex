@@ -2,6 +2,10 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-02-21)
+
+- ✅ **Phase 56 Step 4: Progressive summarization** - COMPLETE (2026-02-21) - Auto-trigger for progress summarization when progress.md exceeds 10K tokens; Tier 1/2/3 and threshold tests added.
+
 ## Completed Work (2026-02-20)
 
 - **Summary (2026-02-20)** - 1 entries archived.

@@ -30,6 +30,7 @@ from cortex.managers.manager_utils import get_manager
 from cortex.managers.types import ManagersDict
 from cortex.server import mcp
 from cortex.tools.compaction_constants import (
+    PROGRESS_TOKEN_THRESHOLD_DEFAULT,
     SESSION_HANDOFF_FILENAME,
     SESSION_HANDOFF_SCHEMA_VERSION,
 )
@@ -260,13 +261,24 @@ async def _compact_session_write_back(
 
 
 def _compact_apply(
-    active_content: str, progress_content: str, today: str
+    active_content: str,
+    progress_content: str,
+    today: str,
+    progress_tokens: int,
+    progress_token_threshold: int = PROGRESS_TOKEN_THRESHOLD_DEFAULT,
 ) -> tuple[str, str]:
-    """Apply compaction rules; return (compacted_active, compacted_progress)."""
+    """Apply compaction rules; return (compacted_active, compacted_progress).
+
+    Progress summarization is applied only when progress_tokens >= threshold
+    (auto-trigger when progress.md exceeds token threshold).
+    """
     compacted_active = trim_recent_changes(
         compact_active_context_completed_work(active_content, today)
     )
-    compacted_progress = apply_progress_tiers(progress_content, today)
+    if progress_tokens >= progress_token_threshold:
+        compacted_progress = apply_progress_tiers(progress_content, today)
+    else:
+        compacted_progress = progress_content
     return compacted_active, compacted_progress
 
 
@@ -298,10 +310,16 @@ async def _compact_apply_and_handoff(
     project_root: Path,
     summary: str | None,
     fs_manager: FileSystemManager,
+    progress_tokens: int,
+    progress_token_threshold: int = PROGRESS_TOKEN_THRESHOLD_DEFAULT,
 ) -> tuple[str, str]:
     """Apply compaction and write handoff; return (compacted_active, compacted_progress)."""
     compacted_active, compacted_progress = _compact_apply(
-        active_content, progress_content, _today_iso()
+        active_content,
+        progress_content,
+        _today_iso(),
+        progress_tokens,
+        progress_token_threshold,
     )
     await _compact_do_handoff(project_root, summary, fs_manager)
     return compacted_active, compacted_progress
@@ -387,6 +405,8 @@ async def _compact_session_apply_write_and_result(
         ctx.project_root,
         summary,
         ctx.fs_manager,
+        tokens_before_progress,
+        PROGRESS_TOKEN_THRESHOLD_DEFAULT,
     )
     return await _compact_session_write_then_success(
         ctx,

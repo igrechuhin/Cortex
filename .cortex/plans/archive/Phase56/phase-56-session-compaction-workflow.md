@@ -94,13 +94,13 @@ Anthropic also recommends structured JSON over Markdown for progress tracking: "
 
 ### Step 4: Progressive Summarization for progress.md
 
-- [ ] Implement summarization tiers:
+- [x] Implement summarization tiers:
   - Tier 1 (0-7 days): Full individual entries
   - Tier 2 (7-30 days): Weekly summaries with key accomplishments
   - Tier 3 (30+ days): Monthly summaries with milestone highlights
-- [ ] Implement `summarize_progress(tier: Literal["weekly", "monthly"])` helper
-- [ ] Auto-trigger summarization when progress.md exceeds token threshold (configurable, default 10K)
-- [ ] Unit tests for each summarization tier
+- [x] Implement `summarize_progress(tier: Literal["weekly", "monthly"])` helper
+- [x] Auto-trigger summarization when progress.md exceeds token threshold (configurable, default 10K)
+- [x] Unit tests for each summarization tier
 
 ### Step 5: Integration with Analyze Prompt
 
