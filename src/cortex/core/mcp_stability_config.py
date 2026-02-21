@@ -4,12 +4,17 @@ Holds tool sets, fallback messages, semaphores, and usage recording helpers
 used by mcp_stability to avoid exceeding the main module file size limit.
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import time
 from collections.abc import Awaitable, Callable
 from types import TracebackType
-from typing import Literal, NoReturn, cast
+from typing import TYPE_CHECKING, NoReturn, cast
+
+if TYPE_CHECKING:
+    from cortex.managers.usage_tracker import UsageTracker
 
 import anyio
 
@@ -17,7 +22,8 @@ from cortex.core.constants import (
     MCP_MAX_CONCURRENT_RESOURCES,
     MCP_MAX_CONCURRENT_TOOLS,
 )
-from cortex.core.models import JsonValue
+from cortex.core.mcp_async_utils import cancel_and_drain_progress_task
+from cortex.core.models import HandlerKind, JsonValue
 
 
 class TrackedSemaphore:
@@ -45,7 +51,7 @@ class TrackedSemaphore:
         self._semaphore.release()
         self._current_count += 1
 
-    async def __aenter__(self) -> "TrackedSemaphore":
+    async def __aenter__(self) -> TrackedSemaphore:
         await self.acquire()
         return self
 
@@ -384,26 +390,36 @@ def to_timeout_value(value: JsonValue | None) -> float | None:
     return None
 
 
+async def _resolve_usage_tracker(
+    managers: dict[str, object] | None,
+) -> UsageTracker | None:
+    """Resolve usage_tracker from managers; None if missing or not ready."""
+    from cortex.managers.lazy_manager import LazyManager
+    from cortex.managers.usage_tracker import UsageTracker
+
+    raw = managers.get("usage_tracker") if managers else None
+    if raw is None:
+        return None
+    tracker = cast(object, await raw.get() if isinstance(raw, LazyManager) else raw)
+    return tracker if isinstance(tracker, UsageTracker) else None
+
+
 async def record_usage_if_available(
     tool_name: str,
     duration_ms: float,
     success: bool,
     error_type: str | None,
-    kind: Literal["tool", "resource"] = "tool",
+    kind: HandlerKind = HandlerKind.TOOL,
+    retry_count: int | None = None,
+    param_validation_failure: str | None = None,
 ) -> None:
     """Record tool or resource usage if UsageTracker is available."""
     from cortex.core.usage_context import get_current_managers
-    from cortex.managers.lazy_manager import LazyManager
     from cortex.managers.usage_tracker import UsageTracker
 
     try:
-        managers = get_current_managers()
-        raw = managers.get("usage_tracker") if managers else None
-        if raw is None:
-            return
-        tracker = cast(
-            object,
-            await raw.get() if isinstance(raw, LazyManager) else raw,
+        tracker: UsageTracker | None = await _resolve_usage_tracker(
+            get_current_managers()
         )
         if isinstance(tracker, UsageTracker):
             await tracker.record_tool_usage(
@@ -412,6 +428,8 @@ async def record_usage_if_available(
                 success=success,
                 error_type=error_type,
                 handler_kind=kind,
+                retry_count=retry_count,
+                param_validation_failure=param_validation_failure,
             )
     except Exception as e:
         _logger.debug("Usage recording skipped or failed: %s (%s)", type(e).__name__, e)
@@ -422,12 +440,20 @@ async def record_usage_finish(
     start_ns: int,
     success: bool,
     error_type: str | None,
-    kind: Literal["tool", "resource"],
+    kind: HandlerKind,
+    retry_count: int | None = None,
+    param_validation_failure: str | None = None,
 ) -> None:
     """Record usage after tool run (duration and outcome)."""
     duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000.0
     await record_usage_if_available(
-        tool_name, duration_ms, success, error_type, kind=kind
+        tool_name,
+        duration_ms,
+        success,
+        error_type,
+        kind=kind,
+        retry_count=retry_count,
+        param_validation_failure=param_validation_failure,
     )
 
 
@@ -453,7 +479,159 @@ async def release_semaphore_and_cancel_progress_if_needed(
         await cancel_fn(progress_task)
 
 
+def attach_attempt_to_exception(exc: Exception | None, attempt: int) -> None:
+    """Attach attempt number for Phase 57 usage recording."""
+    if exc is not None:
+        exc.attempt = attempt  # pyright: ignore[reportAttributeAccessIssue]
+
+
+def param_validation_failure_from_exception(e: BaseException) -> str | None:
+    """Extract short validation message for usage recording (Phase 57)."""
+    if "Validation" not in type(e).__name__:
+        return None
+    return str(e)[:500]
+
+
+async def finalize_on_exception(
+    progress_task: asyncio.Task[None] | None,
+    ctx: object,
+    func_name: str,
+    start_ns: int,
+    kind: HandlerKind,
+    e: Exception,
+    finalize_fn: Callable[..., Awaitable[None]],
+) -> None:
+    """Record usage on exception path (Phase 57)."""
+    rc = getattr(e, "attempt", 1) - 1
+    pvf = param_validation_failure_from_exception(e)
+    await finalize_fn(
+        progress_task,
+        ctx,
+        func_name,
+        start_ns,
+        False,
+        False,
+        type(e).__name__,
+        kind,
+        retry_count=rc,
+        param_validation_failure=pvf,
+    )
+
+
+async def _do_with_serial_semaphore[T](
+    _do: Callable[[], Awaitable[T]], func_name: str
+) -> T:
+    """Run _do() with long-running semaphore acquired; release on exit."""
+    _ = await acquire_long_running_semaphore(func_name)
+    try:
+        return await _do()
+    finally:
+        release_long_running_semaphore(func_name)
+
+
+def _release_lr_for_cancel(fn: str, we: bool) -> None:
+    """Release long-running semaphore (used by release_semaphore_and_cancel_progress_if_needed)."""
+    release_long_running_semaphore(fn, was_exception=we)
+
+
+async def _release_serial_and_reraise(
+    use_serial: bool,
+    semaphore_acquired: bool,
+    func_name: str,
+    progress_task: asyncio.Task[None] | None,
+    exc: BaseException,
+) -> NoReturn:
+    """Release semaphore and cancel progress if needed, then re-raise."""
+    await release_semaphore_and_cancel_progress_if_needed(
+        use_serial,
+        semaphore_acquired,
+        func_name,
+        progress_task,
+        _release_lr_for_cancel,
+        cancel_and_drain_progress_task,
+    )
+    raise exc
+
+
+async def _run_do_with_optional_serial[T](
+    use_serial: bool,
+    _do: Callable[[], Awaitable[T]],
+    func_name: str,
+) -> tuple[T, bool]:
+    """Run _do with optional serial semaphore; return (result, semaphore_acquired)."""
+    if use_serial:
+        return (await _do_with_serial_semaphore(_do, func_name), True)
+    return (await _do(), False)
+
+
+async def run_and_finalize_impl[T](
+    finalize_fn: Callable[..., Awaitable[None]],
+    execute_fn: Callable[
+        [], Awaitable[tuple[T, bool, str | None, bool, int | None, str | None]]
+    ],
+    progress_task: asyncio.Task[None] | None,
+    ctx: object,
+    func_name: str,
+    start_ns: int,
+    kind: HandlerKind,
+    use_serial_semaphore: bool,
+) -> T:
+    """Run execute_fn with optional serial semaphore; finalize and release on exception."""
+
+    async def _do() -> T:
+        return await run_execute_and_finalize(
+            finalize_fn, execute_fn, progress_task, ctx, func_name, start_ns, kind
+        )
+
+    semaphore_acquired = False
+    try:
+        result, semaphore_acquired = await _run_do_with_optional_serial(
+            use_serial_semaphore, _do, func_name
+        )
+        return result
+    except BaseException as e:
+        await _release_serial_and_reraise(
+            use_serial_semaphore, semaphore_acquired, func_name, progress_task, e
+        )
+
+
+async def run_execute_and_finalize[T_run](
+    finalize_fn: Callable[..., Awaitable[None]],
+    execute_fn: Callable[
+        [], Awaitable[tuple[T_run, bool, str | None, bool, int | None, str | None]]
+    ],
+    progress_task: asyncio.Task[None] | None,
+    ctx: object,
+    func_name: str,
+    start_ns: int,
+    kind: HandlerKind,
+) -> T_run:
+    """Run execute_fn, then call finalize_fn (cancel progress, record usage)."""
+    try:
+        result, s, et, wc, retry_count, pvf = await execute_fn()
+        await finalize_fn(
+            progress_task,
+            ctx,
+            func_name,
+            start_ns,
+            wc,
+            s,
+            et,
+            kind,
+            retry_count=retry_count,
+            param_validation_failure=pvf,
+        )
+        return result
+    except Exception as e:
+        await finalize_on_exception(
+            progress_task, ctx, func_name, start_ns, kind, e, finalize_fn
+        )
+        raise
+
+
 __all__ = [
+    "attach_attempt_to_exception",
+    "run_and_finalize_impl",
     "TrackedSemaphore",
     "acquire_long_running_semaphore",
     "cancel_long_running_auto_release",
@@ -473,6 +651,7 @@ __all__ = [
     "record_usage_finish",
     "record_usage_if_available",
     "release_long_running_semaphore",
+    "run_execute_and_finalize",
     "release_semaphore_and_cancel_progress_if_needed",
     "to_timeout_value",
     "tools_needing_frequent_progress",

@@ -13,7 +13,7 @@ import time
 from collections.abc import Awaitable, Callable
 from inspect import Signature
 from pathlib import Path
-from typing import Literal, Protocol, cast
+from typing import Protocol, cast
 
 from cortex.core.constants import (
     MCP_MAX_CONCURRENT_TOOLS,
@@ -29,7 +29,7 @@ from cortex.core.mcp_async_utils import cancel_and_drain_progress_task
 from cortex.core.mcp_failure_handler import MCPToolFailureHandler
 from cortex.core.mcp_stability_config import (
     TrackedSemaphore,
-    acquire_long_running_semaphore,
+    attach_attempt_to_exception,
     connection_error_fallback,
     get_connection_retry_attempts,
     get_connection_retry_delay,
@@ -41,13 +41,17 @@ from cortex.core.mcp_stability_config import (
     long_running_tools_serialized,
     raise_if_retries_exhausted,
     record_usage_finish,
-    release_long_running_semaphore,
-    release_semaphore_and_cancel_progress_if_needed,
+    run_and_finalize_impl,
     to_timeout_value,
     tools_needing_frequent_progress,
     tools_with_own_progress,
 )
-from cortex.core.models import ConnectionHealth, JsonValue, MCPToolArguments
+from cortex.core.models import (
+    ConnectionHealth,
+    HandlerKind,
+    JsonValue,
+    MCPToolArguments,
+)
 from cortex.core.usage_context import get_current_managers, set_current_managers
 
 # Returned to the client when the request was cancelled (e.g. client timeout).
@@ -312,6 +316,48 @@ async def _handle_retry_exception(
     raise
 
 
+async def _after_failed_attempt(
+    func_name: str, attempt: int, last_exception: Exception | None
+) -> None:
+    """Attach attempt to exception and run retry-path health and recovery."""
+    if last_exception is not None:
+        attach_attempt_to_exception(last_exception, attempt)
+    await _retry_path_health_and_recovery(func_name, attempt, last_exception)
+
+
+async def _try_one_attempt[T](
+    func: Callable[..., Awaitable[T]],
+    semaphore: TrackedSemaphore,
+    timeout: float,
+    args: tuple[JsonValue, ...],
+    kwargs: MCPToolArguments,
+    ctx: JsonValue | None,
+    attempt: int,
+    last_exception_ref: list[Exception | None],
+) -> tuple[T, int] | None:
+    """Run one attempt; return (result, attempt) or None and set last_exception_ref[0]."""
+    try:
+        result = await _execute_single_attempt(
+            func, semaphore, timeout, args, kwargs, ctx
+        )
+        return (result, attempt)
+    except asyncio.CancelledError:
+        logger.debug(
+            "Request for %s was cancelled (attempt %d/%d)",
+            func.__name__,
+            attempt,
+            get_connection_retry_attempts(func.__name__),
+        )
+        raise
+    except Exception as e:
+        _, stored = await _handle_retry_exception(
+            func.__name__, timeout, attempt, e, last_exception_ref[0]
+        )
+        last_exception_ref[0] = stored
+        await _after_failed_attempt(func.__name__, attempt, stored)
+        return None
+
+
 async def _execute_with_retry[T](
     func: Callable[..., Awaitable[T]],
     semaphore: TrackedSemaphore,
@@ -319,33 +365,18 @@ async def _execute_with_retry[T](
     args: tuple[JsonValue, ...],
     kwargs: MCPToolArguments,
     ctx: JsonValue | None = None,
-) -> T:
-    """Execute with retry for transient failures. Cancellation re-raised (no retry)."""
-    last_exception: Exception | None = None
+) -> tuple[T, int]:
+    """Execute with retry for transient failures; returns (result, attempt_that_succeeded)."""
+    last_exception_ref: list[Exception | None] = [None]
     func_name = func.__name__
     max_attempts = get_connection_retry_attempts(func_name)
-
     for attempt in range(1, max_attempts + 1):
-        try:
-            return await _execute_single_attempt(
-                func, semaphore, timeout, args, kwargs, ctx
-            )
-        except asyncio.CancelledError:
-            # Re-raise immediately; retrying cancelled requests causes duplicate response errors.
-            logger.debug(
-                "Request for %s was cancelled by client (attempt %d/%d)",
-                func_name,
-                attempt,
-                max_attempts,
-            )
-            raise
-        except Exception as e:
-            _, last_exception = await _handle_retry_exception(
-                func_name, timeout, attempt, e, last_exception
-            )
-        await _retry_path_health_and_recovery(func_name, attempt, last_exception)
-
-    raise_if_retries_exhausted(func_name, last_exception)
+        out = await _try_one_attempt(
+            func, semaphore, timeout, args, kwargs, ctx, attempt, last_exception_ref
+        )
+        if out is not None:
+            return out
+    raise_if_retries_exhausted(func_name, last_exception_ref[0])
 
 
 async def _progress_report_loop(
@@ -519,7 +550,7 @@ def _prepare_execution_context(
     timeout: JsonValue | None,
     stability_timeout: JsonValue | None,
     kwargs: dict[str, JsonValue],
-    kind: Literal["tool", "resource"],
+    kind: HandlerKind,
     enable_progress: bool,
     func_name: str,
 ) -> tuple[
@@ -535,7 +566,9 @@ def _prepare_execution_context(
     Returns:
         Tuple of (semaphore, effective_timeout, kwargs_model, ctx, progress_task, start_ns)
     """
-    semaphore = get_resource_semaphore() if kind == "resource" else get_semaphore()
+    semaphore = (
+        get_resource_semaphore() if kind == HandlerKind.RESOURCE else get_semaphore()
+    )
     effective_timeout, kwargs_model, ctx = _stability_params(
         timeout, stability_timeout, kwargs
     )
@@ -554,11 +587,21 @@ async def _finalize_execution(
     was_cancelled: bool,
     success: bool,
     error_type: str | None,
-    kind: Literal["tool", "resource"],
+    kind: HandlerKind,
+    retry_count: int | None = None,
+    param_validation_failure: str | None = None,
 ) -> None:  # Finalize execution: cancel progress and record usage.
     if not was_cancelled:
         await _cancel_progress_and_report_done(progress_task, ctx, func_name)
-    await record_usage_finish(func_name, start_ns, success, error_type, kind=kind)
+    await record_usage_finish(
+        func_name,
+        start_ns,
+        success,
+        error_type,
+        kind=kind,
+        retry_count=retry_count,
+        param_validation_failure=param_validation_failure,
+    )
 
 
 async def _handle_cancellation(
@@ -585,64 +628,56 @@ async def _execute_with_error_handling[T](
     kwargs_model: MCPToolArguments,
     ctx: JsonValue | None,
     progress_task: asyncio.Task[None] | None,
-) -> tuple[T, bool, str | None, bool]:
+) -> tuple[T, bool, str | None, bool, int | None, str | None]:
     """Execute function with retry and handle exceptions.
 
     Returns:
-        Tuple of (result, success, error_type, was_cancelled)
+        Tuple of (result, success, error_type, was_cancelled, retry_count, param_validation_failure)
     """
     success, error_type, was_cancelled = True, None, False
     try:
-        result = await _execute_with_retry(
+        result, attempt = await _execute_with_retry(
             func, semaphore, effective_timeout, args, kwargs_model, ctx
         )
-        return result, success, error_type, was_cancelled
+        retry_count = attempt - 1 if attempt else 0
+        return result, success, error_type, was_cancelled, retry_count, None
     except asyncio.CancelledError:
         success, error_type, was_cancelled = await _handle_cancellation(progress_task)
-        # Return a response instead of re-raising so the SDK sends one message and the
-        # connection stays open; re-raising would propagate to the server loop and exit.
-        return (cast(T, CANCELLED_RESPONSE_JSON), success, error_type, was_cancelled)
+        return (
+            cast(T, CANCELLED_RESPONSE_JSON),
+            success,
+            error_type,
+            was_cancelled,
+            None,
+            None,
+        )
     except Exception as e:
         success, error_type = False, type(e).__name__
         raise
 
 
-# Error message when another long-running tool is in progress (fail-fast to avoid
-# client timeout and "Connection closed" / "duplicate response suppressed").
 async def _run_and_finalize[T](
-    execute_fn: Callable[[], Awaitable[tuple[T, bool, str | None, bool]]],
+    execute_fn: Callable[
+        [], Awaitable[tuple[T, bool, str | None, bool, int | None, str | None]]
+    ],
     progress_task: asyncio.Task[None] | None,
     ctx: JsonValue | None,
     func_name: str,
     start_ns: int,
-    kind: Literal["tool", "resource"],
+    kind: HandlerKind,
     use_serial_semaphore: bool = False,
 ) -> T:
     """Run execute_fn and finalize (cancel progress, record usage)."""
-
-    # fmt: off
-    async def _do() -> T:
-        result, s, et, wc = await execute_fn()
-        await _finalize_execution(progress_task, ctx, func_name, start_ns, wc, s, et, kind)
-        return result
-    semaphore_acquired = False
-    try:
-        if use_serial_semaphore:
-            _ = await acquire_long_running_semaphore(func_name)
-            semaphore_acquired = True
-            try:
-                return await _do()
-            finally:
-                release_long_running_semaphore(func_name)
-        return await _do()
-    except BaseException:
-        await release_semaphore_and_cancel_progress_if_needed(
-            use_serial_semaphore, semaphore_acquired, func_name, progress_task,
-            lambda fn, we: release_long_running_semaphore(fn, was_exception=we),
-            cancel_and_drain_progress_task,
-        )
-        raise
-    # fmt: on
+    return await run_and_finalize_impl(
+        _finalize_execution,
+        execute_fn,
+        progress_task,
+        ctx,
+        func_name,
+        start_ns,
+        kind,
+        use_serial_semaphore,
+    )
 
 
 async def _run_with_retry_and_record[T](
@@ -651,7 +686,7 @@ async def _run_with_retry_and_record[T](
     timeout: JsonValue | None,
     stability_timeout: JsonValue | None,
     kwargs: dict[str, JsonValue],
-    kind: Literal["tool", "resource"] = "tool",
+    kind: HandlerKind = HandlerKind.TOOL,
     enable_progress: bool = False,
 ) -> T:
     """Run func with retry and record usage. Long-running tools are serialized."""
@@ -661,7 +696,9 @@ async def _run_with_retry_and_record[T](
         )
     )
 
-    async def _execute_and_finalize() -> tuple[T, bool, str | None, bool]:
+    async def _execute_and_finalize() -> (
+        tuple[T, bool, str | None, bool, int | None, str | None]
+    ):
         return await _execute_with_error_handling(
             func, semaphore, effective_timeout, args, kwargs_model, ctx, progress_task
         )
@@ -674,7 +711,7 @@ async def _run_with_retry_and_record[T](
         start_ns,
         kind,
         use_serial_semaphore=(
-            kind == "tool" and func.__name__ in long_running_tools_serialized
+            kind == HandlerKind.TOOL and func.__name__ in long_running_tools_serialized
         ),
     )
 
@@ -684,7 +721,7 @@ async def with_mcp_stability[T](
     *args: JsonValue,  # pyright: ignore[reportUnknownParameterType]
     timeout: JsonValue | None = None,
     stability_timeout: JsonValue | None = None,
-    kind: Literal["tool", "resource"] = "tool",
+    kind: HandlerKind = HandlerKind.TOOL,
     enable_progress: bool = False,
     **kwargs: JsonValue,  # pyright: ignore[reportUnknownParameterType]
 ) -> T:
@@ -703,7 +740,7 @@ async def with_mcp_stability[T](
         *args: Positional arguments for func
         timeout: Maximum execution time in seconds (public API)
         stability_timeout: Internal timeout override (used by wrappers)
-        kind: "tool" or "resource" for usage recording (default "tool")
+        kind: HandlerKind for usage recording (default HandlerKind.TOOL)
         enable_progress: If True, report progress every N seconds when ctx present
         **kwargs: Keyword arguments for func
 
@@ -756,7 +793,7 @@ def _make_tool_wrapper_func[T](
                 func,
                 *args,
                 stability_timeout=timeout,
-                kind="tool",
+                kind=HandlerKind.TOOL,
                 enable_progress=progress_enabled,
                 **kwargs_no_progress,
             )
@@ -819,7 +856,7 @@ def mcp_resource_wrapper[T](
     """Decorator for MCP resources to add stability protections (Phase 43).
 
     Same stability as mcp_tool_wrapper (timeout, semaphore, retry, connection
-    health) and usage recording with handler_kind="resource". Does not run
+    health) and usage recording with HandlerKind.RESOURCE. Does not run
     MCP tool failure protocol on exceptions (resource read failures raised
     as normal exceptions).
 
@@ -856,7 +893,7 @@ def mcp_resource_wrapper[T](
                 func,
                 *args,
                 stability_timeout=timeout,
-                kind="resource",
+                kind=HandlerKind.RESOURCE,
                 enable_progress=False,
                 **kwargs_no_progress,
             )
@@ -902,7 +939,7 @@ async def execute_tool_with_stability[T](
         func,
         *args,
         stability_timeout=timeout,
-        kind="tool",
+        kind=HandlerKind.TOOL,
         enable_progress=False,
         **kwargs_clean,
     )

@@ -28,6 +28,8 @@
 
 - ✅ **Phase 57 Step 2 & Step 6 (partial)** - COMPLETE (2026-02-21) - Completed evaluation harness (token fields, tool usage patterns, output to .cortex/.cache/evals/). Added EvalTaskResult total_input_tokens/total_output_tokens, EvalAnalysis average_tokens_per_task, token_consumption_by_category, top_tool_combinations (ToolCombination). Reproducibility test and phase5_evaluation_helpers extraction; quality gate passed.
 
+- ✅ **Phase 57 Step 3: Extend usage tracking for error patterns** - COMPLETE (2026-02-21) - Extended usage tracking to capture error patterns: ToolUsageEvent now has retry_count, param_validation_failure, result_used; record_tool_usage and record_usage_finish accept and persist them; retry_count is threaded from_execute_with_retry; param_validation_failure is set from exception message when error_type looks like Validation; run_execute_and_finalize/finalize_on_exception/attach_attempt_to_exception moved to mcp_stability_config. Plan Step 3 checkbox marked done.
+
 ## Completed Work (2026-02-20)
 
 - **Summary (2026-02-20)** - 1 entries archived.

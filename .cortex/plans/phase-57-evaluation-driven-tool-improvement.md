@@ -100,11 +100,11 @@ Cortex currently tracks basic usage stats (call counts, success rates) via `get_
 
 ### Step 3: Error Pattern Analysis
 
-- [ ] Extend usage tracking to capture error patterns:
-  - Tool name + error type + frequency
-  - Parameter validation failures (which params, what values)
-  - Retry patterns (how many retries before success, what changed)
-  - "Wasted" tool calls (calls whose results were ignored by agent)
+- [x] Extend usage tracking to capture error patterns:
+  - Tool name + error type + frequency (already in ToolUsageEvent/Stats)
+  - Parameter validation failures (`param_validation_failure` on ToolUsageEvent; set from ValidationError message when recording)
+  - Retry patterns (`retry_count` on ToolUsageEvent; threaded from _execute_with_retry via record_usage_finish)
+  - "Wasted" tool calls (`result_used` field on ToolUsageEvent; optional, for future session-level tracking)
 - [x] Create `analyze_error_patterns()` tool:
   - Surfaces top recurring errors based on evaluation suite results
   - Identifies tools associated with each error type via affected_tools

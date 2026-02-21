@@ -7,6 +7,7 @@ from uuid import NAMESPACE_URL, uuid5
 
 from cortex.core.cache_json_access import read_cache_json, read_modify_write_cache_json
 from cortex.core.cache_utils import CacheType, get_cache_dir
+from cortex.core.models import HandlerKind
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.managers.usage_models import ToolUsageEvent, ToolUsageStats
 
@@ -116,22 +117,22 @@ class UsageTracker:
             return None
         return result_summary if self._is_result_summary_enabled(tool_name) else None
 
-    async def record_tool_usage(
+    def _build_usage_event(
         self,
         tool_name: str,
         duration_ms: float,
         success: bool,
-        error_type: str | None = None,
-        params_hash: str | None = None,
-        handler_kind: str = "tool",
-        result_summary: str | None = None,
-    ) -> None:
-        """Record a single tool or resource usage event."""
-        if not self._should_record_event(tool_name, duration_ms):
-            return
-        kind = "resource" if handler_kind == "resource" else "tool"
+        error_type: str | None,
+        params_hash: str | None,
+        handler_kind: HandlerKind,
+        result_summary: str | None,
+        retry_count: int | None,
+        param_validation_failure: str | None,
+        result_used: bool | None,
+    ) -> ToolUsageEvent:
+        """Build a ToolUsageEvent from recording parameters (Phase 57)."""
         summary = self._select_result_summary(tool_name, result_summary)
-        event = ToolUsageEvent(
+        return ToolUsageEvent(
             tool_name=tool_name,
             timestamp=datetime.now(UTC).isoformat(),
             duration_ms=duration_ms,
@@ -140,8 +141,40 @@ class UsageTracker:
             params_hash=(
                 params_hash if self._config.get("anonymize_params", True) else None
             ),
-            handler_kind=kind,
+            handler_kind=handler_kind,
             result_summary=summary,
+            retry_count=retry_count,
+            param_validation_failure=param_validation_failure,
+            result_used=result_used,
+        )
+
+    async def record_tool_usage(
+        self,
+        tool_name: str,
+        duration_ms: float,
+        success: bool,
+        error_type: str | None = None,
+        params_hash: str | None = None,
+        handler_kind: HandlerKind = HandlerKind.TOOL,
+        result_summary: str | None = None,
+        retry_count: int | None = None,
+        param_validation_failure: str | None = None,
+        result_used: bool | None = None,
+    ) -> None:
+        """Record a single tool or resource usage event."""
+        if not self._should_record_event(tool_name, duration_ms):
+            return
+        event = self._build_usage_event(
+            tool_name,
+            duration_ms,
+            success,
+            error_type,
+            params_hash,
+            handler_kind,
+            result_summary,
+            retry_count,
+            param_validation_failure,
+            result_used,
         )
         await _persist_event(self._project_root, event)
 
@@ -455,6 +488,9 @@ def generate_usage_event_id(data: dict[str, object]) -> str:
             "error_type",
             "params_hash",
             "handler_kind",
+            "retry_count",
+            "param_validation_failure",
+            "result_used",
         )
     )
     return str(uuid5(NAMESPACE_URL, base))

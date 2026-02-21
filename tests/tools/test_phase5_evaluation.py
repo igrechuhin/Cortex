@@ -12,6 +12,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.core.models import HandlerKind
 from cortex.managers.usage_models import ToolUsageEvent
 from cortex.tools.phase5_evaluation import (
     ABComparisonResult,
@@ -570,7 +571,7 @@ async def test_run_task_uses_usage_tracker_metrics() -> None:
                     duration_ms=10.0,
                     success=True,
                     error_type=None,
-                    handler_kind="tool",
+                    handler_kind=HandlerKind.TOOL,
                 ),
                 ToolUsageEvent(
                     tool_name="load_context",
@@ -578,7 +579,7 @@ async def test_run_task_uses_usage_tracker_metrics() -> None:
                     duration_ms=20.0,
                     success=False,
                     error_type="ValueError",
-                    handler_kind="tool",
+                    handler_kind=HandlerKind.TOOL,
                 ),
             ]
 

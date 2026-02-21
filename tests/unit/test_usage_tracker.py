@@ -117,6 +117,49 @@ class TestRecordToolUsage:
         )
         assert err_dict.get("ValueError") == 1
 
+    @pytest.mark.asyncio
+    async def test_record_phase57_retry_and_validation_fields(
+        self, tmp_path: Path
+    ) -> None:
+        """Test Phase 57 retry_count and param_validation_failure are persisted."""
+        root = _make_project_root(tmp_path)
+        tracker = UsageTracker(root)
+        await tracker.record_tool_usage(
+            tool_name="test_tool",
+            duration_ms=1.0,
+            success=True,
+            retry_count=2,
+            param_validation_failure=None,
+        )
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        relative_key = f"usage/events/{today}.json"
+        raw = await read_cache_json(root, relative_key)
+        assert isinstance(raw, list) and raw
+        first = raw[0]
+        first_d = cast(dict[str, object], first) if isinstance(first, dict) else {}
+        assert first_d.get("retry_count") == 2
+        assert first_d.get("param_validation_failure") is None
+        await tracker.record_tool_usage(
+            tool_name="other_tool",
+            duration_ms=1.0,
+            success=False,
+            error_type="ValidationError",
+            param_validation_failure="task_description: required",
+        )
+        raw2 = await read_cache_json(root, relative_key)
+        assert isinstance(raw2, list) and len(raw2) >= 2
+        candidates: list[dict[str, object]] = [
+            cast(dict[str, object], e)
+            for e in raw2
+            if isinstance(e, dict)
+            and cast(dict[str, object], e).get("tool_name") == "other_tool"
+        ]
+        assert candidates, "expected other_tool event"
+        assert (
+            candidates[0].get("param_validation_failure")
+            == "task_description: required"
+        )
+
 
 class TestResultSummaryPersistence:
     """Tests for result_summary field persistence."""

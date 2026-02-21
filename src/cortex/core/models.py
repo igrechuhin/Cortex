@@ -43,6 +43,13 @@ class ContextDepth(str, Enum):
     FULL = "full"
 
 
+class HandlerKind(str, Enum):
+    """Whether the handler is an MCP tool or resource (Phase 43)."""
+
+    TOOL = "tool"
+    RESOURCE = "resource"
+
+
 # ============================================================================
 # Dict-like Pydantic base model (preserves legacy call sites)
 # ============================================================================

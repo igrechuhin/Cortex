@@ -33,6 +33,7 @@ from cortex.core.mcp_stability import (
     mcp_tool_wrapper,
     with_mcp_stability,
 )
+from cortex.core.models import HandlerKind
 from cortex.core.usage_context import set_current_managers
 
 
@@ -318,10 +319,12 @@ class TestProgressHelpers:
 
         semaphore = get_semaphore()
 
-        async def execute_fn() -> tuple[str, bool, str | None, bool]:
+        async def execute_fn() -> (
+            tuple[str, bool, str | None, bool, int | None, str | None]
+        ):
             async with semaphore:
                 result = await tool_that_fails()
-            return result, True, None, False
+            return result, True, None, False, None, None
 
         with pytest.raises(RuntimeError, match="Tool failed early"):
             _ = await _run_and_finalize(
@@ -330,7 +333,7 @@ class TestProgressHelpers:
                 None,
                 "test_tool",
                 0,
-                "tool",
+                HandlerKind.TOOL,
             )
 
         assert progress_task.done(), "Progress task must be cancelled after tool error"
@@ -360,47 +363,51 @@ class TestLongRunningSemaphoreWait:
         _ = get_long_running_semaphore()
         first_done: asyncio.Event = asyncio.Event()
 
-        async def first_execute() -> tuple[str, bool, str | None, bool]:
+        async def first_execute() -> (
+            tuple[str, bool, str | None, bool, int | None, str | None]
+        ):
             await asyncio.sleep(0.15)
             first_done.set()
-            return "first", True, None, False
+            return "first", True, None, False, None, None
 
-        async def second_execute() -> tuple[str, bool, str | None, bool]:
-            return "second", True, None, False
+        async def second_execute() -> (
+            tuple[str, bool, str | None, bool, int | None, str | None]
+        ):
+            return "second", True, None, False, None, None
 
         with patch(
             "cortex.core.mcp_stability_config.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
             1.0,
         ):
             # Start first (holds semaphore), then second (waits then runs)
-            first_task = asyncio.create_task(
+            first_task: asyncio.Task[str] = asyncio.create_task(
                 _run_and_finalize(
                     first_execute,
                     None,
                     None,
                     "first_tool",
                     0,
-                    "tool",
+                    HandlerKind.TOOL,
                     use_serial_semaphore=True,
                 )
             )
             await asyncio.sleep(0.05)
-            second_task = asyncio.create_task(
+            second_task: asyncio.Task[str] = asyncio.create_task(
                 _run_and_finalize(
                     second_execute,
                     None,
                     None,
                     "second_tool",
                     0,
-                    "tool",
+                    HandlerKind.TOOL,
                     use_serial_semaphore=True,
                 )
             )
-            first_result = await first_task
-            second_result = await second_task
+            first_result: str = await first_task
+            second_result: str = await second_task
         assert first_result == "first"
         assert second_result == "second"
-        _ = first_done.wait()
+        _ = await first_done.wait()
 
     @pytest.mark.asyncio
     async def test_second_long_running_fails_after_wait_timeout(self) -> None:
@@ -414,8 +421,10 @@ class TestLongRunningSemaphoreWait:
         await sem.acquire()
         try:
 
-            async def fast_execute() -> tuple[str, bool, str | None, bool]:
-                return "fast", True, None, False
+            async def fast_execute() -> (
+                tuple[str, bool, str | None, bool, int | None, str | None]
+            ):
+                return "fast", True, None, False, None, None
 
             with patch(
                 "cortex.core.mcp_stability_config.LONG_RUNNING_SEMAPHORE_WAIT_SECONDS",
@@ -428,11 +437,11 @@ class TestLongRunningSemaphoreWait:
                         None,
                         "second_tool",
                         0,
-                        "tool",
+                        HandlerKind.TOOL,
                         use_serial_semaphore=True,
                     )
         finally:
-            _ = sem.release()
+            sem.release()
 
 
 def _tools_dir() -> Path:
@@ -619,7 +628,7 @@ class TestResourceReadsUseSeparateSemaphore:
                 result = await with_mcp_stability(
                     dummy_resource,
                     stability_timeout=10.0,
-                    kind="resource",
+                    kind=HandlerKind.RESOURCE,
                 )
         assert result == "ok"
 
@@ -653,7 +662,7 @@ class TestResourceReadsUseSeparateSemaphore:
                     with_mcp_stability(
                         fast_resource,
                         stability_timeout=5.0,
-                        kind="resource",
+                        kind=HandlerKind.RESOURCE,
                     )
                     for _ in range(num_calls)
                 ]

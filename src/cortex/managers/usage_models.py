@@ -1,9 +1,10 @@
 """Pydantic models for MCP tool usage tracking (Phase 29)."""
 
-from typing import Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from cortex.core.models import HandlerKind
 
 
 class ToolUsageEvent(BaseModel):
@@ -25,8 +26,8 @@ class ToolUsageEvent(BaseModel):
     params_hash: str | None = Field(
         default=None, description="Hash of anonymized parameters for deduplication"
     )
-    handler_kind: Literal["tool", "resource"] = Field(
-        default="tool",
+    handler_kind: HandlerKind = Field(
+        default=HandlerKind.TOOL,
         description="Whether the handler is an MCP tool or resource (Phase 43)",
     )
     result_summary: str | None = Field(
@@ -34,6 +35,27 @@ class ToolUsageEvent(BaseModel):
         description=(
             "Short, optional result summary for this usage event, when available. "
             "Used for future semantic search and contextual retrieval."
+        ),
+    )
+    retry_count: int | None = Field(
+        default=None,
+        description=(
+            "Number of retries before this attempt (0 = first try succeeded). "
+            "Used for retry-pattern analysis (Phase 57)."
+        ),
+    )
+    param_validation_failure: str | None = Field(
+        default=None,
+        description=(
+            "When error_type indicates validation (e.g. ValidationError), "
+            "short description of which param or rule failed (Phase 57)."
+        ),
+    )
+    result_used: bool | None = Field(
+        default=None,
+        description=(
+            "Whether the agent used the tool result (False = wasted call). "
+            "None when unknown (Phase 57)."
         ),
     )
 
