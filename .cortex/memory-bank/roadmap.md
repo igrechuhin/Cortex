@@ -6,8 +6,6 @@
 
 ## Blockers (ASAP Priority)
 
-- **Blocker: Resolve Cortex MCP Server Disconnects During Commit Pipeline** - IN PROGRESS - Eliminate or reliably work around recurring Cortex MCP server disconnects during commit pipeline. Recurrence during fix_markdown_lint indicates need for server-side retry logic, health checks, and optimized heartbeat. Step 4 now includes concrete implementation steps for investigation, retry wrapper, and connection handling.
-
 ## Active Work (in progress)
 
 ## Future Enhancements
@@ -15,6 +13,8 @@
 - **Phase 56: Session Compaction Workflow** - IN PROGRESS (Steps 1-3 complete) - Automatic compaction for activeContext/progress, structured JSON session handoff, progressive summarization (daily/weekly/monthly tiers), compact_session tool. Plan: .cortex/plans/archive/Phase56/phase-56-session-compaction-workflow.md.
 
 ## Pending plans (from .cortex/plans)
+
+- **Reference: Pydantic rules encourage enums for fixed sets** - Plan: .cortex/plans/pydantic-rules-encourage-enums-for-all-fixed-sets.md
 
 ### Investigation Plans (Archive / Reference)
 

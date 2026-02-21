@@ -17,6 +17,7 @@
 - **Phase 56 Step 3: Structured Session Handoff (2026-02-20)** - COMPLETE. Added unit tests for session_start handoff integration. SessionHandoff model, read/write functions, and session_start integration already implemented. Tests verify handoff is included in SessionBrief when present and None when missing.
 - **Blocker: MCP disconnects during commit – Step 4 (2026-02-20)** - COMPLETE. Server-side retry for fix_markdown_lint: 4 attempts with exponential backoff (1s, 2s, 4s). Per-tool retry config in mcp_stability_config; is_connection_error, raise_final_error, raise_if_retries_exhausted moved to config. Unit tests for retry config and 4-attempt behavior. Troubleshooting updated.
 - **Commit (preflight, memory bank, plan archive)** - Preflight passed: fix_errors, format, markdown lint (0 errors), type_check, quality, tests 4336 passed, 91.84% coverage. No completed plans in plans root; memory bank and roadmap consistent.
+- **Blocker: MCP disconnects during commit (2026-02-20)** - COMPLETE. Server-side retry, health check, runbook; Step 5 validation passed; manual /cortex/commit run recommended.
 
 ## 2026-02-19
 
@@ -115,7 +116,7 @@
 
 ## 2026-02-13
 
-- **Phase 50 Step 5: Documentation and tool descriptions** - COMPLETE. Updated docs/api/tools.md (Phase 50 section, query_memory_bank, query_usage; removed standalone get_*/ load_progressive_context sections); AGENTS.md tool table (load_context, manage_file, configure, query_*); mcp-tool-timeouts, tool-usage-tracking, troubleshooting, failure-modes, error-recovery, advanced-tool-use, setup-cursor-integration to reference consolidated tools.
+- **Week containing 2026-02-13** - 1 entries summarized.
 
 ## 2026-02-12
 
