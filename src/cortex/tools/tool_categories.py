@@ -161,6 +161,11 @@ TOOL_CATEGORIES: tuple[ToolCategoryEntry, ...] = (
         rationale="Evaluation framework for MCP tools (Phase 57)",
     ),
     ToolCategoryEntry(
+        name="get_session_tool_anomalies",
+        category=ToolCategory.DEFERRED_MEDIUM,
+        rationale="Session tool anomalies for end-of-session analysis (Phase 57)",
+    ),
+    ToolCategoryEntry(
         name="run_tool_optimization_workflow",
         category=ToolCategory.DEFERRED_MEDIUM,
         rationale="Baseline + A/B comparison and optimization history (Phase 57)",

@@ -128,19 +128,20 @@ Cortex currently tracks basic usage stats (call counts, success rates) via `get_
 
 ### Step 5: Continuous Improvement Pipeline
 
-- [ ] Create `run_tool_evaluation` MCP tool:
+- [x] Create `run_tool_evaluation` MCP tool:
   - Runs full evaluation suite
   - Reports results summary
   - Suggests improvements
-- [ ] Integrate with end-of-session analysis:
+- [x] Integrate with end-of-session analysis:
   - Track which tools were used in the session
   - Compare against expected patterns
   - Flag anomalies (unusual tool sequences, high retry counts)
+  - Implemented: `get_session_tool_anomalies(hours=24)` MCP tool; optional step in analyze.md to call it and add Tool use anomalies subsection.
 - [x] Create evaluation dashboard (Markdown report):
   - Overall tool effectiveness score
   - Top 5 tools by usage and by improvement needed
   - Trending error patterns (as "Top Error Patterns" section)
-  - Token efficiency trends (not yet implemented)
+  - Token efficiency trends (implemented: format_token_efficiency in dashboard_helpers; section shown when average_tokens_per_task or token_consumption_by_category present)
 
 ### Step 6: Testing and Validation
 

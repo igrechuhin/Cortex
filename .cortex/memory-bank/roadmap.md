@@ -24,7 +24,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Features & Enhancements
 
-- **Phase 57: Evaluation-Driven Tool Improvement** - IN PROGRESS - Remaining work: extend the evaluation task suite, add evaluation dashboards, and implement automated tool description optimization and A/B testing on top of the existing evaluation framework and error-pattern tooling. Plan: .cortex/plans/phase-57-evaluation-driven-tool-improvement.md.
 - **Reference: Code quality remediation (P0)** - Plan: .cortex/plans/plan-code-quality-remediation.md
 - **Reference: Test coverage and quality (P0)** - Plan: .cortex/plans/plan-test-coverage-and-quality.md
 - **Reference: Documentation completeness (P1)** - Plan: .cortex/plans/plan-documentation-completeness.md

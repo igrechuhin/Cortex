@@ -113,6 +113,32 @@ def format_error_patterns(analysis: EvalAnalysis) -> list[str]:
     return lines
 
 
+def format_token_efficiency(analysis: EvalAnalysis) -> list[str]:
+    """Format token efficiency trends section (when token data is available)."""
+    lines: list[str] = []
+    has_overall = analysis.average_tokens_per_task > 0
+    has_by_category = bool(analysis.token_consumption_by_category)
+    if not has_overall and not has_by_category:
+        return lines
+    lines.append("## Token Efficiency Trends")
+    lines.append("")
+    if has_overall:
+        lines.append(
+            f"- **Average tokens per task:** {analysis.average_tokens_per_task:,.0f}"
+        )
+        lines.append("")
+    if has_by_category:
+        lines.append("**Average tokens per task by category:**")
+        for category, avg_tokens in sorted(
+            analysis.token_consumption_by_category.items(),
+            key=lambda x: x[1],
+            reverse=True,
+        ):
+            lines.append(f"- **{category}:** {avg_tokens:,.0f}")
+        lines.append("")
+    return lines
+
+
 def format_single_task(task: EvalTaskResult) -> list[str]:
     """Format a single task entry."""
     status_emoji = (
@@ -165,5 +191,6 @@ def generate_evaluation_dashboard(
     lines.extend(format_top_tools_sections(suite))
     lines.extend(format_category_success_rates(analysis))
     lines.extend(format_error_patterns(analysis))
+    lines.extend(format_token_efficiency(analysis))
     lines.extend(format_task_details(suite))
     return "\n".join(lines)

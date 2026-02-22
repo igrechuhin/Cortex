@@ -21,27 +21,37 @@ from cortex.tools.phase5_evaluation import (
     EvalAnalysis,
     EvalSuiteResult,
     EvalTask,
+    EvalTaskCategory,
     EvalTaskResult,
+    EvalTaskStatus,
     OptimizationRunRecord,
     OptimizationRunWinner,
     ToolEvaluationHarness,
     ToolTaskMetrics,
-    _append_optimization_record,
-    _load_eval_tasks,
-    _load_optimization_history,
     analyze_error_patterns,
+    append_optimization_record,
     compare_ab_analyses,
+    get_session_tool_anomalies,
+    load_eval_tasks,
+    load_optimization_history,
     run_tool_evaluation,
     run_tool_optimization_workflow,
 )
-from cortex.tools.phase5_evaluation_dashboard_helpers import aggregate_tool_metrics
+from cortex.tools.phase5_evaluation_anomalies_helpers import (
+    aggregate_session_tool_anomalies,
+)
+from cortex.tools.phase5_evaluation_dashboard_helpers import (
+    aggregate_tool_metrics,
+    format_token_efficiency,
+    generate_evaluation_dashboard,
+)
 
 
 @pytest.mark.asyncio
 async def test_load_eval_tasks_from_core_workflows() -> None:
-    """_load_eval_tasks loads tasks from .cortex/evals/tasks/core_workflows.json."""
+    """load_eval_tasks loads tasks from .cortex/evals/tasks/core_workflows.json."""
     project_root = Path(__file__).resolve().parents[2]
-    tasks = await _load_eval_tasks(project_root, task_ids=None)
+    tasks = await load_eval_tasks(project_root, task_ids=None)
 
     # We expect at least a handful of tasks from the seeded core_workflows.json.
     assert len(tasks) >= 5
@@ -52,11 +62,11 @@ async def test_load_eval_tasks_from_core_workflows() -> None:
 
 @pytest.mark.asyncio
 async def test_load_eval_tasks_filters_by_task_ids() -> None:
-    """_load_eval_tasks respects task_ids filter."""
+    """load_eval_tasks respects task_ids filter."""
     project_root = Path(__file__).resolve().parents[2]
 
     target_id = "context-add-new-mcp-tool"
-    tasks = await _load_eval_tasks(project_root, task_ids=[target_id])
+    tasks = await load_eval_tasks(project_root, task_ids=[target_id])
 
     assert tasks
     ids = {t.id for t in tasks}
@@ -67,14 +77,14 @@ async def test_load_eval_tasks_filters_by_task_ids() -> None:
 async def test_load_eval_tasks_returns_empty_when_tasks_dir_missing(
     tmp_path: Path,
 ) -> None:
-    """_load_eval_tasks returns empty list when evals/tasks directory is missing."""
+    """load_eval_tasks returns empty list when evals/tasks directory is missing."""
     project_root = tmp_path
 
     with patch(
         "cortex.tools.phase5_evaluation.get_cortex_path",
         return_value=project_root / ".cortex",
     ):
-        tasks = await _load_eval_tasks(project_root, task_ids=None)
+        tasks = await load_eval_tasks(project_root, task_ids=None)
 
     assert tasks == []
 
@@ -85,8 +95,8 @@ def test_analyze_results_aggregates_basic_metrics() -> None:
     t1 = EvalTaskResult(
         task_id="t1",
         task_name="Task 1",
-        category="context",
-        status="success",
+        category=EvalTaskCategory.CONTEXT,
+        status=EvalTaskStatus.SUCCESS,
         total_calls=10,
         successful_calls=8,
         failed_calls=2,
@@ -99,8 +109,8 @@ def test_analyze_results_aggregates_basic_metrics() -> None:
     t2 = EvalTaskResult(
         task_id="t2",
         task_name="Task 2",
-        category="pre_commit",
-        status="mixed",
+        category=EvalTaskCategory.PRE_COMMIT,
+        status=EvalTaskStatus.MIXED,
         total_calls=5,
         successful_calls=3,
         failed_calls=2,
@@ -204,7 +214,7 @@ async def test_run_suite_reproducibility_same_tracker_data() -> None:
             id="ctx-1",
             name="Context task",
             description="Load context",
-            category="context",
+            category=EvalTaskCategory.CONTEXT,
             expected_tools=["load_context"],
             expected_outcome="ok",
         ),
@@ -212,7 +222,7 @@ async def test_run_suite_reproducibility_same_tracker_data() -> None:
             id="pre-1",
             name="Pre-commit task",
             description="Run checks",
-            category="pre_commit",
+            category=EvalTaskCategory.PRE_COMMIT,
             expected_tools=["execute_pre_commit_checks"],
             expected_outcome="ok",
         ),
@@ -244,7 +254,7 @@ async def test_run_tool_evaluation_uses_harness_and_writes_cache() -> None:
             id="t1",
             name="Task 1",
             description="Test task 1",
-            category="context",
+            category=EvalTaskCategory.CONTEXT,
             expected_tools=["load_context"],
             expected_outcome="ok",
         ),
@@ -252,7 +262,7 @@ async def test_run_tool_evaluation_uses_harness_and_writes_cache() -> None:
             id="t2",
             name="Task 2",
             description="Test task 2",
-            category="pre_commit",
+            category=EvalTaskCategory.PRE_COMMIT,
             expected_tools=["execute_pre_commit_checks"],
             expected_outcome="ok",
         ),
@@ -264,8 +274,8 @@ async def test_run_tool_evaluation_uses_harness_and_writes_cache() -> None:
             EvalTaskResult(
                 task_id="t1",
                 task_name="Task 1",
-                category="context",
-                status="success",
+                category=EvalTaskCategory.CONTEXT,
+                status=EvalTaskStatus.SUCCESS,
                 total_calls=1,
                 successful_calls=1,
                 failed_calls=0,
@@ -299,7 +309,7 @@ async def test_run_tool_evaluation_uses_harness_and_writes_cache() -> None:
             return_value=None,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._load_eval_tasks",
+            "cortex.tools.phase5_evaluation.load_eval_tasks",
             new_callable=AsyncMock,
             return_value=fake_tasks,
         ),
@@ -348,7 +358,7 @@ async def test_analyze_error_patterns_persists_error_cache() -> None:
             id="t1",
             name="Task 1",
             description="Test task 1",
-            category="context",
+            category=EvalTaskCategory.CONTEXT,
             expected_tools=["load_context"],
             expected_outcome="ok",
         )
@@ -360,8 +370,8 @@ async def test_analyze_error_patterns_persists_error_cache() -> None:
             EvalTaskResult(
                 task_id="t1",
                 task_name="Task 1",
-                category="context",
-                status="mixed",
+                category=EvalTaskCategory.CONTEXT,
+                status=EvalTaskStatus.MIXED,
                 total_calls=2,
                 successful_calls=1,
                 failed_calls=1,
@@ -401,7 +411,7 @@ async def test_analyze_error_patterns_persists_error_cache() -> None:
             return_value=None,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._load_eval_tasks",
+            "cortex.tools.phase5_evaluation.load_eval_tasks",
             new_callable=AsyncMock,
             return_value=fake_tasks,
         ),
@@ -469,7 +479,7 @@ async def test_analyze_error_patterns_empty_suite_returns_zero_patterns() -> Non
             new_callable=AsyncMock,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._load_eval_tasks",
+            "cortex.tools.phase5_evaluation.load_eval_tasks",
             new_callable=AsyncMock,
             return_value=[],
         ),
@@ -498,7 +508,7 @@ async def test_analyze_error_patterns_empty_suite_returns_zero_patterns() -> Non
 
 @pytest.mark.asyncio
 async def test_analyze_error_patterns_passes_task_ids_to_load_tasks() -> None:
-    """analyze_error_patterns passes task_ids to _load_eval_tasks."""
+    """analyze_error_patterns passes task_ids to load_eval_tasks."""
     project_root = Path("/project")
     empty_suite = EvalSuiteResult(
         generated_at="2026-02-21T00:00:00Z",
@@ -525,7 +535,7 @@ async def test_analyze_error_patterns_passes_task_ids_to_load_tasks() -> None:
             new_callable=AsyncMock,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._load_eval_tasks",
+            "cortex.tools.phase5_evaluation.load_eval_tasks",
             new_callable=AsyncMock,
             return_value=[],
         ) as mock_load,
@@ -545,7 +555,7 @@ async def test_analyze_error_patterns_passes_task_ids_to_load_tasks() -> None:
     ):
         await analyze_error_patterns(task_ids=["t1", "t2"], ctx=None)
 
-    mock_load.assert_awaited_once()
+    _ = mock_load.assert_awaited_once()
     assert mock_load.call_args[0][1] == ["t1", "t2"]
 
 
@@ -587,7 +597,7 @@ async def test_run_task_uses_usage_tracker_metrics() -> None:
         id="t-metrics",
         name="Task Metrics",
         description="Test task metrics aggregation",
-        category="context",
+        category=EvalTaskCategory.CONTEXT,
         expected_tools=["load_context"],
         expected_outcome="ok",
     )
@@ -620,8 +630,8 @@ def test_aggregate_tool_metrics_sums_across_tasks() -> None:
     t1 = EvalTaskResult(
         task_id="t1",
         task_name="T1",
-        category="context",
-        status="success",
+        category=EvalTaskCategory.CONTEXT,
+        status=EvalTaskStatus.SUCCESS,
         total_calls=5,
         successful_calls=4,
         failed_calls=1,
@@ -637,8 +647,8 @@ def test_aggregate_tool_metrics_sums_across_tasks() -> None:
     t2 = EvalTaskResult(
         task_id="t2",
         task_name="T2",
-        category="context",
-        status="success",
+        category=EvalTaskCategory.CONTEXT,
+        status=EvalTaskStatus.SUCCESS,
         total_calls=3,
         successful_calls=3,
         failed_calls=0,
@@ -659,6 +669,82 @@ def test_aggregate_tool_metrics_sums_across_tasks() -> None:
     agg = aggregate_tool_metrics(suite)
     assert agg["load_context"] == (7, 6, 1)
     assert agg["manage_file"] == (1, 1, 0)
+
+
+def test_format_token_efficiency_empty_when_no_token_data() -> None:
+    """format_token_efficiency returns no lines when average_tokens and by_category are zero/empty."""
+    analysis = EvalAnalysis(
+        overall_success_rate=0.8,
+        total_tasks=2,
+        tasks_with_no_data=0,
+        tasks_unavailable=0,
+        average_calls_per_task=3.0,
+        average_tokens_per_task=0.0,
+        token_consumption_by_category={},
+        top_error_patterns=[],
+        success_rate_by_category={"context": 0.8},
+    )
+    lines = format_token_efficiency(analysis)
+    assert lines == []
+
+
+def test_format_token_efficiency_section_when_token_data_present() -> None:
+    """format_token_efficiency returns Token Efficiency Trends section when token data exists."""
+    analysis = EvalAnalysis(
+        overall_success_rate=0.8,
+        total_tasks=2,
+        tasks_with_no_data=0,
+        tasks_unavailable=0,
+        average_calls_per_task=3.0,
+        average_tokens_per_task=1500.0,
+        token_consumption_by_category={"context": 2000.0, "pre_commit": 1000.0},
+        top_error_patterns=[],
+        success_rate_by_category={"context": 0.8},
+    )
+    lines = format_token_efficiency(analysis)
+    assert any("Token Efficiency Trends" in line for line in lines)
+    assert any("1,500" in line or "1500" in line for line in lines)
+    assert any("context" in line and "2,000" in line for line in lines)
+    assert any("pre_commit" in line and "1,000" in line for line in lines)
+
+
+def test_generate_evaluation_dashboard_includes_token_efficiency_when_available() -> (
+    None
+):
+    """generate_evaluation_dashboard includes Token Efficiency Trends when analysis has token data."""
+    suite = EvalSuiteResult(
+        generated_at="2026-02-21T12:00:00Z",
+        tasks=[
+            EvalTaskResult(
+                task_id="t1",
+                task_name="Task 1",
+                category=EvalTaskCategory.CONTEXT,
+                status=EvalTaskStatus.SUCCESS,
+                total_calls=1,
+                successful_calls=1,
+                failed_calls=0,
+                success_rate=1.0,
+                avg_duration_ms=0.0,
+                total_duration_ms=0.0,
+                error_types={},
+                evaluated_tools=["load_context"],
+            )
+        ],
+    )
+    analysis = EvalAnalysis(
+        overall_success_rate=1.0,
+        total_tasks=1,
+        tasks_with_no_data=0,
+        tasks_unavailable=0,
+        average_calls_per_task=1.0,
+        average_tokens_per_task=1200.0,
+        token_consumption_by_category={"context": 1200.0},
+        top_error_patterns=[],
+        success_rate_by_category={"context": 1.0},
+    )
+    dashboard = generate_evaluation_dashboard(analysis, suite)
+    assert "## Token Efficiency Trends" in dashboard
+    assert "1,200" in dashboard or "1200" in dashboard
 
 
 @pytest.mark.asyncio
@@ -699,14 +785,14 @@ async def test_run_tool_evaluation_generates_dashboard(tmp_path: Path) -> None:
             new_callable=AsyncMock,
         ) as mock_tracker,
         patch(
-            "cortex.tools.phase5_evaluation._load_eval_tasks",
+            "cortex.tools.phase5_evaluation.load_eval_tasks",
             new_callable=AsyncMock,
             return_value=[
                 EvalTask(
                     id="test-task",
                     name="Test Task",
                     description="Test description",
-                    category="other",
+                    category=EvalTaskCategory.OTHER,
                     expected_tools=["load_context"],
                     expected_outcome="Success",
                 )
@@ -771,8 +857,8 @@ async def test_run_tool_evaluation_dashboard_includes_top_tools_sections(
             EvalTaskResult(
                 task_id="t1",
                 task_name="Task 1",
-                category="context",
-                status="success",
+                category=EvalTaskCategory.CONTEXT,
+                status=EvalTaskStatus.SUCCESS,
                 total_calls=10,
                 successful_calls=8,
                 failed_calls=2,
@@ -800,14 +886,14 @@ async def test_run_tool_evaluation_dashboard_includes_top_tools_sections(
             new_callable=AsyncMock,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._load_eval_tasks",
+            "cortex.tools.phase5_evaluation.load_eval_tasks",
             new_callable=AsyncMock,
             return_value=[
                 EvalTask(
                     id="t1",
                     name="Task 1",
                     description="Desc",
-                    category="context",
+                    category=EvalTaskCategory.CONTEXT,
                     expected_tools=["load_context"],
                     expected_outcome="OK",
                 )
@@ -939,21 +1025,133 @@ def test_compare_ab_analyses_tie_when_equal() -> None:
     assert result.error_count_delta == 0
 
 
+def test_aggregate_session_tool_anomalies_empty() -> None:
+    """aggregate_session_tool_anomalies returns empty lists for no events."""
+    result = aggregate_session_tool_anomalies([])
+    assert result.tools_used == []
+    assert result.high_retry_tools == []
+    assert result.high_error_tools == []
+
+
+def test_aggregate_session_tool_anomalies_flags_retries_and_errors() -> None:
+    """aggregate_session_tool_anomalies flags tools with retries or errors."""
+    events = [
+        ToolUsageEvent(
+            tool_name="load_context",
+            timestamp="2026-02-21T12:00:00Z",
+            duration_ms=10.0,
+            success=True,
+            retry_count=0,
+        ),
+        ToolUsageEvent(
+            tool_name="manage_file",
+            timestamp="2026-02-21T12:01:00Z",
+            duration_ms=5.0,
+            success=False,
+            error_type="ValueError",
+            retry_count=2,
+        ),
+        ToolUsageEvent(
+            tool_name="manage_file",
+            timestamp="2026-02-21T12:02:00Z",
+            duration_ms=5.0,
+            success=True,
+            retry_count=1,
+        ),
+    ]
+    result = aggregate_session_tool_anomalies(events)
+    assert len(result.tools_used) == 2
+    by_name = {t.tool_name: t for t in result.tools_used}
+    assert by_name["load_context"].calls == 1
+    assert by_name["load_context"].retries == 0
+    assert by_name["load_context"].errors == 0
+    assert by_name["manage_file"].calls == 2
+    assert by_name["manage_file"].retries == 3
+    assert by_name["manage_file"].errors == 1
+    assert "manage_file" in result.high_retry_tools
+    assert "manage_file" in result.high_error_tools
+    assert "load_context" not in result.high_retry_tools
+    assert "load_context" not in result.high_error_tools
+
+
+@pytest.mark.asyncio
+async def test_get_session_tool_anomalies_unavailable() -> None:
+    """get_session_tool_anomalies returns unavailable when tracker is None."""
+    with (
+        patch(
+            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=Path("/tmp"),
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._get_usage_tracker",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+    ):
+        result_str = await get_session_tool_anomalies(hours=24)
+    result = json.loads(result_str)
+    assert result["status"] == "unavailable"
+    assert result["session_window_hours"] == 24
+    assert "message" in result
+
+
+@pytest.mark.asyncio
+async def test_get_session_tool_anomalies_success() -> None:
+    """get_session_tool_anomalies returns tools_used and anomalies when tracker has events."""
+    mock_events = [
+        ToolUsageEvent(
+            tool_name="query_usage",
+            timestamp="2026-02-21T12:00:00Z",
+            duration_ms=10.0,
+            success=True,
+            retry_count=0,
+        ),
+    ]
+    mock_tracker = MagicMock()
+    mock_tracker.search_usage = AsyncMock(return_value=mock_events)
+
+    with (
+        patch(
+            "cortex.tools.phase5_evaluation.resolve_project_root_async",
+            new_callable=AsyncMock,
+            return_value=Path("/tmp"),
+        ),
+        patch(
+            "cortex.tools.phase5_evaluation._get_usage_tracker",
+            new_callable=AsyncMock,
+            return_value=mock_tracker,
+        ),
+    ):
+        result_str = await get_session_tool_anomalies(hours=24)
+    result = json.loads(result_str)
+    assert result["status"] == "success"
+    assert result["session_window_hours"] == 24
+    assert result["total_events"] == 1
+    assert len(result["tools_used"]) == 1
+    assert result["tools_used"][0]["tool_name"] == "query_usage"
+    assert result["tools_used"][0]["calls"] == 1
+    assert result["tools_used"][0]["retries"] == 0
+    assert result["tools_used"][0]["errors"] == 0
+    assert "high_retry_tools" in result
+    assert "high_error_tools" in result
+
+
 @pytest.mark.asyncio
 async def test_load_optimization_history_empty_when_missing(tmp_path: Path) -> None:
-    """_load_optimization_history returns empty list when cache file is missing."""
+    """load_optimization_history returns empty list when cache file is missing."""
     with patch(
         "cortex.tools.phase5_evaluation.read_cache_json",
         new_callable=AsyncMock,
         return_value=None,
     ):
-        history = await _load_optimization_history(tmp_path)
+        history = await load_optimization_history(tmp_path)
     assert history == []
 
 
 @pytest.mark.asyncio
 async def test_load_optimization_history_parses_runs(tmp_path: Path) -> None:
-    """_load_optimization_history parses runs from cache."""
+    """load_optimization_history parses runs from cache."""
     raw = {
         "runs": [
             {
@@ -973,7 +1171,7 @@ async def test_load_optimization_history_parses_runs(tmp_path: Path) -> None:
         new_callable=AsyncMock,
         return_value=raw,
     ):
-        history = await _load_optimization_history(tmp_path)
+        history = await load_optimization_history(tmp_path)
     assert len(history) == 1
     assert history[0].run_id == "run-1"
     assert history[0].baseline_success_rate == 0.8
@@ -982,7 +1180,7 @@ async def test_load_optimization_history_parses_runs(tmp_path: Path) -> None:
 
 @pytest.mark.asyncio
 async def test_append_optimization_record_persists(tmp_path: Path) -> None:
-    """_append_optimization_record appends a record and writes cache."""
+    """append_optimization_record appends a record and writes cache."""
     record = OptimizationRunRecord(
         run_id="run-test",
         generated_at="2026-02-21T12:00:00Z",
@@ -1010,7 +1208,7 @@ async def test_append_optimization_record_persists(tmp_path: Path) -> None:
             side_effect=capture_write,
         ),
     ):
-        await _append_optimization_record(tmp_path, record)
+        await append_optimization_record(tmp_path, record)
 
     assert len(write_calls) == 1
     assert write_calls[0][1] == "evals/optimization_history.json"
@@ -1054,14 +1252,14 @@ async def test_run_tool_optimization_workflow_baseline_only() -> None:
             return_value=None,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._load_eval_tasks",
+            "cortex.tools.phase5_evaluation.load_eval_tasks",
             new_callable=AsyncMock,
             return_value=[
                 EvalTask(
                     id="t1",
                     name="T1",
                     description="D",
-                    category="context",
+                    category=EvalTaskCategory.CONTEXT,
                     expected_tools=[],
                     expected_outcome="ok",
                 )
@@ -1077,11 +1275,11 @@ async def test_run_tool_optimization_workflow_baseline_only() -> None:
             return_value=baseline_analysis,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._append_optimization_record",
+            "cortex.tools.phase5_evaluation.append_optimization_record",
             new_callable=AsyncMock,
         ) as mock_append,
         patch(
-            "cortex.tools.phase5_evaluation._load_optimization_history",
+            "cortex.tools.phase5_evaluation.load_optimization_history",
             new_callable=AsyncMock,
             return_value=[],
         ),
@@ -1142,7 +1340,7 @@ async def test_run_tool_optimization_workflow_with_ab_comparison() -> None:
             return_value=None,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._load_eval_tasks",
+            "cortex.tools.phase5_evaluation.load_eval_tasks",
             new_callable=AsyncMock,
             return_value=[],
         ),
@@ -1156,11 +1354,11 @@ async def test_run_tool_optimization_workflow_with_ab_comparison() -> None:
             return_value=baseline_analysis,
         ),
         patch(
-            "cortex.tools.phase5_evaluation._append_optimization_record",
+            "cortex.tools.phase5_evaluation.append_optimization_record",
             new_callable=AsyncMock,
         ) as mock_append,
         patch(
-            "cortex.tools.phase5_evaluation._load_optimization_history",
+            "cortex.tools.phase5_evaluation.load_optimization_history",
             new_callable=AsyncMock,
             return_value=[
                 OptimizationRunRecord(

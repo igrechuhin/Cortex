@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Literal
+from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -44,23 +44,47 @@ from cortex.managers.usage_models import ToolUsageEvent
 from cortex.managers.usage_tracker import UsageTracker
 from cortex.server import mcp
 from cortex.tools import usage_analytics
+from cortex.tools.phase5_evaluation_anomalies_helpers import (
+    get_session_tool_anomalies_payload as _get_session_tool_anomalies_payload,
+)
+from cortex.tools.phase5_evaluation_anomalies_helpers import (
+    unavailable_session_anomalies_response,
+)
+from cortex.tools.phase5_evaluation_task_loader import (
+    build_eval_tasks,
+    load_eval_task_dicts,
+)
+
+
+class EvalTaskCategory(str, Enum):
+    """Workflow category for an evaluation task."""
+
+    CONTEXT = "context"
+    PRE_COMMIT = "pre_commit"
+    PLAN = "plan"
+    MEMORY_BANK = "memory_bank"
+    OTHER = "other"
+
+
+class EvalTaskStatus(str, Enum):
+    """Status of a single evaluation task result."""
+
+    SUCCESS = "success"
+    MIXED = "mixed"
+    NO_DATA = "no_data"
+    UNAVAILABLE = "unavailable"
 
 
 class EvalTask(BaseModel):
-    """Single evaluation task definition grounded in a real workflow.
-
-    The initial implementation deliberately keeps this schema small and focused.
-    Future iterations can extend it via the `metadata` field without breaking
-    callers or persisted JSON.
-    """
+    """Single evaluation task definition grounded in a real workflow."""
 
     model_config = ConfigDict(extra="allow")
 
     id: str = Field(description="Stable identifier for this evaluation task")
     name: str = Field(description="Human-readable task name")
     description: str = Field(description="Detailed task description")
-    category: Literal["context", "pre_commit", "plan", "memory_bank", "other"] = Field(
-        default="other",
+    category: EvalTaskCategory = Field(
+        default=EvalTaskCategory.OTHER,
         description="High-level workflow category for the task",
     )
     expected_tools: list[str] = Field(
@@ -106,7 +130,7 @@ class EvalTaskResult(BaseModel):
     task_id: str
     task_name: str
     category: str
-    status: Literal["success", "mixed", "no_data", "unavailable"]
+    status: EvalTaskStatus
     total_calls: int = 0
     successful_calls: int = 0
     failed_calls: int = 0
@@ -256,6 +280,27 @@ class OptimizationRunRecord(BaseModel):
     total_error_count_optimized: int | None = None
 
 
+class RunToolEvaluationPayload(BaseModel):
+    """JSON-serializable payload for run_tool_evaluation response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["success"] = "success"
+    project_root: str = Field(description="Project root path")
+    tasks_loaded: int = Field(ge=0, description="Number of tasks loaded")
+    generated_at: str = Field(description="Suite generation timestamp")
+    cache_file: str = Field(description="Path to last_suite.json")
+    suite: dict[str, object] = Field(
+        description="Suite result as JSON-serializable dict"
+    )
+    analysis: dict[str, object] = Field(
+        description="Analysis result as JSON-serializable dict"
+    )
+    dashboard_path: str | None = Field(
+        default=None, description="Relative path to dashboard.md"
+    )
+
+
 @dataclass(slots=True)
 class _AggregatedEvents:
     """Internal helper for aggregating ToolUsageEvent metrics."""
@@ -334,9 +379,9 @@ class _AnalysisAccumulator:
         """Update aggregate metrics and error counters for a single task."""
         self.total_success_rate += result.success_rate
         self.total_calls += result.total_calls
-        if result.status == "no_data":
+        if result.status == EvalTaskStatus.NO_DATA:
             self.tasks_with_no_data += 1
-        if result.status == "unavailable":
+        if result.status == EvalTaskStatus.UNAVAILABLE:
             self.tasks_unavailable += 1
 
         self.category_success.setdefault(result.category, []).append(
@@ -357,52 +402,15 @@ class _AnalysisAccumulator:
             )
 
 
-def _load_eval_task_dicts(tasks_dir: Path) -> list[dict[str, Any]]:
-    """Load raw task dicts from all JSON files under tasks_dir."""
-    records: list[dict[str, Any]] = []
-    for path in sorted(tasks_dir.glob("*.json")):
-        try:
-            raw_text = path.read_text(encoding="utf-8")
-        except OSError:
-            continue
-        if not raw_text.strip():
-            continue
-        try:
-            data = json.loads(raw_text)
-        except json.JSONDecodeError:
-            continue
-
-        items: list[dict[str, Any]] = []
-        if isinstance(data, list):
-            sequence: list[object] = data
-            for item_obj in sequence:
-                if isinstance(item_obj, dict):
-                    item: dict[str, Any] = item_obj
-                    items.append(item)
-        elif isinstance(data, dict):
-            item_single: dict[str, Any] = data
-            items.append(item_single)
-        records.extend(items)
-    return records
+def _validate_eval_task(rec: dict[str, object]) -> EvalTask | None:
+    """Validate one raw dict into EvalTask; return None on error."""
+    try:
+        return EvalTask.model_validate(rec)
+    except Exception:
+        return None
 
 
-def _build_eval_tasks(
-    records: list[dict[str, Any]], selected_ids: set[str]
-) -> list[EvalTask]:
-    """Validate raw task dicts into EvalTask models and apply ID filter."""
-    tasks: list[EvalTask] = []
-    for rec in records:
-        try:
-            task = EvalTask.model_validate(rec)
-        except Exception:
-            continue
-        if selected_ids and task.id not in selected_ids:
-            continue
-        tasks.append(task)
-    return tasks
-
-
-async def _load_eval_tasks(
+async def load_eval_tasks(
     project_root: Path, task_ids: list[str] | None = None
 ) -> list[EvalTask]:
     """Load evaluation tasks from .cortex/evals/tasks/*.json."""
@@ -412,17 +420,12 @@ async def _load_eval_tasks(
         return []
 
     selected_ids = set(task_ids or [])
-    records = _load_eval_task_dicts(tasks_dir)
-    return _build_eval_tasks(records, selected_ids)
+    records = load_eval_task_dicts(tasks_dir)
+    return build_eval_tasks(records, selected_ids, _validate_eval_task)
 
 
 class ToolEvaluationHarness:
-    """Evaluation harness that aggregates metrics from UsageTracker.
-
-    This harness does not attempt to replay full agent workflows. Instead, it
-    uses historical ToolUsageEvent data for the tools referenced in each task
-    to compute success rates, error patterns, and latency.
-    """
+    """Harness that aggregates metrics from UsageTracker (no workflow replay)."""
 
     def __init__(self, project_root: Path, tracker: UsageTracker | None) -> None:
         self._project_root = project_root
@@ -453,8 +456,8 @@ class ToolEvaluationHarness:
         return EvalTaskResult(
             task_id=task.id,
             task_name=task.name,
-            category=task.category,
-            status="unavailable",
+            category=task.category.value,
+            status=EvalTaskStatus.UNAVAILABLE,
             total_calls=0,
             successful_calls=0,
             failed_calls=0,
@@ -465,16 +468,14 @@ class ToolEvaluationHarness:
             evaluated_tools=task.expected_tools,
         )
 
-    def _status_for_aggregated_events(
-        self, agg: _AggregatedEvents
-    ) -> Literal["success", "mixed", "no_data", "unavailable"]:
+    def _status_for_aggregated_events(self, agg: _AggregatedEvents) -> EvalTaskStatus:
         if agg.total_calls == 0:
-            return "no_data"
+            return EvalTaskStatus.NO_DATA
         if agg.failed_calls == 0:
-            return "success"
+            return EvalTaskStatus.SUCCESS
         if agg.successful_calls == 0:
-            return "mixed"
-        return "mixed"
+            return EvalTaskStatus.MIXED
+        return EvalTaskStatus.MIXED
 
     def _result_from_aggregated_events(
         self,
@@ -485,7 +486,7 @@ class ToolEvaluationHarness:
         return EvalTaskResult(
             task_id=task.id,
             task_name=task.name,
-            category=task.category,
+            category=task.category.value,
             status=status,
             total_calls=agg.total_calls,
             successful_calls=agg.successful_calls,
@@ -601,7 +602,7 @@ async def run_tool_evaluation(
         )
 
     tracker = await _get_usage_tracker(root)
-    tasks = await _load_eval_tasks(root, task_ids)
+    tasks = await load_eval_tasks(root, task_ids)
 
     harness = ToolEvaluationHarness(project_root=root, tracker=tracker)
     suite = await harness.run_suite(tasks)
@@ -610,8 +611,10 @@ async def run_tool_evaluation(
     await _persist_latest_suite(root, suite, analysis)
     dashboard_path = await _write_evaluation_dashboard(root, analysis, suite)
     payload = _build_evaluation_payload(root, tasks, suite, analysis)
-    payload["dashboard_path"] = str(dashboard_path.relative_to(root))
-    return json.dumps(payload, indent=2)
+    payload = payload.model_copy(
+        update={"dashboard_path": str(dashboard_path.relative_to(root))}
+    )
+    return json.dumps(payload.model_dump(mode="json"), indent=2)
 
 
 async def _write_evaluation_dashboard(
@@ -665,18 +668,18 @@ def _build_evaluation_payload(
     tasks: list[EvalTask],
     suite: EvalSuiteResult,
     analysis: EvalAnalysis,
-) -> dict[str, Any]:
+) -> RunToolEvaluationPayload:
     """Build JSON-serializable payload for run_tool_evaluation."""
     cache_path = get_cache_path(root, "evals") / "last_suite.json"
-    return {
-        "status": "success",
-        "project_root": str(root),
-        "tasks_loaded": len(tasks),
-        "generated_at": suite.generated_at,
-        "cache_file": str(cache_path),
-        "suite": suite.model_dump(mode="json"),
-        "analysis": analysis.model_dump(mode="json"),
-    }
+    return RunToolEvaluationPayload(
+        status="success",
+        project_root=str(root),
+        tasks_loaded=len(tasks),
+        generated_at=suite.generated_at,
+        cache_file=str(cache_path),
+        suite=cast(dict[str, object], suite.model_dump(mode="json")),
+        analysis=cast(dict[str, object], analysis.model_dump(mode="json")),
+    )
 
 
 async def _persist_error_patterns(root: Path, analysis: EvalAnalysis) -> None:
@@ -704,7 +707,7 @@ async def _persist_error_patterns(root: Path, analysis: EvalAnalysis) -> None:
 _OPTIMIZATION_HISTORY_KEY = "evals/optimization_history.json"
 
 
-async def _load_optimization_history(
+async def load_optimization_history(
     root: Path,
 ) -> list[OptimizationRunRecord]:
     """Load optimization run history from cache; returns empty list if missing."""
@@ -724,11 +727,9 @@ async def _load_optimization_history(
     return records
 
 
-async def _append_optimization_record(
-    root: Path, record: OptimizationRunRecord
-) -> None:
+async def append_optimization_record(root: Path, record: OptimizationRunRecord) -> None:
     """Append a single optimization run record to history and persist."""
-    history = await _load_optimization_history(root)
+    history = await load_optimization_history(root)
     history.append(record)
     await write_cache_json(
         root,
@@ -824,7 +825,7 @@ async def analyze_error_patterns(
         )
 
     tracker = await _get_usage_tracker(root)
-    tasks = await _load_eval_tasks(root, task_ids)
+    tasks = await load_eval_tasks(root, task_ids)
 
     harness = ToolEvaluationHarness(project_root=root, tracker=tracker)
     suite = await harness.run_suite(tasks)
@@ -844,6 +845,34 @@ async def analyze_error_patterns(
         ],
     }
     return json.dumps(payload, indent=2)
+
+
+@mcp.tool(annotations=read_only_annotations("Session Tool Anomalies"))
+@ensure_usage_context
+@mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
+async def get_session_tool_anomalies(
+    hours: int = 24,
+    ctx: MCPContext | None = None,
+) -> str:
+    """Compare session tool usage to expected patterns and flag anomalies.
+
+    For use in end-of-session analysis: lists tools used in the last N hours,
+    and flags tools with retries or errors. Call this from the Analyze prompt
+    to add a Tool use anomalies subsection to the report.
+    """
+    root = await resolve_project_root_async(None, ctx)
+    if ctx is not None:
+        await log_client(
+            ctx,
+            "info",
+            "get_session_tool_anomalies: starting",
+            logger_name=__name__,
+        )
+    tracker = await _get_usage_tracker(root)
+    if tracker is None:
+        return unavailable_session_anomalies_response(hours)
+    payload = await _get_session_tool_anomalies_payload(root, tracker, hours)
+    return json.dumps(payload.model_dump(mode="json"), indent=2)
 
 
 @mcp.tool(annotations=read_only_annotations("Tool Optimization Workflow"))
@@ -869,7 +898,7 @@ async def run_tool_optimization_workflow(
             logger_name=__name__,
         )
     tracker = await _get_usage_tracker(root)
-    tasks = await _load_eval_tasks(root, task_ids)
+    tasks = await load_eval_tasks(root, task_ids)
     harness = ToolEvaluationHarness(project_root=root, tracker=tracker)
     suite = await harness.run_suite(tasks)
     baseline_analysis = harness.analyze_results(suite)
@@ -879,8 +908,8 @@ async def run_tool_optimization_workflow(
     record = _build_optimization_record(
         baseline_analysis, optimized_analysis, run_id, generated_at
     )
-    await _append_optimization_record(root, record)
-    history = await _load_optimization_history(root)
+    await append_optimization_record(root, record)
+    history = await load_optimization_history(root)
     return _build_optimization_workflow_payload(
         root, run_id, baseline_analysis, record, history
     )

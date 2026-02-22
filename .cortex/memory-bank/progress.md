@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-02-22
+
+- **Phase 57: Evaluation-Driven Tool Improvement (2026-02-22)** - COMPLETE. Evaluation framework with 26 tasks, harness, error pattern analysis, A/B optimization workflow, run_tool_evaluation and get_session_tool_anomalies, evaluation dashboard; 95%+ test coverage.
+
 ## 2026-02-21
 
 - **Phase 56 Step 4: Progressive summarization (2026-02-21)** - COMPLETE. Implemented auto-trigger when progress.md exceeds token threshold (PROGRESS_TOKEN_THRESHOLD_DEFAULT); progress summarization only when tokens >= 10K. Added unit tests for Tier 1/2/3 and summarize_progress(weekly|monthly), and test for progress-below-threshold unchanged.
@@ -20,6 +24,8 @@
 - **Commit (markdown lint fixes)** - Fixed MD040 (fenced code language) in plan-agent-skills-and-composability.md, MD024 (duplicate heading) in session-optimization-2026-02-21T14-12.md. Preflight passed; 4375 tests, 91.88% coverage. No completed plans in plans root.
 - **Phase 57 Step 3: Extend usage tracking for error patterns (2026-02-21)** - COMPLETE. Added retry_count, param_validation_failure, result_used to ToolUsageEvent and record_tool_usage; threaded retry_count from_execute_with_retry to record_usage_finish; set param_validation_failure from ValidationError message on exception path; moved run_execute_and_finalize/finalize_on_exception/attach_attempt_to_exception to mcp_stability_config to keep file size under limit.
 - **Commit (quality: function length mcp_stability, mcp_stability_config)** - Fixed function length: extracted _try_one_attempt,_release_serial_and_reraise,_run_do_with_optional_serial; run_and_finalize_impl and_execute_with_retry ≤30 lines. Preflight: fix_errors, format, type_check, quality, tests 4377 passed, 91.88% coverage. No completed plans in plans root.
+- **Phase 57 Step 5 End-of-session evaluation integration** - COMPLETE. Added get_session_tool_anomalies MCP tool, optional analyze.md step, and phase5_evaluation_anomalies_helpers; quality gate and tests pass.
+- **Phase 57 Token efficiency trends (2026-02-21)** - COMPLETE. Added Token Efficiency Trends section to evaluation dashboard: format_token_efficiency in phase5_evaluation_dashboard_helpers.py shows average tokens per task and by-category when data available; three unit tests added.
 
 ## 2026-02-20
 
