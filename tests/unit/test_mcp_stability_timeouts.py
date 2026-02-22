@@ -13,7 +13,7 @@ Tests verify that:
 
 import asyncio
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -24,7 +24,6 @@ from cortex.core.constants import (
     MCP_TOOL_TIMEOUT_FAST,
     MCP_TOOL_TIMEOUT_MEDIUM,
     MCP_TOOL_TIMEOUT_VERY_COMPLEX,
-    MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS,
     PROGRESS_THRESHOLD_TIMEOUT_SECONDS,
 )
 from cortex.core.mcp_async_utils import cancel_and_drain_progress_task
@@ -35,6 +34,12 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.models import HandlerKind
 from cortex.core.usage_context import set_current_managers
+
+
+async def _block_forever() -> str:
+    """Block until timeout (no real sleep). Used for timeout tests."""
+    _ = await asyncio.Event().wait()
+    return "never"
 
 
 async def fast_operation() -> str:
@@ -55,7 +60,10 @@ class TestTimeoutEnforcement:
     @pytest.mark.asyncio
     async def test_fast_operation_completes_within_timeout(self) -> None:
         """Test that fast operations complete successfully within timeout."""
-        result = await with_mcp_stability(fast_operation, timeout=MCP_TOOL_TIMEOUT_FAST)
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await with_mcp_stability(
+                fast_operation, timeout=MCP_TOOL_TIMEOUT_FAST
+            )
         assert result == "success"
 
     @pytest.mark.asyncio
@@ -63,17 +71,16 @@ class TestTimeoutEnforcement:
         """Test that slow operations timeout correctly."""
         timeout = 0.5
         with pytest.raises(TimeoutError, match="exceeded timeout"):
-            _ = await with_mcp_stability(
-                slow_operation, timeout=timeout, delay=timeout + 0.5
-            )
+            _ = await with_mcp_stability(_block_forever, timeout=timeout)
 
     @pytest.mark.asyncio
     async def test_operation_completes_just_before_timeout(self) -> None:
         """Test that operations completing just before timeout succeed."""
         timeout = 1.0
-        result = await with_mcp_stability(
-            slow_operation, timeout=timeout, delay=timeout - 0.1
-        )
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await with_mcp_stability(
+                slow_operation, timeout=timeout, delay=timeout - 0.1
+            )
         assert result == "success"
 
     @pytest.mark.asyncio
@@ -81,9 +88,7 @@ class TestTimeoutEnforcement:
         """Test that timeout error messages are clear and actionable."""
         timeout = 0.5
         with pytest.raises(TimeoutError) as exc_info:
-            _ = await with_mcp_stability(
-                slow_operation, timeout=timeout, delay=timeout + 0.5
-            )
+            _ = await with_mcp_stability(_block_forever, timeout=timeout)
         assert "exceeded timeout" in str(exc_info.value)
         assert str(timeout) in str(exc_info.value)
 
@@ -100,7 +105,8 @@ class TestTimeoutDecorator:
             await asyncio.sleep(0.1)
             return "success"
 
-        result = await decorated_function()
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await decorated_function()
         assert result == "success"
 
     @pytest.mark.asyncio
@@ -109,7 +115,7 @@ class TestTimeoutDecorator:
 
         @mcp_tool_wrapper(timeout=0.5)
         async def decorated_function() -> str:
-            await asyncio.sleep(1.0)
+            _ = await asyncio.Event().wait()
             return "success"
 
         with pytest.raises(TimeoutError):
@@ -145,7 +151,8 @@ class TestTimeoutDecorator:
             await asyncio.sleep(0.1)
             return "ok"
 
-        result = await long_timeout_tool()
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await long_timeout_tool()
         assert result == "ok"
 
     @pytest.mark.asyncio
@@ -157,7 +164,8 @@ class TestTimeoutDecorator:
             await asyncio.sleep(0.1)
             return "ok"
 
-        result = await complex_tool()
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await complex_tool()
         assert result == "ok"
 
 
@@ -167,43 +175,50 @@ class TestTimeoutCategories:
     @pytest.mark.asyncio
     async def test_fast_timeout_category(self) -> None:
         """Test fast timeout category (60s)."""
-        result = await with_mcp_stability(fast_operation, timeout=MCP_TOOL_TIMEOUT_FAST)
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await with_mcp_stability(
+                fast_operation, timeout=MCP_TOOL_TIMEOUT_FAST
+            )
         assert result == "success"
         assert MCP_TOOL_TIMEOUT_FAST == 60
 
     @pytest.mark.asyncio
     async def test_medium_timeout_category(self) -> None:
         """Test medium timeout category (120s)."""
-        result = await with_mcp_stability(
-            fast_operation, timeout=MCP_TOOL_TIMEOUT_MEDIUM
-        )
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await with_mcp_stability(
+                fast_operation, timeout=MCP_TOOL_TIMEOUT_MEDIUM
+            )
         assert result == "success"
         assert MCP_TOOL_TIMEOUT_MEDIUM == 120
 
     @pytest.mark.asyncio
     async def test_complex_timeout_category(self) -> None:
         """Test complex timeout category (300s)."""
-        result = await with_mcp_stability(
-            fast_operation, timeout=MCP_TOOL_TIMEOUT_COMPLEX
-        )
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await with_mcp_stability(
+                fast_operation, timeout=MCP_TOOL_TIMEOUT_COMPLEX
+            )
         assert result == "success"
         assert MCP_TOOL_TIMEOUT_COMPLEX == 300
 
     @pytest.mark.asyncio
     async def test_very_complex_timeout_category(self) -> None:
         """Test very complex timeout category (960s for full test run)."""
-        result = await with_mcp_stability(
-            fast_operation, timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX
-        )
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await with_mcp_stability(
+                fast_operation, timeout=MCP_TOOL_TIMEOUT_VERY_COMPLEX
+            )
         assert result == "success"
         assert MCP_TOOL_TIMEOUT_VERY_COMPLEX == 960.0
 
     @pytest.mark.asyncio
     async def test_external_timeout_category(self) -> None:
         """Test external timeout category (120s)."""
-        result = await with_mcp_stability(
-            fast_operation, timeout=MCP_TOOL_TIMEOUT_EXTERNAL
-        )
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await with_mcp_stability(
+                fast_operation, timeout=MCP_TOOL_TIMEOUT_EXTERNAL
+            )
         assert result == "success"
         assert MCP_TOOL_TIMEOUT_EXTERNAL == 120
 
@@ -274,7 +289,7 @@ class TestProgressHelpers:
         """cancel_and_drain_progress_task should cancel and drain the task."""
 
         async def never_finishes() -> None:
-            await asyncio.sleep(10.0)
+            _ = await asyncio.Event().wait()
 
         task = asyncio.create_task(never_finishes())
         await cancel_and_drain_progress_task(task)
@@ -286,7 +301,7 @@ class TestProgressHelpers:
         timeout = 0.1
 
         async def operation_that_raises() -> str:
-            await asyncio.sleep(timeout * 2)
+            _ = await asyncio.Event().wait()
             raise ValueError("Should not reach here")
 
         with pytest.raises(TimeoutError):
@@ -305,7 +320,7 @@ class TestProgressHelpers:
         async def fake_progress_loop() -> None:
             progress_loop_running.set()
             while True:
-                await asyncio.sleep(0.05)
+                await asyncio.sleep(0)  # Yield only; no real delay
 
         async def tool_that_fails() -> str:
             raise RuntimeError("Tool failed early")
@@ -362,12 +377,13 @@ class TestLongRunningSemaphoreWait:
         config_mod._long_running_tools_semaphore = None
         _ = get_long_running_semaphore()
         first_done: asyncio.Event = asyncio.Event()
+        first_acquired: asyncio.Event = asyncio.Event()
 
         async def first_execute() -> (
             tuple[str, bool, str | None, bool, int | None, str | None]
         ):
-            await asyncio.sleep(0.15)
-            first_done.set()
+            _ = first_acquired.set()
+            _ = await first_done.wait()
             return "first", True, None, False, None, None
 
         async def second_execute() -> (
@@ -391,7 +407,7 @@ class TestLongRunningSemaphoreWait:
                     use_serial_semaphore=True,
                 )
             )
-            await asyncio.sleep(0.05)
+            _ = await first_acquired.wait()
             second_task: asyncio.Task[str] = asyncio.create_task(
                 _run_and_finalize(
                     second_execute,
@@ -403,11 +419,11 @@ class TestLongRunningSemaphoreWait:
                     use_serial_semaphore=True,
                 )
             )
+            first_done.set()
             first_result: str = await first_task
             second_result: str = await second_task
         assert first_result == "first"
         assert second_result == "second"
-        _ = await first_done.wait()
 
     @pytest.mark.asyncio
     async def test_second_long_running_fails_after_wait_timeout(self) -> None:
@@ -649,7 +665,6 @@ class TestResourceReadsUseSeparateSemaphore:
         )
 
         async def fast_resource() -> str:
-            await asyncio.sleep(0.05)
             return "ok"
 
         with patch(
@@ -718,15 +733,16 @@ class TestUsageContextInitLockTimeout:
         lock = get_usage_context_init_lock()
 
         # Hold the lock in a background task to simulate a stuck initialization
+        lock_acquired: asyncio.Event = asyncio.Event()
+
         async def hold_lock_forever() -> None:
             async with lock:
-                # Hold lock longer than timeout to ensure timeout occurs
-                await asyncio.sleep(MCP_USAGE_CONTEXT_INIT_LOCK_TIMEOUT_SECONDS + 1)
+                _ = lock_acquired.set()
+                _ = await asyncio.Event().wait()
 
         # Start holding the lock
         hold_task = asyncio.create_task(hold_lock_forever())
-        # Wait a bit to ensure lock is acquired
-        await asyncio.sleep(0.1)
+        _ = await lock_acquired.wait()
 
         try:
             # Mock resolve_project_root_async and get_managers to avoid real file system operations

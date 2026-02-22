@@ -221,10 +221,11 @@ class TestMemoryBankWatcherDebouncing:
     """Tests for debouncing behavior."""
 
     @pytest.mark.asyncio
+    @pytest.mark.slow
     async def test_schedule_update_debounces_rapid_changes(
         self, tmp_path: Path
     ) -> None:
-        """Test schedule_update debounces rapid file changes."""
+        """Test schedule_update debounces rapid file changes (timing-dependent)."""
         callback = AsyncMock()
         watcher = MemoryBankWatcher(tmp_path, callback, debounce_delay=0.2)
         loop = asyncio.get_event_loop()
@@ -243,7 +244,7 @@ class TestMemoryBankWatcherDebouncing:
         assert len(watcher.pending_updates) == 1
         assert file_path in watcher.pending_updates
 
-        # Wait for debounce
+        # Wait for debounce to fire
         await asyncio.sleep(0.3)
 
         # Callback should be called exactly once
@@ -467,8 +468,9 @@ class TestFileWatcherManagerIntegration:
     """
 
     @pytest.mark.asyncio
+    @pytest.mark.slow
     async def test_end_to_end_file_modification_detection(self, tmp_path: Path) -> None:
-        """Test modification detection flow with mocked observer and simulated events."""
+        """Test modification detection flow (timing-dependent debounce)."""
         manager = FileWatcherManager()
         callback = AsyncMock()
 
@@ -492,8 +494,9 @@ class TestFileWatcherManagerIntegration:
         manager.stop()
 
     @pytest.mark.asyncio
+    @pytest.mark.slow
     async def test_multiple_file_changes(self, tmp_path: Path) -> None:
-        """Test handling multiple file changes with mocked observer."""
+        """Test handling multiple file changes (timing-dependent debounce)."""
         manager = FileWatcherManager()
         callback = AsyncMock()
 

@@ -451,6 +451,7 @@ class TestLockExpiry:
     """Tests for lock expiry functionality."""
 
     @pytest.mark.asyncio
+    @pytest.mark.slow
     async def test_lock_expires_after_timeout(self, tmp_path: Path) -> None:
         """Test that locks expire after timeout."""
         # Arrange

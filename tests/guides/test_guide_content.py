@@ -33,6 +33,16 @@ class TestGuideConstants:
             "## "
         ), f"Expected '## ' heading, got: {stripped[:50]!r}"
 
+    @pytest.mark.parametrize("name,guide", _GUIDES, ids=[n for n, _ in _GUIDES])
+    def test_guide_has_reasonable_length(self, name: str, guide: str) -> None:
+        """GUIDE is non-trivial and bounded (edge-case parametrization)."""
+        assert 10 <= len(guide) <= 100_000
+
+    @pytest.mark.parametrize("name,guide", _GUIDES, ids=[n for n, _ in _GUIDES])
+    def test_guide_contains_no_null_bytes(self, name: str, guide: str) -> None:
+        """GUIDE is valid text (no null bytes)."""
+        assert "\x00" not in guide
+
 
 class TestBenefitsGuide:
     """Content and formatting for benefits guide."""

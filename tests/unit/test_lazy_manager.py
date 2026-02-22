@@ -43,7 +43,7 @@ async def test_lazy_manager_concurrent_access():
     async def factory():
         nonlocal call_count
         call_count += 1
-        await asyncio.sleep(0.01)  # Simulate work
+        await asyncio.sleep(0)  # Yield to allow concurrent callers to overlap
         return f"initialized-{call_count}"
 
     lazy = LazyManager(factory, name="test")

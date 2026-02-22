@@ -178,6 +178,7 @@ class TestIndexSaving:
         assert content["schema_version"] == "1.0.0"
 
     @pytest.mark.asyncio
+    @pytest.mark.slow
     async def test_save_updates_last_updated_timestamp(
         self, temp_project_root: Path
     ) -> None:
@@ -189,7 +190,7 @@ class TestIndexSaving:
         assert data is not None
         old_timestamp = cast(str, data["last_updated"])
 
-        # Wait a tiny bit to ensure timestamp differs
+        # Wait a tiny bit to ensure timestamp differs (timing-dependent)
         import asyncio
 
         await asyncio.sleep(0.01)
@@ -1223,6 +1224,7 @@ class TestTotalsRecalculation:
         assert cast(int, totals["total_tokens"]) == 768
 
     @pytest.mark.asyncio
+    @pytest.mark.slow
     async def test_recalculate_totals_updates_timestamp(
         self, temp_project_root: Path
     ) -> None:
@@ -1235,6 +1237,7 @@ class TestTotalsRecalculation:
         totals = cast(dict[str, object], data["totals"])
         old_timestamp = cast(str, totals["last_full_scan"])
 
+        # Wait so timestamp can differ (timing-dependent)
         import asyncio
 
         await asyncio.sleep(0.01)

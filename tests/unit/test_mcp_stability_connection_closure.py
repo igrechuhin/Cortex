@@ -183,9 +183,11 @@ class TestConnectionClosureHandling:
     async def test_timeout_error_handling(self) -> None:
         """Test that timeout errors from the stability layer are raised."""
 
-        # Arrange
+        # Arrange - block until timeout using Event (no real sleep)
+        never_set = asyncio.Event()
+
         async def test_func() -> str:
-            await asyncio.sleep(10)  # Deliberately exceed timeout
+            _ = await never_set.wait()
             return "success"
 
         # Act & Assert - timeout protection raises TimeoutError

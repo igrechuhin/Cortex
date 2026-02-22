@@ -95,6 +95,92 @@ class TestManageFileEdgeCases:
                 assert result["status"] == "error"
                 assert "Invalid file name" in result["error"]
 
+    @pytest.mark.parametrize(
+        "operation",
+        ["read", "write", "metadata"],
+        ids=["read", "write", "metadata"],
+    )
+    async def test_manage_file_invalid_file_name_returns_error_for_operation(
+        self, operation: str
+    ) -> None:
+        """Invalid file name (path traversal) returns error for each operation."""
+        file_name = "../../../etc/passwd"
+        mock_fs = AsyncMock()
+        mock_fs.construct_safe_path = MagicMock(
+            side_effect=ValueError("Path traversal detected")
+        )
+        mock_managers_dict = {
+            "fs": mock_fs,
+            "index": AsyncMock(),
+            "tokens": MagicMock(),
+            "versions": AsyncMock(),
+        }
+        with patch(
+            "cortex.tools.file_manage_file_helpers.get_managers",
+            new_callable=AsyncMock,
+            return_value=make_test_managers(**mock_managers_dict),
+        ):
+            with patch(
+                "cortex.tools.file_manage_file_helpers.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ):
+                kwargs: dict[str, object] = {
+                    "file_name": file_name,
+                    "operation": operation,
+                }
+                if operation == "write":
+                    kwargs["content"] = "# dummy"
+                result_str = await manage_file(**kwargs)
+                result = json.loads(result_str)
+                assert result["status"] == "error"
+                assert "Invalid file name" in result["error"]
+
+    _EDGE_FILE_NAMES: list[tuple[str, str]] = [
+        ("", "empty_string"),
+        ("a" * 600, "very_long_path"),
+        ("café_naïve.md", "unicode"),
+        ("  \t  ", "whitespace_only"),
+        (".", "dot_only"),
+    ]
+
+    @pytest.mark.parametrize(
+        "file_name,scenario",
+        _EDGE_FILE_NAMES,
+        ids=[s for _, s in _EDGE_FILE_NAMES],
+    )
+    async def test_manage_file_edge_case_file_name_returns_error(
+        self, file_name: str, scenario: str
+    ) -> None:
+        """Edge-case file_name values (empty, long, unicode, etc.) return error."""
+        mock_fs = AsyncMock()
+        mock_fs.construct_safe_path = MagicMock(
+            side_effect=ValueError("Invalid or disallowed file name")
+        )
+        mock_managers_dict = {
+            "fs": mock_fs,
+            "index": AsyncMock(),
+            "tokens": MagicMock(),
+            "versions": AsyncMock(),
+        }
+        with patch(
+            "cortex.tools.file_manage_file_helpers.get_managers",
+            new_callable=AsyncMock,
+            return_value=make_test_managers(**mock_managers_dict),
+        ):
+            with patch(
+                "cortex.tools.file_manage_file_helpers.get_or_resolve_project_root",
+                new_callable=AsyncMock,
+                return_value=Path("/tmp/test"),
+            ):
+                result_str = await manage_file(
+                    file_name=file_name,
+                    operation="read",
+                )
+                result = json.loads(result_str)
+                assert result["status"] == "error"
+                assert "error" in result
+
     async def test_manage_file_permission_error_on_path_validation(self):
         """Test permission error during path validation."""
         # Arrange

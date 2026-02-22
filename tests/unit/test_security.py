@@ -249,6 +249,7 @@ class TestRateLimiter:
         assert limiter.get_current_count() == 10
 
     @pytest.mark.asyncio
+    @pytest.mark.slow
     async def test_rate_limiter_window_expiry(self):
         """Test operations expire after window."""
         limiter = RateLimiter(max_ops=5, window_seconds=0.2)
@@ -258,7 +259,7 @@ class TestRateLimiter:
             await limiter.acquire()
         assert limiter.get_current_count() == 5
 
-        # Wait for window to expire
+        # Wait for window to expire (timing-dependent test)
         await asyncio.sleep(0.3)
 
         # Old operations should have expired

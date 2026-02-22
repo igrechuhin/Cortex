@@ -460,13 +460,15 @@ class TestMCPStability:
     @pytest.mark.asyncio
     async def test_with_mcp_stability_timeout(self) -> None:
         """Test timeout handling with MCP stability."""
-        # Arrange
+        # Arrange - block until timeout using Event (no real sleep)
         import asyncio
 
         from cortex.core.mcp_stability import with_mcp_stability
 
+        never_set = asyncio.Event()
+
         async def slow_func() -> str:
-            await asyncio.sleep(10)
+            _ = await never_set.wait()
             return "never reached"
 
         # Act & Assert

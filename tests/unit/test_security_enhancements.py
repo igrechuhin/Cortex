@@ -1,7 +1,5 @@
 """Tests for security enhancements in Phase 9.4."""
 
-import asyncio
-
 import pytest
 
 from cortex.core.security import InputValidator
@@ -186,9 +184,8 @@ class TestGitOperationTimeouts:
             git_command_runner=git_runner,
         )
 
-        # Mock fast git command
+        # Mock fast git command (no real delay; patch sleep so test is fast)
         async def fast_command(cmd: list[str]) -> GitCommandResult:
-            await asyncio.sleep(0.1)  # Faster than timeout
             return GitCommandResult(success=True, stdout="OK", stderr="")
 
         repo.git_command_runner = fast_command
