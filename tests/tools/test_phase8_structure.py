@@ -922,8 +922,8 @@ class TestPerformUpdateIndex:
         mgrs = await get_managers(tmp_path)
         metadata = await mgrs.index.get_file_metadata("test.md")
         assert metadata is not None
-        assert metadata.get("exists") is True
-        assert metadata.get("size_bytes") == len(content.encode("utf-8"))
+        assert metadata.exists is True
+        assert metadata.size_bytes == len(content.encode("utf-8"))
 
     @pytest.mark.asyncio
     async def test_perform_update_index_no_memory_bank_dir(

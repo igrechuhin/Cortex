@@ -87,10 +87,15 @@ async def _file_has_snapshot(
         True if file has matching snapshot
     """
     file_meta = await metadata_index.get_file_metadata(rel_path)
-    version_history = _extract_version_history(cast(JsonValue, file_meta))
+    if file_meta is None:
+        return False
+    version_history = (
+        _extract_version_history(cast(JsonValue, file_meta))
+        if isinstance(file_meta, dict)
+        else file_meta.version_history
+    )
     if version_history is None:
         return False
-
     for version_entry in version_history:
         change_description = version_entry.change_description or ""
         if change_description.startswith(f"Pre-refactoring snapshot: {snapshot_id}"):
@@ -117,8 +122,9 @@ async def get_version_history(
     file_meta = await metadata_index.get_file_metadata(file_path)
     if file_meta is None:
         return None
-
-    return _extract_version_history(cast(JsonValue, file_meta))
+    if isinstance(file_meta, dict):
+        return _extract_version_history(cast(JsonValue, file_meta))
+    return file_meta.version_history
 
 
 def find_snapshot_version(

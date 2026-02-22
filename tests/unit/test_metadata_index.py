@@ -399,7 +399,7 @@ class TestFileMetadataUpdates:
         files = cast(dict[str, object], data["files"])
         file_meta = cast(dict[str, object], files["test.md"])
         assert cast(list[dict[str, object]], file_meta["sections"]) == [
-            section.model_dump() for section in sections
+            section.model_dump(mode="json", by_alias=True) for section in sections
         ]
 
     @pytest.mark.asyncio
@@ -712,8 +712,8 @@ class TestFileQueries:
 
         # Assert
         assert meta is not None
-        assert meta["size_bytes"] == 100
-        assert meta["token_count"] == 50
+        assert meta.size_bytes == 100
+        assert meta.token_count == 50
 
     @pytest.mark.asyncio
     async def test_get_file_metadata_returns_none_for_nonexistent(

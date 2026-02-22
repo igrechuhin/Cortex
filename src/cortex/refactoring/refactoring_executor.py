@@ -565,14 +565,8 @@ class RefactoringExecutor:
             full_path = self.memory_bank_dir / file_path
             if full_path.exists():
                 metadata_raw = await self.metadata_index.get_file_metadata(file_path)
-                if isinstance(metadata_raw, dict):
-                    token_count_raw = metadata_raw.get("token_count", 0)
-                    token_count = (
-                        int(token_count_raw)
-                        if isinstance(token_count_raw, (int, float))
-                        else 0
-                    )
-                    total_tokens_after += token_count
+                if metadata_raw is not None:
+                    total_tokens_after += metadata_raw.token_count
         return total_tokens_after
 
     def _extract_estimated_impact(

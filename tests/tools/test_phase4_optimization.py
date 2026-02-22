@@ -16,6 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.core.models import DetailedFileMetadata
 from cortex.managers.types import ManagersDict
 from cortex.tools.phase4_optimization import (
     get_relevance_scores,
@@ -152,11 +153,19 @@ def mock_managers(
         ]
     )
 
+    # get_file_metadata must return a model with .model_dump() (DetailedFileMetadata)
+    _file_metadata_model = DetailedFileMetadata(
+        path="/mock/memory-bank/file.md",
+        exists=True,
+        size_bytes=100,
+        token_count=1000,
+        token_model="cl100k_base",
+        last_modified="2026-01-01T00:00:00",
+        content_hash="mock",
+    )
     metadata_index = MagicMock()
     metadata_index.list_all_files = AsyncMock(return_value=["file1.md", "file2.md"])
-    metadata_index.get_file_metadata = AsyncMock(
-        return_value={"tokens": 1000, "priority": 1}
-    )
+    metadata_index.get_file_metadata = AsyncMock(return_value=_file_metadata_model)
     metadata_index.memory_bank_dir = Path("/mock/memory-bank")
 
     fs_manager = MagicMock()

@@ -413,9 +413,7 @@ async def _update_rollback_metadata(
     file_meta = await metadata_index.get_file_metadata(file_name)
     if not file_meta:
         return 1
-    current_raw = file_meta.get("current_version", 0)
-    current_version = int(current_raw) if isinstance(current_raw, int) else 0
-    return current_version + 1
+    return file_meta.current_version + 1
 
 
 async def _finalize_rollback(

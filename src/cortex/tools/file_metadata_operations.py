@@ -108,7 +108,7 @@ async def handle_metadata_operation(
         {
             "status": "success",
             "file_name": file_name,
-            "metadata": metadata,
+            "metadata": metadata.model_dump(mode="json"),
         },
         indent=2,
     )

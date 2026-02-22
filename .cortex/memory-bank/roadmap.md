@@ -24,7 +24,6 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Features & Enhancements
 
-- **Reference: Code quality remediation (P0)** - Plan: .cortex/plans/plan-code-quality-remediation.md
 - **Reference: Test coverage and quality (P0)** - Plan: .cortex/plans/plan-test-coverage-and-quality.md
 - **Reference: Documentation completeness (P1)** - Plan: .cortex/plans/plan-documentation-completeness.md
 - **Reference: Evaluation framework maturation (P1)** - Plan: .cortex/plans/plan-evaluation-framework-maturation.md

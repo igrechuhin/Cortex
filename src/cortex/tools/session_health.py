@@ -49,10 +49,8 @@ def determine_token_budget_status(
 async def _count_file_tokens(metadata_index: MetadataIndex, file_name: str) -> int:
     """Get token count for a file from metadata."""
     metadata = await metadata_index.get_file_metadata(file_name)
-    if metadata and "token_count" in metadata:
-        token_count_value = metadata["token_count"]
-        if isinstance(token_count_value, int):
-            return token_count_value
+    if metadata is not None:
+        return metadata.token_count
     return 0
 
 

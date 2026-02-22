@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from cortex.core.models import DetailedFileMetadata, SectionMetadata
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.managers.lazy_manager import LazyManager
 from cortex.structure.models import HealthGrade
@@ -93,7 +94,15 @@ class TestManageFile:
         # Setup
         file_name = "projectBrief.md"
         content = "# Project Brief"
-        metadata = {"size_bytes": 100, "token_count": 20}
+        metadata_model = DetailedFileMetadata(
+            path=str(temp_memory_bank),
+            exists=True,
+            size_bytes=100,
+            token_count=20,
+            token_model="cl100k_base",
+            last_modified="2026-01-01T00:00:00",
+            content_hash="hash123",
+        )
         _ = temp_memory_bank.write_text(content)
 
         # Mock managers
@@ -101,7 +110,7 @@ class TestManageFile:
         mock_fs.read_file = AsyncMock(return_value=(content, "hash123"))
         mock_fs.construct_safe_path = MagicMock(return_value=temp_memory_bank)
         mock_index = AsyncMock()
-        mock_index.get_file_metadata = AsyncMock(return_value=metadata)
+        mock_index.get_file_metadata = AsyncMock(return_value=metadata_model)
         mock_managers_dict = {
             "fs": mock_fs,
             "index": mock_index,
@@ -145,8 +154,8 @@ class TestManageFile:
             assert result["status"] == "success"
             # Metadata may have additional fields, check subset
             result_metadata = result["metadata"]
-            assert result_metadata["size_bytes"] == metadata["size_bytes"]
-            assert result_metadata["token_count"] == metadata["token_count"]
+            assert result_metadata["size_bytes"] == metadata_model.size_bytes
+            assert result_metadata["token_count"] == metadata_model.token_count
 
     async def test_manage_file_read_not_found(self, mock_managers: dict[str, object]):
         """Test file read when file doesn't exist."""
@@ -316,11 +325,16 @@ class TestManageFile:
         """Test successful metadata retrieval."""
         # Setup
         file_name = "projectBrief.md"
-        metadata = {
-            "size_bytes": 1000,
-            "token_count": 250,
-            "sections": [{"title": "Brief"}],
-        }
+        metadata_model = DetailedFileMetadata(
+            path="/tmp/test/.cortex/memory-bank/projectBrief.md",
+            exists=True,
+            size_bytes=1000,
+            token_count=250,
+            token_model="cl100k_base",
+            last_modified="2026-01-01T00:00:00",
+            content_hash="abc123",
+            sections=[SectionMetadata(heading="Brief")],
+        )
 
         # Return a path that exists so _handle_metadata_operation passes the exists() check
         existing_path = Path(__file__).resolve().parent
@@ -328,7 +342,7 @@ class TestManageFile:
         mock_fs = MagicMock()
         mock_fs.construct_safe_path = MagicMock(return_value=existing_path)
         mock_index = AsyncMock()
-        mock_index.get_file_metadata = AsyncMock(return_value=metadata)
+        mock_index.get_file_metadata = AsyncMock(return_value=metadata_model)
         mock_managers_dict = {
             "fs": mock_fs,
             "index": mock_index,
@@ -375,9 +389,11 @@ class TestManageFile:
             assert result["status"] == "success"
             # Metadata may have additional fields, check subset
             result_metadata = result["metadata"]
-            assert result_metadata["size_bytes"] == metadata["size_bytes"]
-            assert result_metadata["token_count"] == metadata["token_count"]
-            assert result_metadata["sections"] == metadata["sections"]
+            assert result_metadata["size_bytes"] == metadata_model.size_bytes
+            assert result_metadata["token_count"] == metadata_model.token_count
+            assert result_metadata["sections"] == [
+                s.model_dump(mode="json") for s in metadata_model.sections
+            ]
 
     async def test_manage_file_invalid_operation(
         self, mock_managers: dict[str, object]

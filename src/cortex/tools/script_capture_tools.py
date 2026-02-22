@@ -25,6 +25,7 @@ from cortex.core.mcp_stability import (
 from cortex.core.project_root_resolver import resolve_project_root_async
 from cortex.discovery.recommendation_engine import recommend_tools_and_scripts
 from cortex.discovery.tool_registry import get_known_script_names, get_known_tool_names
+from cortex.script_analysis.models import ScriptAnalysisResult
 from cortex.script_analysis.script_analyzer import analyze_script
 from cortex.script_detection.models import ScriptCaptureRecord
 from cortex.script_detection.script_capture import capture_script
@@ -36,17 +37,16 @@ from cortex.script_promotion.tool_converter import tool_conversion_template
 from cortex.server import mcp
 
 
-def _record_to_summary(record: object) -> dict[str, object]:
+def _record_to_summary(record: ScriptCaptureRecord) -> dict[str, object]:
     """Build a JSON-serializable summary from a ScriptCaptureRecord."""
-    r = record
     return {
-        "script_id": getattr(r, "script_id", ""),
-        "timestamp": getattr(r, "timestamp", ""),
-        "task_description": getattr(r, "task_description", ""),
-        "script_path": getattr(r, "script_path", ""),
-        "script_type": getattr(r, "script_type", ""),
-        "purpose": getattr(r, "purpose", ""),
-        "promotion_status": getattr(r, "promotion_status", ""),
+        "script_id": record.script_id,
+        "timestamp": record.timestamp,
+        "task_description": record.task_description,
+        "script_path": record.script_path,
+        "script_type": record.script_type,
+        "purpose": record.purpose,
+        "promotion_status": record.promotion_status.value,
     }
 
 
@@ -144,16 +144,16 @@ def _build_promote_payload(
     return payload
 
 
-def _analysis_to_summary(obj: object) -> dict[str, object]:
+def _analysis_to_summary(obj: ScriptAnalysisResult) -> dict[str, object]:
     """Build JSON-serializable summary from ScriptAnalysisResult."""
     return {
-        "script_id": getattr(obj, "script_id", ""),
-        "use_case_label": getattr(getattr(obj, "use_case", None), "use_case_label", ""),
-        "keywords": getattr(getattr(obj, "use_case", None), "keywords", []),
-        "gap_reason": getattr(getattr(obj, "gap", None), "gap_reason", ""),
-        "is_gap": getattr(getattr(obj, "gap", None), "is_gap", True),
-        "reusability_score": getattr(obj, "reusability_score", 0.0),
-        "promotion_potential": getattr(obj, "promotion_potential", 0.0),
+        "script_id": obj.script_id,
+        "use_case_label": obj.use_case.use_case_label,
+        "keywords": obj.use_case.keywords,
+        "gap_reason": obj.gap.gap_reason,
+        "is_gap": obj.gap.is_gap,
+        "reusability_score": obj.reusability_score,
+        "promotion_potential": obj.promotion_potential,
     }
 
 

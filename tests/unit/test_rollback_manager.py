@@ -9,7 +9,7 @@ import pytest
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
-from cortex.core.models import ModelDict
+from cortex.core.models import DetailedFileMetadata, ModelDict, VersionMetadata
 from cortex.refactoring.models import RefactoringStatus
 from cortex.refactoring.rollback_manager import RollbackManager, RollbackRecord
 
@@ -27,6 +27,25 @@ def _make_version_metadata_dict(*, version: int, change_description: str) -> Mod
         "changed_sections": [],
         "change_description": change_description,
     }
+
+
+def _make_detail_file_metadata(
+    *,
+    content_hash: str = "",
+    version_history: list[ModelDict] | None = None,
+) -> DetailedFileMetadata:
+    """Build DetailedFileMetadata for rollback tests."""
+    history = version_history or []
+    return DetailedFileMetadata(
+        path="",
+        exists=True,
+        size_bytes=0,
+        token_count=0,
+        token_model="",
+        last_modified="2025-01-01T12:00:00",
+        content_hash=content_hash,
+        version_history=[VersionMetadata.model_validate(h) for h in history],
+    )
 
 
 class TestRollbackRecord:
@@ -397,7 +416,7 @@ class TestDetectConflicts:
         mock_file_system.read_file = AsyncMock(return_value=("New content", None))
         mock_file_system.compute_hash = Mock(return_value="new_hash")
         mock_metadata_index.get_file_metadata = AsyncMock(
-            return_value={"content_hash": "old_hash"}
+            return_value=_make_detail_file_metadata(content_hash="old_hash")
         )
 
         # Act
@@ -469,14 +488,14 @@ class TestRestoreFiles:
 
         # Mock metadata and version manager
         mock_metadata_index.get_file_metadata = AsyncMock(
-            return_value={
-                "version_history": [
+            return_value=_make_detail_file_metadata(
+                version_history=[
                     _make_version_metadata_dict(
                         version=1,
                         change_description="Pre-refactoring snapshot: snapshot-1",
                     )
                 ]
-            }
+            )
         )
         version_manager.rollback_to_version = AsyncMock(
             return_value={"status": "success"}
@@ -674,14 +693,14 @@ class TestGetAffectedFiles:
 
         # Mock metadata to return version history with matching snapshot
         mock_metadata_index.get_file_metadata = AsyncMock(
-            return_value={
-                "version_history": [
+            return_value=_make_detail_file_metadata(
+                version_history=[
                     _make_version_metadata_dict(
                         version=1,
                         change_description="Pre-refactoring snapshot: snapshot-1",
                     )
                 ]
-            }
+            )
         )
 
         # Act
@@ -720,15 +739,17 @@ class TestGetAffectedFiles:
 
         # Mock metadata to return version history with matching snapshot
         # for each file
-        async def mock_get_file_metadata(file_name: str) -> dict[str, object] | None:
-            return {
-                "version_history": [
+        async def mock_get_file_metadata(
+            file_name: str,
+        ) -> DetailedFileMetadata | None:
+            return _make_detail_file_metadata(
+                version_history=[
                     _make_version_metadata_dict(
                         version=1,
                         change_description="Pre-refactoring snapshot: snapshot-1",
                     )
                 ]
-            }
+            )
 
         mock_metadata_index.get_file_metadata = mock_get_file_metadata
 

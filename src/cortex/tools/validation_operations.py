@@ -537,17 +537,16 @@ def _compute_validate_valid_flag(
     check_type: ValidateCheckTypeName,
 ) -> bool:
     """Best-effort validity flag for concise validate responses."""
-    valid_val: object = data.get("valid", True)
-    valid = bool(valid_val)
+    valid_val: bool = bool(data.get("valid", True))
 
     if check_type == "schema":
-        validation_obj: object = data.get("validation")
+        validation_obj = data.get("validation")
         if isinstance(validation_obj, dict):
             validation_dict = cast(dict[str, object], validation_obj)
-            inner_valid: object | None = validation_dict.get("valid")
+            inner_valid = validation_dict.get("valid")
             if isinstance(inner_valid, bool):
-                valid = inner_valid
-    return valid
+                valid_val = inner_valid
+    return valid_val
 
 
 def format_validate_response(
@@ -563,8 +562,9 @@ def format_validate_response(
     if data is None:
         return raw
 
-    status_val: object = data.get("status", "success")
-    status = str(status_val) if not isinstance(status_val, str) else status_val
+    status_raw = data.get("status")
+    status_val: str = status_raw if isinstance(status_raw, str) else "success"
+    status = status_val
     if status != "success":
         # Preserve full error payloads even in concise mode.
         return raw

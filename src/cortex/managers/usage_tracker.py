@@ -349,15 +349,12 @@ class UsageTracker:
         return events[start:end]
 
 
-def _to_row_dict(obj: object) -> dict[str, object]:
+def _to_row_dict(obj: ToolUsageStats | dict[str, object]) -> dict[str, object]:
     """Convert tool stat to dict for get_unused_tools iteration."""
     if isinstance(obj, dict):
-        return cast(dict[str, object], obj)
-    method = getattr(obj, "model_dump", None)
-    if callable(method):
-        out: object = method()
-        return cast(dict[str, object], out) if isinstance(out, dict) else {}
-    return {}
+        return obj
+    out = obj.model_dump()
+    return cast(dict[str, object], out)
 
 
 def _error_types_from_events(events: list[ToolUsageEvent]) -> dict[str, int]:

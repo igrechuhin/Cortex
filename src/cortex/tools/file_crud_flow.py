@@ -58,8 +58,8 @@ async def _build_read_response(
 
     if include_metadata:
         metadata = await metadata_index.get_file_metadata(file_name)
-        if isinstance(metadata, dict):
-            response["metadata"] = cast(JsonValue, metadata)
+        if metadata is not None:
+            response["metadata"] = cast(JsonValue, metadata.model_dump(mode="json"))
 
     return json.dumps(response, indent=2)
 

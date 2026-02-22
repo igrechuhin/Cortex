@@ -7,7 +7,6 @@ Handle file restoration and rollback execution operations.
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 from pathlib import Path
-from typing import cast
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
@@ -298,10 +297,6 @@ async def _create_backup_snapshot(
 async def _get_version_count(metadata_index: MetadataIndex, file_path: str) -> int:
     """Get current version count from metadata."""
     file_meta = await metadata_index.get_file_metadata(file_path)
-    if not isinstance(file_meta, dict):
+    if file_meta is None:
         return 0
-    version_history_raw: object = file_meta.get("version_history", [])
-    if not isinstance(version_history_raw, list):
-        return 0
-    version_history_list = cast(list[object], version_history_raw)
-    return len(version_history_list)
+    return len(file_meta.version_history)

@@ -187,7 +187,7 @@ class ProgressiveLoader:
         new_cumulative = cumulative_tokens + tokens
         metadata_obj = await self.metadata_index.get_file_metadata(file_name)
         metadata = _build_file_content_metadata(
-            cast(ModelDict | None, metadata_obj),
+            metadata_obj.model_dump(mode="json") if metadata_obj else None,
             tokens=tokens,
             priority=depth,
         )
@@ -350,11 +350,9 @@ class ProgressiveLoader:
             if stop_at_budget and cumulative_tokens + tokens > token_budget:
                 return None
 
+            meta = await self.metadata_index.get_file_metadata(file_name)
             metadata = _build_file_content_metadata(
-                cast(
-                    ModelDict | None,
-                    await self.metadata_index.get_file_metadata(file_name),
-                ),
+                meta.model_dump(mode="json") if meta else None,
                 tokens=tokens,
                 priority=None,
             )
@@ -448,11 +446,9 @@ class ProgressiveLoader:
             if cumulative_tokens + tokens > token_budget:
                 return None
 
+            meta = await self.metadata_index.get_file_metadata(file_name)
             metadata = _build_file_content_metadata(
-                cast(
-                    ModelDict | None,
-                    await self.metadata_index.get_file_metadata(file_name),
-                ),
+                meta.model_dump(mode="json") if meta else None,
                 tokens=tokens,
                 priority=None,
             )
@@ -566,9 +562,9 @@ async def _read_all_files_for_loading(
             files_content[file_name] = content
 
             metadata = await metadata_index.get_file_metadata(file_name)
-            if metadata:
+            if metadata is not None:
                 files_metadata[file_name] = FileMetadataForScoring.model_validate(
-                    metadata
+                    metadata.model_dump(mode="json")
                 )
 
         except FileNotFoundError:
@@ -715,10 +711,9 @@ async def _build_priority_loaded_content(
     """Build LoadedContent for priority file."""
     cumulative_tokens += tokens
     more_available = priority < len(priority_order) - 1
+    meta = await loader.metadata_index.get_file_metadata(file_name)
     metadata = _build_file_content_metadata(
-        cast(
-            ModelDict | None, await loader.metadata_index.get_file_metadata(file_name)
-        ),
+        meta.model_dump(mode="json") if meta else None,
         tokens=tokens,
         priority=priority,
     )

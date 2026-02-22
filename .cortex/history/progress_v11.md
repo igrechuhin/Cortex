@@ -19,6 +19,10 @@
 - **Commit pipeline type fixes (2026-02-22)** - COMPLETE. Resolved 10 type errors in tests (pytest.approx, dict.get); format and markdown lint; 4381 tests, 92% coverage.
 - **Code quality remediation Step 6: split plan_operations (2026-02-22)** - COMPLETE. Split plan_operations.py into plan_crud.py, plan_roadmap.py, plan_archive.py; facade re-exports; tests updated to patch implementation modules. Quality gate and tests passed.
 - **Commit pipeline** - Pre-commit checks passed (fix_errors, format, markdown lint, type_check, quality, tests 4385 pass, 92.03% coverage). Plan archiving: 0 plans to archive. Memory bank and roadmap consistent.
+- **Code quality remediation Step 6: core/metadata_index split (2026-02-22)** - COMPLETE. Split core/metadata_index.py into metadata_index.py (facade), metadata_queries.py (queries + I/O), metadata_cache.py (totals/analytics/mutations). All files ≤400 lines; tests pass; quality gate passed.
+- **Code quality remediation (P0) (2026-02-22)** - COMPLETE. All steps 1-6 done: model/file splits, refactored functions, eliminated Any, replaced dict[str,object], resolved type-ignore, split oversized tool files. Quality gate and tests pass.
+- **Test coverage Step 1a: services tests (2026-02-22)** - COMPLETE. Added tests/services/ with test_models, test_language_detector, framework_adapters/test_base, test_detection, test_stub_adapter; 32 tests, type-clean.
+- **Commit: test fixes for manage_file and get_relevance_scores** - COMPLETE. Fixed 10 failing tests: mock metadata must return DetailedFileMetadata so handlers can call model_dump. Updated test_consolidated, test_file_operations, test_phase4_optimization fixture. All 4417 tests pass; coverage 92.05%.
 
 ## 2026-02-21
 

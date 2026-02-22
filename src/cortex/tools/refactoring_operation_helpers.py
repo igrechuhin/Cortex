@@ -361,8 +361,9 @@ def _build_reorg_suggestions(
     data: JsonDict,
 ) -> list[ConciseRefactoringSuggestionEntry]:
     """Build concise entry for reorganization plan."""
-    goal_val: object = data.get("goal")
-    goal = goal_val if isinstance(goal_val, str) else goal_val
+    goal_raw = data.get("goal")
+    goal_val: str | None = goal_raw if isinstance(goal_raw, str) else None
+    goal = goal_val
     recommendation = (
         f"Reorganization plan optimized for goal='{goal}'"
         if goal is not None
@@ -380,9 +381,10 @@ def _build_reorg_suggestions(
 
 def _build_concise_suggestions(
     data: JsonDict,
-) -> tuple[list[ConciseRefactoringSuggestionEntry], object | None]:
+) -> tuple[list[ConciseRefactoringSuggestionEntry], str | None]:
     """Dispatch to type-specific concise suggestion builders."""
-    type_raw: object = data.get("type")
+    type_raw_val = data.get("type")
+    type_raw: str | None = type_raw_val if isinstance(type_raw_val, str) else None
     if type_raw == "consolidation":
         return _build_consolidation_suggestions(data), type_raw
     if type_raw == "splits":
@@ -404,8 +406,9 @@ def format_suggest_refactoring_response(
     if data is None:
         return raw
 
-    status_val: object = data.get("status", "success")
-    status = status_val if isinstance(status_val, str) else str(status_val)
+    status_raw = data.get("status")
+    status_val: str = status_raw if isinstance(status_raw, str) else "success"
+    status = status_val
     if status != "success":
         return raw
 

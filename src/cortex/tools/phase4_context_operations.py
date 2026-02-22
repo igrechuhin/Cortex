@@ -410,8 +410,10 @@ async def _read_all_files_for_context_loading(
             files_content[file_name] = content
 
             metadata_raw = await metadata_index.get_file_metadata(file_name)
-            if metadata_raw:
-                files_metadata[file_name] = cast(ModelDict, metadata_raw)
+            if metadata_raw is not None:
+                files_metadata[file_name] = metadata_raw.model_dump(
+                    mode="json", by_alias=True
+                )
         except FileNotFoundError:
             continue
 
@@ -481,8 +483,10 @@ async def _collect_files_metadata(
 
     for file_name in all_files:
         metadata_raw = await metadata_index.get_file_metadata(file_name)
-        if metadata_raw:
-            files_metadata[file_name] = cast(ModelDict, metadata_raw)
+        if metadata_raw is not None:
+            files_metadata[file_name] = metadata_raw.model_dump(
+                mode="json", by_alias=True
+            )
 
     return files_metadata
 

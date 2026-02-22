@@ -30,6 +30,14 @@
 
 - ✅ **Code quality remediation Step 6: split plan_operations** - COMPLETE (2026-02-22) - Split plan_operations.py (930 lines) into plan_crud.py, plan_roadmap.py, plan_archive.py; plan_operations.py is re-export facade. All modules ≤400 lines. Tests patch plan_crud/plan_roadmap. Remaining: core/metadata_index.
 
+- ✅ **Code quality remediation Step 6: core/metadata_index split** - COMPLETE (2026-02-22) - Split core/metadata_index.py into metadata_index.py (facade), metadata_queries.py (queries + load/save/recover), metadata_cache.py (totals, analytics, file-metadata helpers). All three files under 400 lines; public API unchanged; tests and quality gate pass.
+
+- ✅ **Code quality remediation (P0)** - COMPLETE (2026-02-22) - All steps 1-6 done: split tools/models.py and other oversized model files; refactored oversized functions; eliminated Any; replaced dict[str,object] with Pydantic; resolved type-ignore comments; split file_operations, session_start_tools, markdown_operations, plan_operations, metadata_index. Quality gate and tests pass.
+
+- ✅ **Test coverage Step 1a: services tests** - COMPLETE (2026-02-22) - Created tests/services/ and tests/services/framework_adapters/; added unit tests for models, language_detector, base, detection, stub_adapter (32 tests). All pass; pyright clean on tests/services/.
+
+- ✅ **Commit: test fixes for manage_file and get_relevance_scores** - COMPLETE (2026-02-22) - Fixed 10 failing tests by returning DetailedFileMetadata from mock get_file_metadata in manage_file and phase4 tests; handlers call .model_dump(). All tests pass, coverage 92.05%.
+
 ## Completed Work (2026-02-21)
 
 - **Summary (2026-02-21)** - 1 entries archived.

@@ -34,7 +34,7 @@ async def validate_quality_single_file(
         )
     content, _ = await fs_manager.read_file(file_path)
     file_metadata = await metadata_index.get_file_metadata(file_name)
-    metadata = cast(ModelDict, file_metadata or {})
+    metadata = file_metadata.model_dump(mode="json") if file_metadata else {}
     score = await quality_metrics.calculate_file_score(file_name, content, metadata)
     return json.dumps(
         {
@@ -64,10 +64,8 @@ async def _collect_files_data(
             content, _ = await fs_manager.read_file(md_file)
             all_files_content[md_file.name] = content
             file_meta = await metadata_index.get_file_metadata(md_file.name)
-            if isinstance(file_meta, dict):
-                files_metadata[md_file.name] = cast(
-                    DetailedFileMetadata | FileMetadataForQuality | ModelDict, file_meta
-                )
+            if file_meta is not None:
+                files_metadata[md_file.name] = file_meta
     return all_files_content, files_metadata
 
 

@@ -55,7 +55,7 @@ class TestManagerCoordination:
 
         # Assert: Metadata should exist
         assert metadata is not None
-        assert metadata["path"] == str(file_path)
+        assert metadata.path == str(file_path)
 
         # Act: Add file to dependency graph (as a dynamic dependency with
         # no dependencies)
@@ -220,7 +220,7 @@ class TestManagerCoordination:
         # Assert: Metadata updated
         metadata = await metadata_index.get_file_metadata("test.md")
         assert metadata is not None
-        current_version = metadata.get("current_version")
+        current_version = metadata.current_version
         assert isinstance(current_version, int) and current_version >= 1
 
         # Act: Modify and create new snapshot
@@ -260,7 +260,7 @@ class TestManagerCoordination:
         # Assert: Version incremented
         metadata = await metadata_index.get_file_metadata("test.md")
         assert metadata is not None
-        current_version = metadata.get("current_version")
+        current_version = metadata.current_version
         assert isinstance(current_version, int) and current_version >= 2
 
 

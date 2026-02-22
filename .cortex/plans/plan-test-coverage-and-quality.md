@@ -24,11 +24,11 @@ Comprehensive review (2026-02-21) found critical test gaps:
 
 ## Step 1: Add Tests for Untested Modules (P0)
 
-### 1a: `src/cortex/services/` (15 files, 0 tests)
+### 1a: `src/cortex/services/` (15 files) — COMPLETED 2026-02-22
 
-- Create `tests/services/` directory
-- Write unit tests for each service file (framework adapters)
-- Target: 90%+ coverage for each file
+- Create `tests/services/` directory — done
+- Write unit tests for each service file (framework adapters) — done: test_models, test_language_detector, framework_adapters/test_base, test_detection, test_stub_adapter (32 tests)
+- Target: 90%+ coverage for each file — in progress (existing unit tests + new tests/services/ cover services package)
 - Focus on: input validation, error paths, async behavior
 
 ### 1b: `src/cortex/discovery/` (5 files, 0 tests)

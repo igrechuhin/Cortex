@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from cortex.core.models import ModelDict
+from cortex.core.models import DetailedFileMetadata, ModelDict
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.validation_dispatch import setup_validation_managers
 from cortex.tools.validation_duplication import (
@@ -485,7 +485,15 @@ class TestValidateQuality:
 
         mock_index = MagicMock()
         mock_index.get_file_metadata = AsyncMock(
-            return_value={"tokens": 100, "created": 123456}
+            return_value=DetailedFileMetadata(
+                path=str(test_file),
+                exists=True,
+                size_bytes=0,
+                token_count=100,
+                token_model="",
+                last_modified="",
+                content_hash="",
+            )
         )
 
         mock_metrics = MagicMock()

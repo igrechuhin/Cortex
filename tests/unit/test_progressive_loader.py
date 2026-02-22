@@ -11,12 +11,29 @@ import pytest
 
 from cortex.core.file_system import FileSystemManager
 from cortex.core.metadata_index import MetadataIndex
+from cortex.core.models import DetailedFileMetadata
 from cortex.optimization.context_optimizer import ContextOptimizer
 from cortex.optimization.models import FileContentMetadata
 from cortex.optimization.progressive_loader import (
     LoadedContent,
     ProgressiveLoader,
 )
+
+
+def _minimal_file_metadata(
+    *,
+    token_count: int = 0,
+) -> DetailedFileMetadata:
+    """Minimal DetailedFileMetadata for progressive_loader tests."""
+    return DetailedFileMetadata(
+        path="",
+        exists=False,
+        size_bytes=0,
+        token_count=token_count,
+        token_model="",
+        last_modified="",
+        content_hash="",
+    )
 
 
 class TestProgressiveLoaderInitialization:
@@ -108,7 +125,9 @@ class TestLoadByPriority:
             return_value=("Test content for file", "hash123")
         )
         mock_context_optimizer.token_counter.count_tokens = MagicMock(return_value=10)
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={"tokens": 10})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata(token_count=10)
+        )
 
         # Create test files
         for filename in ["memorybankinstructions.md", "projectBrief.md"]:
@@ -140,7 +159,9 @@ class TestLoadByPriority:
             return_value=("Custom content", "hash123")
         )
         mock_context_optimizer.token_counter.count_tokens = MagicMock(return_value=15)
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         # Create files
         for filename in ["file1.md", "file2.md"]:
@@ -169,7 +190,9 @@ class TestLoadByPriority:
         mock_file_system.memory_bank_dir = tmp_path
         mock_file_system.read_file = AsyncMock(return_value=("Content", "hash"))
         mock_context_optimizer.token_counter.count_tokens = MagicMock(return_value=100)
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         for filename in ["file1.md", "file2.md", "file3.md"]:
             _ = (tmp_path / filename).write_text("Content")
@@ -200,7 +223,9 @@ class TestLoadByPriority:
         mock_file_system.memory_bank_dir = tmp_path
         mock_file_system.read_file = AsyncMock(side_effect=FileNotFoundError())
         mock_context_optimizer.token_counter.count_tokens = MagicMock(return_value=10)
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         loader = ProgressiveLoader(
             mock_file_system, mock_context_optimizer, mock_metadata_index
@@ -229,7 +254,9 @@ class TestLoadByPriority:
         mock_context_optimizer.token_counter.count_tokens = MagicMock(
             side_effect=token_counts
         )
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         for filename in ["file1.md", "file2.md", "file3.md"]:
             _ = (tmp_path / filename).write_text("Content")
@@ -267,7 +294,9 @@ class TestLoadByDependencies:
         mock_context_optimizer.dependency_graph.get_dependencies = MagicMock(
             return_value=[]
         )
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         _ = (tmp_path / "entry.md").write_text("Content")
 
@@ -307,7 +336,9 @@ class TestLoadByDependencies:
         mock_context_optimizer.dependency_graph.get_dependencies = MagicMock(
             side_effect=get_deps
         )
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         for filename in ["entry.md", "dep1.md", "dep2.md"]:
             _ = (tmp_path / filename).write_text("Content")
@@ -341,7 +372,9 @@ class TestLoadByDependencies:
         mock_context_optimizer.dependency_graph.get_dependencies = MagicMock(
             return_value=["dep.md"]
         )
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         for filename in ["entry.md", "dep.md"]:
             _ = (tmp_path / filename).write_text("Content")
@@ -381,7 +414,9 @@ class TestLoadByDependencies:
         mock_context_optimizer.dependency_graph.get_dependencies = MagicMock(
             side_effect=get_deps
         )
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         for filename in ["file1.md", "file2.md"]:
             _ = (tmp_path / filename).write_text("Content")
@@ -414,7 +449,9 @@ class TestLoadByRelevance:
         mock_file_system.read_file = AsyncMock(return_value=("Content", "hash"))
         mock_metadata_index.memory_bank_dir = tmp_path
         mock_metadata_index.list_all_files = AsyncMock(return_value=["file1.md"])
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         # Mock optimization result
         from cortex.optimization.optimization_strategies import (
@@ -458,7 +495,9 @@ class TestLoadByRelevance:
         mock_file_system.read_file = AsyncMock(return_value=("Content", "hash"))
         mock_metadata_index.memory_bank_dir = tmp_path
         mock_metadata_index.list_all_files = AsyncMock(return_value=["file1.md"])
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         from cortex.optimization.optimization_strategies import (
             OptimizationResult,
@@ -508,7 +547,9 @@ class TestLoadWithBudget:
         mock_file_system.memory_bank_dir = tmp_path
         mock_file_system.read_file = AsyncMock(return_value=("Content", "hash"))
         mock_context_optimizer.token_counter.count_tokens = MagicMock(return_value=100)
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         for filename in ["file1.md", "file2.md", "file3.md"]:
             _ = (tmp_path / filename).write_text("Content")
@@ -538,7 +579,9 @@ class TestLoadWithBudget:
         mock_file_system.memory_bank_dir = tmp_path
         mock_file_system.read_file = AsyncMock(return_value=("Content", "hash"))
         mock_context_optimizer.token_counter.count_tokens = MagicMock(return_value=100)
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         for filename in ["file1.md", "file2.md", "file3.md"]:
             _ = (tmp_path / filename).write_text("Content")
@@ -572,7 +615,9 @@ class TestStreamByPriority:
         mock_file_system.memory_bank_dir = tmp_path
         mock_file_system.read_file = AsyncMock(return_value=("Content", "hash"))
         mock_context_optimizer.token_counter.count_tokens = MagicMock(return_value=50)
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         for filename in ["file1.md", "file2.md"]:
             _ = (tmp_path / filename).write_text("Content")
@@ -602,7 +647,9 @@ class TestStreamByPriority:
         mock_file_system.memory_bank_dir = tmp_path
         mock_file_system.read_file = AsyncMock(return_value=("Content", "hash"))
         mock_context_optimizer.token_counter.count_tokens = MagicMock(return_value=100)
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         for filename in ["file1.md", "file2.md", "file3.md"]:
             _ = (tmp_path / filename).write_text("Content")
@@ -639,7 +686,9 @@ class TestStreamByRelevance:
         mock_file_system.read_file = AsyncMock(return_value=("Content", "hash"))
         mock_metadata_index.memory_bank_dir = tmp_path
         mock_metadata_index.list_all_files = AsyncMock(return_value=["file1.md"])
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         from cortex.optimization.optimization_strategies import (
             OptimizationResult,
@@ -766,7 +815,9 @@ class TestEdgeCases:
         mock_file_system.memory_bank_dir = tmp_path
         mock_file_system.read_file = AsyncMock(return_value=("Content", "hash"))
         mock_context_optimizer.token_counter.count_tokens = MagicMock(return_value=10)
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         _ = (tmp_path / "file.md").write_text("Content")
 
@@ -792,7 +843,9 @@ class TestEdgeCases:
         mock_file_system.memory_bank_dir = tmp_path
         mock_file_system.read_file = AsyncMock(return_value=("Content", "hash"))
         mock_context_optimizer.token_counter.count_tokens = MagicMock(return_value=50)
-        mock_metadata_index.get_file_metadata = AsyncMock(return_value={})
+        mock_metadata_index.get_file_metadata = AsyncMock(
+            return_value=_minimal_file_metadata()
+        )
 
         for filename in ["file1.md", "file2.md", "file3.md"]:
             _ = (tmp_path / filename).write_text("Content")

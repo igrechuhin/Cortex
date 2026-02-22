@@ -7,7 +7,7 @@ Helper functions for building metadata structures for context loading.
 from pathlib import Path
 from typing import cast
 
-from cortex.core.models import JsonValue, ModelDict
+from cortex.core.models import JsonValue, ModelDict, SectionMetadata
 from cortex.core.session_logger import log_load_context_call
 from cortex.optimization.agent_roles import AgentRole, get_role_profile
 from cortex.tools.context_models import FileMapEntry, SectionSummary
@@ -122,34 +122,40 @@ def _apply_role_based_adjustments(
 
 
 def extract_sections_from_metadata(
-    sections_list: object,
+    sections_list: list[SectionMetadata] | list[ModelDict] | object,
 ) -> list[SectionSummary]:
     """Extract sections list from metadata.
 
     Args:
-        sections_list: Sections list from metadata
+        sections_list: Sections list from metadata (list of SectionMetadata,
+            list of section dicts, or other; only lists are processed).
 
     Returns:
         List of section summary models
     """
-    from cortex.core.models import ModelDict
-
     sections: list[SectionSummary] = []
-    if isinstance(sections_list, list):
-        typed_sections: list[ModelDict] = cast(list[ModelDict], sections_list)
-        for section_item in typed_sections:
-            heading_raw: JsonValue = section_item.get("heading", "")
-            heading = str(heading_raw) if heading_raw else ""
-
-            token_count_raw: JsonValue = section_item.get("token_count", 0)
-            tokens = (
-                int(token_count_raw) if isinstance(token_count_raw, (int, str)) else 0
+    if not isinstance(sections_list, list):
+        return sections
+    normalized: list[ModelDict] = []
+    items_typed = cast(list[SectionMetadata | ModelDict], sections_list)
+    for item in items_typed:
+        if isinstance(item, SectionMetadata):
+            normalized.append(
+                cast(ModelDict, item.model_dump(mode="json", by_alias=True))
             )
+        else:
+            normalized.append(item)
+    for section_item in normalized:
+        heading_raw: JsonValue = section_item.get("heading", "")
+        heading = str(heading_raw) if heading_raw else ""
 
-            level_raw: JsonValue = section_item.get("level", 2)
-            level = int(level_raw) if isinstance(level_raw, (int, str)) else 2
+        token_count_raw: JsonValue = section_item.get("token_count", 0)
+        tokens = int(token_count_raw) if isinstance(token_count_raw, (int, str)) else 0
 
-            sections.append(SectionSummary(heading=heading, tokens=tokens, level=level))
+        level_raw: JsonValue = section_item.get("level", 2)
+        level = int(level_raw) if isinstance(level_raw, (int, str)) else 2
+
+        sections.append(SectionSummary(heading=heading, tokens=tokens, level=level))
     return sections
 
 

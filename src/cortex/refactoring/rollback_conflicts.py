@@ -48,11 +48,8 @@ async def detect_conflicts(
 
         # Get metadata to check for external modifications
         metadata = await metadata_index.get_file_metadata(file_path)
-        if isinstance(metadata, dict):
-            stored_hash_raw = metadata.get("content_hash")
-            stored_hash = (
-                str(stored_hash_raw) if isinstance(stored_hash_raw, str) else ""
-            )
+        if metadata is not None:
+            stored_hash = metadata.content_hash
             if stored_hash and stored_hash != current_hash:
                 conflicts.append(f"{file_path} - File has been manually edited")
 

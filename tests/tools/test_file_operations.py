@@ -17,7 +17,7 @@ from cortex.core.exceptions import (
     FileLockTimeoutError,
     GitConflictError,
 )
-from cortex.core.models import ResponseStatus
+from cortex.core.models import DetailedFileMetadata, ResponseStatus
 from cortex.tools.file_operation_helpers import (
     build_invalid_operation_error,
     build_schema_validation_error_response,
@@ -1079,7 +1079,15 @@ class TestEdgeCasesForCoverage:
         # Arrange
         file_name = "test.md"
         content = "Test content"
-        metadata = {"size_bytes": 100, "token_count": 25}
+        metadata_model = DetailedFileMetadata(
+            path="/tmp/test/.cortex/memory-bank/test.md",
+            exists=True,
+            size_bytes=100,
+            token_count=25,
+            token_model="cl100k_base",
+            last_modified="2026-01-01T00:00:00",
+            content_hash="hash123",
+        )
 
         # Create mock path that exists
         mock_path = MagicMock(spec=Path)
@@ -1090,7 +1098,7 @@ class TestEdgeCasesForCoverage:
         mock_fs.construct_safe_path = MagicMock(return_value=mock_path)
 
         mock_index = AsyncMock()
-        mock_index.get_file_metadata = AsyncMock(return_value=metadata)
+        mock_index.get_file_metadata = AsyncMock(return_value=metadata_model)
 
         mock_managers_dict = {
             "fs": mock_fs,
@@ -1255,7 +1263,15 @@ class TestEdgeCasesForCoverage:
         file_name = "projectBrief.md"
         content = "# Project Brief\n\n## Section 1\ncontent 1"
         temp_path = Path("/tmp/test/memory-bank/projectBrief.md")
-        metadata = {"size_bytes": 100, "token_count": 25, "content_hash": "hash123"}
+        metadata_model = DetailedFileMetadata(
+            path=str(temp_path),
+            exists=True,
+            size_bytes=100,
+            token_count=25,
+            token_model="cl100k_base",
+            last_modified="2026-01-01T00:00:00",
+            content_hash="hash123",
+        )
 
         mock_fs = AsyncMock()
         mock_fs.read_file = AsyncMock(return_value=(content, "hash123"))
@@ -1266,7 +1282,7 @@ class TestEdgeCasesForCoverage:
         mock_fs.construct_safe_path.return_value = mock_path
 
         mock_index = AsyncMock()
-        mock_index.get_file_metadata = AsyncMock(return_value=metadata)
+        mock_index.get_file_metadata = AsyncMock(return_value=metadata_model)
 
         mock_managers_dict = {
             "fs": mock_fs,
@@ -1386,7 +1402,15 @@ class TestEdgeCasesForCoverage:
         """Test metadata operation when metadata exists (line 359)."""
         # Arrange
         file_name = "test.md"
-        metadata = {"size_bytes": 200, "token_count": 50}
+        metadata_model = DetailedFileMetadata(
+            path="/tmp/test/.cortex/memory-bank/test.md",
+            exists=True,
+            size_bytes=200,
+            token_count=50,
+            token_model="cl100k_base",
+            last_modified="2026-01-01T00:00:00",
+            content_hash="hash456",
+        )
 
         # Create mock path that exists
         mock_path = MagicMock(spec=Path)
@@ -1396,7 +1420,7 @@ class TestEdgeCasesForCoverage:
         mock_fs.construct_safe_path = MagicMock(return_value=mock_path)
 
         mock_index = AsyncMock()
-        mock_index.get_file_metadata = AsyncMock(return_value=metadata)
+        mock_index.get_file_metadata = AsyncMock(return_value=metadata_model)
 
         mock_managers_dict = {
             "fs": mock_fs,
