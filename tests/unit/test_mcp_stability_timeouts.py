@@ -319,9 +319,9 @@ class TestProgressHelpers:
 
         semaphore = get_semaphore()
 
-        async def execute_fn() -> tuple[
-            str, bool, str | None, bool, int | None, str | None
-        ]:
+        async def execute_fn() -> (
+            tuple[str, bool, str | None, bool, int | None, str | None]
+        ):
             async with semaphore:
                 result = await tool_that_fails()
             return result, True, None, False, None, None
@@ -363,16 +363,16 @@ class TestLongRunningSemaphoreWait:
         _ = get_long_running_semaphore()
         first_done: asyncio.Event = asyncio.Event()
 
-        async def first_execute() -> tuple[
-            str, bool, str | None, bool, int | None, str | None
-        ]:
+        async def first_execute() -> (
+            tuple[str, bool, str | None, bool, int | None, str | None]
+        ):
             await asyncio.sleep(0.15)
             first_done.set()
             return "first", True, None, False, None, None
 
-        async def second_execute() -> tuple[
-            str, bool, str | None, bool, int | None, str | None
-        ]:
+        async def second_execute() -> (
+            tuple[str, bool, str | None, bool, int | None, str | None]
+        ):
             return "second", True, None, False, None, None
 
         with patch(
@@ -421,9 +421,9 @@ class TestLongRunningSemaphoreWait:
         await sem.acquire()
         try:
 
-            async def fast_execute() -> tuple[
-                str, bool, str | None, bool, int | None, str | None
-            ]:
+            async def fast_execute() -> (
+                tuple[str, bool, str | None, bool, int | None, str | None]
+            ):
                 return "fast", True, None, False, None, None
 
             with patch(

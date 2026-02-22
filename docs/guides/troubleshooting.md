@@ -1037,10 +1037,20 @@ When the GitHub Actions "Code Quality" workflow fails on push (e.g. [run #244](h
 
 - Push succeeds; GitHub Actions "Code Quality" job fails
 - Annotations mention tests step or coverage (e.g. "All tests must pass with at least 90% coverage")
+- Or: "Black formatting check failed" / "would reformat N files"
 
 **What to do**:
 
-1. **Run the exact CI test command locally** (from repo root, with same Python/uv as CI):
+1. **If the failure is formatting (e.g. "Black formatting check failed")**: The most likely cause is that Step 12.1 was run with a non-CI-equivalent fallback (e.g. `ruff format` instead of Black). CI uses **Black**. Run locally from repo root:
+
+   ```bash
+   uv run black src/ tests/
+   uv run black --check src/ tests/
+   ```
+
+   Fix any reformatting, then commit and push again. Prefer re-running the commit pipeline with Cortex MCP connected so Step 12 runs via `execute_pre_commit_checks` (which uses Black). See [commit-pipeline-phases.md](../design/commit-pipeline-phases.md) and the commit prompt Step 12.1 fallback rules.
+
+2. **Run the exact CI test command locally** (from repo root, with same Python/uv as CI):
 
    ```bash
    uv run python -m pytest tests/ -m "not slow" -n auto -v --cov=src/cortex --cov-report=xml --cov-report=term --cov-fail-under=90
@@ -1048,9 +1058,9 @@ When the GitHub Actions "Code Quality" workflow fails on push (e.g. [run #244](h
 
    Fix any test failures or coverage shortfall before pushing again. The commit pipeline uses the same scope (`-m "not slow"`) and coverage threshold (90%); the Python adapter runs `python -m pytest` for CI parity.
 
-2. **Ensure Step 12 (Final Validation Gate) ran before commit.** If the agent skipped Step 12.7 (tests) due to a connection error or assumed Phase A was enough, that can cause "passed locally, failed in CI". Never commit without Step 12.7 having passed in that run.
+3. **Ensure Step 12 (Final Validation Gate) ran before commit.** If the agent skipped Step 12.7 (tests) due to a connection error or assumed Phase A was enough, that can cause "passed locally, failed in CI". Never commit without Step 12.7 having passed in that run. If Step 12.1 was run via fallback, it must have used Black (or `fix_formatting.py`/`check_formatting.py`), not ruff format.
 
-3. **Require status checks for merge.** In GitHub: **Settings → Branches → Branch protection** for `main` (and `develop` if used), add a rule that requires the "Code Quality" (or "quality") status check to pass before merging. That prevents merging pushes that failed the quality gate.
+4. **Require status checks for merge.** In GitHub: **Settings → Branches → Branch protection** for `main` (and `develop` if used), add a rule that requires the "Code Quality" (or "quality") status check to pass before merging. That prevents merging pushes that failed the quality gate.
 
 **Reference**: The single source of truth for the CI test command is the "Run tests" step in [.github/workflows/quality.yml](../../.github/workflows/quality.yml); the workflow comment at the top of that file repeats the command for local parity.
 

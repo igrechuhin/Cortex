@@ -796,9 +796,9 @@ class TestMemoryBankSchemaAlignment:
             "roadmap.md",
         )
         for file_name in core_files:
-            assert file_name in DEFAULT_SCHEMAS, (
-                f"Missing default schema for core memory bank file: {file_name}"
-            )
+            assert (
+                file_name in DEFAULT_SCHEMAS
+            ), f"Missing default schema for core memory bank file: {file_name}"
 
     def test_roadmap_schema_required_sections_match_expected_headings(self) -> None:
         """roadmap.md schema must match the canonical section headings."""

@@ -65,9 +65,9 @@ class TestManagerGroupsList:
         for group in groups:
             assert isinstance(group, ManagerGroup)
             assert isinstance(group.priority, int)
-            assert 1 <= group.priority <= 4, (
-                f"Group {group.name} has invalid priority {group.priority}"
-            )
+            assert (
+                1 <= group.priority <= 4
+            ), f"Group {group.name} has invalid priority {group.priority}"
 
     def test_manager_groups_all_have_valid_names(self):
         """Test that all manager groups have non-empty names."""
@@ -88,13 +88,13 @@ class TestManagerGroupsList:
         # Assert
         for group in groups:
             assert isinstance(group.managers, list)
-            assert len(group.managers) > 0, (
-                f"Group {group.name} has empty managers list"
-            )
+            assert (
+                len(group.managers) > 0
+            ), f"Group {group.name} has empty managers list"
             for manager in group.managers:
-                assert isinstance(manager, str), (
-                    f"Manager in {group.name} is not a string"
-                )
+                assert isinstance(
+                    manager, str
+                ), f"Manager in {group.name} is not a string"
                 assert len(manager) > 0, f"Manager name in {group.name} is empty"
 
     def test_manager_group_priority_range(self):
@@ -104,9 +104,9 @@ class TestManagerGroupsList:
 
         # Assert
         priorities = [group.priority for group in groups]
-        assert all(1 <= p <= 4 for p in priorities), (
-            f"Invalid priorities found: {priorities}"
-        )
+        assert all(
+            1 <= p <= 4 for p in priorities
+        ), f"Invalid priorities found: {priorities}"
 
     def test_manager_groups_unique_names(self):
         """Test that all manager group names are unique."""

@@ -106,9 +106,7 @@ class InsightSummaryGenerator:
             priority = (
                 "high"
                 if insight.impact_score >= 0.8
-                else "medium"
-                if insight.impact_score >= 0.5
-                else "low"
+                else "medium" if insight.impact_score >= 0.5 else "low"
             )
             recommendations.append(
                 RecommendationEntry(

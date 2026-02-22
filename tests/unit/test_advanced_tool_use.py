@@ -83,9 +83,9 @@ class TestValidateInputExamples:
         for i, example in enumerate(VALIDATE_INPUT_EXAMPLES):
             assert isinstance(example, dict), f"Example {i} must be a dict"
             assert "check_type" in example, f"Example {i} must have check_type"
-            assert example["check_type"] in valid_check_types, (
-                f"Example {i} check_type must be one of {valid_check_types}"
-            )
+            assert (
+                example["check_type"] in valid_check_types
+            ), f"Example {i} check_type must be one of {valid_check_types}"
 
     def test_duplications_example_may_include_similarity_threshold(self) -> None:
         """Duplications examples may include similarity_threshold."""

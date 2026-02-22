@@ -244,8 +244,10 @@ class TestRustAdapter:
     def test_extract_test_counts_parses_cargo_test_output(self) -> None:
         """_extract_test_counts parses cargo test result line."""
         adapter = RustAdapter()
-        passed, failed = adapter._extract_test_counts(  # pyright: ignore[reportPrivateUsage]
-            "test result: ok. 5 passed; 2 failed"
+        passed, failed = (
+            adapter._extract_test_counts(  # pyright: ignore[reportPrivateUsage]
+                "test result: ok. 5 passed; 2 failed"
+            )
         )
         assert passed == 5
         assert failed == 2

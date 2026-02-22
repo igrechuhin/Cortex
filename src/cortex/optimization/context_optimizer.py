@@ -172,13 +172,13 @@ async def _score_files_for_optimization(
         file_name: FileMetadataForScoring.model_validate(meta)
         for file_name, meta in files_metadata.items()
     }
-    relevance_results: dict[
-        str, dict[str, float | str]
-    ] = await relevance_scorer.score_files(
-        task_description,
-        files_content,
-        metadata_models,
-        quality_scores or {},
+    relevance_results: dict[str, dict[str, float | str]] = (
+        await relevance_scorer.score_files(
+            task_description,
+            files_content,
+            metadata_models,
+            quality_scores or {},
+        )
     )
     return _extract_relevance_scores(relevance_results)
 

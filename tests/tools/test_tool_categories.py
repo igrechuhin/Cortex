@@ -133,9 +133,9 @@ class TestToolCategoriesMapping:
     def test_no_duplicate_names(self) -> None:
         """Every tool name appears exactly once."""
         names = [e.name for e in TOOL_CATEGORIES]
-        assert len(names) == len(set(names)), (
-            f"Duplicates found: {[n for n in names if names.count(n) > 1]}"
-        )
+        assert len(names) == len(
+            set(names)
+        ), f"Duplicates found: {[n for n in names if names.count(n) > 1]}"
 
     def test_every_entry_has_nonempty_rationale(self) -> None:
         """Every entry must document its categorization rationale."""
@@ -178,17 +178,17 @@ class TestToolCategoriesMapping:
         }
         for name in core_tools:
             cat = get_tool_category(name)
-            assert cat == ToolCategory.ALWAYS_LOADED, (
-                f"Core tool {name!r} should be ALWAYS_LOADED, got {cat}"
-            )
+            assert (
+                cat == ToolCategory.ALWAYS_LOADED
+            ), f"Core tool {name!r} should be ALWAYS_LOADED, got {cat}"
 
     def test_analytics_tools_are_deferred_low(self) -> None:
         """Usage analytics consolidated tool should be deferred_low (Phase 50)."""
         analytics_tool = "query_usage"
         cat = get_tool_category(analytics_tool)
-        assert cat == ToolCategory.DEFERRED_LOW, (
-            f"Analytics tool {analytics_tool!r} should be DEFERRED_LOW, got {cat}"
-        )
+        assert (
+            cat == ToolCategory.DEFERRED_LOW
+        ), f"Analytics tool {analytics_tool!r} should be DEFERRED_LOW, got {cat}"
 
 
 @pytest.mark.timeout(5)

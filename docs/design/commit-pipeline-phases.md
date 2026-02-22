@@ -171,6 +171,14 @@ during Phase B (documentation updates, new files, code changes):
 | 12.6 | Quality re-check (sizes, lengths) | `execute_pre_commit_checks(checks=["quality"])` |
 | 12.7 | Tests with coverage | `execute_pre_commit_checks(checks=["tests"])` |
 
+**Step 12.1 fallback (CI parity)**: If MCP is unavailable, Step 12.1 fallback
+MUST use the same formatter as CI. The Code Quality workflow uses **Black**
+(`uv run black --check src/ tests/`). Use Synapse scripts
+`fix_formatting.py` then `check_formatting.py` (they use Black), or
+`uv run black src/ tests/` then `uv run black --check src/ tests/`. Do NOT
+use `ruff format` as a substitute—it is not CI-equivalent and causes the
+quality gate to fail.
+
 ### Phase C — Inputs
 
 - Updated memory bank and documentation from Phase B.
@@ -296,6 +304,11 @@ all phases:
    submodule handling).
 7. **User-initiated only**: Commits and pushes only happen when
    explicitly requested via `/cortex/commit`.
+8. **Only healthy commits**: A commit is allowed only when Step 12
+   passed in full via MCP or via CI-equivalent fallbacks (e.g. Black for
+   format, not ruff format). If Step 12 was completed using non-CI-equivalent
+   commands (e.g. ruff format for 12.1), the pipeline must block commit so
+   that the quality gate does not fail on push.
 
 ---
 

@@ -1450,6 +1450,6 @@ class TestContextBudgetValidation:
             assert result.get("status") == "success"
             warnings = result.get("warnings", [])
             assert len(warnings) > 0
-            assert any(w.get("type") == "zero_files_selected" for w in warnings), (
-                f"Expected zero_files_selected warning, got: {warnings}"
-            )
+            assert any(
+                w.get("type") == "zero_files_selected" for w in warnings
+            ), f"Expected zero_files_selected warning, got: {warnings}"

@@ -673,9 +673,7 @@ def create_error_response(error: str, **extra_fields: JsonValue) -> str:
     context_dict: dict[str, JsonValue] | None = (
         context
         if isinstance(context, dict)
-        else {"context": context}
-        if context
-        else None
+        else {"context": context} if context else None
     )
     example = _build_error_example(error, available_options)
 

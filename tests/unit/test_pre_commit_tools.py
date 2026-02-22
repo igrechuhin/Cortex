@@ -132,9 +132,9 @@ class TestExecutePreCommitChecks:
                         ):
                             execute_all_checks_call = call
                             break
-                assert execute_all_checks_call is not None, (
-                    "Expected _execute_all_checks to be called via to_thread"
-                )
+                assert (
+                    execute_all_checks_call is not None
+                ), "Expected _execute_all_checks to be called via to_thread"
                 assert result["status"] == "success"
                 assert result["language"] == "python"
 
@@ -283,9 +283,9 @@ class TestExecutePreCommitChecks:
 
             result = detect_or_use_language(language=None, root_str=str(subdir))
 
-            assert not isinstance(result, str), (
-                "Expected (LanguageInfo, root), not error JSON"
-            )
+            assert not isinstance(
+                result, str
+            ), "Expected (LanguageInfo, root), not error JSON"
             language_info, root_to_use = result
             assert language_info.language == "python"
             assert Path(root_to_use).resolve() == root.resolve()

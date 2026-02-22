@@ -691,9 +691,9 @@ class TestValidateRoadmapSync:
             invalid_refs_from_ghost_phases = [
                 ref for ref in result.invalid_references if ref.phase in ghost_phases
             ]
-            assert len(invalid_refs_from_ghost_phases) == 0, (
-                f"Found {len(invalid_refs_from_ghost_phases)} invalid references from ghost phases: {invalid_refs_from_ghost_phases}"
-            )
+            assert (
+                len(invalid_refs_from_ghost_phases) == 0
+            ), f"Found {len(invalid_refs_from_ghost_phases)} invalid references from ghost phases: {invalid_refs_from_ghost_phases}"
             # Validation should pass since all references exist
             assert result.valid is True
 
@@ -727,9 +727,9 @@ class TestValidateRoadmapSync:
             invalid_refs_from_ghost_phases = [
                 ref for ref in result.invalid_references if ref.phase in ghost_phases
             ]
-            assert len(invalid_refs_from_ghost_phases) == 0, (
-                f"Found {len(invalid_refs_from_ghost_phases)} invalid references from ghost phases (should be filtered): {invalid_refs_from_ghost_phases}"
-            )
+            assert (
+                len(invalid_refs_from_ghost_phases) == 0
+            ), f"Found {len(invalid_refs_from_ghost_phases)} invalid references from ghost phases (should be filtered): {invalid_refs_from_ghost_phases}"
             # Only valid.py reference should be validated (and it exists, so no invalid refs)
             assert len(result.invalid_references) == 0
             assert result.valid is True

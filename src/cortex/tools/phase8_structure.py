@@ -152,7 +152,9 @@ async def _check_structure_health_with_logging(
 
 
 @mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
-    annotations=safe_write_annotations("Check Structure Health"),  # pyright: ignore[reportCallIssue]
+    annotations=safe_write_annotations(
+        "Check Structure Health"
+    ),  # pyright: ignore[reportCallIssue]
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_COMPLEX)
@@ -182,7 +184,9 @@ check_structure_health.__doc__ = CHECK_STRUCTURE_HEALTH_DOC
 
 
 @mcp.tool(  # pyright: ignore[reportUntypedFunctionDecorator]
-    annotations=read_only_annotations("Get Structure Info"),  # pyright: ignore[reportCallIssue]
+    annotations=read_only_annotations(
+        "Get Structure Info"
+    ),  # pyright: ignore[reportCallIssue]
 )
 @ensure_usage_context
 @mcp_tool_wrapper(timeout=MCP_TOOL_TIMEOUT_FAST)

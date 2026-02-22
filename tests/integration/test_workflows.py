@@ -319,9 +319,9 @@ content length for the duplication detector to identify it.
         # Should have either exact duplicates or similar content with high similarity
         has_exact = len(exact) > 0
         has_similar = any(entry.similarity >= 0.85 for entry in similar)
-        assert has_exact or has_similar, (
-            "Should detect either exact duplicates or similar content"
-        )
+        assert (
+            has_exact or has_similar
+        ), "Should detect either exact duplicates or similar content"
 
 
 # ============================================================================
