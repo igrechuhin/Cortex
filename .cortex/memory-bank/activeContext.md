@@ -28,6 +28,8 @@
 
 - ✅ **Commit: type fixes and markdown lint** - COMPLETE (2026-02-22) - Fixed type errors in tests (reportUnknownMemberType for pytest.approx and dict.get): replaced pytest.approx with explicit tolerance assertions in test_phase5_evaluation.py and test_rollback_modules.py; replaced dict.get with key access and cast in test_phase5_evaluation. Format and markdown lint (AGENTS.md) applied. All pre-commit checks pass.
 
+- ✅ **Code quality remediation Step 6: split plan_operations** - COMPLETE (2026-02-22) - Split plan_operations.py (930 lines) into plan_crud.py, plan_roadmap.py, plan_archive.py; plan_operations.py is re-export facade. All modules ≤400 lines. Tests patch plan_crud/plan_roadmap. Remaining: core/metadata_index.
+
 ## Completed Work (2026-02-21)
 
 - **Summary (2026-02-21)** - 1 entries archived.

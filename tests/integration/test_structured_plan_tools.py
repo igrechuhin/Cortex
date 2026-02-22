@@ -60,7 +60,7 @@ class TestCreatePlanIntegration:
         content = "# Test Plan\n\n**Status**: Pending\n\n## Goal\nTest.\n"
 
         with patch(
-            "cortex.tools.plan_operations.resolve_project_root_async",
+            "cortex.tools.plan_crud.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=root,
         ):
@@ -90,7 +90,7 @@ class TestCreatePlanIntegration:
         content = "# Phase 60 Feature\n\nContent."
 
         with patch(
-            "cortex.tools.plan_operations.resolve_project_root_async",
+            "cortex.tools.plan_crud.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=root,
         ):
@@ -122,7 +122,7 @@ class TestRegisterPlanInRoadmapIntegration:
         roadmap_path = memory_bank / MemoryBankFile.ROADMAP
 
         with patch(
-            "cortex.tools.plan_operations.resolve_project_root_async",
+            "cortex.tools.plan_roadmap.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=root,
         ):
@@ -158,7 +158,7 @@ class TestRegisterPlanInRoadmapIntegration:
         root = temp_project_with_roadmap
 
         with patch(
-            "cortex.tools.plan_operations.resolve_project_root_async",
+            "cortex.tools.plan_roadmap.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=root,
         ):
@@ -200,10 +200,17 @@ class TestCreatePlanThenRegisterIntegration:
             "Reference. Plan: .cortex/plans/structured-planning-cortex-mcp-tools.md."
         )
 
-        with patch(
-            "cortex.tools.plan_operations.resolve_project_root_async",
-            new_callable=AsyncMock,
-            return_value=root,
+        with (
+            patch(
+                "cortex.tools.plan_crud.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=root,
+            ),
+            patch(
+                "cortex.tools.plan_roadmap.resolve_project_root_async",
+                new_callable=AsyncMock,
+                return_value=root,
+            ),
         ):
             create_result_str = await create_plan(
                 title=title,

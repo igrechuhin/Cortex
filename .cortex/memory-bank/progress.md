@@ -17,6 +17,8 @@
 - **Commit pipeline** - Type and quality fixes: enum literals replaced with enum types across src and tests; function-length violations fixed (health_check_operations, session_brief, consolidation_detector); test_file_operations imports updated for file_crud_flow/file_manage_file_helpers. All 4385 tests pass, 92.04% coverage.
 - **Code quality remediation Step 6: split markdown_operations (2026-02-22)** - COMPLETE. Split tools/markdown_operations.py into markdown_lint.py, markdown_lint_core.py, markdown_lint_run.py with facade; all ≤400 lines. Tests updated; quality gate passed.
 - **Commit pipeline type fixes (2026-02-22)** - COMPLETE. Resolved 10 type errors in tests (pytest.approx, dict.get); format and markdown lint; 4381 tests, 92% coverage.
+- **Code quality remediation Step 6: split plan_operations (2026-02-22)** - COMPLETE. Split plan_operations.py into plan_crud.py, plan_roadmap.py, plan_archive.py; facade re-exports; tests updated to patch implementation modules. Quality gate and tests passed.
+- **Commit pipeline** - Pre-commit checks passed (fix_errors, format, markdown lint, type_check, quality, tests 4385 pass, 92.03% coverage). Plan archiving: 0 plans to archive. Memory bank and roadmap consistent.
 
 ## 2026-02-21
 

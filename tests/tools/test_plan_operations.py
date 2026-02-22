@@ -12,6 +12,30 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.tools.plan_crud import (
+    _create_plan_file as create_plan_file,  # type: ignore[private-usage]
+)
+from cortex.tools.plan_crud import (
+    _extract_first_heading as extract_first_heading,  # type: ignore[private-usage]
+)
+from cortex.tools.plan_crud import (
+    _extract_status_line as extract_status_line,  # type: ignore[private-usage]
+)
+from cortex.tools.plan_crud import (
+    _get_plan_impl as get_plan_impl,  # type: ignore[private-usage]
+)
+from cortex.tools.plan_crud import (
+    _get_plan_path as get_plan_path,  # type: ignore[private-usage]
+)
+from cortex.tools.plan_crud import (
+    _list_plan_files as list_plan_files,  # type: ignore[private-usage]
+)
+from cortex.tools.plan_crud import (
+    _list_plans_impl as list_plans_impl,  # type: ignore[private-usage]
+)
+from cortex.tools.plan_crud import (
+    _sanitize_plan_slug as sanitize_plan_slug,  # type: ignore[private-usage]
+)
 from cortex.tools.plan_operations import (
     CreatePlanResult,
     GetPlanResult,
@@ -21,43 +45,17 @@ from cortex.tools.plan_operations import (
     list_plans,
     register_plan_in_roadmap,
 )
-
-# Import private functions with public aliases for testing
-from cortex.tools.plan_operations import (
-    _create_plan_file as create_plan_file,  # type: ignore[private-usage]
-)
-from cortex.tools.plan_operations import (
-    _extract_first_heading as extract_first_heading,  # type: ignore[private-usage]
-)
-from cortex.tools.plan_operations import (
-    _extract_status_line as extract_status_line,  # type: ignore[private-usage]
-)
-from cortex.tools.plan_operations import (
+from cortex.tools.plan_roadmap import (
     _find_insertion_line_for_section as find_insertion_line,  # type: ignore[private-usage]
 )
-from cortex.tools.plan_operations import (
-    _get_plan_impl as get_plan_impl,  # type: ignore[private-usage]
-)
-from cortex.tools.plan_operations import (
-    _get_plan_path as get_plan_path,  # type: ignore[private-usage]
-)
-from cortex.tools.plan_operations import (
+from cortex.tools.plan_roadmap import (
     _is_completed_status as is_completed_status,  # type: ignore[private-usage]
 )
-from cortex.tools.plan_operations import (
-    _list_plan_files as list_plan_files,  # type: ignore[private-usage]
-)
-from cortex.tools.plan_operations import (
-    _list_plans_impl as list_plans_impl,  # type: ignore[private-usage]
-)
-from cortex.tools.plan_operations import (
+from cortex.tools.plan_roadmap import (
     _parse_roadmap_sections as parse_roadmap_sections,  # type: ignore[private-usage]
 )
-from cortex.tools.plan_operations import (
+from cortex.tools.plan_roadmap import (
     _register_plan_entry as register_plan_entry,  # type: ignore[private-usage]
-)
-from cortex.tools.plan_operations import (
-    _sanitize_plan_slug as sanitize_plan_slug,  # type: ignore[private-usage]
 )
 
 
@@ -103,7 +101,7 @@ class TestRegisterPlanInRoadmapRejectsCompleted:
     ) -> None:
         """Calling with status=COMPLETED returns error and mentions activeContext."""
         with patch(
-            "cortex.tools.plan_operations.resolve_project_root_async",
+            "cortex.tools.plan_roadmap.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
@@ -131,7 +129,7 @@ class TestRegisterPlanInRoadmapRejectsCompleted:
             + "## Pending plans (from .cortex/plans)\n- **Other** - PENDING\n"
         )
         with patch(
-            "cortex.tools.plan_operations.resolve_project_root_async",
+            "cortex.tools.plan_roadmap.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
@@ -771,7 +769,7 @@ class TestListPlansTool:
         plans_dir.mkdir(parents=True)
         _ = (plans_dir / "one.md").write_text("# One")
         with patch(
-            "cortex.tools.plan_operations.resolve_project_root_async",
+            "cortex.tools.plan_crud.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
@@ -792,7 +790,7 @@ class TestGetPlanTool:
         plans_dir.mkdir(parents=True)
         _ = (plans_dir / "my-plan.md").write_text("# My Plan\n\nBody text")
         with patch(
-            "cortex.tools.plan_operations.resolve_project_root_async",
+            "cortex.tools.plan_crud.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
@@ -809,7 +807,7 @@ class TestGetPlanTool:
         """get_plan with unknown slug returns error."""
         get_cortex_path(tmp_path, CortexResourceType.PLANS).mkdir(parents=True)
         with patch(
-            "cortex.tools.plan_operations.resolve_project_root_async",
+            "cortex.tools.plan_crud.resolve_project_root_async",
             new_callable=AsyncMock,
             return_value=tmp_path,
         ):
