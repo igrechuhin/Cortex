@@ -38,6 +38,12 @@
 
 - ✅ **Commit: test fixes for manage_file and get_relevance_scores** - COMPLETE (2026-02-22) - Fixed 10 failing tests by returning DetailedFileMetadata from mock get_file_metadata in manage_file and phase4 tests; handlers call .model_dump(). All tests pass, coverage 92.05%.
 
+- ✅ **Test coverage plan Step 1b: discovery tests** - COMPLETE (2026-02-22) - Added tests/discovery/ with 30 unit tests for discovery module (tool_registry, search_interface, use_case_mapper, recommendation_engine); edge cases for get_known_script_names. Plan file updated; Step 1c (guides) next.
+
+- ✅ **Test coverage plan Step 1c: guides tests** - COMPLETE (2026-02-22) - Created tests/guides/ with test_setup, test_structure, test_usage, test_benefits, test_resources_integration; fixed type errors in test_guide_content.py; quality gate passed.
+
+- ✅ **Test coverage plan Step 1c (guides tests)** - COMPLETE (2026-02-22) - Added tests/guides/ with tests for GUIDE constants and content formatting (test_guide_content.py) and resources.GUIDES integration (test_resources_guides.py); fixed usage.py string; quality and tests pass.
+
 ## Completed Work (2026-02-21)
 
 - **Summary (2026-02-21)** - 1 entries archived.

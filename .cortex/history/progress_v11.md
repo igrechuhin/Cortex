@@ -23,6 +23,9 @@
 - **Code quality remediation (P0) (2026-02-22)** - COMPLETE. All steps 1-6 done: model/file splits, refactored functions, eliminated Any, replaced dict[str,object], resolved type-ignore, split oversized tool files. Quality gate and tests pass.
 - **Test coverage Step 1a: services tests (2026-02-22)** - COMPLETE. Added tests/services/ with test_models, test_language_detector, framework_adapters/test_base, test_detection, test_stub_adapter; 32 tests, type-clean.
 - **Commit: test fixes for manage_file and get_relevance_scores** - COMPLETE. Fixed 10 failing tests: mock metadata must return DetailedFileMetadata so handlers can call model_dump. Updated test_consolidated, test_file_operations, test_phase4_optimization fixture. All 4417 tests pass; coverage 92.05%.
+- **Test coverage plan Step 1b: discovery tests (2026-02-22)** - COMPLETE. Added tests/discovery/ with 30 unit tests for tool_registry, search_interface, use_case_mapper, recommendation_engine; file-scanning edge cases (missing/empty dirs, private modules, sorted stems).
+- **Test coverage plan Step 1c (guides tests) (2026-02-22)** - COMPLETE. Added tests/guides/ with tests for setup, structure, usage, benefits and resources integration; fixed type errors in test_guide_content.py; 48 tests in tests/guides/.
+- **Test coverage plan Step 1c (guides tests) (2026-02-22)** - COMPLETE. Added tests/guides/ with test_guide_content.py and test_resources_guides.py; fixed implicit string concatenation in guides/usage.py; all tests pass, quality gate passed.
 
 ## 2026-02-21
 

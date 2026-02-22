@@ -24,17 +24,15 @@ Completed investigations are recorded in [activeContext.md](activeContext.md). P
 
 ### Features & Enhancements
 
-- **Phase 57: Evaluation-Driven Tool Improvement** - IN PROGRESS - Remaining work: extend the evaluation task suite, add evaluation dashboards, and implement automated tool description optimization and A/B testing on top of the existing evaluation framework and error-pattern tooling. Plan: .cortex/plans/phase-57-evaluation-driven-tool-improvement.md.
-- **Reference: Code quality remediation (P0)** - Plan: .cortex/plans/plan-code-quality-remediation.md
-- **Reference: Test coverage and quality (P0)** - Plan: .cortex/plans/plan-test-coverage-and-quality.md
-- **Reference: Documentation completeness (P1)** - Plan: .cortex/plans/plan-documentation-completeness.md
-- **Reference: Evaluation framework maturation (P1)** - Plan: .cortex/plans/plan-evaluation-framework-maturation.md
-- **Reference: Anthropic context engineering alignment (P1)** - Plan: .cortex/plans/plan-anthropic-context-engineering-alignment.md
-- **Reference: Agent skills and composability (P2)** - Plan: .cortex/plans/plan-agent-skills-and-composability.md
-- **Reference: Security and resilience (P2)** - Plan: .cortex/plans/plan-security-and-resilience.md
-- **Reference: Compound engineering alignment** - Plan: .cortex/plans/compound-engineering-alignment-cortex.md
-- **Reference: Phase 58 multi-agent specialization** - Plan: .cortex/plans/phase-58-multi-agent-specialization-task-locking.md
-- **Reference: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md
-- **Reference: Investigate execute_pre_commit_checks failure (2026-02-17)** - Plan: .cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260217-201854.md
-- **Reference: Investigate fix_markdown_lint failure (2026-02-16)** - Plan: .cortex/plans/phase-investigate-fix_markdown_lint-failure-20260216-204350.md
-- **Reference: Session Optimization load context and test typing** - Plan: .cortex/plans/session-optimization-load-context-and-test-typing.md
+- **Pending: Test coverage and quality (P0)** - Plan: .cortex/plans/plan-test-coverage-and-quality.md
+- **Pending: Documentation completeness (P1)** - Plan: .cortex/plans/plan-documentation-completeness.md
+- **Pending: Evaluation framework maturation (P1)** - Plan: .cortex/plans/plan-evaluation-framework-maturation.md
+- **Pending: Anthropic context engineering alignment (P1)** - Plan: .cortex/plans/plan-anthropic-context-engineering-alignment.md
+- **Pending: Agent skills and composability (P2)** - Plan: .cortex/plans/plan-agent-skills-and-composability.md
+- **Pending: Security and resilience (P2)** - Plan: .cortex/plans/plan-security-and-resilience.md
+- **Pending: Compound engineering alignment** - Plan: .cortex/plans/compound-engineering-alignment-cortex.md
+- **Pending: Phase 58 multi-agent specialization** - Plan: .cortex/plans/phase-58-multi-agent-specialization-task-locking.md
+- **Pending: Phase 9 excellence** - Plan: .cortex/plans/phase-9-excellence-98.md
+- **Pending: Investigate execute_pre_commit_checks failure (2026-02-17)** - Plan: .cortex/plans/phase-investigate-execute_pre_commit_checks-failure-20260217-201854.md
+- **Pending: Investigate fix_markdown_lint failure (2026-02-16)** - Plan: .cortex/plans/phase-investigate-fix_markdown_lint-failure-20260216-204350.md
+- **Pending: Session Optimization load context and test typing** - Plan: .cortex/plans/session-optimization-load-context-and-test-typing.md

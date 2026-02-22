@@ -126,6 +126,7 @@ The commit workflow is organized into phases (see `docs/design/commit-pipeline-p
 - User flags use of `Any` as a rules violation; follow type annotation rules strictly (use Pydantic or `object` instead).
 - Do not import or test private symbols; test via public API or make symbols public by renaming (no public aliases for private names).
 - Do not disable pyright (e.g. reportPrivateUsage, reportUnknownMemberType) to hide private usage or type issues; fix the underlying usage or types instead.
+- Prefer Pydantic v2 models over `object` for internal structured data; use `object` only for external interfaces (e.g. MCP) or when Pydantic is not feasible.
 
 ## Learned Workspace Facts
 

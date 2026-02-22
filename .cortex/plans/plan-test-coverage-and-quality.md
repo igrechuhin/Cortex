@@ -31,16 +31,16 @@ Comprehensive review (2026-02-21) found critical test gaps:
 - Target: 90%+ coverage for each file — in progress (existing unit tests + new tests/services/ cover services package)
 - Focus on: input validation, error paths, async behavior
 
-### 1b: `src/cortex/discovery/` (5 files, 0 tests)
+### 1b: `src/cortex/discovery/` (5 files) — COMPLETED 2026-02-22
 
-- Create `tests/discovery/` directory
-- Test discovery logic, file scanning, pattern matching
-- Test edge cases: empty directories, permission errors, symlinks
+- Create `tests/discovery/` directory — done
+- Test discovery logic, file scanning, pattern matching — done: test_tool_registry, test_search_interface, test_use_case_mapper, test_recommendation_engine (30 tests)
+- Test edge cases: empty directories (missing/empty scripts dir, private modules, sorted stems)
 
-### 1c: `src/cortex/guides/` (5 files, 0 tests)
+### 1c: `src/cortex/guides/` (5 files, 0 tests) — COMPLETED 2026-02-22
 
-- Create `tests/guides/` directory
-- Test guide generation, template rendering, content formatting
+- Create `tests/guides/` directory — done
+- Test guide generation, template rendering, content formatting — done: test_guide_content.py (GUIDE constants, content/formatting per guide), test_resources_guides.py (GUIDES dict integration)
 
 ### 1d: `src/cortex/script_promotion/` (6 files, 0 tests)
 
