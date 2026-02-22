@@ -9,9 +9,6 @@ Tests for:
 - version_snapshots.py
 """
 
-# pyright: reportPrivateUsage=false
-# pyright: reportUnknownMemberType=false
-
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -143,7 +140,8 @@ class TestRollbackHistory:
         assert stats.total == 3
         assert stats.successful == 2
         assert stats.failed == 1
-        assert stats.success_rate == pytest.approx(2 / 3)
+        expected_rate = 2 / 3
+        assert abs(stats.success_rate - expected_rate) <= expected_rate * 1e-6
 
     def test_calculate_rollback_statistics_empty(self) -> None:
         """Test statistics with empty list."""
@@ -566,14 +564,14 @@ class TestVersionSnapshots:
     @pytest.mark.asyncio
     async def test_file_has_snapshot_no_metadata(self) -> None:
         """Test _file_has_snapshot with no metadata."""
-        from cortex.refactoring.version_snapshots import _file_has_snapshot
+        from cortex.refactoring.version_snapshots import file_has_snapshot
 
         # Arrange
         mock_index = MagicMock()
         mock_index.get_file_metadata = AsyncMock(return_value=None)
 
         # Act
-        result = await _file_has_snapshot("test.md", "snap-123", mock_index)
+        result = await file_has_snapshot("test.md", "snap-123", mock_index)
 
         # Assert
         assert result is False
@@ -581,7 +579,7 @@ class TestVersionSnapshots:
     @pytest.mark.asyncio
     async def test_file_has_snapshot_not_list(self) -> None:
         """Test _file_has_snapshot when version_history is not a list."""
-        from cortex.refactoring.version_snapshots import _file_has_snapshot
+        from cortex.refactoring.version_snapshots import file_has_snapshot
 
         # Arrange
         mock_index = MagicMock()
@@ -590,7 +588,7 @@ class TestVersionSnapshots:
         )
 
         # Act
-        result = await _file_has_snapshot("test.md", "snap-123", mock_index)
+        result = await file_has_snapshot("test.md", "snap-123", mock_index)
 
         # Assert
         assert result is False
@@ -598,7 +596,7 @@ class TestVersionSnapshots:
     @pytest.mark.asyncio
     async def test_file_has_snapshot_non_dict_item(self) -> None:
         """Test _file_has_snapshot with non-dict items in list."""
-        from cortex.refactoring.version_snapshots import _file_has_snapshot
+        from cortex.refactoring.version_snapshots import file_has_snapshot
 
         # Arrange
         mock_index = MagicMock()
@@ -607,7 +605,7 @@ class TestVersionSnapshots:
         )
 
         # Act
-        result = await _file_has_snapshot("test.md", "snap-123", mock_index)
+        result = await file_has_snapshot("test.md", "snap-123", mock_index)
 
         # Assert
         assert result is False

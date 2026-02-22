@@ -5,25 +5,24 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-# pyright: reportPrivateUsage=false
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.core.project_root_resolver import (
-    _file_uri_to_path,
+    file_uri_to_path,
     resolve_project_root_async,
 )
 
 
 class TestFileUriToPath:
-    """Test _file_uri_to_path helper."""
+    """Test file_uri_to_path helper."""
 
     def test_file_uri_absolute_path(self) -> None:
-        assert _file_uri_to_path("file:///Users/foo/bar") == Path("/Users/foo/bar")
+        assert file_uri_to_path("file:///Users/foo/bar") == Path("/Users/foo/bar")
 
     def test_file_uri_non_file_scheme_returns_none(self) -> None:
-        assert _file_uri_to_path("https://example.com/path") is None
+        assert file_uri_to_path("https://example.com/path") is None
 
     def test_file_uri_empty_path_returns_none(self) -> None:
-        assert _file_uri_to_path("file://") is None
+        assert file_uri_to_path("file://") is None
 
 
 class TestResolveProjectRootAsync:

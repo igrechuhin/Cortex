@@ -1,8 +1,5 @@
 """Tests for Phase 57 evaluation framework (run_tool_evaluation)."""
 
-# pyright: reportPrivateUsage=false
-# pyright: reportUnknownMemberType=false
-
 from __future__ import annotations
 
 import json
@@ -131,10 +128,15 @@ def test_analyze_results_aggregates_basic_metrics() -> None:
     assert isinstance(analysis, EvalAnalysis)
     assert analysis.total_tasks == 2
     # Overall success rate is the mean of per-task success rates.
-    assert pytest.approx(analysis.overall_success_rate, rel=1e-6) == (0.8 + 0.6) / 2.0
+    expected_rate = (0.8 + 0.6) / 2.0
+    assert abs(analysis.overall_success_rate - expected_rate) <= expected_rate * 1e-6
     assert analysis.tasks_with_no_data == 0
     assert analysis.tasks_unavailable == 0
-    assert pytest.approx(analysis.average_calls_per_task, rel=1e-6) == (10 + 5) / 2.0
+    expected_avg_calls = (10 + 5) / 2.0
+    assert (
+        abs(analysis.average_calls_per_task - expected_avg_calls)
+        <= expected_avg_calls * 1e-6
+    )
 
     # Error patterns should include both error types with correct counts.
     patterns = {p.error_type: p for p in analysis.top_error_patterns}
@@ -240,7 +242,7 @@ async def test_run_suite_reproducibility_same_tracker_data() -> None:
         assert r1.successful_calls == r2.successful_calls
         assert r1.failed_calls == r2.failed_calls
         assert r1.status == r2.status
-        assert pytest.approx(r1.success_rate, rel=1e-9) == r2.success_rate
+        assert abs(r1.success_rate - r2.success_rate) <= r2.success_rate * 1e-9
     assert suite1.generated_at != suite2.generated_at
 
 
@@ -614,8 +616,8 @@ async def test_run_task_uses_usage_tracker_metrics() -> None:
     assert result.successful_calls == 1
     assert result.failed_calls == 1
     assert result.status == "mixed"
-    assert pytest.approx(result.avg_duration_ms, rel=1e-6) == 15.0
-    assert pytest.approx(result.total_duration_ms, rel=1e-6) == 30.0
+    assert abs(result.avg_duration_ms - 15.0) <= 15.0 * 1e-6
+    assert abs(result.total_duration_ms - 30.0) <= 30.0 * 1e-6
     assert result.error_types == {"ValueError": 1}
     assert result.evaluated_tools == ["load_context"]
     assert "load_context" in result.tool_metrics
@@ -943,7 +945,7 @@ def test_compare_ab_analyses_optimized_wins_by_success_rate() -> None:
     result = compare_ab_analyses(baseline, optimized)
     assert isinstance(result, ABComparisonResult)
     assert result.winner == ABWinner.optimized
-    assert result.success_rate_delta == pytest.approx(0.2)
+    assert abs(result.success_rate_delta - 0.2) <= 1e-9
     assert result.total_error_count_baseline == 0
     assert result.total_error_count_optimized == 0
     assert result.error_count_delta == 0
@@ -971,7 +973,7 @@ def test_compare_ab_analyses_baseline_wins_when_success_rate_lower() -> None:
     )
     result = compare_ab_analyses(baseline, optimized)
     assert result.winner == ABWinner.baseline
-    assert result.success_rate_delta == pytest.approx(-0.3)
+    assert abs(result.success_rate_delta - (-0.3)) <= 1e-9
 
 
 def test_compare_ab_analyses_tie_breaks_by_error_count() -> None:
@@ -1214,13 +1216,11 @@ async def test_append_optimization_record_persists(tmp_path: Path) -> None:
     assert write_calls[0][1] == "evals/optimization_history.json"
     raw_payload = write_calls[0][2]
     assert isinstance(raw_payload, dict)
-    runs = cast(
-        list[dict[str, object]],
-        raw_payload.get("runs"),
-    )
-    assert runs is not None
+    assert "runs" in raw_payload
+    runs = cast(list[dict[str, object]], raw_payload["runs"])
     assert len(runs) == 1
-    assert runs[0].get("run_id") == "run-test"
+    assert "run_id" in runs[0]
+    assert runs[0]["run_id"] == "run-test"
 
 
 @pytest.mark.asyncio
@@ -1380,7 +1380,7 @@ async def test_run_tool_optimization_workflow_with_ab_comparison() -> None:
     data = json.loads(result_str)
     assert data["status"] == "success"
     assert data["record"]["winner"] == "optimized"
-    assert data["record"]["success_rate_delta"] == pytest.approx(0.2)
+    assert abs(data["record"]["success_rate_delta"] - 0.2) <= 1e-9
     assert data["history_runs_count"] == 1
     _ = mock_append.assert_awaited_once()
     call_record = mock_append.call_args[0][1]

@@ -99,6 +99,9 @@ async def _file_has_snapshot(
     return False
 
 
+file_has_snapshot = _file_has_snapshot
+
+
 async def get_version_history(
     file_path: str, metadata_index: MetadataIndex
 ) -> list[VersionMetadata] | None:

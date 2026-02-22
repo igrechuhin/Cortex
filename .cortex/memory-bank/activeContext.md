@@ -24,6 +24,10 @@
 
 - ✅ **Code quality remediation Step 6: split session_start_tools** - COMPLETE (2026-02-22) - Split session_start_tools.py into main (323 lines), session_health.py (130), session_brief.py (361). All modules ≤400 lines. Helper extraction for function-length compliance. Tests and plan updated.
 
+- ✅ **Code quality remediation Step 6: split markdown_operations** - COMPLETE (2026-02-22) - Split tools/markdown_operations.py into markdown_lint.py (public API), markdown_lint_core.py (git, config, cache), markdown_lint_run.py (batch/heartbeat); markdown_operations.py is re-export facade. All modules ≤400 lines. Tests updated to patch implementation modules; quality gate passed.
+
+- ✅ **Commit: type fixes and markdown lint** - COMPLETE (2026-02-22) - Fixed type errors in tests (reportUnknownMemberType for pytest.approx and dict.get): replaced pytest.approx with explicit tolerance assertions in test_phase5_evaluation.py and test_rollback_modules.py; replaced dict.get with key access and cast in test_phase5_evaluation. Format and markdown lint (AGENTS.md) applied. All pre-commit checks pass.
+
 ## Completed Work (2026-02-21)
 
 - **Summary (2026-02-21)** - 1 entries archived.

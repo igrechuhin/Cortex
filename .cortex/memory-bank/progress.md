@@ -15,6 +15,8 @@
 - **Code quality remediation Step 6 (file_operations split) (2026-02-22)** - COMPLETE. Split file_operations.py into file_section_operations, file_metadata_operations, file_crud_flow, file_manage_file_helpers, file_crud_operations; facade re-exports; all files ≤400 lines; tests and quality gate pass.
 - **Code quality remediation Step 6: split session_start_tools (2026-02-22)** - COMPLETE. Split session_start_tools.py (896 lines) into session_start_tools.py (main, 323 lines), session_health.py (130 lines), session_brief.py (361 lines). All ≤400 lines; function-length fixes via _extract_focus_and_completed, _assemble_brief_from_components, _load_and_build_brief. Tests updated to import from session_health and session_brief; MCP health patch path updated. Quality gate passed.
 - **Commit pipeline** - Type and quality fixes: enum literals replaced with enum types across src and tests; function-length violations fixed (health_check_operations, session_brief, consolidation_detector); test_file_operations imports updated for file_crud_flow/file_manage_file_helpers. All 4385 tests pass, 92.04% coverage.
+- **Code quality remediation Step 6: split markdown_operations (2026-02-22)** - COMPLETE. Split tools/markdown_operations.py into markdown_lint.py, markdown_lint_core.py, markdown_lint_run.py with facade; all ≤400 lines. Tests updated; quality gate passed.
+- **Commit pipeline type fixes (2026-02-22)** - COMPLETE. Resolved 10 type errors in tests (pytest.approx, dict.get); format and markdown lint; 4381 tests, 92% coverage.
 
 ## 2026-02-21
 

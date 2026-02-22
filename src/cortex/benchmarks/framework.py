@@ -101,7 +101,7 @@ class Benchmark:
         await self._run_warmup_phase()
         times, total_time = await self._run_measurement_phase()
         await self.teardown()
-        stats = self._calculate_statistics(times)
+        stats = self.calculate_statistics(times)
 
         return BenchmarkResult(
             name=self.name,
@@ -140,7 +140,7 @@ class Benchmark:
         total_end = time.perf_counter()
         return times, total_end - total_start
 
-    def _calculate_statistics(self, times: list[float]) -> dict[str, float]:
+    def calculate_statistics(self, times: list[float]) -> dict[str, float]:
         """Calculate benchmark statistics."""
         sorted_times = sorted(times)
         mean_time = sum(times) / len(times)

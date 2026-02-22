@@ -36,6 +36,9 @@ def _file_uri_to_path(uri: str) -> Path | None:
     return Path(path_str).resolve()
 
 
+file_uri_to_path = _file_uri_to_path
+
+
 def _fallback_root() -> Path:
     """Resolve project root via get_project_root(None) and log elapsed time."""
     t0 = time.monotonic()

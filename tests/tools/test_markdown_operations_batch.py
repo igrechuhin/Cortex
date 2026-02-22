@@ -49,7 +49,7 @@ class TestSequentialProcessing:
 
             # Act
             with patch(
-                "cortex.tools.markdown_operations._run_markdownlint_batch",
+                "cortex.tools.markdown_lint_run._run_markdownlint_batch",
                 side_effect=mock_run_markdownlint_batch,
             ):
                 results: list[FileResult] = await _process_markdown_files_sequential(
@@ -108,7 +108,7 @@ class TestSequentialProcessing:
 
             # Act
             with patch(
-                "cortex.tools.markdown_operations._run_markdownlint_batch",
+                "cortex.tools.markdown_lint_run._run_markdownlint_batch",
                 side_effect=mock_run_markdownlint_batch,
             ):
                 results: list[FileResult] = await _process_markdown_files_sequential(
@@ -163,7 +163,7 @@ class TestSequentialProcessing:
 
             # Act
             with patch(
-                "cortex.tools.markdown_operations._run_markdownlint_batch",
+                "cortex.tools.markdown_lint_run._run_markdownlint_batch",
                 side_effect=mock_run_markdownlint_batch,
             ):
                 results: list[FileResult] = await _process_markdown_files_sequential(
@@ -224,7 +224,7 @@ class TestSequentialProcessing:
                 ]
 
             with patch(
-                "cortex.tools.markdown_operations._run_markdownlint_batch",
+                "cortex.tools.markdown_lint_run._run_markdownlint_batch",
                 side_effect=mock_run_markdownlint_batch,
             ):
                 results: list[FileResult] = await _process_markdown_files_sequential(

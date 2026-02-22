@@ -15,17 +15,17 @@ from cortex.core.models import GitCommandResult
 
 __all__ = [
     "FileResult",
-    "_apply_validation_error_hint",
+    "apply_validation_error_hint",
     "_build_error_result",
     "_build_markdownlint_batch_results",
     "_build_markdownlint_error_result",
     "_build_markdownlint_success_result",
-    "_calculate_statistics",
+    "calculate_statistics",
     "_chunk_paths",
     "_not_in_git_repo_hint",
-    "_parse_markdownlint_errors",
+    "parse_markdownlint_errors",
     "_parse_markdownlint_lines_by_file",
-    "_parse_markdownlint_output",
+    "parse_markdownlint_output",
     "_result_error",
     "_result_returncode",
     "_result_stderr",
@@ -90,6 +90,9 @@ def _parse_markdownlint_errors(stderr: str) -> list[str]:
     return errors
 
 
+parse_markdownlint_errors = _parse_markdownlint_errors
+
+
 def _parse_markdownlint_output(stdout: str) -> list[str]:
     """Parse markdownlint output from stdout."""
     errors: list[str] = []
@@ -97,6 +100,9 @@ def _parse_markdownlint_output(stdout: str) -> list[str]:
         if line.strip():
             errors.append(line.strip())
     return errors
+
+
+parse_markdownlint_output = _parse_markdownlint_output
 
 
 def _try_parse_file_with_spaces(s: str, by_file: dict[str, list[str]]) -> bool:
@@ -258,7 +264,7 @@ def _build_markdownlint_batch_results(
     ]
 
 
-def _calculate_statistics(results: list[FileResult]) -> tuple[int, int, int]:
+def calculate_statistics(results: list[FileResult]) -> tuple[int, int, int]:
     """Return (files_fixed, files_with_errors, files_unchanged)."""
     files_fixed = sum(1 for r in results if r.fixed)
     files_with_errors = sum(1 for r in results if r.error_message is not None)
@@ -278,7 +284,7 @@ def _not_in_git_repo_hint(project_root_was_none: bool) -> str:
     return " When running under MCP, use workspace root or client roots (roots/list)."
 
 
-def _apply_validation_error_hint(validation_error: str) -> str:
+def apply_validation_error_hint(validation_error: str) -> str:
     """Apply not-in-git hint to validation error JSON when applicable; return final JSON."""
     if "Not in a git repository" in validation_error:
         hint = _not_in_git_repo_hint(True)

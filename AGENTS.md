@@ -124,6 +124,8 @@ The commit workflow is organized into phases (see `docs/design/commit-pipeline-p
 
 - Do not mark a blocker or plan as complete when only documentation was updated and the root cause may not have been encountered; the user expects code changes or validated recurrence before closing.
 - User flags use of `Any` as a rules violation; follow type annotation rules strictly (use Pydantic or `object` instead).
+- Do not import or test private symbols; test via public API or make symbols public by renaming (no public aliases for private names).
+- Do not disable pyright (e.g. reportPrivateUsage, reportUnknownMemberType) to hide private usage or type issues; fix the underlying usage or types instead.
 
 ## Learned Workspace Facts
 

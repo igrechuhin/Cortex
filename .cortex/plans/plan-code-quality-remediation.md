@@ -160,7 +160,7 @@ These violations create technical debt, hurt readability, and make onboarding ha
 
 **Acceptance criteria:** All production files ≤ 400 lines.
 
-**Step 6 progress (2026-02-22):** Split `tools/file_operations.py` (1,110 lines) into: `file_section_operations.py`, `file_metadata_operations.py`, `file_crud_flow.py`, `file_manage_file_helpers.py`, `file_crud_operations.py`; `file_operations.py` is a re-export facade (~52 lines). Split `tools/session_start_tools.py` (896 lines) into: `session_start_tools.py` (main, 323 lines), `session_health.py` (130 lines), `session_brief.py` (361 lines). All new modules ≤ 400 lines. Tests updated to import from session_health and session_brief; MCP health patch path updated to session_health. Remaining Step 6 targets: markdown_operations, plan_operations, core/metadata_index.
+**Step 6 progress (2026-02-22):** Split `tools/file_operations.py` (1,110 lines) into: `file_section_operations.py`, `file_metadata_operations.py`, `file_crud_flow.py`, `file_manage_file_helpers.py`, `file_crud_operations.py`; `file_operations.py` is a re-export facade (~52 lines). Split `tools/session_start_tools.py` (896 lines) into: `session_start_tools.py` (main, 323 lines), `session_health.py` (130 lines), `session_brief.py` (361 lines). Split `tools/markdown_operations.py` (933 lines) into: `markdown_lint.py` (public API, ~213 lines), `markdown_lint_core.py` (git, config, cache, ~384 lines), `markdown_lint_run.py` (batch/heartbeat, ~340 lines); `markdown_operations.py` is a re-export facade. All new modules ≤ 400 lines. Tests updated to patch implementation modules where needed. Remaining Step 6 targets: plan_operations, core/metadata_index.
 
 ---
 
