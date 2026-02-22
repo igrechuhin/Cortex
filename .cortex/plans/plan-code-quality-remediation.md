@@ -44,7 +44,7 @@ These violations create technical debt, hurt readability, and make onboarding ha
 
 **Acceptance criteria:** All model files ≤ 400 lines. No import changes needed by consumers (re-exports maintain backward compatibility).
 
-**Step 1 progress (2026-02-22):** Split `tools/models.py` into domain modules. Created `validation_result_models.py` (Validate*, link graph), `refactoring_result_models.py` (suggest_refactoring, apply_refactoring), `context_models.py` (load_context, configure, get_memory_bank_stats, version history, dependency graph, transclusions, progressive, relevance, summarize), and `analysis_models.py` (analyze usage/structure/insights). `models.py` now imports from `models_base`, `session_models`, and the new modules and re-exports for backward compatibility; file reduced from ~2900 to ~1600 lines. Remaining: further split or move remaining blocks (rollback, structure health, rules, roadmap ops, etc.) so `models.py` ≤ 400 lines; evaluation_models deferred (no evaluation-specific types in tools/models).
+**Step 1 progress (2026-02-22):** Split `tools/models.py` into domain modules. Created `validation_result_models.py`, `refactoring_result_models.py`, `context_models.py`, `analysis_models.py` (first batch). Second batch: `file_operations_models.py` (manage_file, rollback, ManagersInitResult), `structure_models.py` (check_structure_health, get_structure_info), `rules_models.py`, `quality_precommit_models.py`, `synapse_models.py`, `feedback_models.py`, `markdown_models.py`, `health_connection_models.py`, `links_models.py`, `context_analysis_models.py`, `roadmap_operations_models.py`. `models.py` is now a re-export facade (~500 lines including **all**); all model files ≤ 400 lines. **Step 1 COMPLETE.**
 
 ---
 

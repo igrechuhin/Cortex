@@ -20,6 +20,7 @@ from cortex.core.session_logger import (
     read_session_log,
 )
 from cortex.tools.models import (
+    ContextAnalysisStatus,
     ContextInsights,
     ContextStatisticsResult,
     ContextUsageEntry,
@@ -572,7 +573,7 @@ def _build_current_session_result(
 
     insights = stats.insights or _create_empty_insights()
     return CurrentSessionAnalysisResult(
-        status="success",
+        status=ContextAnalysisStatus.SUCCESS,
         session_id=session_id,
         current_session=JsonDict.from_dict(
             {
@@ -597,7 +598,7 @@ def analyze_current_session(project_root: Path) -> CurrentSessionAnalysisResult:
     session_log = read_session_log(log_path)
     if session_log is None or not session_log.load_context_calls:
         return CurrentSessionAnalysisResult(
-            status="no_data",
+            status=ContextAnalysisStatus.NO_DATA,
             session_id=session_id,
             current_session=None,
             global_statistics_updated=None,
@@ -650,7 +651,7 @@ def _build_session_logs_result(
         key: cast(JsonValue, value) for key, value in stats.common_task_patterns.items()
     }
     return SessionLogsAnalysisResult(
-        status="success",
+        status=ContextAnalysisStatus.SUCCESS,
         new_sessions_analyzed=sessions_analyzed,
         new_entries_added=len(new_entries),
         total_sessions=stats.total_sessions_analyzed,
@@ -673,7 +674,7 @@ def analyze_session_logs(project_root: Path) -> SessionLogsAnalysisResult:
     log_files = list_session_logs(project_root)
     if not log_files:
         return SessionLogsAnalysisResult(
-            status="no_data",
+            status=ContextAnalysisStatus.NO_DATA,
             new_sessions_analyzed=None,
             new_entries_added=None,
             total_sessions=None,
@@ -716,7 +717,7 @@ def _build_success_statistics_result(
     """Build success statistics result."""
     insights = stats.insights or _create_empty_insights()
     return ContextStatisticsResult(
-        status="success",
+        status=ContextAnalysisStatus.SUCCESS,
         last_updated=stats.last_updated,
         total_sessions=stats.total_sessions_analyzed,
         total_calls=stats.total_load_context_calls,
@@ -743,7 +744,7 @@ def get_context_statistics(project_root: Path) -> ContextStatisticsResult:
     stats_path = _get_statistics_path(project_root)
     if not stats_path.exists():
         return ContextStatisticsResult(
-            status="no_data",
+            status=ContextAnalysisStatus.NO_DATA,
             last_updated=None,
             total_sessions=None,
             total_calls=None,
